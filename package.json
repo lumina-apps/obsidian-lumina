@@ -1,0 +1,41 @@
+{
+	"name": "obsidian-lumina",
+	"version": "1.0.0",
+	"description": "Your intelligent AI Agent for Obsidian with RAG and Multi-LLM support.",
+	"main": "main.js",
+	"scripts": {
+		"dev": "node esbuild.config.mjs",
+		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+		"version": "node version-bump.mjs && git add manifest.json versions.json"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "MIT",
+	"devDependencies": {
+		"@tsconfig/svelte": "^5.0.8",
+		"@types/node": "^25.9.2",
+		"@typescript-eslint/eslint-plugin": "^8.60.1",
+		"@typescript-eslint/parser": "^8.60.1",
+		"builtin-modules": "^5.2.0",
+		"dotenv": "^17.4.2",
+		"esbuild": "^0.28.0",
+		"esbuild-svelte": "^0.9.5",
+		"eslint": "^10.4.1",
+		"obsidian": "^1.13.0",
+		"svelte": "^5.56.2",
+		"svelte-preprocess": "^6.0.5",
+		"tslib": "^2.8.1",
+		"typescript": "^6.0.3"
+	},
+	"dependencies": {
+		"@langchain/anthropic": "^1.4.0",
+		"@langchain/core": "^1.1.48",
+		"@langchain/google-genai": "^2.1.31",
+		"@langchain/openai": "^1.4.7",
+		"@modelcontextprotocol/sdk": "^1.29.0",
+		"@xenova/transformers": "^2.17.2",
+		"mammoth": "^1.12.0",
+		"pdfjs-dist": "^6.0.227",
+		"xlsx": "^0.18.5"
+	}
+}

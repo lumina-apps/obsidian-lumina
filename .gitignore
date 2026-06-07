@@ -1,0 +1,35 @@
+# IDEs / Editors
+.vscode/
+.idea/
+*.iml
+
+# Node / npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+# Don't include the compiled files in the repo.
+# They should be uploaded to GitHub releases instead.
+main.js
+embedding.worker.js
+*.map
+
+# Obsidian
+data.json
+.hotreload
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
