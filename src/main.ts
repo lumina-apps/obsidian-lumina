@@ -1,9 +1,9 @@
-import { Notice, Platform, Plugin, addIcon, TFile } from 'obsidian';
+import { Notice, Platform, Plugin, addIcon, TFile, requestUrl } from 'obsidian';
 import { LuminaSettingTab } from './core/settings/settingTab';
 import { DEFAULT_SETTINGS } from './core/settings/defaultSettings';
 import type { LuminaSettings } from './core/settings/settings.types';
 import { EmbeddingWorkerBridge } from './features/rag/workerBridge';
-import { getModelCacheDir, getWorkerPath } from './features/rag/storage';
+import { getModelCacheDir, getWorkerPath, getWorkerRelativePath } from './features/rag/storage';
 import { VaultIndexer } from './features/rag/indexer';
 import { ChatView, CHAT_VIEW_TYPE } from './features/chat/chatView';
 import { DebugView, DEBUG_VIEW_TYPE } from './features/debug/debugView';
@@ -684,7 +684,23 @@ export default class LuminaPlugin extends Plugin {
 				}
 				modelName = DEFAULT_EMBEDDING_MODEL;
 				const workerPath = getWorkerPath(this.app);
+				const relativeWorkerPath = getWorkerRelativePath(this.app);
 				const cacheDir   = getModelCacheDir(this.app);
+
+				// 워커 자동 다운로드 로직
+				const adapter = this.app.vault.adapter;
+				if (!(await adapter.exists(relativeWorkerPath))) {
+					if (!isStartup) progressNotice?.setMessage('Downloading embedding worker (워커 다운로드 중)...');
+					const version = this.manifest.version;
+					const downloadUrl = `https://github.com/lumina-apps/obsidian-lumina/releases/download/${version}/embedding.worker.js`;
+					try {
+						const response = await requestUrl(downloadUrl);
+						await adapter.write(relativeWorkerPath, response.text);
+						if (!isStartup) progressNotice?.setMessage('Worker downloaded successfully.');
+					} catch (downloadErr) {
+						throw new Error(`워커 파일 다운로드 실패: ${downloadErr}`);
+					}
+				}
 
 				this.embeddingWorker = new EmbeddingWorkerBridge();
 
