@@ -699,7 +699,7 @@
 		new Notice($tStore("errors.underDevelopment"));
 	}
 
-	function openSettingsToTab(tabId: string = "obsidian-lumina") {
+	function openSettingsToTab(tabId: string = "lumina") {
 		// @ts-ignore
 		(plugin.app as any).setting.open();
 		// @ts-ignore

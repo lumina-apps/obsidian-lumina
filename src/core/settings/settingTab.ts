@@ -1766,7 +1766,7 @@ export class LuminaSettingTab extends PluginSettingTab {
 
 			// 버전 정보
 			this.sectionHeading(el, t('settings.misc.versionInfo.name'));
-			const { version } = (this.app as any).plugins.manifests['obsidian-lumina'] ?? { version: '—' };
+			const { version } = (this.app as any).plugins.manifests['lumina'] ?? { version: '—' };
 			new Setting(el)
 				.setName(`Lumina v${version}`)
 				.setDesc(t('settings.misc.versionInfo.desc'))
@@ -1796,7 +1796,7 @@ export class LuminaSettingTab extends PluginSettingTab {
 
 								// 인덱스 및 다운로드된 모델(storage 폴더) 삭제
 								try {
-									const storagePath = `${this.app.vault.configDir}/plugins/obsidian-lumina/storage`;
+									const storagePath = `${this.app.vault.configDir}/plugins/lumina/storage`;
 									if (await this.app.vault.adapter.exists(storagePath)) {
 										await this.app.vault.adapter.rmdir(storagePath, true);
 									}
@@ -1806,7 +1806,7 @@ export class LuminaSettingTab extends PluginSettingTab {
 
 								// 언어 번역 캐시(locales 폴더) 삭제
 								try {
-									const localesPath = `${this.app.vault.configDir}/plugins/obsidian-lumina/locales`;
+									const localesPath = `${this.app.vault.configDir}/plugins/lumina/locales`;
 									if (await this.app.vault.adapter.exists(localesPath)) {
 										await this.app.vault.adapter.rmdir(localesPath, true);
 									}

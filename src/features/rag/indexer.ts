@@ -6,7 +6,7 @@
  * 주요 기능:
  * - mtime 기반 증분 업데이트 (변경된 파일만 재인덱싱)
  * - CHUNK_EMBED_BATCH 단위로 임베딩 워커에 배치 전송
- * - JSON 형태로 .obsidian/plugins/obsidian-lumina/storage/index.json에 영속화
+ * - JSON 형태로 .obsidian/plugins/lumina/storage/index.json에 영속화
  * - schemaVersion + modelName 조합으로 모델 변경 시 자동 무효화
  * - exclusions.ts를 통한 기본+커스텀 제외 경로 필터링
  *
@@ -46,7 +46,7 @@ const CHUNK_EMBED_BATCH = 16;
  */
 const SCHEMA_VERSION = 2;
 /** 플러그인 스토리지 경로 (볼트 configDir 기준 상대경로) */
-const STORAGE_SUBPATH = 'plugins/obsidian-lumina/storage';
+const STORAGE_SUBPATH = 'plugins/lumina/storage';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

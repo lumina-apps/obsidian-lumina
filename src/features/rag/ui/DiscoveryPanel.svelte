@@ -316,7 +316,7 @@
 				// @ts-ignore
 				plugin.app.setting.open();
 				// @ts-ignore
-				plugin.app.setting.openTabById('obsidian-lumina');
+				plugin.app.setting.openTabById('lumina');
 			}}>
 				⚙️ {$tStore('common.settings')}
 			</button>

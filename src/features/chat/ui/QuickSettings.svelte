@@ -57,7 +57,7 @@
 		// @ts-ignore
 		(plugin.app as any).setting.open();
 		// @ts-ignore
-		(plugin.app as any).setting.openTabById('obsidian-lumina');
+		(plugin.app as any).setting.openTabById('lumina');
 	}
 
 	// Click outside handler

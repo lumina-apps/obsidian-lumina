@@ -109,7 +109,7 @@ ${sourceJson}
 
     // Save to cache
     const configDir = app.vault.configDir;
-    const cacheDir = `${configDir}/plugins/obsidian-lumina/locales`;
+    const cacheDir = `${configDir}/plugins/lumina/locales`;
 
     // Obsidian's FileSystem API uses Vault adapter for paths relative to the vault root.
     // configDir itself is a path (usually '.obsidian').
@@ -133,7 +133,7 @@ ${sourceJson}
  */
 export async function loadSystemLocaleCache(app: App): Promise<boolean> {
     const configDir = app.vault.configDir;
-    const cacheFile = `${configDir}/plugins/obsidian-lumina/locales/system.json`;
+    const cacheFile = `${configDir}/plugins/lumina/locales/system.json`;
 
     if (await app.vault.adapter.exists(cacheFile)) {
         try {
@@ -154,7 +154,7 @@ export async function loadSystemLocaleCache(app: App): Promise<boolean> {
  */
 export async function deleteSystemLocaleCache(app: App): Promise<boolean> {
     const configDir = app.vault.configDir;
-    const cacheFile = `${configDir}/plugins/obsidian-lumina/locales/system.json`;
+    const cacheFile = `${configDir}/plugins/lumina/locales/system.json`;
 
     if (await app.vault.adapter.exists(cacheFile)) {
         try {

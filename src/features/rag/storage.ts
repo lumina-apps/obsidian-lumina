@@ -18,7 +18,7 @@ if (Platform.isDesktop) {
 	path = require('path');
 }
 
-const PLUGIN_ID = 'obsidian-lumina';
+const PLUGIN_ID = 'lumina';
 
 /** 볼트 절대 경로 (예: /path/to/vault) */
 function getBasePath(app: App): string {
