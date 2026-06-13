@@ -1,6 +1,7 @@
 import { App, TFile, requestUrl } from 'obsidian';
 import { DocumentParserRouter, SUPPORTED_EXTENSIONS } from '../../rag/parsers/DocumentParserRouter';
 import type { ContextAttachment } from '../../../shared/types/chat.types';
+import type LuminaPlugin from '../../../main';
 
 export const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif']);
 const MAX_TEXT_LENGTH = 100000; // 대략적인 글자 수 제한 (초과 시 잘림)
@@ -14,7 +15,7 @@ export class ChatAttachmentHandler {
 	/**
 	 * 첨부 파일을 분석하여 텍스트 또는 이미지(base64)로 변환합니다.
 	 */
-	static async parseAttachment(app: App, att: ContextAttachment): Promise<ParsedAttachment | null> {
+	static async parseAttachment(app: App, att: ContextAttachment, plugin?: LuminaPlugin): Promise<ParsedAttachment | null> {
 		try {
 			if (att.type === 'file') {
 				const file = app.vault.getAbstractFileByPath(att.path);
@@ -31,7 +32,18 @@ export class ChatAttachmentHandler {
 					
 					// 2. 문서 파일 처리 (파서 라우터 재사용)
 					if (SUPPORTED_EXTENSIONS.has(ext)) {
-						const text = await DocumentParserRouter.parse(app, file);
+						let text = '';
+						if (['pdf', 'docx', 'xlsx', 'xls'].includes(ext)) {
+							if (plugin?.embeddingWorker) {
+								const buffer = await app.vault.readBinary(file);
+								text = await plugin.embeddingWorker.parse(buffer, ext);
+							} else {
+								console.warn('Worker not ready to parse binary file:', file.name);
+							}
+						} else {
+							const textContent = await app.vault.read(file);
+							text = await DocumentParserRouter.parseText(textContent, ext);
+						}
 						return this.createTextPayload(`[첨부 파일: ${att.name}]\n${text}`);
 					}
 					

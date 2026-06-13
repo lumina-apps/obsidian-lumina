@@ -1,18 +1,7 @@
-/**
- * anthropic.provider.ts
- * Anthropic (Claude) 클라우드 프로바이더
- *
- * 사용 패키지: @langchain/anthropic
- * 모델 목록: /v1/models API를 동적 조회 후 `claude-` 프리픽스로 필터
- *             API 호출 실패 시 하드코딩 fallback 사용
- */
-
-import { ChatAnthropic } from '@langchain/anthropic';
 import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, ToolCall } from '../../../shared/types/llm.types';
-import { HumanMessage, SystemMessage, AIMessage, ToolMessage } from '@langchain/core/messages';
 import { t } from '../../../shared/locales/helpers';
-import { tool } from '@langchain/core/tools';
 import { requestUrl } from 'obsidian';
+import { readStreamLines } from '../utils';
 
 /** Anthropic 공식 지원 모델 목록 (최신순) */
 const ANTHROPIC_MODELS = [
@@ -59,48 +48,162 @@ export class AnthropicProvider implements ILLMProvider {
 	}
 
 	async chat(messages: ChatMessage[], options: ChatOptions, onChunk?: (chunk: string) => void): Promise<ChatResponse> {
-		const llm = this.buildLLM(options);
-		const lc = toLangChainMessages(messages);
+		const url = 'https://api.anthropic.com/v1/messages';
+		const headers: Record<string, string> = {
+			'content-type': 'application/json',
+			'x-api-key': this.apiKey,
+			'anthropic-version': '2023-06-01',
+		};
 
-		// bind tools
-		const executor = options.tools && options.tools.length > 0
-			? llm.bindTools(options.tools.map(td => tool(
-				async () => '',
-				{
-					name: td.name,
-					description: td.description,
-					schema: td.inputSchema as unknown as import('zod').ZodType,
+		const system = getSystemPrompt(messages);
+		const formattedMessages = formatAnthropicMessages(messages);
+		const formattedTools = formatAnthropicTools(options.tools);
+
+		const payload: Record<string, any> = {
+			model: options.model,
+			messages: formattedMessages,
+			temperature: options.temperature ?? 0.7,
+			max_tokens: options.maxOutputTokens ?? 4096,
+			tools: formattedTools,
+			stream: !!onChunk,
+		};
+
+		if (system) {
+			payload.system = system;
+		}
+
+		if (onChunk) {
+			let fullContent = '';
+			const accumulatedBlocks: any[] = [];
+			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+
+			const response = await fetch(url, {
+				method: 'POST',
+				headers,
+				body: JSON.stringify(payload),
+				signal: options.signal,
+			});
+
+			if (!response.ok) {
+				const errText = await response.text();
+				throw new Error(`Anthropic Error (HTTP ${response.status}): ${errText}`);
+			}
+
+			await readStreamLines(response, options.signal, (line) => {
+				const cleanLine = line.trim();
+				if (!cleanLine) return;
+
+				if (cleanLine.startsWith('data: ')) {
+					const dataStr = cleanLine.slice(6);
+					try {
+						const chunk = JSON.parse(dataStr);
+						if (chunk.type === 'message_start' && chunk.message?.usage) {
+							usage = {
+								inputTokens: chunk.message.usage.input_tokens || 0,
+								outputTokens: chunk.message.usage.output_tokens || 0,
+								totalTokens: (chunk.message.usage.input_tokens || 0) + (chunk.message.usage.output_tokens || 0),
+							};
+						}
+						else if (chunk.type === 'content_block_start') {
+							const index = chunk.index ?? 0;
+							accumulatedBlocks[index] = {
+								type: chunk.content_block?.type,
+								id: chunk.content_block?.id || '',
+								name: chunk.content_block?.name || '',
+								input: '',
+								text: '',
+							};
+						}
+						else if (chunk.type === 'content_block_delta') {
+							const index = chunk.index ?? 0;
+							const block = accumulatedBlocks[index];
+							if (block) {
+								if (chunk.delta?.type === 'text_delta' && chunk.delta.text) {
+									block.text += chunk.delta.text;
+									fullContent += chunk.delta.text;
+									onChunk(chunk.delta.text);
+								}
+								else if (chunk.delta?.type === 'input_json_delta' && chunk.delta.partial_json) {
+									block.input += chunk.delta.partial_json;
+								}
+							}
+						}
+						else if (chunk.type === 'message_delta') {
+							if (chunk.usage && usage) {
+								usage.outputTokens = chunk.usage.output_tokens || usage.outputTokens;
+								usage.totalTokens = usage.inputTokens + usage.outputTokens;
+							}
+						}
+					} catch (e) {
+						// ignore parse errors
+					}
 				}
-			)))
-			: llm;
+			});
 
-		const res = await executor.invoke(lc, { signal: options.signal });
+			const toolCalls: ToolCall[] = [];
+			for (const block of accumulatedBlocks) {
+				if (block && block.type === 'tool_use') {
+					try {
+						toolCalls.push({
+							id: block.id || crypto.randomUUID(),
+							name: block.name,
+							arguments: block.input ? JSON.parse(block.input) : {},
+						});
+					} catch (e) {
+						console.warn('Failed to parse Anthropic tool arguments:', block.input);
+					}
+				}
+			}
 
-		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
-		if (res.usage_metadata) {
-			usage = {
-				inputTokens: res.usage_metadata.input_tokens,
-				outputTokens: res.usage_metadata.output_tokens,
-				totalTokens: res.usage_metadata.total_tokens,
+			return {
+				content: fullContent,
+				usage,
+				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+			};
+		} else {
+			// non-streaming
+			const res = await requestUrl({
+				url,
+				method: 'POST',
+				headers,
+				body: JSON.stringify(payload),
+			});
+
+			const data = res.json as any;
+			if (!data.content) {
+				throw new Error(`Anthropic API returned an empty response. Response: ${res.text}`);
+			}
+
+			let fullContent = '';
+			const toolCalls: ToolCall[] = [];
+
+			for (const block of data.content) {
+				if (block.type === 'text') {
+					fullContent += block.text || '';
+				} else if (block.type === 'tool_use') {
+					toolCalls.push({
+						id: block.id || crypto.randomUUID(),
+						name: block.name,
+						arguments: block.input || {},
+					});
+				}
+			}
+
+			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+			if (data.usage) {
+				usage = {
+					inputTokens: data.usage.input_tokens || 0,
+					outputTokens: data.usage.output_tokens || 0,
+					totalTokens: (data.usage.input_tokens || 0) + (data.usage.output_tokens || 0),
+				};
+			}
+
+			return {
+				content: fullContent,
+				usage,
+				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
 			};
 		}
-
-		const toolCalls: ToolCall[] = [];
-		if (res.tool_calls && res.tool_calls.length > 0) {
-			for (const tc of res.tool_calls) {
-				toolCalls.push({
-					id: tc.id ?? crypto.randomUUID(),
-					name: tc.name,
-					arguments: tc.args as Record<string, unknown>,
-				});
-			}
-		}
-
-		return {
-			content: typeof res.content === 'string' ? res.content : '',
-			usage,
-			toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-		};
 	}
 
 	async stream(
@@ -108,60 +211,139 @@ export class AnthropicProvider implements ILLMProvider {
 		options: ChatOptions,
 		onChunk: (chunk: string) => void,
 	): Promise<{ usage?: import('../../../shared/types/llm.types').TokenUsage }> {
-		const llm = this.buildLLM(options);
-		const lc = toLangChainMessages(messages);
-		const iter = await llm.stream(lc, { signal: options.signal });
-		let usage;
-		for await (const chunk of iter) {
-			if (chunk.usage_metadata) {
-				usage = {
-					inputTokens: chunk.usage_metadata.input_tokens,
-					outputTokens: chunk.usage_metadata.output_tokens,
-					totalTokens: chunk.usage_metadata.total_tokens,
-				};
-			}
-			const text = typeof chunk.content === 'string' ? chunk.content : '';
-			if (text) onChunk(text);
+		const url = 'https://api.anthropic.com/v1/messages';
+		const headers: Record<string, string> = {
+			'content-type': 'application/json',
+			'x-api-key': this.apiKey,
+			'anthropic-version': '2023-06-01',
+		};
+
+		const system = getSystemPrompt(messages);
+		const formattedMessages = formatAnthropicMessages(messages);
+
+		const payload: Record<string, any> = {
+			model: options.model,
+			messages: formattedMessages,
+			temperature: options.temperature ?? 0.7,
+			max_tokens: options.maxOutputTokens ?? 4096,
+			stream: true,
+		};
+
+		if (system) {
+			payload.system = system;
 		}
+
+		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+
+		const response = await fetch(url, {
+			method: 'POST',
+			headers,
+			body: JSON.stringify(payload),
+			signal: options.signal,
+		});
+
+		if (!response.ok) {
+			const errText = await response.text();
+			throw new Error(`Anthropic Error (HTTP ${response.status}): ${errText}`);
+		}
+
+		await readStreamLines(response, options.signal, (line) => {
+			const cleanLine = line.trim();
+			if (!cleanLine) return;
+
+			if (cleanLine.startsWith('data: ')) {
+				const dataStr = cleanLine.slice(6);
+				try {
+					const chunk = JSON.parse(dataStr);
+					if (chunk.type === 'message_start' && chunk.message?.usage) {
+						usage = {
+							inputTokens: chunk.message.usage.input_tokens || 0,
+							outputTokens: chunk.message.usage.output_tokens || 0,
+							totalTokens: (chunk.message.usage.input_tokens || 0) + (chunk.message.usage.output_tokens || 0),
+						};
+					}
+					else if (chunk.type === 'content_block_delta') {
+						if (chunk.delta?.type === 'text_delta' && chunk.delta.text) {
+							onChunk(chunk.delta.text);
+						}
+					}
+					else if (chunk.type === 'message_delta') {
+						if (chunk.usage && usage) {
+							usage.outputTokens = chunk.usage.output_tokens || usage.outputTokens;
+							usage.totalTokens = usage.inputTokens + usage.outputTokens;
+						}
+					}
+				} catch (e) {
+					// ignore json parse errors
+				}
+			}
+		});
+
 		return { usage };
 	}
 
 	async embed(texts: string[], options: { model: string }): Promise<number[][]> {
 		throw new Error(t('settings.providerErrors.anthropicNoEmbed'));
 	}
-
-	private buildLLM(options: ChatOptions): ChatAnthropic {
-		return new ChatAnthropic({
-			anthropicApiKey: this.apiKey,
-			modelName: options.model,
-			temperature: options.temperature ?? 0.7,
-			maxTokens: options.maxOutputTokens ?? 4096,
-			streaming: true,
-			maxRetries: 0,
-		});
-	}
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-export function toLangChainMessages(messages: ChatMessage[]) {
-	return messages.map((m) => {
-		if (m.role === 'system') return new SystemMessage(m.content as string);
-		if (m.role === 'user') return new HumanMessage({ content: m.content as unknown as import('@langchain/core/messages').MessageContent });
-		if (m.role === 'tool') return new ToolMessage({
-			name: m.name ?? '',
-			content: m.content as string,
-			tool_call_id: m.tool_call_id ?? '',
-		});
-		if (m.role === 'assistant') return new AIMessage({
-			content: m.content as string,
-			tool_calls: m.tool_calls?.map(tc => ({
-				id: tc.id,
-				name: tc.name,
-				args: tc.arguments,
-				type: 'tool_call' as const,
-			})),
-		});
-		return new SystemMessage(m.content as string); // unreachable, fallback
+function getSystemPrompt(messages: ChatMessage[]): string | undefined {
+	const systemMsgs = messages.filter(m => m.role === 'system');
+	if (systemMsgs.length === 0) return undefined;
+	return systemMsgs.map(m => m.content).join('\n');
+}
+
+function formatAnthropicMessages(messages: ChatMessage[]) {
+	// Filter out system messages
+	const filtered = messages.filter(m => m.role !== 'system');
+	return filtered.map((m) => {
+		if (m.role === 'user') {
+			return { role: 'user', content: m.content };
+		}
+		if (m.role === 'assistant') {
+			const contentArray: any[] = [];
+			if (typeof m.content === 'string' && m.content) {
+				contentArray.push({ type: 'text', text: m.content });
+			}
+			if (m.tool_calls && m.tool_calls.length > 0) {
+				for (const tc of m.tool_calls) {
+					contentArray.push({
+						type: 'tool_use',
+						id: tc.id,
+						name: tc.name,
+						input: tc.arguments,
+					});
+				}
+			}
+			return { role: 'assistant', content: contentArray };
+		}
+		if (m.role === 'tool') {
+			return {
+				role: 'user',
+				content: [
+					{
+						type: 'tool_result',
+						tool_use_id: m.tool_call_id,
+						content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+					}
+				]
+			};
+		}
+		return { role: 'user', content: String(m.content) };
 	});
+}
+
+function formatAnthropicTools(tools?: import('../../../shared/types/llm.types').ToolDefinition[]) {
+	if (!tools || tools.length === 0) return undefined;
+	return tools.map((td) => ({
+		name: td.name,
+		description: td.description,
+		input_schema: {
+			type: 'object',
+			properties: td.inputSchema.properties,
+			required: td.inputSchema.required || [],
+		},
+	}));
 }

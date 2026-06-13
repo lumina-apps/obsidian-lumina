@@ -1,20 +1,7 @@
-/**
- * google.provider.ts
- * Google Gemini 클라우드 프로바이더
- *
- * 사용 패키지: @langchain/google-genai
- * 모델 목록: /v1beta/models API 동적 조회
- *             generateContent 지원 모델만 필터링 (임베딩 전용 모델 제외)
- *             API 실패 시 하드코딩 fallback 사용
- */
-
-import { ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
-import { TaskType } from '@google/generative-ai';
 import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, ToolCall } from '../../../shared/types/llm.types';
-import { HumanMessage, SystemMessage, AIMessage, ToolMessage } from '@langchain/core/messages';
 import { t } from '../../../shared/locales/helpers';
-import { tool } from '@langchain/core/tools';
 import { requestUrl } from 'obsidian';
+import { readStreamLines } from '../utils';
 
 /** Google Gemini 지원 모델 목록 (최신순) */
 const GOOGLE_MODELS = [
@@ -63,47 +50,155 @@ export class GoogleProvider implements ILLMProvider {
 	}
 
 	async chat(messages: ChatMessage[], options: ChatOptions, onChunk?: (chunk: string) => void): Promise<ChatResponse> {
-		const llm = this.buildLLM(options);
-		const lc = toLangChainMessages(messages);
+		const isStream = !!onChunk;
+		const method = isStream ? 'streamGenerateContent' : 'generateContent';
+		const url = `https://generativelanguage.googleapis.com/v1beta/models/${options.model}:${method}?key=${this.apiKey}`;
+		
+		const headers: Record<string, string> = {
+			'Content-Type': 'application/json',
+		};
 
-		const executor = options.tools && options.tools.length > 0
-			? llm.bindTools(options.tools.map(td => tool(
-				async () => '',
-				{
-					name: td.name,
-					description: td.description,
-					schema: td.inputSchema as unknown as import('zod').ZodType,
+		const formattedContents = formatGeminiMessages(messages);
+		const systemInstruction = getGeminiSystemInstruction(messages);
+		const formattedTools = formatGeminiTools(options.tools);
+
+		const payload: Record<string, any> = {
+			contents: formattedContents,
+			generationConfig: {
+				temperature: options.temperature ?? 0.7,
+				maxOutputTokens: options.maxOutputTokens,
+			}
+		};
+
+		if (systemInstruction) {
+			payload.systemInstruction = systemInstruction;
+		}
+
+		if (formattedTools) {
+			payload.tools = formattedTools;
+		}
+
+		if (isStream) {
+			let fullContent = '';
+			const accumulatedToolCalls: any[] = [];
+			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+
+			const response = await fetch(url, {
+				method: 'POST',
+				headers,
+				body: JSON.stringify(payload),
+				signal: options.signal,
+			});
+
+			if (!response.ok) {
+				const errText = await response.text();
+				throw new Error(`Google Gemini Error (HTTP ${response.status}): ${errText}`);
+			}
+
+			await readStreamLines(response, options.signal, (line) => {
+				let cleanLine = line.trim();
+				if (cleanLine.startsWith('[')) cleanLine = cleanLine.slice(1).trim();
+				if (cleanLine.endsWith(']')) cleanLine = cleanLine.slice(0, -1).trim();
+				if (cleanLine.endsWith(',')) cleanLine = cleanLine.slice(0, -1).trim();
+				if (!cleanLine) return;
+
+				try {
+					const chunk = JSON.parse(cleanLine);
+					const candidate = chunk.candidates?.[0];
+					if (candidate) {
+						const parts = candidate.content?.parts;
+						if (parts) {
+							for (const part of parts) {
+								if (part.text) {
+									fullContent += part.text;
+									onChunk(part.text);
+								}
+								if (part.functionCall) {
+									accumulatedToolCalls.push({
+										name: part.functionCall.name,
+										args: part.functionCall.args,
+									});
+								}
+							}
+						}
+					}
+					if (chunk.usageMetadata) {
+						usage = {
+							inputTokens: chunk.usageMetadata.promptTokenCount || 0,
+							outputTokens: chunk.usageMetadata.candidatesTokenCount || 0,
+							totalTokens: chunk.usageMetadata.totalTokenCount || 0,
+						};
+					}
+				} catch (e) {
+					// Ignore line boundaries parsing errors
 				}
-			)))
-			: llm;
+			});
 
-		const res = await executor.invoke(lc, { signal: options.signal });
+			const toolCalls: ToolCall[] = [];
+			for (const tc of accumulatedToolCalls) {
+				if (tc) {
+					toolCalls.push({
+						id: crypto.randomUUID(),
+						name: tc.name,
+						arguments: tc.args || {},
+					});
+				}
+			}
 
-		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
-		if (res.usage_metadata) {
-			usage = {
-				inputTokens: res.usage_metadata.input_tokens,
-				outputTokens: res.usage_metadata.output_tokens,
-				totalTokens: res.usage_metadata.total_tokens,
+			return {
+				content: fullContent,
+				usage,
+				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+			};
+		} else {
+			// non-streaming
+			const res = await requestUrl({
+				url,
+				method: 'POST',
+				headers,
+				body: JSON.stringify(payload),
+			});
+
+			const data = res.json as any;
+			const candidate = data.candidates?.[0];
+			if (!candidate) {
+				throw new Error(`Google Gemini API returned an empty response. Response: ${res.text}`);
+			}
+
+			let fullContent = '';
+			const toolCalls: ToolCall[] = [];
+			const parts = candidate.content?.parts;
+
+			if (parts) {
+				for (const part of parts) {
+					if (part.text) {
+						fullContent += part.text;
+					}
+					if (part.functionCall) {
+						toolCalls.push({
+							id: crypto.randomUUID(),
+							name: part.functionCall.name,
+							arguments: part.functionCall.args || {},
+						});
+					}
+				}
+			}
+
+			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+			if (data.usageMetadata) {
+				usage = {
+					inputTokens: data.usageMetadata.promptTokenCount || 0,
+					outputTokens: data.usageMetadata.candidatesTokenCount || 0,
+					totalTokens: data.usageMetadata.totalTokenCount || 0,
+				};
+			}
+
+			return {
+				content: fullContent,
+				usage,
+				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
 			};
 		}
-
-		const toolCalls: ToolCall[] = [];
-		if (res.tool_calls && res.tool_calls.length > 0) {
-			for (const tc of res.tool_calls) {
-				toolCalls.push({
-					id: tc.id ?? crypto.randomUUID(),
-					name: tc.name,
-					arguments: tc.args as Record<string, unknown>,
-				});
-			}
-		}
-
-		return {
-			content: typeof res.content === 'string' ? res.content : '',
-			usage,
-			toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-		};
 	}
 
 	async stream(
@@ -111,65 +206,190 @@ export class GoogleProvider implements ILLMProvider {
 		options: ChatOptions,
 		onChunk: (chunk: string) => void,
 	): Promise<{ usage?: import('../../../shared/types/llm.types').TokenUsage }> {
-		const llm = this.buildLLM(options);
-		const lc = toLangChainMessages(messages);
-		const iter = await llm.stream(lc, { signal: options.signal });
-		let usage;
-		for await (const chunk of iter) {
-			if (chunk.usage_metadata) {
-				usage = {
-					inputTokens: chunk.usage_metadata.input_tokens,
-					outputTokens: chunk.usage_metadata.output_tokens,
-					totalTokens: chunk.usage_metadata.total_tokens,
-				};
+		const url = `https://generativelanguage.googleapis.com/v1beta/models/${options.model}:streamGenerateContent?key=${this.apiKey}`;
+		
+		const headers: Record<string, string> = {
+			'Content-Type': 'application/json',
+		};
+
+		const formattedContents = formatGeminiMessages(messages);
+		const systemInstruction = getGeminiSystemInstruction(messages);
+
+		const payload: Record<string, any> = {
+			contents: formattedContents,
+			generationConfig: {
+				temperature: options.temperature ?? 0.7,
+				maxOutputTokens: options.maxOutputTokens,
 			}
-			const text = typeof chunk.content === 'string' ? chunk.content : '';
-			if (text) onChunk(text);
+		};
+
+		if (systemInstruction) {
+			payload.systemInstruction = systemInstruction;
 		}
+
+		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+
+		const response = await fetch(url, {
+			method: 'POST',
+			headers,
+			body: JSON.stringify(payload),
+			signal: options.signal,
+		});
+
+		if (!response.ok) {
+			const errText = await response.text();
+			throw new Error(`Google Gemini Error (HTTP ${response.status}): ${errText}`);
+		}
+
+		await readStreamLines(response, options.signal, (line) => {
+			let cleanLine = line.trim();
+			if (cleanLine.startsWith('[')) cleanLine = cleanLine.slice(1).trim();
+			if (cleanLine.endsWith(']')) cleanLine = cleanLine.slice(0, -1).trim();
+			if (cleanLine.endsWith(',')) cleanLine = cleanLine.slice(0, -1).trim();
+			if (!cleanLine) return;
+
+			try {
+				const chunk = JSON.parse(cleanLine);
+				const candidate = chunk.candidates?.[0];
+				if (candidate) {
+					const parts = candidate.content?.parts;
+					if (parts) {
+						for (const part of parts) {
+							if (part.text) {
+								onChunk(part.text);
+							}
+						}
+					}
+				}
+				if (chunk.usageMetadata) {
+					usage = {
+						inputTokens: chunk.usageMetadata.promptTokenCount || 0,
+						outputTokens: chunk.usageMetadata.candidatesTokenCount || 0,
+						totalTokens: chunk.usageMetadata.totalTokenCount || 0,
+					};
+				}
+			} catch (e) {
+				// Ignore line boundaries parsing errors
+			}
+		});
+
 		return { usage };
 	}
 
 	async embed(texts: string[], options: { model: string }): Promise<number[][]> {
-		const embeddings = new GoogleGenerativeAIEmbeddings({
-			apiKey: this.apiKey,
-			modelName: options.model,
-			taskType: TaskType.RETRIEVAL_DOCUMENT,
-		});
-		return await embeddings.embedDocuments(texts);
-	}
+		try {
+			const modelName = options.model.startsWith('models/') ? options.model : `models/${options.model}`;
+			const url = `https://generativelanguage.googleapis.com/v1beta/${modelName}:batchEmbedContents?key=${this.apiKey}`;
+			
+			const requests = texts.map((text) => ({
+				model: modelName,
+				content: {
+					parts: [{ text }],
+				},
+			}));
 
-	private buildLLM(options: ChatOptions): ChatGoogleGenerativeAI {
-		return new ChatGoogleGenerativeAI({
-			apiKey: this.apiKey,
-			model: options.model,
-			temperature: options.temperature ?? 0.7,
-			maxOutputTokens: options.maxOutputTokens,
-			streaming: true,
-			maxRetries: 0,
-		});
+			const res = await requestUrl({
+				url,
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ requests }),
+			});
+
+			const data = res.json as { embeddings: { values: number[] }[] };
+			return data.embeddings.map((e) => e.values);
+		} catch (error) {
+			throw new Error(`Google Gemini Embedding Error: ${error instanceof Error ? error.message : String(error)}`);
+		}
 	}
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-export function toLangChainMessages(messages: ChatMessage[]) {
-	return messages.map((m) => {
-		if (m.role === 'system') return new SystemMessage(m.content as string);
-		if (m.role === 'user') return new HumanMessage({ content: m.content as unknown as import('@langchain/core/messages').MessageContent });
-		if (m.role === 'tool') return new ToolMessage({
-			name: m.name ?? '',
-			content: m.content as string,
-			tool_call_id: m.tool_call_id ?? '',
-		});
-		if (m.role === 'assistant') return new AIMessage({
-			content: m.content as string,
-			tool_calls: m.tool_calls?.map(tc => ({
-				id: tc.id,
-				name: tc.name,
-				args: tc.arguments,
-				type: 'tool_call' as const,
-			})),
-		});
-		return new SystemMessage(m.content as string); // unreachable, fallback
+function getGeminiSystemInstruction(messages: ChatMessage[]) {
+	const systemMsgs = messages.filter(m => m.role === 'system');
+	if (systemMsgs.length === 0) return undefined;
+	return {
+		parts: [{ text: systemMsgs.map(m => m.content).join('\n') }]
+	};
+}
+
+function formatGeminiMessages(messages: ChatMessage[]) {
+	const filtered = messages.filter(m => m.role !== 'system');
+	return filtered.map((m) => {
+		if (m.role === 'user') {
+			if (Array.isArray(m.content)) {
+				const parts = m.content.map(c => {
+					if (c.type === 'text') {
+						return { text: c.text };
+					} else {
+						const match = c.image_url.url.match(/^data:([^;]+);base64,(.+)$/);
+						if (match) {
+							return {
+								inlineData: {
+									mimeType: match[1],
+									data: match[2],
+								}
+							};
+						}
+						return { text: '[Image Url]' };
+					}
+				});
+				return { role: 'user', parts };
+			}
+			return { role: 'user', parts: [{ text: m.content }] };
+		}
+		if (m.role === 'assistant') {
+			const parts: any[] = [];
+			if (typeof m.content === 'string' && m.content) {
+				parts.push({ text: m.content });
+			}
+			if (m.tool_calls && m.tool_calls.length > 0) {
+				parts.push({
+					functionCalls: m.tool_calls.map(tc => ({
+						name: tc.name,
+						args: tc.arguments,
+					}))
+				});
+			}
+			return { role: 'model', parts };
+		}
+		if (m.role === 'tool') {
+			let responseObj: any = { content: m.content };
+			try {
+				if (typeof m.content === 'string') {
+					responseObj = JSON.parse(m.content);
+					if (typeof responseObj !== 'object' || responseObj === null) {
+						responseObj = { content: m.content };
+					}
+				}
+			} catch (e) {
+				// not a JSON string, keep wrapping
+			}
+			return {
+				role: 'function',
+				parts: [
+					{
+						functionResponse: {
+							name: m.name || '',
+							response: responseObj,
+						}
+					}
+				]
+			};
+		}
+		return { role: 'user', parts: [{ text: String(m.content) }] };
 	});
+}
+
+function formatGeminiTools(tools?: import('../../../shared/types/llm.types').ToolDefinition[]) {
+	if (!tools || tools.length === 0) return undefined;
+	return [{
+		functionDeclarations: tools.map(td => ({
+			name: td.name,
+			description: td.description,
+			parameters: td.inputSchema,
+		}))
+	}];
 }

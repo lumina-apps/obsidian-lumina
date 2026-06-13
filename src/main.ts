@@ -765,6 +765,7 @@ export default class LuminaPlugin extends Plugin {
 			this.indexer = new VaultIndexer(
 				this.app,
 				embedFn,
+				(buffer, ext) => this.embeddingWorker!.parse(buffer, ext),
 				this.settings.rag,
 				modelName,
 			);

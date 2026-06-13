@@ -1,23 +1,9 @@
-/**
- * openaiCompat.provider.ts
- * OpenAI 호환 로컬 LLM 프로바이더 (Ollama, LM Studio, Custom)
- *
- * - Ollama: /v1/ OpenAI 호환 엔드포인트 또는 /api/tags 로 모델 목록 조회
- * - LM Studio: /v1/models 로 모델 목록 조회
- * - Custom: /v1/models 시도, 실패 시 credential 입력 그대로 baseURL 사용
- *
- * API 키 없이 baseURL만으로 동작.
- */
-
-import { ChatOpenAI, OpenAIEmbeddings } from '@langchain/openai';
 import type { ProviderType } from '../../../shared/types/settings.types';
 import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, ToolCall } from '../../../shared/types/llm.types';
 import { debugLogger } from '../../../shared/debugLogger';
-import { HumanMessage, SystemMessage, AIMessage, ToolMessage, AIMessageChunk } from '@langchain/core/messages';
-
-import { tool } from '@langchain/core/tools';
 import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
+import { readStreamLines } from '../utils';
 
 export class OpenAICompatProvider implements ILLMProvider {
 	readonly providerId: string;
@@ -44,88 +30,158 @@ export class OpenAICompatProvider implements ILLMProvider {
 	}
 
 	async chat(messages: ChatMessage[], options: ChatOptions, onChunk?: (chunk: string) => void): Promise<ChatResponse> {
-		const llm = this.buildLLM(options);
-		const lc = toLangChainMessages(messages);
+		const url = `${this.baseUrl}/v1/chat/completions`;
+		const headers: Record<string, string> = {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${this.apiKey}`,
+		};
 
-		const executor = options.tools && options.tools.length > 0
-			? llm.bindTools(options.tools.map(td => tool(
-				async () => '',
-				{
-					name: td.name,
-					description: td.description,
-					schema: td.inputSchema as unknown as import('zod').ZodType,
-				}
-			)))
-			: llm;
+		const formattedMessages = formatOpenAIMessages(messages);
+		const formattedTools = formatOpenAITools(options.tools);
 
 		const stopSeq = options.stop ?? ["<|im_end|>", "<|endoftext|>", "<|eot_id|>", "<|end_of_text|>"];
-		const streamOptions: { signal?: AbortSignal; stop?: string[] } = { signal: options.signal };
+
+		const payload: Record<string, any> = {
+			model: options.model,
+			messages: formattedMessages,
+			temperature: options.temperature ?? 0.7,
+			max_tokens: options.maxOutputTokens,
+			tools: formattedTools,
+			stream: !!onChunk,
+		};
+
 		if (stopSeq.length > 0) {
-			streamOptions.stop = stopSeq;
-		}
-		debugLogger.logMcp('Stream Options', `🔍 chat stream 옵션`, { stop: streamOptions.stop, hasSignal: !!streamOptions.signal });
-
-		// .invoke() 대신 .stream()으로 응답을 직접 수집 (Ollama 호환성)
-		const stream = await executor.stream(lc, streamOptions);
-		let finalMessage: AIMessageChunk | null = null;
-		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
-
-		for await (const chunk of stream) {
-			const aiChunk = chunk as AIMessageChunk & {
-				usage_metadata?: {
-					input_tokens: number;
-					output_tokens: number;
-					total_tokens: number;
-				};
-			};
-			if (!finalMessage) {
-				finalMessage = aiChunk;
-			} else {
-				finalMessage = finalMessage.concat(aiChunk);
-			}
-
-			if (onChunk && typeof aiChunk.content === 'string' && aiChunk.content) {
-				onChunk(aiChunk.content);
-			}
-
-			if (aiChunk.usage_metadata) {
-				usage = {
-					inputTokens: aiChunk.usage_metadata.input_tokens,
-					outputTokens: aiChunk.usage_metadata.output_tokens,
-					totalTokens: aiChunk.usage_metadata.total_tokens,
-				};
-			}
+			payload.stop = stopSeq;
 		}
 
-		let content = typeof finalMessage?.content === 'string' ? finalMessage.content : '';
-		
-		const toolCalls: ToolCall[] = [];
-		if (finalMessage) {
-			const tcList = finalMessage.tool_calls as Array<{ id?: string; name: string; args?: unknown }> | undefined;
-			if (tcList && tcList.length > 0) {
-				for (const tc of tcList) {
-					toolCalls.push({
-						id: tc.id || crypto.randomUUID(),
-						name: tc.name,
-						arguments: (tc.args as Record<string, unknown>) || {},
-					});
+		if (onChunk) {
+			let fullContent = '';
+			const accumulatedToolCalls: any[] = [];
+			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+
+			const response = await fetch(url, {
+				method: 'POST',
+				headers,
+				body: JSON.stringify(payload),
+				signal: options.signal,
+			});
+
+			if (!response.ok) {
+				const errText = await response.text();
+				throw new Error(`${this.type} Error (HTTP ${response.status}): ${errText}`);
+			}
+
+			await readStreamLines(response, options.signal, (line) => {
+				const cleanLine = line.trim();
+				if (!cleanLine || !cleanLine.startsWith('data: ')) return;
+				const dataStr = cleanLine.slice(6);
+				if (dataStr === '[DONE]') return;
+
+				try {
+					const chunk = JSON.parse(dataStr);
+					const choice = chunk.choices?.[0];
+					if (choice) {
+						const delta = choice.delta;
+						if (delta) {
+							if (delta.content) {
+								fullContent += delta.content;
+								onChunk(delta.content);
+							}
+							if (delta.tool_calls) {
+								for (const tc of delta.tool_calls) {
+									const index = tc.index ?? 0;
+									if (!accumulatedToolCalls[index]) {
+										accumulatedToolCalls[index] = {
+											id: tc.id || '',
+											name: tc.function?.name || '',
+											arguments: tc.function?.arguments || '',
+										};
+									} else {
+										if (tc.id) accumulatedToolCalls[index].id = tc.id;
+										if (tc.function?.name) accumulatedToolCalls[index].name = tc.function.name;
+										if (tc.function?.arguments) accumulatedToolCalls[index].arguments += tc.function.arguments;
+									}
+								}
+							}
+						}
+					}
+					if (chunk.usage) {
+						usage = {
+							inputTokens: chunk.usage.prompt_tokens,
+							outputTokens: chunk.usage.completion_tokens,
+							totalTokens: chunk.usage.total_tokens,
+						};
+					}
+				} catch (e) {
+					// Ignore json parse errors
+				}
+			});
+
+			const toolCalls: ToolCall[] = [];
+			for (const tc of accumulatedToolCalls) {
+				if (tc) {
+					try {
+						toolCalls.push({
+							id: tc.id || crypto.randomUUID(),
+							name: tc.name,
+							arguments: tc.arguments ? JSON.parse(tc.arguments) : {},
+						});
+					} catch (e) {
+						console.warn('Failed to parse tool call arguments:', tc.arguments);
+					}
 				}
 			}
+
+			return {
+				content: fullContent,
+				usage,
+				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+			};
+		} else {
+			// non-streaming
+			const res = await requestUrl({
+				url,
+				method: 'POST',
+				headers,
+				body: JSON.stringify(payload),
+			});
+
+			const data = res.json as any;
+			const message = data.choices?.[0]?.message;
+			if (!message) {
+				throw new Error(`${this.type} API returned an empty response. Response: ${res.text}`);
+			}
+
+			const toolCalls: ToolCall[] = [];
+			if (message.tool_calls) {
+				for (const tc of message.tool_calls) {
+					try {
+						toolCalls.push({
+							id: tc.id || crypto.randomUUID(),
+							name: tc.function.name,
+							arguments: tc.function.arguments ? JSON.parse(tc.function.arguments) : {},
+						});
+					} catch (e) {
+						console.warn('Failed to parse tool call arguments:', tc.function.arguments);
+					}
+				}
+			}
+
+			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+			if (data.usage) {
+				usage = {
+					inputTokens: data.usage.prompt_tokens,
+					outputTokens: data.usage.completion_tokens,
+					totalTokens: data.usage.total_tokens,
+				};
+			}
+
+			return {
+				content: message.content || '',
+				usage,
+				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+			};
 		}
-
-		debugLogger.logMcp('Raw API Response', `🔍 raw 응답`, {
-			content_type: typeof content,
-			content_len: content.length,
-			content_preview: content.substring(0, 200),
-			tool_calls: toolCalls.length,
-			usage_metadata: usage,
-		});
-
-		return {
-			content,
-			usage,
-			toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-		};
 	}
 
 	async stream(
@@ -133,46 +189,91 @@ export class OpenAICompatProvider implements ILLMProvider {
 		options: ChatOptions,
 		onChunk: (chunk: string) => void,
 	): Promise<{ usage?: import('../../../shared/types/llm.types').TokenUsage }> {
-		const llm = new ChatOpenAI({
-			apiKey: this.apiKey,
-			modelName: options.model,
+		const url = `${this.baseUrl}/v1/chat/completions`;
+		const headers: Record<string, string> = {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${this.apiKey}`,
+		};
+
+		const formattedMessages = formatOpenAIMessages(messages);
+		const payload: Record<string, any> = {
+			model: options.model,
+			messages: formattedMessages,
 			temperature: options.temperature ?? 0.7,
-			maxTokens: options.maxOutputTokens,
-			streaming: true,
-			maxRetries: 0,
-			configuration: {
-				baseURL: `${this.baseUrl}/v1`,
-			},
-		});
-		const lc = toLangChainMessages(messages);
-		const iter = await llm.stream(lc, { 
-			signal: options.signal,
-			stop: ["<|im_end|>", "<|endoftext|>", "<|eot_id|>", "<|end_of_text|>"]
-		});
-		let usage;
-		for await (const chunk of iter) {
-			if (chunk.usage_metadata) {
-				usage = {
-					inputTokens: chunk.usage_metadata.input_tokens,
-					outputTokens: chunk.usage_metadata.output_tokens,
-					totalTokens: chunk.usage_metadata.total_tokens,
-				};
-			}
-			const text = typeof chunk.content === 'string' ? chunk.content : '';
-			if (text) onChunk(text);
+			max_tokens: options.maxOutputTokens,
+			stream: true,
+		};
+
+		const stopSeq = options.stop ?? ["<|im_end|>", "<|endoftext|>", "<|eot_id|>", "<|end_of_text|>"];
+		if (stopSeq.length > 0) {
+			payload.stop = stopSeq;
 		}
+
+		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+
+		const response = await fetch(url, {
+			method: 'POST',
+			headers,
+			body: JSON.stringify(payload),
+			signal: options.signal,
+		});
+
+		if (!response.ok) {
+			const errText = await response.text();
+			throw new Error(`${this.type} Error (HTTP ${response.status}): ${errText}`);
+		}
+
+		await readStreamLines(response, options.signal, (line) => {
+			const cleanLine = line.trim();
+			if (!cleanLine || !cleanLine.startsWith('data: ')) return;
+			const dataStr = cleanLine.slice(6);
+			if (dataStr === '[DONE]') return;
+
+			try {
+				const chunk = JSON.parse(dataStr);
+				const choice = chunk.choices?.[0];
+				if (choice) {
+					const delta = choice.delta;
+					if (delta && delta.content) {
+						onChunk(delta.content);
+					}
+				}
+				if (chunk.usage) {
+					usage = {
+						inputTokens: chunk.usage.prompt_tokens,
+						outputTokens: chunk.usage.completion_tokens,
+						totalTokens: chunk.usage.total_tokens,
+					};
+				}
+			} catch (e) {
+				// Ignore JSON parse errors
+			}
+		});
+
 		return { usage };
 	}
 
 	async embed(texts: string[], options: { model: string }): Promise<number[][]> {
-		const embeddings = new OpenAIEmbeddings({
-			apiKey: this.apiKey,
-			modelName: options.model,
-			configuration: {
-				baseURL: `${this.baseUrl}/v1`,
-			},
-		});
-		return await embeddings.embedDocuments(texts);
+		try {
+			const res = await requestUrl({
+				url: `${this.baseUrl}/v1/embeddings`,
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${this.apiKey}`,
+				},
+				body: JSON.stringify({
+					input: texts,
+					model: options.model,
+				}),
+			});
+			const data = res.json as { data: { embedding: number[]; index: number }[] };
+			return data.data
+				.sort((a, b) => a.index - b.index)
+				.map((d) => d.embedding);
+		} catch (error) {
+			throw new Error(`${this.type} Embedding Error: ${error instanceof Error ? error.message : String(error)}`);
+		}
 	}
 
 	// ─── Model listing ────────────────────────────────────────────────────────
@@ -210,44 +311,54 @@ export class OpenAICompatProvider implements ILLMProvider {
 			throw new Error(t('settings.providerErrors.connectFail', { status, text }));
 		}
 	}
-
-	// ─── LangChain builder ────────────────────────────────────────────────────
-
-	private buildLLM(options: ChatOptions): ChatOpenAI {
-		return new ChatOpenAI({
-			apiKey: this.apiKey,
-			modelName: options.model,
-			temperature: options.temperature ?? 0.7,
-			maxTokens: options.maxOutputTokens,
-			streaming: true,
-			maxRetries: 0,
-			configuration: {
-				baseURL: `${this.baseUrl}/v1`,
-			},
-		});
-	}
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-export function toLangChainMessages(messages: ChatMessage[]) {
+function formatOpenAIMessages(messages: ChatMessage[]) {
 	return messages.map((m) => {
-		if (m.role === 'system') return new SystemMessage(m.content as string);
-		if (m.role === 'user') return new HumanMessage({ content: m.content as unknown as import('@langchain/core/messages').MessageContent });
-		if (m.role === 'tool') return new ToolMessage({
-			name: m.name ?? '',
-			content: m.content as string,
-			tool_call_id: m.tool_call_id ?? '',
-		});
-		if (m.role === 'assistant') return new AIMessage({
-			content: m.content as string,
-			tool_calls: m.tool_calls?.map(tc => ({
-				id: tc.id,
-				name: tc.name,
-				args: tc.arguments,
-				type: 'tool_call' as const,
-			})),
-		});
-		return new SystemMessage(m.content as string); // unreachable, fallback
+		if (m.role === 'system') {
+			return { role: 'system', content: m.content };
+		}
+		if (m.role === 'user') {
+			return { role: 'user', content: m.content };
+		}
+		if (m.role === 'assistant') {
+			const payload: Record<string, any> = {
+				role: 'assistant',
+				content: typeof m.content === 'string' ? (m.content || null) : null,
+			};
+			if (m.tool_calls && m.tool_calls.length > 0) {
+				payload.tool_calls = m.tool_calls.map((tc) => ({
+					id: tc.id,
+					type: 'function',
+					function: {
+						name: tc.name,
+						arguments: JSON.stringify(tc.arguments),
+					},
+				}));
+			}
+			return payload;
+		}
+		if (m.role === 'tool') {
+			return {
+				role: 'tool',
+				tool_call_id: m.tool_call_id,
+				content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+			};
+		}
+		return { role: 'user', content: String(m.content) };
 	});
+}
+
+function formatOpenAITools(tools?: import('../../../shared/types/llm.types').ToolDefinition[]) {
+	if (!tools || tools.length === 0) return undefined;
+	return tools.map((td) => ({
+		type: 'function' as const,
+		function: {
+			name: td.name,
+			description: td.description,
+			parameters: td.inputSchema,
+		},
+	}));
 }

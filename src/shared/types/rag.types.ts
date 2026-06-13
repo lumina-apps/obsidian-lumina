@@ -75,6 +75,12 @@ export type WorkerRequest =
 			/** 임베딩할 텍스트 배열 */
 			texts: string[];
 	  }
+	| {
+			type: 'parse';
+			requestId: string;
+			buffer: ArrayBuffer;
+			ext: string;
+	  }
 	| { type: 'terminate' };
 
 /** 워커 → 메인 스레드 */
@@ -93,7 +99,13 @@ export type WorkerResponse =
 			embeddings: number[][];
 	  }
 	| {
+			type: 'parseResult';
+			requestId: string;
+			text: string;
+	  }
+	| {
 			type: 'error';
 			requestId: string;
 			message: string;
 	  };
+

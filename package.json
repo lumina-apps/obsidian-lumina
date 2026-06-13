@@ -26,11 +26,6 @@
 		"typescript": "^6.0.3"
 	},
 	"dependencies": {
-		"@google/generative-ai": "^0.24.1",
-		"@langchain/anthropic": "^1.4.0",
-		"@langchain/core": "^1.1.48",
-		"@langchain/google-genai": "^2.1.31",
-		"@langchain/openai": "^1.4.7",
 		"@modelcontextprotocol/sdk": "^1.29.0",
 		"@huggingface/transformers": "^3.8.1",
 		"mammoth": "^1.12.0",

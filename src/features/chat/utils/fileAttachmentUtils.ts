@@ -1,5 +1,6 @@
 import { Notice } from "obsidian";
 import type { ContextAttachment } from "../../../shared/types/chat.types";
+import type LuminaPlugin from "../../../main";
 
 const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "webp", "gif"]);
 const TEXT_EXTS = new Set(["md", "txt", "csv", "json", "jsonl", "html", "htm"]);
@@ -17,18 +18,20 @@ export async function readTextFile(file: File): Promise<string> {
 	return file.text();
 }
 
-export async function readBinaryDocument(file: File, ext: string): Promise<string> {
+export async function readBinaryDocument(file: File, ext: string, plugin?: LuminaPlugin): Promise<string> {
 	const buffer = await file.arrayBuffer();
-	const { DocumentParserRouter } = await import(
-		"../../rag/parsers/DocumentParserRouter"
-	);
-	return DocumentParserRouter.parseBuffer(buffer, ext);
+	if (plugin?.embeddingWorker) {
+		return plugin.embeddingWorker.parse(buffer, ext);
+	}
+	console.warn('Worker not ready to parse binary file:', file.name);
+	return '';
 }
 
 export async function readFileContent(
 	file: File, 
 	ext: string, 
-	t: (key: string, vars?: Record<string, string>) => string
+	t: (key: string, vars?: Record<string, string>) => string,
+	plugin?: LuminaPlugin
 ): Promise<string | null> {
 	if (IMAGE_EXTS.has(ext)) {
 		return readImageAsDataURL(file);
@@ -37,7 +40,7 @@ export async function readFileContent(
 		return readTextFile(file);
 	}
 	if (DOC_EXTS.has(ext)) {
-		return readBinaryDocument(file, ext);
+		return readBinaryDocument(file, ext, plugin);
 	}
 	new Notice(t('uiMessages.unsupportedFileType', { ext }));
 	return null;
@@ -54,7 +57,8 @@ export function extractFileFromEntry(entry: File | DataTransferItem): File | nul
 export async function processFiles(
 	files: FileList | File[] | DataTransferItemList,
 	existingAttachments: ContextAttachment[],
-	t: (key: string, vars?: Record<string, string>) => string
+	t: (key: string, vars?: Record<string, string>) => string,
+	plugin?: LuminaPlugin
 ): Promise<ContextAttachment[]> {
 	const newAttachments: ContextAttachment[] = [];
 
@@ -73,7 +77,7 @@ export async function processFiles(
 		}
 
 		try {
-			const content = await readFileContent(file, ext, t);
+			const content = await readFileContent(file, ext, t, plugin);
 			if (content === null) continue;
 
 			newAttachments.push({

@@ -1,19 +1,7 @@
-/**
- * openai.provider.ts
- * OpenAI (GPT) 클라우드 프로바이더
- *
- * 사용 패키지: @langchain/openai
- * 모델 목록: /v1/models API 동적 조회
- *             송수신 지원 모델만 필터링 (gpt-, o숙자-, chatgpt-)
- *             임베딩 / TTS / Whisper / DALL-E 제외
- */
-
-import { ChatOpenAI, OpenAIEmbeddings } from '@langchain/openai';
-import { HumanMessage, SystemMessage, AIMessage, ToolMessage } from '@langchain/core/messages';
 import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, ToolCall } from '../../../shared/types/llm.types';
 import { t } from '../../../shared/locales/helpers';
-import { tool } from '@langchain/core/tools';
 import { requestUrl } from 'obsidian';
+import { readStreamLines } from '../utils';
 
 export class OpenAIProvider implements ILLMProvider {
 	readonly providerId: string;
@@ -46,49 +34,156 @@ export class OpenAIProvider implements ILLMProvider {
 	}
 
 	async chat(messages: ChatMessage[], options: ChatOptions, onChunk?: (chunk: string) => void): Promise<ChatResponse> {
-		const llm = this.buildLLM(options);
-		const lc = toLangChainMessages(messages);
+		const url = 'https://api.openai.com/v1/chat/completions';
+		const headers: Record<string, string> = {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${this.apiKey}`,
+		};
 
-		// bind tools if provided
-		const executor = options.tools && options.tools.length > 0
-			? llm.bindTools(options.tools.map(td => tool(
-				async () => '',
-				{
-					name: td.name,
-					description: td.description,
-					schema: td.inputSchema as unknown as import('zod').ZodType,
+		const formattedMessages = formatOpenAIMessages(messages);
+		const formattedTools = formatOpenAITools(options.tools);
+
+		const payload: Record<string, any> = {
+			model: options.model,
+			messages: formattedMessages,
+			temperature: options.temperature ?? 0.7,
+			max_tokens: options.maxOutputTokens,
+			tools: formattedTools,
+			stream: !!onChunk,
+		};
+
+		if (options.stop && options.stop.length > 0) {
+			payload.stop = options.stop;
+		}
+
+		if (onChunk) {
+			let fullContent = '';
+			const accumulatedToolCalls: any[] = [];
+			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+
+			const response = await fetch(url, {
+				method: 'POST',
+				headers,
+				body: JSON.stringify(payload),
+				signal: options.signal,
+			});
+
+			if (!response.ok) {
+				const errText = await response.text();
+				throw new Error(`OpenAI Error (HTTP ${response.status}): ${errText}`);
+			}
+
+			await readStreamLines(response, options.signal, (line) => {
+				const cleanLine = line.trim();
+				if (!cleanLine || !cleanLine.startsWith('data: ')) return;
+				const dataStr = cleanLine.slice(6);
+				if (dataStr === '[DONE]') return;
+
+				try {
+					const chunk = JSON.parse(dataStr);
+					const choice = chunk.choices?.[0];
+					if (choice) {
+						const delta = choice.delta;
+						if (delta) {
+							if (delta.content) {
+								fullContent += delta.content;
+								onChunk(delta.content);
+							}
+							if (delta.tool_calls) {
+								for (const tc of delta.tool_calls) {
+									const index = tc.index ?? 0;
+									if (!accumulatedToolCalls[index]) {
+										accumulatedToolCalls[index] = {
+											id: tc.id || '',
+											name: tc.function?.name || '',
+											arguments: tc.function?.arguments || '',
+										};
+									} else {
+										if (tc.id) accumulatedToolCalls[index].id = tc.id;
+										if (tc.function?.name) accumulatedToolCalls[index].name = tc.function.name;
+										if (tc.function?.arguments) accumulatedToolCalls[index].arguments += tc.function.arguments;
+									}
+								}
+							}
+						}
+					}
+					if (chunk.usage) {
+						usage = {
+							inputTokens: chunk.usage.prompt_tokens,
+							outputTokens: chunk.usage.completion_tokens,
+							totalTokens: chunk.usage.total_tokens,
+						};
+					}
+				} catch (e) {
+					// Ignore json parsing errors
 				}
-			)))
-			: llm;
+			});
 
-		const res = await executor.invoke(lc, { signal: options.signal });
+			const toolCalls: ToolCall[] = [];
+			for (const tc of accumulatedToolCalls) {
+				if (tc) {
+					try {
+						toolCalls.push({
+							id: tc.id || crypto.randomUUID(),
+							name: tc.name,
+							arguments: tc.arguments ? JSON.parse(tc.arguments) : {},
+						});
+					} catch (e) {
+						console.warn('Failed to parse tool call arguments:', tc.arguments);
+					}
+				}
+			}
 
-		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
-		if (res.usage_metadata) {
-			usage = {
-				inputTokens: res.usage_metadata.input_tokens,
-				outputTokens: res.usage_metadata.output_tokens,
-				totalTokens: res.usage_metadata.total_tokens,
+			return {
+				content: fullContent,
+				usage,
+				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+			};
+		} else {
+			// non-streaming
+			const res = await requestUrl({
+				url,
+				method: 'POST',
+				headers,
+				body: JSON.stringify(payload),
+			});
+
+			const data = res.json as any;
+			const message = data.choices?.[0]?.message;
+			if (!message) {
+				throw new Error(`OpenAI API returned an empty response. Response: ${res.text}`);
+			}
+
+			const toolCalls: ToolCall[] = [];
+			if (message.tool_calls) {
+				for (const tc of message.tool_calls) {
+					try {
+						toolCalls.push({
+							id: tc.id || crypto.randomUUID(),
+							name: tc.function.name,
+							arguments: tc.function.arguments ? JSON.parse(tc.function.arguments) : {},
+						});
+					} catch (e) {
+						console.warn('Failed to parse tool call arguments:', tc.function.arguments);
+					}
+				}
+			}
+
+			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+			if (data.usage) {
+				usage = {
+					inputTokens: data.usage.prompt_tokens,
+					outputTokens: data.usage.completion_tokens,
+					totalTokens: data.usage.total_tokens,
+				};
+			}
+
+			return {
+				content: message.content || '',
+				usage,
+				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
 			};
 		}
-
-		// parse tool_calls from AIMessage
-		const toolCalls: ToolCall[] = [];
-		if (res.tool_calls && res.tool_calls.length > 0) {
-			for (const tc of res.tool_calls) {
-				toolCalls.push({
-					id: tc.id ?? crypto.randomUUID(),
-					name: tc.name,
-					arguments: tc.args as Record<string, unknown>,
-				});
-			}
-		}
-
-		return {
-			content: typeof res.content === 'string' ? res.content : '',
-			usage,
-			toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-		};
 	}
 
 	async stream(
@@ -96,64 +191,139 @@ export class OpenAIProvider implements ILLMProvider {
 		options: ChatOptions,
 		onChunk: (chunk: string) => void,
 	): Promise<{ usage?: import('../../../shared/types/llm.types').TokenUsage }> {
-		const llm = this.buildLLM(options);
-		const lc = toLangChainMessages(messages);
-		const iter = await llm.stream(lc, { signal: options.signal });
-		let usage;
-		for await (const chunk of iter) {
-			if (chunk.usage_metadata) {
-				usage = {
-					inputTokens: chunk.usage_metadata.input_tokens,
-					outputTokens: chunk.usage_metadata.output_tokens,
-					totalTokens: chunk.usage_metadata.total_tokens,
-				};
-			}
-			const text = typeof chunk.content === 'string' ? chunk.content : '';
-			if (text) onChunk(text);
+		const url = 'https://api.openai.com/v1/chat/completions';
+		const headers: Record<string, string> = {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${this.apiKey}`,
+		};
+
+		const formattedMessages = formatOpenAIMessages(messages);
+		const payload: Record<string, any> = {
+			model: options.model,
+			messages: formattedMessages,
+			temperature: options.temperature ?? 0.7,
+			max_tokens: options.maxOutputTokens,
+			stream: true,
+		};
+
+		if (options.stop && options.stop.length > 0) {
+			payload.stop = options.stop;
 		}
+
+		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+
+		const response = await fetch(url, {
+			method: 'POST',
+			headers,
+			body: JSON.stringify(payload),
+			signal: options.signal,
+		});
+
+		if (!response.ok) {
+			const errText = await response.text();
+			throw new Error(`OpenAI Error (HTTP ${response.status}): ${errText}`);
+		}
+
+		await readStreamLines(response, options.signal, (line) => {
+			const cleanLine = line.trim();
+			if (!cleanLine || !cleanLine.startsWith('data: ')) return;
+			const dataStr = cleanLine.slice(6);
+			if (dataStr === '[DONE]') return;
+
+			try {
+				const chunk = JSON.parse(dataStr);
+				const choice = chunk.choices?.[0];
+				if (choice) {
+					const delta = choice.delta;
+					if (delta && delta.content) {
+						onChunk(delta.content);
+					}
+				}
+				if (chunk.usage) {
+					usage = {
+						inputTokens: chunk.usage.prompt_tokens,
+						outputTokens: chunk.usage.completion_tokens,
+						totalTokens: chunk.usage.total_tokens,
+					};
+				}
+			} catch (e) {
+				// Ignore JSON parse errors
+			}
+		});
+
 		return { usage };
 	}
 
 	async embed(texts: string[], options: { model: string }): Promise<number[][]> {
-		const embeddings = new OpenAIEmbeddings({
-			apiKey: this.apiKey,
-			modelName: options.model,
-		});
-		return await embeddings.embedDocuments(texts);
-	}
-
-	private buildLLM(options: ChatOptions): ChatOpenAI {
-		return new ChatOpenAI({
-			apiKey: this.apiKey,
-			modelName: options.model,
-			temperature: options.temperature ?? 0.7,
-			maxTokens: options.maxOutputTokens,
-			streaming: true,
-			maxRetries: 0,
-		});
+		try {
+			const res = await requestUrl({
+				url: 'https://api.openai.com/v1/embeddings',
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${this.apiKey}`,
+				},
+				body: JSON.stringify({
+					input: texts,
+					model: options.model,
+				}),
+			});
+			const data = res.json as { data: { embedding: number[]; index: number }[] };
+			return data.data
+				.sort((a, b) => a.index - b.index)
+				.map((d) => d.embedding);
+		} catch (error) {
+			throw new Error(`OpenAI Embedding Error: ${error instanceof Error ? error.message : String(error)}`);
+		}
 	}
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-export function toLangChainMessages(messages: ChatMessage[]) {
+function formatOpenAIMessages(messages: ChatMessage[]) {
 	return messages.map((m) => {
-		if (m.role === 'system') return new SystemMessage(m.content as string);
-		if (m.role === 'user') return new HumanMessage({ content: m.content as unknown as import('@langchain/core/messages').MessageContent });
-		if (m.role === 'tool') return new ToolMessage({
-			name: m.name ?? '',
-			content: m.content as string,
-			tool_call_id: m.tool_call_id ?? '',
-		});
-		if (m.role === 'assistant') return new AIMessage({
-			content: m.content as string,
-			tool_calls: m.tool_calls?.map(tc => ({
-				id: tc.id,
-				name: tc.name,
-				args: tc.arguments,
-				type: 'tool_call' as const,
-			})),
-		});
-		return new SystemMessage(m.content as string); // unreachable, fallback
+		if (m.role === 'system') {
+			return { role: 'system', content: m.content };
+		}
+		if (m.role === 'user') {
+			return { role: 'user', content: m.content };
+		}
+		if (m.role === 'assistant') {
+			const payload: Record<string, any> = {
+				role: 'assistant',
+				content: typeof m.content === 'string' ? (m.content || null) : null,
+			};
+			if (m.tool_calls && m.tool_calls.length > 0) {
+				payload.tool_calls = m.tool_calls.map((tc) => ({
+					id: tc.id,
+					type: 'function',
+					function: {
+						name: tc.name,
+						arguments: JSON.stringify(tc.arguments),
+					},
+				}));
+			}
+			return payload;
+		}
+		if (m.role === 'tool') {
+			return {
+				role: 'tool',
+				tool_call_id: m.tool_call_id,
+				content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+			};
+		}
+		return { role: 'user', content: String(m.content) };
 	});
+}
+
+function formatOpenAITools(tools?: import('../../../shared/types/llm.types').ToolDefinition[]) {
+	if (!tools || tools.length === 0) return undefined;
+	return tools.map((td) => ({
+		type: 'function' as const,
+		function: {
+			name: td.name,
+			description: td.description,
+			parameters: td.inputSchema,
+		},
+	}));
 }

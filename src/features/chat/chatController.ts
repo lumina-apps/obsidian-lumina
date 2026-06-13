@@ -157,7 +157,7 @@ export class ChatController {
 			for (const att of updatedAttachments) {
 				try {
 					if (att.type === 'file' || att.type === 'url' || att.type === 'external_file') {
-						const parsed = await ChatAttachmentHandler.parseAttachment(this.app, att);
+						const parsed = await ChatAttachmentHandler.parseAttachment(this.app, att, this.plugin);
 						if (parsed) {
 							if (parsed.type === 'image') {
 								multimodalImages.push(parsed.content);

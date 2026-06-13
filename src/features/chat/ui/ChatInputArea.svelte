@@ -227,7 +227,7 @@
 				}
 			}
 			return text;
-		});
+		}, plugin);
 		if (newAtts.length > 0) {
 			attachments = [...attachments, ...newAtts];
 			tick().then(() => resizeTextarea());
@@ -247,7 +247,7 @@
 					}
 				}
 				return text;
-			});
+			}, plugin);
 			if (newAtts.length > 0) {
 				attachments = [...attachments, ...newAtts];
 				tick().then(() => resizeTextarea());
@@ -287,7 +287,7 @@
 					}
 				}
 				return text;
-			});
+			}, plugin);
 			if (newAtts.length > 0) {
 				attachments = [...attachments, ...newAtts];
 				tick().then(() => resizeTextarea());

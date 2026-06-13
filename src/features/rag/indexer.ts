@@ -67,6 +67,7 @@ interface PersistedIndex {
 export class VaultIndexer {
 	private app: App;
 	private embedFn: (texts: string[]) => Promise<number[][]>;
+	private parseBinaryFn: (buffer: ArrayBuffer, ext: string) => Promise<string>;
 	private settings: RagSettings;
 	/** 현재 인덱싱에 사용 중인 모델명 */
 	private modelName: string;
@@ -84,9 +85,16 @@ export class VaultIndexer {
 	private readonly storageDirPath: string;
 	private readonly indexPath: string;
 
-	constructor(app: App, embedFn: (texts: string[]) => Promise<number[][]>, settings: RagSettings, modelName: string) {
+	constructor(
+		app: App,
+		embedFn: (texts: string[]) => Promise<number[][]>,
+		parseBinaryFn: (buffer: ArrayBuffer, ext: string) => Promise<string>,
+		settings: RagSettings,
+		modelName: string
+	) {
 		this.app = app;
 		this.embedFn = embedFn;
+		this.parseBinaryFn = parseBinaryFn;
 		this.settings = settings;
 		this.modelName = modelName;
 		this.storageDirPath = normalizePath(
@@ -272,7 +280,16 @@ export class VaultIndexer {
 				return;
 			}
 			try {
-				const content = await DocumentParserRouter.parse(this.app, file);
+				let content = '';
+				const ext = file.extension.toLowerCase();
+
+				if (['pdf', 'docx', 'xlsx', 'xls'].includes(ext)) {
+					const buffer = await this.app.vault.readBinary(file);
+					content = await this.parseBinaryFn(buffer, ext);
+				} else {
+					const textContent = await this.app.vault.read(file);
+					content = await DocumentParserRouter.parseText(textContent, ext);
+				}
 				
 				if (!content || !content.trim()) {
 					this.fileMtimes[file.path] = file.stat.mtime;

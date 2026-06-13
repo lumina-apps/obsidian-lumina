@@ -20,7 +20,7 @@ const INIT_TIMEOUT_MS = 60_000;
 interface IWorker {
 	addEventListener(type: string, listener: (evt: MessageEvent) => void): void;
 	terminate(): void;
-	postMessage(message: unknown): void;
+	postMessage(message: unknown, transfer?: Transferable[]): void;
 }
 
 export class EmbeddingWorkerBridge {
@@ -29,6 +29,10 @@ export class EmbeddingWorkerBridge {
 	private pendingRequests = new Map<
 		string,
 		{ resolve: (embeddings: number[][]) => void; reject: (err: Error) => void }
+	>();
+	private pendingParseRequests = new Map<
+		string,
+		{ resolve: (text: string) => void; reject: (err: Error) => void }
 	>();
 	private onProgress: EmbeddingProgressCallback | null = null;
 	private isReady = false;
@@ -122,6 +126,11 @@ export class EmbeddingWorkerBridge {
 			reject(new Error(t('uiMessages.ragWorkerTerm')))
 		);
 		this.pendingRequests.clear();
+
+		this.pendingParseRequests.forEach(({ reject }) =>
+			reject(new Error(t('uiMessages.ragWorkerTerm')))
+		);
+		this.pendingParseRequests.clear();
 	}
 
 	get ready(): boolean {
@@ -146,6 +155,20 @@ export class EmbeddingWorkerBridge {
 		});
 	}
 
+	/**
+	 * ArrayBuffer 문서를 워커 스레드에서 비동기 파싱합니다.
+	 */
+	async parse(buffer: ArrayBuffer, ext: string): Promise<string> {
+		if (!this.worker || !this.isReady) {
+			throw new Error(t('uiMessages.ragWorkerNotReady'));
+		}
+		const requestId = crypto.randomUUID();
+		return new Promise<string>((resolve, reject) => {
+			this.pendingParseRequests.set(requestId, { resolve, reject });
+			this.worker!.postMessage({ type: 'parse', requestId, buffer, ext }, [buffer]);
+		});
+	}
+
 	private async processQueue() {
 		if (this.isProcessingQueue || this.embedQueue.length === 0) return;
 		this.isProcessingQueue = true;
@@ -167,7 +190,7 @@ export class EmbeddingWorkerBridge {
 
 	// ─── Internals ────────────────────────────────────────────────────────────
 
-	private send(msg: WorkerRequest): void {
+	private send(msg: any): void {
 		this.worker?.postMessage(msg);
 	}
 
@@ -198,6 +221,15 @@ export class EmbeddingWorkerBridge {
 				break;
 			}
 
+			case 'parseResult': {
+				const pending = this.pendingParseRequests.get(msg.requestId);
+				if (pending) {
+					pending.resolve(msg.text);
+					this.pendingParseRequests.delete(msg.requestId);
+				}
+				break;
+			}
+
 			case 'error': {
 				const err = new Error(msg.message);
 				if (msg.requestId === 'init') {
@@ -212,6 +244,12 @@ export class EmbeddingWorkerBridge {
 					if (pending) {
 						pending.reject(err);
 						this.pendingRequests.delete(msg.requestId);
+					} else {
+						const pendingParse = this.pendingParseRequests.get(msg.requestId);
+						if (pendingParse) {
+							pendingParse.reject(err);
+							this.pendingParseRequests.delete(msg.requestId);
+						}
 					}
 				}
 				console.error('[EmbeddingWorker] error:', msg.message);
