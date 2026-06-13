@@ -155,10 +155,11 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			})
 			.addButton((btn: ButtonComponent) => {
 				btn.setButtonText(t('settings.rag.reset.button'));
-				if (typeof btn.setDestructive === 'function') {
-					btn.setDestructive();
+				const btnAny = btn as any;
+				if (typeof btnAny.setDestructive === 'function') {
+					btnAny.setDestructive();
 				} else {
-					btn.setWarning();
+					btnAny.setWarning();
 				}
 				btn.onClick(() => {
 					if (!tab.plugin.indexer) {

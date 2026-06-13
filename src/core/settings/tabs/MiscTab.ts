@@ -94,10 +94,11 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			.setDesc(t('settings.misc.factoryReset.desc'))
 			.addButton((btn: ButtonComponent) => {
 				btn.setButtonText(t('settings.misc.factoryReset.button'));
-				if (typeof btn.setDestructive === 'function') {
-					btn.setDestructive();
+				const btnAny = btn as any;
+				if (typeof btnAny.setDestructive === 'function') {
+					btnAny.setDestructive();
 				} else {
-					btn.setWarning();
+					btnAny.setWarning();
 				}
 				btn.onClick(wrapAsync(async () => {
 					new ConfirmModal(
