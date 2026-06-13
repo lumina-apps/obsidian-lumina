@@ -28,18 +28,18 @@
 	flex-shrink: 0;
 }
 
-body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn--advanced {
-	flex: 0 0 44px !important;
-	width: 44px !important;
-	min-width: 44px !important;
-	padding: 0 !important;
+html body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn.lumina-settings__nav-btn--advanced {
+	flex: 0 0 44px;
+	width: 44px;
+	min-width: 44px;
+	padding: 0;
 	display: flex;
 	justify-content: center;
 	align-items: center;
 }
 
-.lumina-settings__nav-text {
-	display: none !important;
+html body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn--advanced .lumina-settings__nav-text {
+	display: none;
 }
 
 /* 3. Advanced Toggle Container & Custom Sliding Switch */
@@ -150,16 +150,16 @@ body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumi
 	transform: translateY(-1px);
 }
 
-body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn.is-active {
-	color: #ffffff !important;
-	background: linear-gradient(135deg, var(--interactive-accent) 0%, #8b5cf6 100%) !important;
-	box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25) !important;
+html body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn.is-active {
+	color: #ffffff;
+	background: linear-gradient(135deg, var(--interactive-accent) 0%, #8b5cf6 100%);
+	box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
 }
 
-body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn--advanced.is-active {
-	color: #ffffff !important;
-	background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
-	box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3) !important;
+html body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn.lumina-settings__nav-btn--advanced.is-active {
+	color: #ffffff;
+	background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+	box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
 }
 
 body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn--advanced.is-active .lumina-settings__nav-icon {
@@ -191,11 +191,11 @@ body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumi
 	color: #ffffff;
 }
 
-.lumina-settings__body > .lumina-settings__section-heading:first-of-type,
-.lumina-settings__body > .setting-item-heading:first-of-type,
-.lumina-settings__body > .setting-item:first-of-type {
-	margin-top: 0 !important;
-	padding-top: 0 !important;
+html body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__body > .lumina-settings__section-heading:first-of-type,
+html body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__body > .setting-item-heading:first-of-type,
+html body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__body > .setting-item:first-of-type {
+	margin-top: 0;
+	padding-top: 0;
 }
 
 .lumina-settings__section-heading {

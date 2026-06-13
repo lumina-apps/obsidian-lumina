@@ -140,7 +140,7 @@ export function renderMcpTab(tab: LuminaSettingTab, el: HTMLElement): void {
 		if (tab.showAdvanced) {
 			tab.advancedLabel(localServerCard);
 
-			new Setting(el)
+			new Setting(localServerCard)
 				.setName(t('settings.mcp.localServer.maxRead.name'))
 				.setDesc(t('settings.mcp.localServer.maxRead.desc'))
 				.addText(text => {
@@ -154,7 +154,7 @@ export function renderMcpTab(tab: LuminaSettingTab, el: HTMLElement): void {
 					});
 				});
 
-			new Setting(el)
+			new Setting(localServerCard)
 				.setName(t('settings.mcp.localServer.searchSnippet.name'))
 				.setDesc(t('settings.mcp.localServer.searchSnippet.desc'))
 				.addText(text => {
@@ -168,7 +168,7 @@ export function renderMcpTab(tab: LuminaSettingTab, el: HTMLElement): void {
 					});
 				});
 
-			new Setting(el)
+			new Setting(localServerCard)
 				.setName(t('settings.mcp.localServer.searchMaxResults.name'))
 				.setDesc(t('settings.mcp.localServer.searchMaxResults.desc'))
 				.addText(text => {
@@ -182,7 +182,7 @@ export function renderMcpTab(tab: LuminaSettingTab, el: HTMLElement): void {
 					});
 				});
 
-			new Setting(el)
+			new Setting(localServerCard)
 				.setName(t('settings.mcp.localServer.maxAppend.name'))
 				.setDesc(t('settings.mcp.localServer.maxAppend.desc'))
 				.addText(text => {
