@@ -250,10 +250,9 @@
 	});
 
 	function openSettingsToTab(tabId: string = "lumina") {
-		// @ts-ignore
-		(plugin.app as any).setting.open();
-		// @ts-ignore
-		(plugin.app as any).setting.openTabById(tabId);
+		const appCompat = plugin.app as unknown as { setting: { open: () => void; openTabById: (id: string) => void } };
+		appCompat.setting.open();
+		appCompat.setting.openTabById(tabId);
 	}
 </script>
 

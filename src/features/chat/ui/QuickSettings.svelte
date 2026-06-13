@@ -54,10 +54,9 @@
 
 	function openFullSettings() {
 		isOpen = false;
-		// @ts-ignore
-		(plugin.app as any).setting.open();
-		// @ts-ignore
-		(plugin.app as any).setting.openTabById('lumina');
+		const appCompat = plugin.app as unknown as { setting: { open: () => void; openTabById: (id: string) => void } };
+		appCompat.setting.open();
+		appCompat.setting.openTabById('lumina');
 	}
 
 	// Click outside handler

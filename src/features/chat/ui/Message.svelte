@@ -182,7 +182,8 @@
 			if (activeFile) {
 				const leaves = app.workspace.getLeavesOfType("markdown");
 				for (const leaf of leaves) {
-					if ((leaf.view as any).file?.path === activeFile.path) {
+					const viewCompat = leaf.view as unknown as { file?: { path: string } };
+					if (viewCompat.file?.path === activeFile.path) {
 						activeView = leaf.view as MarkdownView;
 						break;
 					}

@@ -220,11 +220,11 @@ export function renderChatTab(tab: LuminaSettingTab, el: HTMLElement): void {
 		const deleteSetting = new Setting(body)
 			.addButton((btn: ButtonComponent) => {
 				btn.setButtonText(t('settings.chat.quickActions.deleteAction'));
-				const btnAny = btn as any;
-				if (typeof btnAny.setDestructive === 'function') {
-					btnAny.setDestructive();
-				} else {
-					btnAny.setWarning();
+				const btnCompat = btn as unknown as { setDestructive?: () => void; setWarning?: () => void };
+				if (typeof btnCompat.setDestructive === 'function') {
+					btnCompat.setDestructive();
+				} else if (typeof btnCompat.setWarning === 'function') {
+					btnCompat.setWarning();
 				}
 				btn.onClick(async () => {
 						s.quickActions = s.quickActions.filter(a => a.id !== action.id);
