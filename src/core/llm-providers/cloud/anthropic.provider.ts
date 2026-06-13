@@ -3,6 +3,52 @@ import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
 import { readStreamLines } from '../utils';
 
+interface AnthropicBlock {
+	type?: string;
+	id?: string;
+	name?: string;
+	input?: string;
+	text?: string;
+}
+
+interface AnthropicStreamChunk {
+	type: string;
+	message?: {
+		usage?: {
+			input_tokens?: number;
+			output_tokens?: number;
+		};
+	};
+	index?: number;
+	content_block?: {
+		type?: string;
+		id?: string;
+		name?: string;
+	};
+	delta?: {
+		type?: string;
+		text?: string;
+		partial_json?: string;
+	};
+	usage?: {
+		output_tokens?: number;
+	};
+}
+
+interface AnthropicResponse {
+	content?: Array<{
+		type: string;
+		text?: string;
+		id?: string;
+		name?: string;
+		input?: Record<string, unknown>;
+	}>;
+	usage?: {
+		input_tokens?: number;
+		output_tokens?: number;
+	};
+}
+
 /** Anthropic 공식 지원 모델 목록 (최신순) */
 const ANTHROPIC_MODELS = [
 	'claude-opus-4-5',
@@ -59,7 +105,7 @@ export class AnthropicProvider implements ILLMProvider {
 		const formattedMessages = formatAnthropicMessages(messages);
 		const formattedTools = formatAnthropicTools(options.tools);
 
-		const payload: Record<string, any> = {
+		const payload: Record<string, unknown> = {
 			model: options.model,
 			messages: formattedMessages,
 			temperature: options.temperature ?? 0.7,
@@ -74,10 +120,10 @@ export class AnthropicProvider implements ILLMProvider {
 
 		if (onChunk) {
 			let fullContent = '';
-			const accumulatedBlocks: any[] = [];
+			const accumulatedBlocks: AnthropicBlock[] = [];
 			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
 
-			const response = await fetch(url, {
+			const response = await globalThis.fetch(url, {
 				method: 'POST',
 				headers,
 				body: JSON.stringify(payload),
@@ -96,7 +142,7 @@ export class AnthropicProvider implements ILLMProvider {
 				if (cleanLine.startsWith('data: ')) {
 					const dataStr = cleanLine.slice(6);
 					try {
-						const chunk = JSON.parse(dataStr);
+						const chunk = JSON.parse(dataStr) as AnthropicStreamChunk;
 						if (chunk.type === 'message_start' && chunk.message?.usage) {
 							usage = {
 								inputTokens: chunk.message.usage.input_tokens || 0,
@@ -119,12 +165,12 @@ export class AnthropicProvider implements ILLMProvider {
 							const block = accumulatedBlocks[index];
 							if (block) {
 								if (chunk.delta?.type === 'text_delta' && chunk.delta.text) {
-									block.text += chunk.delta.text;
+									block.text = (block.text || '') + chunk.delta.text;
 									fullContent += chunk.delta.text;
 									onChunk(chunk.delta.text);
 								}
 								else if (chunk.delta?.type === 'input_json_delta' && chunk.delta.partial_json) {
-									block.input += chunk.delta.partial_json;
+									block.input = (block.input || '') + chunk.delta.partial_json;
 								}
 							}
 						}
@@ -134,7 +180,7 @@ export class AnthropicProvider implements ILLMProvider {
 								usage.totalTokens = usage.inputTokens + usage.outputTokens;
 							}
 						}
-					} catch (e) {
+					} catch {
 						// ignore parse errors
 					}
 				}
@@ -146,10 +192,10 @@ export class AnthropicProvider implements ILLMProvider {
 					try {
 						toolCalls.push({
 							id: block.id || crypto.randomUUID(),
-							name: block.name,
-							arguments: block.input ? JSON.parse(block.input) : {},
+							name: block.name || '',
+							arguments: block.input ? JSON.parse(block.input) as Record<string, unknown> : {},
 						});
-					} catch (e) {
+					} catch {
 						console.warn('Failed to parse Anthropic tool arguments:', block.input);
 					}
 				}
@@ -169,7 +215,7 @@ export class AnthropicProvider implements ILLMProvider {
 				body: JSON.stringify(payload),
 			});
 
-			const data = res.json as any;
+			const data = res.json as AnthropicResponse;
 			if (!data.content) {
 				throw new Error(`Anthropic API returned an empty response. Response: ${res.text}`);
 			}
@@ -183,7 +229,7 @@ export class AnthropicProvider implements ILLMProvider {
 				} else if (block.type === 'tool_use') {
 					toolCalls.push({
 						id: block.id || crypto.randomUUID(),
-						name: block.name,
+						name: block.name || '',
 						arguments: block.input || {},
 					});
 				}
@@ -221,7 +267,7 @@ export class AnthropicProvider implements ILLMProvider {
 		const system = getSystemPrompt(messages);
 		const formattedMessages = formatAnthropicMessages(messages);
 
-		const payload: Record<string, any> = {
+		const payload: Record<string, unknown> = {
 			model: options.model,
 			messages: formattedMessages,
 			temperature: options.temperature ?? 0.7,
@@ -235,7 +281,7 @@ export class AnthropicProvider implements ILLMProvider {
 
 		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
 
-		const response = await fetch(url, {
+		const response = await globalThis.fetch(url, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),
@@ -254,7 +300,7 @@ export class AnthropicProvider implements ILLMProvider {
 			if (cleanLine.startsWith('data: ')) {
 				const dataStr = cleanLine.slice(6);
 				try {
-					const chunk = JSON.parse(dataStr);
+					const chunk = JSON.parse(dataStr) as AnthropicStreamChunk;
 					if (chunk.type === 'message_start' && chunk.message?.usage) {
 						usage = {
 							inputTokens: chunk.message.usage.input_tokens || 0,
@@ -273,7 +319,7 @@ export class AnthropicProvider implements ILLMProvider {
 							usage.totalTokens = usage.inputTokens + usage.outputTokens;
 						}
 					}
-				} catch (e) {
+				} catch {
 					// ignore json parse errors
 				}
 			}
@@ -303,7 +349,10 @@ function formatAnthropicMessages(messages: ChatMessage[]) {
 			return { role: 'user', content: m.content };
 		}
 		if (m.role === 'assistant') {
-			const contentArray: any[] = [];
+			const contentArray: Array<
+				| { type: 'text'; text: string }
+				| { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
+			> = [];
 			if (typeof m.content === 'string' && m.content) {
 				contentArray.push({ type: 'text', text: m.content });
 			}

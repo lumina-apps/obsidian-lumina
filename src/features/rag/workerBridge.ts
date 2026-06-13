@@ -96,7 +96,7 @@ export class EmbeddingWorkerBridge {
 					t('uiMessages.ragWorkerTimeout')
 				),
 			);
-		}, INIT_TIMEOUT_MS) as unknown as number;
+		}, INIT_TIMEOUT_MS);
 
 		// 워커에 초기화 요청
 		this.send({ type: 'init', cacheDir, modelName, pluginDir });
@@ -190,7 +190,7 @@ export class EmbeddingWorkerBridge {
 
 	// ─── Internals ────────────────────────────────────────────────────────────
 
-	private send(msg: any): void {
+	private send(msg: WorkerRequest): void {
 		this.worker?.postMessage(msg);
 	}
 

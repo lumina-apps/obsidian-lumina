@@ -1,4 +1,3 @@
-import { App, TFile } from 'obsidian';
 import { TextParser } from './TextParser';
 
 // 지원하는 확장자 목록 (소문자 기준)

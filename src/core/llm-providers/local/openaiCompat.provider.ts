@@ -1,9 +1,57 @@
 import type { ProviderType } from '../../../shared/types/settings.types';
 import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, ToolCall } from '../../../shared/types/llm.types';
-import { debugLogger } from '../../../shared/debugLogger';
 import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
 import { readStreamLines } from '../utils';
+
+interface OpenAIToolCallInfo {
+	id?: string;
+	name?: string;
+	arguments: string;
+}
+
+interface OpenAIStreamChunk {
+	choices?: Array<{
+		delta?: {
+			content?: string | null;
+			tool_calls?: Array<{
+				index: number;
+				id?: string;
+				function?: {
+					name?: string;
+					arguments?: string;
+				};
+			}>;
+		};
+	}>;
+	usage?: {
+		prompt_tokens: number;
+		completion_tokens: number;
+		total_tokens: number;
+	};
+}
+
+interface OpenAIResponse {
+	choices?: Array<{
+		message?: {
+			role?: string;
+			content?: string | null;
+			tool_calls?: Array<{
+				id: string;
+				type: 'function';
+				function: {
+					name: string;
+					arguments: string;
+				};
+			}>;
+		};
+	}>;
+	usage?: {
+		prompt_tokens: number;
+		completion_tokens: number;
+		total_tokens: number;
+	};
+}
 
 export class OpenAICompatProvider implements ILLMProvider {
 	readonly providerId: string;
@@ -41,7 +89,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 
 		const stopSeq = options.stop ?? ["<|im_end|>", "<|endoftext|>", "<|eot_id|>", "<|end_of_text|>"];
 
-		const payload: Record<string, any> = {
+		const payload: Record<string, unknown> = {
 			model: options.model,
 			messages: formattedMessages,
 			temperature: options.temperature ?? 0.7,
@@ -56,10 +104,10 @@ export class OpenAICompatProvider implements ILLMProvider {
 
 		if (onChunk) {
 			let fullContent = '';
-			const accumulatedToolCalls: any[] = [];
+			const accumulatedToolCalls: OpenAIToolCallInfo[] = [];
 			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
 
-			const response = await fetch(url, {
+			const response = await globalThis.fetch(url, {
 				method: 'POST',
 				headers,
 				body: JSON.stringify(payload),
@@ -78,7 +126,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 				if (dataStr === '[DONE]') return;
 
 				try {
-					const chunk = JSON.parse(dataStr);
+					const chunk = JSON.parse(dataStr) as OpenAIStreamChunk;
 					const choice = chunk.choices?.[0];
 					if (choice) {
 						const delta = choice.delta;
@@ -112,7 +160,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 							totalTokens: chunk.usage.total_tokens,
 						};
 					}
-				} catch (e) {
+				} catch {
 					// Ignore json parse errors
 				}
 			});
@@ -123,10 +171,10 @@ export class OpenAICompatProvider implements ILLMProvider {
 					try {
 						toolCalls.push({
 							id: tc.id || crypto.randomUUID(),
-							name: tc.name,
-							arguments: tc.arguments ? JSON.parse(tc.arguments) : {},
+							name: tc.name || '',
+							arguments: tc.arguments ? JSON.parse(tc.arguments) as Record<string, unknown> : {},
 						});
-					} catch (e) {
+					} catch {
 						console.warn('Failed to parse tool call arguments:', tc.arguments);
 					}
 				}
@@ -146,7 +194,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 				body: JSON.stringify(payload),
 			});
 
-			const data = res.json as any;
+			const data = res.json as OpenAIResponse;
 			const message = data.choices?.[0]?.message;
 			if (!message) {
 				throw new Error(`${this.type} API returned an empty response. Response: ${res.text}`);
@@ -159,9 +207,9 @@ export class OpenAICompatProvider implements ILLMProvider {
 						toolCalls.push({
 							id: tc.id || crypto.randomUUID(),
 							name: tc.function.name,
-							arguments: tc.function.arguments ? JSON.parse(tc.function.arguments) : {},
+							arguments: tc.function.arguments ? JSON.parse(tc.function.arguments) as Record<string, unknown> : {},
 						});
-					} catch (e) {
+					} catch {
 						console.warn('Failed to parse tool call arguments:', tc.function.arguments);
 					}
 				}
@@ -196,7 +244,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 		};
 
 		const formattedMessages = formatOpenAIMessages(messages);
-		const payload: Record<string, any> = {
+		const payload: Record<string, unknown> = {
 			model: options.model,
 			messages: formattedMessages,
 			temperature: options.temperature ?? 0.7,
@@ -211,7 +259,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 
 		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
 
-		const response = await fetch(url, {
+		const response = await globalThis.fetch(url, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),
@@ -230,7 +278,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 			if (dataStr === '[DONE]') return;
 
 			try {
-				const chunk = JSON.parse(dataStr);
+				const chunk = JSON.parse(dataStr) as OpenAIStreamChunk;
 				const choice = chunk.choices?.[0];
 				if (choice) {
 					const delta = choice.delta;
@@ -245,7 +293,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 						totalTokens: chunk.usage.total_tokens,
 					};
 				}
-			} catch (e) {
+			} catch {
 				// Ignore JSON parse errors
 			}
 		});
@@ -324,7 +372,7 @@ function formatOpenAIMessages(messages: ChatMessage[]) {
 			return { role: 'user', content: m.content };
 		}
 		if (m.role === 'assistant') {
-			const payload: Record<string, any> = {
+			const payload: Record<string, unknown> = {
 				role: 'assistant',
 				content: typeof m.content === 'string' ? (m.content || null) : null,
 			};

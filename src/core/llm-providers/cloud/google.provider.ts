@@ -3,6 +3,49 @@ import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
 import { readStreamLines } from '../utils';
 
+interface GeminiToolCallInfo {
+	name: string;
+	args: Record<string, unknown>;
+}
+
+interface GeminiStreamChunk {
+	candidates?: Array<{
+		content?: {
+			parts?: Array<{
+				text?: string;
+				functionCall?: {
+					name: string;
+					args?: Record<string, unknown>;
+				};
+			}>;
+		};
+	}>;
+	usageMetadata?: {
+		promptTokenCount?: number;
+		candidatesTokenCount?: number;
+		totalTokenCount?: number;
+	};
+}
+
+interface GeminiResponse {
+	candidates?: Array<{
+		content?: {
+			parts?: Array<{
+				text?: string;
+				functionCall?: {
+					name: string;
+					args?: Record<string, unknown>;
+				};
+			}>;
+		};
+	}>;
+	usageMetadata?: {
+		promptTokenCount?: number;
+		candidatesTokenCount?: number;
+		totalTokenCount?: number;
+	};
+}
+
 /** Google Gemini 지원 모델 목록 (최신순) */
 const GOOGLE_MODELS = [
 	'gemini-2.0-flash',
@@ -62,7 +105,7 @@ export class GoogleProvider implements ILLMProvider {
 		const systemInstruction = getGeminiSystemInstruction(messages);
 		const formattedTools = formatGeminiTools(options.tools);
 
-		const payload: Record<string, any> = {
+		const payload: Record<string, unknown> = {
 			contents: formattedContents,
 			generationConfig: {
 				temperature: options.temperature ?? 0.7,
@@ -80,10 +123,10 @@ export class GoogleProvider implements ILLMProvider {
 
 		if (isStream) {
 			let fullContent = '';
-			const accumulatedToolCalls: any[] = [];
+			const accumulatedToolCalls: GeminiToolCallInfo[] = [];
 			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
 
-			const response = await fetch(url, {
+			const response = await globalThis.fetch(url, {
 				method: 'POST',
 				headers,
 				body: JSON.stringify(payload),
@@ -103,7 +146,7 @@ export class GoogleProvider implements ILLMProvider {
 				if (!cleanLine) return;
 
 				try {
-					const chunk = JSON.parse(cleanLine);
+					const chunk = JSON.parse(cleanLine) as GeminiStreamChunk;
 					const candidate = chunk.candidates?.[0];
 					if (candidate) {
 						const parts = candidate.content?.parts;
@@ -116,7 +159,7 @@ export class GoogleProvider implements ILLMProvider {
 								if (part.functionCall) {
 									accumulatedToolCalls.push({
 										name: part.functionCall.name,
-										args: part.functionCall.args,
+										args: part.functionCall.args || {},
 									});
 								}
 							}
@@ -129,7 +172,7 @@ export class GoogleProvider implements ILLMProvider {
 							totalTokens: chunk.usageMetadata.totalTokenCount || 0,
 						};
 					}
-				} catch (e) {
+				} catch {
 					// Ignore line boundaries parsing errors
 				}
 			});
@@ -159,7 +202,7 @@ export class GoogleProvider implements ILLMProvider {
 				body: JSON.stringify(payload),
 			});
 
-			const data = res.json as any;
+			const data = res.json as GeminiResponse;
 			const candidate = data.candidates?.[0];
 			if (!candidate) {
 				throw new Error(`Google Gemini API returned an empty response. Response: ${res.text}`);
@@ -215,7 +258,7 @@ export class GoogleProvider implements ILLMProvider {
 		const formattedContents = formatGeminiMessages(messages);
 		const systemInstruction = getGeminiSystemInstruction(messages);
 
-		const payload: Record<string, any> = {
+		const payload: Record<string, unknown> = {
 			contents: formattedContents,
 			generationConfig: {
 				temperature: options.temperature ?? 0.7,
@@ -229,7 +272,7 @@ export class GoogleProvider implements ILLMProvider {
 
 		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
 
-		const response = await fetch(url, {
+		const response = await globalThis.fetch(url, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),
@@ -249,7 +292,7 @@ export class GoogleProvider implements ILLMProvider {
 			if (!cleanLine) return;
 
 			try {
-				const chunk = JSON.parse(cleanLine);
+				const chunk = JSON.parse(cleanLine) as GeminiStreamChunk;
 				const candidate = chunk.candidates?.[0];
 				if (candidate) {
 					const parts = candidate.content?.parts;
@@ -268,7 +311,7 @@ export class GoogleProvider implements ILLMProvider {
 						totalTokens: chunk.usageMetadata.totalTokenCount || 0,
 					};
 				}
-			} catch (e) {
+			} catch {
 				// Ignore line boundaries parsing errors
 			}
 		});
@@ -341,7 +384,10 @@ function formatGeminiMessages(messages: ChatMessage[]) {
 			return { role: 'user', parts: [{ text: m.content }] };
 		}
 		if (m.role === 'assistant') {
-			const parts: any[] = [];
+			const parts: Array<
+				| { text: string }
+				| { functionCalls: Array<{ name: string; args: Record<string, unknown> }> }
+			> = [];
 			if (typeof m.content === 'string' && m.content) {
 				parts.push({ text: m.content });
 			}
@@ -356,15 +402,15 @@ function formatGeminiMessages(messages: ChatMessage[]) {
 			return { role: 'model', parts };
 		}
 		if (m.role === 'tool') {
-			let responseObj: any = { content: m.content };
+			let responseObj: Record<string, unknown> = { content: m.content };
 			try {
 				if (typeof m.content === 'string') {
-					responseObj = JSON.parse(m.content);
-					if (typeof responseObj !== 'object' || responseObj === null) {
-						responseObj = { content: m.content };
+					const parsed = JSON.parse(m.content) as unknown;
+					if (typeof parsed === 'object' && parsed !== null) {
+						responseObj = parsed as Record<string, unknown>;
 					}
 				}
-			} catch (e) {
+			} catch {
 				// not a JSON string, keep wrapping
 			}
 			return {

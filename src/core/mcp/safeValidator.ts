@@ -5,16 +5,24 @@
  * to satisfy the Obsidian plugin security guidelines.
  */
 export class SafeJsonSchemaValidator {
-	getValidator(schema: any) {
-		return (input: any) => {
+	getValidator<T>(schema: unknown): (input: unknown) => { valid: true; data: T; errorMessage: undefined } | { valid: false; data: undefined; errorMessage: string } {
+		return (input: unknown) => {
 			if (!schema || typeof schema !== 'object') {
-				return { valid: true as const, data: input, errorMessage: undefined };
+				return { valid: true as const, data: input as T, errorMessage: undefined };
 			}
 
+			const schemaObj = schema as Record<string, unknown>;
+
 			// Validate required fields
-			if (Array.isArray(schema.required)) {
-				for (const key of schema.required) {
-					if (input === null || input === undefined || !(key in input)) {
+			if (Array.isArray(schemaObj.required)) {
+				for (const key of schemaObj.required) {
+					if (typeof key !== 'string') continue;
+					if (
+						input === null ||
+						input === undefined ||
+						typeof input !== 'object' ||
+						!(key in input)
+					) {
 						return {
 							valid: false as const,
 							data: undefined,
@@ -25,27 +33,40 @@ export class SafeJsonSchemaValidator {
 			}
 
 			// Basic type checking if input is an object
-			if (schema.type === 'object' && schema.properties && typeof input === 'object' && input !== null) {
-				for (const key of Object.keys(input)) {
-					const propSchema = schema.properties[key];
-					if (propSchema && propSchema.type) {
-						const val = input[key];
-						const valType = typeof val;
-						
-						let typeMatch = false;
-						if (propSchema.type === 'string' && valType === 'string') typeMatch = true;
-						else if (propSchema.type === 'number' && valType === 'number') typeMatch = true;
-						else if (propSchema.type === 'boolean' && valType === 'boolean') typeMatch = true;
-						else if (propSchema.type === 'array' && Array.isArray(val)) typeMatch = true;
-						else if (propSchema.type === 'object' && valType === 'object' && val !== null) typeMatch = true;
-						else if (propSchema.type === 'null' && val === null) typeMatch = true;
+			if (
+				schemaObj.type === 'object' &&
+				schemaObj.properties &&
+				typeof schemaObj.properties === 'object' &&
+				schemaObj.properties !== null &&
+				typeof input === 'object' &&
+				input !== null
+			) {
+				const properties = schemaObj.properties as Record<string, unknown>;
+				const inputObj = input as Record<string, unknown>;
 
-						if (!typeMatch) {
-							return {
-								valid: false as const,
-								data: undefined,
-								errorMessage: `Property ${key} should be of type ${propSchema.type}`
-							};
+				for (const key of Object.keys(inputObj)) {
+					const propSchema = properties[key];
+					if (propSchema && typeof propSchema === 'object' && 'type' in propSchema) {
+						const propType = (propSchema as Record<string, unknown>).type;
+						if (typeof propType === 'string') {
+							const val = inputObj[key];
+							const valType = typeof val;
+							
+							let typeMatch = false;
+							if (propType === 'string' && valType === 'string') typeMatch = true;
+							else if (propType === 'number' && valType === 'number') typeMatch = true;
+							else if (propType === 'boolean' && valType === 'boolean') typeMatch = true;
+							else if (propType === 'array' && Array.isArray(val)) typeMatch = true;
+							else if (propType === 'object' && valType === 'object' && val !== null) typeMatch = true;
+							else if (propType === 'null' && val === null) typeMatch = true;
+
+							if (!typeMatch) {
+								return {
+									valid: false as const,
+									data: undefined,
+									errorMessage: `Property ${key} should be of type ${propType}`
+								};
+							}
 						}
 					}
 				}
@@ -53,7 +74,7 @@ export class SafeJsonSchemaValidator {
 
 			return {
 				valid: true as const,
-				data: input,
+				data: input as T,
 				errorMessage: undefined
 			};
 		};

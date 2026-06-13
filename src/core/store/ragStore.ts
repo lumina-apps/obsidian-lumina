@@ -32,7 +32,7 @@ indexingState.subscribe(state => {
 		if (!indicatorTimer) {
 			indicatorTimer = window.setTimeout(() => {
 				showIndexingIndicator.set(true);
-			}, 1000) as unknown as number;
+			}, 1000);
 		}
 	} else {
 		if (indicatorTimer) {

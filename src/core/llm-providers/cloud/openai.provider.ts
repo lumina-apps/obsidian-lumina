@@ -3,6 +3,55 @@ import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
 import { readStreamLines } from '../utils';
 
+interface OpenAIToolCallInfo {
+	id?: string;
+	name?: string;
+	arguments: string;
+}
+
+interface OpenAIStreamChunk {
+	choices?: Array<{
+		delta?: {
+			content?: string | null;
+			tool_calls?: Array<{
+				index: number;
+				id?: string;
+				function?: {
+					name?: string;
+					arguments?: string;
+				};
+			}>;
+		};
+	}>;
+	usage?: {
+		prompt_tokens: number;
+		completion_tokens: number;
+		total_tokens: number;
+	};
+}
+
+interface OpenAIResponse {
+	choices?: Array<{
+		message?: {
+			role?: string;
+			content?: string | null;
+			tool_calls?: Array<{
+				id: string;
+				type: 'function';
+				function: {
+					name: string;
+					arguments: string;
+				};
+			}>;
+		};
+	}>;
+	usage?: {
+		prompt_tokens: number;
+		completion_tokens: number;
+		total_tokens: number;
+	};
+}
+
 export class OpenAIProvider implements ILLMProvider {
 	readonly providerId: string;
 	private apiKey: string;
@@ -43,7 +92,7 @@ export class OpenAIProvider implements ILLMProvider {
 		const formattedMessages = formatOpenAIMessages(messages);
 		const formattedTools = formatOpenAITools(options.tools);
 
-		const payload: Record<string, any> = {
+		const payload: Record<string, unknown> = {
 			model: options.model,
 			messages: formattedMessages,
 			temperature: options.temperature ?? 0.7,
@@ -58,10 +107,10 @@ export class OpenAIProvider implements ILLMProvider {
 
 		if (onChunk) {
 			let fullContent = '';
-			const accumulatedToolCalls: any[] = [];
+			const accumulatedToolCalls: OpenAIToolCallInfo[] = [];
 			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
 
-			const response = await fetch(url, {
+			const response = await globalThis.fetch(url, {
 				method: 'POST',
 				headers,
 				body: JSON.stringify(payload),
@@ -80,7 +129,7 @@ export class OpenAIProvider implements ILLMProvider {
 				if (dataStr === '[DONE]') return;
 
 				try {
-					const chunk = JSON.parse(dataStr);
+					const chunk = JSON.parse(dataStr) as OpenAIStreamChunk;
 					const choice = chunk.choices?.[0];
 					if (choice) {
 						const delta = choice.delta;
@@ -114,7 +163,7 @@ export class OpenAIProvider implements ILLMProvider {
 							totalTokens: chunk.usage.total_tokens,
 						};
 					}
-				} catch (e) {
+				} catch {
 					// Ignore json parsing errors
 				}
 			});
@@ -125,10 +174,10 @@ export class OpenAIProvider implements ILLMProvider {
 					try {
 						toolCalls.push({
 							id: tc.id || crypto.randomUUID(),
-							name: tc.name,
-							arguments: tc.arguments ? JSON.parse(tc.arguments) : {},
+							name: tc.name || '',
+							arguments: tc.arguments ? JSON.parse(tc.arguments) as Record<string, unknown> : {},
 						});
-					} catch (e) {
+					} catch {
 						console.warn('Failed to parse tool call arguments:', tc.arguments);
 					}
 				}
@@ -148,7 +197,7 @@ export class OpenAIProvider implements ILLMProvider {
 				body: JSON.stringify(payload),
 			});
 
-			const data = res.json as any;
+			const data = res.json as OpenAIResponse;
 			const message = data.choices?.[0]?.message;
 			if (!message) {
 				throw new Error(`OpenAI API returned an empty response. Response: ${res.text}`);
@@ -161,9 +210,9 @@ export class OpenAIProvider implements ILLMProvider {
 						toolCalls.push({
 							id: tc.id || crypto.randomUUID(),
 							name: tc.function.name,
-							arguments: tc.function.arguments ? JSON.parse(tc.function.arguments) : {},
+							arguments: tc.function.arguments ? JSON.parse(tc.function.arguments) as Record<string, unknown> : {},
 						});
-					} catch (e) {
+					} catch {
 						console.warn('Failed to parse tool call arguments:', tc.function.arguments);
 					}
 				}
@@ -198,7 +247,7 @@ export class OpenAIProvider implements ILLMProvider {
 		};
 
 		const formattedMessages = formatOpenAIMessages(messages);
-		const payload: Record<string, any> = {
+		const payload: Record<string, unknown> = {
 			model: options.model,
 			messages: formattedMessages,
 			temperature: options.temperature ?? 0.7,
@@ -212,7 +261,7 @@ export class OpenAIProvider implements ILLMProvider {
 
 		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
 
-		const response = await fetch(url, {
+		const response = await globalThis.fetch(url, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),
@@ -231,7 +280,7 @@ export class OpenAIProvider implements ILLMProvider {
 			if (dataStr === '[DONE]') return;
 
 			try {
-				const chunk = JSON.parse(dataStr);
+				const chunk = JSON.parse(dataStr) as OpenAIStreamChunk;
 				const choice = chunk.choices?.[0];
 				if (choice) {
 					const delta = choice.delta;
@@ -246,7 +295,7 @@ export class OpenAIProvider implements ILLMProvider {
 						totalTokens: chunk.usage.total_tokens,
 					};
 				}
-			} catch (e) {
+			} catch {
 				// Ignore JSON parse errors
 			}
 		});
@@ -280,6 +329,12 @@ export class OpenAIProvider implements ILLMProvider {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+function getSystemPrompt(messages: ChatMessage[]): string | undefined {
+	const systemMsgs = messages.filter(m => m.role === 'system');
+	if (systemMsgs.length === 0) return undefined;
+	return systemMsgs.map(m => m.content).join('\n');
+}
+
 function formatOpenAIMessages(messages: ChatMessage[]) {
 	return messages.map((m) => {
 		if (m.role === 'system') {
@@ -289,7 +344,7 @@ function formatOpenAIMessages(messages: ChatMessage[]) {
 			return { role: 'user', content: m.content };
 		}
 		if (m.role === 'assistant') {
-			const payload: Record<string, any> = {
+			const payload: Record<string, unknown> = {
 				role: 'assistant',
 				content: typeof m.content === 'string' ? (m.content || null) : null,
 			};
