@@ -59,7 +59,7 @@
 <summary><b>🧠 RAG-Powered Chat & Local Embeddings (Absolute Privacy)</b></summary>
 
 - **Description:** AI gains deep insight into your knowledge base. It autonomously searches relevant notes during conversations and displays similar documents and recommended tags in the side panel, creating smart contextual links.
-- **Offline Security:** Natively supports local embeddings (`ibm-granite`). Unless a cloud model is selected, your valuable note data will never leave your device. *(⚠️ Local embeddings are not supported on mobile environments.)*
+- **Offline Security:** Natively supports local embeddings (`ibm-granite`). Unless a cloud model is selected, your valuable note data will never leave your device.
 - **Fully Automated:** Zero configuration required! Background indexing quietly starts the moment the plugin is enabled, and automatically syncs in real-time (`watch` mode) whenever notes are modified.
 </details>
 
