@@ -110,7 +110,7 @@ export class OpenAIProvider implements ILLMProvider {
 			const accumulatedToolCalls: OpenAIToolCallInfo[] = [];
 			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
 
-			const response = await globalThis.fetch(url, {
+			const response = await window.fetch(url, {
 				method: 'POST',
 				headers,
 				body: JSON.stringify(payload),
@@ -261,7 +261,7 @@ export class OpenAIProvider implements ILLMProvider {
 
 		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
 
-		const response = await globalThis.fetch(url, {
+		const response = await window.fetch(url, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),
@@ -329,11 +329,6 @@ export class OpenAIProvider implements ILLMProvider {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function getSystemPrompt(messages: ChatMessage[]): string | undefined {
-	const systemMsgs = messages.filter(m => m.role === 'system');
-	if (systemMsgs.length === 0) return undefined;
-	return systemMsgs.map(m => m.content).join('\n');
-}
 
 function formatOpenAIMessages(messages: ChatMessage[]) {
 	return messages.map((m) => {

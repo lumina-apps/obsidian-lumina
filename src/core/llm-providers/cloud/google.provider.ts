@@ -126,7 +126,7 @@ export class GoogleProvider implements ILLMProvider {
 			const accumulatedToolCalls: GeminiToolCallInfo[] = [];
 			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
 
-			const response = await globalThis.fetch(url, {
+			const response = await window.fetch(url, {
 				method: 'POST',
 				headers,
 				body: JSON.stringify(payload),
@@ -272,7 +272,7 @@ export class GoogleProvider implements ILLMProvider {
 
 		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
 
-		const response = await globalThis.fetch(url, {
+		const response = await window.fetch(url, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),

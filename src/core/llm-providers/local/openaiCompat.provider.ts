@@ -107,7 +107,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 			const accumulatedToolCalls: OpenAIToolCallInfo[] = [];
 			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
 
-			const response = await globalThis.fetch(url, {
+			const response = await window.fetch(url, {
 				method: 'POST',
 				headers,
 				body: JSON.stringify(payload),
@@ -259,7 +259,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 
 		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
 
-		const response = await globalThis.fetch(url, {
+		const response = await window.fetch(url, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),
