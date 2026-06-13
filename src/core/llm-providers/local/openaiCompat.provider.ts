@@ -81,7 +81,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 			if (!finalMessage) {
 				finalMessage = aiChunk;
 			} else {
-				finalMessage = (finalMessage as AIMessageChunk).concat(aiChunk) as AIMessageChunk;
+				finalMessage = finalMessage.concat(aiChunk);
 			}
 
 			if (onChunk && typeof aiChunk.content === 'string' && aiChunk.content) {

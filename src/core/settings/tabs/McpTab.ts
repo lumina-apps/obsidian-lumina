@@ -122,7 +122,7 @@ export function renderMcpTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			.addButton(btn => {
 				btn.setButtonText(t('common.copy'))
 					.onClick(() => {
-						navigator.clipboard.writeText(s.serverAuthToken);
+						void navigator.clipboard.writeText(s.serverAuthToken);
 						new Notice(t('uiMessages.mcpTokenCopied'));
 					});
 			})
@@ -220,7 +220,7 @@ export function renderMcpTab(tab: LuminaSettingTab, el: HTMLElement): void {
 						id: crypto.randomUUID(),
 						name: 'New Server',
 						transport: 'sse',
-						url: 'http://localhost:3000/sse',
+						url: '',
 						enabled: false,
 						status: 'disconnected',
 					};

@@ -28,7 +28,7 @@ export class QuickActionHandler {
 
 		if (!providerId || !modelId) {
 			new Notice(t('uiMessages.qaNotConfigured'));
-			const appWithSetting = this.plugin.app as any as {
+			const appWithSetting = this.plugin.app as unknown as {
 				setting: {
 					open(): void;
 					openTabById(id: string): void;

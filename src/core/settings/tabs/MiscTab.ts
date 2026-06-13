@@ -69,7 +69,7 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 					await tab.saveAndSync();
 					// 토글에 따라 DevLog 패널 자동 열기/닫기
 					if (val) {
-						tab.plugin.activateDebugView();
+						void tab.plugin.activateDebugView();
 					} else {
 						tab.plugin.closeDebugView();
 					}

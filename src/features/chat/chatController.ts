@@ -42,11 +42,11 @@ import { debugLogger as originalDebugLogger } from '../../shared/debugLogger';
 
 interface IDebugLogger {
 	logMcp(action: string, message: string, data?: unknown): void;
-	logRequest(params: any): string;
-	logResponse(requestId: string, params: any): void;
-	logError(domain: string, error: any): void;
-	logSystem(event: string, message: string, meta?: any): void;
-	logRagSearch(params: any): void;
+	logRequest(params: unknown): string;
+	logResponse(requestId: string, params: unknown): void;
+	logError(domain: string, error: unknown): void;
+	logSystem(event: string, message: string, meta?: unknown): void;
+	logRagSearch(params: unknown): void;
 }
 const debugLogger = originalDebugLogger as unknown as IDebugLogger;
 import type { RagChunkMeta } from '../../shared/types/debug.types';
@@ -203,7 +203,7 @@ export class ChatController {
 								interface CanvasData {
 									nodes?: CanvasNode[];
 								}
-								const canvasData: CanvasData = JSON.parse(content);
+								const canvasData = JSON.parse(content) as CanvasData;
 								let canvasText = `[캔버스 파일: ${att.name}]\n`;
 								canvasData.nodes?.forEach((node) => {
 									if (node.type === 'text' && node.text) {
@@ -292,7 +292,7 @@ export class ChatController {
 							? `${ragContext}\n\n---\n\n${ragText}`
 							: ragText;
 
-						ragChunksForLog = (results as import('../../shared/types/rag.types').SearchResult[]).map((r) => ({
+						ragChunksForLog = results.map((r) => ({
 							filePath: r.chunk?.path ?? '',
 							score: r.score ?? 0,
 							preview: (r.chunk?.text ?? '').slice(0, 200),

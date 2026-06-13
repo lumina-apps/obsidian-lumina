@@ -14,16 +14,35 @@ console.log("HELLO_WORLD_WORKER");
 import { env, pipeline, type FeatureExtractionPipeline } from '@huggingface/transformers';
 import type { WorkerRequest, WorkerResponse } from '../../../shared/types/rag.types';
 
+interface EnvWasmConfig {
+	numThreads?: number;
+	simd?: boolean;
+	proxy?: boolean;
+	wasmPaths?: string;
+}
+interface BackendsOnnxConfig {
+	wasm?: EnvWasmConfig;
+	executionProviders?: string[];
+}
+interface HuggingFaceEnv {
+	wasm?: EnvWasmConfig;
+	backends?: {
+		onnx?: BackendsOnnxConfig;
+	};
+}
+const customEnv = env as unknown as HuggingFaceEnv;
+
 // ─── ONNX Runtime Multi-threading Fix ─────────────────────────────────────────
 // ONNX Runtime의 multi-threaded WASM은 별도 Web Worker를 생성하는데,
 // Electron 환경의 Web Worker에서는 `worker_threads` 모듈을 로드할 수 없음.
 // numThreads=1 + simd=false → single-threaded, non-SIMD WASM만 사용
 // → 서브 워커 미생성, Node 전용 모듈 참조 방지
 // transformers.js v3: env.backends.onnx를 통해 ONNX Runtime 설정
-(env as any).wasm = { numThreads: 1, simd: false, proxy: false };
-(env.backends.onnx as any).wasm = { numThreads: 1, simd: false, proxy: false };
-// ONNX Runtime 실행 프로바이더를 wasm으로 강제 (webgpu 등 다른 백엔드 시도 방지)
-(env.backends.onnx as any).executionProviders = ['wasm'];
+customEnv.wasm = { numThreads: 1, simd: false, proxy: false };
+if (customEnv.backends && customEnv.backends.onnx) {
+	customEnv.backends.onnx.wasm = { numThreads: 1, simd: false, proxy: false };
+	customEnv.backends.onnx.executionProviders = ['wasm'];
+}
 
 // ─── Tokenizer Hotfix ─────────────────────────────────────────────────────────
 // ibm-granite 97m-r2 모델의 tokenizer.json 내 merges가 배열의 배열 형식으로 되어 있어
@@ -84,9 +103,13 @@ async function initModel(modelName: string, cacheDir: string, pluginDir?: string
 		// Obsidian의 getResourcePath는 끝에 캐시 무효화용 쿼리스트링(?16...)을 붙이므로 제거합니다.
 		const cleanPluginDir = pluginDir.split('?')[0];
 		const basePath = cleanPluginDir.endsWith('/') ? cleanPluginDir : cleanPluginDir + '/';
-		(env.backends.onnx as any).wasm.wasmPaths = basePath;
+		if (customEnv.backends?.onnx?.wasm) {
+			customEnv.backends.onnx.wasm.wasmPaths = basePath;
+		}
 	} else {
-		(env.backends.onnx as any).wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/dist/';
+		if (customEnv.backends?.onnx?.wasm) {
+			customEnv.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/dist/';
+		}
 	}
 	// numThreads=1은 파일 상단에서 이미 설정됨 (중복 제거)
 	
@@ -105,7 +128,7 @@ async function initModel(modelName: string, cacheDir: string, pluginDir?: string
 	};
 
 	const pipe = await pipeline('feature-extraction', modelName, pipelineOptions);
-	extractor = pipe as FeatureExtractionPipeline;
+	extractor = pipe;
 
 	send({ type: 'ready' });
 }

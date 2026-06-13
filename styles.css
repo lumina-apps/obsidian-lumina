@@ -105,6 +105,7 @@
 /* 4. Tab Navigation Menu (Horizontal Segmented Control) */
 .lumina-settings__nav {
 	display: flex;
+	align-items: center;
 	background-color: var(--background-secondary-alt);
 	padding: 4px;
 	border-radius: 10px;
@@ -127,6 +128,7 @@
 	justify-content: center;
 	text-align: center;
 	padding: 6px 8px;
+	height: auto !important;
 	font-size: 0.95em;
 	font-weight: 600;
 	color: var(--text-muted);

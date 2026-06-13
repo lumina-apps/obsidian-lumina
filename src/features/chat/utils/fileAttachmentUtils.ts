@@ -59,7 +59,7 @@ export async function processFiles(
 	const newAttachments: ContextAttachment[] = [];
 
 	for (let i = 0; i < files.length; i++) {
-		const file = extractFileFromEntry(files[i] as File | DataTransferItem);
+		const file = extractFileFromEntry(files[i]);
 		if (!file) continue;
 
 		const ext = file.name.split(".").pop()?.toLowerCase() || "";

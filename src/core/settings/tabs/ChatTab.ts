@@ -27,9 +27,9 @@ export function renderChatTab(tab: LuminaSettingTab, el: HTMLElement): void {
 		});
 		nameInput.placeholder = t('settings.chat.systemPrompt.name');
 		nameInput.addEventListener('click', (e) => e.stopPropagation());
-		nameInput.addEventListener('change', async () => {
+		nameInput.addEventListener('change', () => {
 			prompt.name = nameInput.value;
-			await tab.saveAndSync();
+			void tab.saveAndSync();
 		});
 
 		// Status badge
@@ -212,9 +212,9 @@ export function renderChatTab(tab: LuminaSettingTab, el: HTMLElement): void {
 				});
 			});
 
-		promptSetting.settingEl.setCssStyles({ display: 'flex !important', alignItems: 'flex-start !important' });
-		promptSetting.infoEl.setCssStyles({ flex: '0 0 auto !important', whiteSpace: 'nowrap !important', marginRight: '20px !important' });
-		promptSetting.controlEl.setCssStyles({ flex: '1 1 auto !important', width: '100% !important', justifyContent: 'flex-end !important', display: 'flex !important' });
+		promptSetting.settingEl.setCssStyles({ display: 'flex', alignItems: 'flex-start' });
+		promptSetting.infoEl.setCssStyles({ flex: '0 0 auto', whiteSpace: 'nowrap', marginRight: '20px' });
+		promptSetting.controlEl.setCssStyles({ flex: '1 1 auto', width: '100%', justifyContent: 'flex-end', display: 'flex' });
 
 		// Delete button
 		const deleteSetting = new Setting(body)
@@ -232,28 +232,28 @@ export function renderChatTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			});
 
 		// Force center alignment
-		deleteSetting.settingEl.setCssStyles({ justifyContent: 'center !important', borderBottom: 'none !important' });
-		deleteSetting.infoEl.setCssStyles({ display: 'none !important' });
-		deleteSetting.controlEl.setCssStyles({ width: '100% !important', justifyContent: 'center !important', padding: '0 !important' });
+		deleteSetting.settingEl.addClass('lumina-setting-center-button');
 	}
 
 	const addActionBtnContainer = el.createDiv({ cls: 'lumina-settings-add-prompt-container' });
 	addActionBtnContainer.setCssStyles({ display: 'flex', justifyContent: 'center', margin: '10px 0' });
 
 	const addActionBtn = addActionBtnContainer.createEl('button', { text: t('settings.chat.quickActions.add') });
-	addActionBtn.addEventListener('click', async () => {
-		if (!s.quickActions) s.quickActions = [];
-		s.quickActions.push({
-			id: `qa-${crypto.randomUUID()}`,
-			name: t('settings.chat.quickActions.newAction'),
-			prompt: '',
-			actionType: 'replace',
-		});
-		await tab.saveAndSync();
-		if (tab.plugin.registerQuickActions) {
-			tab.plugin.registerQuickActions();
-		}
-		tab.display();
+	addActionBtn.addEventListener('click', () => {
+		void (async () => {
+			if (!s.quickActions) s.quickActions = [];
+			s.quickActions.push({
+				id: `qa-${crypto.randomUUID()}`,
+				name: t('settings.chat.quickActions.newAction'),
+				prompt: '',
+				actionType: 'replace',
+			});
+			await tab.saveAndSync();
+			if (tab.plugin.registerQuickActions) {
+				tab.plugin.registerQuickActions();
+			}
+			tab.display();
+		})();
 	});
 
 	// ── 고급 ─────────────────────────────────────────────────────────────

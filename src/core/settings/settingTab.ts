@@ -23,7 +23,7 @@ const MCP_REFRESH_DELAY = 1500;
 /** 추론형 모델 경고 Notice 표시 시간 (ms) */
 const REASONING_MODEL_NOTICE_DURATION = 10000;
 
-export function wrapAsync<T extends any[]>(fn: (...args: T) => Promise<any>): (...args: T) => void {
+export function wrapAsync<T extends unknown[]>(fn: (...args: T) => Promise<unknown>): (...args: T) => void {
 	return (...args) => {
 		void fn(...args);
 	};
@@ -194,7 +194,8 @@ export class LuminaSettingTab extends PluginSettingTab {
 
 	private renderHeader(el: HTMLElement): void {
 		const header = el.createDiv({ cls: 'lumina-settings__header' });
-		header.createEl('h2', { text: '✦ Lumina', cls: 'lumina-settings__title' });
+		const titleSetting = new Setting(header).setName('✦ Lumina').setHeading();
+		titleSetting.nameEl.addClass('lumina-settings__title');
 
 		// 고급 설정 토글
 		const toggle = header.createDiv({ cls: 'lumina-settings__advanced-toggle' });
@@ -308,7 +309,7 @@ export class LuminaSettingTab extends PluginSettingTab {
 		options: { value: string; label: string }[],
 		currentValue: string,
 		currentLabel: string,
-		onChange: (val: string) => void,
+		onChange: (val: string) => Promise<void>,
 		getDynamicValue: () => string,
 	): void {
 		if (options.length >= FUZZY_MODAL_THRESHOLD) {

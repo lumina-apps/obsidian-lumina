@@ -70,22 +70,6 @@ export class FuzzyModelSuggestModal extends FuzzySuggestModal<ModelSuggestItem> 
 		super.renderSuggestion(match, el);
 		if (this.defaultItemValue !== undefined && match.item.value === this.defaultItemValue) {
 			el.classList.add('is-selected-default');
-			// 강제 인라인 스타일 적용 (테마 CSS 충돌 방지)
-			el.style.setProperty('background-color', 'rgba(139, 92, 246, 0.15)', 'important');
-			el.style.setProperty('border-left', '3px solid #8b5cf6', 'important');
-			el.style.setProperty('font-weight', '600', 'important');
-			el.style.setProperty('position', 'relative', 'important');
-			
-			// 체크마크 강제 추가
-			const checkmark = el.createSpan();
-			checkmark.innerText = '✓';
-			checkmark.style.setProperty('position', 'absolute', 'important');
-			checkmark.style.setProperty('right', '12px', 'important');
-			checkmark.style.setProperty('top', '50%', 'important');
-			checkmark.style.setProperty('transform', 'translateY(-50%)', 'important');
-			checkmark.style.setProperty('color', '#8b5cf6', 'important');
-			checkmark.style.setProperty('font-weight', '700', 'important');
-			checkmark.style.setProperty('font-size', '1.1em', 'important');
 		}
 	}
 

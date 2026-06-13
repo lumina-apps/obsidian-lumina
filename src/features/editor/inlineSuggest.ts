@@ -100,7 +100,7 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 		editor.replaceRange('', start, end);
 		
 		if (action.id === '__unconfigured__') {
-			const appWithSetting = this.plugin.app as any as {
+			const appWithSetting = this.plugin.app as unknown as {
 				setting: {
 					open(): void;
 					openTabById(id: string): void;

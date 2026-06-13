@@ -19,9 +19,9 @@ export type EmbeddingProgressCallback = (progress: number, status: string) => vo
 const INIT_TIMEOUT_MS = 60_000;
 
 interface IWorker {
-	addEventListener(type: string, listener: (evt: any) => void): void;
+	addEventListener(type: string, listener: (evt: MessageEvent) => void): void;
 	terminate(): void;
-	postMessage(message: any): void;
+	postMessage(message: unknown): void;
 }
 
 export class EmbeddingWorkerBridge {
@@ -70,7 +70,7 @@ export class EmbeddingWorkerBridge {
 		const blob = new Blob([workerCode], { type: 'application/javascript' });
 		this.workerUrl = URL.createObjectURL(blob);
 
-		const WorkerCtor = (globalThis as any).Worker as new (url: string) => IWorker;
+		const WorkerCtor = window.Worker as unknown as new (url: string) => IWorker;
 		this.worker = new WorkerCtor(this.workerUrl);
 		this.worker.addEventListener('message', this.handleMessage.bind(this));
 		this.worker.addEventListener('error', (e) => {

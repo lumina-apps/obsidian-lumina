@@ -73,7 +73,7 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 				.setName(t('settings.rag.chunking.name'))
 				.setDesc(t('settings.rag.chunking.sizeDesc')),
 			{ min: 100, max: 2000, step: 50, value: s.chunkSize },
-			async (val) => { s.chunkSize = val; await tab.saveAndSync(); },
+			wrapAsync(async (val) => { s.chunkSize = val; await tab.saveAndSync(); }),
 		);
 
 		addSliderWithInput(
@@ -81,7 +81,7 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 				.setName(t('settings.rag.chunking.overlapLabel'))
 				.setDesc(t('settings.rag.chunking.overlapDesc')),
 			{ min: 0, max: 500, step: 10, value: s.chunkOverlap },
-			async (val) => { s.chunkOverlap = val; await tab.saveAndSync(); },
+			wrapAsync(async (val) => { s.chunkOverlap = val; await tab.saveAndSync(); }),
 		);
 
 		addSliderWithInput(

@@ -43,8 +43,9 @@ export class McpManager {
 					if (this.localServer.port !== mcpSettings.serverPort || this.localServer.authToken !== mcpSettings.serverAuthToken) {
 						await this.localServer.stop().catch(console.error);
 						this.localServer = new ServerCtor(this.plugin, mcpSettings.serverPort, mcpSettings.serverAuthToken);
-						await this.localServer.start().catch(e => {
-							new Notice(t('uiMessages.mcpLocalServerStartFailed', { error: e.message }));
+						await this.localServer.start().catch((e: unknown) => {
+							const msg = e instanceof Error ? e.message : String(e);
+							new Notice(t('uiMessages.mcpLocalServerStartFailed', { error: msg }));
 							this.localServer = null;
 						});
 						if (this.localServer) {
@@ -58,8 +59,9 @@ export class McpManager {
 				} else {
 					if (mcpSettings.serverPort) {
 						this.localServer = new ServerCtor(this.plugin, mcpSettings.serverPort, mcpSettings.serverAuthToken);
-						await this.localServer.start().catch(e => {
-							new Notice(t('uiMessages.mcpLocalServerStartFailed', { error: e.message }));
+						await this.localServer.start().catch((e: unknown) => {
+							const msg = e instanceof Error ? e.message : String(e);
+							new Notice(t('uiMessages.mcpLocalServerStartFailed', { error: msg }));
 							this.localServer = null;
 						});
 						if (this.localServer) {
@@ -102,7 +104,7 @@ export class McpManager {
 				if (existingClient) {
 					if (existingClient.config.url !== localConfig.url ||
 						existingClient.config.authToken !== localConfig.authToken) {
-						await existingClient.disconnect().catch(e => debugLogger.logError('mcp', e));
+						await existingClient.disconnect().catch((e: unknown) => debugLogger.logError('mcp', e instanceof Error ? e : String(e)));
 						this.clients.delete(LOCAL_MCP_CLIENT_ID);
 						debugLogger.logSystem('mcp', '내장 MCP 서버 설정 변경 감지, 재연결 시도...');
 					}
@@ -131,7 +133,7 @@ export class McpManager {
 				// 내장 서버 비활성화 시 클라이언트 제거
 				const localClient = this.clients.get(LOCAL_MCP_CLIENT_ID);
 				if (localClient) {
-					await localClient.disconnect().catch(e => debugLogger.logError('mcp', e));
+					await localClient.disconnect().catch((e: unknown) => debugLogger.logError('mcp', e instanceof Error ? e : String(e)));
 					this.clients.delete(LOCAL_MCP_CLIENT_ID);
 					debugLogger.logSystem('mcp', '내장 MCP 클라이언트 제거됨');
 				}
@@ -235,7 +237,7 @@ export class McpManager {
 		return dangerousPatterns.some(pattern => pattern.test(lower));
 	}
 
-	async callTool(serverId: string, toolName: string, args: any): Promise<any> {
+	async callTool(serverId: string, toolName: string, args: Record<string, unknown>): Promise<unknown> {
 		const client = this.clients.get(serverId);
 		if (!client) throw new Error(`MCP server ${serverId} is not connected.`);
 

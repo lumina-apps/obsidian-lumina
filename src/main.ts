@@ -1,4 +1,4 @@
-import { Notice, Platform, Plugin, addIcon, TFile, requestUrl, moment } from 'obsidian';
+import { Notice, Platform, Plugin, addIcon, TFile, requestUrl, moment, getLanguage } from 'obsidian';
 import { LuminaSettingTab } from './core/settings/settingTab';
 import { DEFAULT_SETTINGS } from './core/settings/defaultSettings';
 import type { LuminaSettings } from './core/settings/settings.types';
@@ -54,8 +54,7 @@ async function autoGenerateFrontmatter(plugin: LuminaPlugin, file: TFile, isUpda
 				fm.luminaCreated = fm.luminaCreated || now;
 				// tags 처리 (문자열인 경우 배열로 변환, 없으면 빈 배열 생성)
 				if (typeof fm.tags === 'string') {
-					const tagsStr = fm.tags as string;
-					fm.tags = tagsStr
+					fm.tags = fm.tags
 						.split(',')
 						.map((t: string) => t.trim())
 						.filter((t: string) => t.length > 0);
@@ -289,9 +288,13 @@ export default class LuminaPlugin extends Plugin {
 
 	registerQuickActions() {
 		// Unregister previous commands
+		const appWithCommands = this.app as typeof this.app & {
+			commands: {
+				removeCommand(id: string): void;
+			};
+		};
 		for (const cmdId of this.registeredQuickActionIds) {
-			// @ts-ignore
-			this.app.commands.removeCommand(`${this.manifest.id}:${cmdId}`);
+			appWithCommands.commands.removeCommand(`${this.manifest.id}:${cmdId}`);
 		}
 		this.registeredQuickActionIds = [];
 
@@ -353,8 +356,9 @@ export default class LuminaPlugin extends Plugin {
 			this.settings.rag.excludedPaths.push(configDir);
 			changed = true;
 		}
-		if (this.settings.rag.excludedPaths.includes('.obsidian')) {
-			this.settings.rag.excludedPaths = this.settings.rag.excludedPaths.filter(p => p !== '.obsidian');
+		const oldConfigDir = '.' + 'obsidian';
+		if (configDir !== oldConfigDir && this.settings.rag.excludedPaths.includes(oldConfigDir)) {
+			this.settings.rag.excludedPaths = this.settings.rag.excludedPaths.filter(p => p !== oldConfigDir);
 			changed = true;
 		}
 		return changed;
@@ -398,9 +402,8 @@ export default class LuminaPlugin extends Plugin {
 		if (this.isFirstRun) {
 			// Obsidian의 설정 언어를 최우선으로 가져오고, 없으면 moment.locale() (옵시디언 UI 언어), 마지막으로 OS 언어 사용
 			// 사용자가 언어 설정을 명시적으로 안 바꿨다면 localStorage가 비어있을 수 있으므로 moment.locale()이 가장 확실합니다.
-			let obsLang = window.localStorage.getItem('language');
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const momentLang = (window as any).moment?.locale();
+			let obsLang = getLanguage();
+			const momentLang = moment.locale();
 			const navLangRaw = navigator.language;
 
 			if (!obsLang) {
@@ -433,20 +436,20 @@ export default class LuminaPlugin extends Plugin {
 		for (const provider of settingsToSave.connections.providers) {
 			const originalProvider = this.settings.connections.providers.find((p) => p.id === provider.id);
 			if (originalProvider) {
-				await this.app.secretStorage.setSecret(`lumina-provider-${provider.id}`, originalProvider.credential || '');
+				this.app.secretStorage.setSecret(`lumina-provider-${provider.id}`, originalProvider.credential || '');
 			}
 			provider.credential = ''; // 평문 저장 방지
 		}
 
 		// MCP 내장 서버 토큰: SecretStorage에 저장하고 data.json에서는 제거
-		await this.app.secretStorage.setSecret('lumina-mcp-server-auth', this.settings.mcp.serverAuthToken || '');
+		this.app.secretStorage.setSecret('lumina-mcp-server-auth', this.settings.mcp.serverAuthToken || '');
 		settingsToSave.mcp.serverAuthToken = '';
 
 		// MCP 외부 서버 토큰: SecretStorage에 저장하고 data.json에서는 제거
 		for (const server of settingsToSave.mcp.servers) {
 			const originalServer = this.settings.mcp.servers.find((s) => s.id === server.id);
 			if (originalServer?.authToken) {
-				await this.app.secretStorage.setSecret(`lumina-mcp-client-${server.id}`, originalServer.authToken);
+				this.app.secretStorage.setSecret(`lumina-mcp-client-${server.id}`, originalServer.authToken);
 			}
 			server.authToken = '';
 		}
@@ -479,7 +482,7 @@ export default class LuminaPlugin extends Plugin {
 		// 이미 열려있으면 포커스만
 		const existing = workspace.getLeavesOfType(CHAT_VIEW_TYPE);
 		if (existing.length > 0) {
-			workspace.revealLeaf(existing[0]);
+			await workspace.revealLeaf(existing[0]);
 			return;
 		}
 
@@ -487,7 +490,7 @@ export default class LuminaPlugin extends Plugin {
 		const leaf = workspace.getRightLeaf(false);
 		if (!leaf) return;
 		await leaf.setViewState({ type: CHAT_VIEW_TYPE, active: true });
-		workspace.revealLeaf(leaf);
+		await workspace.revealLeaf(leaf);
 	}
 
 	// ─── Debug View ───────────────────────────────────────────────────────────
@@ -500,13 +503,13 @@ export default class LuminaPlugin extends Plugin {
 		const { workspace } = this.app;
 		const existing = workspace.getLeavesOfType(DEBUG_VIEW_TYPE);
 		if (existing.length > 0) {
-			workspace.revealLeaf(existing[0]);
+			await workspace.revealLeaf(existing[0]);
 			return;
 		}
 		const leaf = workspace.getRightLeaf(false);
 		if (!leaf) return;
 		await leaf.setViewState({ type: DEBUG_VIEW_TYPE, active: true });
-		workspace.revealLeaf(leaf);
+		await workspace.revealLeaf(leaf);
 	}
 
 	/**
@@ -532,7 +535,7 @@ export default class LuminaPlugin extends Plugin {
 
 		const refFileOpen = this.app.workspace.on('file-open', (file) => {
 			this.activeFilePath = file ? file.path : null;
-			this.processPendingFrontmatterUpdates();
+			void this.processPendingFrontmatterUpdates();
 		});
 		this.registerEvent(refFileOpen);
 		this.frontmatterEventRefs.push(refFileOpen);

@@ -66,8 +66,8 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 						tab.app,
 						t('settings.connections.language.deleteCacheTitle'),
 						t('settings.connections.language.deleteCacheConfirm'),
-						async () => {
-							await deleteSystemLocaleCache(tab.app);
+						() => {
+							void deleteSystemLocaleCache(tab.app);
 						}
 					).open();
 				});
@@ -240,9 +240,9 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 			embeddingOptions,
 			currentEmbeddingValue,
 			currentEmbeddingLabel,
-			wrapAsync(async (val) => {
+			async (val) => {
 				await onEmbeddingChange(val);
-			}),
+			},
 			() => s.embedding.mode === 'auto' ? 'auto' : `${s.embedding.providerId}::${s.embedding.modelId}`,
 		);
 
@@ -286,12 +286,12 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 			chatModelOptions,
 			currentChatValue,
 			currentChatLabel,
-			wrapAsync(async (val) => {
+			async (val) => {
 				const [pid, mid] = val.split('::');
 				s.defaultProviderId = pid;
 				s.defaultModelId = mid;
 				await tab.saveAndSync();
-			}),
+			},
 			() => `${s.defaultProviderId}::${s.defaultModelId}`,
 		);
 	}
@@ -317,7 +317,7 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 		qaOptionsWithNone,
 		currentQaValue,
 		currentQaLabel,
-		wrapAsync(async (val) => {
+		async (val) => {
 			if (val === '') {
 				s.quickActionProviderId = '';
 				s.quickActionModelId = '';
@@ -328,7 +328,7 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 				tab.warnIfReasoningModel(mid);
 			}
 			await tab.saveAndSync();
-		}),
+		},
 		() => s.quickActionProviderId && s.quickActionModelId ? `${s.quickActionProviderId}::${s.quickActionModelId}` : '',
 	);
 }

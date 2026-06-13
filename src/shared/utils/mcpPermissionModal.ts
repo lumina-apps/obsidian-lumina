@@ -46,11 +46,13 @@ export class McpPermissionModal extends Modal {
 		preEl.createEl('code', { text: JSON.stringify(this.args, null, 2) });
 		
 		// Style the pre element a bit so it looks nice in Obsidian
-		preEl.style.maxHeight = '200px';
-		preEl.style.overflow = 'auto';
-		preEl.style.backgroundColor = 'var(--background-secondary)';
-		preEl.style.padding = '10px';
-		preEl.style.borderRadius = '5px';
+		preEl.setCssStyles({
+			maxHeight: '200px',
+			overflow: 'auto',
+			backgroundColor: 'var(--background-secondary)',
+			padding: '10px',
+			borderRadius: '5px'
+		});
 
 		new Setting(contentEl)
 			.addButton((btn) =>
