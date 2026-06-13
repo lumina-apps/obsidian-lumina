@@ -55,13 +55,12 @@ export class McpPermissionModal extends Modal {
 		});
 
 		new Setting(contentEl)
-			.addButton((btn) => {
+			.addButton((btn: ButtonComponent) => {
 				btn.setButtonText(t('settings.mcp.permission.reject'));
-				const customBtn = btn as any;
-				if (typeof customBtn['setDestructive'] === 'function') {
-					customBtn['setDestructive']();
+				if (typeof btn.setDestructive === 'function') {
+					btn.setDestructive();
 				} else {
-					customBtn['setWarning']();
+					btn.setWarning();
 				}
 				btn.onClick(() => {
 					this.respond(false);
