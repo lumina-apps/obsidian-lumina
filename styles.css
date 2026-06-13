@@ -7,7 +7,6 @@
 }
 
 /* Center all top-level layout components */
-.lumina-settings .lumina-settings__header,
 .lumina-settings .lumina-settings__nav,
 .lumina-settings .lumina-settings__body,
 .lumina-settings .lumina-settings__section-heading,
@@ -20,29 +19,27 @@
 	box-sizing: border-box;
 }
 
-/* 2. Header & Title styling */
-.lumina-settings__header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 12px;
-	padding-bottom: 10px;
-	border-bottom: 1px solid var(--background-modifier-border);
+/* 2. Advanced Toggle inline styles inside navigation bar */
+.lumina-settings__nav-separator {
+	width: 1px;
+	background-color: var(--background-modifier-border);
+	margin: 6px 4px;
+	align-self: stretch;
+	flex-shrink: 0;
 }
 
-.lumina-settings .lumina-settings__title {
-	margin: 0;
-	padding: 0;
-	font-size: 2.8em;
-	font-weight: 850;
-	background: linear-gradient(135deg, var(--interactive-accent) 0%, #a855f7 50%, #6366f1 100%);
-	-webkit-background-clip: text;
-	-webkit-text-fill-color: transparent;
-	letter-spacing: -1.5px;
+body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn--advanced {
+	flex: 0 0 44px !important;
+	width: 44px !important;
+	min-width: 44px !important;
+	padding: 0 !important;
 	display: flex;
+	justify-content: center;
 	align-items: center;
-	gap: 8px;
-	text-shadow: 0px 4px 12px rgba(168, 85, 247, 0.15);
+}
+
+.lumina-settings__nav-text {
+	display: none !important;
 }
 
 /* 3. Advanced Toggle Container & Custom Sliding Switch */
@@ -52,8 +49,8 @@
 	gap: 12px;
 	font-size: 0.9em;
 	color: var(--text-muted);
-	margin-right: 48px;
-	/* Leave space for Obsidian modal close button */
+	flex-shrink: 0;
+	white-space: nowrap;
 }
 
 .lumina-toggle-btn {
@@ -105,16 +102,22 @@
 /* 4. Tab Navigation Menu (Horizontal Segmented Control) */
 .lumina-settings__nav {
 	display: flex;
-	align-items: center;
-	background-color: var(--background-secondary-alt);
+	align-items: stretch;
+	background-color: var(--background-primary);
 	padding: 4px;
 	border-radius: 10px;
-	margin-bottom: 16px;
 	border: 1px solid var(--background-modifier-border);
 	gap: 4px;
+	--input-height: auto;
+	--button-height: auto;
+	margin-bottom: 12px;
+	position: sticky;
+	top: -20px;
+	z-index: 99;
+	box-shadow: 0 8px 16px -8px rgba(0, 0, 0, 0.3);
 }
 
-.lumina-settings__nav-btn {
+body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn {
 	background: none;
 	border: none;
 	margin: 0;
@@ -128,7 +131,9 @@
 	justify-content: center;
 	text-align: center;
 	padding: 6px 8px;
-	height: auto !important;
+	height: auto;
+	min-height: 0;
+	max-height: none;
 	font-size: 0.95em;
 	font-weight: 600;
 	color: var(--text-muted);
@@ -145,10 +150,22 @@
 	transform: translateY(-1px);
 }
 
-.lumina-settings__nav-btn.is-active {
-	color: #ffffff;
-	background: linear-gradient(135deg, var(--interactive-accent) 0%, #8b5cf6 100%);
-	box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn.is-active {
+	color: #ffffff !important;
+	background: linear-gradient(135deg, var(--interactive-accent) 0%, #8b5cf6 100%) !important;
+	box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25) !important;
+}
+
+body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn--advanced.is-active {
+	color: #ffffff !important;
+	background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+	box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3) !important;
+}
+
+body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn--advanced.is-active .lumina-settings__nav-icon {
+	transform: rotate(30deg);
+	display: inline-block;
+	transition: transform 0.3s ease;
 }
 
 .lumina-settings .lumina-settings__nav-label {
@@ -174,7 +191,13 @@
 	color: #ffffff;
 }
 
-/* 5. Section Heading styling */
+.lumina-settings__body > .lumina-settings__section-heading:first-of-type,
+.lumina-settings__body > .setting-item-heading:first-of-type,
+.lumina-settings__body > .setting-item:first-of-type {
+	margin-top: 0 !important;
+	padding-top: 0 !important;
+}
+
 .lumina-settings__section-heading {
 	margin-top: 36px;
 	margin-bottom: 16px;
@@ -729,11 +752,13 @@
 	padding: 16px 0;
 	justify-content: center;
 }
+
 .lumina-settings .setting-item.lumina-setting-cta .setting-item-control {
 	width: 100%;
 	justify-content: center;
 	padding: 0;
 }
+
 .lumina-settings .setting-item.lumina-setting-cta button.mod-cta {
 	width: 100%;
 	max-width: 360px;
@@ -767,6 +792,7 @@
 	transition: all 0.2s ease-in-out;
 	border-radius: 6px;
 }
+
 .vertical-tab-content-container .lumina-settings .lumina-provider-card .clickable-icon:hover {
 	color: var(--text-error);
 	background-color: rgba(239, 68, 68, 0.12);
@@ -805,11 +831,26 @@
 
 /* ── 2x2 그리드 배치 (시맨틱 클래스 기반) ── */
 /* Row 1 */
-.lumina-provider-card.mcp-server-card .mcp-server-card__name { grid-column: 1; grid-row: 1; }
-.lumina-provider-card.mcp-server-card .mcp-server-card__transport { grid-column: 2; grid-row: 1; }
+.lumina-provider-card.mcp-server-card .mcp-server-card__name {
+	grid-column: 1;
+	grid-row: 1;
+}
+
+.lumina-provider-card.mcp-server-card .mcp-server-card__transport {
+	grid-column: 2;
+	grid-row: 1;
+}
+
 /* Row 2: SSE 모드 (URL + Token) */
-.lumina-provider-card.mcp-server-card .mcp-server-card__url { grid-column: 1; grid-row: 2; }
-.lumina-provider-card.mcp-server-card .mcp-server-card__token { grid-column: 2; grid-row: 2; }
+.lumina-provider-card.mcp-server-card .mcp-server-card__url {
+	grid-column: 1;
+	grid-row: 2;
+}
+
+.lumina-provider-card.mcp-server-card .mcp-server-card__token {
+	grid-column: 2;
+	grid-row: 2;
+}
 
 
 /* 액션 영역 (토글 + 삭제) - 전체 너비, 자동 행 배치 */
@@ -972,6 +1013,7 @@ body div.modal-overlay .suggestion-container .suggestion-item.is-selected-defaul
 .lumina-chat-view .lumina-chat__send-btn {
 	padding: 0;
 }
+
 .lumina-chat-view .lumina-chat__send-btn svg {
 	width: 22px;
 	height: 22px;

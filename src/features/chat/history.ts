@@ -218,5 +218,6 @@ function serializeSession(session: ChatSession): string {
 export function generateTitle(messages: UIChatMessage[]): string {
 	const first = messages.find(m => m.role === 'user');
 	if (!first) return '새 대화';
-	return first.content.slice(0, 15) + (first.content.length > 15 ? '…' : '');
+	return first.content.slice(0, 40) + (first.content.length > 40 ? '…' : '');
 }
+

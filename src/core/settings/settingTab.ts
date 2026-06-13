@@ -116,7 +116,6 @@ export class LuminaSettingTab extends PluginSettingTab {
 		containerEl.empty();
 		containerEl.addClass('lumina-settings');
 
-		this.renderHeader(containerEl);
 		this.renderTabNav(containerEl);
 
 		const body = containerEl.createDiv({ cls: 'lumina-settings__body' });
@@ -190,27 +189,7 @@ export class LuminaSettingTab extends PluginSettingTab {
 		}
 	}
 
-	// ── Header ────────────────────────────────────────────────────────────────
-
-	private renderHeader(el: HTMLElement): void {
-		const header = el.createDiv({ cls: 'lumina-settings__header' });
-		const titleSetting = new Setting(header).setName('✦ Lumina').setHeading();
-		titleSetting.nameEl.addClass('lumina-settings__title');
-
-		// 고급 설정 토글
-		const toggle = header.createDiv({ cls: 'lumina-settings__advanced-toggle' });
-		toggle.createEl('span', { text: t('settings.showAdvanced') });
-		const btn = toggle.createEl('button', {
-			cls: `lumina-toggle-btn ${this.showAdvanced ? 'is-active' : ''}`,
-			text: '',
-		});
-		btn.addEventListener('click', () => {
-			this.showAdvanced = !this.showAdvanced;
-			this.display();
-		});
-	}
-
-	// ── Tab Navigation ────────────────────────────────────────────────────────
+	// ── Header & Navigation ───────────────────────────────────────────────────
 
 	private renderTabNav(el: HTMLElement): void {
 		const nav = el.createDiv({ cls: 'lumina-settings__nav' });
@@ -236,6 +215,24 @@ export class LuminaSettingTab extends PluginSettingTab {
 				this.display();
 			});
 		}
+
+		// 2. 구분선 추가
+		nav.createDiv({ cls: 'lumina-settings__nav-separator' });
+
+		// 3. 고급 설정 토글 버튼 추가
+		const advBtn = nav.createEl('button', {
+			cls: `lumina-settings__nav-btn lumina-settings__nav-btn--advanced ${this.showAdvanced ? 'is-active' : ''}`,
+		});
+		advBtn.setAttribute('title', t('settings.showAdvanced'));
+
+		const labelSpan = advBtn.createSpan({ cls: 'lumina-settings__nav-label' });
+		labelSpan.createSpan({ text: '⚙️', cls: 'lumina-settings__nav-icon' });
+		labelSpan.createSpan({ text: t('settings.showAdvanced'), cls: 'lumina-settings__nav-text' });
+
+		advBtn.addEventListener('click', () => {
+			this.showAdvanced = !this.showAdvanced;
+			this.display();
+		});
 	}
 
 	// ── Tab Router ────────────────────────────────────────────────────────────
@@ -255,7 +252,8 @@ export class LuminaSettingTab extends PluginSettingTab {
 	// ═══════════════════════════════════════════════════════════════════════════
 
 	public sectionHeading(el: HTMLElement, text: string): void {
-		new Setting(el).setName(text).setHeading();
+		const headingSetting = new Setting(el).setName(text).setHeading();
+		headingSetting.settingEl.addClass('lumina-settings__section-heading');
 	}
 
 	public advancedLabel(el: HTMLElement): void {
