@@ -1,4 +1,4 @@
-import { Notice, Platform, Plugin, addIcon, TFile, requestUrl, moment, getLanguage } from 'obsidian';
+import { Notice, Platform, Plugin, addIcon, TFile, requestUrl, moment, getLanguage, normalizePath } from 'obsidian';
 import { LuminaSettingTab } from './core/settings/settingTab';
 import { DEFAULT_SETTINGS } from './core/settings/defaultSettings';
 import type { LuminaSettings } from './core/settings/settings.types';
@@ -735,7 +735,16 @@ export default class LuminaPlugin extends Plugin {
 
 				const workerCode = await adapter.read(relativeWorkerPath);
 				this.embeddingWorker = new EmbeddingWorkerBridge();
-				const pluginDir = this.app.vault.adapter.getResourcePath(this.manifest.dir || '');
+
+				// WASM 파일이 로컬에 존재하는지 확인
+				const mjsPath = normalizePath(`${this.manifest.dir}/ort-wasm-simd-threaded.jsep.mjs`);
+				const wasmPath = normalizePath(`${this.manifest.dir}/ort-wasm-simd-threaded.jsep.wasm`);
+				const hasLocalWasm = (await adapter.exists(mjsPath)) && (await adapter.exists(wasmPath));
+
+				// 로컬 WASM 파일이 없으면 CDN 백업을 사용하도록 pluginDir을 undefined로 설정
+				const pluginDir = hasLocalWasm
+					? this.app.vault.adapter.getResourcePath(this.manifest.dir || '')
+					: undefined;
 
 				await this.embeddingWorker.init(
 					workerCode,
