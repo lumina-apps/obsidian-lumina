@@ -2,6 +2,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { debugLogger } from '../../shared/debugLogger';
 import type { McpServerConfig } from '../../shared/types/settings.types';
+import { SafeJsonSchemaValidator } from './safeValidator';
 
 export interface McpTool {
 	name: string;
@@ -27,7 +28,8 @@ export class LuminaMcpClient {
 			name: 'Lumina',
 			version: '1.0.0'
 		}, {
-			capabilities: {}
+			capabilities: {},
+			jsonSchemaValidator: new SafeJsonSchemaValidator()
 		});
 	}
 

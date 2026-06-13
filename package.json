@@ -10,7 +10,7 @@
 	},
 	"keywords": [],
 	"author": "",
-	"license": "MIT",
+	"license": "GPL-3.0-only",
 	"devDependencies": {
 		"@tsconfig/svelte": "^5.0.8",
 		"@types/node": "^25.9.2",

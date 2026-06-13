@@ -10,6 +10,7 @@ import type LuminaPlugin from '../../../main';
 import { searchVault, formatRagContext } from '../../../features/rag/search';
 import { debugLogger } from '../../../shared/debugLogger';
 import { t } from '../../../shared/locales/helpers';
+import { SafeJsonSchemaValidator } from '../safeValidator';
 
 export class LuminaMcpServer {
 	private server: McpServer;
@@ -32,7 +33,8 @@ export class LuminaMcpServer {
 		}, {
 			capabilities: {
 				tools: {}
-			}
+			},
+			jsonSchemaValidator: new SafeJsonSchemaValidator()
 		});
 
 		this.registerTools();

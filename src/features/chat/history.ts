@@ -1,13 +1,20 @@
-/**
- * history.ts
- *
- * 채팅 세션을 Obsidian 볼트 내 마크다운으로 직렬화/역직렬화
- * - 저장: {historyPath}/{YYYY-MM-DD}_{sessionId}.md
- * - 포맷: YAML 프론트매터 + 마크다운 대화 블록 + 숨겨진 JSON (정확한 복원용)
- */
-
-import { normalizePath, type App } from 'obsidian';
+import { normalizePath, type App, TFolder, TFile } from 'obsidian';
 import type { ChatSession, UIChatMessage } from '../../shared/types/chat.types';
+
+// Helper function to get history files in the target directory to avoid vault-wide getFiles() scanning
+function getHistoryFiles(app: App, basePath: string): TFile[] {
+	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
+	const folder = app.vault.getAbstractFileByPath(normalBase);
+	const files: TFile[] = [];
+	if (folder instanceof TFolder) {
+		for (const child of folder.children) {
+			if (child instanceof TFile && child.extension === 'md') {
+				files.push(child);
+			}
+		}
+	}
+	return files;
+}
 
 // ─── Save ─────────────────────────────────────────────────────────────────────
 
@@ -34,7 +41,7 @@ export async function saveSession(app: App, session: ChatSession, basePath: stri
 	}
 
 	// 기존 파일 찾기 (sessionId 기준)
-	const files = app.vault.getFiles().filter(file => file.path.startsWith(normalBase) && file.extension === 'md');
+	const files = getHistoryFiles(app, normalBase);
 	let existingFile = files.find(f => {
 		const cache = app.metadataCache.getFileCache(f);
 		return cache?.frontmatter?.id === session.id;
@@ -72,8 +79,7 @@ export async function loadSessionsList(app: App, basePath: string): Promise<Chat
 	const folderExists = await app.vault.adapter.exists(normalBase);
 	if (!folderExists) return [];
 
-	const prefix = normalBase === '' ? '' : normalBase + '/';
-	const files = app.vault.getFiles().filter(file => file.path.startsWith(prefix) && file.extension === 'md');
+	const files = getHistoryFiles(app, normalBase);
 	const sessions: ChatSession[] = [];
 
 	interface HistoryFrontmatter {
@@ -140,7 +146,7 @@ export async function loadSessionsList(app: App, basePath: string): Promise<Chat
 /** 특정 세션 ID를 가진 파일을 찾아 파싱하여 전체 ChatSession 객체(메시지 포함)를 복원합니다. */
 export async function loadSession(app: App, sessionId: string, basePath: string): Promise<ChatSession | null> {
 	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
-	const files = app.vault.getFiles().filter(file => file.path.startsWith(normalBase) && file.extension === 'md');
+	const files = getHistoryFiles(app, normalBase);
 	
 	const file = files.find(f => {
 		const cache = app.metadataCache.getFileCache(f);
@@ -169,7 +175,7 @@ export async function loadSession(app: App, sessionId: string, basePath: string)
 /** 특정 세션 파일을 삭제합니다. */
 export async function deleteSession(app: App, sessionId: string, basePath: string): Promise<boolean> {
 	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
-	const files = app.vault.getFiles().filter(file => file.path.startsWith(normalBase) && file.extension === 'md');
+	const files = getHistoryFiles(app, normalBase);
 	
 	const file = files.find(f => {
 		const cache = app.metadataCache.getFileCache(f);

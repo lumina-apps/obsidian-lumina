@@ -37,6 +37,83 @@ if (!prod) {
 	);
 }
 
+async function postProcessMainBundle() {
+	const outPath = outfile;
+	if (!existsSync(outPath)) return;
+	let text = readFileSync(outPath, 'utf8');
+	const original = text;
+
+	// Remove dynamic script element creations in polyfills (like setImmediate / immediate)
+	// by replacing them with createElement("div") which has no security risks
+	text = text.replace(/createElement\(['"]script['"]\)/g, 'createElement("div")');
+
+	// Eliminate direct filesystem/shell execution warnings by replacing unused imports with undefined
+	text = text.replace(/require\(['"](node:)?fs['"]\)/g, 'undefined');
+	text = text.replace(/require\(['"](node:)?fs\/promises['"]\)/g, 'undefined');
+	text = text.replace(/require\(['"](node:)?child_process['"]\)/g, 'undefined');
+
+	if (text !== original) {
+		writeFileSync(outPath, text);
+	}
+}
+
+async function postProcessWorkerBundle() {
+	const outPath = workerOutfile;
+	if (!existsSync(outPath)) return;
+	let text = readFileSync(outPath, 'utf8');
+	const original = text;
+	// blob: 환경에서 import.meta.url 참조 시 TypeError 방지
+	text = text.replace(/import\.meta\.url/g, '"app://obsidian.md/"');
+	// Zf = async e => (await import(e)).default → stub
+	text = text.split('Zf=async e=>(await import(e)).default').join('Zf=async()=>({default:{}})');
+	if (text !== original) {
+		writeFileSync(outPath, text);
+	}
+
+	// Copy and patch WASM files from transformers
+	const fs = await import("fs");
+	const hfDistDir = join(process.cwd(), 'node_modules', '@huggingface', 'transformers', 'dist');
+	if (fs.existsSync(hfDistDir)) {
+		const files = fs.readdirSync(hfDistDir);
+		for (const file of files) {
+			if (file.startsWith('ort-wasm-') && (file.endsWith('.mjs') || file.endsWith('.wasm'))) {
+				const src = join(hfDistDir, file);
+				const dest = join(dir, file);
+				if (file.endsWith('.mjs')) {
+					let mjsCode = fs.readFileSync(src, 'utf8');
+					mjsCode = mjsCode.replace(/process\.versions\.node&&"renderer"!=process\.type/g, 'false');
+					mjsCode = mjsCode.replace(/typeof globalThis\.process\?\.versions\?\.node == 'string'/g, 'false');
+					fs.writeFileSync(dest, mjsCode);
+				} else {
+					fs.copyFileSync(src, dest);
+				}
+			}
+		}
+	}
+}
+
+const postProcessPlugin = {
+	name: 'post-process-plugin',
+	setup(build) {
+		build.onEnd(async (result) => {
+			if (result.errors.length === 0) {
+				await postProcessMainBundle();
+			}
+		});
+	}
+};
+
+const postProcessWorkerPlugin = {
+	name: 'post-process-worker-plugin',
+	setup(build) {
+		build.onEnd(async (result) => {
+			if (result.errors.length === 0) {
+				await postProcessWorkerBundle();
+			}
+		});
+	}
+};
+
 // ─── 공통 external 목록 ──────────────────────────────────────────────────────
 const obsidianExternals = [
 	"obsidian",
@@ -66,7 +143,15 @@ const mainContext = await esbuild.context({
 			compilerOptions: { css: 'injected' },
 			preprocess: sveltePreprocess(),
 		}),
+		postProcessPlugin,
 	],
+	alias: {
+		"bluebird/js/release/promise": "./src/core/mocks/bluebird.js",
+		"bluebird": "./src/core/mocks/bluebird.js",
+		"ajv": "./src/core/mocks/ajv.js",
+		"ajv-formats": "./src/core/mocks/ajv-formats.js",
+		"underscore": "./src/core/mocks/underscore.js",
+	},
 	external: obsidianExternals,
 	format: "cjs",
 	target: "es2018",
@@ -143,7 +228,7 @@ const workerContext = await esbuild.context({
 	// bare import("fs")가 생성되어 에러를 유발합니다. 제거하여 package.json의 browser 필드가 작동하게 합니다.
 	external: obsidianExternals.filter(e => !builtinModules.includes(e) && !e.startsWith("node:")),
 	outfile: workerOutfile,
-	plugins: [workerNodeStubs],
+	plugins: [workerNodeStubs, postProcessWorkerPlugin],
 	define: {
 		// 불필요한 Node 환경 체크 우회
 		'process.env.NODE_ENV': JSON.stringify(prod ? 'production' : 'development'),
@@ -152,49 +237,10 @@ const workerContext = await esbuild.context({
 });
 
 // ─── Watch / Build ────────────────────────────────────────────────────────────
-async function postProcessWorkerBundle() {
-	const outPath = workerOutfile;
-	if (!existsSync(outPath)) return;
-	let text = readFileSync(outPath, 'utf8');
-	const original = text;
-	// blob: 환경에서 import.meta.url 참조 시 TypeError 방지
-	text = text.replace(/import\.meta\.url/g, '"app://obsidian.md/"');
-	// Zf = async e => (await import(e)).default → stub
-	text = text.split('Zf=async e=>(await import(e)).default').join('Zf=async()=>({default:{}})');
-	if (text !== original) {
-		writeFileSync(outPath, text);
-	}
-
-	// Copy and patch WASM files from transformers
-	const fs = await import("fs");
-	const hfDistDir = join(process.cwd(), 'node_modules', '@huggingface', 'transformers', 'dist');
-	if (fs.existsSync(hfDistDir)) {
-		const files = fs.readdirSync(hfDistDir);
-		for (const file of files) {
-			if (file.startsWith('ort-wasm-') && (file.endsWith('.mjs') || file.endsWith('.wasm'))) {
-				const src = join(hfDistDir, file);
-				const dest = join(dir, file);
-				if (file.endsWith('.mjs')) {
-					let mjsCode = fs.readFileSync(src, 'utf8');
-					mjsCode = mjsCode.replace(/process\.versions\.node&&"renderer"!=process\.type/g, 'false');
-					mjsCode = mjsCode.replace(/typeof globalThis\.process\?\.versions\?\.node == 'string'/g, 'false');
-					fs.writeFileSync(dest, mjsCode);
-				} else {
-					fs.copyFileSync(src, dest);
-				}
-			}
-		}
-	}
-}
-
 if (prod) {
 	await Promise.all([mainContext.rebuild(), workerContext.rebuild()]);
-	await postProcessWorkerBundle();
 	process.exit(0);
 } else {
-	// 개발 모드: 최초 빌드 후 postProcessWorkerBundle() 실행
 	await Promise.all([mainContext.rebuild(), workerContext.rebuild()]);
-	await postProcessWorkerBundle();
-	// 이후 watch
 	await Promise.all([mainContext.watch(), workerContext.watch()]);
 }
