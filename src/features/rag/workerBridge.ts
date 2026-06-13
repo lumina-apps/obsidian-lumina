@@ -25,7 +25,7 @@ interface IWorker {
 }
 
 /**
- * Gzip 압축된 Base64 워커 소스코드를 브라우저 네이티브 DecompressionStream을 사용하여 압축 해제합니다.
+ * Deflate 압축된 Base64 워커 소스코드를 브라우저 네이티브 DecompressionStream을 사용하여 압축 해제합니다.
  */
 async function decompressWorkerCode(base64: string): Promise<string> {
 	const binString = atob(base64);
@@ -42,7 +42,7 @@ async function decompressWorkerCode(base64: string): Promise<string> {
 		}
 	});
 
-	const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));
+	const decompressedStream = stream.pipeThrough(new DecompressionStream('deflate'));
 	const response = new Response(decompressedStream);
 	return response.text();
 }

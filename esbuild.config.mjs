@@ -73,7 +73,7 @@ async function postProcessWorkerBundle() {
 
 	// Compress worker code and output to workerCode.ts
 	const finalCode = readFileSync(outPath);
-	const compressed = zlib.gzipSync(finalCode, { level: 9 });
+	const compressed = zlib.deflateSync(finalCode, { level: 9 });
 	const base64 = compressed.toString('base64');
 	const workerCodeTsPath = join(process.cwd(), 'src', 'features', 'rag', 'worker', 'workerCode.ts');
 	writeFileSync(
@@ -232,8 +232,8 @@ const workerContext = await esbuild.context({
 	format: "iife",
 	target: "es2020",
 	logLevel: "info",
-	sourcemap: prod ? false : "inline",
-	minify: prod,
+	sourcemap: false,
+	minify: true,
 	treeShaking: true,
 	banner: { js: workerProcessPolyfill },
 	// obsidian / electron 은 워커에서 사용 불가 — external 처리
@@ -244,7 +244,7 @@ const workerContext = await esbuild.context({
 	plugins: [workerNodeStubs, postProcessWorkerPlugin],
 	define: {
 		// 불필요한 Node 환경 체크 우회
-		'process.env.NODE_ENV': JSON.stringify(prod ? 'production' : 'development'),
+		'process.env.NODE_ENV': '"production"',
 		'process.release.name': '"browser"',
 	},
 });
