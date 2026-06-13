@@ -1,4 +1,4 @@
-import { Notice, Platform, Plugin, addIcon, TFile, requestUrl, moment, getLanguage, normalizePath } from 'obsidian';
+import { Notice, Platform, Plugin, addIcon, TFile, moment, getLanguage, normalizePath } from 'obsidian';
 import { LuminaSettingTab } from './core/settings/settingTab';
 import { DEFAULT_SETTINGS } from './core/settings/defaultSettings';
 import type { LuminaSettings } from './core/settings/settings.types';
