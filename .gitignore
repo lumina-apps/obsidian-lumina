@@ -12,6 +12,7 @@ yarn-error.log*
 # Build outputs
 # Don't include the compiled files in the repo.
 # They should be uploaded to GitHub releases instead.
+dist/
 main.js
 embedding.worker.js
 ort-wasm-*
