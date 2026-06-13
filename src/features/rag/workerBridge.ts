@@ -10,6 +10,7 @@
 
 import type { WorkerRequest, WorkerResponse } from '../../shared/types/rag.types';
 import { t } from '../../shared/locales/helpers';
+import { WORKER_COMPRESSED_BASE64 } from './worker/workerCode';
 
 
 export type EmbeddingProgressCallback = (progress: number, status: string) => void;
@@ -21,6 +22,29 @@ interface IWorker {
 	addEventListener(type: string, listener: (evt: MessageEvent) => void): void;
 	terminate(): void;
 	postMessage(message: unknown, transfer?: Transferable[]): void;
+}
+
+/**
+ * Gzip 압축된 Base64 워커 소스코드를 브라우저 네이티브 DecompressionStream을 사용하여 압축 해제합니다.
+ */
+async function decompressWorkerCode(base64: string): Promise<string> {
+	const binString = atob(base64);
+	const len = binString.length;
+	const bytes = new Uint8Array(len);
+	for (let i = 0; i < len; i++) {
+		bytes[i] = binString.charCodeAt(i);
+	}
+
+	const stream = new ReadableStream({
+		start(controller) {
+			controller.enqueue(bytes);
+			controller.close();
+		}
+	});
+
+	const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));
+	const response = new Response(decompressedStream);
+	return response.text();
 }
 
 export class EmbeddingWorkerBridge {
@@ -50,13 +74,11 @@ export class EmbeddingWorkerBridge {
 
 	/**
 	 * 워커를 생성하고 모델을 로드합니다.
-	 * @param workerCode  실행할 워커의 소스 코드 문자열
 	 * @param modelName   사용할 HuggingFace 모델
 	 * @param cacheDir    모델 캐시 저장 절대 경로
 	 * @param onProgress  모델 로딩 진행률 콜백 (0 ~ 1)
 	 */
 	async init(
-		workerCode: string,
 		modelName: string,
 		cacheDir: string,
 		pluginDir?: string,
@@ -65,6 +87,14 @@ export class EmbeddingWorkerBridge {
 		if (this.worker) this.terminate();
 
 		this.onProgress = onProgress ?? null;
+
+		let workerCode = '';
+		try {
+			workerCode = await decompressWorkerCode(WORKER_COMPRESSED_BASE64);
+		} catch (decompErr) {
+			console.error('[EmbeddingWorker] decompression failed:', decompErr);
+			throw new Error(`워커 코드 압축 해제 실패: ${decompErr instanceof Error ? decompErr.message : String(decompErr)}`);
+		}
 
 		// Electron 환경에서 file:// 절대 경로로 Worker 생성 시 Origin 에러 발생.
 		// app://local/... 도 Origin이 다르기 때문에 SecurityError 발생.

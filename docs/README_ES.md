@@ -59,7 +59,7 @@
 <summary><b>🧠 Chat Basado en RAG e Incrustaciones Locales (Privacidad Absoluta)</b></summary>
 
 - **Descripción:** La IA obtiene una visión profunda de tu base de conocimientos. Busca de manera autónoma notas relevantes durante las conversaciones y muestra documentos similares y etiquetas recomendadas en el panel lateral, creando enlaces contextuales inteligentes.
-- **Seguridad Offline:** Soporta de forma nativa incrustaciones (embeddings) locales (`ibm-granite`). A menos que se seleccione un modelo en la nube, los valiosos datos de tus notas nunca saldrán de tu dispositivo. *(⚠️ Las incrustaciones locales no son compatibles en entornos móviles).*
+- **Seguridad Offline:** Soporta de forma nativa incrustaciones (embeddings) locales (`ibm-granite`). A menos que se seleccione un modelo en la nube, los valiosos datos de tus notas nunca saldrán de tu dispositivo.
 - **Totalmente Automatizado:** ¡No requiere configuración! La indexación en segundo plano comienza silenciosamente en el momento en que se habilita el plugin, y se sincroniza automáticamente en tiempo real (modo `watch`) cada vez que se modifican las notas.
 </details>
 
@@ -102,7 +102,7 @@
 Puedes ver todos los datos internos procesados por el plugin habilitando la Configuración Avanzada y activando el [Modo de Depuración] bajo la pestaña [Complementos y Varios] en la configuración. (Los registros de depuración no se guardan hasta que se descargan).
 
 **💡 Información Útil para la Resolución:**
-- Tu Dispositivo/SO (PC / Móvil) y la versión de Obsidian.
+- Tu sistema operativo (Windows, macOS, Linux) y la versión de Obsidian.
 - El Proveedor de IA y Nombre del Modelo utilizado (ej., OpenAI / gpt-4o, Ollama / llama3).
 - El archivo de registro descargado después de que ocurrió el error en Modo de Depuración.
 > [!IMPORTANT]

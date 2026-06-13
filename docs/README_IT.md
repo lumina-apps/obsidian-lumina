@@ -59,7 +59,7 @@
 <summary><b>🧠 Chat Basata su RAG ed Embedding Locali (Privacy Assoluta)</b></summary>
 
 - **Descrizione:** L'IA ottiene una profonda comprensione della tua base di conoscenze. Cerca autonomamente note rilevanti durante le conversazioni e visualizza documenti simili e tag consigliati nel pannello laterale, creando collegamenti contestuali intelligenti.
-- **Sicurezza Offline:** Supporta nativamente embedding locali (`ibm-granite`). A meno che non venga selezionato un modello cloud, i preziosi dati delle tue note non lasceranno mai il tuo dispositivo. *(⚠️ Gli embedding locali non sono supportati in ambienti mobili).*
+- **Sicurezza Offline:** Supporta nativamente embedding locali (`ibm-granite`). A meno che non venga selezionato un modello cloud, i preziosi dati delle tue note non lasceranno mai il tuo dispositivo.
 - **Completamente Automatizzato:** Nessuna configurazione richiesta! L'indicizzazione in background inizia silenziosamente nel momento in cui il plugin viene abilitato, e si sincronizza automaticamente in tempo reale (modalità `watch`) ogni volta che le note vengono modificate.
 </details>
 
@@ -102,7 +102,7 @@
 Puoi visualizzare tutti i dati interni elaborati dal plugin abilitando le Impostazioni Avanzate e attivando la [Modalità di Debug] sotto la scheda [Add-on & Varie] nelle impostazioni. (I log di debug non vengono salvati finché non vengono scaricati).
 
 **💡 Informazioni Utili per la Risoluzione:**
-- Il tuo Dispositivo/OS (PC / Mobile) e la versione di Obsidian.
+- Il tuo sistema operativo (Windows, macOS, Linux) e la versione di Obsidian.
 - Il Provider IA e il Nome Modello utilizzato (es., OpenAI / gpt-4o, Ollama / llama3).
 - Il file di log scaricato dopo che l'errore si è verificato in Modalità di Debug.
 > [!IMPORTANT]

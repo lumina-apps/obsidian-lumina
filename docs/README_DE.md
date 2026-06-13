@@ -59,7 +59,7 @@
 <summary><b>🧠 RAG-basierter Chat & Lokale Embeddings (Absolute Privatsphäre)</b></summary>
 
 - **Beschreibung:** Die KI erhält tiefe Einblicke in deine Wissensbasis. Sie sucht während Unterhaltungen autonom nach relevanten Notizen und zeigt ähnliche Dokumente und empfohlene Tags im Seitenpanel an, wodurch smarte kontextuelle Verknüpfungen entstehen.
-- **Offline-Sicherheit:** Unterstützt nativ lokale Embeddings (`ibm-granite`). Sofern kein Cloud-Modell ausgewählt ist, verlassen deine wertvollen Notizdaten dein Gerät niemals. *(⚠️ Lokale Embeddings werden auf mobilen Umgebungen nicht unterstützt).*
+- **Offline-Sicherheit:** Unterstützt nativ lokale Embeddings (`ibm-granite`). Sofern kein Cloud-Modell ausgewählt ist, verlassen deine wertvollen Notizdaten dein Gerät niemals.
 - **Vollständig automatisiert:** Keine Konfiguration erforderlich! Die Hintergrundindizierung startet leise im Moment der Aktivierung des Plugins und synchronisiert sich automatisch in Echtzeit (`watch`-Modus), wenn Notizen geändert werden.
 </details>
 
@@ -102,7 +102,7 @@
 Du kannst alle internen Daten einsehen, die das Plugin verarbeitet, indem du die Erweiterten Einstellungen aktivierst und den [Debug-Modus] unter dem Tab [Add-ons & Sonstiges] einschaltest. (Debug-Logs werden erst nach dem Herunterladen gespeichert).
 
 **💡 Hilfreiche Informationen zur Fehlerbehebung:**
-- Dein Gerät/Betriebssystem (PC / Mobil) und die Obsidian-Version.
+- Dein Betriebssystem (Windows, macOS, Linux) und die Obsidian-Version.
 - Der KI-Anbieter und der Name des verwendeten Modells (z. B. OpenAI / gpt-4o, Ollama / llama3).
 - Die Logdatei, die nach dem Auftreten des Fehlers im Debug-Modus heruntergeladen wurde.
 > [!IMPORTANT]

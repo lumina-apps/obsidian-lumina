@@ -59,7 +59,7 @@
 <summary><b>🧠 Chat Basé sur RAG & Intégrations Locales (Confidentialité Absolue)</b></summary>
 
 - **Description :** L'IA obtient une vision approfondie de votre base de connaissances. Elle recherche de manière autonome les notes pertinentes pendant les conversations et affiche les documents similaires ainsi que les balises recommandées dans le panneau latéral, créant des liens contextuels intelligents.
-- **Sécurité Hors Ligne :** Prend en charge nativement les intégrations (embeddings) locales (`ibm-granite`). À moins qu'un modèle cloud ne soit sélectionné, vos précieuses données de notes ne quitteront jamais votre appareil. *(⚠️ Les intégrations locales ne sont pas prises en charge dans les environnements mobiles.)*
+- **Sécurité Hors Ligne :** Prend en charge nativement les intégrations (embeddings) locales (`ibm-granite`). À moins qu'un modèle cloud ne soit sélectionné, vos précieuses données de notes ne quitteront jamais votre appareil.
 - **Entièrement Automatisé :** Aucune configuration requise ! L'indexation en arrière-plan démarre discrètement dès que le plugin est activé, et se synchronise automatiquement en temps réel (mode `watch`) chaque fois que les notes sont modifiées.
 </details>
 
@@ -102,7 +102,7 @@
 Vous pouvez afficher toutes les données internes traitées par le plugin en activant les Paramètres Avancés et en cochant le [Mode Débogage] sous l'onglet [Add-ons & Divers] dans les paramètres. (Les journaux de débogage ne sont sauvegardés qu'une fois téléchargés).
 
 **💡 Informations Utiles pour la Résolution :**
-- Votre Appareil/Système d'exploitation (PC / Mobile) et la version d'Obsidian.
+- Votre système d'exploitation (Windows, macOS, Linux) et la version d'Obsidian.
 - Le Fournisseur d'IA et le Nom du Modèle utilisé (ex. : OpenAI / gpt-4o, Ollama / llama3).
 - Le fichier journal téléchargé après l'apparition de l'erreur en Mode Débogage.
 > [!IMPORTANT]

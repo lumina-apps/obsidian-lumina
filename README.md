@@ -102,7 +102,7 @@
 You can view all internal data processed by the plugin by enabling Advanced Settings and toggling [Debug Mode] under the [Add-ons & Misc] tab in settings. (Debug logs are not saved until downloaded.)
 
 **💡 Helpful Information for Resolution:**
-- Your Device/OS (PC / Mobile) and Obsidian version.
+- Your OS (Windows, macOS, Linux) and Obsidian version.
 - The AI Provider and Model Name used (e.g., OpenAI / gpt-4o, Ollama / llama3).
 - The log file downloaded after the error occurred in Debug Mode.
 > [!IMPORTANT]
