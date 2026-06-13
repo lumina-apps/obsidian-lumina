@@ -4,11 +4,11 @@ import { t } from '../locales/helpers';
 export class McpPermissionModal extends Modal {
 	private serverName: string;
 	private toolName: string;
-	private args: any;
+	private args: unknown;
 	private resolvePromise: ((value: boolean) => void) | null = null;
 	private responded = false;
 
-	constructor(app: App, serverName: string, toolName: string, args: any) {
+	constructor(app: App, serverName: string, toolName: string, args: unknown) {
 		super(app);
 		this.serverName = serverName;
 		this.toolName = toolName;

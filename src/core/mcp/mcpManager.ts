@@ -1,4 +1,4 @@
-import type { LuminaMcpClient } from './mcpClient';
+import type { LuminaMcpClient, McpTool } from './mcpClient';
 import type LuminaPlugin from '../../main';
 import { McpPermissionModal } from '../../shared/utils/mcpPermissionModal';
 import { t } from '../../shared/locales/helpers';
@@ -115,7 +115,7 @@ export class McpManager {
 						localConfig.status = 'connected';
 						debugLogger.logSystem('mcp', `✅ 내장 MCP 서버 연결 성공 (툴 ${client.availableTools.length}개)`);
 					});
-					const timeoutP = new Promise<void>((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 15000));
+					const timeoutP = new Promise<void>((_, reject) => window.setTimeout(() => reject(new Error('Connection timeout')), 15000));
 					Promise.race([connectP, timeoutP]).catch(e => {
 						debugLogger.logError('mcp', e instanceof Error ? e : new Error(`내장 MCP 서버 연결 실패: ${e}`));
 						this.clients.delete(LOCAL_MCP_CLIENT_ID);
@@ -167,7 +167,7 @@ export class McpManager {
 
 				// 타임아웃 처리: Promise.race로 먼저 해결된 결과만 취하고, 나머지는 abort
 				const timeoutPromise = new Promise<void>((_, reject) => {
-					setTimeout(() => reject(new Error('Connection timeout')), CONNECT_TIMEOUT);
+					window.setTimeout(() => reject(new Error('Connection timeout')), CONNECT_TIMEOUT);
 				});
 
 				connectPromises.push(Promise.race([p, timeoutPromise]).catch(e => {
@@ -199,8 +199,8 @@ export class McpManager {
 		}
 	}
 
-	getAllTools(): any[] {
-		const toolsMap = new Map<string, any>();
+	getAllTools(): McpTool[] {
+		const toolsMap = new Map<string, McpTool>();
 		for (const client of this.clients.values()) {
 			for (const tool of client.availableTools) {
 					// tool name만으로 중복 제거 (여러 클라이언트가 같은 서버 툴을 중복 제공하는 것 방지)

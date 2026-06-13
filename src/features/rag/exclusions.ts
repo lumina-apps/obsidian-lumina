@@ -8,7 +8,6 @@
 
 /** 디폴트로 항상 제외되는 경로 프리픽스 */
 export const DEFAULT_EXCLUDED_PATHS: readonly string[] = [
-	'.obsidian',
 	'templates',
 	'Templates',
 	'_templates',

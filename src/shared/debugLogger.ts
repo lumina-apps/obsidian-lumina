@@ -141,7 +141,7 @@ class DebugLogger {
 	}
 
 	/** MCP 로그 */
-	logMcp(action: string, message: string, data?: any): void {
+	logMcp(action: string, message: string, data?: unknown): void {
 		if (!this.isEnabled) return;
 		const entry: MCPLog = {
 			id: this.nextId(),

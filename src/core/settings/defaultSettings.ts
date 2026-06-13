@@ -55,7 +55,6 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		includeActiveNote: false,  // 채팅 입력 영역 토글로 이동 → 설정 디폴트는 false
 		includedPaths: [],
 		excludedPaths: [
-			'.obsidian',
 			'templates',
 			'Templates',
 			'_templates',

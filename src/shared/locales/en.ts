@@ -137,18 +137,6 @@ Connecting large models or Reasoning models will cause extreme delays of tens of
       },
       externalServer: {
         sectionTitle: 'External MCP Servers (Client Connection)',
-        command: {
-          name: 'Command',
-          desc: 'e.g. npx, python, node',
-        },
-        args: {
-          name: 'Arguments',
-          desc: 'JSON string array (e.g. ["-y", "@modelcontextprotocol/server-everything"])',
-        },
-        env: {
-          name: 'Environment Variables',
-          desc: 'JSON object (e.g. {"API_KEY": "..."})',
-        },
         sseUrl: {
           name: 'SSE URL',
           desc: 'e.g. http://localhost:8080/sse',

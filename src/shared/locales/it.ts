@@ -132,18 +132,6 @@ La connessione di modelli grandi o di Reasoning models causerà ritardi estremi 
     },
       externalServer: {
         sectionTitle: 'Server MCP Esterni (Connessione Client)',
-        command: {
-          name: 'Comando',
-          desc: 'es. npx, python, node',
-        },
-        args: {
-          name: 'Argomenti',
-          desc: 'Array di stringhe JSON (es. ["-y", "@modelcontextprotocol/server-everything"])',
-        },
-        env: {
-          name: 'Variabili d\'Ambiente',
-          desc: 'Oggetto JSON (es. {"API_KEY": "..."})',
-        },
         sseUrl: {
           name: 'SSE URL',
           desc: 'es. http://localhost:8080/sse',

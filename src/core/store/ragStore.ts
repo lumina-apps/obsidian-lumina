@@ -25,18 +25,18 @@ const INITIAL_STATE: IndexingState = {
 export const indexingState = writable<IndexingState>({ ...INITIAL_STATE });
 
 export const showIndexingIndicator = writable(false);
-let indicatorTimer: ReturnType<typeof setTimeout> | null = null;
+let indicatorTimer: number | null = null;
 
 indexingState.subscribe(state => {
 	if (state.status === 'loading-model' || state.status === 'indexing') {
 		if (!indicatorTimer) {
-			indicatorTimer = setTimeout(() => {
+			indicatorTimer = window.setTimeout(() => {
 				showIndexingIndicator.set(true);
-			}, 1000);
+			}, 1000) as unknown as number;
 		}
 	} else {
 		if (indicatorTimer) {
-			clearTimeout(indicatorTimer);
+			window.clearTimeout(indicatorTimer);
 			indicatorTimer = null;
 		}
 		showIndexingIndicator.set(false);

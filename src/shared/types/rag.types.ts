@@ -65,6 +65,8 @@ export type WorkerRequest =
 			cacheDir: string;
 			/** 사용할 임베딩 모델 이름 */
 			modelName: string;
+			/** 플러그인 로컬 디렉토리 URL (옵션) */
+			pluginDir?: string;
 	  }
 	| {
 			type: 'embed';

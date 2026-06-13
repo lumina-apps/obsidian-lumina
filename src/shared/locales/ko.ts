@@ -139,18 +139,6 @@ export const ko: Translation = {
       },
       externalServer: {
         sectionTitle: '외부 MCP 서버 (클라이언트 연결)',
-        command: {
-          name: '명령어 (Command)',
-          desc: '예: npx, python, node',
-        },
-        args: {
-          name: '인자 (Arguments)',
-          desc: 'JSON 문자열 배열 (예: ["-y", "@modelcontextprotocol/server-everything"])',
-        },
-        env: {
-          name: '환경 변수 (Environment Variables)',
-          desc: 'JSON 객체 (예: {"API_KEY": "..."})',
-        },
         sseUrl: {
           name: 'SSE URL',
           desc: '예: http://localhost:8080/sse',

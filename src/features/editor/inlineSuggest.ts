@@ -92,7 +92,7 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 		});
 	}
 
-	async selectSuggestion(action: QuickAction, evt: MouseEvent | KeyboardEvent): Promise<void> {
+	selectSuggestion(action: QuickAction, evt: MouseEvent | KeyboardEvent): void {
 		if (!this.context) return;
 		const { editor, start, end } = this.context;
 		
@@ -100,10 +100,14 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 		editor.replaceRange('', start, end);
 		
 		if (action.id === '__unconfigured__') {
-			// @ts-ignore
-			this.plugin.app.setting.open();
-			// @ts-ignore
-			this.plugin.app.setting.openTabById(this.plugin.manifest.id);
+			const appWithSetting = this.plugin.app as any as {
+				setting: {
+					open(): void;
+					openTabById(id: string): void;
+				};
+			};
+			appWithSetting.setting.open();
+			appWithSetting.setting.openTabById(this.plugin.manifest.id);
 			return;
 		}
 		
@@ -124,7 +128,7 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 
 		const view = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
 		if (view) {
-			await this.plugin.quickActionHandler.executeAction(action, editor, view);
+			void this.plugin.quickActionHandler.executeAction(action, editor, view);
 			
 			// 덧붙이기(append) 모드 등일 때 전체가 선택되어 있으면 UX가 좋지 않으므로
 			// 실행 완료 후 커서를 문서의 끝이나 적절한 위치로 옮길 수 있습니다.

@@ -63,7 +63,7 @@
 
 		// 3. Folders
 		const folders = new Set<string>();
-		files.forEach(f => {
+		files.forEach((f: any) => {
 			if (f.parent && f.parent.path !== "/") {
 				folders.add(f.parent.path);
 			}
@@ -77,7 +77,7 @@
 		});
 
 		// 4. Files & Canvas
-		files.forEach(f => {
+		files.forEach((f: any) => {
 			if (f.extension === 'canvas') {
 				items.push({
 					type: "canvas",

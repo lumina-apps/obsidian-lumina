@@ -10,12 +10,9 @@ import { normalizePath, type App, Platform } from 'obsidian';
 import { FileSystemAdapter } from 'obsidian';
 import { t } from '../../shared/locales/helpers';
 
-// 모바일 호환성을 위해 정적 import 제거 후 동적 할당
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let path: any;
+let nodePath: typeof import('path') | null = null;
 if (Platform.isDesktop) {
-	// eslint-disable-next-line @typescript-eslint/no-var-requires
-	path = require('path');
+	nodePath = (window as unknown as { require: (module: string) => typeof import('path') }).require('path');
 }
 
 const PLUGIN_ID = 'lumina';
@@ -33,16 +30,16 @@ function getBasePath(app: App): string {
 export function getPluginDir(app: App): string {
 	const base = getBasePath(app);
 	const configDir = app.vault.configDir; // 예: .obsidian
-	if (Platform.isDesktop) {
-		return path.join(base, configDir, 'plugins', PLUGIN_ID);
+	if (Platform.isDesktop && nodePath) {
+		return nodePath.join(base, configDir, 'plugins', PLUGIN_ID);
 	}
 	return `${base}/${configDir}/plugins/${PLUGIN_ID}`;
 }
 
 /** 임베딩 워커 파일 절대 경로 */
 export function getWorkerPath(app: App): string {
-	if (Platform.isDesktop) {
-		return path.join(getPluginDir(app), 'embedding.worker.js');
+	if (Platform.isDesktop && nodePath) {
+		return nodePath.join(getPluginDir(app), 'embedding.worker.js');
 	}
 	return `${getPluginDir(app)}/embedding.worker.js`;
 }
@@ -55,16 +52,16 @@ export function getWorkerRelativePath(app: App): string {
 
 /** 모델 캐시 저장 절대 경로 */
 export function getModelCacheDir(app: App): string {
-	if (Platform.isDesktop) {
-		return path.join(getPluginDir(app), 'storage', 'models');
+	if (Platform.isDesktop && nodePath) {
+		return nodePath.join(getPluginDir(app), 'storage', 'models');
 	}
 	return `${getPluginDir(app)}/storage/models`;
 }
 
 /** 벡터 DB 저장 절대 경로 */
 export function getVectorDbDir(app: App): string {
-	if (Platform.isDesktop) {
-		return path.join(getPluginDir(app), 'storage', 'vectordb');
+	if (Platform.isDesktop && nodePath) {
+		return nodePath.join(getPluginDir(app), 'storage', 'vectordb');
 	}
 	return `${getPluginDir(app)}/storage/vectordb`;
 }

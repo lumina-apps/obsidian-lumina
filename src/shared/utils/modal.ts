@@ -94,11 +94,11 @@ export class FuzzyModelSuggestModal extends FuzzySuggestModal<ModelSuggestItem> 
 	}
 
 	onOpen(): void {
-		super.onOpen();
+		void super.onOpen();
 
 		if (this.defaultItemValue) {
 			// give it a bit of time to render suggestions
-			setTimeout(() => {
+			window.setTimeout(() => {
 				const selectedEl = this.containerEl.querySelector('.is-selected-default');
 				if (selectedEl) {
 					selectedEl.scrollIntoView({ behavior: 'auto', block: 'center' });

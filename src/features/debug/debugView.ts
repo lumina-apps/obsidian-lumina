@@ -14,7 +14,7 @@ export const DEBUG_VIEW_TYPE = 'lumina-debug-panel';
 
 export class DebugView extends ItemView {
 	private plugin: LuminaPlugin;
-	private component: Record<string, any> | null = null;
+	private component: Record<string, unknown> | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: LuminaPlugin) {
 		super(leaf);
@@ -48,9 +48,9 @@ export class DebugView extends ItemView {
 		if (this.component) {
 			const comp = this.component;
 			this.component = null;
-			setTimeout(() => {
+			window.setTimeout(() => {
 				try {
-					unmount(comp);
+					void unmount(comp);
 				} catch (e) {
 					console.error('[Lumina] debug panel unmount error:', e);
 				}

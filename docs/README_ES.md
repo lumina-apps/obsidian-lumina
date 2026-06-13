@@ -91,8 +91,8 @@
   - `read_active_note`, `read_note`, `search_notes`, `rag_search`: Proporciona el contexto y conocimiento de tu bóveda a la IA.
   - `create_note`, `append_to_note`: Permite a la IA escribir con seguridad ideas organizadas directamente en tu bóveda (protección de sobrescritura aplicada).
   - `read_daily_note`, `append_to_daily_note`: Integración de lectura/escritura para la nota diaria de hoy.
-- **Cómo usar:** Habilita las características MCP en la configuración del plugin y configura los métodos de transporte cliente/servidor (stdio/SSE).
-- **Nota:** *Las funciones de Agente y MCP se encuentran actualmente en fase Experimental (Beta). Las conexiones Stdio no son compatibles con móviles. Aunque existen diversas redes de seguridad como la protección contra sobrescritura y límites de caracteres, recomendamos supervisar de cerca las operaciones inicialmente, ya que las IA externas editarán tus notas directamente.*
+- **Cómo usar:** Habilita las características MCP en la configuración del plugin y configura el método de transporte cliente/servidor (SSE).
+- **Nota:** *Las funciones de Agente y MCP se encuentran actualmente en fase Experimental (Beta). Aunque existen diversas redes de seguridad como la protección contra sobrescritura y límites de caracteres, recomendamos supervisar de cerca las operaciones inicialmente, ya que las IA externas editarán tus notas directamente.*
 </details>
 
 ---

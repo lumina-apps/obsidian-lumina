@@ -91,8 +91,8 @@
   - `read_active_note`, `read_note`, `search_notes`, `rag_search`: Provides your vault's context and knowledge to the AI.
   - `create_note`, `append_to_note`: Allows the AI to safely write organized ideas directly into your vault (overwriting protection applied).
   - `read_daily_note`, `append_to_daily_note`: Read/write integration for today's daily note.
-- **How to use:** Enable MCP features in the plugin settings and configure the client/server transport methods (stdio/SSE).
-- **Note:** *Agent and MCP features are currently in Experimental (Beta) phase. Stdio connections are not supported on mobile. While various safety nets like overwrite protection and character limits are in place, we recommend initially monitoring operations closely as external AI will directly edit your notes.*
+- **How to use:** Enable MCP features in the plugin settings and configure the client/server transport method (SSE).
+- **Note:** *Agent and MCP features are currently in Experimental (Beta) phase. While various safety nets like overwrite protection and character limits are in place, we recommend initially monitoring operations closely as external AI will directly edit your notes.*
 </details>
 
 ---

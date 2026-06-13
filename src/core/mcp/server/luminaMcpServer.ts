@@ -367,81 +367,83 @@ export class LuminaMcpServer {
 		if (this.isRunning) return;
 		this.isRunning = true;
 
-		this.httpServer = http.createServer(async (req, res) => {
-			try {
-				// CORS headers
-				res.setHeader('Access-Control-Allow-Origin', '*');
-				res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-				res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, mcp-protocol-version');
+		this.httpServer = http.createServer((req, res) => {
+			void (async () => {
+				try {
+					// CORS headers
+					res.setHeader('Access-Control-Allow-Origin', '*');
+					res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+					res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, mcp-protocol-version');
 
-				if (req.method === 'OPTIONS') {
-					res.writeHead(200);
-					res.end();
-					return;
-				}
-
-				if (req.url?.startsWith('/sse')) {
-					if (!this.authenticate(req)) {
-						res.writeHead(401, { 'Content-Type': 'text/plain' });
-						res.end('Unauthorized');
+					if (req.method === 'OPTIONS') {
+						res.writeHead(200);
+						res.end();
 						return;
 					}
 
-					// 이전 연결이 있으면 반드시 await로 정리 후 진행
-					if (this.transport) {
-						debugLogger.logSystem('mcp', '기존 SSE 연결 정리 후 재연결');
-						const oldTransport = this.transport;
-						this.transport = null;
-						this.connectionReady = null;
-						try { await oldTransport.close(); } catch (e) {
-							// ignore
+					if (req.url?.startsWith('/sse')) {
+						if (!this.authenticate(req)) {
+							res.writeHead(401, { 'Content-Type': 'text/plain' });
+							res.end('Unauthorized');
+							return;
 						}
-					}
 
-					// 새 transport 생성 및 서버 연결 (await로 완료 대기)
-					this.transport = new SSEServerTransport('/message', res);
-					const ready = this.server.connect(this.transport).then(() => {
-						debugLogger.logSystem('mcp', '✅ SSE 클라이언트 연결 완료');
-					}).catch((e) => {
-						debugLogger.logError('mcp', e instanceof Error ? e : new Error(`SSE 서버 연결 실패: ${e}`));
-						this.transport = null;
-						throw e;
-					});
-					this.connectionReady = ready;
-					try {
-						await ready;
-					} catch {
-						// connect 실패는 이미 로깅됨, 클라이언트는 SSE 응답이 끊어졌으므로 재연결 시도
-					}
-					return;
-				}
-
-				if (req.url?.startsWith('/message')) {
-					if (req.method === 'POST') {
-						// SSE 연결이 완료될 때까지 대기
-						if (this.connectionReady) {
-							try { await this.connectionReady; } catch { /* connect 실패, 아래 transport 체크로 처리 */ }
-						}
+						// 이전 연결이 있으면 반드시 await로 정리 후 진행
 						if (this.transport) {
-							await this.transport.handlePostMessage(req, res);
-						} else {
-							debugLogger.logSystem('mcp', 'POST /message: SSE transport 없음');
-							res.writeHead(503, { 'Content-Type': 'text/plain' });
-							res.end('SSE transport not established. Reconnect required.');
+							debugLogger.logSystem('mcp', '기존 SSE 연결 정리 후 재연결');
+							const oldTransport = this.transport;
+							this.transport = null;
+							this.connectionReady = null;
+							try { await oldTransport.close(); } catch (e) {
+								// ignore
+							}
+						}
+
+						// 새 transport 생성 및 서버 연결 (await로 완료 대기)
+						this.transport = new SSEServerTransport('/message', res);
+						const ready = this.server.connect(this.transport).then(() => {
+							debugLogger.logSystem('mcp', '✅ SSE 클라이언트 연결 완료');
+						}).catch((e) => {
+							debugLogger.logError('mcp', e instanceof Error ? e : new Error(`SSE 서버 연결 실패: ${e}`));
+							this.transport = null;
+							throw e;
+						});
+						this.connectionReady = ready;
+						try {
+							await ready;
+						} catch {
+							// connect 실패는 이미 로깅됨, 클라이언트는 SSE 응답이 끊어졌으므로 재연결 시도
 						}
 						return;
 					}
-				}
 
-				res.writeHead(404, { 'Content-Type': 'text/plain' });
-				res.end('Not Found');
-			} catch (err) {
-				debugLogger.logError('mcp', err instanceof Error ? err : new Error(`HTTP 요청 처리 중 예외: ${err}`));
-				if (!res.headersSent) {
-					res.writeHead(500, { 'Content-Type': 'text/plain' });
-					res.end('Internal Server Error');
+					if (req.url?.startsWith('/message')) {
+						if (req.method === 'POST') {
+							// SSE 연결이 완료될 때까지 대기
+							if (this.connectionReady) {
+								try { await this.connectionReady; } catch { /* connect 실패, 아래 transport 체크로 처리 */ }
+							}
+							if (this.transport) {
+								await this.transport.handlePostMessage(req, res);
+							} else {
+								debugLogger.logSystem('mcp', 'POST /message: SSE transport 없음');
+								res.writeHead(503, { 'Content-Type': 'text/plain' });
+								res.end('SSE transport not established. Reconnect required.');
+							}
+							return;
+						}
+					}
+
+					res.writeHead(404, { 'Content-Type': 'text/plain' });
+					res.end('Not Found');
+				} catch (err) {
+					debugLogger.logError('mcp', err instanceof Error ? err : new Error(`HTTP 요청 처리 중 예외: ${err}`));
+					if (!res.headersSent) {
+						res.writeHead(500, { 'Content-Type': 'text/plain' });
+						res.end('Internal Server Error');
+					}
 				}
-			}
+			})();
 		});
 
 		return new Promise<void>((resolve, reject) => {
@@ -483,13 +485,13 @@ export class LuminaMcpServer {
 	public async stop() {
 		this.isRunning = false;
 		if (this.transport) {
-			try { await this.transport.close(); } catch {}
+			try { await this.transport.close(); } catch { /* ignore */ }
 			this.transport = null;
 		}
 		if (this.httpServer) {
 			await new Promise<void>((resolve) => {
 				this.httpServer!.close(() => resolve());
-				setTimeout(() => resolve(), 3000);
+				window.setTimeout(() => resolve(), 3000);
 			});
 			this.httpServer = null;
 		}

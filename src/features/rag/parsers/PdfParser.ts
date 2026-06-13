@@ -18,9 +18,10 @@ export class PdfParser {
 
 			for (let i = 1; i <= pdf.numPages; i++) {
 				const page = await pdf.getPage(i);
-				const content = await page.getTextContent();
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				const strings = content.items.map((item: any) => item.str);
+				const content = (await page.getTextContent()) as { items: Array<unknown> };
+				const strings = content.items
+					.filter((item): item is { str: string } => typeof item === 'object' && item !== null && 'str' in item)
+					.map((item: { str: string }) => item.str);
 				fullText += strings.join(' ') + '\n\n';
 			}
 

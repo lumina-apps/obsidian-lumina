@@ -131,18 +131,6 @@ export const ja: DeepPartial<Translation> = {
     },
       externalServer: {
         sectionTitle: '外部MCPサーバー（クライアント接続）',
-        command: {
-          name: 'コマンド',
-          desc: '例: npx, python, node',
-         },
-        args: {
-          name: '引数',
-          desc: 'JSON文字列配列 (例: ["-y", "@modelcontextprotocol/server-everything"])',
-         },
-        env: {
-          name: '環境変数',
-          desc: 'JSONオブジェクト (例: {"API_KEY": "..."})',
-         },
         sseUrl: {
           name: 'SSE URL',
           desc: '例: http://localhost:8080/sse',

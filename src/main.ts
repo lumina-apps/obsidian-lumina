@@ -1,9 +1,9 @@
-import { Notice, Platform, Plugin, addIcon, TFile, requestUrl } from 'obsidian';
+import { Notice, Platform, Plugin, addIcon, TFile, requestUrl, moment } from 'obsidian';
 import { LuminaSettingTab } from './core/settings/settingTab';
 import { DEFAULT_SETTINGS } from './core/settings/defaultSettings';
 import type { LuminaSettings } from './core/settings/settings.types';
 import { EmbeddingWorkerBridge } from './features/rag/workerBridge';
-import { getModelCacheDir, getWorkerPath, getWorkerRelativePath } from './features/rag/storage';
+import { getModelCacheDir, getWorkerRelativePath } from './features/rag/storage';
 import { VaultIndexer } from './features/rag/indexer';
 import { ChatView, CHAT_VIEW_TYPE } from './features/chat/chatView';
 import { DebugView, DEBUG_VIEW_TYPE } from './features/debug/debugView';
@@ -40,14 +40,22 @@ async function autoGenerateFrontmatter(plugin: LuminaPlugin, file: TFile, isUpda
 	plugin.generatingFrontmatterFiles.add(file.path);
 
 	try {
-		await plugin.app.fileManager.processFrontMatter(file, (fm) => {
+		interface LuminaFrontmatter {
+			luminaCreated?: string;
+			luminaModified?: string;
+			luminaVersion?: string;
+			tags?: string | string[];
+		}
+		await plugin.app.fileManager.processFrontMatter(file, (fmObj) => {
+			const fm = fmObj as LuminaFrontmatter;
 			const now = new Date().toISOString();
 
 			if (!isUpdate) {
 				fm.luminaCreated = fm.luminaCreated || now;
 				// tags 처리 (문자열인 경우 배열로 변환, 없으면 빈 배열 생성)
 				if (typeof fm.tags === 'string') {
-					fm.tags = fm.tags
+					const tagsStr = fm.tags as string;
+					fm.tags = tagsStr
 						.split(',')
 						.map((t: string) => t.trim())
 						.filter((t: string) => t.length > 0);
@@ -83,7 +91,7 @@ export default class LuminaPlugin extends Plugin {
 	isFirstRun: boolean = false;
 	private ribbonEl: HTMLElement | null = null;
 		/** watch 모드 파일 변경 디바운스 타이머 */
-	private watchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+	private watchDebounceTimer: number | null = null;
 		/** watch 모드 이벤트 해제 함수 모음 */
 	private watchEventRefs: import('obsidian').EventRef[] = [];
 	quickActionHandler!: QuickActionHandler;
@@ -187,20 +195,20 @@ export default class LuminaPlugin extends Plugin {
 
 		// ── 커맨드 팔레트 ─────────────────────────────────────────────────────
 		this.addCommand({
-			id: 'open-lumina-chat',
+			id: 'open-chat',
 			name: t('uiMessages.cmdChatTitle'),
-			callback: () => this.activateChatView(),
+			callback: () => { void this.activateChatView(); },
 		});
 
 		this.addCommand({
-			id: 'open-lumina-devlog',
+			id: 'open-devlog',
 			name: t('uiMessages.cmdLogTitle'),
-			callback: () => this.activateDebugView(),
+			callback: () => { void this.activateDebugView(); },
 		});
 
 		// RAG 전체 재인덱싱 커맨드
 		this.addCommand({
-			id: 'lumina-reindex-vault',
+			id: 'reindex-vault',
 			name: t('uiMessages.cmdReindex'),
 			callback: async () => {
 				if (!this.indexer) {
@@ -219,7 +227,7 @@ export default class LuminaPlugin extends Plugin {
 
 		// RAG 인덱스 초기화 커맨드
 		this.addCommand({
-			id: 'lumina-clear-index',
+			id: 'clear-index',
 			name: t('uiMessages.cmdClearIdx'),
 			callback: async () => {
 				if (!this.indexer) {
@@ -249,7 +257,7 @@ export default class LuminaPlugin extends Plugin {
 
 			// debugMode ON이면 자동으로 패널 열기
 			if (this.settings.misc.debugMode) {
-				this.activateDebugView();
+				void this.activateDebugView();
 			}
 
 			// RAG 워커 초기화
@@ -276,7 +284,7 @@ export default class LuminaPlugin extends Plugin {
 		this.embeddingWorker?.terminate();
 		this.clearWatchEvents();
 		this.clearFrontmatterEvents();
-		this.mcpManager?.destroy();
+		void this.mcpManager?.destroy();
 	}
 
 	registerQuickActions() {
@@ -294,7 +302,7 @@ export default class LuminaPlugin extends Plugin {
 				id: cmdId,
 				name: action.name,
 				editorCallback: (editor: Editor, view: MarkdownView | MarkdownFileInfo) => {
-					this.quickActionHandler.executeAction(action, editor, view);
+					void this.quickActionHandler.executeAction(action, editor, view);
 				}
 			});
 			this.registeredQuickActionIds.push(cmdId);
@@ -332,18 +340,28 @@ export default class LuminaPlugin extends Plugin {
 	}
 
 	migrateExcludedPaths(): boolean {
+		let changed = false;
 		if (!this.settings.misc.hasMigratedChatHistory) {
 			if (!this.settings.rag.excludedPaths.includes('chatHistory')) {
 				this.settings.rag.excludedPaths.push('chatHistory');
 			}
 			this.settings.misc.hasMigratedChatHistory = true;
-			return true;
+			changed = true;
 		}
-		return false;
+		const configDir = this.app.vault.configDir;
+		if (configDir && !this.settings.rag.excludedPaths.includes(configDir)) {
+			this.settings.rag.excludedPaths.push(configDir);
+			changed = true;
+		}
+		if (this.settings.rag.excludedPaths.includes('.obsidian')) {
+			this.settings.rag.excludedPaths = this.settings.rag.excludedPaths.filter(p => p !== '.obsidian');
+			changed = true;
+		}
+		return changed;
 	}
 
 	async loadSettings() {
-		const saved = await this.loadData();
+		const saved = await this.loadData() as Partial<LuminaSettings> | null;
 		this.isFirstRun = !saved || Object.keys(saved).length === 0;
 		const safeSaved = saved ?? {};
 		// 섹션별 깊은 병합: 기존 저장된 서브키를 보존하면서 새 기본값 추가
@@ -401,7 +419,7 @@ export default class LuminaPlugin extends Plugin {
 				}
 			}
 			
-			this.settings.connections.language = detectLang as any;
+			this.settings.connections.language = detectLang as import('./shared/types/settings.types').PluginLanguage;
 			// 최초 실행 시 설정값을 즉시 파일로 저장하여 이후 실행에서 유지되도록 함
 			await this.saveSettings();
 		}
@@ -409,26 +427,26 @@ export default class LuminaPlugin extends Plugin {
 
 	async saveSettings() {
 		// data.json에 저장할 설정 객체 복제본 생성
-		const settingsToSave = JSON.parse(JSON.stringify(this.settings));
+		const settingsToSave = JSON.parse(JSON.stringify(this.settings)) as LuminaSettings;
 
 		// 자격 증명은 SecretStorage에 저장하고, 파일 저장 객체에서는 제거 (LLM Provider)
 		for (const provider of settingsToSave.connections.providers) {
-			const originalProvider = this.settings.connections.providers.find((p: any) => p.id === provider.id);
+			const originalProvider = this.settings.connections.providers.find((p) => p.id === provider.id);
 			if (originalProvider) {
-				this.app.secretStorage.setSecret(`lumina-provider-${provider.id}`, originalProvider.credential || '');
+				await this.app.secretStorage.setSecret(`lumina-provider-${provider.id}`, originalProvider.credential || '');
 			}
 			provider.credential = ''; // 평문 저장 방지
 		}
 
 		// MCP 내장 서버 토큰: SecretStorage에 저장하고 data.json에서는 제거
-		this.app.secretStorage.setSecret('lumina-mcp-server-auth', this.settings.mcp.serverAuthToken || '');
+		await this.app.secretStorage.setSecret('lumina-mcp-server-auth', this.settings.mcp.serverAuthToken || '');
 		settingsToSave.mcp.serverAuthToken = '';
 
 		// MCP 외부 서버 토큰: SecretStorage에 저장하고 data.json에서는 제거
 		for (const server of settingsToSave.mcp.servers) {
-			const originalServer = this.settings.mcp.servers.find((s: any) => s.id === server.id);
+			const originalServer = this.settings.mcp.servers.find((s) => s.id === server.id);
 			if (originalServer?.authToken) {
-				this.app.secretStorage.setSecret(`lumina-mcp-client-${server.id}`, originalServer.authToken);
+				await this.app.secretStorage.setSecret(`lumina-mcp-client-${server.id}`, originalServer.authToken);
 			}
 			server.authToken = '';
 		}
@@ -445,7 +463,7 @@ export default class LuminaPlugin extends Plugin {
 	updateRibbonIcon(): void {
 		if (this.settings.misc.showRibbonIcon && !this.ribbonEl) {
 			this.ribbonEl = this.addRibbonIcon('message-circle', t('uiMessages.ribbonTitle'), () => {
-				this.activateChatView();
+				void this.activateChatView();
 			});
 		} else if (!this.settings.misc.showRibbonIcon && this.ribbonEl) {
 			this.ribbonEl.remove();
@@ -602,15 +620,17 @@ export default class LuminaPlugin extends Plugin {
 		this.clearWatchEvents();
 
 		const triggerUpdate = () => {
-			if (this.watchDebounceTimer) clearTimeout(this.watchDebounceTimer);
-			this.watchDebounceTimer = setTimeout(async () => {
-				if (!this.indexer) return;
-				try {
-					await this.indexer.updateIndex();
-				} catch (err) {
-					debugLogger.logError('rag', err instanceof Error ? err : new Error(`watch 인덱싱 실패: ${err}`));
-				}
-			}, 2000);
+			if (this.watchDebounceTimer) window.clearTimeout(this.watchDebounceTimer);
+			this.watchDebounceTimer = window.setTimeout(() => {
+				void (async () => {
+					if (!this.indexer) return;
+					try {
+						await this.indexer.updateIndex();
+					} catch (err) {
+						debugLogger.logError('rag', err instanceof Error ? err : new Error(`watch 인덱싱 실패: ${err}`));
+					}
+				})();
+			}, 2000) as unknown as number;
 		};
 
 		const modifyRef = this.app.vault.on('modify', triggerUpdate);
@@ -630,7 +650,7 @@ export default class LuminaPlugin extends Plugin {
 	/** watch 이벤트 및 타이머 정리 */
 	private clearWatchEvents(): void {
 		if (this.watchDebounceTimer) {
-			clearTimeout(this.watchDebounceTimer);
+			window.clearTimeout(this.watchDebounceTimer);
 			this.watchDebounceTimer = null;
 		}
 		
@@ -683,7 +703,6 @@ export default class LuminaPlugin extends Plugin {
 					throw new Error(t('uiMessages.errMobileAuto'));
 				}
 				modelName = DEFAULT_EMBEDDING_MODEL;
-				const workerPath = getWorkerPath(this.app);
 				const relativeWorkerPath = getWorkerRelativePath(this.app);
 				const cacheDir   = getModelCacheDir(this.app);
 
@@ -702,12 +721,15 @@ export default class LuminaPlugin extends Plugin {
 					}
 				}
 
+				const workerCode = await adapter.read(relativeWorkerPath);
 				this.embeddingWorker = new EmbeddingWorkerBridge();
+				const pluginDir = this.app.vault.adapter.getResourcePath(this.manifest.dir || '');
 
 				await this.embeddingWorker.init(
-					workerPath,
+					workerCode,
 					modelName,
 					cacheDir,
+					pluginDir,
 					(progress, status) => {
 						const pct = Math.round(progress * 100);
 						if (!isStartup) progressNotice?.setMessage(t('settings.rag.init.loadingProgress', { pct: pct, status: status }));

@@ -6,7 +6,7 @@ import { ChatController } from '../chat/chatController';
 import type { QuickAction } from '../../shared/types/settings.types';
 import { t } from '../../shared/locales/helpers';
 import { debugLogger } from '../../shared/debugLogger';
-import type { TokenUsage } from '../../shared/types/llm.types';
+import type { ChatMessage, TokenUsage } from '../../shared/types/llm.types';
 
 export class QuickActionHandler {
 	private plugin: LuminaPlugin;
@@ -28,10 +28,14 @@ export class QuickActionHandler {
 
 		if (!providerId || !modelId) {
 			new Notice(t('uiMessages.qaNotConfigured'));
-			// @ts-ignore
-			this.plugin.app.setting.open();
-			// @ts-ignore
-			this.plugin.app.setting.openTabById(this.plugin.manifest.id);
+			const appWithSetting = this.plugin.app as any as {
+				setting: {
+					open(): void;
+					openTabById(id: string): void;
+				};
+			};
+			appWithSetting.setting.open();
+			appWithSetting.setting.openTabById(this.plugin.manifest.id);
 			return;
 		}
 
@@ -68,7 +72,7 @@ export class QuickActionHandler {
 				? `Task: ${action.prompt}\n\nInput Text:\n${selection.trim()}\n\nOutput:\n`
 				: selection.trim();
 
-			const llmMessages: any[] = [
+			const llmMessages: ChatMessage[] = [
 				{ role: 'system', content: sysPrompt },
 				{ role: 'user', content: userPrompt }
 			];
@@ -84,7 +88,7 @@ export class QuickActionHandler {
 				maxTokens: chat.maxOutputTokens,
 				stream: chat.streaming,
 				systemPrompt: sysPrompt,
-				messages: llmMessages,
+				messages: llmMessages.map(m => ({ role: m.role, content: m.content as string })) as { role: string; content: string }[],
 			});
 
 			const indicatorText = t('uiMessages.qaWaitingAI');

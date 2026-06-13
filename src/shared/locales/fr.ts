@@ -132,18 +132,6 @@ La connexion de modèles volumineux ou de modèles de raisonnement entraînera d
     },
       externalServer: {
         sectionTitle: 'Serveurs MCP externes (Connexion client)',
-        command: {
-          name: 'Commande',
-          desc: 'ex : npx, python, node',
-         },
-        args: {
-          name: 'Arguments',
-          desc: 'Tableau de chaînes JSON (ex : ["-y", "@modelcontextprotocol/server-everything"])',
-         },
-        env: {
-          name: 'Variables d\'environnement',
-          desc: 'Objet JSON (ex : {"API_KEY" : "..."})',
-         },
         sseUrl: {
           name: 'URL SSE',
           desc: 'ex : http://localhost:8080/sse',

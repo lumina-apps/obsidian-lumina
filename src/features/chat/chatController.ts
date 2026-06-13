@@ -30,13 +30,25 @@ import {
 	currentSessionId,
 	currentSessionTitle,
 	setSessionTitle,
+	resetChat,
 } from '../../core/store/chatStore';
 import { get } from 'svelte/store';
 import { indexingState } from '../../core/store/ragStore';
 import { saveSession, generateTitle, loadSessionsList, loadSession, deleteSession } from './history';
 import type { UIChatMessage, ChatSession, ContextAttachment } from '../../shared/types/chat.types';
-import type { ChatOptions, ChatMessage, ToolDefinition } from '../../shared/types/llm.types';
-import { debugLogger } from '../../shared/debugLogger';
+import type { ChatOptions, ChatMessage, ToolDefinition, MultiModalContent, ToolCall } from '../../shared/types/llm.types';
+import type { McpTool } from '../../core/mcp/mcpClient';
+import { debugLogger as originalDebugLogger } from '../../shared/debugLogger';
+
+interface IDebugLogger {
+	logMcp(action: string, message: string, data?: unknown): void;
+	logRequest(params: any): string;
+	logResponse(requestId: string, params: any): void;
+	logError(domain: string, error: any): void;
+	logSystem(event: string, message: string, meta?: any): void;
+	logRagSearch(params: any): void;
+}
+const debugLogger = originalDebugLogger as unknown as IDebugLogger;
 import type { RagChunkMeta } from '../../shared/types/debug.types';
 import { ChatAttachmentHandler } from './utils/ChatAttachmentHandler';
 import { calculateEstimatedCost } from '../../shared/pricing';
@@ -184,10 +196,17 @@ export class ChatController {
 						if (file instanceof TFile) {
 							const content = await this.app.vault.read(file);
 							try {
-								const canvasData = JSON.parse(content);
+								interface CanvasNode {
+									type: string;
+									text?: string;
+								}
+								interface CanvasData {
+									nodes?: CanvasNode[];
+								}
+								const canvasData: CanvasData = JSON.parse(content);
 								let canvasText = `[캔버스 파일: ${att.name}]\n`;
-								canvasData.nodes?.forEach((node: any) => {
-									if (node.type === 'text') {
+								canvasData.nodes?.forEach((node) => {
+									if (node.type === 'text' && node.text) {
 										canvasText += `- ${node.text}\n`;
 									}
 								});
@@ -202,7 +221,9 @@ export class ChatController {
 						let count = 0;
 						for (const file of files) {
 							const cache = this.app.metadataCache.getFileCache(file);
-							const hasTag = cache?.tags?.some(t => t.tag === att.name) || cache?.frontmatter?.tags?.includes(att.name.replace('#', ''));
+							const tags = cache?.tags;
+							const fmTags = cache?.frontmatter?.tags as string[] | undefined;
+							const hasTag = (Array.isArray(tags) && tags.some(t => t.tag === att.name)) || (Array.isArray(fmTags) && fmTags.includes(att.name.replace('#', '')));
 							if (hasTag) {
 								const content = await this.app.vault.read(file);
 								tagContent += `--- ${file.basename} ---\n${content}\n\n`;
@@ -271,11 +292,11 @@ export class ChatController {
 							? `${ragContext}\n\n---\n\n${ragText}`
 							: ragText;
 
-						ragChunksForLog = results.map((r: any) => ({
-							filePath: r.chunk?.path ?? r.filePath ?? r.path ?? '',
+						ragChunksForLog = (results as import('../../shared/types/rag.types').SearchResult[]).map((r) => ({
+							filePath: r.chunk?.path ?? '',
 							score: r.score ?? 0,
-							preview: (r.chunk?.text ?? r.content ?? '').slice(0, 200),
-							fullContent: r.chunk?.text ?? r.content ?? '',
+							preview: (r.chunk?.text ?? '').slice(0, 200),
+							fullContent: r.chunk?.text ?? '',
 						}));
 
 						debugLogger.logRagSearch({
@@ -300,16 +321,20 @@ export class ChatController {
 			const toolServerMap: Record<string, string> = {}; // toolName → serverId
 			if (chat.agentEnabled && this.plugin.mcpManager && this.plugin.settings.mcp.clientToolsEnabled) {
 				const rawTools = this.plugin.mcpManager.getAllTools();
-				debugLogger.logMcp('Tools Init', `MCP 툴 ${rawTools.length}개 수집`, rawTools.map(t => t.name));
+				debugLogger.logMcp('Tools Init', `MCP 툴 ${rawTools.length}개 수집`, rawTools.map((t: McpTool) => t.name));
 				for (const t of rawTools) {
 					const schema = t.inputSchema ?? { type: 'object', properties: {} };
 					// _serverId를 inputSchema에 숨겨서 LLM이 tool call 시 arguments에 포함하도록 함
-					const properties = { ...(schema.properties ?? {}) };
+					const properties: Record<string, unknown> & { _serverId?: unknown } = { ...(schema.properties ?? {}) };
 					properties._serverId = { type: 'string', description: 'DO NOT FILL - internal use' };
 					mcpTools.push({
 						name: t.name,
 						description: t.description ?? '',
-						inputSchema: { type: 'object', properties, required: schema.required ?? [] },
+						inputSchema: { 
+							type: 'object', 
+							properties: properties as Record<string, { type: string; description: string }>, 
+							required: schema.required ?? [] 
+						},
 					});
 					toolServerMap[t.name] = t._serverId ?? '';
 				}
@@ -338,7 +363,7 @@ export class ChatController {
 			if (multimodalImages.length > 0) {
 				const lastMsg = llmMessages[llmMessages.length - 1];
 				if (lastMsg && lastMsg.role === 'user') {
-					const multiContent: any[] = [{ type: 'text', text: lastMsg.content as string }];
+					const multiContent: MultiModalContent[] = [{ type: 'text', text: lastMsg.content as string }];
 					multimodalImages.forEach(imgUrl => {
 						multiContent.push({ type: 'image_url', image_url: { url: imgUrl } });
 					});
@@ -477,8 +502,8 @@ export class ChatController {
 					}
 
 					// 중복 호출 감지: 동일 툴+동일 인자를 연속 3회 호출 시 강제 종료
-					const currentKey = resolvedToolCalls.map(tc => {
-						const args = { ...tc.arguments };
+					const currentKey = resolvedToolCalls.map((tc: ToolCall) => {
+						const args = { ...tc.arguments } as Record<string, unknown> & { _serverId?: unknown };
 						delete args._serverId;
 						return `${tc.name}:${JSON.stringify(args)}`;
 					}).join('|');
@@ -491,7 +516,7 @@ export class ChatController {
 					lastToolCallKeys.push(currentKey);
 					if (lastToolCallKeys.length > 2) lastToolCallKeys.shift();
 
-					debugLogger.logMcp('Tool Requested', `🔧 LLM이 ${resolvedToolCalls.length}개 툴 호출 요청`, resolvedToolCalls.map(tc => tc.name));
+					debugLogger.logMcp('Tool Requested', `🔧 LLM이 ${resolvedToolCalls.length}개 툴 호출 요청`, resolvedToolCalls.map((tc: ToolCall) => tc.name));
 
 					// assistant의 tool call 메시지를 대화에 추가
 					// 로컬 모델은 텍스트 포맷을 유지하도록 <lumina_tool_call> 블록을 content에 포함하고 tool_calls 필드는 비웁니다.
@@ -504,18 +529,18 @@ export class ChatController {
 					}
 
 					if (useLocal && resolvedToolCalls.length > 0) {
-						const toolCallBlocks = resolvedToolCalls.map(tc => {
+						const toolCallBlocks = resolvedToolCalls.map((tc: ToolCall) => {
 							return `<lumina_tool_call>\n${JSON.stringify({ name: tc.name, arguments: tc.arguments })}\n</lumina_tool_call>`;
 						}).join('\n\n');
 						assistantContent = assistantContent ? `${assistantContent}\n\n${toolCallBlocks}` : toolCallBlocks;
 					} else if (!useLocal && !assistantContent) {
-						assistantContent = resolvedToolCalls.map(tc => `Calling tool: ${tc.name}`).join(', ');
+						assistantContent = resolvedToolCalls.map((tc: ToolCall) => `Calling tool: ${tc.name}`).join(', ');
 					}
 
 					messagesForLLM.push({
 						role: 'assistant',
 						content: assistantContent,
-						tool_calls: useLocal ? undefined : resolvedToolCalls.map(tc => ({
+						tool_calls: useLocal ? undefined : resolvedToolCalls.map((tc: ToolCall) => ({
 							id: tc.id,
 							name: tc.name,
 							arguments: tc.arguments,
@@ -525,15 +550,15 @@ export class ChatController {
 					// 각 tool call 실행
 					for (const tc of resolvedToolCalls) {
 						try {
-							const serverId = (tc.arguments as any)._serverId;
+							const serverId = (tc.arguments as { _serverId?: string })._serverId;
 							// _serverId 제거 후 전달
-							const cleanArgs = { ...tc.arguments };
+							const cleanArgs = { ...tc.arguments } as Record<string, unknown> & { _serverId?: unknown };
 							delete cleanArgs._serverId;
 
 							const resolvedServerId = serverId || toolServerMap[tc.name];
 							debugLogger.logMcp('Tool Execute', `▶️ 툴 실행: ${tc.name}`, { serverId: resolvedServerId, args: cleanArgs });
 
-							let toolResult: any;
+							let toolResult: unknown;
 							if (resolvedServerId && this.plugin.mcpManager) {
 								toolResult = await this.plugin.mcpManager.callTool(resolvedServerId, tc.name, cleanArgs);
 							} else {
@@ -542,9 +567,10 @@ export class ChatController {
 
 							// 결과를 text로 변환
 							let resultText = '';
-							if (toolResult?.content) {
-								resultText = toolResult.content
-									.map((c: any) => c.text ?? '')
+							const typedResult = toolResult as { content?: Array<{ text?: string }>, isError?: boolean } | null | undefined;
+							if (typedResult?.content) {
+								resultText = typedResult.content
+									.map((c) => c.text ?? '')
 									.join('\n');
 							} else if (typeof toolResult === 'string') {
 								resultText = toolResult;
@@ -730,7 +756,7 @@ export class ChatController {
 		if (success) {
 			const currentId = get(currentSessionId);
 			if (currentId === sessionId) {
-				setSession(null as any, []);
+				resetChat();
 			}
 			new Notice(t('settings.chat.history.deleteSuccess'));
 		} else {
@@ -759,14 +785,15 @@ export class ChatController {
 // ─── 텍스트 기반 Tool Calling (로컬 모델 폴백) ──────────────────────────────
 
 function buildTextToolPrompt(tools: ToolDefinition[]): string {
-	const toolDescs = tools.map(t => {
+	const toolDescs = tools.map((t: ToolDefinition) => {
 		const props = t.inputSchema?.properties ?? {};
 		const required = t.inputSchema?.required ?? [];
 		const argsDesc = Object.entries(props)
 			.filter(([key]) => key !== '_serverId')
 			.map(([key, val]) => {
 				const isRequired = required.includes(key) ? ' (required)' : ' (optional)';
-				return `    ${key}: ${(val as any).description || val.type}${isRequired}`;
+				const valObj = val as { description?: string; type?: string };
+				return `    ${key}: ${valObj.description || valObj.type}${isRequired}`;
 			})
 			.join('\n');
 		return `- ${t.name}: ${t.description}\n  Arguments:\n${argsDesc || '    (none)'}`;
@@ -791,8 +818,8 @@ IMPORTANT: ALWAYS explain your reasoning inside <think>...</think> tags BEFORE o
 CRITICAL: If you decide to use a tool, you MUST output the <lumina_tool_call> JSON block immediately after the </think> tag. Do NOT output any conversational text or explanation outside of the <think> tags when calling a tool. Never output <lumina_tool_call> without thinking first.`;
 }
 
-function parsePythonArgs(argsStr: string): Record<string, any> {
-	const args: Record<string, any> = {};
+function parsePythonArgs(argsStr: string): Record<string, unknown> {
+	const args: Record<string, unknown> = {};
 	let i = 0;
 	const len = argsStr.length;
 
@@ -827,7 +854,7 @@ function parsePythonArgs(argsStr: string): Record<string, any> {
 
 		if (i >= len) break;
 
-		let val: any = undefined;
+		let val: unknown = undefined;
 		const char = argsStr[i];
 
 		if (char === '"' || char === "'") {
@@ -933,7 +960,7 @@ function parsePythonArgs(argsStr: string): Record<string, any> {
 	return args;
 }
 
-function parsePythonCall(code: string): { name: string; arguments: Record<string, any> } | null {
+function parsePythonCall(code: string): { name: string; arguments: Record<string, unknown> } | null {
 	code = code.trim();
 	if (code.startsWith('print(') && code.endsWith(')')) {
 		code = code.substring(6, code.length - 1).trim();
@@ -961,8 +988,12 @@ function parseTextToolCalls(content: string): { toolCalls: Array<{ id: string; n
 		parts.push(content.substring(lastEnd, match.index));
 		const blockContent = match[2].trim();
 		try {
-			const json = JSON.parse(blockContent);
-			if (json.name) {
+			interface TextToolCallJson {
+				name: string;
+				arguments?: Record<string, unknown>;
+			}
+			const json = JSON.parse(blockContent) as TextToolCallJson | null | undefined;
+			if (json?.name) {
 				toolCalls.push({
 					id: crypto.randomUUID(),
 					name: json.name,
@@ -984,11 +1015,11 @@ function parseTextToolCalls(content: string): { toolCalls: Array<{ id: string; n
 
 				if (nameMatch) {
 					const toolName = nameMatch[1].trim();
-					let toolArgs = {};
+					let toolArgs: Record<string, unknown> = {};
 					if (argsMatch) {
 						let argsStr = argsMatch[1].trim();
 						try {
-							toolArgs = JSON.parse(argsStr);
+							toolArgs = JSON.parse(argsStr) as Record<string, unknown>;
 						} catch {
 							// JSON.parse 실패 시 파이썬 스타일이나 단순 파싱 시도할 수도 있지만, 일단 빈 객체로 fallback
 						}

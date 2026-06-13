@@ -132,18 +132,6 @@ export const zhTW: DeepPartial<Translation> = {
     },
       externalServer: {
         sectionTitle: '外部 MCP 伺服器 (用戶端連線)',
-        command: {
-          name: '命令',
-          desc: '例如 npx, python, node',
-        },
-        args: {
-          name: '參數',
-          desc: 'JSON 字串陣列 (例如 ["-y", "@modelcontextprotocol/server-everything"])',
-        },
-        env: {
-          name: '環境變數',
-          desc: 'JSON 物件 (例如 {"API_KEY": "..."})',
-        },
         sseUrl: {
           name: 'SSE URL',
           desc: '例如 http://localhost:8080/sse',

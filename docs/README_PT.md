@@ -91,8 +91,8 @@
   - `read_active_note`, `read_note`, `search_notes`, `rag_search`: Fornece o contexto e o conhecimento do seu cofre à IA.
   - `create_note`, `append_to_note`: Permite que a IA escreva de forma segura ideias organizadas diretamente no seu cofre (proteção contra substituição aplicada).
   - `read_daily_note`, `append_to_daily_note`: Integração de leitura/escrita para a nota diária de hoje.
-- **Como utilizar:** Ative as funcionalidades MCP nas configurações do plugin e configure os métodos de transporte cliente/servidor (stdio/SSE).
-- **Nota:** *As funcionalidades de Agente e MCP estão atualmente na fase Experimental (Beta). Conexões Stdio não são suportadas em dispositivos móveis. Embora várias redes de segurança, como proteção contra substituição e limites de caracteres, estejam em vigor, recomendamos monitorizar de perto as operações inicialmente, pois IAs externas editarão diretamente as suas notas.*
+- **Como utilizar:** Ative as funcionalidades MCP nas configurações do plugin e configure o método de transporte cliente/servidor (SSE).
+- **Nota:** *As funcionalidades de Agente e MCP estão atualmente na fase Experimental (Beta). Embora várias redes de segurança, como proteção contra substituição e limites de caracteres, estejam em vigor, recomendamos monitorizar de perto as operações inicialmente, pois IAs externas editarão diretamente as suas notas.*
 </details>
 
 ---

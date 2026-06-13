@@ -133,18 +133,6 @@ Das Verbinden von großen Modellen oder Reasoning-Modellen führt zu extremen Ve
     },
       externalServer: {
         sectionTitle: 'Externe MCP-Server (Client-Verbindung)',
-        command: {
-          name: 'Befehl',
-          desc: 'z. B. npx, python, node',
-        },
-        args: {
-          name: 'Argumente',
-          desc: 'JSON-Zeichenketten-Array (z. B. ["-y", "@modelcontextprotocol/server-everything"])',
-        },
-        env: {
-          name: 'Umgebungsvariablen',
-          desc: 'JSON-Objekt (z. B. {"API_KEY": "..."})',
-        },
         sseUrl: {
           name: 'SSE-URL',
           desc: 'z. B. http://localhost:8080/sse',

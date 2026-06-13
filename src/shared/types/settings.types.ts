@@ -120,7 +120,7 @@ export type PluginLanguage = 'en' | 'ko' | 'ja' | 'zh' | 'zh-tw' | 'es' | 'pt' |
 
 // ─── MCP Types ──────────────────────────────────────────────────────────────
 
-export type McpTransportType = 'stdio' | 'sse';
+export type McpTransportType = 'sse';
 
 export interface McpSettings {
 	/** 등록된 외부 MCP 서버 목록 */
@@ -155,12 +155,7 @@ export interface McpServerConfig {
 	name: string;
 	/** 전송 방식 */
 	transport: McpTransportType;
-	/** stdio 모드: 실행 명령어 (예: npx, python) */
-	command?: string;
-	/** stdio 모드: 명령어 인자 배열 */
-	args?: string[];
-	/** stdio 모드: 환경 변수 맵 */
-	env?: Record<string, string>;
+
 	/** sse 모드: 원격 서버 URL */
 	url?: string;
 	/** sse 모드: 인증 토큰 (내장 MCP 서버 연결 시 필요) */

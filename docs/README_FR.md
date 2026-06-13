@@ -91,8 +91,8 @@
   - `read_active_note`, `read_note`, `search_notes`, `rag_search` : Fournit le contexte et les connaissances de votre coffre-fort à l'IA.
   - `create_note`, `append_to_note` : Permet à l'IA d'écrire en toute sécurité des idées organisées directement dans votre coffre-fort (protection d'écrasement appliquée).
   - `read_daily_note`, `append_to_daily_note` : Intégration de lecture/écriture pour la note quotidienne d'aujourd'hui.
-- **Comment utiliser :** Activez les fonctionnalités MCP dans les paramètres du plugin et configurez les méthodes de transport client/serveur (stdio/SSE).
-- **Remarque :** *Les fonctionnalités d'Agent et de MCP sont actuellement en phase Expérimentale (Bêta). Les connexions Stdio ne sont pas prises en charge sur mobile. Bien que divers filets de sécurité comme la protection contre l'écrasement et des limites de caractères soient en place, nous recommandons de surveiller étroitement les opérations au début, car des IA externes éditeront directement vos notes.*
+- **Comment utiliser :** Activez les fonctionnalités MCP dans les paramètres du plugin et configurez la méthode de transport client/serveur (SSE).
+- **Remarque :** *Les fonctionnalités d'Agent et de MCP sont actuellement en phase Expérimentale (Bêta). Bien que divers filets de sécurité comme la protection contre l'écrasement et des limites de caractères soient en place, nous recommandons de surveiller étroitement les opérations au début, car des IA externes éditeront directement vos notes.*
 </details>
 
 ---

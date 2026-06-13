@@ -15,7 +15,7 @@ export const CHAT_VIEW_TYPE = 'lumina-chat';
 
 export class ChatView extends ItemView {
 	private plugin: LuminaPlugin;
-	private component: Record<string, any> | null = null;
+	private component: Record<string, unknown> | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: LuminaPlugin) {
 		super(leaf);
@@ -52,9 +52,9 @@ export class ChatView extends ItemView {
 		if (this.component) {
 			const comp = this.component;
 			this.component = null;
-			setTimeout(() => {
+			window.setTimeout(() => {
 				try {
-					unmount(comp);
+					void unmount(comp);
 				} catch (e) {
 					console.error('[Lumina] unmount error:', e);
 				}

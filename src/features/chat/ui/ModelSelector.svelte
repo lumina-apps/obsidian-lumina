@@ -8,7 +8,12 @@
 		providers, 
 		selectedProviderId = $bindable(), 
 		selectedModelId = $bindable(), 
-		onSelect 
+		onSelect = undefined
+	}: {
+		providers: any[];
+		selectedProviderId?: string;
+		selectedModelId?: string;
+		onSelect?: (providerId: string, modelId: string) => void;
 	} = $props();
 
 	let isOpen = $state(false);

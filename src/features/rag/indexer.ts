@@ -242,9 +242,13 @@ export class VaultIndexer {
 
 	// ─── Internals ───────────────────────────────────────────────────────────
 
-	/** 설정(excludedPaths, includedPaths)에 따라 인덱싱 대상 파일 목록 반환 */
 	private getTargetFiles(): TFile[] {
 		const { excludedPaths, includedPaths } = this.settings;
+		const configDir = this.app.vault.configDir;
+		const finalExcludedPaths = [...excludedPaths];
+		if (configDir && !finalExcludedPaths.includes(configDir)) {
+			finalExcludedPaths.push(configDir);
+		}
 		
 		// 전체 파일 중 지원되는 확장자만 필터링
 		const files = this.app.vault.getFiles().filter(f => {
@@ -252,7 +256,7 @@ export class VaultIndexer {
 		});
 
 		// exclusions.ts의 isIncluded, isExcluded로 화이트리스트/블랙리스트 동시 적용
-		return files.filter(f => isIncluded(f.path, includedPaths) && !isExcluded(f.path, excludedPaths));
+		return files.filter(f => isIncluded(f.path, includedPaths) && !isExcluded(f.path, finalExcludedPaths));
 	}
 
 	/**

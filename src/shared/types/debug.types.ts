@@ -113,7 +113,7 @@ export interface MCPLog extends BaseLogEntry {
 	/** 메시지 내용 */
 	message: string;
 	/** 추가 데이터 (JSON 형태로 기록됨) */
-	data?: any;
+	data?: unknown;
 }
 
 // ─── Union ────────────────────────────────────────────────────────────────────

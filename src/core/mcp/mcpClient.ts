@@ -1,15 +1,25 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { debugLogger } from '../../shared/debugLogger';
 import type { McpServerConfig } from '../../shared/types/settings.types';
-import { Platform } from 'obsidian';
+
+export interface McpTool {
+	name: string;
+	description?: string;
+	inputSchema: {
+		type: 'object';
+		properties?: Record<string, unknown>;
+		required?: string[];
+	};
+	_serverId?: string;
+	_serverName?: string;
+}
 
 export class LuminaMcpClient {
 	private client: Client;
-	private transport: StdioClientTransport | SSEClientTransport | null = null;
+	private transport: SSEClientTransport | null = null;
 	public config: McpServerConfig;
-	public availableTools: any[] = [];
+	public availableTools: McpTool[] = [];
 
 	constructor(config: McpServerConfig) {
 		this.config = config;
@@ -17,41 +27,25 @@ export class LuminaMcpClient {
 			name: 'Lumina',
 			version: '1.0.0'
 		}, {
-			capabilities: {
-				tools: {}
-			} as any
+			capabilities: {}
 		});
 	}
 
 	async connect(): Promise<void> {
-		if (this.config.transport === 'stdio') {
-			if (Platform.isMobile) {
-				throw new Error('stdio transport is not supported on mobile');
-			}
-			const command = this.config.command;
-			if (!command) throw new Error('Command is required for stdio transport');
-			
-			const env = { ...process.env, ...this.config.env };
-			
-			this.transport = new StdioClientTransport({
-				command,
-				args: this.config.args || [],
-				env: env as Record<string, string>
-			});
-	} else {
-			let url = this.config.url;
-			if (!url) throw new Error('URL is required for SSE transport');
-			const urlObj = new URL(url);
-			const opts: any = {};
-			
-			if (this.config.authToken) {
-				const headers = { Authorization: `Bearer ${this.config.authToken}` };
-				opts.eventSourceInit = { headers };
-				opts.requestInit = { headers };
-			}
-			
-			this.transport = new SSEClientTransport(urlObj, opts);
-			}
+		let url = this.config.url;
+		if (!url) throw new Error('URL is required for SSE transport');
+		const urlObj = new URL(url);
+		let opts: import('@modelcontextprotocol/sdk/client/sse.js').SSEClientTransportOptions = {};
+		
+		if (this.config.authToken) {
+			const headers = { Authorization: `Bearer ${this.config.authToken}` };
+			opts = {
+				eventSourceInit: { headers } as unknown as EventSourceInit,
+				requestInit: { headers }
+			};
+		}
+		
+		this.transport = new SSEClientTransport(urlObj, opts);
 
 		await this.client.connect(this.transport);
 		await this.refreshTools();
@@ -67,7 +61,7 @@ export class LuminaMcpClient {
 		}
 	}
 
-	async callTool(name: string, args: any): Promise<any> {
+	async callTool(name: string, args: Record<string, unknown>): Promise<unknown> {
 		return await this.client.callTool({ name, arguments: args ?? {} });
 	}
 

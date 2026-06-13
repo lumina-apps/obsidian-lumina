@@ -13,9 +13,11 @@ import { ChatOpenAI, OpenAIEmbeddings } from '@langchain/openai';
 import type { ProviderType } from '../../../shared/types/settings.types';
 import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, ToolCall } from '../../../shared/types/llm.types';
 import { debugLogger } from '../../../shared/debugLogger';
-import { HumanMessage, SystemMessage, AIMessage, ToolMessage } from '@langchain/core/messages';
+import { HumanMessage, SystemMessage, AIMessage, ToolMessage, AIMessageChunk } from '@langchain/core/messages';
+
 import { tool } from '@langchain/core/tools';
 import { t } from '../../../shared/locales/helpers';
+import { requestUrl } from 'obsidian';
 
 export class OpenAICompatProvider implements ILLMProvider {
 	readonly providerId: string;
@@ -51,13 +53,13 @@ export class OpenAICompatProvider implements ILLMProvider {
 				{
 					name: td.name,
 					description: td.description,
-					schema: td.inputSchema as any,
+					schema: td.inputSchema as unknown as import('zod').ZodTypeAny,
 				}
 			)))
 			: llm;
 
 		const stopSeq = options.stop ?? ["<|im_end|>", "<|endoftext|>", "<|eot_id|>", "<|end_of_text|>"];
-		const streamOptions: Record<string, any> = { signal: options.signal };
+		const streamOptions: { signal?: AbortSignal; stop?: string[] } = { signal: options.signal };
 		if (stopSeq.length > 0) {
 			streamOptions.stop = stopSeq;
 		}
@@ -65,25 +67,32 @@ export class OpenAICompatProvider implements ILLMProvider {
 
 		// .invoke() 대신 .stream()으로 응답을 직접 수집 (Ollama 호환성)
 		const stream = await executor.stream(lc, streamOptions);
-		let finalMessage: any = null;
+		let finalMessage: AIMessageChunk | null = null;
 		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
 
 		for await (const chunk of stream) {
+			const aiChunk = chunk as AIMessageChunk & {
+				usage_metadata?: {
+					input_tokens: number;
+					output_tokens: number;
+					total_tokens: number;
+				};
+			};
 			if (!finalMessage) {
-				finalMessage = chunk;
+				finalMessage = aiChunk;
 			} else {
-				finalMessage = finalMessage.concat(chunk);
+				finalMessage = (finalMessage as AIMessageChunk).concat(aiChunk) as AIMessageChunk;
 			}
 
-			if (onChunk && typeof chunk.content === 'string' && chunk.content) {
-				onChunk(chunk.content);
+			if (onChunk && typeof aiChunk.content === 'string' && aiChunk.content) {
+				onChunk(aiChunk.content);
 			}
 
-			if (chunk.usage_metadata) {
+			if (aiChunk.usage_metadata) {
 				usage = {
-					inputTokens: chunk.usage_metadata.input_tokens,
-					outputTokens: chunk.usage_metadata.output_tokens,
-					totalTokens: chunk.usage_metadata.total_tokens,
+					inputTokens: aiChunk.usage_metadata.input_tokens,
+					outputTokens: aiChunk.usage_metadata.output_tokens,
+					totalTokens: aiChunk.usage_metadata.total_tokens,
 				};
 			}
 		}
@@ -91,13 +100,16 @@ export class OpenAICompatProvider implements ILLMProvider {
 		let content = typeof finalMessage?.content === 'string' ? finalMessage.content : '';
 		
 		const toolCalls: ToolCall[] = [];
-		if (finalMessage?.tool_calls && finalMessage.tool_calls.length > 0) {
-			for (const tc of finalMessage.tool_calls) {
-				toolCalls.push({
-					id: tc.id || crypto.randomUUID(),
-					name: tc.name,
-					arguments: tc.args || {},
-				});
+		if (finalMessage) {
+			const tcList = finalMessage.tool_calls as Array<{ id?: string; name: string; args?: unknown }> | undefined;
+			if (tcList && tcList.length > 0) {
+				for (const tc of tcList) {
+					toolCalls.push({
+						id: tc.id || crypto.randomUUID(),
+						name: tc.name,
+						arguments: (tc.args as Record<string, unknown>) || {},
+					});
+				}
 			}
 		}
 
@@ -166,20 +178,37 @@ export class OpenAICompatProvider implements ILLMProvider {
 	// ─── Model listing ────────────────────────────────────────────────────────
 
 	private async listOllamaModels(): Promise<string[]> {
-		const res = await fetch(`${this.baseUrl}/api/tags`);
-		if (!res.ok) throw new Error(t('settings.providerErrors.apiError', { provider: 'Ollama', status: String(res.status), text: res.statusText }));
-		const data = await res.json() as { models: { name: string }[] };
-		if (!data.models?.length) throw new Error(t('settings.providerErrors.ollamaNoModel'));
-		return data.models.map((m) => m.name);
+		try {
+			const res = await requestUrl({
+				url: `${this.baseUrl}/api/tags`,
+				method: 'GET',
+			});
+			const data = res.json as { models: { name: string }[] };
+			if (!data.models?.length) throw new Error(t('settings.providerErrors.ollamaNoModel'));
+			return data.models.map((m) => m.name);
+		} catch (error) {
+			const err = error as { status?: string | number; message?: string };
+			const status = err.status ? String(err.status) : 'unknown';
+			const text = err.message || '';
+			throw new Error(t('settings.providerErrors.apiError', { provider: 'Ollama', status, text }));
+		}
 	}
 
 	private async listOpenAICompatModels(): Promise<string[]> {
-		const res = await fetch(`${this.baseUrl}/v1/models`, {
-			headers: { Authorization: `Bearer ${this.apiKey}` },
-		});
-		if (!res.ok) throw new Error(t('settings.providerErrors.connectFail', { status: String(res.status), text: res.statusText }));
-		const data = await res.json() as { data: { id: string }[] };
-		return data.data.map((m) => m.id);
+		try {
+			const res = await requestUrl({
+				url: `${this.baseUrl}/v1/models`,
+				method: 'GET',
+				headers: { Authorization: `Bearer ${this.apiKey}` },
+			});
+			const data = res.json as { data: { id: string }[] };
+			return data.data.map((m) => m.id);
+		} catch (error) {
+			const err = error as { status?: string | number; message?: string };
+			const status = err.status ? String(err.status) : 'unknown';
+			const text = err.message || '';
+			throw new Error(t('settings.providerErrors.connectFail', { status, text }));
+		}
 	}
 
 	// ─── LangChain builder ────────────────────────────────────────────────────
@@ -204,7 +233,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 export function toLangChainMessages(messages: ChatMessage[]) {
 	return messages.map((m) => {
 		if (m.role === 'system') return new SystemMessage(m.content as string);
-		if (m.role === 'user') return new HumanMessage({ content: m.content as any });
+		if (m.role === 'user') return new HumanMessage({ content: m.content as unknown as import('@langchain/core/messages').MessageContent });
 		if (m.role === 'tool') return new ToolMessage({
 			name: m.name ?? '',
 			content: m.content as string,

@@ -27,7 +27,7 @@ export class TextParser {
 								}
 							}).join('\n');
 					} else {
-						const parsed = JSON.parse(content);
+						const parsed = JSON.parse(content) as unknown;
 						return JSON.stringify(parsed, null, 2);
 					}
 				} catch {

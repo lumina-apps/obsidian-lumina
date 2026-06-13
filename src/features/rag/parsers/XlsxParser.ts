@@ -1,4 +1,4 @@
-import * as xlsx from 'xlsx';
+import * as xlsx from 'xlsx-js-style';
 
 export class XlsxParser {
 	/**

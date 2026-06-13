@@ -91,8 +91,8 @@
   - `read_active_note`, `read_note`, `search_notes`, `rag_search`: Bietet der KI den Kontext und das Wissen deines Vaults.
   - `create_note`, `append_to_note`: Erlaubt der KI, organisierte Ideen sicher direkt in deinen Vault zu schreiben (Überschreibschutz aktiv).
   - `read_daily_note`, `append_to_daily_note`: Lese-/Schreibintegration für die heutige Tagesnotiz.
-- **Verwendung:** Aktiviere MCP-Funktionen in den Plugin-Einstellungen und konfiguriere die Client/Server-Transportmethoden (stdio/SSE).
-- **Hinweis:** *Agenten- und MCP-Funktionen befinden sich derzeit in der experimentellen Phase (Beta). Stdio-Verbindungen werden auf Mobilgeräten nicht unterstützt. Obwohl verschiedene Sicherheitsnetze wie Überschreibschutz und Zeichenbegrenzungen bestehen, empfehlen wir anfangs, Operationen genau zu überwachen, da externe KI deine Notizen direkt bearbeitet.*
+- **Verwendung:** Aktiviere MCP-Funktionen in den Plugin-Einstellungen und konfiguriere die Client/Server-Transportmethode (SSE).
+- **Hinweis:** *Agenten- und MCP-Funktionen befinden sich derzeit in der experimentellen Phase (Beta). Obwohl verschiedene Sicherheitsnetze wie Überschreibschutz und Zeichenbegrenzungen bestehen, empfehlen wir anfangs, Operationen genau zu überwachen, da externe KI deine Notizen direkt bearbeitet.*
 </details>
 
 ---

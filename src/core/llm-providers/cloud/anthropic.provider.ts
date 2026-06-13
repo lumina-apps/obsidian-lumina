@@ -12,6 +12,7 @@ import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, ToolCall } f
 import { HumanMessage, SystemMessage, AIMessage, ToolMessage } from '@langchain/core/messages';
 import { t } from '../../../shared/locales/helpers';
 import { tool } from '@langchain/core/tools';
+import { requestUrl } from 'obsidian';
 
 /** Anthropic 공식 지원 모델 목록 (최신순) */
 const ANTHROPIC_MODELS = [
@@ -34,20 +35,27 @@ export class AnthropicProvider implements ILLMProvider {
 	}
 
 	async listModels(): Promise<string[]> {
-		const res = await fetch('https://api.anthropic.com/v1/models', {
-			headers: {
-				'x-api-key': this.apiKey,
-				'anthropic-version': '2023-06-01',
-			},
-		});
-		if (!res.ok) throw new Error(t('settings.providerErrors.apiError', { provider: 'Anthropic', status: String(res.status), text: res.statusText }));
+		try {
+			const res = await requestUrl({
+				url: 'https://api.anthropic.com/v1/models',
+				method: 'GET',
+				headers: {
+					'x-api-key': this.apiKey,
+					'anthropic-version': '2023-06-01',
+				},
+			});
+			const data = res.json as { data?: { id: string; type?: string }[] };
+			const apiModels = data.data
+				?.map(m => m.id)
+				.filter(id => id.startsWith('claude-')) ?? [];
 
-		const data = await res.json() as { data?: { id: string; type?: string }[] };
-		const apiModels = data.data
-			?.map(m => m.id)
-			.filter(id => id.startsWith('claude-')) ?? [];
-
-		return apiModels.length > 0 ? apiModels : ANTHROPIC_MODELS;
+			return apiModels.length > 0 ? apiModels : ANTHROPIC_MODELS;
+		} catch (error) {
+			const err = error as { status?: string | number; message?: string };
+			const status = err.status ? String(err.status) : 'unknown';
+			const text = err.message || '';
+			throw new Error(t('settings.providerErrors.apiError', { provider: 'Anthropic', status, text }));
+		}
 	}
 
 	async chat(messages: ChatMessage[], options: ChatOptions, onChunk?: (chunk: string) => void): Promise<ChatResponse> {
@@ -61,7 +69,7 @@ export class AnthropicProvider implements ILLMProvider {
 				{
 					name: td.name,
 					description: td.description,
-					schema: td.inputSchema as any,
+					schema: td.inputSchema as unknown as import('zod').ZodTypeAny,
 				}
 			)))
 			: llm;
@@ -139,7 +147,7 @@ export class AnthropicProvider implements ILLMProvider {
 export function toLangChainMessages(messages: ChatMessage[]) {
 	return messages.map((m) => {
 		if (m.role === 'system') return new SystemMessage(m.content as string);
-		if (m.role === 'user') return new HumanMessage({ content: m.content as any });
+		if (m.role === 'user') return new HumanMessage({ content: m.content as unknown as import('@langchain/core/messages').MessageContent });
 		if (m.role === 'tool') return new ToolMessage({
 			name: m.name ?? '',
 			content: m.content as string,

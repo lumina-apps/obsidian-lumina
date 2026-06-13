@@ -23,7 +23,7 @@ export async function saveSession(app: App, session: ChatSession, basePath: stri
 	const filename = `${yy}${mm}${dd}_${hh}${min} - ${safeTitle}.md`;
 
 	// 사용자 입력 경로 정규화 (중복 슬래시, 선행/후행 슬래시 제거)
-	const normalBase = normalizePath(basePath.replace(/[\/\\]+$/, ''));
+	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
 	const filePath = normalizePath(`${normalBase}/${filename}`);
 
 	const content = serializeSession(session);
@@ -50,7 +50,7 @@ export async function saveSession(app: App, session: ChatSession, basePath: stri
 					existingFile = f;
 					break;
 				}
-			} catch (e) {}
+			} catch (e) { /* ignore */ }
 		}
 	}
 
@@ -68,7 +68,7 @@ export async function saveSession(app: App, session: ChatSession, basePath: stri
 
 /** 히스토리 폴더의 모든 마크다운 파일을 읽어 세션 메타데이터 목록을 반환합니다. */
 export async function loadSessionsList(app: App, basePath: string): Promise<ChatSession[]> {
-	const normalBase = normalizePath(basePath.replace(/[\/\\]+$/, ''));
+	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
 	const folderExists = await app.vault.adapter.exists(normalBase);
 	if (!folderExists) return [];
 
@@ -76,9 +76,18 @@ export async function loadSessionsList(app: App, basePath: string): Promise<Chat
 	const files = app.vault.getFiles().filter(file => file.path.startsWith(prefix) && file.extension === 'md');
 	const sessions: ChatSession[] = [];
 
+	interface HistoryFrontmatter {
+		id?: string;
+		title?: string;
+		created?: string | number;
+		updated?: string | number;
+		provider?: string;
+		model?: string;
+	}
+
 	for (const file of files) {
 		const cache = app.metadataCache.getFileCache(file);
-		let fm = cache?.frontmatter;
+		let fm = cache?.frontmatter as HistoryFrontmatter | undefined;
 
 		// Obsidian 캐시가 아직 동기화되지 않은 경우 (새로 생성 직후 등)
 		if (!fm) {
@@ -94,7 +103,7 @@ export async function loadSessionsList(app: App, basePath: string): Promise<Chat
 					
 					let parsedTitle = '새 대화';
 					if (titleMatch) {
-						try { parsedTitle = JSON.parse(titleMatch[1]); } catch { parsedTitle = titleMatch[1].trim(); }
+						try { parsedTitle = JSON.parse(titleMatch[1]) as string; } catch { parsedTitle = titleMatch[1].trim(); }
 					}
 
 					fm = {
@@ -115,8 +124,8 @@ export async function loadSessionsList(app: App, basePath: string): Promise<Chat
 			sessions.push({
 				id: fm.id,
 				title: fm.title || '새 대화',
-				createdAt: new Date(fm.created).getTime(),
-				updatedAt: new Date(fm.updated).getTime(),
+				createdAt: new Date(fm.created || '').getTime(),
+				updatedAt: new Date(fm.updated || '').getTime(),
 				providerId: fm.provider || '',
 				modelId: fm.model || '',
 				messages: [], // 목록에서는 메시지 본문을 로드하지 않음 (최적화)
@@ -130,7 +139,7 @@ export async function loadSessionsList(app: App, basePath: string): Promise<Chat
 
 /** 특정 세션 ID를 가진 파일을 찾아 파싱하여 전체 ChatSession 객체(메시지 포함)를 복원합니다. */
 export async function loadSession(app: App, sessionId: string, basePath: string): Promise<ChatSession | null> {
-	const normalBase = normalizePath(basePath.replace(/[\/\\]+$/, ''));
+	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
 	const files = app.vault.getFiles().filter(file => file.path.startsWith(normalBase) && file.extension === 'md');
 	
 	const file = files.find(f => {
@@ -146,9 +155,9 @@ export async function loadSession(app: App, sessionId: string, basePath: string)
 	const match = content.match(/<!-- LUMINA_HISTORY_DATA:\s*([\s\S]*?)\s*-->/);
 	if (match && match[1]) {
 		try {
-			const parsed = JSON.parse(match[1]);
+			const parsed = JSON.parse(match[1]) as ChatSession;
 			// 저장된 전체 세션을 반환 (포맷에 맞춤)
-			return parsed as ChatSession;
+			return parsed;
 		} catch (e) {
 			console.error('Lumina: Failed to parse history JSON data', e);
 		}
@@ -159,7 +168,7 @@ export async function loadSession(app: App, sessionId: string, basePath: string)
 
 /** 특정 세션 파일을 삭제합니다. */
 export async function deleteSession(app: App, sessionId: string, basePath: string): Promise<boolean> {
-	const normalBase = normalizePath(basePath.replace(/[\/\\]+$/, ''));
+	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
 	const files = app.vault.getFiles().filter(file => file.path.startsWith(normalBase) && file.extension === 'md');
 	
 	const file = files.find(f => {
@@ -168,7 +177,7 @@ export async function deleteSession(app: App, sessionId: string, basePath: strin
 	});
 
 	if (file) {
-		await app.vault.delete(file);
+		await app.fileManager.trashFile(file);
 		return true;
 	}
 	return false;

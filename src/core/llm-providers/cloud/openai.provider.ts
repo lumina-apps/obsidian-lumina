@@ -14,6 +14,7 @@ import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, ToolDefiniti
 import { t } from '../../../shared/locales/helpers';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
+import { requestUrl } from 'obsidian';
 
 export class OpenAIProvider implements ILLMProvider {
 	readonly providerId: string;
@@ -25,16 +26,24 @@ export class OpenAIProvider implements ILLMProvider {
 	}
 
 	async listModels(): Promise<string[]> {
-		const res = await fetch('https://api.openai.com/v1/models', {
-			headers: { Authorization: `Bearer ${this.apiKey}` },
-		});
-		if (!res.ok) throw new Error(t('settings.providerErrors.apiError', { provider: 'OpenAI', status: String(res.status), text: res.statusText }));
-		const data = await res.json() as { data: { id: string; created: number }[] };
+		try {
+			const res = await requestUrl({
+				url: 'https://api.openai.com/v1/models',
+				method: 'GET',
+				headers: { Authorization: `Bearer ${this.apiKey}` },
+			});
+			const data = res.json as { data: { id: string; created: number }[] };
 
-		return data.data
-			.filter((m) => /^gpt-|^o\d|^chatgpt-/.test(m.id) || m.id.includes('embedding'))
-			.sort((a, b) => b.created - a.created)
-			.map((m) => m.id);
+			return data.data
+				.filter((m) => /^gpt-|^o\d|^chatgpt-/.test(m.id) || m.id.includes('embedding'))
+				.sort((a, b) => b.created - a.created)
+				.map((m) => m.id);
+		} catch (error) {
+			const err = error as { status?: string | number; message?: string };
+			const status = err.status ? String(err.status) : 'unknown';
+			const text = err.message || '';
+			throw new Error(t('settings.providerErrors.apiError', { provider: 'OpenAI', status, text }));
+		}
 	}
 
 	async chat(messages: ChatMessage[], options: ChatOptions, onChunk?: (chunk: string) => void): Promise<ChatResponse> {
@@ -48,7 +57,7 @@ export class OpenAIProvider implements ILLMProvider {
 				{
 					name: td.name,
 					description: td.description,
-					schema: td.inputSchema as any,
+					schema: td.inputSchema as unknown as import('zod').ZodTypeAny,
 				}
 			)))
 			: llm;
@@ -131,7 +140,7 @@ export class OpenAIProvider implements ILLMProvider {
 export function toLangChainMessages(messages: ChatMessage[]) {
 	return messages.map((m) => {
 		if (m.role === 'system') return new SystemMessage(m.content as string);
-		if (m.role === 'user') return new HumanMessage({ content: m.content as any });
+		if (m.role === 'user') return new HumanMessage({ content: m.content as unknown as import('@langchain/core/messages').MessageContent });
 		if (m.role === 'tool') return new ToolMessage({
 			name: m.name ?? '',
 			content: m.content as string,

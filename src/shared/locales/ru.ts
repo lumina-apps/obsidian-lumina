@@ -132,18 +132,6 @@ export const ru: DeepPartial<Translation> = {
     },
       externalServer: {
         sectionTitle: 'Внешние MCP-серверы (Клиентские подключения)',
-        command: {
-          name: 'Команда',
-          desc: 'например, npx, python, node',
-        },
-        args: {
-          name: 'Аргументы',
-          desc: 'Массив строк JSON (например, ["-y", "@modelcontextprotocol/server-everything"])',
-        },
-        env: {
-          name: 'Переменные окружения',
-          desc: 'Объект JSON (например, {"API_KEY": "..."})',
-        },
         sseUrl: {
           name: 'SSE URL',
           desc: 'например, http://localhost:8080/sse',
