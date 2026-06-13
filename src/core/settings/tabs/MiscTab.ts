@@ -54,7 +54,7 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 						tab.plugin.clearFrontmatterEvents();
 					}
 
-					tab.display();
+					tab.refreshDisplay();
 				});
 			});
 
@@ -93,7 +93,13 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			.setName(t('settings.misc.factoryReset.name'))
 			.setDesc(t('settings.misc.factoryReset.desc'))
 			.addButton(btn => {
-				btn.setButtonText(t('settings.misc.factoryReset.button')).setWarning().onClick(wrapAsync(async () => {
+				btn.setButtonText(t('settings.misc.factoryReset.button'));
+				if (typeof (btn as any).setDestructive === 'function') {
+					(btn as any).setDestructive();
+				} else {
+					(btn as any).setWarning();
+				}
+				btn.onClick(wrapAsync(async () => {
 					new ConfirmModal(
 						tab.app,
 						t('settings.misc.factoryReset.confirmTitle'),
@@ -157,7 +163,7 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 							}
 
 							new Notice(t('settings.misc.factoryReset.success'), 3000);
-							tab.display();
+							tab.refreshDisplay();
 						})
 					).open();
 				}));

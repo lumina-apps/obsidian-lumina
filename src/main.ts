@@ -7,7 +7,7 @@ import { getModelCacheDir, getWorkerRelativePath } from './features/rag/storage'
 import { VaultIndexer } from './features/rag/indexer';
 import { ChatView, CHAT_VIEW_TYPE } from './features/chat/chatView';
 import { DebugView, DEBUG_VIEW_TYPE } from './features/debug/debugView';
-import { initSettingsStore } from './core/store/settingsStore';
+import { initSettingsStore, syncSettingsStore } from './core/store/settingsStore';
 import { setIndexingStatus } from './core/store/ragStore';
 import { loadSystemLocaleCache } from './shared/locales/translator';
 import { setLanguage, t } from './shared/locales/helpers';
@@ -89,6 +89,7 @@ export default class LuminaPlugin extends Plugin {
 	mcpManager!: McpManager;
 	isFirstRun: boolean = false;
 	private ribbonEl: HTMLElement | null = null;
+	public settingTab: LuminaSettingTab | null = null;
 		/** watch 모드 파일 변경 디바운스 타이머 */
 	private watchDebounceTimer: number | null = null;
 		/** watch 모드 이벤트 해제 함수 모음 */
@@ -239,7 +240,8 @@ export default class LuminaPlugin extends Plugin {
 		});
 
 		// ── 설정 탭 ────────────────────────────────────────────────────────────
-		this.addSettingTab(new LuminaSettingTab(this.app, this));
+		this.settingTab = new LuminaSettingTab(this.app, this);
+		this.addSettingTab(this.settingTab);
 
 			// ── 프론트매터 자동생성 이벤트 등록 ─────────────────────────────
 		if (this.settings.misc.autoFrontmatter) {
@@ -455,6 +457,13 @@ export default class LuminaPlugin extends Plugin {
 		}
 
 		await this.saveData(settingsToSave);
+		syncSettingsStore(this.settings);
+	}
+
+	refreshSettingTab(): void {
+		if (this.settingTab && this.settingTab.containerEl && this.settingTab.containerEl.offsetParent !== null) {
+			this.settingTab.refreshDisplay();
+		}
 	}
 
 	// ─── Ribbon Icon ──────────────────────────────────────────────────────────

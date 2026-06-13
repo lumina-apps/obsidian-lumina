@@ -69,7 +69,7 @@ export class AnthropicProvider implements ILLMProvider {
 				{
 					name: td.name,
 					description: td.description,
-					schema: td.inputSchema as unknown as import('zod').ZodTypeAny,
+					schema: td.inputSchema as unknown as import('zod').ZodType,
 				}
 			)))
 			: llm;

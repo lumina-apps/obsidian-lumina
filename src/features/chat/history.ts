@@ -6,7 +6,7 @@
  * - 포맷: YAML 프론트매터 + 마크다운 대화 블록 + 숨겨진 JSON (정확한 복원용)
  */
 
-import { normalizePath, TFile, type App } from 'obsidian';
+import { normalizePath, type App } from 'obsidian';
 import type { ChatSession, UIChatMessage } from '../../shared/types/chat.types';
 
 // ─── Save ─────────────────────────────────────────────────────────────────────
@@ -50,7 +50,7 @@ export async function saveSession(app: App, session: ChatSession, basePath: stri
 					existingFile = f;
 					break;
 				}
-			} catch (e) { /* ignore */ }
+			} catch { /* ignore */ }
 		}
 	}
 
@@ -115,7 +115,7 @@ export async function loadSessionsList(app: App, basePath: string): Promise<Chat
 						provider: providerMatch ? providerMatch[1].trim() : ''
 					};
 				}
-			} catch (e) {
+			} catch {
 				// 읽기 실패 시 무시
 			}
 		}

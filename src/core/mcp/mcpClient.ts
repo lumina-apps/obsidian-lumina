@@ -1,5 +1,5 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { debugLogger } from '../../shared/debugLogger';
 import type { McpServerConfig } from '../../shared/types/settings.types';
 
@@ -17,7 +17,7 @@ export interface McpTool {
 
 export class LuminaMcpClient {
 	private client: Client;
-	private transport: SSEClientTransport | null = null;
+	private transport: StreamableHTTPClientTransport | null = null;
 	public config: McpServerConfig;
 	public availableTools: McpTool[] = [];
 
@@ -35,17 +35,16 @@ export class LuminaMcpClient {
 		let url = this.config.url;
 		if (!url) throw new Error('URL is required for SSE transport');
 		const urlObj = new URL(url);
-		let opts: import('@modelcontextprotocol/sdk/client/sse.js').SSEClientTransportOptions = {};
+		let opts: import('@modelcontextprotocol/sdk/client/streamableHttp.js').StreamableHTTPClientTransportOptions = {};
 		
 		if (this.config.authToken) {
 			const headers = { Authorization: `Bearer ${this.config.authToken}` };
 			opts = {
-				eventSourceInit: { headers } as unknown as EventSourceInit,
 				requestInit: { headers }
 			};
 		}
 		
-		this.transport = new SSEClientTransport(urlObj, opts);
+		this.transport = new StreamableHTTPClientTransport(urlObj, opts);
 
 		await this.client.connect(this.transport);
 		await this.refreshTools();

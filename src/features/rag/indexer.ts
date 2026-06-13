@@ -14,7 +14,7 @@
  *    Node.js fs 직접 사용 불가 → Obsidian vault.adapter API 사용.
  */
 
-import { App, TFile, Notice, normalizePath } from 'obsidian';
+import { App, TFile, normalizePath } from 'obsidian';
 import type { DocumentChunk, RawDocument } from '../../shared/types/rag.types';
 import type { RagSettings } from '../../core/settings/settings.types';
 import {
@@ -226,7 +226,7 @@ export class VaultIndexer {
 			this._chunks = data.chunks ?? [];
 			this.fileMtimes = data.fileMtimes ?? {};
 			this.fileHashes = data.fileHashes ?? {};
-		} catch (err) {
+		} catch {
 			debugLogger.logSystem('rag', '인덱스 로드 실패 (최초 실행이면 정상)');
 		}
 	}

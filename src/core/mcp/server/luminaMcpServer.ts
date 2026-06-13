@@ -1,21 +1,20 @@
 import * as http from 'http';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {
 	CallToolRequestSchema,
 	ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { TFile, TFolder, normalizePath } from 'obsidian';
+import { TFile, normalizePath } from 'obsidian';
 import type LuminaPlugin from '../../../main';
 import { searchVault, formatRagContext } from '../../../features/rag/search';
 import { debugLogger } from '../../../shared/debugLogger';
 import { t } from '../../../shared/locales/helpers';
 
 export class LuminaMcpServer {
-	private server: Server;
+	private server: McpServer;
 	private httpServer: http.Server | null = null;
-	private transport: SSEServerTransport | null = null;
-	private connectionReady: Promise<void> | null = null; // SSE 연결 준비 완료 대기용
+	private transports = new Map<string, StreamableHTTPServerTransport>();
 	public port: number;
 	public authToken: string;
 	private plugin: LuminaPlugin;
@@ -27,7 +26,7 @@ export class LuminaMcpServer {
 		this.port = port;
 		this.authToken = authToken;
 
-		this.server = new Server({
+		this.server = new McpServer({
 			name: 'Lumina-MCP-Server',
 			version: '1.0.0'
 		}, {
@@ -64,7 +63,7 @@ export class LuminaMcpServer {
 	}
 
 	private registerTools() {
-		this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+		this.server.server.setRequestHandler(ListToolsRequestSchema, async () => {
 			return {
 				tools: [
 					{
@@ -151,7 +150,7 @@ export class LuminaMcpServer {
 			};
 		});
 
-		this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+		this.server.server.setRequestHandler(CallToolRequestSchema, async (request) => {
 			const { name, arguments: args } = request.params;
 			const limits = this.plugin.settings.mcp;
 			const limitRead = limits.serverMaxReadChars || 20000;
@@ -356,11 +355,30 @@ export class LuminaMcpServer {
 				const token = url.searchParams.get('token');
 				if (token === this.authToken) return true;
 			}
-		} catch (e) {
+		} catch {
 			// ignore URL parse errors
 		}
 
 		return false;
+	}
+
+	private parseBody(req: http.IncomingMessage): Promise<any> {
+		return new Promise((resolve, reject) => {
+			let body = '';
+			req.on('data', chunk => {
+				body += chunk;
+			});
+			req.on('end', () => {
+				try {
+					resolve(body ? JSON.parse(body) : null);
+				} catch (e) {
+					reject(e);
+				}
+			});
+			req.on('error', err => {
+				reject(err);
+			});
+		});
 	}
 
 	public async start() {
@@ -372,14 +390,37 @@ export class LuminaMcpServer {
 				try {
 					// CORS headers
 					res.setHeader('Access-Control-Allow-Origin', '*');
-					res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-					res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, mcp-protocol-version');
+					res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE');
+					res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, mcp-protocol-version, mcp-session-id');
+					res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id, mcp-protocol-version');
 
 					if (req.method === 'OPTIONS') {
 						res.writeHead(200);
 						res.end();
 						return;
 					}
+
+					let parsedBody: any = null;
+					if (req.method === 'POST') {
+						try {
+							parsedBody = await this.parseBody(req);
+						} catch (e) {
+							debugLogger.logError('mcp', e instanceof Error ? e : new Error(`Body parse error: ${e}`));
+							res.writeHead(400, { 'Content-Type': 'application/json' });
+							res.end(JSON.stringify({
+								jsonrpc: '2.0',
+								error: { code: -32700, message: 'Parse error: Invalid JSON' },
+								id: null
+							}));
+							return;
+						}
+					}
+
+					const isInit = req.method === 'POST' && (
+						Array.isArray(parsedBody)
+							? parsedBody.some(msg => msg?.method === 'initialize')
+							: parsedBody?.method === 'initialize'
+					);
 
 					if (req.url?.startsWith('/sse')) {
 						if (!this.authenticate(req)) {
@@ -388,48 +429,77 @@ export class LuminaMcpServer {
 							return;
 						}
 
-						// 이전 연결이 있으면 반드시 await로 정리 후 진행
-						if (this.transport) {
-							debugLogger.logSystem('mcp', '기존 SSE 연결 정리 후 재연결');
-							const oldTransport = this.transport;
-							this.transport = null;
-							this.connectionReady = null;
-							try { await oldTransport.close(); } catch (e) {
-								// ignore
+						const sessionId = req.headers['mcp-session-id'] as string | undefined;
+
+						if (isInit) {
+							debugLogger.logSystem('mcp', 'POST /sse: 새로운 SSE 연결 초기화 시작');
+							// 이전 연결이 있으면 모두 닫고 새로 시작 (Local MCP Server는 single-client)
+							for (const oldTransport of this.transports.values()) {
+								try { await oldTransport.close(); } catch { /* ignore */ }
 							}
+							this.transports.clear();
+
+							const newTransport = new StreamableHTTPServerTransport({
+								sessionIdGenerator: () => crypto.randomUUID(),
+								onsessioninitialized: (sid) => {
+									debugLogger.logSystem('mcp', `✅ SSE 세션 초기화 완료: ${sid}`);
+									this.transports.set(sid, newTransport);
+								}
+							});
+
+							newTransport.onclose = () => {
+								const sid = newTransport.sessionId;
+								if (sid && this.transports.has(sid)) {
+									debugLogger.logSystem('mcp', `SSE 세션 종료: ${sid}`);
+									this.transports.delete(sid);
+								}
+							};
+
+							// MCP 서버와 연결 (await로 완료 대기)
+							await this.server.connect(newTransport);
+							await newTransport.handleRequest(req, res, parsedBody);
+							return;
 						}
 
-						// 새 transport 생성 및 서버 연결 (await로 완료 대기)
-						this.transport = new SSEServerTransport('/message', res);
-						const ready = this.server.connect(this.transport).then(() => {
-							debugLogger.logSystem('mcp', '✅ SSE 클라이언트 연결 완료');
-						}).catch((e) => {
-							debugLogger.logError('mcp', e instanceof Error ? e : new Error(`SSE 서버 연결 실패: ${e}`));
-							this.transport = null;
-							throw e;
-						});
-						this.connectionReady = ready;
-						try {
-							await ready;
-						} catch {
-							// connect 실패는 이미 로깅됨, 클라이언트는 SSE 응답이 끊어졌으므로 재연결 시도
+						// GET / POST / DELETE 요청 처리
+						if (!sessionId) {
+							debugLogger.logSystem('mcp', `${req.method} /sse: mcp-session-id 없음`);
+							res.writeHead(400, { 'Content-Type': 'text/plain' });
+							res.end('Bad Request: Mcp-Session-Id header is required');
+							return;
 						}
+
+						const transport = this.transports.get(sessionId);
+						if (!transport) {
+							debugLogger.logSystem('mcp', `${req.method} /sse: 세션 ${sessionId}을 찾을 수 없음`);
+							res.writeHead(404, { 'Content-Type': 'text/plain' });
+							res.end('Session not found');
+							return;
+						}
+
+						await transport.handleRequest(req, res, parsedBody);
 						return;
 					}
 
 					if (req.url?.startsWith('/message')) {
 						if (req.method === 'POST') {
-							// SSE 연결이 완료될 때까지 대기
-							if (this.connectionReady) {
-								try { await this.connectionReady; } catch { /* connect 실패, 아래 transport 체크로 처리 */ }
+							const sessionId = req.headers['mcp-session-id'] as string | undefined;
+							if (!sessionId) {
+								debugLogger.logSystem('mcp', 'POST /message: mcp-session-id 없음');
+								res.writeHead(400, { 'Content-Type': 'text/plain' });
+								res.end('Bad Request: Mcp-Session-Id header is required');
+								return;
 							}
-							if (this.transport) {
-								await this.transport.handlePostMessage(req, res);
-							} else {
-								debugLogger.logSystem('mcp', 'POST /message: SSE transport 없음');
-								res.writeHead(503, { 'Content-Type': 'text/plain' });
-								res.end('SSE transport not established. Reconnect required.');
+
+							const transport = this.transports.get(sessionId);
+							if (!transport) {
+								debugLogger.logSystem('mcp', `POST /message: 세션 ${sessionId}을 찾을 수 없음`);
+								res.writeHead(404, { 'Content-Type': 'text/plain' });
+								res.end('Session not found');
+								return;
 							}
+
+							await transport.handleRequest(req, res, parsedBody);
 							return;
 						}
 					}
@@ -484,10 +554,10 @@ export class LuminaMcpServer {
 
 	public async stop() {
 		this.isRunning = false;
-		if (this.transport) {
-			try { await this.transport.close(); } catch { /* ignore */ }
-			this.transport = null;
+		for (const transport of this.transports.values()) {
+			try { await transport.close(); } catch { /* ignore */ }
 		}
+		this.transports.clear();
 		if (this.httpServer) {
 			await new Promise<void>((resolve) => {
 				this.httpServer!.close(() => resolve());

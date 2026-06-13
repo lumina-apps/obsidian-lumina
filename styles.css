@@ -4,6 +4,7 @@
 .vertical-tab-content-container .vertical-tab-content.lumina-settings {
 	padding: 20px 48px 40px 48px;
 	font-family: var(--font-interface, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
+	container-type: inline-size;
 }
 
 /* Center all top-level layout components */
@@ -29,17 +30,31 @@
 }
 
 html body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn.lumina-settings__nav-btn--advanced {
-	flex: 0 0 44px;
-	width: 44px;
-	min-width: 44px;
-	padding: 0;
+	flex: 0 0 auto;
+	width: auto;
+	min-width: 0;
+	padding: 6px 12px;
 	display: flex;
 	justify-content: center;
 	align-items: center;
+	white-space: nowrap;
 }
 
 html body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn--advanced .lumina-settings__nav-text {
-	display: none;
+	display: inline;
+	margin-left: 6px;
+}
+
+@container (max-width: 850px) {
+	.lumina-settings__nav-separator {
+		display: none;
+	}
+	html body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn.lumina-settings__nav-btn--advanced {
+		padding: 6px 10px;
+	}
+	html body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn--advanced .lumina-settings__nav-text {
+		display: none;
+	}
 }
 
 /* 3. Advanced Toggle Container & Custom Sliding Switch */
@@ -102,6 +117,7 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 /* 4. Tab Navigation Menu (Horizontal Segmented Control) */
 .lumina-settings__nav {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: stretch;
 	background-color: var(--background-primary);
 	padding: 4px;

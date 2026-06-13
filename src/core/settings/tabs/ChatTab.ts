@@ -53,7 +53,7 @@ export function renderChatTab(tab: LuminaSettingTab, el: HTMLElement): void {
 				e.stopPropagation();
 				s.activeSystemPromptId = prompt.id;
 				await tab.saveAndSync();
-				tab.display();
+				tab.refreshDisplay();
 			}));
 		}
 
@@ -69,7 +69,7 @@ export function renderChatTab(tab: LuminaSettingTab, el: HTMLElement): void {
 				s.activeSystemPromptId = s.systemPrompts[0]?.id ?? '';
 			}
 			await tab.saveAndSync();
-			tab.display();
+			tab.refreshDisplay();
 		}));
 
 		// Body content (Textarea)
@@ -97,7 +97,7 @@ export function renderChatTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			content: '',
 		});
 		await tab.saveAndSync();
-		tab.display();
+		tab.refreshDisplay();
 	}));
 
 	// ── 채팅 기록 ─────────────────────────────────────────────────────────
@@ -110,7 +110,7 @@ export function renderChatTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			toggle.setValue(s.autoSaveHistory).onChange(wrapAsync(async (val) => {
 				s.autoSaveHistory = val;
 				await tab.saveAndSync();
-				tab.display();
+				tab.refreshDisplay();
 			}));
 		});
 
@@ -219,15 +219,19 @@ export function renderChatTab(tab: LuminaSettingTab, el: HTMLElement): void {
 		// Delete button
 		const deleteSetting = new Setting(body)
 			.addButton(btn => {
-				btn.setButtonText(t('settings.chat.quickActions.deleteAction'))
-					.setWarning()
-					.onClick(async () => {
+				btn.setButtonText(t('settings.chat.quickActions.deleteAction'));
+				if (typeof (btn as any).setDestructive === 'function') {
+					(btn as any).setDestructive();
+				} else {
+					(btn as any).setWarning();
+				}
+				btn.onClick(async () => {
 						s.quickActions = s.quickActions.filter(a => a.id !== action.id);
 						await tab.saveAndSync();
 						if (tab.plugin.registerQuickActions) {
 							tab.plugin.registerQuickActions();
 						}
-						tab.display();
+						tab.refreshDisplay();
 					});
 			});
 
@@ -252,7 +256,7 @@ export function renderChatTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			if (tab.plugin.registerQuickActions) {
 				tab.plugin.registerQuickActions();
 			}
-			tab.display();
+			tab.refreshDisplay();
 		})();
 	});
 
@@ -271,7 +275,7 @@ export function renderChatTab(tab: LuminaSettingTab, el: HTMLElement): void {
 					.onChange(async (val) => {
 						s.useTokenLimit = val === 'tokens';
 						await tab.saveAndSync();
-						tab.display();
+						tab.refreshDisplay();
 					});
 			});
 

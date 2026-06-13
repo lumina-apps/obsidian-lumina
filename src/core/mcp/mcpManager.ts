@@ -43,10 +43,14 @@ export class McpManager {
 					if (this.localServer.port !== mcpSettings.serverPort || this.localServer.authToken !== mcpSettings.serverAuthToken) {
 						await this.localServer.stop().catch(console.error);
 						this.localServer = new ServerCtor(this.plugin, mcpSettings.serverPort, mcpSettings.serverAuthToken);
-						await this.localServer.start().catch((e: unknown) => {
+						await this.localServer.start().catch(async (e: unknown) => {
 							const msg = e instanceof Error ? e.message : String(e);
 							new Notice(t('uiMessages.mcpLocalServerStartFailed', { error: msg }));
 							this.localServer = null;
+							mcpSettings.serverEnabled = false;
+							this.plugin.settings.chat.agentEnabled = false;
+							await this.plugin.saveSettings();
+							this.plugin.refreshSettingTab();
 						});
 						if (this.localServer) {
 							if (mcpSettings.serverPort !== this.localServer.port) {
@@ -59,10 +63,14 @@ export class McpManager {
 				} else {
 					if (mcpSettings.serverPort) {
 						this.localServer = new ServerCtor(this.plugin, mcpSettings.serverPort, mcpSettings.serverAuthToken);
-						await this.localServer.start().catch((e: unknown) => {
+						await this.localServer.start().catch(async (e: unknown) => {
 							const msg = e instanceof Error ? e.message : String(e);
 							new Notice(t('uiMessages.mcpLocalServerStartFailed', { error: msg }));
 							this.localServer = null;
+							mcpSettings.serverEnabled = false;
+							this.plugin.settings.chat.agentEnabled = false;
+							await this.plugin.saveSettings();
+							this.plugin.refreshSettingTab();
 						});
 						if (this.localServer) {
 							if (mcpSettings.serverPort !== this.localServer.port) {
@@ -118,15 +126,19 @@ export class McpManager {
 						debugLogger.logSystem('mcp', `✅ 내장 MCP 서버 연결 성공 (툴 ${client.availableTools.length}개)`);
 					});
 					const timeoutP = new Promise<void>((_, reject) => window.setTimeout(() => reject(new Error('Connection timeout')), 15000));
-					Promise.race([connectP, timeoutP]).catch(e => {
+					Promise.race([connectP, timeoutP]).catch(async (e) => {
 						debugLogger.logError('mcp', e instanceof Error ? e : new Error(`내장 MCP 서버 연결 실패: ${e}`));
 						this.clients.delete(LOCAL_MCP_CLIENT_ID);
 						client.disconnect().catch(() => {});
-						if (this.plugin.settings.chat.agentEnabled) {
-							this.plugin.settings.chat.agentEnabled = false;
-							this.plugin.saveSettings().catch(() => {});
-							new Notice(t('uiMessages.mcpLocalServerDisconnectAgentDisabled'));
+						mcpSettings.serverEnabled = false;
+						if (this.localServer) {
+							await this.localServer.stop().catch(console.error);
+							this.localServer = null;
 						}
+						this.plugin.settings.chat.agentEnabled = false;
+						await this.plugin.saveSettings();
+						this.plugin.refreshSettingTab();
+						new Notice(t('uiMessages.mcpLocalServerDisconnectAgentDisabled'));
 					});
 				}
 			} else {
@@ -196,6 +208,7 @@ export class McpManager {
 			}
 			// 모든 연결 완료 후 한 번에 설정 저장
 			await this.plugin.saveSettings();
+			this.plugin.refreshSettingTab();
 		} finally {
 			this.isSyncing = false;
 		}
@@ -264,12 +277,20 @@ export class McpManager {
 			
 			new Notice(t('uiMessages.mcpClientToolExecutionFailedStatusError', { name: client.config.name }));
 			
-			if (serverId === LOCAL_MCP_CLIENT_ID && this.plugin.settings.chat.agentEnabled) {
-				this.plugin.settings.chat.agentEnabled = false;
-				new Notice(t('uiMessages.mcpLocalServerDisconnectAgentDisabled'));
+			if (serverId === LOCAL_MCP_CLIENT_ID) {
+				this.plugin.settings.mcp.serverEnabled = false;
+				if (this.localServer) {
+					await this.localServer.stop().catch(console.error);
+					this.localServer = null;
+				}
+				if (this.plugin.settings.chat.agentEnabled) {
+					this.plugin.settings.chat.agentEnabled = false;
+					new Notice(t('uiMessages.mcpLocalServerDisconnectAgentDisabled'));
+				}
 			}
 			
 			await this.plugin.saveSettings();
+			this.plugin.refreshSettingTab();
 			
 			return {
 				isError: true,

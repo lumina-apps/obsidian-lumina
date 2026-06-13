@@ -10,10 +10,9 @@
 
 import { ChatOpenAI, OpenAIEmbeddings } from '@langchain/openai';
 import { HumanMessage, SystemMessage, AIMessage, ToolMessage } from '@langchain/core/messages';
-import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, ToolDefinition, ToolCall } from '../../../shared/types/llm.types';
+import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, ToolCall } from '../../../shared/types/llm.types';
 import { t } from '../../../shared/locales/helpers';
 import { tool } from '@langchain/core/tools';
-import { z } from 'zod';
 import { requestUrl } from 'obsidian';
 
 export class OpenAIProvider implements ILLMProvider {
@@ -57,7 +56,7 @@ export class OpenAIProvider implements ILLMProvider {
 				{
 					name: td.name,
 					description: td.description,
-					schema: td.inputSchema as unknown as import('zod').ZodTypeAny,
+					schema: td.inputSchema as unknown as import('zod').ZodType,
 				}
 			)))
 			: llm;

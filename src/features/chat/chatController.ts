@@ -10,7 +10,7 @@
  * 콜백이 필요 없으므로 ChatPanel이 단순해짐.
  */
 
-import { Notice, TFile, TFolder, MarkdownView, requestUrl, type App } from 'obsidian';
+import { Notice, TFile, TFolder, MarkdownView, type App } from 'obsidian';
 import { t } from '../../shared/locales/helpers';
 import type LuminaPlugin from '../../main';
 import { createProvider, isLocalProvider } from '../../core/llm-providers/index';
@@ -29,7 +29,6 @@ import {
 	messages,
 	currentSessionId,
 	currentSessionTitle,
-	setSessionTitle,
 	resetChat,
 } from '../../core/store/chatStore';
 import { get } from 'svelte/store';

@@ -1,4 +1,4 @@
-import { App, TFile, TFolder, requestUrl } from 'obsidian';
+import { App, TFile, requestUrl } from 'obsidian';
 import { DocumentParserRouter, SUPPORTED_EXTENSIONS } from '../../rag/parsers/DocumentParserRouter';
 import type { ContextAttachment } from '../../../shared/types/chat.types';
 

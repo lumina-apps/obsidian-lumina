@@ -8,7 +8,6 @@
  * - init() 타임아웃: 60초 초과 시 자동 reject (무한 대기 방지)
  */
 
-import { Platform } from 'obsidian';
 import type { WorkerRequest, WorkerResponse } from '../../shared/types/rag.types';
 import { t } from '../../shared/locales/helpers';
 

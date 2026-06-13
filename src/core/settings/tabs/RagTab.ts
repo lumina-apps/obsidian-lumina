@@ -147,14 +147,20 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 					try {
 						await tab.plugin.indexer.indexVault();
 						new Notice(t('settings.rag.reindex.success'), 3000);
-						tab.display();
+						tab.refreshDisplay();
 					} catch (err) {
 						new Notice(`${t('settings.rag.reindex.fail')}${(err as Error).message}`, 5000);
 					}
 				}));
 			})
 			.addButton(btn => {
-				btn.setButtonText(t('settings.rag.reset.button')).setWarning().onClick(() => {
+				btn.setButtonText(t('settings.rag.reset.button'));
+				if (typeof (btn as any).setDestructive === 'function') {
+					(btn as any).setDestructive();
+				} else {
+					(btn as any).setWarning();
+				}
+				btn.onClick(() => {
 					if (!tab.plugin.indexer) {
 						new Notice(t('settings.rag.reindex.notActivated'));
 						return;
@@ -167,7 +173,7 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 							if (tab.plugin.indexer) {
 								await tab.plugin.indexer.resetIndex();
 								new Notice(t('settings.rag.reset.resetSuccess'), 3000);
-								tab.display();
+								tab.refreshDisplay();
 							}
 						})
 					).open();

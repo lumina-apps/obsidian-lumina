@@ -1,4 +1,4 @@
-import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
+import { App, Notice, PluginSettingTab, Setting, setTooltip } from 'obsidian';
 import { debugLogger } from '../../shared/debugLogger';
 import type LuminaPlugin from '../../main';
 import type { ProviderType } from '../../shared/types/settings.types';
@@ -111,7 +111,7 @@ export class LuminaSettingTab extends PluginSettingTab {
 		];
 	}
 
-	display(): void {
+	refreshDisplay(): void {
 		const { containerEl } = this;
 		containerEl.empty();
 		containerEl.addClass('lumina-settings');
@@ -122,6 +122,10 @@ export class LuminaSettingTab extends PluginSettingTab {
 		this.renderTab(body);
 
 		this.renderDonationFooter(body);
+	}
+
+	display(): void {
+		this.refreshDisplay();
 	}
 
 	private renderDonationFooter(el: HTMLElement): void {
@@ -179,8 +183,8 @@ export class LuminaSettingTab extends PluginSettingTab {
 			const scrollContainer = this.containerEl.querySelector('.lumina-settings__body') || this.containerEl;
 			const scrollTop = scrollContainer.scrollTop;
 			window.setTimeout(() => {
-				this.display();
-				// display() 후 스크롤 위치 복원
+				this.refreshDisplay();
+				// refreshDisplay() 후 스크롤 위치 복원
 				window.requestAnimationFrame(() => {
 					const newContainer = this.containerEl.querySelector('.lumina-settings__body') || this.containerEl;
 					newContainer.scrollTop = scrollTop;
@@ -212,7 +216,7 @@ export class LuminaSettingTab extends PluginSettingTab {
 
 			btn.addEventListener('click', () => {
 				this.activeTab = tab.id;
-				this.display();
+				this.refreshDisplay();
 			});
 		}
 
@@ -223,7 +227,7 @@ export class LuminaSettingTab extends PluginSettingTab {
 		const advBtn = nav.createEl('button', {
 			cls: `lumina-settings__nav-btn lumina-settings__nav-btn--advanced ${this.showAdvanced ? 'is-active' : ''}`,
 		});
-		advBtn.setAttribute('title', t('settings.showAdvanced'));
+		setTooltip(advBtn, t('settings.showAdvanced'), { delay: 0 });
 
 		const labelSpan = advBtn.createSpan({ cls: 'lumina-settings__nav-label' });
 		labelSpan.createSpan({ text: '⚙️', cls: 'lumina-settings__nav-icon' });
@@ -231,7 +235,7 @@ export class LuminaSettingTab extends PluginSettingTab {
 
 		advBtn.addEventListener('click', () => {
 			this.showAdvanced = !this.showAdvanced;
-			this.display();
+			this.refreshDisplay();
 		});
 	}
 

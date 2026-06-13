@@ -50,7 +50,7 @@ export function renderMcpTab(tab: LuminaSettingTab, el: HTMLElement): void {
 					new Notice(t('uiMessages.agentModeDisabled'));
 				}
 				await tab.saveAndSync();
-				tab.display(); // UI 즉시 갱신
+				tab.refreshDisplay(); // UI 즉시 갱신
 			});
 		});
 
@@ -90,7 +90,7 @@ export function renderMcpTab(tab: LuminaSettingTab, el: HTMLElement): void {
 					new Notice(t('uiMessages.agentModeLocalServerStoppedDisabled'));
 				}
 				await tab.saveAndSync(true);
-				tab.display(); // UI 즉시 갱신
+				tab.refreshDisplay(); // UI 즉시 갱신
 			});
 		});
 
@@ -109,7 +109,7 @@ export function renderMcpTab(tab: LuminaSettingTab, el: HTMLElement): void {
 				});
 			});
 
-		const tokenSetting = new Setting(localServerCard)
+		new Setting(localServerCard)
 			.setName(t('settings.mcp.localServer.token.name'))
 			.setDesc(t('settings.mcp.localServer.token.desc'))
 			.addText(text => {
@@ -131,7 +131,7 @@ export function renderMcpTab(tab: LuminaSettingTab, el: HTMLElement): void {
 					.onClick(async () => {
 						s.serverAuthToken = crypto.randomUUID();
 						await tab.saveAndSync();
-						tab.display();
+						tab.refreshDisplay();
 					});
 			});
 
@@ -226,7 +226,7 @@ export function renderMcpTab(tab: LuminaSettingTab, el: HTMLElement): void {
 					};
 					s.servers.push(newServer);
 					await tab.saveAndSync();
-					tab.display();
+					tab.refreshDisplay();
 				});
 		});
 }
@@ -274,12 +274,10 @@ export function renderMcpServerCard(tab: LuminaSettingTab, el: HTMLElement, serv
 	urlSetting.settingEl.setCssStyles({ gridColumn: '1', gridRow: '2' });
 
 	// sse Auth Token
-	let tokenInput: TextComponent;
 	const authSetting = new Setting(card)
 		.setName(t('settings.mcp.externalServer.token.name'))
 		.setDesc(t('settings.mcp.externalServer.token.desc'))
 		.addText(text => {
-			tokenInput = text;
 			text.setValue(server.authToken || '')
 				.setPlaceholder('token')
 				.onChange(async (val) => {
@@ -305,14 +303,14 @@ export function renderMcpServerCard(tab: LuminaSettingTab, el: HTMLElement, serv
 					if (server.enabled !== val) {
 						toggle.setValue(server.enabled);
 					}
-					tab.display(); // 상태(색상 등) 업데이트를 위해 전체 다시 렌더링
+					tab.refreshDisplay(); // 상태(색상 등) 업데이트를 위해 전체 다시 렌더링
 				});
 		})
 		.addExtraButton(btn => {
 			btn.setIcon('trash').setTooltip(t('settings.mcp.deleteServer')).onClick(async () => {
 				tab.plugin.settings.mcp.servers = tab.plugin.settings.mcp.servers.filter(s => s.id !== server.id);
 				await tab.saveAndSync();
-				tab.display();
+				tab.refreshDisplay();
 			});
 		});
 	actionsSetting.settingEl.addClass('lumina-provider-card__setting-actions');

@@ -55,14 +55,17 @@ export class McpPermissionModal extends Modal {
 		});
 
 		new Setting(contentEl)
-			.addButton((btn) =>
-				btn
-					.setButtonText(t('settings.mcp.permission.reject'))
-					.setWarning()
-					.onClick(() => {
-						this.respond(false);
-					})
-			)
+			.addButton((btn) => {
+				btn.setButtonText(t('settings.mcp.permission.reject'));
+				if (typeof (btn as any).setDestructive === 'function') {
+					(btn as any).setDestructive();
+				} else {
+					(btn as any).setWarning();
+				}
+				btn.onClick(() => {
+					this.respond(false);
+				});
+			})
 			.addButton((btn) =>
 				btn
 					.setButtonText(t('settings.mcp.permission.approve'))

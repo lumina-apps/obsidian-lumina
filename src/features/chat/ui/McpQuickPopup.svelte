@@ -3,6 +3,7 @@
 	import type LuminaPlugin from "../../../main";
 	import type { McpServerConfig } from "../../../shared/types/settings.types";
 	import { t } from "../../../shared/locales/helpers";
+	import { settingsStore } from "../../../core/store/settingsStore";
 
 	let {
 		plugin,
@@ -22,13 +23,14 @@
 	let serverPort = $state(3000);
 	let agentEnabled = $state(false);
 
-	// 팝업이 열릴 때마다(= showMcpPopup이 true가 될 때마다) 최신 설정 동기화
+	// 팝업이 열릴 때마다 혹은 settingsStore가 업데이트될 때마다 최신 설정 동기화
 	$effect(() => {
-		// 원본 배열 레퍼런스를 유지하여 토글 시 원본이 수정되도록 합니다.
-		servers = plugin.settings.mcp.servers;
-		serverEnabled = plugin.settings.mcp.serverEnabled;
-		serverPort = plugin.settings.mcp.serverPort;
-		agentEnabled = plugin.settings.chat.agentEnabled;
+		if ($settingsStore) {
+			servers = $settingsStore.mcp.servers;
+			serverEnabled = $settingsStore.mcp.serverEnabled;
+			serverPort = $settingsStore.mcp.serverPort;
+			agentEnabled = $settingsStore.chat.agentEnabled;
+		}
 	});
 
 	function handleClickOutside(e: MouseEvent) {

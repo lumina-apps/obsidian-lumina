@@ -54,7 +54,7 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 					s.language = val as typeof s.language;
 					tab.plugin.migrateQuickActions();
 					await tab.saveAndSync();
-					tab.display(); // 언어 변경에 따른 UI 리렌더링
+					tab.refreshDisplay(); // 언어 변경에 따른 UI 리렌더링
 				});
 		})
 		.addButton(btn => {
@@ -103,7 +103,7 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 					};
 					s.providers.push(newProvider);
 					await tab.saveAndSync();
-					tab.display();
+					tab.refreshDisplay();
 				}));
 		});
 
@@ -154,7 +154,7 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 					tab.plugin.indexer = null;
 					setIndexingStatus('idle');
 				}
-				tab.display();
+				tab.refreshDisplay();
 			});
 			if (isMobileLocked) {
 				toggle.setDisabled(true);
@@ -361,7 +361,7 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 				provider.isVerified = false;
 				provider.availableModels = [];
 				await tab.saveAndSync();
-				tab.display();
+				tab.refreshDisplay();
 			});
 		});
 	typeSetting.settingEl.addClass('lumina-provider-card__setting-type');
@@ -409,7 +409,7 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 				btn.setButtonText(t('settings.connections.apiKey.testing')).setDisabled(true);
 				await testProvider(provider);
 				await tab.saveAndSync();
-				tab.display();
+				tab.refreshDisplay();
 			});
 		})
 		.addExtraButton(btn => {
@@ -417,7 +417,7 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 				tab.plugin.settings.connections.providers =
 					tab.plugin.settings.connections.providers.filter(p => p.id !== provider.id);
 				await tab.saveAndSync();
-				tab.display();
+				tab.refreshDisplay();
 			});
 		});
 	actionsSetting.settingEl.addClass('lumina-provider-card__setting-actions');
