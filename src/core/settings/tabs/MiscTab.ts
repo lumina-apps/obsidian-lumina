@@ -1,4 +1,4 @@
-import { Notice, Setting, Platform } from 'obsidian';
+import { Notice, Setting, Platform, ButtonComponent } from 'obsidian';
 import type { LuminaSettingTab } from '../settingTab';
 import { t, setLanguage } from '../../../shared/locales/helpers';
 import { wrapAsync } from '../settingTab';
@@ -94,10 +94,11 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			.setDesc(t('settings.misc.factoryReset.desc'))
 			.addButton(btn => {
 				btn.setButtonText(t('settings.misc.factoryReset.button'));
-				if (typeof (btn as any).setDestructive === 'function') {
-					(btn as any).setDestructive();
+				const customBtn = btn as ButtonComponent & { setDestructive?: () => ButtonComponent };
+				if (typeof customBtn.setDestructive === 'function') {
+					customBtn.setDestructive();
 				} else {
-					(btn as any).setWarning();
+					customBtn.setWarning();
 				}
 				btn.onClick(wrapAsync(async () => {
 					new ConfirmModal(

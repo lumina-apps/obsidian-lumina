@@ -1,4 +1,4 @@
-import { Setting } from 'obsidian';
+import { Setting, ButtonComponent } from 'obsidian';
 import type { LuminaSettingTab } from '../settingTab';
 import { wrapAsync, addSliderWithInput } from '../settingTab';
 import { t } from '../../../shared/locales/helpers';
@@ -220,10 +220,11 @@ export function renderChatTab(tab: LuminaSettingTab, el: HTMLElement): void {
 		const deleteSetting = new Setting(body)
 			.addButton(btn => {
 				btn.setButtonText(t('settings.chat.quickActions.deleteAction'));
-				if (typeof (btn as any).setDestructive === 'function') {
-					(btn as any).setDestructive();
+				const customBtn = btn as ButtonComponent & { setDestructive?: () => ButtonComponent };
+				if (typeof customBtn.setDestructive === 'function') {
+					customBtn.setDestructive();
 				} else {
-					(btn as any).setWarning();
+					customBtn.setWarning();
 				}
 				btn.onClick(async () => {
 						s.quickActions = s.quickActions.filter(a => a.id !== action.id);

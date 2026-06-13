@@ -362,7 +362,7 @@ export class LuminaMcpServer {
 		return false;
 	}
 
-	private parseBody(req: http.IncomingMessage): Promise<any> {
+	private parseBody(req: http.IncomingMessage): Promise<unknown> {
 		return new Promise((resolve, reject) => {
 			let body = '';
 			req.on('data', chunk => {
@@ -372,11 +372,11 @@ export class LuminaMcpServer {
 				try {
 					resolve(body ? JSON.parse(body) : null);
 				} catch (e) {
-					reject(e);
+					reject(e instanceof Error ? e : new Error(String(e)));
 				}
 			});
 			req.on('error', err => {
-				reject(err);
+				reject(err instanceof Error ? err : new Error(String(err)));
 			});
 		});
 	}
@@ -400,7 +400,7 @@ export class LuminaMcpServer {
 						return;
 					}
 
-					let parsedBody: any = null;
+					let parsedBody: unknown = null;
 					if (req.method === 'POST') {
 						try {
 							parsedBody = await this.parseBody(req);
@@ -416,10 +416,14 @@ export class LuminaMcpServer {
 						}
 					}
 
+					const hasInitializeMethod = (msg: unknown): boolean => {
+						return typeof msg === 'object' && msg !== null && 'method' in msg && (msg as Record<string, unknown>).method === 'initialize';
+					};
+
 					const isInit = req.method === 'POST' && (
 						Array.isArray(parsedBody)
-							? parsedBody.some(msg => msg?.method === 'initialize')
-							: parsedBody?.method === 'initialize'
+							? parsedBody.some(hasInitializeMethod)
+							: hasInitializeMethod(parsedBody)
 					);
 
 					if (req.url?.startsWith('/sse')) {

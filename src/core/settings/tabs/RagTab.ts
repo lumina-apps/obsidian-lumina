@@ -1,4 +1,4 @@
-import { Notice, Setting } from 'obsidian';
+import { Notice, Setting, ButtonComponent } from 'obsidian';
 import type { LuminaSettingTab } from '../settingTab';
 import { wrapAsync, addSliderWithInput } from '../settingTab';
 import { t } from '../../../shared/locales/helpers';
@@ -155,10 +155,11 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			})
 			.addButton(btn => {
 				btn.setButtonText(t('settings.rag.reset.button'));
-				if (typeof (btn as any).setDestructive === 'function') {
-					(btn as any).setDestructive();
+				const customBtn = btn as ButtonComponent & { setDestructive?: () => ButtonComponent };
+				if (typeof customBtn.setDestructive === 'function') {
+					customBtn.setDestructive();
 				} else {
-					(btn as any).setWarning();
+					customBtn.setWarning();
 				}
 				btn.onClick(() => {
 					if (!tab.plugin.indexer) {

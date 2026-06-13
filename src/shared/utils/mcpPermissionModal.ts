@@ -1,4 +1,4 @@
-import { App, Modal, Setting } from 'obsidian';
+import { App, Modal, Setting, ButtonComponent } from 'obsidian';
 import { t } from '../locales/helpers';
 
 export class McpPermissionModal extends Modal {
@@ -57,10 +57,11 @@ export class McpPermissionModal extends Modal {
 		new Setting(contentEl)
 			.addButton((btn) => {
 				btn.setButtonText(t('settings.mcp.permission.reject'));
-				if (typeof (btn as any).setDestructive === 'function') {
-					(btn as any).setDestructive();
+				const customBtn = btn as ButtonComponent & { setDestructive?: () => ButtonComponent };
+				if (typeof customBtn.setDestructive === 'function') {
+					customBtn.setDestructive();
 				} else {
-					(btn as any).setWarning();
+					customBtn.setWarning();
 				}
 				btn.onClick(() => {
 					this.respond(false);
