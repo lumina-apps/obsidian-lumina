@@ -140,9 +140,9 @@
 				updateContext();
 			}, 1000); // 1초 디바운스
 		}
-		return () => {
-			if (contextTimer) clearTimeout(contextTimer);
-		};
+		// 클린업에서 타이머를 취소하지 않음:
+		// $effect가 재실행될 때 클린업이 먼저 호출되므로,
+		// 클린업에서 타이머를 지우면 타이머가 무한정 취소→재생성 루프에 빠짐
 	});
 
 	// searchQuery 및 filterQuery 감지 (디바운스 적용)
@@ -167,10 +167,7 @@
 				}, 500);
 			}
 		}
-		return () => {
-			if (searchTimer) clearTimeout(searchTimer);
-			if (contextTimer) clearTimeout(contextTimer);
-		};
+		// 클린업에서 타이머를 취소하지 않음 (위와 동일한 이유)
 	});
 
 	function icon(node: HTMLElement, iconId: string) {
@@ -426,7 +423,9 @@
 					{#if $discoveryState.isSearching && $discoveryState.similarNotes.length === 0 && !$discoveryState.duplicateNote && $discoveryState.recommendedTags.length === 0}
 						<div class="lumina-discovery__loading"><div class="spinner"></div></div>
 					{:else}
-						<div class="lumina-discovery__context-view" class:is-updating={$discoveryState.isSearching}>
+						<!-- is-updating은 결과가 없을 때만 적용 — 기존 결과가 있을 때 흐려지면 깜빡임처럼 보임 -->
+						<div class="lumina-discovery__context-view"
+							class:is-updating={$discoveryState.isSearching && $discoveryState.similarNotes.length === 0 && $discoveryState.recommendedTags.length === 0}>
 							
 							<!-- 중복/매우 유사한 노트 경고 -->
 							{#if $discoveryState.duplicateNote}
