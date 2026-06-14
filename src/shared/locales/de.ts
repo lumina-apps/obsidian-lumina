@@ -591,6 +591,11 @@ Das Verbinden von großen Modellen oder Reasoning-Modellen führt zu extremen Ve
       agentToolResultFor: "Tool-Ergebnis für \"{{name}}\":",
       agentToolError: "Tool \"{{name}}\" Fehler: {{error}}",
       agentToolExecuteError: "Fehler beim Ausführen des Tools: {{error}}",
+      agentBetaActivateTitle: "🤖 Agent (Beta) aktivieren?",
+      agentBetaActivateDesc: "LLM verbunden! Möchten Sie den Agenten-Modus aktivieren?\n\nDer Agent kann automatisch Notizen lesen, neue Notizen erstellen und Inhalte an Notizen anhängen.\n\nSie können dies jederzeit über die MCP-Schaltfläche im Chat ein- und ausschalten.",
+      agentBetaActivateConfirm: "Aktivieren",
+      agentBetaActivateSkip: "Jetzt nicht",
+      agentBetaEnabled: "🤖 Agenten-Modus aktiviert! Der Agent ist bereit, Ihnen mit Ihren Notizen zu helfen.",
       copiedToClipboard: "In die Zwischenablage kopiert.",
       contentInserted: "Inhalt in Notiz eingefügt.",
       noActiveMarkdown: "Kein aktives Markdown-Fenster. Bitte klicken Sie zuerst auf eine Notiz.",
@@ -648,6 +653,12 @@ Das Verbinden von großen Modellen oder Reasoning-Modellen führt zu extremen Ve
             maxLengthExceeded: "Kann nicht weiter anhängen, da die Datei die maximale Länge (100.000 Zeichen) überschritten hat.",
             successAppend: "Inhalt an tägliche Notiz angehängt: {{path}}",
             successCreate: "Tägliche Notiz erstellt und Inhalt angehängt: {{path}}"
+        },
+        list_notes: {
+            desc: "Listet alle Markdown-Notizen im Vault auf. Optional kann ein Ordnerpfad angegeben werden, um nur Notizen in diesem Ordner aufzulisten.",
+            argPath: "Der Ordnerpfad, aus dem Notizen aufgelistet werden sollen (z. B. Ordner/Unterordner). Wenn nicht angegeben, werden alle Notizen im Vault aufgelistet.",
+            noNotes: "Keine Notizen gefunden{{path}}.",
+            listPrefix: "Notizen{{path}} (insgesamt {{count}}):\\n\\n"
         },
         rag_search: {
             desc: "Führt semantische Suchen nach Notizen im Vault mithilfe von RAG (Retrieval-Augmented Generation) durch. Findet die Dokumentfragmente, die der Suchanfrage am ähnlichsten sind, mithilfe einer hybriden Vektorsuche + BM25 und nicht durch einfachen Keyword-Abgleich. Funktioniert nur, wenn die RAG-Indizierung abgeschlossen ist.",

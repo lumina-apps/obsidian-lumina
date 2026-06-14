@@ -589,6 +589,11 @@ export const zhTW: DeepPartial<Translation> = {
       agentToolResultFor: "「{{name}}」的工具結果：",
       agentToolError: "工具「{{name}}」出錯：{{error}}",
       agentToolExecuteError: "執行工具時出錯：{{error}}",
+      agentBetaActivateTitle: "🤖 啟用代理（測試版）？",
+      agentBetaActivateDesc: "LLM 已連線！是否啟用代理模式？\n\n代理可以自動讀取筆記、建立新筆記以及向筆記追加內容。\n\n您可以隨時透過聊天中的 MCP 按鈕開啟或關閉此功能。",
+      agentBetaActivateConfirm: "啟用",
+      agentBetaActivateSkip: "暫不",
+      agentBetaEnabled: "🤖 代理模式已啟用！代理已準備好協助您處理筆記。",
       copiedToClipboard: "已複製到剪貼簿。",
       contentInserted: "內容已插入筆記中。",
       noActiveMarkdown: "沒有活動的 Markdown 視窗。請先點選一個筆記。",
@@ -647,6 +652,12 @@ export const zhTW: DeepPartial<Translation> = {
             successAppend: "已將內容附加到每日筆記：{{path}}",
             successCreate: "已建立每日筆記並附加內容：{{path}}"
         },
+    list_notes: {
+      desc: "列出庫中的所有 Markdown 筆記。您可以指定一個資料夾路徑來僅列出該資料夾中的筆記。",
+      argPath: "要列出筆記的資料夾路徑（例如 資料夾/子資料夾）。如果不提供，則列出庫中的所有筆記。",
+      noNotes: "未找到筆記{{path}}。",
+      listPrefix: "筆記列表{{path}}（共 {{count}} 筆）：\n\n"
+    },
         rag_search: {
             desc: "使用 RAG（檢索增強生成）對庫中的筆記進行語意搜尋。透過混合向量搜尋 + BM25，找到與查詢最相似的檔案區塊，而不是簡單的關鍵字比對。僅在 RAG 索引完成時有效。",
             argQuery: "要執行語意搜尋的查詢字串",

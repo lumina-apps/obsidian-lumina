@@ -88,7 +88,7 @@
   - Verbinde zahlreiche externe MCP-Server (GitHub, lokale Datenbanken, Web-Suche usw.), um sofort riesige Datenmengen zu scrapen und in deinen Notizen zu organisieren.
 - **🖥️ Server-Modus (Externe KI-gesteuert):**
   - Stellt 7 Tools zur Verfügung, die externen KI-Assistenten (Claude, Cursor usw.) direkten Zugriff auf deinen Vault gewähren.
-  - `read_active_note`, `read_note`, `search_notes`, `rag_search`: Bietet der KI den Kontext und das Wissen deines Vaults.
+  - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: Bietet der KI den Kontext und das Wissen deines Vaults.
   - `create_note`, `append_to_note`: Erlaubt der KI, organisierte Ideen sicher direkt in deinen Vault zu schreiben (Überschreibschutz aktiv).
   - `read_daily_note`, `append_to_daily_note`: Lese-/Schreibintegration für die heutige Tagesnotiz.
 - **Verwendung:** Aktiviere MCP-Funktionen in den Plugin-Einstellungen und konfiguriere die Client/Server-Transportmethode (SSE).

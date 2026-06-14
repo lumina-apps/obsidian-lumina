@@ -590,6 +590,11 @@ Conectar modelos grandes ou modelos de raciocínio (Reasoning) causará atrasos 
       agentToolResultFor: "Resultado da ferramenta \"{{name}}\":",
       agentToolError: "Erro na ferramenta \"{{name}}\": {{error}}",
       agentToolExecuteError: "Erro ao executar ferramenta: {{error}}",
+      agentBetaActivateTitle: "🤖 Ativar Agente (Beta)?",
+      agentBetaActivateDesc: "LLM conectado! Gostaria de ativar o Modo Agente?\n\nO agente pode ler notas, criar novas notas e adicionar conteúdo às notas automaticamente.\n\nVocê pode ativar ou desativar isso a qualquer momento pelo botão MCP no chat.",
+      agentBetaActivateConfirm: "Ativar",
+      agentBetaActivateSkip: "Agora não",
+      agentBetaEnabled: "🤖 Modo Agente ativado! O agente está pronto para ajudar com suas notas.",
       copiedToClipboard: "Copiado para a área de transferência.",
       contentInserted: "Conteúdo inserido na nota.",
       noActiveMarkdown: "Nenhuma janela Markdown ativa. Clique em uma nota primeiro.",
@@ -648,6 +653,12 @@ Conectar modelos grandes ou modelos de raciocínio (Reasoning) causará atrasos 
             successAppend: "Conteúdo adicionado à nota diária: {{path}}",
             successCreate: "Nota diária criada e conteúdo adicionado: {{path}}"
         },
+    list_notes: {
+      desc: "Lista todas as notas Markdown no cofre. Você pode especificar opcionalmente um caminho de pasta para listar apenas as notas dentro dessa pasta.",
+      argPath: "O caminho da pasta da qual listar as notas (ex: pasta/subpasta). Se não fornecido, lista todas as notas no cofre.",
+      noNotes: "Nenhuma nota encontrada{{path}}.",
+      listPrefix: "Notas{{path}} ({{count}} no total):\n\n"
+    },
         rag_search: {
             desc: "Realiza pesquisas semânticas de notas no cofre usando RAG (Retrieval-Augmented Generation). Encontra os trechos de documentos mais semelhantes à consulta usando a pesquisa híbrida de vetores + BM25, em vez da correspondência de palavras-chave simples. Funciona apenas quando a indexação RAG está concluída.",
             argQuery: "A string de consulta para executar a pesquisa semântica",

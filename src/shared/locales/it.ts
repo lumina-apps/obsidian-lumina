@@ -590,6 +590,11 @@ La connessione di modelli grandi o di Reasoning models causerà ritardi estremi 
       agentToolResultFor: "Risultato dello strumento per \"{{name}}\":",
       agentToolError: "Errore strumento \"{{name}}\": {{error}}",
       agentToolExecuteError: "Errore durante l'esecuzione dello strumento: {{error}}",
+      agentBetaActivateTitle: "🤖 Attivare l'Agente (Beta)?",
+      agentBetaActivateDesc: "LLM connesso! Vuoi attivare la modalità Agente?\n\nL'agente può leggere le note, creare nuove note e aggiungere contenuti alle note automaticamente.\n\nPuoi attivarlo o disattivarlo in qualsiasi momento dal pulsante MCP nella chat.",
+      agentBetaActivateConfirm: "Attiva",
+      agentBetaActivateSkip: "Non ora",
+      agentBetaEnabled: "🤖 Modalità Agente attivata! L'agente è pronto ad aiutarti con le tue note.",
       copiedToClipboard: "Copiato negli appunti.",
       contentInserted: "Contenuto inserito nella nota.",
       noActiveMarkdown: "Nessuna finestra Markdown attiva. Per favore fai clic su una nota prima.",
@@ -648,6 +653,12 @@ La connessione di modelli grandi o di Reasoning models causerà ritardi estremi 
             successAppend: "Contenuto aggiunto alla nota giornaliera: {{path}}",
             successCreate: "Nota giornaliera creata e contenuto aggiunto: {{path}}"
         },
+    list_notes: {
+      desc: "Elenca tutte le note Markdown nel vault. Puoi specificare facoltativamente un percorso di cartella per elencare solo le note in quella cartella.",
+      argPath: "Il percorso della cartella da cui elencare le note (es. cartella/sottocartella). Se non fornito, elenca tutte le note nel vault.",
+      noNotes: "Nessuna nota trovata{{path}}.",
+      listPrefix: "Note{{path}} ({{count}} in totale):\n\n"
+    },
         rag_search: {
             desc: "Esegue ricerche semantiche delle note nel vault utilizzando RAG (Retrieval-Augmented Generation). Trova i frammenti di documento più simili alla query utilizzando una ricerca ibrida di vettori + BM25, e non una semplice corrispondenza di parole chiave. Funziona solo quando l'indicizzazione RAG è completata.",
             argQuery: "La stringa di query per eseguire la ricerca semantica",

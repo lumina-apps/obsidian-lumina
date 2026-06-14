@@ -1034,3 +1034,71 @@ body div.modal-overlay .suggestion-container .suggestion-item.is-selected-defaul
 	width: 22px;
 	height: 22px;
 }
+
+/* 15. Agent Beta Activation Modal */
+.modal-container .modal.lumina-agent-beta-modal,
+.lumina-agent-beta-modal .modal-content {
+	max-width: 420px;
+}
+
+.lumina-agent-beta-modal .lumina-agent-beta-modal__title {
+	font-size: 1.3em;
+	font-weight: 700;
+	margin-bottom: 16px;
+	color: var(--text-normal);
+	line-height: 1.3;
+}
+
+.lumina-agent-beta-modal .lumina-agent-beta-modal__desc {
+	margin-bottom: 24px;
+}
+
+.lumina-agent-beta-modal .lumina-agent-beta-modal__desc p {
+	font-size: 0.95em;
+	color: var(--text-muted);
+	margin: 6px 0;
+	line-height: 1.6;
+}
+
+.lumina-agent-beta-modal .lumina-agent-beta-modal__actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	padding-top: 8px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.lumina-agent-beta-modal .lumina-agent-beta-modal__btn-skip {
+	background: transparent;
+	border: 1px solid var(--background-modifier-border);
+	color: var(--text-muted);
+	padding: 8px 18px;
+	border-radius: 6px;
+	cursor: pointer;
+	font-size: 0.9em;
+	font-weight: 500;
+	transition: all 0.15s ease;
+}
+
+.lumina-agent-beta-modal .lumina-agent-beta-modal__btn-skip:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.lumina-agent-beta-modal .lumina-agent-beta-modal__btn-confirm {
+	background: linear-gradient(135deg, var(--interactive-accent) 0%, #8b5cf6 100%);
+	border: none;
+	color: #ffffff;
+	padding: 8px 22px;
+	border-radius: 6px;
+	cursor: pointer;
+	font-size: 0.9em;
+	font-weight: 600;
+	box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+	transition: all 0.15s ease;
+}
+
+.lumina-agent-beta-modal .lumina-agent-beta-modal__btn-confirm:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}

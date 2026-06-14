@@ -590,6 +590,11 @@ La connexion de modèles volumineux ou de modèles de raisonnement entraînera d
       agentToolResultFor: "Résultat de l'outil pour \"{{name}}\" :",
       agentToolError: "Erreur de l'outil \"{{name}}\" : {{error}}",
       agentToolExecuteError: "Erreur lors de l'exécution de l'outil : {{error}}",
+      agentBetaActivateTitle: "🤖 Activer l'Agent (Bêta) ?",
+      agentBetaActivateDesc: "LLM connecté ! Voulez-vous activer le mode Agent ?\n\nL'agent peut lire des notes, créer de nouvelles notes et ajouter du contenu aux notes automatiquement.\n\nVous pouvez l'activer ou le désactiver à tout moment depuis le bouton MCP dans le chat.",
+      agentBetaActivateConfirm: "Activer",
+      agentBetaActivateSkip: "Pas maintenant",
+      agentBetaEnabled: "🤖 Mode Agent activé ! L'agent est prêt à vous aider avec vos notes.",
       copiedToClipboard: "Copié dans le presse-papiers.",
       contentInserted: "Contenu inséré dans la note.",
       noActiveMarkdown: "Aucune fenêtre Markdown active. Veuillez d'abord cliquer sur une note.",
@@ -648,6 +653,12 @@ La connexion de modèles volumineux ou de modèles de raisonnement entraînera d
             successAppend: "Contenu ajouté à la note quotidienne : {{path}}",
             successCreate: "Note quotidienne créée et contenu ajouté : {{path}}"
         },
+    list_notes: {
+      desc: "Liste toutes les notes Markdown dans le coffre. Vous pouvez optionnellement spécifier un chemin de dossier pour n'afficher que les notes de ce dossier.",
+      argPath: "Le chemin du dossier à partir duquel lister les notes (ex. dossier/sous-dossier). Si non fourni, liste toutes les notes du coffre.",
+      noNotes: "Aucune note trouvée{{path}}.",
+      listPrefix: "Notes{{path}} ({{count}} au total) :\n\n"
+    },
         rag_search: {
             desc: "Effectue des recherches sémantiques de notes dans le coffre à l'aide du RAG (Retrieval-Augmented Generation). Trouve les extraits de documents les plus similaires à la requête en utilisant une recherche hybride vectorielle + BM25, pas une simple correspondance de mots-clés. Ne fonctionne que lorsque l'indexation RAG est terminée.",
             argQuery: "La chaîne de requête pour effectuer la recherche sémantique",

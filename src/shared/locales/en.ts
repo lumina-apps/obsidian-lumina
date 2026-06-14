@@ -590,6 +590,11 @@ Connecting large models or Reasoning models will cause extreme delays of tens of
     agentToolResultFor: 'Tool result for "{{name}}":',
     agentToolError: 'Tool "{{name}}" error: {{error}}',
     agentToolExecuteError: 'Error executing tool: {{error}}',
+    agentBetaActivateTitle: '🤖 Enable Agent (Beta)?',
+    agentBetaActivateDesc: 'LLM connected! Would you like to enable Agent mode?\n\nThe agent can read notes, create notes, and append content to notes automatically.\n\nYou can turn this on or off anytime from the MCP button in chat.',
+    agentBetaActivateConfirm: 'Enable',
+    agentBetaActivateSkip: 'Not now',
+    agentBetaEnabled: '🤖 Agent mode enabled! The agent is ready to help with your notes.',
     copiedToClipboard: 'Copied to clipboard.',
     contentInserted: 'Content inserted into note.',
     noActiveMarkdown: 'No active Markdown window. Please click on a note first.',
@@ -647,6 +652,12 @@ Connecting large models or Reasoning models will cause extreme delays of tens of
       maxLengthExceeded: 'Cannot append further as the file has exceeded the maximum length (100,000 characters).',
       successAppend: 'Content appended to daily note: {{path}}',
       successCreate: 'Daily note created and content appended: {{path}}'
+    },
+    list_notes: {
+      desc: 'Lists all Markdown notes in the vault. You can optionally specify a folder path to list notes within that folder.',
+      argPath: 'The folder path to list notes from (e.g. folder/subfolder). If not provided, lists all notes in the vault.',
+      noNotes: 'No notes found{{path}}.',
+      listPrefix: 'Notes{{path}} ({{count}} total):\n\n'
     },
     rag_search: {
       desc: 'Semantically searches notes in the vault using RAG (Retrieval-Augmented Generation). Finds document chunks most similar to the query using hybrid vector search + BM25, not simple keyword matching. Only works when RAG indexing is complete.',

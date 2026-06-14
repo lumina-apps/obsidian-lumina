@@ -590,6 +590,11 @@ export const zh: DeepPartial<Translation> = {
       agentToolResultFor: "“{{name}}”的工具结果：",
       agentToolError: "工具“{{name}}”出错：{{error}}",
       agentToolExecuteError: "执行工具时出错：{{error}}",
+      agentBetaActivateTitle: "🤖 启用代理（测试版）？",
+      agentBetaActivateDesc: "LLM 已连接！是否启用代理模式？\n\n代理可以自动阅读笔记、创建新笔记以及向笔记追加内容。\n\n您可以随时通过聊天中的 MCP 按钮打开或关闭此功能。",
+      agentBetaActivateConfirm: "启用",
+      agentBetaActivateSkip: "暂不",
+      agentBetaEnabled: "🤖 代理模式已启用！代理已准备好协助您处理笔记。",
       copiedToClipboard: "已复制到剪贴板。",
       contentInserted: "内容已插入笔记中。",
       noActiveMarkdown: "没有活动的 Markdown 窗口。请先点击一个笔记。",
@@ -648,6 +653,12 @@ export const zh: DeepPartial<Translation> = {
             successAppend: "已将内容追加到每日笔记：{{path}}",
             successCreate: "已创建每日笔记并追加内容：{{path}}"
         },
+    list_notes: {
+      desc: "列出库中的所有 Markdown 笔记。您可以指定一个文件夹路径来仅列出该文件夹中的笔记。",
+      argPath: "要列出笔记的文件夹路径（例如 文件夹/子文件夹）。如果不提供，则列出库中的所有笔记。",
+      noNotes: "未找到笔记{{path}}。",
+      listPrefix: "笔记列表{{path}}（共 {{count}} 条）：\n\n"
+    },
         rag_search: {
             desc: "使用 RAG（检索增强生成）对库中的笔记进行语义搜索。通过混合向量搜索 + BM25，找到与查询最相似的文档块，而不是简单的关键字匹配。仅在 RAG 索引完成时有效。",
             argQuery: "要执行语义搜索的查询字符串",

@@ -88,7 +88,7 @@
   - Connect numerous external MCP servers (GitHub, local DBs, web search, etc.) to instantly scrape and organize vast amounts of data into your notes.
 - **🖥️ Server Mode (External AI-led):**
   - Exposes 7 tools allowing external AI assistants (Claude, Cursor, etc.) to directly access your vault.
-  - `read_active_note`, `read_note`, `search_notes`, `rag_search`: Provides your vault's context and knowledge to the AI.
+  - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: Provides your vault's context and knowledge to the AI.
   - `create_note`, `append_to_note`: Allows the AI to safely write organized ideas directly into your vault (overwriting protection applied).
   - `read_daily_note`, `append_to_daily_note`: Read/write integration for today's daily note.
 - **How to use:** Enable MCP features in the plugin settings and configure the client/server transport method (SSE).

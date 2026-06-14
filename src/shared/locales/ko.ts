@@ -592,6 +592,11 @@ export const ko: Translation = {
     agentToolResultFor: '도구 "{{name}}" 실행 결과:',
     agentToolError: '도구 "{{name}}" 에러: {{error}}',
     agentToolExecuteError: '도구 실행 중 오류 발생: {{error}}',
+    agentBetaActivateTitle: '🤖 에이전트(베타) 기능을 켤까요?',
+    agentBetaActivateDesc: 'LLM 연결 성공! 에이전트 모드를 활성화하시겠어요?\n\n에이전트는 노트 읽기, 새 노트 만들기, 노트에 내용 덧붙이기 작업을 자동으로 수행할 수 있습니다.\n\n채팅 창의 MCP 버튼에서 언제든지 켜고 끌 수 있습니다.',
+    agentBetaActivateConfirm: '활성화',
+    agentBetaActivateSkip: '나중에',
+    agentBetaEnabled: '🤖 에이전트 모드가 켜졌습니다! 이제 에이전트가 노트 작업을 도와드릴 수 있습니다.',
     copiedToClipboard: '클립보드에 복사되었습니다.',
     contentInserted: '노트에 내용이 삽입되었습니다.',
     noActiveMarkdown: '활성화된 마크다운 창이 없습니다. 노트를 먼저 클릭해 주세요.',
@@ -649,6 +654,12 @@ export const ko: Translation = {
       maxLengthExceeded: '파일의 최대 길이(100,000자)를 초과하여 더 이상 추가할 수 없습니다.',
       successAppend: '데일리 노트에 내용이 추가되었습니다: {{path}}',
       successCreate: '데일리 노트를 생성하고 내용을 추가했습니다: {{path}}'
+    },
+    list_notes: {
+      desc: '볼트 내의 모든 마크다운 노트 목록을 가져옵니다. 특정 폴더 경로를 지정하면 해당 폴더 내의 노트만 나열할 수 있습니다.',
+      argPath: '노트 목록을 가져올 폴더 경로 (예: folder/subfolder). 지정하지 않으면 볼트 전체의 모든 노트를 나열합니다.',
+      noNotes: '노트를 찾을 수 없습니다{{path}}.',
+      listPrefix: '노트 목록{{path}} (총 {{count}}개):\n\n'
     },
     rag_search: {
       desc: 'RAG(Retrieval-Augmented Generation)를 사용하여 볼트 내 노트들을 의미적으로 검색합니다. 단순 키워드 매칭이 아닌, 쿼리의 의미와 가장 유사한 문서 청크를 벡터 검색 + BM25 하이브리드 방식으로 찾아냅니다. RAG 인덱싱이 완료된 상태에서만 작동합니다.',

@@ -88,7 +88,7 @@
   - Connetti numerosi server MCP esterni (GitHub, DB locali, ricerca web, ecc.) per raschiare (scrape) e organizzare all'istante grandi quantità di dati nelle tue note.
 - **🖥️ Modalità Server (Guidata da IA Esterna):**
   - Espone 7 strumenti consentendo ad assistenti IA esterni (Claude, Cursor, ecc.) di accedere direttamente al tuo vault.
-  - `read_active_note`, `read_note`, `search_notes`, `rag_search`: Fornisce all'IA il contesto e le conoscenze del tuo vault.
+  - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: Fornisce all'IA il contesto e le conoscenze del tuo vault.
   - `create_note`, `append_to_note`: Consente all'IA di scrivere in sicurezza idee organizzate direttamente nel tuo vault (protezione da sovrascrittura applicata).
   - `read_daily_note`, `append_to_daily_note`: Integrazione lettura/scrittura per la nota quotidiana di oggi.
 - **Come usare:** Abilita le funzioni MCP nelle impostazioni del plugin e configura il metodo di trasporto client/server (SSE).

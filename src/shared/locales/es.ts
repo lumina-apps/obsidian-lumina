@@ -591,6 +591,11 @@ Conectar modelos grandes o modelos de razonamiento (Reasoning) causará demoras 
       agentToolResultFor: "Resultado de la herramienta \"{{name}}\":",
       agentToolError: "Error en la herramienta \"{{name}}\": {{error}}",
       agentToolExecuteError: "Error al ejecutar la herramienta: {{error}}",
+      agentBetaActivateTitle: "🤖 ¿Activar Agente (Beta)?",
+      agentBetaActivateDesc: "¡LLM conectado! ¿Te gustaría activar el modo Agente?\n\nEl agente puede leer notas, crear notas y añadir contenido a las notas automáticamente.\n\nPuedes activarlo o desactivarlo en cualquier momento desde el botón MCP en el chat.",
+      agentBetaActivateConfirm: "Activar",
+      agentBetaActivateSkip: "Ahora no",
+      agentBetaEnabled: "🤖 ¡Modo Agente activado! El agente está listo para ayudarte con tus notas.",
       copiedToClipboard: "Copiado al portapapeles.",
       contentInserted: "Contenido insertado en la nota.",
       noActiveMarkdown: "No hay una ventana Markdown activa. Por favor, haga clic en una nota primero.",
@@ -648,6 +653,12 @@ Conectar modelos grandes o modelos de razonamiento (Reasoning) causará demoras 
             maxLengthExceeded: "No se puede agregar más porque el archivo ha superado la longitud máxima (100,000 caracteres).",
             successAppend: "Contenido agregado a la nota diaria: {{path}}",
             successCreate: "Nota diaria creada y contenido agregado: {{path}}"
+        },
+        list_notes: {
+            desc: "Enumera todas las notas Markdown en la bóveda. Opcionalmente, puedes especificar una ruta de carpeta para listar solo las notas dentro de esa carpeta.",
+            argPath: "La ruta de la carpeta desde la cual listar las notas (ej. carpeta/subcarpeta). Si no se proporciona, se listan todas las notas de la bóveda.",
+            noNotes: "No se encontraron notas{{path}}.",
+            listPrefix: "Notas{{path}} ({{count}} en total):\\n\\n"
         },
         rag_search: {
             desc: "Realiza búsquedas semánticas de notas en el almacén utilizando RAG (Retrieval-Augmented Generation). Encuentra los fragmentos de documento más similares a la consulta utilizando búsqueda híbrida de vectores + BM25, no una simple coincidencia de palabras clave. Solo funciona cuando se completa la indexación de RAG.",

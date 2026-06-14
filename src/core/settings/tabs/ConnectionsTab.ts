@@ -5,7 +5,7 @@ import type { LLMProviderConfig, ProviderType } from '../../../shared/types/sett
 import { PROVIDER_LABELS, PROVIDER_CATEGORIES, PROVIDER_BASE_URLS } from '../../../shared/types/settings.types';
 import { createProvider } from '../../llm-providers/index';
 import { translatePluginLocales, loadSystemLocaleCache, deleteSystemLocaleCache } from '../../../shared/locales/translator';
-import { ConfirmModal } from '../../../shared/utils/modal';
+import { ConfirmModal, AgentBetaModal } from '../../../shared/utils/modal';
 import { setLanguage, t } from '../../../shared/locales/helpers';
 import { debugLogger } from '../../../shared/debugLogger';
 import { setIndexingStatus } from '../../store/ragStore';
@@ -430,9 +430,39 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 		.addButton(btn => {
 			btn.setButtonText(t('settings.connections.apiKey.testConnection')).onClick(async () => {
 				btn.setButtonText(t('settings.connections.apiKey.testing')).setDisabled(true);
+				const wasVerified = provider.isVerified;
 				await testProvider(provider);
 				await tab.saveAndSync();
 				tab.refreshDisplay();
+				// LLM 연결 성공 & 이전에 미연결 상태였고 & 아직 에이전트가 꺼져있으면 → 에이전트 베타 팝업
+				if (provider.isVerified && !wasVerified && !tab.plugin.settings.chat.agentEnabled) {
+					window.setTimeout(() => {
+						new AgentBetaModal(
+							tab.app,
+							t('uiMessages.agentBetaActivateTitle'),
+							t('uiMessages.agentBetaActivateDesc'),
+							t('uiMessages.agentBetaActivateConfirm'),
+							t('uiMessages.agentBetaActivateSkip'),
+							async (enabled) => {
+								if (!enabled) return;
+								// 에이전트 활성화 + 내장 서버 자동 켜기
+								tab.plugin.settings.chat.agentEnabled = true;
+								if (!tab.plugin.settings.mcp.serverEnabled) {
+									tab.plugin.settings.mcp.serverEnabled = true;
+									if (!tab.plugin.settings.mcp.serverAuthToken) {
+										tab.plugin.settings.mcp.serverAuthToken = crypto.randomUUID();
+									}
+									if (tab.plugin.mcpManager) {
+										await tab.plugin.mcpManager.syncServers();
+									}
+								}
+								await tab.saveAndSync();
+								tab.refreshDisplay();
+								new Notice(t('uiMessages.agentBetaEnabled'));
+							},
+						).open();
+					}, 300);
+				}
 			});
 		})
 		.addExtraButton(btn => {

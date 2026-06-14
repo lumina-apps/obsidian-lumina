@@ -88,7 +88,7 @@
   - Connectez de nombreux serveurs MCP externes (GitHub, bases de données locales, recherche web, etc.) pour extraire et organiser instantanément de vastes quantités de données dans vos notes.
 - **🖥️ Mode Serveur (Dirigido par une IA Externe) :**
   - Expose 7 outils permettant à des assistants IA externes (Claude, Cursor, etc.) d'accéder directement à votre coffre-fort.
-  - `read_active_note`, `read_note`, `search_notes`, `rag_search` : Fournit le contexte et les connaissances de votre coffre-fort à l'IA.
+  - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search` : Fournit le contexte et les connaissances de votre coffre-fort à l'IA.
   - `create_note`, `append_to_note` : Permet à l'IA d'écrire en toute sécurité des idées organisées directement dans votre coffre-fort (protection d'écrasement appliquée).
   - `read_daily_note`, `append_to_daily_note` : Intégration de lecture/écriture pour la note quotidienne d'aujourd'hui.
 - **Comment utiliser :** Activez les fonctionnalités MCP dans les paramètres du plugin et configurez la méthode de transport client/serveur (SSE).

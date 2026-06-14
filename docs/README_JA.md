@@ -88,7 +88,7 @@
   - 多数の外部MCPサーバー（GitHub、ローカルDB、Web検索など）に接続し、膨大なデータをノートに即座にスクレイピングして整理します。
 - **🖥️ サーバーモード（外部AI主導）:**
   - 外部のAIアシアシスタント（Claude、Cursorなど）があなたのボルトに直接アクセスできる7つのツールを公開します。
-  - `read_active_note`, `read_note`, `search_notes`, `rag_search`: ボルトのコンテキストと知識をAIに提供します。
+  - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: ボルトのコンテキストと知識をAIに提供します。
   - `create_note`, `append_to_note`: AIが整理されたアイデアをボルトに安全に直接書き込むことができます（上書き保護適用済み）。
   - `read_daily_note`, `append_to_daily_note`: 今日のデイリーノートへの読み書きの統合。
 - **使い方:** プラグイン設定でMCP機能を有効にし、クライアント/サーバーの転送方法（SSE）を設定します。

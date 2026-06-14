@@ -136,6 +136,17 @@ export class LuminaMcpServer {
 						}
 					},
 					{
+						name: 'list_notes',
+						description: t('mcpServerTools.list_notes.desc'),
+						inputSchema: {
+							type: 'object',
+							properties: {
+								path: { type: 'string', description: t('mcpServerTools.list_notes.argPath') }
+							},
+							required: []
+						}
+					},
+					{
 						name: 'rag_search',
 						description: t('mcpServerTools.rag_search.desc'),
 						inputSchema: {
@@ -298,6 +309,32 @@ export class LuminaMcpServer {
 								return { content: [{ type: 'text', text: t('mcpServerTools.append_to_daily_note.successCreate', { path }) }] };
 							}
 						});
+					}
+
+					case 'list_notes': {
+						const folderPath = args?.path as string | undefined;
+						const allFiles = this.plugin.app.vault.getMarkdownFiles();
+						
+						let filteredFiles = allFiles;
+						let displayPath = '';
+						
+						if (folderPath) {
+							const normalized = normalizePath(folderPath);
+							displayPath = ` in ${normalized}`;
+							filteredFiles = allFiles.filter(f => {
+								const filePath = f.path;
+								// 폴더 내의 파일만 포함 (정확한 폴더 경로 또는 하위 경로)
+								return filePath === normalized || filePath.startsWith(normalized + '/');
+							});
+						}
+						
+						if (filteredFiles.length === 0) {
+							return { content: [{ type: 'text', text: t('mcpServerTools.list_notes.noNotes', { path: displayPath }) }] };
+						}
+						
+						const fileList = filteredFiles.map(f => f.path).sort().join('\n');
+						const result = t('mcpServerTools.list_notes.listPrefix', { path: displayPath, count: filteredFiles.length }) + fileList;
+						return { content: [{ type: 'text', text: applyReadLimit(result) }] };
 					}
 
 					case 'rag_search': {

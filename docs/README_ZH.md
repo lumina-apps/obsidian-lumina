@@ -88,7 +88,7 @@
   - 连接众多外部 MCP 服务器（GitHub、本地数据库、网络搜索等），将海量数据即时抓取并整理到您的笔记中。
 - **🖥️ 服务端模式 (外部 AI 主导):**
   - 提供 7 个工具，允许外部 AI 助手（Claude、Cursor 等）直接访问您的库。
-  - `read_active_note`, `read_note`, `search_notes`, `rag_search`: 为 AI 提供您库的上下文和知识。
+  - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: 为 AI 提供您库的上下文和知识。
   - `create_note`, `append_to_note`: 允许 AI 整理思路并直接将内容安全地写入您的库（应用了覆盖保护）。
   - `read_daily_note`, `append_to_daily_note`: 针对今天的每日笔记的读/写集成。
 - **如何使用:** 在插件设置中启用 MCP 功能，并配置客户端/服务端传输方法 (SSE)。

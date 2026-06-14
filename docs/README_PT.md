@@ -88,7 +88,7 @@
   - Conecte vários servidores MCP externos (GitHub, bases de dados locais, pesquisa na web, etc.) para extrair e organizar instantaneamente grandes quantidades de dados nas suas notas.
 - **🖥️ Modo Servidor (Liderado por IA Externa):**
   - Expõe 7 ferramentas que permitem que assistentes de IA externos (Claude, Cursor, etc.) acedam diretamente ao seu cofre.
-  - `read_active_note`, `read_note`, `search_notes`, `rag_search`: Fornece o contexto e o conhecimento do seu cofre à IA.
+  - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: Fornece o contexto e o conhecimento do seu cofre à IA.
   - `create_note`, `append_to_note`: Permite que a IA escreva de forma segura ideias organizadas diretamente no seu cofre (proteção contra substituição aplicada).
   - `read_daily_note`, `append_to_daily_note`: Integração de leitura/escrita para a nota diária de hoje.
 - **Como utilizar:** Ative as funcionalidades MCP nas configurações do plugin e configure o método de transporte cliente/servidor (SSE).

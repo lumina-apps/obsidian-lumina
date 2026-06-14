@@ -88,7 +88,7 @@
   - Conecta numerosos servidores MCP externos (GitHub, bases de datos locales, búsqueda web, etc.) para extraer (scrape) y organizar instantáneamente grandes cantidades de datos en tus notas.
 - **🖥️ Modo Servidor (Dirigido por IA Externa):**
   - Expone 7 herramientas que permiten a asistentes de IA externos (Claude, Cursor, etc.) acceder directamente a tu bóveda.
-  - `read_active_note`, `read_note`, `search_notes`, `rag_search`: Proporciona el contexto y conocimiento de tu bóveda a la IA.
+  - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: Proporciona el contexto y conocimiento de tu bóveda a la IA.
   - `create_note`, `append_to_note`: Permite a la IA escribir con seguridad ideas organizadas directamente en tu bóveda (protección de sobrescritura aplicada).
   - `read_daily_note`, `append_to_daily_note`: Integración de lectura/escritura para la nota diaria de hoy.
 - **Cómo usar:** Habilita las características MCP en la configuración del plugin y configura el método de transporte cliente/servidor (SSE).

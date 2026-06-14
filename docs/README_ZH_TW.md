@@ -88,7 +88,7 @@
   - 連接眾多外部 MCP 伺服器（GitHub、本地資料庫、網路搜尋等），將海量資料即時抓取並整理到您的筆記中。
 - **🖥️ 伺服器端模式 (外部 AI 主導):**
   - 提供 7 個工具，允許外部 AI 助手（Claude、Cursor 等）直接存取您的儲存庫。
-  - `read_active_note`, `read_note`, `search_notes`, `rag_search`: 為 AI 提供您儲存庫的上下文和知識。
+  - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: 為 AI 提供您儲存庫的上下文和知識。
   - `create_note`, `append_to_note`: 允許 AI 整理思路並直接將內容安全地寫入您的儲存庫（應用了覆蓋保護）。
   - `read_daily_note`, `append_to_daily_note`: 針對今天的每日筆記的讀/寫整合。
 - **如何使用:** 在外掛設定中啟用 MCP 功能，並配置用戶端/伺服器端傳輸方法 (SSE)。

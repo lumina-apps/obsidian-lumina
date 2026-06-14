@@ -88,7 +88,7 @@
   - 수많은 외부 MCP 서버(GitHub, 로컬 DB, 웹 검색 등)를 연결해 방대한 데이터를 내 노트로 즉시 스크랩 및 정리
 - **🖥️ 서버 모드 (외부 AI가 주도):**
   - 외부 AI(Claude, Cursor 등)가 내 볼트에 직접 접근할 수 있도록 7가지 도구 제공
-  - `read_active_note`, `read_note`, `search_notes`, `rag_search`: 내 노트의 문맥과 지식을 AI에게 제공
+  - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: 내 노트의 문맥과 지식을 AI에게 제공
   - `create_note`, `append_to_note`: AI가 정리한 아이디어를 내 볼트에 안전하게 직접 작성 (덮어쓰기 방지 적용)
   - `read_daily_note`, `append_to_daily_note`: 오늘 날짜의 데일리 노트 읽기/쓰기 연동
 - **사용 방법:** 플러그인 설정 메뉴에서 MCP 기능을 켜고, 클라이언트/서버 전송 방식(SSE)을 구성하세요.

@@ -589,6 +589,11 @@ export const ja: DeepPartial<Translation> = {
       agentToolResultFor: "ツール「{{name}}」の実行結果:",
       agentToolError: "ツール「{{name}}」のエラー: {{error}}",
       agentToolExecuteError: "ツールの実行中にエラーが発生しました: {{error}}",
+      agentBetaActivateTitle: "🤖 エージェント（ベータ版）を有効にしますか？",
+      agentBetaActivateDesc: "LLM接続完了！エージェントモードを有効にしますか？\n\nエージェントはノートの読み取り、新しいノートの作成、ノートへの内容の追加を自動的に実行できます。\n\nチャット画面のMCPボタンからいつでもオン/オフを切り替えられます。",
+      agentBetaActivateConfirm: "有効にする",
+      agentBetaActivateSkip: "後で",
+      agentBetaEnabled: "🤖 エージェントモードが有効になりました！エージェントがノート作業のお手伝いをします。",
       copiedToClipboard: "クリップボードにコピーしました。",
       contentInserted: "ノートに内容が挿入されました。",
       noActiveMarkdown: "アクティブなMarkdownウィンドウがありません。先にノートをクリックしてください。",
@@ -647,6 +652,12 @@ export const ja: DeepPartial<Translation> = {
             successAppend: "デイリーノートに内容が追加されました: {{path}}",
             successCreate: "デイリーノートを作成し、内容を追加しました: {{path}}"
         },
+    list_notes: {
+      desc: "Vault内のすべてのMarkdownノートの一覧を取得します。特定のフォルダパスを指定すると、そのフォルダ内のノートのみを表示できます。",
+      argPath: "ノートを一覧表示するフォルダのパス（例: folder/subfolder）。指定しない場合、Vault全体のすべてのノートを表示します。",
+      noNotes: "ノートが見つかりません{{path}}。",
+      listPrefix: "ノート一覧{{path}}（全{{count}}件）:\n\n"
+    },
         rag_search: {
             desc: "RAG (Retrieval-Augmented Generation) を使用して、Vault内のノートを意味的に検索します。単純なキーワードマッチングではなく、クエリの意味に最も類似したドキュメントチャンクをハイブリッド検索（ベクトル+BM25）で探し出します。RAGのインデックス作成が完了している状態でのみ動作します。",
             argQuery: "意味的検索を実行するクエリ文字列",
