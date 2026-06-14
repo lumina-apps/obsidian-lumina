@@ -210,12 +210,22 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 			.setName(t('settings.connections.customEmbedding.name'))
 			.setDesc(customDesc);
 
-		const currentEmbeddingValue = s.embedding.mode === 'auto' ? 'auto' : `${s.embedding.providerId}::${s.embedding.modelId}`;
-		const currentEmbeddingLabel = embeddingOptions.find(opt => opt.value === currentEmbeddingValue)?.label || currentEmbeddingValue;
+		const currentEmbeddingValue = s.embedding.mode === 'auto'
+			? 'auto'
+			: (s.embedding.providerId && s.embedding.modelId ? `${s.embedding.providerId}::${s.embedding.modelId}` : '');
+		const currentEmbeddingLabel = s.embedding.mode === 'auto'
+			? t('settings.connections.customEmbedding.auto')
+			: (embeddingOptions.find(opt => opt.value === currentEmbeddingValue)?.label || currentEmbeddingValue || t('settings.connections.apiKey.selectModel'));
+
+		const adjustedEmbeddingOptions = s.embedding.mode !== 'auto' && currentEmbeddingValue === ''
+			? [{ value: '', label: t('settings.connections.apiKey.selectModel') }, ...embeddingOptions]
+			: embeddingOptions;
 
 		const onEmbeddingChange = async (val: string) => {
 			if (val === 'auto') {
 				s.embedding = { mode: 'auto', providerId: '', modelId: '' };
+			} else if (val === '') {
+				s.embedding = { mode: 'custom', providerId: '', modelId: '' };
 			} else {
 				const sepIdx = val.indexOf('::');
 				const pid = val.slice(0, sepIdx);
@@ -237,13 +247,13 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 
 		tab.addModelSelector(
 			embeddingSetting,
-			embeddingOptions,
+			adjustedEmbeddingOptions,
 			currentEmbeddingValue,
 			currentEmbeddingLabel,
 			async (val) => {
 				await onEmbeddingChange(val);
 			},
-			() => s.embedding.mode === 'auto' ? 'auto' : `${s.embedding.providerId}::${s.embedding.modelId}`,
+			() => s.embedding.mode === 'auto' ? 'auto' : (s.embedding.providerId && s.embedding.modelId ? `${s.embedding.providerId}::${s.embedding.modelId}` : ''),
 		);
 
 		if (Platform.isMobile) {
@@ -278,21 +288,34 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 			.setName(t('settings.connections.defaultChatModel.sidebarDefault'))
 			.setDesc(t('settings.connections.defaultChatModel.desc'));
 
-		const currentChatValue = `${s.defaultProviderId}::${s.defaultModelId}`;
-		const currentChatLabel = chatModelOptions.find(opt => opt.value === currentChatValue)?.label || currentChatValue || t('settings.connections.apiKey.selectModel');
+		const currentChatValue = s.defaultProviderId && s.defaultModelId
+			? `${s.defaultProviderId}::${s.defaultModelId}`
+			: '';
+		const currentChatLabel = currentChatValue
+			? (chatModelOptions.find(opt => opt.value === currentChatValue)?.label || currentChatValue)
+			: t('settings.connections.apiKey.selectModel');
+
+		const adjustedChatModelOptions = currentChatValue === ''
+			? [{ value: '', label: t('settings.connections.apiKey.selectModel') }, ...chatModelOptions]
+			: chatModelOptions;
 
 		tab.addModelSelector(
 			defaultChatSetting,
-			chatModelOptions,
+			adjustedChatModelOptions,
 			currentChatValue,
 			currentChatLabel,
 			async (val) => {
-				const [pid, mid] = val.split('::');
-				s.defaultProviderId = pid;
-				s.defaultModelId = mid;
+				if (val === '') {
+					s.defaultProviderId = '';
+					s.defaultModelId = '';
+				} else {
+					const [pid, mid] = val.split('::');
+					s.defaultProviderId = pid;
+					s.defaultModelId = mid;
+				}
 				await tab.saveAndSync();
 			},
-			() => `${s.defaultProviderId}::${s.defaultModelId}`,
+			() => s.defaultProviderId && s.defaultModelId ? `${s.defaultProviderId}::${s.defaultModelId}` : '',
 		);
 	}
 

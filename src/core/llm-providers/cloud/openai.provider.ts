@@ -22,6 +22,7 @@ interface OpenAIStreamChunk {
 				};
 			}>;
 		};
+		finish_reason?: string | null;
 	}>;
 	usage?: {
 		prompt_tokens: number;
@@ -44,6 +45,7 @@ interface OpenAIResponse {
 				};
 			}>;
 		};
+		finish_reason?: string | null;
 	}>;
 	usage?: {
 		prompt_tokens: number;
@@ -109,6 +111,7 @@ export class OpenAIProvider implements ILLMProvider {
 			let fullContent = '';
 			const accumulatedToolCalls: OpenAIToolCallInfo[] = [];
 			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+			let finishReason: string | undefined;
 
 			const response = await window.fetch(url, {
 				method: 'POST',
@@ -132,6 +135,9 @@ export class OpenAIProvider implements ILLMProvider {
 					const chunk = JSON.parse(dataStr) as OpenAIStreamChunk;
 					const choice = chunk.choices?.[0];
 					if (choice) {
+						if (choice.finish_reason) {
+							finishReason = choice.finish_reason;
+						}
 						const delta = choice.delta;
 						if (delta) {
 							if (delta.content) {
@@ -187,6 +193,7 @@ export class OpenAIProvider implements ILLMProvider {
 				content: fullContent,
 				usage,
 				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+				finishReason,
 			};
 		} else {
 			// non-streaming
@@ -198,10 +205,12 @@ export class OpenAIProvider implements ILLMProvider {
 			});
 
 			const data = res.json as OpenAIResponse;
-			const message = data.choices?.[0]?.message;
+			const choice = data.choices?.[0];
+			const message = choice?.message;
 			if (!message) {
 				throw new Error(`OpenAI API returned an empty response. Response: ${res.text}`);
 			}
+			const finishReason = choice?.finish_reason || undefined;
 
 			const toolCalls: ToolCall[] = [];
 			if (message.tool_calls) {
@@ -231,6 +240,7 @@ export class OpenAIProvider implements ILLMProvider {
 				content: message.content || '',
 				usage,
 				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+				finishReason,
 			};
 		}
 	}
@@ -239,7 +249,7 @@ export class OpenAIProvider implements ILLMProvider {
 		messages: ChatMessage[],
 		options: ChatOptions,
 		onChunk: (chunk: string) => void,
-	): Promise<{ usage?: import('../../../shared/types/llm.types').TokenUsage }> {
+	): Promise<{ usage?: import('../../../shared/types/llm.types').TokenUsage; finishReason?: string }> {
 		const url = 'https://api.openai.com/v1/chat/completions';
 		const headers: Record<string, string> = {
 			'Content-Type': 'application/json',
@@ -260,6 +270,7 @@ export class OpenAIProvider implements ILLMProvider {
 		}
 
 		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+		let finishReason: string | undefined;
 
 		const response = await window.fetch(url, {
 			method: 'POST',
@@ -283,6 +294,9 @@ export class OpenAIProvider implements ILLMProvider {
 				const chunk = JSON.parse(dataStr) as OpenAIStreamChunk;
 				const choice = chunk.choices?.[0];
 				if (choice) {
+					if (choice.finish_reason) {
+						finishReason = choice.finish_reason;
+					}
 					const delta = choice.delta;
 					if (delta && delta.content) {
 						onChunk(delta.content);
@@ -300,7 +314,7 @@ export class OpenAIProvider implements ILLMProvider {
 			}
 		});
 
-		return { usage };
+		return { usage, finishReason };
 	}
 
 	async embed(texts: string[], options: { model: string }): Promise<number[][]> {
@@ -339,9 +353,11 @@ function formatOpenAIMessages(messages: ChatMessage[]) {
 			return { role: 'user', content: m.content };
 		}
 		if (m.role === 'assistant') {
+			const contentText = typeof m.content === 'string' ? m.content : '';
+			const isMockToolText = contentText.startsWith('Calling tool');
 			const payload: Record<string, unknown> = {
 				role: 'assistant',
-				content: typeof m.content === 'string' ? (m.content || null) : null,
+				content: (contentText && !isMockToolText) ? contentText : null,
 			};
 			if (m.tool_calls && m.tool_calls.length > 0) {
 				payload.tool_calls = m.tool_calls.map((tc) => ({

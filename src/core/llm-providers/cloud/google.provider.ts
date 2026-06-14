@@ -2,10 +2,12 @@ import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, ToolCall } f
 import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
 import { readStreamLines } from '../utils';
+import { debugLogger } from '../../../shared/debugLogger';
 
 interface GeminiToolCallInfo {
 	name: string;
 	args: Record<string, unknown>;
+	thoughtSignature?: string;
 }
 
 interface GeminiStreamChunk {
@@ -17,8 +19,10 @@ interface GeminiStreamChunk {
 					name: string;
 					args?: Record<string, unknown>;
 				};
+				thoughtSignature?: string;
 			}>;
 		};
+		finishReason?: string;
 	}>;
 	usageMetadata?: {
 		promptTokenCount?: number;
@@ -36,8 +40,10 @@ interface GeminiResponse {
 					name: string;
 					args?: Record<string, unknown>;
 				};
+				thoughtSignature?: string;
 			}>;
 		};
+		finishReason?: string;
 	}>;
 	usageMetadata?: {
 		promptTokenCount?: number;
@@ -125,6 +131,7 @@ export class GoogleProvider implements ILLMProvider {
 			let fullContent = '';
 			const accumulatedToolCalls: GeminiToolCallInfo[] = [];
 			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+			let finishReason: string | undefined;
 
 			const response = await window.fetch(url, {
 				method: 'POST',
@@ -138,42 +145,35 @@ export class GoogleProvider implements ILLMProvider {
 				throw new Error(`Google Gemini Error (HTTP ${response.status}): ${errText}`);
 			}
 
-			await readStreamLines(response, options.signal, (line) => {
-				let cleanLine = line.trim();
-				if (cleanLine.startsWith('[')) cleanLine = cleanLine.slice(1).trim();
-				if (cleanLine.endsWith(']')) cleanLine = cleanLine.slice(0, -1).trim();
-				if (cleanLine.endsWith(',')) cleanLine = cleanLine.slice(0, -1).trim();
-				if (!cleanLine) return;
-
-				try {
-					const chunk = JSON.parse(cleanLine) as GeminiStreamChunk;
-					const candidate = chunk.candidates?.[0];
-					if (candidate) {
-						const parts = candidate.content?.parts;
-						if (parts) {
-							for (const part of parts) {
-								if (part.text) {
-									fullContent += part.text;
-									onChunk(part.text);
-								}
-								if (part.functionCall) {
-									accumulatedToolCalls.push({
-										name: part.functionCall.name,
-										args: part.functionCall.args || {},
-									});
-								}
+			await readGeminiStreamChunks(response, options.signal, (chunk) => {
+				const candidate = chunk.candidates?.[0];
+				if (candidate) {
+					if (candidate.finishReason) {
+						finishReason = candidate.finishReason;
+					}
+					const parts = candidate.content?.parts;
+					if (parts) {
+						for (const part of parts) {
+							if (part.text) {
+								fullContent += part.text;
+								onChunk(part.text);
+							}
+							if (part.functionCall) {
+								accumulatedToolCalls.push({
+									name: part.functionCall.name,
+									args: part.functionCall.args || {},
+									thoughtSignature: part.thoughtSignature,
+								});
 							}
 						}
 					}
-					if (chunk.usageMetadata) {
-						usage = {
-							inputTokens: chunk.usageMetadata.promptTokenCount || 0,
-							outputTokens: chunk.usageMetadata.candidatesTokenCount || 0,
-							totalTokens: chunk.usageMetadata.totalTokenCount || 0,
-						};
-					}
-				} catch {
-					// Ignore line boundaries parsing errors
+				}
+				if (chunk.usageMetadata) {
+					usage = {
+						inputTokens: chunk.usageMetadata.promptTokenCount || 0,
+						outputTokens: chunk.usageMetadata.candidatesTokenCount || 0,
+						totalTokens: chunk.usageMetadata.totalTokenCount || 0,
+					};
 				}
 			});
 
@@ -184,6 +184,7 @@ export class GoogleProvider implements ILLMProvider {
 						id: crypto.randomUUID(),
 						name: tc.name,
 						arguments: tc.args || {},
+						thoughtSignature: tc.thoughtSignature,
 					});
 				}
 			}
@@ -192,6 +193,7 @@ export class GoogleProvider implements ILLMProvider {
 				content: fullContent,
 				usage,
 				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+				finishReason,
 			};
 		} else {
 			// non-streaming
@@ -207,6 +209,7 @@ export class GoogleProvider implements ILLMProvider {
 			if (!candidate) {
 				throw new Error(`Google Gemini API returned an empty response. Response: ${res.text}`);
 			}
+			const finishReason = candidate.finishReason || undefined;
 
 			let fullContent = '';
 			const toolCalls: ToolCall[] = [];
@@ -222,6 +225,7 @@ export class GoogleProvider implements ILLMProvider {
 							id: crypto.randomUUID(),
 							name: part.functionCall.name,
 							arguments: part.functionCall.args || {},
+							thoughtSignature: part.thoughtSignature,
 						});
 					}
 				}
@@ -240,6 +244,7 @@ export class GoogleProvider implements ILLMProvider {
 				content: fullContent,
 				usage,
 				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+				finishReason,
 			};
 		}
 	}
@@ -248,7 +253,7 @@ export class GoogleProvider implements ILLMProvider {
 		messages: ChatMessage[],
 		options: ChatOptions,
 		onChunk: (chunk: string) => void,
-	): Promise<{ usage?: import('../../../shared/types/llm.types').TokenUsage }> {
+	): Promise<{ usage?: import('../../../shared/types/llm.types').TokenUsage; finishReason?: string }> {
 		const url = `https://generativelanguage.googleapis.com/v1beta/models/${options.model}:streamGenerateContent?key=${this.apiKey}`;
 		
 		const headers: Record<string, string> = {
@@ -271,6 +276,7 @@ export class GoogleProvider implements ILLMProvider {
 		}
 
 		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+		let finishReason: string | undefined;
 
 		const response = await window.fetch(url, {
 			method: 'POST',
@@ -284,39 +290,31 @@ export class GoogleProvider implements ILLMProvider {
 			throw new Error(`Google Gemini Error (HTTP ${response.status}): ${errText}`);
 		}
 
-		await readStreamLines(response, options.signal, (line) => {
-			let cleanLine = line.trim();
-			if (cleanLine.startsWith('[')) cleanLine = cleanLine.slice(1).trim();
-			if (cleanLine.endsWith(']')) cleanLine = cleanLine.slice(0, -1).trim();
-			if (cleanLine.endsWith(',')) cleanLine = cleanLine.slice(0, -1).trim();
-			if (!cleanLine) return;
-
-			try {
-				const chunk = JSON.parse(cleanLine) as GeminiStreamChunk;
-				const candidate = chunk.candidates?.[0];
-				if (candidate) {
-					const parts = candidate.content?.parts;
-					if (parts) {
-						for (const part of parts) {
-							if (part.text) {
-								onChunk(part.text);
-							}
+		await readGeminiStreamChunks(response, options.signal, (chunk) => {
+			const candidate = chunk.candidates?.[0];
+			if (candidate) {
+				if (candidate.finishReason) {
+					finishReason = candidate.finishReason;
+				}
+				const parts = candidate.content?.parts;
+				if (parts) {
+					for (const part of parts) {
+						if (part.text) {
+							onChunk(part.text);
 						}
 					}
 				}
-				if (chunk.usageMetadata) {
-					usage = {
-						inputTokens: chunk.usageMetadata.promptTokenCount || 0,
-						outputTokens: chunk.usageMetadata.candidatesTokenCount || 0,
-						totalTokens: chunk.usageMetadata.totalTokenCount || 0,
-					};
-				}
-			} catch {
-				// Ignore line boundaries parsing errors
+			}
+			if (chunk.usageMetadata) {
+				usage = {
+					inputTokens: chunk.usageMetadata.promptTokenCount || 0,
+					outputTokens: chunk.usageMetadata.candidatesTokenCount || 0,
+					totalTokens: chunk.usageMetadata.totalTokenCount || 0,
+				};
 			}
 		});
 
-		return { usage };
+		return { usage, finishReason };
 	}
 
 	async embed(texts: string[], options: { model: string }): Promise<number[][]> {
@@ -349,6 +347,77 @@ export class GoogleProvider implements ILLMProvider {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+async function readGeminiStreamChunks(
+	response: Response,
+	signal: AbortSignal | undefined,
+	onChunk: (chunk: GeminiStreamChunk) => void
+): Promise<void> {
+	const reader = response.body?.getReader();
+	if (!reader) {
+		throw new Error('Response body is not readable');
+	}
+	const decoder = new TextDecoder('utf-8');
+	let buffer = '';
+	let braceCount = 0;
+	let inString = false;
+	let escape = false;
+	let objectStart = -1;
+
+	try {
+		while (true) {
+			if (signal?.aborted) {
+				await reader.cancel();
+				break;
+			}
+			const { done, value } = await reader.read();
+			if (done) break;
+
+			buffer += decoder.decode(value, { stream: true });
+
+			let i = 0;
+			while (i < buffer.length) {
+				const char = buffer[i];
+
+				if (inString) {
+					if (escape) {
+						escape = false;
+					} else if (char === '\\') {
+						escape = true;
+					} else if (char === '"') {
+						inString = false;
+					}
+				} else {
+					if (char === '"') {
+						inString = true;
+					} else if (char === '{') {
+						if (braceCount === 0) {
+							objectStart = i;
+						}
+						braceCount++;
+					} else if (char === '}') {
+						braceCount--;
+						if (braceCount === 0 && objectStart !== -1) {
+							const objStr = buffer.substring(objectStart, i + 1);
+							try {
+								const chunk = JSON.parse(objStr) as GeminiStreamChunk;
+								onChunk(chunk);
+							} catch (e) {
+								debugLogger.logError('Gemini Stream Parse', `Failed to parse chunk: "${objStr}". Error: ${e instanceof Error ? e.message : String(e)}`);
+							}
+							buffer = buffer.substring(i + 1);
+							i = -1;
+							objectStart = -1;
+						}
+					}
+				}
+				i++;
+			}
+		}
+	} finally {
+		reader.releaseLock();
+	}
+}
 
 function getGeminiSystemInstruction(messages: ChatMessage[]) {
 	const systemMsgs = messages.filter(m => m.role === 'system');
@@ -386,18 +455,23 @@ function formatGeminiMessages(messages: ChatMessage[]) {
 		if (m.role === 'assistant') {
 			const parts: Array<
 				| { text: string }
-				| { functionCalls: Array<{ name: string; args: Record<string, unknown> }> }
+				| { functionCall: { name: string; args: Record<string, unknown> }; thoughtSignature?: string }
 			> = [];
-			if (typeof m.content === 'string' && m.content) {
-				parts.push({ text: m.content });
+			const contentText = typeof m.content === 'string' ? m.content : '';
+			const isMockToolText = contentText.startsWith('Calling tool');
+			if (contentText && !isMockToolText) {
+				parts.push({ text: contentText });
 			}
 			if (m.tool_calls && m.tool_calls.length > 0) {
-				parts.push({
-					functionCalls: m.tool_calls.map(tc => ({
-						name: tc.name,
-						args: tc.arguments,
-					}))
-				});
+				for (const tc of m.tool_calls) {
+					parts.push({
+						functionCall: {
+							name: tc.name,
+							args: tc.arguments,
+						},
+						...(tc.thoughtSignature ? { thoughtSignature: tc.thoughtSignature } : {})
+					});
+				}
 			}
 			return { role: 'model', parts };
 		}
@@ -420,7 +494,8 @@ function formatGeminiMessages(messages: ChatMessage[]) {
 						functionResponse: {
 							name: m.name || '',
 							response: responseObj,
-						}
+						},
+						...(m.thoughtSignature ? { thoughtSignature: m.thoughtSignature } : {})
 					}
 				]
 			};

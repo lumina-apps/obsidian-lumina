@@ -3,6 +3,7 @@ import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, ToolCall } f
 import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
 import { readStreamLines } from '../utils';
+import { debugLogger } from '../../../shared/debugLogger';
 
 interface OpenAIToolCallInfo {
 	id?: string;
@@ -14,6 +15,8 @@ interface OpenAIStreamChunk {
 	choices?: Array<{
 		delta?: {
 			content?: string | null;
+			reasoning_content?: string | null;
+			reasoning?: string | null;
 			tool_calls?: Array<{
 				index: number;
 				id?: string;
@@ -23,6 +26,7 @@ interface OpenAIStreamChunk {
 				};
 			}>;
 		};
+		finish_reason?: string | null;
 	}>;
 	usage?: {
 		prompt_tokens: number;
@@ -36,6 +40,8 @@ interface OpenAIResponse {
 		message?: {
 			role?: string;
 			content?: string | null;
+			reasoning_content?: string | null;
+			reasoning?: string | null;
 			tool_calls?: Array<{
 				id: string;
 				type: 'function';
@@ -45,6 +51,7 @@ interface OpenAIResponse {
 				};
 			}>;
 		};
+		finish_reason?: string | null;
 	}>;
 	usage?: {
 		prompt_tokens: number;
@@ -106,6 +113,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 			let fullContent = '';
 			const accumulatedToolCalls: OpenAIToolCallInfo[] = [];
 			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+			let finishReason: string | undefined;
 
 			const response = await window.fetch(url, {
 				method: 'POST',
@@ -119,6 +127,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 				throw new Error(`${this.type} Error (HTTP ${response.status}): ${errText}`);
 			}
 
+			let isThinking = false;
 			await readStreamLines(response, options.signal, (line) => {
 				const cleanLine = line.trim();
 				if (!cleanLine || !cleanLine.startsWith('data: ')) return;
@@ -129,11 +138,30 @@ export class OpenAICompatProvider implements ILLMProvider {
 					const chunk = JSON.parse(dataStr) as OpenAIStreamChunk;
 					const choice = chunk.choices?.[0];
 					if (choice) {
+						if (choice.finish_reason) {
+							finishReason = choice.finish_reason;
+						}
 						const delta = choice.delta;
 						if (delta) {
-							if (delta.content) {
-								fullContent += delta.content;
-								onChunk(delta.content);
+							const reasoning = delta.reasoning_content || delta.reasoning;
+							if (reasoning) {
+								if (!isThinking) {
+									isThinking = true;
+									fullContent += '<think>\n';
+									onChunk('<think>\n');
+								}
+								fullContent += reasoning;
+								onChunk(reasoning);
+							} else {
+								if (isThinking) {
+									isThinking = false;
+									fullContent += '\n</think>\n';
+									onChunk('\n</think>\n');
+								}
+								if (delta.content) {
+									fullContent += delta.content;
+									onChunk(delta.content);
+								}
 							}
 							if (delta.tool_calls) {
 								for (const tc of delta.tool_calls) {
@@ -160,10 +188,13 @@ export class OpenAICompatProvider implements ILLMProvider {
 							totalTokens: chunk.usage.total_tokens,
 						};
 					}
-				} catch {
-					// Ignore json parse errors
+				} catch (e) {
+					debugLogger.logError('OpenAICompat Stream Parse', `Failed to parse line: "${cleanLine}". Error: ${e instanceof Error ? e.message : String(e)}`);
 				}
 			});
+			if (isThinking) {
+				fullContent += '\n</think>\n';
+			}
 
 			const toolCalls: ToolCall[] = [];
 			for (const tc of accumulatedToolCalls) {
@@ -184,6 +215,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 				content: fullContent,
 				usage,
 				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+				finishReason,
 			};
 		} else {
 			// non-streaming
@@ -195,10 +227,12 @@ export class OpenAICompatProvider implements ILLMProvider {
 			});
 
 			const data = res.json as OpenAIResponse;
-			const message = data.choices?.[0]?.message;
+			const choice = data.choices?.[0];
+			const message = choice?.message;
 			if (!message) {
 				throw new Error(`${this.type} API returned an empty response. Response: ${res.text}`);
 			}
+			const finishReason = choice?.finish_reason || undefined;
 
 			const toolCalls: ToolCall[] = [];
 			if (message.tool_calls) {
@@ -224,10 +258,18 @@ export class OpenAICompatProvider implements ILLMProvider {
 				};
 			}
 
+			let returnContent = '';
+			const reasoning = message.reasoning_content || message.reasoning;
+			if (reasoning) {
+				returnContent += `<think>\n${reasoning}\n</think>\n`;
+			}
+			returnContent += message.content || '';
+
 			return {
-				content: message.content || '',
+				content: returnContent,
 				usage,
 				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+				finishReason,
 			};
 		}
 	}
@@ -236,7 +278,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 		messages: ChatMessage[],
 		options: ChatOptions,
 		onChunk: (chunk: string) => void,
-	): Promise<{ usage?: import('../../../shared/types/llm.types').TokenUsage }> {
+	): Promise<{ usage?: import('../../../shared/types/llm.types').TokenUsage; finishReason?: string }> {
 		const url = `${this.baseUrl}/v1/chat/completions`;
 		const headers: Record<string, string> = {
 			'Content-Type': 'application/json',
@@ -258,6 +300,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 		}
 
 		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+		let finishReason: string | undefined;
 
 		const response = await window.fetch(url, {
 			method: 'POST',
@@ -271,6 +314,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 			throw new Error(`${this.type} Error (HTTP ${response.status}): ${errText}`);
 		}
 
+		let isThinking = false;
 		await readStreamLines(response, options.signal, (line) => {
 			const cleanLine = line.trim();
 			if (!cleanLine || !cleanLine.startsWith('data: ')) return;
@@ -281,9 +325,27 @@ export class OpenAICompatProvider implements ILLMProvider {
 				const chunk = JSON.parse(dataStr) as OpenAIStreamChunk;
 				const choice = chunk.choices?.[0];
 				if (choice) {
+					if (choice.finish_reason) {
+						finishReason = choice.finish_reason;
+					}
 					const delta = choice.delta;
-					if (delta && delta.content) {
-						onChunk(delta.content);
+					if (delta) {
+						const reasoning = delta.reasoning_content || delta.reasoning;
+						if (reasoning) {
+							if (!isThinking) {
+								isThinking = true;
+								onChunk('<think>\n');
+							}
+							onChunk(reasoning);
+						} else {
+							if (isThinking) {
+								isThinking = false;
+								onChunk('\n</think>\n');
+							}
+							if (delta.content) {
+								onChunk(delta.content);
+							}
+						}
 					}
 				}
 				if (chunk.usage) {
@@ -293,12 +355,15 @@ export class OpenAICompatProvider implements ILLMProvider {
 						totalTokens: chunk.usage.total_tokens,
 					};
 				}
-			} catch {
-				// Ignore JSON parse errors
+			} catch (e) {
+				debugLogger.logError('OpenAICompat Stream Parse', `Failed to parse line in stream(): "${cleanLine}". Error: ${e instanceof Error ? e.message : String(e)}`);
 			}
 		});
+		if (isThinking) {
+			onChunk('\n</think>\n');
+		}
 
-		return { usage };
+		return { usage, finishReason };
 	}
 
 	async embed(texts: string[], options: { model: string }): Promise<number[][]> {
@@ -372,9 +437,11 @@ function formatOpenAIMessages(messages: ChatMessage[]) {
 			return { role: 'user', content: m.content };
 		}
 		if (m.role === 'assistant') {
+			const contentText = typeof m.content === 'string' ? m.content : '';
+			const isMockToolText = contentText.startsWith('Calling tool');
 			const payload: Record<string, unknown> = {
 				role: 'assistant',
-				content: typeof m.content === 'string' ? (m.content || null) : null,
+				content: (contentText && !isMockToolText) ? contentText : null,
 			};
 			if (m.tool_calls && m.tool_calls.length > 0) {
 				payload.tool_calls = m.tool_calls.map((tc) => ({

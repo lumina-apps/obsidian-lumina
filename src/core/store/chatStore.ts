@@ -11,6 +11,7 @@
 
 import { writable, get } from 'svelte/store';
 import type { UIChatMessage, ContextAttachment, ChatRagSource } from '../../shared/types/chat.types';
+import { t } from '../../shared/locales/helpers';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -95,7 +96,7 @@ export function setMessageError(messageId: string, errMsg: string): void {
 	messages.update(ms =>
 		ms.map(m =>
 			m.id === messageId
-				? { ...m, content: `⚠️ 오류: ${errMsg}`, isStreaming: false }
+				? { ...m, content: `⚠️ ${t('common.error')}: ${errMsg}`, isStreaming: false }
 				: m,
 		),
 	);

@@ -248,8 +248,12 @@ La connexion de modèles volumineux ou de modèles de raisonnement entraînera d
       emptyResponseFallback: '⚠️ The model returned an empty response. (This may be due to an unsupported language/format, prompt filtering, or exceeding the context limit.)',
         context: {
             activeNote: "Inclure la note actuelle : {{name}}",
-            selectedText: "Texte sélectionné ({{length}} caractères)"
-        }
+            selectedText: "Texte sélectionné ({{length}} caractères)",
+        folderFiles: "[Fichiers dans le dossier : {{name}}]",
+        activeNotePrefix: "[Note active : {{name}}]",
+        canvasFile: "[Fichier Canvas : {{name}}]",
+        tagFiles: "[Fichiers avec tag : {{name}} (Max 5)]",
+        activeNotePrompt: "Note active"}
     },
     rag: {
       toggleTooltip: 'Lorsqu\'activé, l\'IA lira et consultera les notes de votre coffre pour répondre.',
@@ -419,6 +423,14 @@ La connexion de modèles volumineux ou de modèles de raisonnement entraînera d
     send: 'Envoyer',
     underDevelopment: 'Cette fonctionnalité est en cours de développement.',
     ragDisabledGlobally: 'Le moteur RAG global est désactivé. Activez-le dans les Paramètres.',
+    llm: {
+      rateLimit: '⚠️ Quota API ou limite de débit dépassée. Veuillez réessayer dans un instant. Pour les comptes gratuits, vérifiez vos limites quotidiennes/minutaires ou votre statut de facturation.',
+      unauthorized: '⚠️ La clé API est invalide ou a expiré. Veuillez vérifier votre clé API dans les paramètres sous "Connexions & Modèles".',
+      forbidden: '⚠️ Accès refusé ou requête interdite. Veuillez vérifier les autorisations de votre clé API, votre plan de service ou les restrictions régionales.',
+      notFound: '⚠️ Modèle demandé introuvable ou URL de l\'endpoint API incorrecte. Veuillez vérifier le modèle sélectionné et l\'url de connexion dans les paramètres.',
+      networkError: '⚠️ Échec de la connexion réseau. Veuillez vérifier votre connexion Internet ou si votre serveur LLM local fonctionne.',
+      notReadable: 'Le corps de la réponse n\'est pas lisible',
+    }
    },
   chat: {
     newChat: 'Nouveau chat',
@@ -488,6 +500,8 @@ La connexion de modèles volumineux ou de modèles de raisonnement entraînera d
     noActiveEditor: 'Aucun éditeur Markdown actif trouvé.',
    },
   uiMessages: {
+    emptyResponseTokenLimit: '⚠️ Le modèle a renvoyé une réponse vide. La génération a été arrêtée car la limite de jetons de sortie maximaux a été atteinte. Veuillez augmenter la limite de "jetons de sortie maximaux" dans les paramètres.',
+    tokenLimitHitWarning: '\n\n⚠️ (La génération a été interrompue car la limite de jetons de sortie maximaux a été atteinte. Veuillez augmenter la valeur de "jetons de sortie maximaux" dans les paramètres.)',
     toolExecutionRejected: 'L\'exécution de l\'outil a été rejetée par l\'utilisateur.',
     inlineReplace: 'Remplacer',
     inlineAppend: 'Ajouter',

@@ -248,8 +248,12 @@ export const ru: DeepPartial<Translation> = {
       emptyResponseFallback: '⚠️ The model returned an empty response. (This may be due to an unsupported language/format, prompt filtering, or exceeding the context limit.)',
         context: {
             activeNote: "Включить текущую заметку: {{name}}",
-            selectedText: "Выделенный текст ({{length}} символов)"
-        }
+            selectedText: "Выделенный текст ({{length}} символов)",
+        folderFiles: "[Файлы в папке: {{name}}]",
+        activeNotePrefix: "[Активная заметка: {{name}}]",
+        canvasFile: "[Файл Canvas: {{name}}]",
+        tagFiles: "[Файлы с тегом: {{name}} (макс. 5)]",
+        activeNotePrompt: "Активная заметка"}
     },
     rag: {
       toggleTooltip: 'При включении ИИ будет читать и ссылаться на заметки в вашем хранилище (Vault) при ответе.',
@@ -418,6 +422,14 @@ export const ru: DeepPartial<Translation> = {
     send: 'Отправить',
     underDevelopment: 'Эта функция находится в разработке.',
     ragDisabledGlobally: 'Глобальный RAG движок отключен. Включите его в Настройках.',
+    llm: {
+      rateLimit: '⚠️ Лимит квоты или частоты запросов к API превышен. Пожалуйста, подождите немного и попробуйте еще раз. Для бесплатных аккаунтов проверьте лимиты в минуту/день или статус оплаты.',
+      unauthorized: '⚠️ Недействительный или истекший API-ключ. Проверьте ваш API-ключ в настройках в разделе "Подключения и модели".',
+      forbidden: '⚠️ Доступ запрещен или запрос заблокирован. Проверьте права доступа API-ключа, тарифный план или региональные ограничения.',
+      notFound: '⚠️ Запрошенная модель не найдена или неверный URL-адрес конечной точки API. Проверьте выбранную модель и URL подключения в настройках.',
+      networkError: '⚠️ Сетевое соединение не удалось. Проверьте подключение к Интернету или убедитесь, что ваш локальный сервер LLM запущен.',
+      notReadable: 'Тело ответа не может быть прочитано',
+    }
   },
   chat: {
     newChat: 'Новый чат',
@@ -487,6 +499,8 @@ export const ru: DeepPartial<Translation> = {
     noActiveEditor: 'Активный Markdown редактор не найден.',
   },
   uiMessages: {
+    emptyResponseTokenLimit: '⚠️ Модель вернула пустой ответ. Генерация остановлена, так как достигнут лимит максимального количества токенов вывода. Пожалуйста, увеличьте лимит "Макс. токенов вывода" в настройках.',
+    tokenLimitHitWarning: '\n\n⚠️ (Генерация была прервана из-за достижения лимита максимального количества токенов вывода. Пожалуйста, увеличьте значение "Макс. токенов вывода" в настройках.)',
     toolExecutionRejected: 'Выполнение инструмента было отклонено пользователем.',
     inlineReplace: 'Заменить',
     inlineAppend: 'Добавить в конец',

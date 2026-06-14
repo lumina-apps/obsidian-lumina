@@ -13,6 +13,8 @@ export interface ChatMessage {
 	name?: string;
 	/** assistant role 전용: assistant가 요청한 tool call 목록 (Gemini/Anthropic에서 중요) */
 	tool_calls?: ToolCall[];
+	/** Gemini 전용: 추론 상태 서명 */
+	thoughtSignature?: string;
 }
 
 // ─── Tool Calling ─────────────────────────────────────────────────────────────
@@ -31,6 +33,8 @@ export interface ToolCall {
 	id: string;
 	name: string;
 	arguments: Record<string, unknown>;
+	/** Gemini 전용: 추론 상태 서명 */
+	thoughtSignature?: string;
 }
 
 // ─── Chat Options ─────────────────────────────────────────────────────────────
@@ -60,6 +64,8 @@ export interface ChatResponse {
 	usage?: TokenUsage;
 	/** LLM이 tool call을 요청한 경우 */
 	toolCalls?: ToolCall[];
+	/** 모델이 생성을 완료한 원인 (예: 'length', 'max_tokens', 'MAX_TOKENS') */
+	finishReason?: string;
 }
 
 export interface ILLMProvider {
@@ -85,7 +91,7 @@ export interface ILLMProvider {
 		messages: ChatMessage[],
 		options: ChatOptions,
 		onChunk: (chunk: string) => void,
-	): Promise<{ usage?: TokenUsage }>;
+	): Promise<{ usage?: TokenUsage; finishReason?: string }>;
 
 	/**
 	 * 임베딩 (벡터화)

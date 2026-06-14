@@ -195,6 +195,11 @@ Connecting large models or Reasoning models will cause extreme delays of tens of
       context: {
         activeNote: 'Include Current Note: {{name}}',
         selectedText: 'Selected Text ({{length}} chars)',
+        folderFiles: '[Files in Folder: {{name}}]',
+        activeNotePrefix: '[Active Note: {{name}}]',
+        canvasFile: '[Canvas File: {{name}}]',
+        tagFiles: '[Files with Tag: {{name}} (Max 5)]',
+        activeNotePrompt: 'Active Note'
       },
       sendMode: {
         name: 'Send Message Mode',
@@ -418,6 +423,14 @@ Connecting large models or Reasoning models will cause extreme delays of tens of
     send: 'Send',
     underDevelopment: 'This feature is under development.',
     ragDisabledGlobally: 'Global RAG engine is disabled. Turn it on in Settings.',
+    llm: {
+      rateLimit: '⚠️ API quota or rate limit exceeded. Please try again in a moment. For free tier accounts, check your daily/minutely limits or verify your credit card/billing status.',
+      unauthorized: '⚠️ API key is invalid or has expired. Please check your API key in settings under "Connections & Models".',
+      forbidden: '⚠️ Access denied or request forbidden. Please check your API key permissions, service plan, or regional restrictions.',
+      notFound: '⚠️ Requested model not found or API endpoint URL is incorrect. Please check your selected model and connection URL in settings.',
+      networkError: '⚠️ Network connection failed. Please check your internet connection, or verify if your local LLM server is running.',
+      notReadable: 'Response body is not readable',
+    }
   },
   chat: {
     newChat: 'New Chat',
@@ -487,6 +500,8 @@ Connecting large models or Reasoning models will cause extreme delays of tens of
     noActiveEditor: 'No active Markdown editor found.',
   },
   uiMessages: {
+    emptyResponseTokenLimit: '⚠️ The model returned an empty response. Generation was stopped because the Max Output Tokens limit was reached. Please increase the "Max Output Tokens" limit in settings.',
+    tokenLimitHitWarning: '\n\n⚠️ (Generation was interrupted because the Max Output Tokens limit was reached. Please increase the "Max Output Tokens" value in settings.)',
     toolExecutionRejected: 'Tool execution was rejected by the user.',
     inlineReplace: 'Replace',
     inlineAppend: 'Append',

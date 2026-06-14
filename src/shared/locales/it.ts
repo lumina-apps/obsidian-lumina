@@ -248,8 +248,12 @@ La connessione di modelli grandi o di Reasoning models causerà ritardi estremi 
       emptyResponseFallback: '⚠️ The model returned an empty response. (This may be due to an unsupported language/format, prompt filtering, or exceeding the context limit.)',
         context: {
             activeNote: "Includi nota attuale: {{name}}",
-            selectedText: "Testo selezionato ({{length}} caratteri)"
-        }
+            selectedText: "Testo selezionato ({{length}} caratteri)",
+        folderFiles: "[File nella cartella: {{name}}]",
+        activeNotePrefix: "[Nota attiva: {{name}}]",
+        canvasFile: "[File Canvas: {{name}}]",
+        tagFiles: "[File con tag: {{name}} (Max 5)]",
+        activeNotePrompt: "Nota attiva"}
     },
     rag: {
       toggleTooltip: 'Quando abilitato, l\'IA leggerà e farà riferimento alle note del vault per rispondere.',
@@ -419,6 +423,14 @@ La connessione di modelli grandi o di Reasoning models causerà ritardi estremi 
     send: 'Invia',
     underDevelopment: 'Questa funzionalità è in sviluppo.',
     ragDisabledGlobally: 'Motore RAG globale disabilitato. Attivalo nelle Impostazioni.',
+    llm: {
+      rateLimit: '⚠️ Quota API o limite di frequenza superato. Riprova tra un momento. Per gli account gratuiti, verifica i tuoi limiti giornalieri/minutali o lo stato della fatturazione.',
+      unauthorized: '⚠️ La chiave API non è valida o è scaduta. Controlla la tua chiave API nelle impostazioni sotto "Connessioni e modelli".',
+      forbidden: '⚠️ Accesso negato o richiesta vietata. Verifica i permessi della tua chiave API, il piano di serviço o le restrizioni regionali.',
+      notFound: '⚠️ Modello richiesto non trovato o URL dell\'endpoint API errato. Controlla il modello selezionato e l\'URL di connessione nelle impostazioni.',
+      networkError: '⚠️ Connessione di rete non riuscita. Controlla la tua connessione Internet o verifica se il tuo server LLM locale è in esecuzione.',
+      notReadable: 'Il corpo della risposta non è leggibile',
+    }
    },
   chat: {
     newChat: 'Nuova Chat',
@@ -488,6 +500,8 @@ La connessione di modelli grandi o di Reasoning models causerà ritardi estremi 
     noActiveEditor: 'Nessun editor Markdown attivo trovato.',
    },
   uiMessages: {
+    emptyResponseTokenLimit: '⚠️ Il modello ha restituito una resposta vuota. La generazione è stata interrotta perché è stato raggiunto il limite massimo di token di output. Aumenta il limite "Token di output massimi" nelle impostazioni.',
+    tokenLimitHitWarning: '\n\n⚠️ (La generazione è stata interrotta perché è stato raggiunto il limite massimo di token di output. Aumenta il valore di "Token di output massimi" nelle impostazioni.)',
     toolExecutionRejected: 'L\'esecuzione dello strumento è stata rifiutata dall\'utente.',
     inlineReplace: 'Sostituisci',
     inlineAppend: 'Aggiungi',

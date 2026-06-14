@@ -14,6 +14,7 @@ import { Notice, TFile, TFolder, MarkdownView, type App } from 'obsidian';
 import { t } from '../../shared/locales/helpers';
 import type LuminaPlugin from '../../main';
 import { createProvider, isLocalProvider } from '../../core/llm-providers/index';
+import { formatLlmError } from '../../core/llm-providers/utils';
 import { buildMessages } from './promptBuilder';
 import { searchVault, formatRagContext } from '../rag/search';
 import {
@@ -168,7 +169,7 @@ export class ChatController {
 					} else if (att.type === 'folder') {
 						const folder = this.app.vault.getAbstractFileByPath(att.path);
 						if (folder instanceof TFolder) {
-							let folderContent = `[폴더: ${att.name} 내의 파일들]\n`;
+							let folderContent = t('settings.chat.context.folderFiles', { name: att.name }) + '\n';
 							for (const child of folder.children) {
 								if (child instanceof TFile && child.extension === 'md') {
 									const content = await this.app.vault.read(child);
@@ -188,7 +189,7 @@ export class ChatController {
 						const activeFile = this.app.workspace.getActiveFile();
 						if (activeFile) {
 							const content = await this.app.vault.read(activeFile);
-							attachmentContext += `[현재 노트: ${activeFile.basename}]\n${content}\n\n`;
+							attachmentContext += t('settings.chat.context.activeNotePrefix', { name: activeFile.basename }) + '\n' + content + '\n\n';
 						}
 					} else if (att.type === 'canvas') {
 						const file = this.app.vault.getAbstractFileByPath(att.path);
@@ -203,7 +204,7 @@ export class ChatController {
 									nodes?: CanvasNode[];
 								}
 								const canvasData = JSON.parse(content) as CanvasData;
-								let canvasText = `[캔버스 파일: ${att.name}]\n`;
+								let canvasText = t('settings.chat.context.canvasFile', { name: att.name }) + '\n';
 								canvasData.nodes?.forEach((node) => {
 									if (node.type === 'text' && node.text) {
 										canvasText += `- ${node.text}\n`;
@@ -216,7 +217,7 @@ export class ChatController {
 						}
 					} else if (att.type === 'tag') {
 						const files = this.app.vault.getMarkdownFiles();
-						let tagContent = `[태그: ${att.name} 가 포함된 파일들 (최대 5개)]\n`;
+						let tagContent = t('settings.chat.context.tagFiles', { name: att.name }) + '\n';
 						let count = 0;
 						for (const file of files) {
 							const cache = this.app.metadataCache.getFileCache(file);
@@ -248,7 +249,7 @@ export class ChatController {
 				? null
 				: await this.getActiveNoteContext(options?.includeActiveNote);
 			if (activeNoteText) {
-				const txt = `[현재 활성 노트]\n${activeNoteText}`;
+				const txt = `[${t('settings.chat.context.activeNotePrompt')}]\n${activeNoteText}`;
 				ragContext = ragContext ? `${ragContext}\n\n${txt}` : txt;
 			}
 
@@ -343,10 +344,14 @@ export class ChatController {
 
 			// ── 7. 프롬프트 빌드 & LLM 대화 메시지 구성 ──────────────────────────
 			const useLocal = isLocalProvider(providerConfig?.type ?? 'custom');
+			const modelName = (modelId || providerConfig?.availableModels?.[0] || '').toLowerCase();
+			const isReasoningModel = modelName.includes('reasoner') || modelName.includes('r1');
+			const useTextTools = useLocal || isReasoningModel;
+
 			let llmMessages: ChatMessage[] = buildMessages(history, userText, { chat, ragContext });
 
-			// ── 7.5 로컬 모델용 텍스트 기반 툴 프롬프트 주입 ────────────────
-			const textToolPrompt = useLocal && mcpTools.length > 0
+			// ── 7.5 로컬/추론 모델용 텍스트 기반 툴 프롬프트 주입 ────────────────
+			const textToolPrompt = useTextTools && mcpTools.length > 0
 				? buildTextToolPrompt(mcpTools)
 				: '';
 			if (textToolPrompt) {
@@ -355,6 +360,18 @@ export class ChatController {
 					llmMessages[0].content = (llmMessages[0].content as string) + textToolPrompt;
 				} else {
 					llmMessages.unshift({ role: 'system', content: textToolPrompt });
+				}
+			}
+
+			// ── 7.6 클라우드 모델용 툴 사용 지침 프롬프트 주입 ────────────────
+			const cloudToolPrompt = (!useTextTools && mcpTools.length > 0)
+				? `\n\n[Tool Use Instruction]\nYou have access to tools. If the user asks you to do something that can be done with a tool (e.g., modifying, writing, appending to, or reading Obsidian notes/files, or running a search), you MUST call the appropriate tool to execute the action. Do not just describe what you would do or output the raw text in the chat; always execute it via tool calling.`
+				: '';
+			if (cloudToolPrompt) {
+				if (llmMessages.length > 0 && llmMessages[0].role === 'system') {
+					llmMessages[0].content = (llmMessages[0].content as string) + cloudToolPrompt;
+				} else {
+					llmMessages.unshift({ role: 'system', content: cloudToolPrompt });
 				}
 			}
 
@@ -378,10 +395,10 @@ export class ChatController {
 				temperature: chat.temperature,
 				maxOutputTokens: chat.maxOutputTokens,
 				signal,
-				// 로컬 모델은 LangChain bindTools 대신 텍스트 기반 파싱 사용
-				tools: (!useLocal && mcpTools.length > 0) ? mcpTools : undefined,
+				// 로컬 및 추론 모델은 LangChain bindTools 대신 텍스트 기반 파싱 사용
+				tools: (!useTextTools && mcpTools.length > 0) ? mcpTools : undefined,
 				// 텍스트 tool prompt 모드 시 stop 토큰 비활성화 (stop 토큰이 <lumina_tool_call> 태그와 충돌 방지)
-				stop: (useLocal && mcpTools.length > 0) ? [] : undefined,
+				stop: (useTextTools && mcpTools.length > 0) ? [] : undefined,
 			};
 
 			// 디버그: LLM 요청 로그
@@ -402,8 +419,9 @@ export class ChatController {
 			let fullResponse = '';
 			let accumulatedText = '';
 			let tokenUsage: TokenUsage | undefined;
+			let hasTokenLimitBeenHit = false;
 
-			debugLogger.logMcp('Loop Start', `MCP 툴 루프 시작`, { hasTools, streaming: chat.streaming, toolsCount: mcpTools.length, useLocal, method: useLocal ? '텍스트' : 'bindTools' });
+			debugLogger.logMcp('Loop Start', `MCP 툴 루프 시작`, { hasTools, streaming: chat.streaming, toolsCount: mcpTools.length, useTextTools, method: useTextTools ? '텍스트' : 'bindTools' });
 
 			if (hasTools) {
 				const maxRounds = chat.agentMaxSteps || 15;
@@ -429,11 +447,23 @@ export class ChatController {
 						}
 					});
 
+					const isTokenLimit = rawResponse.finishReason === 'length' ||
+						rawResponse.finishReason === 'max_tokens' ||
+						rawResponse.finishReason === 'MAX_TOKENS';
+					if (isTokenLimit) {
+						hasTokenLimitBeenHit = true;
+						fullResponse = accumulatedText || (rawResponse.content || '');
+						if (!useTextTools && fullResponse) {
+							fullResponse = fullResponse.replace(/<think>([\s\S]*?)(?:<\/think>|$)/gi, '').trim();
+						}
+						break;
+					}
+
 					// 로컬 모델: 텍스트에서 <lumina_tool_call> 블록 파싱
 					let resolvedToolCalls = rawResponse.toolCalls;
 					let currentRoundText = rawResponse.content || '';
 
-					if (useLocal && currentRoundText) {
+					if (useTextTools && currentRoundText) {
 						const parsed = parseTextToolCalls(currentRoundText);
 						if (parsed.toolCalls.length > 0) {
 							debugLogger.logMcp('Text Parse', `📝 텍스트 tool call 파싱: ${parsed.toolCalls.length}개 발견`, parsed.toolCalls.map(tc => tc.name));
@@ -522,27 +552,28 @@ export class ChatController {
 					let assistantContent = currentRoundText || '';
 
 					// DeepSeek API 에러 방지: 클라우드 모델의 경우 루프 내 assistant 응답에서 <think> 블록을 제거.
-					// 로컬 모델은 자신의 사고 과정을 문맥으로 유지해야 환각(빈 토큰 무한생성 등)을 방지할 수 있음.
-					if (!useLocal) {
+					// 로컬 및 추론 모델은 자신의 사고 과정을 문맥으로 유지해야 환각(빈 토큰 무한생성 등)을 방지할 수 있음.
+					if (!useTextTools) {
 						assistantContent = assistantContent.replace(/<think>([\s\S]*?)(?:<\/think>|$)/gi, '').trim();
 					}
 
-					if (useLocal && resolvedToolCalls.length > 0) {
+					if (useTextTools && resolvedToolCalls.length > 0) {
 						const toolCallBlocks = resolvedToolCalls.map((tc: ToolCall) => {
 							return `<lumina_tool_call>\n${JSON.stringify({ name: tc.name, arguments: tc.arguments })}\n</lumina_tool_call>`;
 						}).join('\n\n');
 						assistantContent = assistantContent ? `${assistantContent}\n\n${toolCallBlocks}` : toolCallBlocks;
-					} else if (!useLocal && !assistantContent) {
+					} else if (!useTextTools && !assistantContent) {
 						assistantContent = resolvedToolCalls.map((tc: ToolCall) => `Calling tool: ${tc.name}`).join(', ');
 					}
 
 					messagesForLLM.push({
 						role: 'assistant',
 						content: assistantContent,
-						tool_calls: useLocal ? undefined : resolvedToolCalls.map((tc: ToolCall) => ({
+						tool_calls: useTextTools ? undefined : resolvedToolCalls.map((tc: ToolCall) => ({
 							id: tc.id,
 							name: tc.name,
 							arguments: tc.arguments,
+							thoughtSignature: tc.thoughtSignature,
 						})),
 					});
 
@@ -587,26 +618,28 @@ export class ChatController {
 							debugLogger.logMcp('Tool Result', `◀️ 툴 결과: ${tc.name} → ${resultText.length}자${truncationNote ? ' (잘림)' : ''}`, { result: resultText });
 
 							// tool 결과를 대화에 추가
-							// 로컬 모델은 role: 'tool'을 지원하지 않으므로 role: 'user'로 변환
-							const toolMsgRole = useLocal ? 'user' : 'tool';
+							// 로컬 및 추론 모델은 role: 'tool'을 지원하지 않으므로 role: 'user'로 변환
+							const toolMsgRole = useTextTools ? 'user' : 'tool';
 							messagesForLLM.push({
 								role: toolMsgRole,
 								name: tc.name,
-								content: useLocal
+								content: useTextTools
 									? t('uiMessages.agentToolResultFor', { name: tc.name }) + '\n' + resultText
 									: resultText,
-								...(useLocal ? {} : { tool_call_id: tc.id }),
+								...(useTextTools ? {} : { tool_call_id: tc.id }),
+								thoughtSignature: tc.thoughtSignature,
 							});
 						} catch (e) {
 							debugLogger.logMcp('Tool Error', `❌ 툴 실행 오류 ${tc.name}`, { error: (e as Error).message });
-							const toolMsgRole2 = useLocal ? 'user' : 'tool';
+							const toolMsgRole2 = useTextTools ? 'user' : 'tool';
 							messagesForLLM.push({
 								role: toolMsgRole2,
 								name: tc.name,
-								content: useLocal
+								content: useTextTools
 									? t('uiMessages.agentToolError', { name: tc.name, error: (e as Error).message })
 									: t('uiMessages.agentToolExecuteError', { error: (e as Error).message }),
-								...(useLocal ? {} : { tool_call_id: tc.id }),
+								...(useTextTools ? {} : { tool_call_id: tc.id }),
+								thoughtSignature: tc.thoughtSignature,
 							});
 						}
 					}
@@ -625,12 +658,24 @@ export class ChatController {
 					appendChunk(assistantId, chunk);
 				});
 				tokenUsage = streamRes?.usage;
+				const isTokenLimit = streamRes?.finishReason === 'length' ||
+					streamRes?.finishReason === 'max_tokens' ||
+					streamRes?.finishReason === 'MAX_TOKENS';
+				if (isTokenLimit) {
+					hasTokenLimitBeenHit = true;
+				}
 			} else {
 				// ── Non-streaming (no tools) ──
 				const response = await provider.chat(llmMessages, chatOptions);
 				fullResponse = response.content;
 				tokenUsage = response?.usage;
 				appendChunk(assistantId, fullResponse);
+				const isTokenLimit = response.finishReason === 'length' ||
+					response.finishReason === 'max_tokens' ||
+					response.finishReason === 'MAX_TOKENS';
+				if (isTokenLimit) {
+					hasTokenLimitBeenHit = true;
+				}
 			}
 
 			if (tokenUsage) {
@@ -643,8 +688,20 @@ export class ChatController {
 
 			// 응답이 비어있을 경우 (필터링, 모델 한계 등)
 			if (!fullResponse.trim()) {
-				fullResponse = t('settings.chat.emptyResponseFallback') || '⚠️ 모델이 빈 응답을 반환했습니다. (컨텍스트 초과 또는 지원되지 않는 요청일 수 있습니다.)';
+				if (hasTokenLimitBeenHit) {
+					fullResponse = t('uiMessages.emptyResponseTokenLimit');
+				} else {
+					fullResponse = t('settings.chat.emptyResponseFallback');
+				}
 				appendChunk(assistantId, fullResponse);
+			} else if (hasTokenLimitBeenHit) {
+				fullResponse += t('uiMessages.tokenLimitHitWarning');
+				// 최종적으로 UI 동기화
+				messages.update(msgs => {
+					const m = msgs.find(x => x.id === assistantId);
+					if (m) m.content = fullResponse;
+					return msgs;
+				});
 			}
 
 			// 디버그: LLM 응답 로그
@@ -658,11 +715,11 @@ export class ChatController {
 			// ── 9. 스트리밍 완료 표시 ────────────────────────────────────────
 			setMessageStreaming(assistantId, false);
 		} catch (err: unknown) {
-			const msg = err instanceof Error ? err.message : '알 수 없는 오류';
 			if (err instanceof Error && err.name === 'AbortError') {
 				setMessageStreaming(assistantId, false);
 			} else {
-				setMessageError(assistantId, msg);
+				const friendlyMsg = formatLlmError(err);
+				setMessageError(assistantId, friendlyMsg);
 				debugLogger.logError('llm', err as Error);
 			}
 			throw err;

@@ -249,8 +249,12 @@ Conectar modelos grandes o modelos de razonamiento (Reasoning) causará demoras 
       emptyResponseFallback: '⚠️ The model returned an empty response. (This may be due to an unsupported language/format, prompt filtering, or exceeding the context limit.)',
         context: {
             activeNote: "Incluir nota actual: {{name}}",
-            selectedText: "Texto seleccionado ({{length}} caracteres)"
-        }
+            selectedText: "Texto seleccionado ({{length}} caracteres)",
+        folderFiles: "[Archivos en la carpeta: {{name}}]",
+        activeNotePrefix: "[Nota activa: {{name}}]",
+        canvasFile: "[Archivo Canvas: {{name}}]",
+        tagFiles: "[Archivos con etiqueta: {{name}} (Máx. 5)]",
+        activeNotePrompt: "Nota activa"}
     },
     rag: {
       toggleTooltip: 'Cuando está activado, la IA leerá y consultará las notas de tu bóveda para responder.',
@@ -420,6 +424,14 @@ Conectar modelos grandes o modelos de razonamiento (Reasoning) causará demoras 
     send: 'Enviar',
     underDevelopment: 'Esta función está en desarrollo.',
     ragDisabledGlobally: 'El motor RAG global está desactivado. Actívalo en los Ajustes.',
+    llm: {
+      rateLimit: '⚠️ Límite de cuota o velocidad de API excedido. Por favor, inténtelo de nuevo en un momento. Para cuentas de nivel gratuito, verifique sus límites diarios/minutales o el estado de facturación.',
+      unauthorized: '⚠️ La clave API no es válida o ha caducado. Por favor, verifique su clave API en la configuración en "Conexiones y modelos".',
+      forbidden: '⚠️ Acceso denegado o solicitud prohibida. Por favor, verifique los permisos de su clave API, plan de servicio o restricciones regionales.',
+      notFound: '⚠️ Modelo solicitado no encontrado o la URL del extremo de la API es incorrecta. Por favor, verifique el modelo seleccionado y la URL de conexión en la configuración.',
+      networkError: '⚠️ Conexión de red fallida. Por favor, compruebe su conexión a Internet o verifique si su servidor LLM local se está ejecutando.',
+      notReadable: 'El cuerpo de la respuesta no es legible',
+    }
    },
   chat: {
     newChat: 'Nuevo chat',
@@ -489,6 +501,8 @@ Conectar modelos grandes o modelos de razonamiento (Reasoning) causará demoras 
     noActiveEditor: 'No se encontró ningún editor Markdown activo.',
    },
   uiMessages: {
+    emptyResponseTokenLimit: '⚠️ El modelo devolvió una respuesta vacía. La generación se detuvo porque se alcanzó el límite de Tokens Máximos de Salida. Por favor, aumente el límite de "Tokens Máximos de Salida" en la configuración.',
+    tokenLimitHitWarning: '\n\n⚠️ (La generación se interrumpió porque se alcanzó el límite de Tokens Máximos de Salida. Por favor, aumente el valor de "Tokens Máximos de Salida" en la configuración.)',
     toolExecutionRejected: 'El usuario rechazó la ejecución de la herramienta.',
     inlineReplace: 'Reemplazar',
     inlineAppend: 'Añadir al final',

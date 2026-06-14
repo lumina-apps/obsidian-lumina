@@ -248,8 +248,12 @@ export const zh: DeepPartial<Translation> = {
       emptyResponseFallback: '⚠️ The model returned an empty response. (This may be due to an unsupported language/format, prompt filtering, or exceeding the context limit.)',
         context: {
             activeNote: "包含当前笔记：{{name}}",
-            selectedText: "选中的文本 ({{length}} 个字符)"
-        }
+            selectedText: "选中的文本 ({{length}} 个字符)",
+        folderFiles: "[文件夹内的文件: {{name}}]",
+        activeNotePrefix: "[当前笔记: {{name}}]",
+        canvasFile: "[白板文件: {{name}}]",
+        tagFiles: "[含标签的文件: {{name}} (最多 5 个)]",
+        activeNotePrompt: "当前活动笔记"}
     },
     rag: {
       toggleTooltip: '开启后，AI 将读取并参考您库中的笔记来回答。',
@@ -419,6 +423,14 @@ export const zh: DeepPartial<Translation> = {
     send: '发送',
     underDevelopment: '此功能正在开发中。',
     ragDisabledGlobally: '全局 RAG 引擎已关闭。请先在设置中启用。',
+    llm: {
+      rateLimit: '⚠️ 超出 API 配额或请求频率限制。请稍后再试。若为免费套餐，请检查分钟/日度额度或账户账单状态。',
+      unauthorized: '⚠️ API 密钥无效或已过期。请在“连接与模型”设置中检查您的 API 密钥。',
+      forbidden: '⚠️ 拒绝访问或请求被禁止。请检查您的 API 密钥权限、服务计划或地区限制。',
+      notFound: '⚠️ 未找到所请求的模型或 API 终结点 URL 不正确。请检查设置中选定的模型和连接 URL。',
+      networkError: '⚠️ 网络连接失败。请检查您的互联网连接，或者确认您的本地 LLM 服务器是否正常运行。',
+      notReadable: '无法读取响应正文',
+    }
    },
   chat: {
     newChat: '新对话',
@@ -488,6 +500,8 @@ export const zh: DeepPartial<Translation> = {
     noActiveEditor: '未找到激活的 Markdown 编辑器。',
    },
   uiMessages: {
+    emptyResponseTokenLimit: '⚠️ 模型返回了空响应。由于达到最大输出 Token 限制，生成已停止。请在设置中增加“最大输出 Token”限制。',
+    tokenLimitHitWarning: '\n\n⚠️ (由于达到最大输出 Token 限制，生成已中断。请在设置中增加“最大输出 Token”值。)',
     toolExecutionRejected: '用户已拒绝执行工具。',
     inlineReplace: '替换',
     inlineAppend: '追加',

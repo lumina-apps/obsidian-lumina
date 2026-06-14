@@ -197,6 +197,11 @@ export const ko: Translation = {
       context: {
         activeNote: '현재 노트 포함: {{name}}',
         selectedText: '선택된 텍스트 ({{length}}자)',
+        folderFiles: '[폴더: {{name}} 내의 파일들]',
+        activeNotePrefix: '[현재 노트: {{name}}]',
+        canvasFile: '[캔버스 파일: {{name}}]',
+        tagFiles: '[태그: {{name}} 가 포함된 파일들 (최대 5개)]',
+        activeNotePrompt: '현재 활성 노트'
       },
       sendMode: {
         name: '메시지 전송 방식',
@@ -420,6 +425,14 @@ export const ko: Translation = {
     send: '전송',
     underDevelopment: '개발 중인 기능입니다.',
     ragDisabledGlobally: '전역 RAG 엔진이 사용 중지되었습니다. 설정에서 먼저 활성화해 주세요.',
+    llm: {
+      rateLimit: '⚠️ API 호출 한도(Quota) 또는 요청 속도 제한(Rate Limit)을 초과했습니다. 잠시 후 다시 시도해 주세요. 무료 티어의 경우 분당/일일 한도 제한이거나 계정의 결제 카드/크레딧 정보를 확인해 주십시오.',
+      unauthorized: '⚠️ API 키가 올바르지 않거나 만료되었습니다. 플러그인 설정의 [연결 및 모델 설정]에서 API 키를 확인해 주세요.',
+      forbidden: '⚠️ API 권한이 없거나 차단된 요청입니다. API 키 권한이나 해당 서비스 계정 플랜(혹은 지역 제한)을 확인해 주세요.',
+      notFound: '⚠️ 요청한 모델을 찾을 수 없거나 엔드포인트 URL이 올바르지 않습니다. 설정에서 선택된 모델과 연결 정보를 확인해 주세요.',
+      networkError: '⚠️ 네트워크 연결에 실패했습니다. 인터넷 연결 상태를 확인하시거나, 로컬 LLM의 경우 서버가 정상적으로 켜져 있는지 확인해 주세요.',
+      notReadable: '응답 본문을 읽을 수 없습니다.',
+    }
   },
   chat: {
     newChat: '새 채팅',
@@ -489,6 +502,8 @@ export const ko: Translation = {
     noActiveEditor: '활성화된 마크다운 에디터를 찾을 수 없습니다.',
   },
   uiMessages: {
+    emptyResponseTokenLimit: '⚠️ 모델이 빈 응답을 반환했습니다. 최대 출력 토큰(Max Output Tokens) 제한에 도달하여 생성이 중단되었습니다. 설정의 [최대 출력 토큰] 제한을 늘려주세요.',
+    tokenLimitHitWarning: '\n\n⚠️ (최대 출력 토큰 제한에 도달하여 답변이 도중에 끊겼습니다. 설정의 [최대 출력 토큰] 값을 늘려주세요.)',
     toolExecutionRejected: '사용자가 도구 실행을 승인하지 않았습니다.',
     inlineReplace: '덮어쓰기',
     inlineAppend: '덧붙이기',

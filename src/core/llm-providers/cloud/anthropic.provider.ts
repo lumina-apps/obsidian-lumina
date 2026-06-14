@@ -29,6 +29,7 @@ interface AnthropicStreamChunk {
 		type?: string;
 		text?: string;
 		partial_json?: string;
+		stop_reason?: string | null;
 	};
 	usage?: {
 		output_tokens?: number;
@@ -47,6 +48,7 @@ interface AnthropicResponse {
 		input_tokens?: number;
 		output_tokens?: number;
 	};
+	stop_reason?: string | null;
 }
 
 /** Anthropic 공식 지원 모델 목록 (최신순) */
@@ -122,6 +124,7 @@ export class AnthropicProvider implements ILLMProvider {
 			let fullContent = '';
 			const accumulatedBlocks: AnthropicBlock[] = [];
 			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+			let finishReason: string | undefined;
 
 			const response = await window.fetch(url, {
 				method: 'POST',
@@ -175,6 +178,9 @@ export class AnthropicProvider implements ILLMProvider {
 							}
 						}
 						else if (chunk.type === 'message_delta') {
+							if (chunk.delta?.stop_reason) {
+								finishReason = chunk.delta.stop_reason;
+							}
 							if (chunk.usage && usage) {
 								usage.outputTokens = chunk.usage.output_tokens || usage.outputTokens;
 								usage.totalTokens = usage.inputTokens + usage.outputTokens;
@@ -205,6 +211,7 @@ export class AnthropicProvider implements ILLMProvider {
 				content: fullContent,
 				usage,
 				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+				finishReason,
 			};
 		} else {
 			// non-streaming
@@ -248,6 +255,7 @@ export class AnthropicProvider implements ILLMProvider {
 				content: fullContent,
 				usage,
 				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+				finishReason: data.stop_reason || undefined,
 			};
 		}
 	}
@@ -256,7 +264,7 @@ export class AnthropicProvider implements ILLMProvider {
 		messages: ChatMessage[],
 		options: ChatOptions,
 		onChunk: (chunk: string) => void,
-	): Promise<{ usage?: import('../../../shared/types/llm.types').TokenUsage }> {
+	): Promise<{ usage?: import('../../../shared/types/llm.types').TokenUsage; finishReason?: string }> {
 		const url = 'https://api.anthropic.com/v1/messages';
 		const headers: Record<string, string> = {
 			'content-type': 'application/json',
@@ -280,6 +288,7 @@ export class AnthropicProvider implements ILLMProvider {
 		}
 
 		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+		let finishReason: string | undefined;
 
 		const response = await window.fetch(url, {
 			method: 'POST',
@@ -314,6 +323,9 @@ export class AnthropicProvider implements ILLMProvider {
 						}
 					}
 					else if (chunk.type === 'message_delta') {
+						if (chunk.delta?.stop_reason) {
+							finishReason = chunk.delta.stop_reason;
+						}
 						if (chunk.usage && usage) {
 							usage.outputTokens = chunk.usage.output_tokens || usage.outputTokens;
 							usage.totalTokens = usage.inputTokens + usage.outputTokens;
@@ -325,7 +337,7 @@ export class AnthropicProvider implements ILLMProvider {
 			}
 		});
 
-		return { usage };
+		return { usage, finishReason };
 	}
 
 	async embed(texts: string[], options: { model: string }): Promise<number[][]> {
@@ -353,8 +365,10 @@ function formatAnthropicMessages(messages: ChatMessage[]) {
 				| { type: 'text'; text: string }
 				| { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
 			> = [];
-			if (typeof m.content === 'string' && m.content) {
-				contentArray.push({ type: 'text', text: m.content });
+			const contentText = typeof m.content === 'string' ? m.content : '';
+			const isMockToolText = contentText.startsWith('Calling tool');
+			if (contentText && !isMockToolText) {
+				contentArray.push({ type: 'text', text: contentText });
 			}
 			if (m.tool_calls && m.tool_calls.length > 0) {
 				for (const tc of m.tool_calls) {

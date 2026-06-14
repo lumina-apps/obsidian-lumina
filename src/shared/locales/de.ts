@@ -249,8 +249,12 @@ Das Verbinden von großen Modellen oder Reasoning-Modellen führt zu extremen Ve
       emptyResponseFallback: '⚠️ The model returned an empty response. (This may be due to an unsupported language/format, prompt filtering, or exceeding the context limit.)',
         context: {
             activeNote: "Aktuelle Notiz einbeziehen: {{name}}",
-            selectedText: "Ausgewählter Text ({{length}} Zeichen)"
-        }
+            selectedText: "Ausgewählter Text ({{length}} Zeichen)",
+        folderFiles: "[Dateien im Ordner: {{name}}]",
+        activeNotePrefix: "[Aktive Notiz: {{name}}]",
+        canvasFile: "[Canvas-Datei: {{name}}]",
+        tagFiles: "[Dateien mit Tag: {{name}} (Max. 5)]",
+        activeNotePrompt: "Aktive Notiz"}
     },
     rag: {
       toggleTooltip: 'Wenn aktiviert, liest und referenziert die KI Notizen in Ihrem Vault, um zu antworten.',
@@ -420,6 +424,14 @@ Das Verbinden von großen Modellen oder Reasoning-Modellen führt zu extremen Ve
     send: 'Senden',
     underDevelopment: 'Diese Funktion befindet sich in der Entwicklung.',
     ragDisabledGlobally: 'Die globale RAG-Engine ist deaktiviert. Aktivieren Sie sie in den Einstellungen.',
+    llm: {
+      rateLimit: '⚠️ API-Quota oder Ratenbegrenzung überschritten. Bitte versuchen Sie es gleich noch einmal. Überprüfen Sie bei kostenlosen Konten Ihre Limits oder Ihren Abrechnungsstatus.',
+      unauthorized: '⚠️ API-Schlüssel ist ungültig oder abgelaufen. Bitte überprüfen Sie Ihren API-Schlüssel in den Einstellungen unter "Verbindungen & Modelle".',
+      forbidden: '⚠️ Zugriff verweigert oder Anfrage verboten. Bitte überprüfen Sie Ihre API-Schlüsselberechtigungen, Ihren Service-Plan oder regionale Einschränkungen.',
+      notFound: '⚠️ Angeforschtes Modell nicht gefunden oder API-Endpunkt-URL ist fehlerhaft. Bitte überprüfen Sie Ihr Modell und die Verbindungs-URL in den Einstellungen.',
+      networkError: '⚠️ Netzwerkverbindung fehlgeschlagen. Bitte überprüfen Sie Ihre Internetverbindung oder ob Ihr lokaler LLM-Server läuft.',
+      notReadable: 'Antwort-Body ist nicht lesbar',
+    }
    },
   chat: {
     newChat: 'Neuer Chat',
@@ -489,6 +501,8 @@ Das Verbinden von großen Modellen oder Reasoning-Modellen führt zu extremen Ve
     noActiveEditor: 'Kein aktiver Markdown-Editor gefunden.',
    },
   uiMessages: {
+    emptyResponseTokenLimit: '⚠️ Das Modell hat eine leere Antwort zurückgegeben. Die Generierung wurde gestoppt, da das Limit für maximale Ausgabetoken erreicht wurde. Bitte erhöhen Sie das Limit "Max Output Tokens" in den Einstellungen.',
+    tokenLimitHitWarning: '\n\n⚠️ (Die Generierung wurde unterbrochen, da das Limit für maximale Ausgabetoken erreicht wurde. Bitte erhöhen Sie den Wert "Max Output Tokens" in den Einstellungen.)',
     toolExecutionRejected: 'Die Tool-Ausführung wurde vom Benutzer abgelehnt.',
     inlineReplace: 'Ersetzen',
     inlineAppend: 'Anhängen',

@@ -247,8 +247,12 @@ export const ja: DeepPartial<Translation> = {
       emptyResponseFallback: '⚠️ The model returned an empty response. (This may be due to an unsupported language/format, prompt filtering, or exceeding the context limit.)',
         context: {
             activeNote: "現在のノートを含める: {{name}}",
-            selectedText: "選択されたテキスト ({{length}}文字)"
-        }
+            selectedText: "選択されたテキスト ({{length}}文字)",
+        folderFiles: "[フォルダ: {{name}} 内のファイル群]",
+        activeNotePrefix: "[現在のノート: {{name}}]",
+        canvasFile: "[キャンバスファイル: {{name}}]",
+        tagFiles: "[タグ: {{name}} が含まれるファイル群 (最大5件)]",
+        activeNotePrompt: "現在の有効なノート"}
     },
     rag: {
       toggleTooltip: 'オンにすると、AIがVault内のノートを読み取り、参照して回答します。',
@@ -418,6 +422,14 @@ export const ja: DeepPartial<Translation> = {
     send: '送信',
     underDevelopment: 'この機能は開発中です。',
     ragDisabledGlobally: 'グローバルRAGエンジンが無効になっています。設定で有効にしてください。',
+    llm: {
+      rateLimit: '⚠️ API呼び出し制限（Quota）またはリクエスト速度制限（Rate Limit）を超過しました。しばらく経ってから再度お試しください。無料ティアの場合は分/日制限、またはアカウントの支払いカード/クレジット情報をご確認ください。',
+      unauthorized: '⚠️ APIキーが正しくないか、有効期限が切れています。プラグイン設定の「接続とモデル」でAPIキーを確認してください。',
+      forbidden: '⚠️ API権限がないか、拒否されたリクエストです。APIキーの権限、または当該サービスのアカウントプラン（あるいは地域制限）を確認してください。',
+      notFound: '⚠️ リクエストされたモデルが見つからないか、エンドポイントのURLが正しくありません。設定で選択されたモデルと接続情報を確認してください。',
+      networkError: '⚠️ ネットワーク接続に失敗しました。インターネットの接続状態を確認するか、ローカルLLMの場合はサーバーが正常に起動しているか確認してください。',
+      notReadable: 'レスポンスボディを読み取れません。',
+    }
    },
   chat: {
     newChat: '新しいチャット',
@@ -487,6 +499,8 @@ export const ja: DeepPartial<Translation> = {
     noActiveEditor: 'アクティブなMarkdownエディターが見つかりません。',
    },
   uiMessages: {
+    emptyResponseTokenLimit: '⚠️ モデルが空の応答を返しました。最大出力トークン（Max Output Tokens）制限に達したため、生成が中断されました。設定の「最大出力トークン」制限を増やしてください。',
+    tokenLimitHitWarning: '\n\n⚠️ （最大出力トークン制限に達したため、回答が途中で途切れました。設定の「最大出力トークン」の値を増やしてください。）',
     toolExecutionRejected: 'ツールの実行をユーザーが承認しませんでした。',
     inlineReplace: '上書き',
     inlineAppend: '追記',
