@@ -396,6 +396,7 @@ La connexion de modèles volumineux ou de modèles de raisonnement entraînera d
       ollamaNoModel: 'Aucun modèle en cours d\'exécution dans Ollama. Veuillez d\'abord démarrer un modèle avec `ollama run <model>`.',
       connectFail: 'Échec de la connexion : {{status}} {{text}}',
       anthropicNoEmbed: 'Anthropic ne prend pas en charge l\'API d\'embedding.',
+      visionNotSupported: '⚠️ Le fournisseur sélectionné ({{provider}}) ne prend pas en charge l\'analyse d\'images. Veuillez utiliser OpenAI, Anthropic ou Google avec un modèle compatible avec la vision.',
      },
     translation: {
       confirmTitle: 'Traduction dans la langue du système',

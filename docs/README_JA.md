@@ -115,7 +115,6 @@
 
 このプラグインは100%無料で配布されており、継続的に更新されます。
 スポンサーからの支援は、アップデートをより早く進めるためのモチベーションになります！
-
-👉 **[GitHub Sponsor](https://github.com/sponsors/lumina-apps)**  
+ 
 👉 **[Ko-fi](https://ko-fi.com/luminaapps)**  
 👉 **[Ctee](https://ctee.kr/place/luminaapps)**

@@ -396,6 +396,7 @@ Connecting large models or Reasoning models will cause extreme delays of tens of
       ollamaNoModel: 'There are no running models in Ollama. Please start a model with `ollama run <model>` first.',
       connectFail: 'Connection failed: {{status}} {{text}}',
       anthropicNoEmbed: 'Anthropic does not support the embedding API.',
+      visionNotSupported: '⚠️ The selected provider ({{provider}}) does not support image analysis. Please use OpenAI, Anthropic, or Google with a vision-capable model.',
     },
     translation: {
       confirmTitle: 'System Language Translation',

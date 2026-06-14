@@ -115,7 +115,6 @@ Vous pouvez afficher toutes les données internes traitées par le plugin en act
 
 Ce plugin est distribué 100% gratuitement et sera continuellement mis à jour.
 Le sponsoring me motive à publier des mises à jour encore plus rapidement !
-
-👉 **[GitHub Sponsor](https://github.com/sponsors/lumina-apps)**  
+ 
 👉 **[Ko-fi](https://ko-fi.com/luminaapps)**  
 👉 **[Ctee](https://ctee.kr/place/luminaapps)**

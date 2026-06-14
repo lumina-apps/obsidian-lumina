@@ -396,6 +396,7 @@ export const zh: DeepPartial<Translation> = {
       ollamaNoModel: 'Ollama 中没有正在运行的模型。请先使用 `ollama run <model>` 运行模型。',
       connectFail: '连接失败：{{status}} {{text}}',
       anthropicNoEmbed: 'Anthropic 不支持嵌入 API。',
+      visionNotSupported: '⚠️ 所选提供商（{{provider}}）不支持图像分析。如需使用图片，请选择 OpenAI、Anthropic 或 Google（支持视觉的模型）。',
      },
     translation: {
       confirmTitle: '系统语言翻译',

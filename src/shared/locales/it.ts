@@ -396,6 +396,7 @@ La connessione di modelli grandi o di Reasoning models causerà ritardi estremi 
       ollamaNoModel: 'Non ci sono modelli in esecuzione in Ollama. Avvia un modello con `ollama run <model>` prima.',
       connectFail: 'Connessione fallita: {{status}} {{text}}',
       anthropicNoEmbed: 'Anthropic non supporta l\'API embedding.',
+      visionNotSupported: '⚠️ Il provider selezionato ({{provider}}) non supporta l\'analisi delle immagini. Si prega di utilizzare OpenAI, Anthropic o Google con un modello compatibile con la visione.',
      },
     translation: {
       confirmTitle: 'Traduzione Lingua di Sistema',

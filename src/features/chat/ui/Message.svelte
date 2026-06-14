@@ -30,6 +30,9 @@
 	let displayContent = $derived.by(() => {
 		let content = rawContent.replace(/<think>([\s\S]*?)(?:<\/think>|$)/gi, '');
 		content = content.replace(/<(lumina_tool_call|tool_code|tool_call)>([\s\S]*?)(?:<\/\1>|$)/gi, '');
+		// 로컬 LLM(Qwen, Mistral 등)의 컨텍스트 마스킹 토큰 제거
+		content = content.replace(/<\|mask_start\|>[\s\S]*?<\|mask_end\|>/g, '');
+		content = content.replace(/<\|mask_start\|>/g, '').replace(/<\|mask_end\|>/g, '');
 		return content.trim();
 	});
 	let isThinking = $derived(

@@ -24,6 +24,7 @@ import { createProvider, isLocalProvider } from '../../core/llm-providers/index'
 import { formatLlmError } from '../../core/llm-providers/utils';
 import { buildMessages } from './promptBuilder';
 import { searchVault, formatRagContext } from '../rag/search';
+import { VISION_UNSUPPORTED_PROVIDERS, PROVIDER_LABELS } from '../../shared/types/settings.types';
 import {
 	addMessage,
 	appendChunk,
@@ -100,10 +101,14 @@ export class ChatController {
 		const providerConfig = connections.providers.find(p => p.id === providerId);
 		const resolvedModelId = providerConfig?.isVerified ? (modelId || providerConfig.availableModels[0] || '') : '';
 
-		// 활성 노트를 attachments에 추가할지 판단
+		// 활성 노트를 attachments에 추가할지 판단.
+		// RAG가 글로벌로 꺼져 있으면 includeActiveNote 토글 상태와 무관하게 주입을 건너뜀.
+		// (active note 주입은 RAG 컨텍스트 시스템의 일부로 취급)
+		const shouldIncludeActiveNote =
+			connections.ragEnabled && (options?.includeActiveNote ?? rag.includeActiveNote);
 		const updatedAttachments = await this.resolveAttachmentsWithActiveNote(
 			attachments,
-			options?.includeActiveNote ?? rag.includeActiveNote,
+			shouldIncludeActiveNote,
 		);
 
 		// ── 1. 사용자 메시지를 store에 추가 ──────────────────────────────────
@@ -147,21 +152,13 @@ export class ChatController {
 			);
 
 			// ── 5. 컨텍스트 구성 (첨부파일 + 활성 노트 + RAG 검색) ──────────────────────
+			// 활성 노트는 resolveAttachmentsWithActiveNote()에서 이미 updatedAttachments에
+			// active_note 타입으로 추가됐고, buildAttachmentContext()가 단일 경로로 처리한다.
+			// 별도 getActiveNoteContext() 호출은 제거하여 이중 주입 경로를 통합했음.
 			const { attachmentContext, multimodalImages } =
 				await ChatAttachmentHandler.buildAttachmentContext(this.app, updatedAttachments, this.plugin);
 
 			let ragContext: string | undefined = attachmentContext || undefined;
-
-			// 활성 노트 컨텍스트 (includeActiveNote 설정)
-			// attachments에 active_note가 이미 있다면 이중 포함을 방지하기 위해 건너뜁니다.
-			const hasActiveNoteInAttachments = updatedAttachments.some(att => att.type === 'active_note');
-			if (!hasActiveNoteInAttachments) {
-				const activeNoteText = await this.getActiveNoteContext(options?.includeActiveNote);
-				if (activeNoteText) {
-					const txt = `[${t('settings.chat.context.activeNotePrompt')}]\n${activeNoteText}`;
-					ragContext = ragContext ? `${ragContext}\n\n${txt}` : txt;
-				}
-			}
 
 			// RAG 벡터 검색
 			let ragChunksForLog: RagChunkMeta[] | undefined;
@@ -196,6 +193,11 @@ export class ChatController {
 
 			// 멀티모달 이미지 주입
 			if (multimodalImages.length > 0) {
+				// 비전을 지원하지 않는 프로바이더에서 이미지 첨부 시 명확한 에러를 반환
+				if (VISION_UNSUPPORTED_PROVIDERS.has(providerConfig.type)) {
+					const providerLabel = PROVIDER_LABELS[providerConfig.type] ?? providerConfig.type;
+					throw new Error(t('settings.providerErrors.visionNotSupported', { provider: providerLabel }));
+				}
 				llmMessages = injectMultimodalImages(llmMessages, multimodalImages);
 			}
 
@@ -401,6 +403,10 @@ export class ChatController {
 	/**
 	 * 활성 노트 파일 내용을 읽어 반환합니다.
 	 * includeActiveNote 설정이 꺼져있으면 null 반환.
+	 *
+	 * @deprecated sendMessage 내부에서는 더 이상 직접 호출하지 않습니다.
+	 *   활성 노트 주입은 resolveAttachmentsWithActiveNote() → buildAttachmentContext()
+	 *   단일 경로로 통합되었습니다. 외부(예: 테스트/디버그)에서만 사용하세요.
 	 */
 	async getActiveNoteContext(useActiveNote?: boolean): Promise<string | null> {
 		const shouldInclude = useActiveNote ?? this.plugin.settings.rag.includeActiveNote;
@@ -591,9 +597,10 @@ export class ChatController {
  *
  * 규칙:
  *   - ragEnabled가 false이면 검색하지 않는다.
+ *   - useRagContext가 명시적으로 false이면 검색하지 않는다 (UI 토글 OFF).
  *   - useRagContext가 명시적으로 true이면 dataScope 무관하게 검색한다.
  *   - dataScope가 'manual'이고 useRagContext가 명시되지 않았으면 검색하지 않는다.
- *   - 그 외에는 ragEnabled를 따른다.
+ *   - 그 외(useRagContext가 undefined)에는 ragEnabled를 따른다.
  */
 function resolveRagSearchFlag(opts: {
 	ragEnabled: boolean;
@@ -602,6 +609,7 @@ function resolveRagSearchFlag(opts: {
 }): boolean {
 	const { ragEnabled, dataScope, useRagContext } = opts;
 	if (!ragEnabled) return false;
+	if (useRagContext === false) return false; // UI 토글이 명시적으로 꺼진 경우
 	if (useRagContext === true) return true;
 	if (dataScope === 'manual') return false;
 	return ragEnabled;

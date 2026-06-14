@@ -395,6 +395,7 @@ export const ru: DeepPartial<Translation> = {
       ollamaNoModel: 'В Ollama нет запущенных моделей. Пожалуйста, сначала запустите модель с помощью `ollama run <model>`.',
       connectFail: 'Ошибка подключения: {{status}} {{text}}',
       anthropicNoEmbed: 'Anthropic не поддерживает API эмбеддингов.',
+      visionNotSupported: '⚠️ Выбранный провайдер ({{provider}}) не поддерживает анализ изображений. Пожалуйста, используйте OpenAI, Anthropic или Google с моделью, поддерживающей зрение.',
     },
     translation: {
       confirmTitle: 'Перевод системного языка',

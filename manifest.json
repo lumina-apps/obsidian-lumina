@@ -6,7 +6,6 @@
 	"description": "Your intelligent AI Agent for your vault with RAG and Multi-LLM support.",
 	"author": "Lumina",
 	"fundingUrl": {
-		"GitHub Sponsor": "https://github.com/sponsors/lumina-apps",
 		"Ko-fi": "https://ko-fi.com/luminaapps",
 		"ctee": "https://ctee.kr/place/luminaapps"
 	},

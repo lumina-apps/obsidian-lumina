@@ -116,6 +116,5 @@ Pode visualizar todos os dados internos processados pelo plugin ativando as Conf
 Este plugin é distribuído 100% de forma gratuita e será continuamente atualizado.
 Os patrocínios mantêm-me motivado para lançar atualizações ainda mais rápido!
 
-👉 **[GitHub Sponsor](https://github.com/sponsors/lumina-apps)**  
 👉 **[Ko-fi](https://ko-fi.com/luminaapps)**  
 👉 **[Ctee](https://ctee.kr/place/luminaapps)**

@@ -123,6 +123,8 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 		let currentRoundText = rawResponse.content || '';
 
 		if (useTextTools && currentRoundText) {
+			// 마스크 토큰을 먼저 제거한 뒤 tool call 파싱
+			currentRoundText = stripMaskTokens(currentRoundText);
 			const parsed = parseTextToolCalls(currentRoundText);
 			if (parsed.toolCalls.length > 0) {
 				debugLogger.logMcp('Text Parse', `📝 텍스트 tool call 파싱: ${parsed.toolCalls.length}개 발견`, parsed.toolCalls.map(tc => tc.name));
@@ -293,7 +295,7 @@ async function executeToolCall(
 			};
 		}
 
-		const resultText = truncateToolResult(extractToolResultText(toolResult), tc.name);
+		const resultText = truncateToolResult(stripMaskTokens(extractToolResultText(toolResult)), tc.name);
 		debugLogger.logMcp('Tool Result', `◀️ 툴 결과: ${tc.name} → ${resultText.length}자`, { result: resultText });
 
 		return {
@@ -328,6 +330,18 @@ function extractToolResultText(toolResult: unknown): string {
 	}
 	if (typeof toolResult === 'string') return toolResult;
 	return JSON.stringify(toolResult);
+}
+
+/**
+ * 로컈 LLM(Qwen, Mistral 등)이 삽입하는 <|mask_start|>...<|mask_end|> 특수 토큰을 제거한다.
+ * LLM 응답과 툴 결과 두 곳에서 사용.
+ */
+function stripMaskTokens(text: string): string {
+	return text
+		.replace(/<\|mask_start\|>[\s\S]*?<\|mask_end\|>/g, '')
+		.replace(/<\|mask_start\|>/g, '')
+		.replace(/<\|mask_end\|>/g, '')
+		.trim();
 }
 
 /** tool 결과 텍스트를 최대 길이로 자른다. */

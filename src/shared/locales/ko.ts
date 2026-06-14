@@ -398,6 +398,7 @@ export const ko: Translation = {
       ollamaNoModel: 'Ollama에 실행 중인 모델이 없습니다. `ollama run <model>` 로 모델을 먼저 실행해 주세요.',
       connectFail: '연결 실패: {{status}} {{text}}',
       anthropicNoEmbed: 'Anthropic은 임베딩 API를 지원하지 않습니다.',
+      visionNotSupported: '⚠️ 선택한 프로바이더({{provider}})는 이미지 분석을 지원하지 않습니다. 이미지 첨부를 사용하려면 OpenAI, Anthropic 또는 Google(비전 모델)을 선택해 주세요.',
     },
     translation: {
       confirmTitle: '시스템 언어 번역',

@@ -116,6 +116,5 @@
 此插件 100% 免费分发，并将持续更新。
 赞助能让我更有动力，更快地推出更新！
 
-👉 **[GitHub Sponsor](https://github.com/sponsors/lumina-apps)**  
 👉 **[Ko-fi](https://ko-fi.com/luminaapps)**  
 👉 **[Ctee](https://ctee.kr/place/luminaapps)**

@@ -115,7 +115,6 @@ Du kannst alle internen Daten einsehen, die das Plugin verarbeitet, indem du die
 
 Dieses Plugin wird zu 100% kostenlos vertrieben und wird kontinuierlich aktualisiert.
 Sponsoring hält mich motiviert, Updates noch schneller zu veröffentlichen!
-
-👉 **[GitHub Sponsor](https://github.com/sponsors/lumina-apps)**  
+ 
 👉 **[Ko-fi](https://ko-fi.com/luminaapps)**  
 👉 **[Ctee](https://ctee.kr/place/luminaapps)**

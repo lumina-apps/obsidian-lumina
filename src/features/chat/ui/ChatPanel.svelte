@@ -195,6 +195,7 @@
 	$effect(() => {
 		if (!$isRagEnabled) {
 			useRagContext = false;
+			includeActiveNote = false; // RAG 글로벌 비활성화 시 active note도 함께 off
 		}
 	});
 

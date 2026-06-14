@@ -395,6 +395,7 @@ export const ja: DeepPartial<Translation> = {
       ollamaNoModel: 'Ollamaに実行中のモデルがありません。`ollama run <model>`でモデルを先に起動してください。',
       connectFail: '接続に失敗しました: {{status}} {{text}}',
       anthropicNoEmbed: 'Anthropicは埋め込みAPIをサポートしていません。',
+      visionNotSupported: '⚠️ 選択したプロバイダー({{provider}})は画像分析をサポートしていません。画像を使用するには、OpenAI、Anthropic、またはGoogle（ビジョン対応モデル）を選択してください。',
      },
     translation: {
       confirmTitle: 'システム言語への翻訳',

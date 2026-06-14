@@ -116,6 +116,5 @@ You can view all internal data processed by the plugin by enabling Advanced Sett
 This plugin is distributed 100% free of charge and will be continuously updated.
 Sponsorships keep me motivated to push out updates even faster!
 
-👉 **[GitHub Sponsor](https://github.com/sponsors/lumina-apps)**  
 👉 **[Ko-fi](https://ko-fi.com/luminaapps)**  
 👉 **[Ctee](https://ctee.kr/place/luminaapps)**

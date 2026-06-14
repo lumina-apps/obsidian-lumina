@@ -144,7 +144,6 @@ export class LuminaSettingTab extends PluginSettingTab {
 			a.addEventListener('mouseleave', () => a.setCssStyles({ opacity: isAccent ? '0.9' : '0.75' }));
 		};
 
-		createLink('💖 GitHub Sponsors', 'https://github.com/sponsors/lumina-apps');
 		createLink('☕ Ko-fi', 'https://ko-fi.com/luminaapps');
 		createLink('☕ Ctee', 'https://ctee.kr/place/luminaapps');
 

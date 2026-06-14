@@ -116,6 +116,5 @@ Puoi visualizzare tutti i dati interni elaborati dal plugin abilitando le Impost
 Questo plugin è distribuito al 100% gratuitamente e sarà costantemente aggiornato.
 Le sponsorizzazioni mi mantengono motivato per rilasciare aggiornamenti ancora più velocemente!
 
-👉 **[GitHub Sponsor](https://github.com/sponsors/lumina-apps)**  
 👉 **[Ko-fi](https://ko-fi.com/luminaapps)**  
 👉 **[Ctee](https://ctee.kr/place/luminaapps)**

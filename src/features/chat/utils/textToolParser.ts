@@ -31,7 +31,9 @@ export function buildTextToolPrompt(tools: ToolDefinition[]): string {
 	}).join('\n');
 
 	return `\n\n## Available Tools
-You have access to the following tools. To use a tool, you MUST output your reasoning in <think> tags first, followed by a JSON block like this:
+You have access to the following tools. To use a tool, you MUST output your reasoning in <think> tags first, followed by a JSON block.
+
+The EXACT format you MUST use (the tag is called <lumina_tool_call>, not <tool_call> or <tool_calls>):
 
 <think>
 I need to use the tool to find the information the user requested.
@@ -44,6 +46,14 @@ The tool result will be provided to you in the next message. You may call multip
 
 Available tools:
 ${toolDescs}
+
+## Workflow Guidelines
+- When the user says "지금 노트에 넣어줘", "현재 노트에 추가해줘", "insert into current note", or any similar phrase referring to the currently open note:
+  1. FIRST call \`read_active_note\` (no arguments needed) to retrieve the current note's path and content.
+  2. THEN call \`append_to_note\` with the \`path\` from step 1 and your \`content\`.
+  NEVER call \`append_to_note\` with a null or empty path — always obtain the path from \`read_active_note\` first.
+- When reading a specific note before writing, use \`read_note\` with the correct path.
+- Multi-step tasks require multiple tool calls across multiple rounds. Plan ahead in <think> tags.
 
 IMPORTANT: ALWAYS explain your reasoning inside <think>...</think> tags BEFORE outputting a <lumina_tool_call> block.
 CRITICAL: If you decide to use a tool, you MUST output the <lumina_tool_call> JSON block immediately after the </think> tag. Do NOT output any conversational text or explanation outside of the <think> tags when calling a tool. Never output <lumina_tool_call> without thinking first.`;
@@ -226,8 +236,67 @@ interface TextToolCallJson {
 	arguments?: Record<string, unknown>;
 }
 
+// 지원 태그 목록 (LLM별 변형: tool_calls, tool_use 등 포함)
+const TAG_ALT = 'lumina_tool_call|tool_calls|tool_call|tool_code|tool_use|use_tool';
+
+/** JSON/Python/XML 포맷의 tool call 블록을 파싱해 배열에 추가한다. */
+function tryParseBlock(
+	blockContent: string,
+	toolCalls: Array<{ id: string; name: string; arguments: Record<string, unknown> }>,
+): void {
+	if (!blockContent) return;
+	try {
+		const json = JSON.parse(blockContent) as TextToolCallJson | null | undefined;
+		if (json?.name) {
+			toolCalls.push({
+				id: crypto.randomUUID(),
+				name: json.name,
+				arguments: json.arguments || {},
+			});
+		}
+	} catch (e) {
+		const parsedPy = parsePythonCall(blockContent);
+		if (parsedPy) {
+			toolCalls.push({
+				id: crypto.randomUUID(),
+				name: parsedPy.name,
+				arguments: parsedPy.arguments,
+			});
+		} else {
+			// XML 스타일 폴백 (예: <name>tool</name><arguments>{}</arguments>)
+			const nameMatch = blockContent.match(/<name>\s*(.*?)\s*<\/name>/i) || blockContent.match(/"name"\s*:\s*"([^"]+)"/i);
+			const argsMatch = blockContent.match(/<arguments>\s*([\s\S]*?)(?:<\/arguments>|$)/i);
+
+			if (nameMatch) {
+				const toolName = nameMatch[1].trim();
+				let toolArgs: Record<string, unknown> = {};
+				if (argsMatch) {
+					const argsStr = argsMatch[1].trim();
+					try {
+						toolArgs = JSON.parse(argsStr) as Record<string, unknown>;
+					} catch {
+						// JSON 파싱 실패 시 빈 객체로 fallback
+					}
+				}
+				toolCalls.push({
+					id: crypto.randomUUID(),
+					name: toolName,
+					arguments: toolArgs,
+				});
+			} else {
+				// 파싱 실패 — 로그는 호출자(agentLoop)가 처리
+				console.warn('[Lumina] textToolParser: tool call 파싱 실패', { error: (e as Error).message, text: blockContent });
+			}
+		}
+	}
+}
+
 /**
  * LLM 응답 텍스트에서 <lumina_tool_call> (및 유사 태그) 블록을 파싱한다.
+ *
+ * 두 단계로 처리:
+ * 1. 닫는 태그가 있는 완전한 블록 파싱 (정상 응답)
+ * 2. 닫는 태그 없이 끝난 경우 폴백 (스트리밍 중 잘린 응답)
  *
  * @returns toolCalls: 파싱된 tool call 목록, cleanContent: 태그 블록을 제거한 순수 텍스트
  */
@@ -236,60 +305,42 @@ export function parseTextToolCalls(content: string): {
 	cleanContent: string;
 } {
 	const toolCalls: Array<{ id: string; name: string; arguments: Record<string, unknown> }> = [];
-	// 시작 태그의 오타($lumina_tool_call 등)를 허용하기 위해 더 관대하게 파싱
-	const regex = /[<$]*(lumina_tool_call|tool_code|tool_call|use_tool)[>]*\s*([\s\S]*?)\s*<\/\1>/gi;
-	let match;
+
+	// 1차: 닫는 태그가 있는 완전한 블록 파싱 (태그 변형 모두 허용)
+	const closedRegex = new RegExp(
+		`[<$]*(${TAG_ALT})[>]*\\s*([\\s\\S]*?)\\s*<\\/(?:${TAG_ALT})>`,
+		'gi'
+	);
+
 	const parts: string[] = [];
 	let lastEnd = 0;
+	let match: RegExpExecArray | null;
 
-	while ((match = regex.exec(content)) !== null) {
+	while ((match = closedRegex.exec(content)) !== null) {
 		parts.push(content.substring(lastEnd, match.index));
 		const blockContent = match[2].trim();
-		try {
-			const json = JSON.parse(blockContent) as TextToolCallJson | null | undefined;
-			if (json?.name) {
-				toolCalls.push({
-					id: crypto.randomUUID(),
-					name: json.name,
-					arguments: json.arguments || {},
-				});
-			}
-		} catch (e) {
-			const parsedPy = parsePythonCall(blockContent);
-			if (parsedPy) {
-				toolCalls.push({
-					id: crypto.randomUUID(),
-					name: parsedPy.name,
-					arguments: parsedPy.arguments,
-				});
-			} else {
-				// XML 스타일 폴백 (예: <name>tool</name><arguments>{}</arguments>)
-				const nameMatch = blockContent.match(/<name>\s*(.*?)\s*<\/name>/i) || blockContent.match(/"name"\s*:\s*"([^"]+)"/i);
-				const argsMatch = blockContent.match(/<arguments>\s*([\s\S]*?)(?:<\/arguments>|$)/i);
+		if (blockContent) {
+			tryParseBlock(blockContent, toolCalls);
+		}
+		lastEnd = closedRegex.lastIndex;
+	}
 
-				if (nameMatch) {
-					const toolName = nameMatch[1].trim();
-					let toolArgs: Record<string, unknown> = {};
-					if (argsMatch) {
-						const argsStr = argsMatch[1].trim();
-						try {
-							toolArgs = JSON.parse(argsStr) as Record<string, unknown>;
-						} catch {
-							// JSON 파싱 실패 시 빈 객체로 fallback
-						}
-					}
-					toolCalls.push({
-						id: crypto.randomUUID(),
-						name: toolName,
-						arguments: toolArgs,
-					});
-				} else {
-					// 파싱 실패 — 로그는 호출자(agentLoop)가 처리
-					console.warn('[Lumina] textToolParser: tool call 파싱 실패', { error: (e as Error).message, text: blockContent });
+	// 2차: 닫는 태그 없이 끝난 경우 폴백 (스트리밍 도중 잘린 경우)
+	// 빈 매칭 방지를 위해 태그 이후 내용이 1자 이상인 경우만 처리
+	if (toolCalls.length === 0) {
+		const openTagRegex = new RegExp(`[<$]*(${TAG_ALT})[>]*\\s+([\\s\\S]{1,})$`, 'i');
+		const openMatch = openTagRegex.exec(content);
+		if (openMatch) {
+			const blockContent = openMatch[2].trim();
+			if (blockContent) {
+				tryParseBlock(blockContent, toolCalls);
+				if (toolCalls.length > 0) {
+					// 태그 시작 전까지만 cleanContent로 유지
+					parts.push(content.substring(0, openMatch.index));
+					lastEnd = content.length;
 				}
 			}
 		}
-		lastEnd = regex.lastIndex;
 	}
 
 	if (lastEnd < content.length) {

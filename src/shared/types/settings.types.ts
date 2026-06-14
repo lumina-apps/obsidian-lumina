@@ -49,6 +49,15 @@ export const PROVIDER_CATEGORIES: Record<ProviderType, ProviderCategory> = {
 	custom: 'custom',
 };
 
+/**
+ * image_url 멀티모달 콘텐츠를 지원하지 않는 프로바이더 타입 목록.
+ * 이 목록에 포함된 프로바이더는 이미지 첨부 시 오류가 발생합니다.
+ */
+export const VISION_UNSUPPORTED_PROVIDERS: ReadonlySet<ProviderType> = new Set<ProviderType>([
+	'deepseek',
+	'groq',
+]);
+
 export const PROVIDER_BASE_URLS: Partial<Record<ProviderType, string>> = {
 	xai: 'https://api.x.ai',
 	deepseek: 'https://api.deepseek.com',

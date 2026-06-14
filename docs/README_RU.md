@@ -116,6 +116,5 @@
 Этот плагин распространяется 100% бесплатно и будет постоянно обновляться.
 Спонсорская помощь мотивирует меня выпускать обновления еще быстрее!
 
-👉 **[GitHub Sponsor](https://github.com/sponsors/lumina-apps)**  
 👉 **[Ko-fi](https://ko-fi.com/luminaapps)**  
 👉 **[Ctee](https://ctee.kr/place/luminaapps)**

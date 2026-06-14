@@ -397,6 +397,7 @@ Das Verbinden von großen Modellen oder Reasoning-Modellen führt zu extremen Ve
       ollamaNoModel: 'In Ollama laufen keine Modelle. Bitte starten Sie zuerst ein Modell mit `ollama run <model>`.',
       connectFail: 'Verbindung fehlgeschlagen: {{status}} {{text}}',
       anthropicNoEmbed: 'Anthropic unterstützt die Embedding-API nicht.',
+      visionNotSupported: '⚠️ Der ausgewählte Anbieter ({{provider}}) unterstützt keine Bildanalyse. Bitte verwenden Sie OpenAI, Anthropic oder Google mit einem visionsfähigen Modell.',
      },
     translation: {
       confirmTitle: 'Systemsprache-Übersetzung',

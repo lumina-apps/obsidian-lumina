@@ -116,6 +116,5 @@
 此外掛 100% 免費分發，並將持續更新。
 贊助能讓我更有動力，更快地推出更新！
 
-👉 **[GitHub Sponsor](https://github.com/sponsors/lumina-apps)**  
 👉 **[Ko-fi](https://ko-fi.com/luminaapps)**  
 👉 **[Ctee](https://ctee.kr/place/luminaapps)**
