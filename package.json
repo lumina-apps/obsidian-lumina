@@ -1,6 +1,6 @@
 {
 	"name": "lumina",
-	"version": "1.0.12",
+	"version": "1.0.13",
 	"description": "Your intelligent AI Agent for Obsidian with RAG and Multi-LLM support.",
 	"main": "main.js",
 	"scripts": {
