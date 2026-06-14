@@ -320,6 +320,7 @@ export const ru: DeepPartial<Translation> = {
     },
       init: {
         loadingModel: 'Lumina: Загрузка модели эмбеддингов...',
+        loadingModelDesc: 'Первая загрузка и запуск локальной модели могут занять несколько минут.',
         cloudSuccess: 'Lumina: Облачные эмбеддинги подключены',
         loadingProgress: 'Lumina: Загрузка модели {{pct}}% — {{status}}',
         indexingVault: 'Lumina: Индексирование хранилища...',

@@ -321,6 +321,7 @@ Das Verbinden von großen Modellen oder Reasoning-Modellen führt zu extremen Ve
     },
       init: {
         loadingModel: 'Lumina: Embedding-Modell wird geladen...',
+        loadingModelDesc: 'Das erste Herunterladen und Laden des lokalen Modells kann einige Minuten dauern.',
         cloudSuccess: 'Lumina: Cloud-Embedding verbunden',
         loadingProgress: 'Lumina: Modell wird geladen {{pct}}% — {{status}}',
         indexingVault: 'Lumina: Vault wird indexiert...',

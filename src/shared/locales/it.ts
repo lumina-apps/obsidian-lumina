@@ -320,6 +320,7 @@ La connessione di modelli grandi o di Reasoning models causerà ritardi estremi 
     },
       init: {
         loadingModel: 'Lumina: Caricamento modello embedding...',
+        loadingModelDesc: 'Il download e il caricamento del modello locale per la prima volta potrebbero richiedere alcuni minuti.',
         cloudSuccess: 'Lumina: Embedding cloud connesso',
         loadingProgress: 'Lumina: Caricamento modello {{pct}}% — {{status}}',
         indexingVault: 'Lumina: Indicizzazione vault in corso...',

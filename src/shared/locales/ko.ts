@@ -321,6 +321,7 @@ export const ko: Translation = {
       },
       init: {
         loadingModel: 'Lumina: 임베딩 모델 로딩 중…',
+        loadingModelDesc: '최초 실행 시 로컬 모델 다운로드 및 로딩에 수 분이 소요될 수 있습니다.',
         cloudSuccess: 'Lumina: 클라우드 임베딩 연결 성공',
         loadingProgress: 'Lumina: 모델 로딩 중 {{pct}}% — {{status}}',
         indexingVault: 'Lumina: 볼트 인덱싱 중…',

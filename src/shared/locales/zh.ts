@@ -320,6 +320,7 @@ export const zh: DeepPartial<Translation> = {
     },
       init: {
         loadingModel: 'Lumina: 正在加载嵌入模型...',
+        loadingModelDesc: '首次运行时，下载和加载本地模型可能需要几分钟时间。',
         cloudSuccess: 'Lumina: 云端嵌入连接成功',
         loadingProgress: 'Lumina: 模型加载中 {{pct}}% — {{status}}',
         indexingVault: 'Lumina: 正在对库进行索引...',

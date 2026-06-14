@@ -319,6 +319,7 @@ Connecting large models or Reasoning models will cause extreme delays of tens of
       },
       init: {
         loadingModel: 'Lumina: Loading embedding model...',
+        loadingModelDesc: 'Downloading and loading the local model for the first time may take a few minutes.',
         cloudSuccess: 'Lumina: Cloud embedding connected',
         loadingProgress: 'Lumina: Loading model {{pct}}% — {{status}}',
         indexingVault: 'Lumina: Indexing vault...',

@@ -320,6 +320,7 @@ La connexion de modèles volumineux ou de modèles de raisonnement entraînera d
     },
       init: {
         loadingModel: 'Lumina : Chargement du modèle d\'embedding...',
+        loadingModelDesc: 'Le téléchargement et le chargement du modèle local pour la première fois peuvent prendre quelques minutes.',
         cloudSuccess: 'Lumina : Embedding cloud connecté',
         loadingProgress: 'Lumina : Chargement du modèle {{pct}}% — {{status}}',
         indexingVault: 'Lumina : Indexation du coffre...',

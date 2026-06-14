@@ -319,6 +319,7 @@ export const ja: DeepPartial<Translation> = {
     },
       init: {
         loadingModel: 'Lumina: 埋め込みモデルを読み込んでいます...',
+        loadingModelDesc: '初回実行時、ローカルモデルのダウンロードと読み込みに数分かかる場合があります。',
         cloudSuccess: 'Lumina: クラウド埋め込みに接続しました',
         loadingProgress: 'Lumina: モデル読み込み中 {{pct}}% — {{status}}',
         indexingVault: 'Lumina: Vaultのインデックスを作成しています...',

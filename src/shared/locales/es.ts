@@ -321,6 +321,7 @@ Conectar modelos grandes o modelos de razonamiento (Reasoning) causará demoras 
     },
       init: {
         loadingModel: 'Lumina: Cargando modelo de embedding...',
+        loadingModelDesc: 'La descarga y carga del modelo local por primera vez puede tardar unos minutos.',
         cloudSuccess: 'Lumina: Embedding en la nube conectado',
         loadingProgress: 'Lumina: Cargando modelo {{pct}}% — {{status}}',
         indexingVault: 'Lumina: Indexando bóveda...',

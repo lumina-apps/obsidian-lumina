@@ -320,6 +320,7 @@ Conectar modelos grandes ou modelos de raciocínio (Reasoning) causará atrasos 
     },
       init: {
         loadingModel: 'Lumina: Carregando modelo de incorporação...',
+        loadingModelDesc: 'O download e carregamento do modelo local pela primeira vez pode levar alguns minutos.',
         cloudSuccess: 'Lumina: Incorporação em nuvem conectada',
         loadingProgress: 'Lumina: Carregando modelo {{pct}}% — {{status}}',
         indexingVault: 'Lumina: Indexando o vault...',

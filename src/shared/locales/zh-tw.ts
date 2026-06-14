@@ -320,6 +320,7 @@ export const zhTW: DeepPartial<Translation> = {
     },
       init: {
         loadingModel: 'Lumina: 正在載入嵌入模型...',
+        loadingModelDesc: '首次執行時，下載和載入本地模型可能需要幾分鐘時間。',
         cloudSuccess: 'Lumina: 雲端嵌入連線成功',
         loadingProgress: 'Lumina: 模型載入中 {{pct}}% — {{status}}',
         indexingVault: 'Lumina: 正在對庫進行索引...',
