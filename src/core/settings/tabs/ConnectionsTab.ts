@@ -465,7 +465,7 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 							t('uiMessages.agentBetaActivateDesc'),
 							t('uiMessages.agentBetaActivateConfirm'),
 							t('uiMessages.agentBetaActivateSkip'),
-							async (enabled) => {
+							(enabled) => {
 								if (!enabled) return;
 								// 에이전트 활성화 + 내장 서버 자동 켜기
 								tab.plugin.settings.chat.agentEnabled = true;
@@ -475,12 +475,13 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 										tab.plugin.settings.mcp.serverAuthToken = crypto.randomUUID();
 									}
 									if (tab.plugin.mcpManager) {
-										await tab.plugin.mcpManager.syncServers();
+										void tab.plugin.mcpManager.syncServers();
 									}
 								}
-								await tab.saveAndSync();
-								tab.refreshDisplay();
-								new Notice(t('uiMessages.agentBetaEnabled'));
+								void tab.saveAndSync().then(() => {
+									tab.refreshDisplay();
+									new Notice(t('uiMessages.agentBetaEnabled'));
+								});
 							},
 						).open();
 					}, 300);
