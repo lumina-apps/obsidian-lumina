@@ -107,6 +107,16 @@ export function getMessages(): UIChatMessage[] {
 	return get(messages);
 }
 
+/**
+ * 특정 메시지의 content를 직접 교체한다.
+ * streaming 중 tool call 정리 후 UI 동기화에 사용.
+ */
+export function syncMessageContent(messageId: string, content: string): void {
+	messages.update(ms =>
+		ms.map(m => (m.id === messageId ? { ...m, content } : m)),
+	);
+}
+
 /** 대기 중인 컨텍스트 첨부 추가 */
 export function addPendingAttachment(attachment: ContextAttachment): void {
 	pendingAttachments.update(arr => [...arr, attachment]);
