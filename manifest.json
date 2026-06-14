@@ -1,7 +1,7 @@
 {
 	"id": "lumina",
 	"name": "Lumina",
-	"version": "1.0.11",
+	"version": "1.0.12",
 	"minAppVersion": "1.11.4",
 	"description": "Your intelligent AI Agent for your vault with RAG and Multi-LLM support.",
 	"author": "Lumina",
