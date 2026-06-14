@@ -48,7 +48,6 @@
 			
 			if (plugin.indexer) {
 				const allChunks = plugin.indexer.indexedChunks;
-				// 현재 파일 자신은 제외
 				
 				let results: SearchResult[] = [];
 
@@ -88,13 +87,110 @@
 				// 매우 유사한 노트(0.90 이상) 찾기
 				const duplicate = results.find(r => r.score >= 0.90) || null;
 				
-				// 태그 추출 (유사도가 높은 문서 기반)
-				const tags = extractRecommendedTags(results);
+				// 태그 추출 (유사도가 높은 문서 기반 - 본문 #tag + 프론트매터/캐시 태그 통합)
+				const bodyTags = extractRecommendedTags(results);
+				const tagScoreMap = new Map<string, number>();
+				for (const t of bodyTags) {
+					tagScoreMap.set(t.tag, t.score);
+				}
+
+				// 1) 유사 문서의 프론트매터/캐시 태그 수집
+				const metadataCache = plugin.app.metadataCache;
+				for (const result of results) {
+					const cache = metadataCache.getCache(result.chunk.path);
+
+					if (!cache) continue;
+
+					// 프론트매터 tags
+					const fmTags = cache.frontmatter?.tags;
+					if (fmTags) {
+						const fmTagList = Array.isArray(fmTags) ? fmTags : [fmTags];
+						for (const rawTag of fmTagList) {
+							const tagStr = typeof rawTag === 'string' ? rawTag : String(rawTag);
+							if (!tagStr.trim()) continue;
+							const tag = tagStr.startsWith('#') ? tagStr : '#' + tagStr;
+							const existing = tagScoreMap.get(tag);
+							tagScoreMap.set(tag, Math.max(existing || 0, result.score * 0.7));
+						}
+					}
+
+					// 캐시된 본문 태그 (extractRecommendedTags에서 누락된 것 보완)
+					const cachedTags = cache.tags?.map((t: { tag: string }) => t.tag) || [];
+					for (const rawTag of cachedTags) {
+						const tag = rawTag.startsWith('#') ? rawTag : '#' + rawTag;
+						if (!tagScoreMap.has(tag)) {
+							tagScoreMap.set(tag, result.score * 0.8);
+						}
+					}
+
+					// 프론트매터의 다른 키에서도 태그 추출 시도 (예: category, type 등)
+					const fm = cache.frontmatter as Record<string, unknown> | undefined;
+					if (fm && (!fmTags || (Array.isArray(fmTags) && fmTags.length === 0))) {
+						for (const key of ['tag', 'category', 'categories', 'type', 'types', 'topic', 'topics', 'keyword', 'keywords']) {
+							const val = fm[key];
+							if (typeof val === 'string' && val.trim()) {
+								const tag = '#' + val.trim().replace(/\s+/g, '-');
+								const existing = tagScoreMap.get(tag);
+								tagScoreMap.set(tag, Math.max(existing || 0, result.score * 0.5));
+							} else if (Array.isArray(val)) {
+								for (const item of val) {
+									if (typeof item === 'string' && item.trim()) {
+										const tag = '#' + item.trim().replace(/\s+/g, '-');
+										const existing = tagScoreMap.get(tag);
+										tagScoreMap.set(tag, Math.max(existing || 0, result.score * 0.5));
+									}
+								}
+							}
+						}
+					}
+
+					// 파일 경로에서도 태그 추출 (폴더명/파일명 기반)
+					const pathParts = result.chunk.path.replace(/\.md$/, '').split('/');
+					for (const part of pathParts) {
+						const cleanPart = part.trim().replace(/\s+/g, '-');
+						if (cleanPart.length >= 2 && cleanPart.length <= 30) {
+							const tag = '#' + cleanPart;
+							if (!tagScoreMap.has(tag)) {
+								tagScoreMap.set(tag, result.score * 0.35);
+							}
+						}
+					}
+				}
+
+				// 2) 현재 활성 파일 자신의 태그도 추천에 포함
+				if (file) {
+					const ownCache = metadataCache.getCache(file.path);
+					if (ownCache) {
+						const ownFmTags = ownCache.frontmatter?.tags;
+						if (ownFmTags) {
+							const ownFmTagList = Array.isArray(ownFmTags) ? ownFmTags : [ownFmTags];
+							for (const rawTag of ownFmTagList) {
+								const tagStr = typeof rawTag === 'string' ? rawTag : String(rawTag);
+								if (!tagStr.trim()) continue;
+								const tag = tagStr.startsWith('#') ? tagStr : '#' + tagStr;
+								const existing = tagScoreMap.get(tag);
+								tagScoreMap.set(tag, Math.max(existing || 0, 0.95));
+							}
+						}
+						const ownCachedTags = ownCache.tags?.map((t: { tag: string }) => t.tag) || [];
+						for (const rawTag of ownCachedTags) {
+							const tag = rawTag.startsWith('#') ? rawTag : '#' + rawTag;
+							if (!tagScoreMap.has(tag)) {
+								tagScoreMap.set(tag, 0.9);
+							}
+						}
+					}
+				}
+
+				const enrichedTags = Array.from(tagScoreMap.entries())
+					.map(([tag, score]) => ({ tag, score }))
+					.sort((a, b) => b.score - a.score)
+					.slice(0, 5);
 
 				updateDiscoveryState({
 					similarNotes: results,
 					duplicateNote: duplicate,
-					recommendedTags: tags,
+					recommendedTags: enrichedTags,
 					lastSearchedFilePath: file.path,
 					isSearching: false
 				});
@@ -130,11 +226,12 @@
 		}
 	}
 
-	// activeFile 및 인덱싱 상태 감지 (디바운스 적용)
+	// activeFile, isActive, 인덱싱 상태 감지 (디바운스 적용)
 	$effect(() => {
 		const file = $discoveryState.activeFile;
 		const status = $indexingState.status;
-		if (isActive && file && status === 'ready') {
+		const active = isActive;
+		if (active && file && status === 'ready') {
 			if (contextTimer) clearTimeout(contextTimer);
 			contextTimer = setTimeout(() => {
 				updateContext();
