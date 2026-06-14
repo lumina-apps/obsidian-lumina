@@ -394,14 +394,25 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 			.setName(t('settings.connections.apiKey.endpointUrl'))
 			.setDesc(t('settings.connections.apiKey.endpointPlaceholder'))
 			.addText(text => {
+				let composing = false;
+				const inputEl = text.inputEl;
+				inputEl.addEventListener('compositionstart', () => { composing = true; });
+				inputEl.addEventListener('compositionend', () => {
+					composing = false;
+					provider.baseUrl = inputEl.value;
+					provider.isVerified = false;
+					provider.availableModels = [];
+					void tab.saveAndSync();
+				});
 				text
 					.setPlaceholder('http://localhost:11434')
 					.setValue(provider.baseUrl || '');
-				text.onChange(async (val) => {
+				text.onChange((val) => {
+					if (composing) return;
 					provider.baseUrl = val;
 					provider.isVerified = false;
 					provider.availableModels = [];
-					await tab.saveAndSync();
+					tab.saveAndSync().catch(console.error);
 				});
 			});
 		urlSetting.settingEl.addClass('lumina-provider-card__setting-url');
@@ -412,15 +423,26 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 			.setName(t('settings.connections.apiKey.apiKey'))
 			.setDesc(t('settings.connections.apiKey.hiddenDesc'))
 			.addText(text => {
+				let composing = false;
+				const inputEl = text.inputEl;
+				inputEl.addEventListener('compositionstart', () => { composing = true; });
+				inputEl.addEventListener('compositionend', () => {
+					composing = false;
+					provider.credential = inputEl.value;
+					provider.isVerified = false;
+					provider.availableModels = [];
+					void tab.saveAndSync();
+				});
 				text
 					.setPlaceholder('sk-...')
 					.setValue(provider.credential);
 				text.inputEl.type = 'password';
-				text.onChange(async (val) => {
+				text.onChange((val) => {
+					if (composing) return;
 					provider.credential = val;
 					provider.isVerified = false;
 					provider.availableModels = [];
-					await tab.saveAndSync();
+					tab.saveAndSync().catch(console.error);
 				});
 			});
 		credentialSetting.settingEl.addClass('lumina-provider-card__setting-credential');

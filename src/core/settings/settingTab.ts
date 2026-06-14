@@ -171,10 +171,18 @@ export class LuminaSettingTab extends PluginSettingTab {
 	 * 설정 저장 + settingsStore 동기화를 한 번에 처리하는 내부 헬퍼.
 	 * 모든 onChange 핸들러에서 this.plugin.saveSettings() 대신 이 메서드 사용.
 	 */
-	public async saveAndSync(needsRefresh: boolean = false): Promise<void> {
+	/**
+	 * 설정 저장 + settingsStore 동기화를 한 번에 처리하는 내부 헬퍼.
+	 * @param needsRefresh - true면 MCP_REFRESH_DELAY 후 UI 전체 새로고침 (스크롤 위치 복원 포함)
+	 * @param syncMcp - true면 mcpManager.syncServers() 호출. 텍스트 입력 onChange처럼
+	 *                  포커스를 유지해야 하는 경우에는 반드시 false(기본값)로 유지할 것.
+	 *                  syncServers()는 완료 시 refreshSettingTab()을 호출하여 DOM을 재생성하므로
+	 *                  포커스가 사라지는 부작용이 있습니다.
+	 */
+	public async saveAndSync(needsRefresh: boolean = false, syncMcp: boolean = false): Promise<void> {
 		await this.plugin.saveSettings();
 		syncSettingsStore(this.plugin.settings);
-		if (this.plugin.mcpManager) {
+		if (syncMcp && this.plugin.mcpManager) {
 			await this.plugin.mcpManager.syncServers().catch((e: unknown) => debugLogger.logError('mcp', e instanceof Error ? e : String(e)));
 		}
 		// MCP 서버 토글 변경 시 UI 새로고침 (연결 완료 후 상태 반영)

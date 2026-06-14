@@ -119,8 +119,17 @@ export function renderChatTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			.setName(t('settings.chat.history.savePath'))
 			.setDesc(t('settings.chat.history.desc'))
 			.addText(text => {
+				let composing = false;
+				const inputEl = text.inputEl;
+				inputEl.addEventListener('compositionstart', () => { composing = true; });
+				inputEl.addEventListener('compositionend', () => {
+					composing = false;
+					s.historyPath = inputEl.value;
+					void tab.saveAndSync();
+				});
 				text.setPlaceholder(t('settings.chat.history.pathPlaceholder'))
 					.setValue(s.historyPath).onChange(async (val) => {
+						if (composing) return;
 						s.historyPath = val;
 						await tab.saveAndSync();
 					});
@@ -151,9 +160,18 @@ export function renderChatTab(tab: LuminaSettingTab, el: HTMLElement): void {
 		.setName(t('settings.chat.inlineTrigger.name'))
 		.setDesc(t('settings.chat.inlineTrigger.desc'))
 		.addText(text => {
+			let composing = false;
+			const inputEl = text.inputEl;
+			inputEl.addEventListener('compositionstart', () => { composing = true; });
+			inputEl.addEventListener('compositionend', () => {
+				composing = false;
+				s.inlineTrigger = inputEl.value;
+				void tab.saveAndSync();
+			});
 			text.setPlaceholder('/ai')
 				.setValue(s.inlineTrigger || '/ai')
 				.onChange(async (val) => {
+					if (composing) return;
 					s.inlineTrigger = val;
 					await tab.saveAndSync();
 				});
@@ -174,8 +192,21 @@ export function renderChatTab(tab: LuminaSettingTab, el: HTMLElement): void {
 		new Setting(body)
 			.setName(t('settings.chat.quickActions.actionName'))
 			.addText(text => {
+				let composing = false;
+				const nameInputEl = text.inputEl;
+				nameInputEl.addEventListener('compositionstart', () => { composing = true; });
+				nameInputEl.addEventListener('compositionend', () => {
+					composing = false;
+					action.name = nameInputEl.value;
+					header.setText(`✨ ${nameInputEl.value || t('settings.chat.quickActions.newAction')}`);
+					void tab.saveAndSync();
+					if (tab.plugin.registerQuickActions) {
+						tab.plugin.registerQuickActions();
+					}
+				});
 				text.setValue(action.name)
 					.onChange(async (val) => {
+						if (composing) return;
 						action.name = val;
 						header.setText(`✨ ${val || t('settings.chat.quickActions.newAction')}`);
 						await tab.saveAndSync();
@@ -203,10 +234,18 @@ export function renderChatTab(tab: LuminaSettingTab, el: HTMLElement): void {
 		const promptSetting = new Setting(body)
 			.setName(t('settings.chat.quickActions.actionPrompt'))
 			.addTextArea(text => {
+				let composing = false;
 				text.inputEl.addClass('lumina-prompt-card__content');
 				text.inputEl.setCssStyles({ width: '100%', minWidth: '300px' });
 				text.inputEl.rows = 4;
+				text.inputEl.addEventListener('compositionstart', () => { composing = true; });
+				text.inputEl.addEventListener('compositionend', () => {
+					composing = false;
+					action.prompt = text.inputEl.value;
+					void tab.saveAndSync();
+				});
 				text.setValue(action.prompt).onChange(async (val) => {
+					if (composing) return;
 					action.prompt = val;
 					await tab.saveAndSync();
 				});
@@ -289,14 +328,24 @@ export function renderChatTab(tab: LuminaSettingTab, el: HTMLElement): void {
 				wrapAsync(async (val) => { s.contextWindowTurns = val; await tab.saveAndSync(); })
 			);
 		} else {
-			new Setting(el)
-				.setName(t('settings.chat.memoryLimit.maxTokens'))
-				.addText(text => {
-					text.setValue(String(s.maxContextTokens)).onChange(wrapAsync(async (val) => {
-						const n = parseInt(val);
-						if (!isNaN(n)) { s.maxContextTokens = n; await tab.saveAndSync(); }
-					}));
+		new Setting(el)
+			.setName(t('settings.chat.memoryLimit.maxTokens'))
+			.addText(text => {
+				let composing = false;
+				const inputEl = text.inputEl;
+				inputEl.type = 'number';
+				inputEl.addEventListener('compositionstart', () => { composing = true; });
+				inputEl.addEventListener('compositionend', () => {
+					composing = false;
+					const n = parseInt(inputEl.value);
+					if (!isNaN(n)) { s.maxContextTokens = n; void tab.saveAndSync(); }
 				});
+				text.setValue(String(s.maxContextTokens)).onChange(wrapAsync(async (val) => {
+					if (composing) return;
+					const n = parseInt(val);
+					if (!isNaN(n)) { s.maxContextTokens = n; await tab.saveAndSync(); }
+				}));
+			});
 		}
 
 		addSliderWithInput(
@@ -310,7 +359,17 @@ export function renderChatTab(tab: LuminaSettingTab, el: HTMLElement): void {
 		new Setting(el)
 			.setName(t('settings.chat.modelParams.maxOutput'))
 			.addText(text => {
+				let composing = false;
+				const inputEl = text.inputEl;
+				inputEl.type = 'number';
+				inputEl.addEventListener('compositionstart', () => { composing = true; });
+				inputEl.addEventListener('compositionend', () => {
+					composing = false;
+					const n = parseInt(inputEl.value);
+					if (!isNaN(n)) { s.maxOutputTokens = n; void tab.saveAndSync(); }
+				});
 				text.setValue(String(s.maxOutputTokens)).onChange(wrapAsync(async (val) => {
+					if (composing) return;
 					const n = parseInt(val);
 					if (!isNaN(n)) { s.maxOutputTokens = n; await tab.saveAndSync(); }
 				}));

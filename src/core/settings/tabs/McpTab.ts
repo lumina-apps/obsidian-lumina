@@ -113,7 +113,16 @@ export function renderMcpTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			.setName(t('settings.mcp.localServer.token.name'))
 			.setDesc(t('settings.mcp.localServer.token.desc'))
 			.addText(text => {
+				let composing = false;
+				const inputEl = text.inputEl;
+				inputEl.addEventListener('compositionstart', () => { composing = true; });
+				inputEl.addEventListener('compositionend', () => {
+					composing = false;
+					s.serverAuthToken = inputEl.value;
+					void tab.saveAndSync();
+				});
 				text.setValue(s.serverAuthToken).onChange(async (val) => {
+					if (composing) return;
 					s.serverAuthToken = val;
 					await tab.saveAndSync();
 				});
@@ -237,16 +246,25 @@ export function renderMcpServerCard(tab: LuminaSettingTab, el: HTMLElement, serv
 	// inline grid로 2x2 레이아웃 강제 적용
 	card.setCssStyles({ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', alignItems: 'start', padding: '12px 16px 8px 16px', overflow: 'visible' });
 
-	// 이름
-	const nameSetting = new Setting(card)
-		.setName(t('settings.mcp.serverName'))
-		.setDesc(t('settings.mcp.serverName'))
-		.addText(text => {
-			text.setValue(server.name).onChange(async (val) => {
-				server.name = val;
-				await tab.saveAndSync();
+		// 이름
+		const nameSetting = new Setting(card)
+			.setName(t('settings.mcp.serverName'))
+			.setDesc(t('settings.mcp.serverName'))
+			.addText(text => {
+				let composing = false;
+				const inputEl = text.inputEl;
+				inputEl.addEventListener('compositionstart', () => { composing = true; });
+				inputEl.addEventListener('compositionend', () => {
+					composing = false;
+					server.name = inputEl.value;
+					void tab.saveAndSync();
+				});
+				text.setValue(server.name).onChange(async (val) => {
+					if (composing) return;
+					server.name = val;
+					await tab.saveAndSync();
+				});
 			});
-		});
 	nameSetting.settingEl.addClass('mcp-server-card__name');
 	nameSetting.settingEl.setCssStyles({ gridColumn: '1', gridRow: '1' });
 
@@ -260,32 +278,50 @@ export function renderMcpServerCard(tab: LuminaSettingTab, el: HTMLElement, serv
 	transportSetting.settingEl.addClass('mcp-server-card__transport');
 	transportSetting.settingEl.setCssStyles({ gridColumn: '2', gridRow: '1' });
 
-	// sse URL
-	const urlSetting = new Setting(card)
-		.setName(t('settings.mcp.externalServer.sseUrl.name'))
-		.setDesc(t('settings.mcp.externalServer.sseUrl.desc'))
-		.addText(text => {
-			text.setValue(server.url || '').onChange(async (val) => {
-				server.url = val;
-				await tab.saveAndSync();
+		// sse URL
+		const urlSetting = new Setting(card)
+			.setName(t('settings.mcp.externalServer.sseUrl.name'))
+			.setDesc(t('settings.mcp.externalServer.sseUrl.desc'))
+			.addText(text => {
+				let composing = false;
+				const inputEl = text.inputEl;
+				inputEl.addEventListener('compositionstart', () => { composing = true; });
+				inputEl.addEventListener('compositionend', () => {
+					composing = false;
+					server.url = inputEl.value;
+					void tab.saveAndSync();
+				});
+				text.setValue(server.url || '').onChange(async (val) => {
+					if (composing) return;
+					server.url = val;
+					await tab.saveAndSync();
+				});
 			});
-		});
 	urlSetting.settingEl.addClass('mcp-server-card__url');
 	urlSetting.settingEl.setCssStyles({ gridColumn: '1', gridRow: '2' });
 
-	// sse Auth Token
-	const authSetting = new Setting(card)
-		.setName(t('settings.mcp.externalServer.token.name'))
-		.setDesc(t('settings.mcp.externalServer.token.desc'))
-		.addText(text => {
-			text.setValue(server.authToken || '')
-				.setPlaceholder('token')
-				.onChange(async (val) => {
-					server.authToken = val;
-					await tab.saveAndSync();
+		// sse Auth Token
+		const authSetting = new Setting(card)
+			.setName(t('settings.mcp.externalServer.token.name'))
+			.setDesc(t('settings.mcp.externalServer.token.desc'))
+			.addText(text => {
+				let composing = false;
+				const inputEl = text.inputEl;
+				inputEl.addEventListener('compositionstart', () => { composing = true; });
+				inputEl.addEventListener('compositionend', () => {
+					composing = false;
+					server.authToken = inputEl.value;
+					void tab.saveAndSync();
 				});
-			text.inputEl.type = 'password';
-		});
+				text.setValue(server.authToken || '')
+					.setPlaceholder('token')
+					.onChange(async (val) => {
+						if (composing) return;
+						server.authToken = val;
+						await tab.saveAndSync();
+					});
+				text.inputEl.type = 'password';
+			});
 
 
 	authSetting.settingEl.addClass('mcp-server-card__token');
@@ -298,7 +334,7 @@ export function renderMcpServerCard(tab: LuminaSettingTab, el: HTMLElement, serv
 				.setTooltip(t('settings.mcp.enableDesc'))
 				.onChange(async (val) => {
 					server.enabled = val;
-					await tab.saveAndSync(true); // 연결 완료 후 UI 갱신
+					await tab.saveAndSync(true, true); // 연결 완료 후 UI 갱신 + MCP 동기화
 					// 만약 연결 실패로 인해 내부적으로 false로 강등되었다면 토글 UI를 다시 꺼준다
 					if (server.enabled !== val) {
 						toggle.setValue(server.enabled);

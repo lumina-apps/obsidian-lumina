@@ -5,6 +5,32 @@ import { t } from '../../../shared/locales/helpers';
 import { indexingState } from '../../store/ragStore';
 import { ConfirmModal } from '../../../shared/utils/modal';
 
+/** 경로 설정 변경 후 자동 재인덱싱 디바운스 타이머 */
+let pathChangeDebounceTimer: number | null = null;
+const PATH_CHANGE_DEBOUNCE_MS = 1500;
+
+/**
+ * 경로 설정(includedPaths / excludedPaths) 변경 시 호출.
+ * 1.5초 디바운스 후 indexVault()를 실행하여 변경 사항을 즉시 반영합니다.
+ */
+function triggerReindexAfterPathChange(tab: LuminaSettingTab): void {
+	if (pathChangeDebounceTimer !== null) {
+		window.clearTimeout(pathChangeDebounceTimer);
+	}
+	pathChangeDebounceTimer = window.setTimeout(() => {
+		pathChangeDebounceTimer = null;
+		if (!tab.plugin.indexer) return;
+		new Notice(t('settings.rag.reindex.started'), 2000);
+		tab.plugin.indexer.indexVault()
+			.then(() => {
+				new Notice(t('settings.rag.reindex.success'), 3000);
+			})
+			.catch((err: Error) => {
+				new Notice(`${t('settings.rag.reindex.fail')}${err.message}`, 5000);
+			});
+	}, PATH_CHANGE_DEBOUNCE_MS) as unknown as number;
+}
+
 export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 	const s = tab.plugin.settings.rag;
 	const ragEnabled = tab.plugin.settings.connections.ragEnabled;
@@ -48,6 +74,7 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 				.onChange(async (val) => {
 					s.includedPaths = val.split(',').map(v => v.trim()).filter(Boolean);
 					await tab.saveAndSync();
+					if (tab.plugin.indexer) triggerReindexAfterPathChange(tab);
 				});
 		});
 
@@ -61,6 +88,7 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 				.onChange(async (val) => {
 					s.excludedPaths = val.split(',').map(v => v.trim()).filter(Boolean);
 					await tab.saveAndSync();
+					if (tab.plugin.indexer) triggerReindexAfterPathChange(tab);
 				});
 		});
 
