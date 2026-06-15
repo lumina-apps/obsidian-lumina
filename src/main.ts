@@ -841,6 +841,12 @@ export default class LuminaPlugin extends Plugin {
 			new Notice(t('settings.rag.init.initFail', { error: (err as Error).message }), 5000);
 			debugLogger.logError('rag', err instanceof Error ? err : new Error(`embedding worker init failed: ${err}`));
 			this.embeddingWorker = null;
+			// 임베딩 워커 초기화 실패 시 RAG 토글을 false로 되돌려 UI 불일치 방지
+			if (this.settings.connections.ragEnabled) {
+				this.settings.connections.ragEnabled = false;
+				await this.saveSettings();
+				this.refreshSettingTab();
+			}
 		}
 	}
 }

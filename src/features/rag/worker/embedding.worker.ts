@@ -124,16 +124,18 @@ async function initModel(modelName: string, cacheDir: string, pluginDir?: string
 	env.allowLocalModels = false;
 	
 	// transformers.js v3는 외부 WASM 파일을 동적으로 로드해야 합니다.
-	if (pluginDir) {
-		// Obsidian의 getResourcePath는 끝에 캐시 무효화용 쿼리스트링(?16...)을 붙이므로 제거합니다.
-		const cleanPluginDir = pluginDir.split('?')[0];
-		const basePath = cleanPluginDir.endsWith('/') ? cleanPluginDir : cleanPluginDir + '/';
-		if (customEnv.backends?.onnx?.wasm) {
+	// ⚠️ 항상 로컬(pluginDir) 경로를 사용합니다. CDN을 사용하면
+	//   ort-wasm-simd-threaded.jsep.mjs의 top-level `import('worker_threads')`가
+	//   브라우저 Worker에서 `failed to resolve module specifier` 오류를 발생시킵니다.
+	if (customEnv.backends?.onnx?.wasm) {
+		if (pluginDir) {
+			// Obsidian의 getResourcePath는 끝에 캐시 무효화용 쿼리스트링(?16...)을 붙이므로 제거합니다.
+			const cleanPluginDir = pluginDir.split('?')[0];
+			const basePath = cleanPluginDir.endsWith('/') ? cleanPluginDir : cleanPluginDir + '/';
 			customEnv.backends.onnx.wasm.wasmPaths = basePath;
-		}
-	} else {
-		if (customEnv.backends?.onnx?.wasm) {
-			customEnv.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/dist/';
+		} else {
+			// pluginDir이 없으면 상대 경로 사용 (워커 번들과 같은 디렉토리)
+			customEnv.backends.onnx.wasm.wasmPaths = './';
 		}
 	}
 	// numThreads=1은 파일 상단에서 이미 설정됨 (중복 제거)

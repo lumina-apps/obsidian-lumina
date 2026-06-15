@@ -94,8 +94,14 @@ export const WORKER_COMPRESSED_BASE64 = "${base64}";
 				const dest = join(dir, file);
 				if (file.endsWith('.mjs')) {
 					let mjsCode = fs.readFileSync(src, 'utf8');
+					// Node.isNode → false (브라우저/Electron Worker 환경에서 ORT WASM이 Node.js로 오인 방지)
 					mjsCode = mjsCode.replace(/process\.versions\.node&&"renderer"!=process\.type/g, 'false');
 					mjsCode = mjsCode.replace(/typeof globalThis\.process\?\.versions\?\.node == 'string'/g, 'false');
+					// Node 동적 import들을 브라우저 Worker에서 안전한 스텁으로 대체
+					mjsCode = mjsCode.replace(/await import\(['"]worker_threads['"]\)/g, '({workerData:null,Worker:null,isMainThread:true,parentPort:null})');
+					mjsCode = mjsCode.replace(/await import\(['"]module['"]\)/g, '({createRequire:()=>()=>({})})');
+					mjsCode = mjsCode.replace(/await import\(['"]fs['"]\)/g, '({})');
+					mjsCode = mjsCode.replace(/await import\(['"]path['"]\)/g, '({})');
 					fs.writeFileSync(dest, mjsCode);
 				} else {
 					fs.copyFileSync(src, dest);
