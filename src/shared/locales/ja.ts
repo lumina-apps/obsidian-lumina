@@ -55,8 +55,8 @@ export const ja: DeepPartial<Translation> = {
       ragEngine: {
         name: 'ワンクリックRAGエンジン',
         desc: 'Vault内の全ノートをリアルタイムで参照して回答を生成し、スマートディスカバリー機能を提供します。',
-        privacyNotice: '🔒 ドキュメントのインデックス作成（解析）は完全にローカル環境で行われます。（なお、クラウドAIを使用してチャットする場合、回答生成のために抽出されたノートが当該AIサーバーに送信されることがあります。）',
-        customGuide: '💡 埋め込みエンジンを手動で変更するには、右上の「詳細設定」を有効にしてください。',
+        privacyNotice: '🔒 ドキュメント分析はローカルで実行されます。（クラウドAIチャットではノートの抜粋が送信される場合があります）',
+        customGuide: '💡 埋め込みエンジンを手動で選択するには、右上の「詳細設定」を有効にしてください。',
         mobileWarning: '⚠️ モバイルデバイスではワンクリックローカル埋め込み（RAG）をサポートしていません。詳細設定でクラウド用埋め込みモデルを直接選択してください。',
         ragDisabledForEmbedding: '⚠️ RAGエンジンが無効化されています。RAGエンジンを有効にした後で埋め込みモデルを選択できます。',
        },
@@ -64,7 +64,7 @@ export const ja: DeepPartial<Translation> = {
         name: 'カスタム埋め込み（上級者向け）',
         desc: '登録済みプロバイダーのモデル一覧から埋め込みモデルを選択します。',
         auto: '🤖 自動 (内蔵ローカルモデル: ibm-granite/granite-embedding-97m-multilingual-r2)',
-        guide: '※ モデルリストを追加または更新するには、上記「APIキーとモデル登録」セクションでLLM接続を追加後、接続テストを完了してください。',
+        guide: '※ 上記でLLM接続を登録し、接続テストを実行してください。',
         localWarn: '⚠️ ローカルモデルは埋め込みモデルかどうかを自動的に確認できません。\nインデックス作成後にエラーが発生した場合は、埋め込み専用モデルを選択してください。',
         mobileWarn: '⚠️ モバイルデバイスではローカル埋め込みモデルを使用できません。クラウド埋め込みを選択してください。',
        },
@@ -76,7 +76,7 @@ export const ja: DeepPartial<Translation> = {
        },
       quickActionProvider: {
         name: 'クイックアクション プロバイダー',
-        desc: `🚨 クイックアクション モデル設定の注意（応答遅延とエラー防止）\n大規模モデルや推論型(Reasoning)モデルを接続すると、数十秒に及ぶ極端な遅延が発生したり、自ら考え続けることで画面が空白になる現象が発生します。即時フィードバックを希望される場合は、必ず高速で軽量な専用モデル（軽量ローカルInstructモデルまたは応答の速いFlash/MiniクラスクラウドAPI）を使用してください。`,
+        desc: '🚨 大規模・推論モデルは深刻な遅延を引き起こす可能性があります。高速で軽量なモデル（Instruct、Flash、Miniクラス）をご使用ください。',
        },
       quickActionModel: {
         name: 'クイックアクション モデル',
@@ -111,22 +111,22 @@ export const ja: DeepPartial<Translation> = {
           desc: '外部クライアントが接続する際に必要なトークンです。外部に公開しないでください。',
           regenerate: '再発行',
          },
-        guide: '接続ガイド:\n- SSE URL: http://localhost:{{port}}/sse\n- Auth: リクエストヘッダーに Authorization: Bearer <トークン> を追加\n(またはURLクエリとして ?token=<トークン> を渡す)',
+        guide: 'SSE: http://localhost:{{port}}/sse\n認証: ヘッダーに Authorization: Bearer <トークン> (または ?token=<トークン>)',
         maxRead: {
-          name: '読み込み(Read)ツールの最大返却文字数',
-          desc: 'デフォルト: 20000。ファイル内容がこの値を超えた場合、後半を切り捨てて返却します。',
+          name: 'Read 最大文字数',
+          desc: 'ファイル読み取り時の最大返却文字数 (デフォルト: 20000)',
          },
         searchSnippet: {
-          name: '検索(Search)結果スニペットの前後文字数',
-          desc: 'デフォルト: 300。一致した単語の周辺テキストをこの長さだけ抽出して返却します。',
+          name: 'Search スニペット長',
+          desc: '一致語の前後に表示する文字数 (デフォルト: 300)',
          },
         searchMaxResults: {
-          name: '検索(Search)の最大返却結果数',
-          desc: 'デフォルト: 10。曖昧すぎる検索語によって結果が膨大になるのを防ぎます。',
+          name: 'Search 最大結果数',
+          desc: '1回の検索での最大返却結果数 (デフォルト: 10)',
          },
         maxAppend: {
-          name: '追加(Append)ツールの一度に許可する最大文字数',
-          desc: 'デフォルト: 10000。外部クライアントが一度に大量のコンテンツを追加するのを制限します。',
+          name: 'Append 最大文字数',
+          desc: '1回の追加操作での最大文字数 (デフォルト: 10000)',
          },
     },
       externalServer: {
@@ -149,9 +149,11 @@ export const ja: DeepPartial<Translation> = {
        },
         agentMode: {
             name: "エージェントモード",
-            desc: "LLMがMCPツールを活用してタスクを自律的に実行できるようにします。(ツールの実行のために内蔵MCPサーバーが自動的に有効になります。)\n⚠️ エージェントモードのパフォーマンスは使用するLLMの能力(推論およびツールの使用)に大きく依存するため、小型モデルの使用は極力避けることを推奨します。",
+            desc: "LLMがMCPツールを使って自律的にタスクを実行します。⚠️ 小型モデルではパフォーマンスが低下する可能性があります。",
             maxSteps: "最大自動実行回数",
-            maxStepsDesc: "エージェントが1回の応答でツールを連続して実行できる最大回数。(デフォルト: 15)"
+            maxStepsDesc: "エージェントが1回の応答でツールを連続して実行できる最大回数。(デフォルト: 15)",
+            respectRagExclusions: "RAGの除外/包含パスをエージェントに適用",
+            respectRagExclusionsDesc: "RAGタブの除外ルールをエージェントのファイル操作に適用します。",
         },
         experimental: "実験的機能"
     },
@@ -252,7 +254,18 @@ export const ja: DeepPartial<Translation> = {
         activeNotePrefix: "[現在のノート: {{name}}]",
         canvasFile: "[キャンバスファイル: {{name}}]",
         tagFiles: "[タグ: {{name}} が含まれるファイル群 (最大5件)]",
-        activeNotePrompt: "現在の有効なノート"}
+        activeNotePrompt: "現在の有効なノート",
+        categoryActiveNote: "📄 現在のノートを含める",
+        categorySelection: "✂️ 選択テキスト",
+        categoryFolder: "📁 フォルダを追加",
+        categoryFile: "📝 ファイルを追加",
+        categoryTag: "🏷️ タグを追加",
+        categoryUrl: "🔗 URLを入力",
+        categoryCanvas: "🎨 キャンバスを追加",
+        categoryBack: "戻る",
+        categoryTitle: "コンテキストタイプを選択",
+        urlInputPlaceholder: "URLを入力（例: https://...）",
+        urlInputPrompt: "EnterでURLを追加"}
     },
     rag: {
       toggleTooltip: 'オンにすると、AIがVault内のノートを読み取り、参照して回答します。',
@@ -261,7 +274,7 @@ export const ja: DeepPartial<Translation> = {
       disabledWarning: '⚪ RAGが無効化されています。「接続とモデル」タブでRAGエンジンを有効にしてください。',
       dataScope: {
         name: 'デフォルトのデータ範囲',
-        desc: 'RAG検索に含めるデフォルトのノート範囲を設定します。',
+        desc: 'RAG検索に含めるノートを選択します。',
         vaultWide: 'Vault全体',
         activeNote: 'アクティブなノートのみの場合',
         manual: '手動で選択したファイルのみ',
@@ -271,12 +284,12 @@ export const ja: DeepPartial<Translation> = {
         desc: 'チャット時に現在アクティブ（開かれている）ノートをコンテキストにデフォルトで含めます。',
        },
       includePaths: {
-        name: '含めるパス（ホワイトリスト）',
-        desc: 'RAGインデックスに含めるパス。空白にするとVault全体が対象になります。パスを指定した場合は、そのフォルダのみがインデックスされます。',
+        name: '含めるパス',
+        desc: 'カンマ区切り。空白でVault全体を含む',
        },
       ignorePaths: {
-        name: '除外パス（ブラックリスト）',
-        desc: 'RAGインデックスから除外するフォルダ/ファイル。この設定は含めるパスの設定より優先されます。',
+        name: '除外パス',
+        desc: 'カンマ区切り。含めるパスより優先',
        },
       chunking: {
         name: 'テキストチャンキング設定（上級者向け）',
@@ -673,7 +686,8 @@ export const ja: DeepPartial<Translation> = {
         common: {
             truncated: "\n\n... (長さ制限{{limit}}文字のため内容が切り捨てられました)",
             unknownTool: "不明なツールです。",
-            executionError: "ツールの実行中にエラーが発生しました: {{error}}"
+            executionError: "ツールの実行中にエラーが発生しました: {{error}}",
+            pathExcluded: "RAGの除外/包含設定により、このパスへのアクセスが制限されています: {{path}}"
         }
     }
 };

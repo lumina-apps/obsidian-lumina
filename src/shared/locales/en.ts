@@ -53,8 +53,8 @@ export const en = {
       ragEngine: {
         name: 'One-Click RAG Engine',
         desc: 'Generates answers by referencing all notes in your vault in real-time and provides Smart Discovery features.',
-        privacyNotice: '🔒 Document indexing is performed entirely locally. (Note: If using a cloud AI for chat, excerpted notes may be sent to the AI server to generate answers.)',
-        customGuide: '💡 To manually change the embedding engine, enable "Advanced Settings" in the top right.',
+        privacyNotice: '🔒 Document analysis runs locally. (Cloud AI chat may send note excerpts to generate answers.)',
+        customGuide: '💡 Enable "Advanced Settings" (top right) to manually select an embedding engine.',
         mobileWarning: '⚠️ Mobile devices do not support one-click local embedding (RAG). Please select a cloud embedding model in Advanced Settings.',
         ragDisabledForEmbedding: '⚠️ RAG engine is disabled. Please enable the RAG engine first to select an embedding model.',
       },
@@ -62,7 +62,7 @@ export const en = {
         name: 'Custom Embedding (Advanced)',
         desc: 'Select an embedding model from registered providers.',
         auto: '🤖 Auto (Built-in Local Model: ibm-granite/granite-embedding-97m-multilingual-r2)',
-        guide: '※ To add or update custom models, please register a provider in the "API Key & Model Registration" section above and complete the connection test.',
+        guide: '※ Register an LLM connection above and run a connection test to add models.',
         localWarn: '⚠️ Local models cannot be automatically verified as embedding models.\\nIf indexing fails, please select an embedding-specific model.',
         mobileWarn: '⚠️ Mobile devices cannot use local embedding models. Please select a cloud embedding.',
       },
@@ -74,8 +74,7 @@ export const en = {
       },
       quickActionProvider: {
         name: 'Quick Action Provider',
-        desc: `🚨 Quick Action Model Warning (Latency & Error Prevention)
-Connecting large models or Reasoning models will cause extreme delays of tens of seconds, or result in an empty screen due to excessive thinking. For instant feedback, you MUST use a fast and lightweight dedicated model (e.g., small local Instruct models or fast Flash/Mini-tier Cloud APIs).`,
+        desc: '🚨 Large or Reasoning models may cause severe latency. Use a fast, lightweight model (Instruct, Flash, or Mini-tier) for instant feedback.',
       },
       quickActionModel: {
         name: 'Quick Action Model',
@@ -90,9 +89,11 @@ Connecting large models or Reasoning models will cause extreme delays of tens of
       desc: 'Connect external Model Context Protocol (MCP) servers to use local tools, or enable the built-in server to allow other apps to control Lumina.',
       agentMode: {
         name: 'Agent Mode',
-        desc: 'Allows the LLM to use MCP tools to perform tasks autonomously. (Built-in MCP server will be automatically activated to execute tools.)\n⚠️ Agent performance is highly dependent on the LLM\'s capability (reasoning and tool use). Avoid using small/lightweight models if possible.',
+        desc: 'LLM autonomously performs tasks using MCP tools. ⚠️ Performance may degrade with smaller models.',
         maxSteps: "Max Auto-Execution Steps",
         maxStepsDesc: 'The maximum number of consecutive tool executions the agent can run in a single turn. (Default: 15)',
+        respectRagExclusions: 'Apply RAG path exclusions/inclusions to Agent',
+        respectRagExclusionsDesc: 'Apply RAG tab exclusion rules to Agent file operations.',
       },
       addServer: '+ Add new MCP server',
       serverName: 'Server Name',
@@ -117,22 +118,22 @@ Connecting large models or Reasoning models will cause extreme delays of tens of
           desc: 'Token required for external clients to connect. Keep this private.',
           regenerate: 'Regenerate',
         },
-        guide: 'Connection Guide:\n- SSE URL: http://localhost:{{port}}/sse\n- Auth: Add "Authorization: Bearer <token>" to request headers\n(or pass "?token=<token>" as URL query)',
+        guide: 'SSE: http://localhost:{{port}}/sse\nAuth: Header "Authorization: Bearer <token>" (or ?token=<token>)',
         maxRead: {
-          name: 'Max Returned Characters for Read Tool',
-          desc: 'Default: 20000. Truncates file content if it exceeds this value.',
+          name: 'Read Max Characters',
+          desc: 'Max characters returned per file read (Default: 20000)',
         },
         searchSnippet: {
-          name: 'Search Snippet Margin Characters',
-          desc: 'Default: 300. Length of context extracted around matching words.',
+          name: 'Search Snippet Length',
+          desc: 'Characters shown around matched terms (Default: 300)',
         },
         searchMaxResults: {
-          name: 'Max Results for Search Tool',
-          desc: 'Default: 10. Prevents excessive output from overly broad searches.',
+          name: 'Search Max Results',
+          desc: 'Max results returned per search (Default: 10)',
         },
         maxAppend: {
-          name: 'Max Allowed Characters for Append Tool',
-          desc: 'Default: 10000. Restricts external clients from appending too much content at once.',
+          name: 'Append Max Characters',
+          desc: 'Max characters per append operation (Default: 10000)',
         }
       },
       externalServer: {
@@ -199,7 +200,18 @@ Connecting large models or Reasoning models will cause extreme delays of tens of
         activeNotePrefix: '[Active Note: {{name}}]',
         canvasFile: '[Canvas File: {{name}}]',
         tagFiles: '[Files with Tag: {{name}} (Max 5)]',
-        activeNotePrompt: 'Active Note'
+        activeNotePrompt: 'Active Note',
+        categoryActiveNote: '📄 Include Current Note',
+        categorySelection: '✂️ Selected Text',
+        categoryFolder: '📁 Add Folder',
+        categoryFile: '📝 Add File',
+        categoryTag: '🏷️ Add Tag',
+        categoryUrl: '🔗 Enter URL',
+        categoryCanvas: '🎨 Add Canvas',
+        categoryBack: 'Back',
+        categoryTitle: 'Select Context Type',
+        urlInputPlaceholder: 'Enter URL (e.g., https://...)',
+        urlInputPrompt: 'Press Enter to add URL'
       },
       sendMode: {
         name: 'Send Message Mode',
@@ -231,22 +243,22 @@ Connecting large models or Reasoning models will cause extreme delays of tens of
       },
       memoryLimit: {
         name: 'Conversation Memory Limit (Advanced)',
-        desc: 'Number of previous turns to remember and send to the API.',
+        desc: 'How much conversation history to retain (by turns or tokens).',
         limitType: 'Conversation Memory Mode',
         turns: 'Turn Limit',
         tokens: 'Token Limit',
         turnsLabel: 'Turns to Remember',
-        turnsDesc: '1 ~ 15 turns. 1 turn = user message + AI response',
+        turnsDesc: 'Turns to remember (1 turn = user message + AI response)',
         maxTokens: 'Max Context Tokens',
       },
       modelParams: {
         name: 'Model Parameters (Advanced)',
-        desc: 'Adjust Temperature, Max Tokens, etc.',
+        desc: 'Adjust response creativity and output length.',
         tempLabel: 'Temperature',
-        tempDesc: 'Lower is more precise, higher is more creative (0.0 ~ 2.0)',
+        tempDesc: 'Closer to 0 = precise, closer to 2 = creative',
         maxOutput: 'Max Output Tokens',
         responseLang: 'Specify Response Language',
-        responseLangDesc: 'Force AI to reply in specified language. Auto follows system prompt.',
+        responseLangDesc: 'Force AI responses to a specific language. "Auto" follows the system prompt.',
         responseLangAuto: 'Auto',
       },
       streaming: {
@@ -262,7 +274,7 @@ Connecting large models or Reasoning models will cause extreme delays of tens of
       disabledWarning: '⚪ RAG is disabled. Please enable RAG engine in the Connections & Models tab.',
       dataScope: {
         name: 'Default Data Scope',
-        desc: 'Set the default range of notes for RAG search.',
+        desc: 'Choose which notes to include in RAG search.',
         vaultWide: 'Entire Vault',
         activeNote: 'Active Note Only',
         manual: 'Manually Selected Files',
@@ -272,34 +284,34 @@ Connecting large models or Reasoning models will cause extreme delays of tens of
         desc: 'Automatically include the currently active note as context in chat.',
       },
       includePaths: {
-        name: 'Include Paths (White List)',
-        desc: 'Paths to include for RAG indexing (e.g., Projects, Notes). Leave empty to index the entire vault. If specified, only these folders will be indexed.',
+        name: 'Include Paths',
+        desc: 'Comma-separated. Leave empty to include the entire vault.',
       },
       ignorePaths: {
-        name: 'Ignore Paths (Black List)',
-        desc: 'Folders/files to exclude from RAG indexing. This setting takes precedence over included paths.',
+        name: 'Ignore Paths',
+        desc: 'Comma-separated. Takes precedence over included paths.',
       },
       chunking: {
-        name: 'Text Chunking (Advanced)',
-        desc: 'Configure chunk size and overlap for document indexing.',
-        sizeDesc: 'Text unit size for splitting documents (tokens)',
+        name: 'Chunking (Advanced)',
+        desc: 'Configure chunk size and overlap for document splitting.',
+        sizeDesc: 'Chunk size (tokens)',
         overlapLabel: 'Chunk Overlap',
-        overlapDesc: 'Number of overlapping tokens between adjacent chunks',
+        overlapDesc: 'Overlapping tokens between adjacent chunks',
       },
       topK: {
         name: 'Top-K Retrieval (Advanced)',
-        desc: 'Number of most relevant documents to retrieve for the LLM.',
+        desc: 'Number of top-ranked documents to pass to the LLM.',
       },
       syncMode: {
-        name: 'Indexing Sync Mode (Advanced)',
-        desc: 'When to sync document index.',
+        name: 'Indexing Sync (Advanced)',
+        desc: 'How the index updates when notes change.',
         watch: 'Watch for changes (recommended)',
         manual: 'Manual',
         startup: 'On App Startup',
       },
       minSimilarity: {
-        name: 'Min Similarity Threshold (Advanced)',
-        desc: 'Minimum cosine similarity (0~1). Chunks below this score are excluded from results.',
+        name: 'Min Similarity (Advanced)',
+        desc: 'Exclude results below this relevance score (0~1)',
       },
       reindex: {
         name: 'Full Re-index',
@@ -352,7 +364,7 @@ Connecting large models or Reasoning models will cause extreme delays of tens of
       title: 'Misc & Extensions',
       contextMenu: {
         name: 'Context Menu Integration',
-        desc: 'Show Lumina actions in the editor right-click menu.',
+        desc: 'Add Lumina to the editor right-click menu.',
       },
       ribbonIcon: {
         name: 'Show Ribbon Icon',
@@ -360,11 +372,11 @@ Connecting large models or Reasoning models will cause extreme delays of tens of
       },
       frontmatter: {
         name: 'Auto-generate Frontmatter (Advanced)',
-        desc: 'Automatically generate frontmatter for notes.',
+        desc: 'Automatically add frontmatter when creating new notes.',
       },
       debugMode: {
         name: 'Debug Mode (Advanced)',
-        desc: 'Display background data as text for debugging.',
+        desc: 'View internal logs such as LLM requests and responses.',
       },
       versionInfo: {
         name: 'Version Info & Release Notes (Advanced)',
@@ -372,7 +384,7 @@ Connecting large models or Reasoning models will cause extreme delays of tens of
       },
       factoryReset: {
         name: "Data Initialization & Plugin Reset (Advanced)",
-        desc: 'Clear all data and reset plugin to default state.',
+        desc: 'Reset all settings and data to defaults. (Chat history is preserved)',
         button: '🔄 Reset',
         devNotice: '⚠️ Factory reset (Under development)',
         confirmTitle: 'Factory Reset',
@@ -674,7 +686,8 @@ Connecting large models or Reasoning models will cause extreme delays of tens of
     common: {
       truncated: '\\n\\n... (Content truncated due to length limit of {{limit}} characters)',
       unknownTool: 'Unknown tool.',
-      executionError: 'Error occurred during tool execution: {{error}}'
+      executionError: 'Error occurred during tool execution: {{error}}',
+      pathExcluded: 'Access to this path is restricted by RAG exclusion/inclusion settings: {{path}}'
     }
   }
 };
@@ -686,6 +699,8 @@ export type Translation = Omit<typeof en, 'settings'> & {
         desc: string;
         maxSteps: string;
         maxStepsDesc: string;
+        respectRagExclusions: string;
+        respectRagExclusionsDesc: string;
       };
     };
     rag: Omit<typeof en.settings.rag, 'init'> & {

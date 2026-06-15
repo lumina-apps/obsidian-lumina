@@ -55,8 +55,8 @@ export const es: DeepPartial<Translation> = {
       ragEngine: {
         name: 'Motor RAG con un clic',
         desc: 'Genera respuestas consultando en tiempo real todas las notas de tu bóveda y ofrece funciones de descubrimiento inteligente.',
-        privacyNotice: '🔒 La indexación de documentos se realiza completamente de forma local. (Nota: Si usas una IA en la nube para el chat, es posible que las notas extraídas se envíen al servidor de IA para generar respuestas.)',
-        customGuide: '💡 Para cambiar manualmente el motor de embeddings, habilita la "Configuración avanzada" en la esquina superior derecha.',
+        privacyNotice: '🔒 El análisis de documentos se ejecuta localmente. (El chat con IA en la nube puede enviar extractos de notas para generar respuestas.)',
+        customGuide: '💡 Activa "Configuración avanzada" (arriba a la derecha) para seleccionar manualmente el motor de embedding.',
         mobileWarning: '⚠️ Los dispositivos móviles no admiten embeddings locales con un clic (RAG). Selecciona un modelo de embedding en la nube en Configuración avanzada.',
         ragDisabledForEmbedding: '⚠️ El motor RAG está desactivado. Actívalo primero para poder seleccionar un modelo de embedding.',
       },
@@ -64,7 +64,7 @@ export const es: DeepPartial<Translation> = {
         name: 'Embedding personalizado (Avanzado)',
         desc: 'Selecciona un modelo de embedding de la lista de proveedores registrados.',
         auto: '🤖 Automático (Modelo local integrado: ibm-granite/granite-embedding-97m-multilingual-r2)',
-        guide: '※ Para agregar o actualizar modelos, registra un proveedor en la sección "Clave de API y registro de modelos" de arriba y completa la prueba de conexión.',
+        guide: '※ Registra una conexión LLM arriba y completa la prueba de conexión para agregar modelos.',
         localWarn: '⚠️ Los modelos locales no se pueden verificar automáticamente como modelos de embedding.\nSi la indexación falla, selecciona un modelo específico para embedding.',
         mobileWarn: '⚠️ Los dispositivos móviles no pueden usar modelos de embedding locales. Selecciona un embedding en la nube.',
       },
@@ -76,8 +76,7 @@ export const es: DeepPartial<Translation> = {
       },
       quickActionProvider: {
         name: 'Proveedor de acciones rápidas',
-        desc: `🚨 Advertencia del modelo de acción rápida (Prevención de latencia y errores)
-Conectar modelos grandes o modelos de razonamiento (Reasoning) causará demoras extremas de decenas de segundos, o provocará que aparezca una pantalla vacía por exceso de procesamiento interno. Para obtener retroalimentación instantánea, DEBES usar un modelo dedicado rápido y ligero (p. ej., modelos Instruct locales pequeños o APIs Cloud rápidas tipo Flash/Mini).`,
+        desc: '🚨 Los modelos grandes o de razonamiento pueden causar latencia severa. Usa un modelo rápido y ligero (Instruct, Flash o Mini) para una respuesta instantánea.',
       },
        quickActionModel: {
          name: 'Modelo de acción rápida',
@@ -113,22 +112,22 @@ Conectar modelos grandes o modelos de razonamiento (Reasoning) causará demoras 
           desc: 'Token necesario para que los clientes externos se conecten. Mantén este valor en privado.',
           regenerate: 'Regenerar',
         },
-        guide: 'Guía de conexión:\n- URL SSE: http://localhost:{{port}}/sse\n- Auth: Agrega "Authorization: Bearer <token>" a los encabezados de la solicitud\n(o pasa "?token=<token>" como parámetro de consulta en la URL)',
+        guide: 'SSE: http://localhost:{{port}}/sse\nAuth: Header "Authorization: Bearer <token>" (o ?token=<token>)',
         maxRead: {
-          name: 'Máx. de caracteres devueltos por la herramienta Read',
-          desc: 'Predeterminado: 20000. Trunca el contenido del archivo si supera este valor.',
+          name: 'Read - Máx. de caracteres',
+          desc: 'Máx. de caracteres devueltos por lectura de archivo (Predeterminado: 20000)',
         },
         searchSnippet: {
-          name: 'Margen de caracteres del fragmento en Search',
-          desc: 'Predeterminado: 300. Longitud del contexto extraído alrededor de las palabras coincidentes.',
+          name: 'Search - Longitud del fragmento',
+          desc: 'Caracteres mostrados alrededor de términos coincidentes (Predeterminado: 300)',
         },
         searchMaxResults: {
-          name: 'Máx. de resultados devueltos por la herramienta Search',
-          desc: 'Predeterminado: 10. Evita una salida excesiva en búsquedas demasiado amplias.',
+          name: 'Search - Máx. de resultados',
+          desc: 'Máx. de resultados por búsqueda (Predeterminado: 10)',
         },
         maxAppend: {
-          name: 'Máx. de caracteres permitidos por la herramienta Append',
-          desc: 'Predeterminado: 10000. Limita a los clientes externos para que no añadan demasiado contenido a la vez.',
+          name: 'Append - Máx. de caracteres',
+          desc: 'Máx. de caracteres por operación de anexado (Predeterminado: 10000)',
         },
     },
       externalServer: {
@@ -151,9 +150,11 @@ Conectar modelos grandes o modelos de razonamiento (Reasoning) causará demoras 
       },
         agentMode: {
             name: "Modo Agente (Agent Mode)",
-            desc: "Permite que el LLM utilice herramientas MCP para realizar tareas de forma autónoma. (El servidor MCP integrado se activará automáticamente para ejecutar herramientas).\\n⚠️ El rendimiento del modo agente depende en gran medida de las capacidades del LLM utilizado (razonamiento y uso de herramientas), se recomienda evitar el uso de modelos pequeños si es posible.",
+            desc: "El LLM realiza tareas de forma autónoma con herramientas MCP. ⚠️ El rendimiento puede degradarse con modelos pequeños.",
             maxSteps: "Número máximo de ejecuciones automáticas",
-            maxStepsDesc: "El número máximo de veces que el agente puede ejecutar herramientas de forma consecutiva en una sola respuesta. (Predeterminado: 15)"
+            maxStepsDesc: "El número máximo de veces que el agente puede ejecutar herramientas de forma consecutiva en una sola respuesta. (Predeterminado: 15)",
+            respectRagExclusions: "Aplicar exclusiones/inclusiones de ruta RAG al Agente",
+            respectRagExclusionsDesc: "Aplica las reglas de exclusión de RAG a las operaciones de archivos del Agente.",
         },
         experimental: "Funciones experimentales"
     },
@@ -224,22 +225,22 @@ Conectar modelos grandes o modelos de razonamiento (Reasoning) causará demoras 
        },
       memoryLimit: {
         name: 'Límite de memoria de conversación (Avanzado)',
-        desc: 'Configura cuántos turnos anteriores recordar y enviar a la API.',
+        desc: 'Cuánto historial de conversación conservar (por turnos o tokens).',
         limitType: 'Modo de memoria de conversación',
         turns: 'Límite de turnos',
         tokens: 'Límite de tokens',
         turnsLabel: 'Turnos a recordar',
-        turnsDesc: '1 ~ 15 turnos. 1 turno = mensaje del usuario + respuesta de IA (1 conjunto)',
+        turnsDesc: 'Turnos a recordar (1 turno = mensaje de usuario + respuesta de IA)',
         maxTokens: 'Máx. de tokens de contexto',
        },
       modelParams: {
         name: 'Parámetros del modelo (Avanzado)',
-        desc: 'Ajusta la Temperatura, Máximo de tokens, etc.',
+        desc: 'Ajusta la creatividad y longitud de la respuesta.',
         tempLabel: 'Temperatura',
-        tempDesc: 'Menor = más preciso, mayor = más creativo (0.0 ~ 2.0)',
-        maxOutput: 'Máx. de tokens de salida (Max Output Tokens)',
+        tempDesc: 'Más cerca de 0 = preciso, más cerca de 2 = creativo',
+        maxOutput: 'Máx. de tokens de salida',
         responseLang: 'Idioma de respuesta',
-        responseLangDesc: 'Obliga a la IA a responder en el idioma especificado. Automático sigue el prompt del sistema.',
+        responseLangDesc: 'Forzar respuestas de IA a un idioma específico. "Auto" sigue el prompt del sistema.',
         responseLangAuto: 'Automático',
        },
       streaming: {
@@ -254,7 +255,18 @@ Conectar modelos grandes o modelos de razonamiento (Reasoning) causará demoras 
         activeNotePrefix: "[Nota activa: {{name}}]",
         canvasFile: "[Archivo Canvas: {{name}}]",
         tagFiles: "[Archivos con etiqueta: {{name}} (Máx. 5)]",
-        activeNotePrompt: "Nota activa"}
+        activeNotePrompt: "Nota activa",
+        categoryActiveNote: "📄 Incluir nota actual",
+        categorySelection: "✂️ Texto seleccionado",
+        categoryFolder: "📁 Añadir carpeta",
+        categoryFile: "📝 Añadir archivo",
+        categoryTag: "🏷️ Añadir etiqueta",
+        categoryUrl: "🔗 Introducir URL",
+        categoryCanvas: "🎨 Añadir Canvas",
+        categoryBack: "Atrás",
+        categoryTitle: "Seleccionar tipo de contexto",
+        urlInputPlaceholder: "Introducir URL (ej. https://...)",
+        urlInputPrompt: "Presiona Enter para añadir URL"}
     },
     rag: {
       toggleTooltip: 'Cuando está activado, la IA leerá y consultará las notas de tu bóveda para responder.',
@@ -263,7 +275,7 @@ Conectar modelos grandes o modelos de razonamiento (Reasoning) causará demoras 
       disabledWarning: '⚪ RAG está desactivado. Activa el motor RAG en la pestaña Conexiones y modelos.',
       dataScope: {
         name: 'Alcance de datos predeterminado',
-        desc: 'Establece el rango predeterminado de notas para la búsqueda RAG.',
+        desc: 'Elige qué notas incluir en la búsqueda RAG.',
         vaultWide: 'Toda la bóveda',
         activeNote: 'Solo nota activa',
         manual: 'Archivos seleccionados manualmente',
@@ -273,34 +285,34 @@ Conectar modelos grandes o modelos de razonamiento (Reasoning) causará demoras 
         desc: 'Incluye automáticamente la nota actualmente abierta como contexto en el chat.',
        },
       includePaths: {
-        name: 'Rutas a incluir (Lista blanca)',
-        desc: 'Rutas a incluir para la indexación RAG. Déjalo en blanco para indexar toda la bóveda. Si se especifican, solo se indexarán estas carpetas.',
+        name: 'Rutas a incluir',
+        desc: 'Separadas por comas. Dejar vacío para incluir toda la bóveda.',
        },
       ignorePaths: {
-        name: 'Rutas a ignorar (Lista negra)',
-        desc: 'Carpetas/archivos a excluir de la indexación RAG. Esta configuración tiene prioridad sobre las rutas incluidas.',
+        name: 'Rutas a ignorar',
+        desc: 'Separadas por comas. Tiene prioridad sobre las rutas incluidas.',
        },
       chunking: {
-        name: 'Fragmentación de texto (Chunking) (Avanzado)',
-        desc: 'Configura el tamaño de los fragmentos y el solapamiento para la indexación de documentos.',
-        sizeDesc: 'Tamaño de la unidad de texto para dividir documentos (tokens)',
+        name: 'Chunking (Avanzado)',
+        desc: 'Configura el tamaño y solapamiento de fragmentos para la división de documentos.',
+        sizeDesc: 'Tamaño del fragmento (tokens)',
         overlapLabel: 'Solapamiento de fragmentos',
-        overlapDesc: 'Número de tokens superpuestos entre fragmentos adyacentes',
+        overlapDesc: 'Tokens solapados entre fragmentos adyacentes',
        },
       topK: {
         name: 'Recuperación Top-K (Avanzado)',
-        desc: 'Número de documentos más relevantes a recuperar para el LLM.',
+        desc: 'Número de documentos principales a pasar al LLM.',
        },
       syncMode: {
-        name: 'Modo de sincronización de indexación (Avanzado)',
-        desc: 'Cuándo sincronizar la indexación de documentos.',
+        name: 'Sincronización de índice (Avanzado)',
+        desc: 'Cómo se actualiza el índice cuando cambian las notas.',
         watch: 'Detección de cambios (Recomendado)',
         manual: 'Manual',
         startup: 'Al iniciar la aplicación',
        },
       minSimilarity: {
-        name: 'Umbral mínimo de similitud (Avanzado)',
-        desc: 'Similitud del coseno mínima (0~1). Los fragmentos por debajo de este valor se excluyen de los resultados.',
+        name: 'Similitud mínima (Avanzado)',
+        desc: 'Excluir resultados por debajo de esta puntuación de relevancia (0~1)',
        },
       reindex: {
         name: 'Reindexación completa',
@@ -353,7 +365,7 @@ Conectar modelos grandes o modelos de razonamiento (Reasoning) causará demoras 
       title: 'Varios y extensiones',
       contextMenu: {
         name: 'Integración en el menú contextual',
-        desc: 'Muestra las acciones de Lumina al hacer clic derecho en el editor.',
+        desc: 'Añade Lumina al menú de clic derecho del editor.',
        },
       ribbonIcon: {
         name: 'Mostrar icono en la cinta',
@@ -361,11 +373,11 @@ Conectar modelos grandes o modelos de razonamiento (Reasoning) causará demoras 
        },
       frontmatter: {
         name: 'Autogenerar frontmatter (Avanzado)',
-        desc: 'Genera automáticamente el frontmatter (metadatos) de las notas.',
+        desc: 'Añade automáticamente frontmatter al crear nuevas notas.',
        },
       debugMode: {
         name: 'Modo de depuración (Avanzado)',
-        desc: 'Muestra los datos del fondo como texto para depuración.',
+        desc: 'Ver registros internos como solicitudes y respuestas del LLM.',
        },
       versionInfo: {
         name: 'Información de versión y notas de lanzamiento (Avanzado)',
@@ -373,7 +385,7 @@ Conectar modelos grandes o modelos de razonamiento (Reasoning) causará demoras 
        },
       factoryReset: {
         name: "Inicialización de datos y restablecimiento del complemento (Avanzado)",
-        desc: 'Borra todos los datos y restablece el plugin a su estado predeterminado.',
+        desc: 'Restablece todas las configuraciones y datos a los valores predeterminados. (El historial de chat se conserva)',
         button: '🔄 Restablecer',
         devNotice: '⚠️ Función de restablecimiento de fábrica (En desarrollo)',
         confirmTitle: 'Restablecimiento de fábrica',
@@ -675,7 +687,8 @@ Conectar modelos grandes o modelos de razonamiento (Reasoning) causará demoras 
         common: {
             truncated: "\\n\\n... (Contenido truncado debido al límite de longitud de {{limit}} caracteres)",
             unknownTool: "Herramienta desconocida.",
-            executionError: "Se produjo un error durante la ejecución de la herramienta: {{error}}"
+            executionError: "Se produjo un error durante la ejecución de la herramienta: {{error}}",
+            pathExcluded: "El acceso a esta ruta está restringido por la configuración de exclusión/inclusión de RAG: {{path}}"
         }
     }
 };

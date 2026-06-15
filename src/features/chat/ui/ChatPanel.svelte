@@ -106,6 +106,8 @@
 			: $tStore("settings.chat.sendMode.ctrlEnter"),
 	);
 
+	const agentEnabled = $derived($settingsStore?.chat.agentEnabled ?? false);
+
 	const sessionTokenStats = $derived.by(() => {
 		let totalTokens = 0;
 		let estimatedCost = 0;
@@ -311,6 +313,7 @@
 			{sendHint}
 			{sessionTokenStats}
 			{includeActiveNote}
+			{agentEnabled}
 			{tStore}
 			bind:inputText
 			bind:attachments
@@ -558,6 +561,11 @@
 	:global(.lumina-chat__toolbar-btn:hover) {
 		background: var(--background-modifier-hover);
 		color: var(--text-normal);
+	}
+
+	:global(.lumina-chat__toolbar-btn.is-agent-active) {
+		background: rgba(var(--color-accent-rgb, 139, 92, 246), 0.12);
+		color: var(--interactive-accent);
 	}
 
 	:global(.lumina-chat__context-badge) {

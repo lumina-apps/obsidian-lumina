@@ -55,6 +55,16 @@ export function renderMcpTab(tab: LuminaSettingTab, el: HTMLElement): void {
 		});
 
 	new Setting(agentCard)
+		.setName(t('settings.mcp.agentMode.respectRagExclusions'))
+		.setDesc(t('settings.mcp.agentMode.respectRagExclusionsDesc'))
+		.addToggle(toggle => {
+			toggle.setValue(tab.plugin.settings.mcp.agentRespectRagExclusions).onChange(async (val) => {
+				tab.plugin.settings.mcp.agentRespectRagExclusions = val;
+				await tab.saveAndSync();
+			});
+		});
+
+	new Setting(agentCard)
 		.setName(t('settings.mcp.agentMode.maxSteps'))
 		.setDesc(t('settings.mcp.agentMode.maxStepsDesc'))
 		.addText(text => {

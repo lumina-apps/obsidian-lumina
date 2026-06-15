@@ -55,8 +55,8 @@ export const zhTW: DeepPartial<Translation> = {
       ragEngine: {
         name: '一鍵 RAG 引擎',
         desc: '透過即時參考您庫中的所有筆記來生成回答。',
-        privacyNotice: '🔒 文件索引（分析）完全在本地環境中進行。（注意：如果使用雲端 AI 進行聊天，為了生成回答，部分摘錄的筆記可能會被發送到該 AI 伺服器）',
-        customGuide: '💡 若要手動更改嵌入引擎，請啟用右上角的「進階設定」。',
+        privacyNotice: '🔒 文件分析在本地執行。（雲端 AI 聊天時，筆記摘錄可能被發送以生成回答）',
+        customGuide: '💡 啟用右上角的「進階設定」以手動選擇嵌入引擎。',
         mobileWarning: '⚠️ 行動端不支援一鍵本地嵌入（RAG）。請在進階設定中直接選擇雲端嵌入模型。',
         ragDisabledForEmbedding: '⚠️ RAG 引擎已停用。請先啟用 RAG 引擎以選擇嵌入模型。',
       },
@@ -64,7 +64,7 @@ export const zhTW: DeepPartial<Translation> = {
         name: '自訂嵌入（進階）',
         desc: '從已註冊提供商的模型列表中選擇嵌入模型。',
         auto: '🤖 自動 (內建本地模型: ibm-granite/granite-embedding-97m-multilingual-r2)',
-        guide: '※ 若要新增或更改模型列表，請在上面的「API 金鑰與模型註冊」部分新增 LLM 連線並完成連線測試。',
+        guide: '※ 在上方註冊 LLM 連線並完成連線測試。',
         localWarn: '⚠️ 無法自動驗證本地模型是否為嵌入模型。\n如果索引失敗，請選擇專門的嵌入模型。',
         mobileWarn: '⚠️ 行動端無法使用本地嵌入模型。請選擇雲端嵌入。',
       },
@@ -76,8 +76,7 @@ export const zhTW: DeepPartial<Translation> = {
             },
       quickActionProvider: {
         name: '快速操作提供者',
-        desc: `🚨 快速操作模型設定注意事項（延遲與錯誤預防）
-連接大型模型或推理型（Reasoning）模型會導致數十秒以上的極度延遲，或因為過度思考而產生空白畫面。若要獲得即時回饋，請務必使用輕量且快速的專用模型（例如小型本地 Instruct 模型，或回應迅速的 Flash/Mini 級雲端 API）。`,
+        desc: '🚨 大型或推理模型可能導致嚴重延遲。請使用快速輕量的模型（Instruct、Flash 或 Mini 級）以獲得即時回饋。',
        },
       quickActionModel: {
         name: '快速操作模型',
@@ -112,22 +111,22 @@ export const zhTW: DeepPartial<Translation> = {
           desc: '外部用戶端連線時所需的權杖。請勿公開分享此權杖。',
           regenerate: '重新產生',
         },
-        guide: '連線指南:\n- SSE URL: http://localhost:{{port}}/sse\n- Auth: 在請求標頭中新增 "Authorization: Bearer <token>"\n(或者透過 URL 參數傳遞 "?token=<token>")',
+        guide: 'SSE: http://localhost:{{port}}/sse\n認證: 請求頭加入 "Authorization: Bearer <token>" (或 ?token=<token>)',
         maxRead: {
-          name: '讀取(Read)工具最大回傳字元數',
-          desc: '預設值: 20000。如果檔案內容超過該值，將截斷並回傳前半部分。',
+          name: 'Read 最大字元數',
+          desc: '單次讀取檔案回傳的最大字元數 (預設: 20000)',
         },
         searchSnippet: {
-          name: '搜尋(Search)結果上下文前後字元數',
-          desc: '預設值: 300。擷取符合字詞周圍該長度的文字並回傳。',
+          name: 'Search 片段長度',
+          desc: '符合字詞前後顯示的字元數 (預設: 300)',
         },
         searchMaxResults: {
-          name: '搜尋(Search)工具最大回傳結果數量',
-          desc: '預設值: 10。防止過寬的搜尋字詞導致結果爆滿。',
+          name: 'Search 最大結果數',
+          desc: '單次搜尋回傳的最大結果數 (預設: 10)',
         },
         maxAppend: {
-          name: '追加(Append)工具單次允許最大字元數',
-          desc: '預設值: 10000。限制外部用戶端單次追加過多的內容。',
+          name: 'Append 最大字元數',
+          desc: '單次附加操作的最大字元數 (預設: 10000)',
         },
     },
       externalServer: {
@@ -150,9 +149,11 @@ export const zhTW: DeepPartial<Translation> = {
       },
         agentMode: {
             name: "代理模式 (Agent Mode)",
-            desc: "允許 LLM 利用 MCP 工具自主執行任務。（將自動啟動內建 MCP 伺服器以執行工具。）\n⚠️ 代理模式的效能很大程度上取決於所用 LLM 的能力（推理和工具使用能力），建議儘量避免使用小型模型。",
+            desc: "LLM 利用 MCP 工具自主執行任務。⚠️ 小型模型可能導致效能下降。",
             maxSteps: "最大自動執行次數",
-            maxStepsDesc: "代理在單次回應中可以連續執行工具的最大次數。（預設值：15）"
+            maxStepsDesc: "代理在單次回應中可以連續執行工具的最大次數。（預設值：15）",
+            respectRagExclusions: "將 RAG 路徑排除/包含設定套用至代理",
+            respectRagExclusionsDesc: "將 RAG 頁籤的排除規則套用至代理的檔案操作。",
         },
         experimental: "實驗性功能"
     },
@@ -223,22 +224,22 @@ export const zhTW: DeepPartial<Translation> = {
        },
       memoryLimit: {
         name: '對話記憶限制（進階）',
-        desc: '設定記住並發送給 API 的歷史對話輪數 (Turn)。',
+        desc: '保留多少對話歷史（按輪數或 Token 數）。',
         limitType: '對話記憶方式',
         turns: '輪數限制',
         tokens: 'Token 數限制',
         turnsLabel: '要記住的輪數',
-        turnsDesc: '1 ~ 15輪。對話1輪 = 1條用戶訊息 + 1條 AI 回答',
+        turnsDesc: '要記住的輪數（1輪 = 用戶訊息 + AI 回答）',
         maxTokens: '最大上下文 Token',
       },
       modelParams: {
-        name: '調整模型參數（進階）',
-        desc: '設定 Temperature（控制創造力/準確性）、最大輸出長度等。',
-        tempLabel: 'Temperature (溫度)',
-        tempDesc: '值越低越準確，越高越具創造性 (0.0 ~ 2.0)',
-        maxOutput: '最大輸出 Token (Max Output Tokens)',
+        name: '模型參數（進階）',
+        desc: '調整回答的創造性與輸出長度。',
+        tempLabel: 'Temperature',
+        tempDesc: '越接近 0 = 精確，越接近 2 = 創造性',
+        maxOutput: '最大輸出 Token',
         responseLang: '指定回應語言',
-        responseLangDesc: '強制 AI 始終使用指定的語言進行回答。選擇自動則遵循系統提示詞。',
+        responseLangDesc: '強制 AI 使用指定語言回答。「自動」遵循系統提示詞。',
         responseLangAuto: '自動',
       },
       streaming: {
@@ -253,7 +254,18 @@ export const zhTW: DeepPartial<Translation> = {
         activeNotePrefix: "[目前筆記: {{name}}]",
         canvasFile: "[白板檔案: {{name}}]",
         tagFiles: "[含標籤的檔案: {{name}} (最多 5 個)]",
-        activeNotePrompt: "目前活動筆記"}
+        activeNotePrompt: "目前活動筆記",
+        categoryActiveNote: "📄 包含當前筆記",
+        categorySelection: "✂️ 選取的文字",
+        categoryFolder: "📁 新增資料夾",
+        categoryFile: "📝 新增檔案",
+        categoryTag: "🏷️ 新增標籤",
+        categoryUrl: "🔗 輸入網址",
+        categoryCanvas: "🎨 新增 Canvas",
+        categoryBack: "返回",
+        categoryTitle: "選擇上下文類型",
+        urlInputPlaceholder: "輸入網址（例：https://...）",
+        urlInputPrompt: "按 Enter 新增網址"}
     },
     rag: {
       toggleTooltip: '開啟後，AI 將讀取並參考您庫中的筆記來回答。',
@@ -262,7 +274,7 @@ export const zhTW: DeepPartial<Translation> = {
       disabledWarning: '⚪ RAG 目前已停用。請先在 [連線與模型設定] 索引標籤中啟用 RAG 引擎。',
       dataScope: {
         name: '預設資料範圍設定',
-        desc: '設定 RAG 搜尋時包含的預設資料範圍。',
+        desc: '選擇 RAG 搜尋要包含的筆記。',
         vaultWide: '整個庫',
         activeNote: '僅目前活動筆記',
         manual: '僅手動選擇的檔案',
@@ -272,34 +284,34 @@ export const zhTW: DeepPartial<Translation> = {
         desc: '在聊天時預設將目前活動的（打開的）筆記包含在上下文中。',
       },
       includePaths: {
-        name: '包含的路徑 (White List)',
-        desc: '要包含在 RAG 索引中的路徑。留空以索引整個儲存庫。如果指定，則僅索引這些資料夾。',
+        name: '包含的路徑',
+        desc: '逗號分隔。留空則包含整個庫。',
       },
       ignorePaths: {
-        name: '忽略的資料夾/檔案 (Black List)',
-        desc: '從 RAG 索引中排除的資料夾/檔案。此設定優先於包含的路徑。',
+        name: '忽略的路徑',
+        desc: '逗號分隔。優先於包含的路徑。',
       },
       chunking: {
-        name: '文字分塊 (Chunking) 設定（進階）',
-        desc: '設定分割文件的單位大小 (Chunk Size) 及重疊部分 (Overlap)。',
-        sizeDesc: '分割文件的單位大小 (Token 數)',
-        overlapLabel: '分塊重疊 (Overlap)',
-        overlapDesc: '相鄰分塊之間重疊的 Token 數',
+        name: '分塊設定（進階）',
+        desc: '設定文件分割的區塊大小與重疊。',
+        sizeDesc: '區塊大小 (Token 數)',
+        overlapLabel: '區塊重疊',
+        overlapDesc: '相鄰區塊之間重疊的 Token 數',
       },
       topK: {
-        name: 'Top-K 檢索數量（進階）',
-        desc: '提問時，設定向 LLM 傳遞多少個相關度最高的文件。',
+        name: 'Top-K 檢索（進階）',
+        desc: '向 LLM 傳遞的排名最高文件數量。',
       },
       syncMode: {
-        name: '索引同步方式（進階）',
-        desc: '選擇 RAG 索引的同步方式。',
+        name: '索引同步（進階）',
+        desc: '筆記變更時索引的更新方式。',
         watch: '監控檔案變更 (Watch)（推薦）',
         manual: '手動同步',
         startup: '應用啟動時執行一次',
       },
       minSimilarity: {
-        name: '最小相似度閾值（進階）',
-        desc: '餘弦相似度的最小值 (0~1)。低於此值的分塊將被排除在搜尋結果之外。',
+        name: '最小相似度（進階）',
+        desc: '低於此相關性分數的結果將被排除 (0~1)',
       },
       reindex: {
         name: '完全重新索引',
@@ -352,7 +364,7 @@ export const zhTW: DeepPartial<Translation> = {
       title: '附加功能與其他',
       contextMenu: {
         name: '右鍵選單整合',
-        desc: '在編輯器中選取文字後右鍵點擊時，顯示 Lumina 選單。',
+        desc: '在編輯器右鍵選單中加入 Lumina。',
       },
       ribbonIcon: {
         name: '顯示功能區圖示',
@@ -360,10 +372,10 @@ export const zhTW: DeepPartial<Translation> = {
       },
       frontmatter: {
         name: '自動生成 Frontmatter（進階）',
-        desc: '自動生成筆記的 Frontmatter (詮釋資料)。',},
+        desc: '建立新筆記時自動加入 Frontmatter。',},
       debugMode: {
         name: '除錯模式（進階）',
-        desc: '以文字形式查看後台運作的資料。',
+        desc: '查看 LLM 請求/回應等內部日誌。',
       },
       versionInfo: {
         name: '版本資訊與發布說明（進階）',
@@ -371,7 +383,7 @@ export const zhTW: DeepPartial<Translation> = {
       },
       factoryReset: {
         name: "資料初始化與外掛重置 (進階)",
-        desc: '將外掛恢復到初始狀態。',
+        desc: '將所有設定和資料重置為預設值。（聊天記錄將保留）',
         button: '🔄 重置',
         devNotice: '⚠️ 外掛重置功能正在開發中。',
         confirmTitle: '外掛重置',
@@ -673,7 +685,8 @@ export const zhTW: DeepPartial<Translation> = {
         common: {
             truncated: "\n\n...（由於 {{limit}} 個字元的長度限制，內容被截斷）",
             unknownTool: "未知工具。",
-            executionError: "工具執行期間出錯：{{error}}"
+            executionError: "工具執行期間出錯：{{error}}",
+            pathExcluded: "RAG 排除/包含設定已限制對此路徑的存取：{{path}}"
         }
     }
 };

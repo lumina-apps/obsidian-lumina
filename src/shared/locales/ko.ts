@@ -55,8 +55,8 @@ export const ko: Translation = {
       ragEngine: {
         name: '원클릭 RAG 엔진',
         desc: '보관소의 전체 노트를 실시간으로 참조하여 답변을 생성하고 스마트 탐색 기능을 제공합니다.',
-        privacyNotice: '🔒 문서 인덱싱(분석)은 전면 로컬 환경에서 수행됩니다. (단, 클라우드 AI를 사용하여 채팅할 경우 답변 생성을 위해 발췌된 일부 노트가 해당 AI 서버로 전송될 수 있습니다)',
-        customGuide: '💡 임베딩 엔진을 수동으로 변경하려면 우측 상단의 "고급 설정"을 활성화하십시오.',
+        privacyNotice: '🔒 문서 분석은 로컬에서 수행됩니다. (클라우드 AI 채팅 시, 답변 생성을 위해 발췌된 노트 일부가 전송될 수 있습니다)',
+        customGuide: '💡 임베딩 엔진을 직접 선택하려면 우측 상단의 "고급 설정"을 켜주세요.',
         mobileWarning: '⚠️ 모바일 환경에서는 원클릭 로컬 임베딩(RAG)을 지원하지 않습니다. 고급 설정에서 클라우드 임베딩 전용 모델을 직접 선택해 주세요.',
         ragDisabledForEmbedding: '⚠️ RAG 엔진이 비활성화되어 있습니다. RAG 엔진을 활성화한 후 임베딩 모델을 선택할 수 있습니다.',
       },
@@ -64,7 +64,7 @@ export const ko: Translation = {
         name: '커스텀 임베딩 (고급)',
         desc: '등록된 제공자의 모델 목록에서 임베딩 모델을 선택합니다.',
         auto: '🤖 자동 (내장 로컬 모델: ibm-granite/granite-embedding-97m-multilingual-r2)',
-        guide: '※ 모델 목록을 추가하거나 변경하려면, 위의 "API 키 및 모델 등록" 섹션에서 LLM 연결 추가 후 연결 테스트를 완료해 주세요.',
+        guide: '※ 모델을 추가하려면 위쪽에서 LLM 연결을 등록하고 연결 테스트를 완료해 주세요.',
         localWarn: '⚠️ 로컬 모델은 임베딩 모델인지 자동으로 확인할 수 없습니다.\n인덱싱 시도 후 오류가 발생하면 임베딩 전용 모델을 선택해 주세요.',
         mobileWarn: '⚠️ 모바일 환경에서는 로컬 임베딩 모델을 사용할 수 없습니다. 클라우드 임베딩을 선택해 주세요.',
       },
@@ -76,8 +76,7 @@ export const ko: Translation = {
       },
       quickActionProvider: {
         name: '퀵 액션 프로바이더',
-        desc: `🚨 퀵 액션 모델 설정 주의 (응답 지연 및 오류 방지)
-대형 모델이나 추론형(Reasoning) 모델을 연결하면 수십 초 이상의 극심한 딜레이가 발생하거나, 혼자 생각만 하다가 빈 화면이 출력되는 현상이 발생합니다. 즉각적인 피드백을 원하신다면 반드시 빠르고 가벼운 전용 모델(경량 로컬 Instruct 모델 또는 응답이 빠른 Flash/Mini급 클라우드 API)을 사용해 주세요.`,
+        desc: '🚨 추론형·대형 모델 사용 시 응답 지연이 발생할 수 있습니다. 빠르고 가벼운 모델(Instruct, Flash, Mini급)을 권장합니다.',
       },
       quickActionModel: {
         name: '퀵 액션 모델',
@@ -92,9 +91,11 @@ export const ko: Translation = {
       desc: 'Model Context Protocol (MCP)을 통해 외부 도구를 연결하거나, 내장 서버를 통해 다른 앱에서 Lumina를 제어하도록 설정합니다.',
       agentMode: {
         name: '에이전트 모드 (Agent Mode)',
-        desc: '활성화 시 LLM이 MCP 도구를 활용하여 작업을 자율적으로 수행합니다.\n(도구 실행을 위해 내장 MCP 서버가 자동으로 활성화됩니다.)\n⚠️ 에이전트 모드는 사용 중인 LLM의 성능(추론 및 도구 사용 능력)에 영향을 매우 크게 받으며, 소형 모델은 가급적 사용을 피하시는 것을 권장합니다.',
+        desc: 'LLM이 MCP 도구를 활용해 자율적으로 작업을 수행합니다. ⚠️ 소형 모델에서는 성능이 떨어질 수 있습니다.',
         maxSteps: '최대 자동 실행 횟수 (Max Steps)',
         maxStepsDesc: '에이전트가 단일 응답에서 도구를 연속으로 실행할 수 있는 최대 횟수입니다. (기본값: 15)',
+        respectRagExclusions: 'RAG 제외/포함 경로를 에이전트에 적용',
+        respectRagExclusionsDesc: 'RAG 탭의 제외 경로 규칙을 에이전트 파일 작업에도 적용합니다.',
       },
       addServer: '+ 새 MCP 서버 추가',
       serverName: '서버 이름',
@@ -119,22 +120,22 @@ export const ko: Translation = {
           desc: '외부 클라이언트가 접속할 때 필요한 토큰입니다. 외부에 노출하지 마세요.',
           regenerate: '재발급',
         },
-        guide: '연결 가이드:\n- SSE URL: http://localhost:{{port}}/sse\n- Auth: 요청 헤더에 Authorization: Bearer <토큰> 추가\n(또는 URL 쿼리로 ?token=<토큰> 전달)',
+        guide: 'SSE: http://localhost:{{port}}/sse\n인증: Header에 Authorization: Bearer <토큰> 추가 (또는 ?token=<토큰>)',
         maxRead: {
-          name: '읽기(Read) 도구 최대 반환 글자 수',
-          desc: '기본값: 20000. 파일 내용이 이 값을 초과하면 뒷부분을 자르고 반환합니다.',
+          name: '읽기(Read) 최대 글자 수',
+          desc: '파일 읽기 시 한 번에 반환할 최대 글자 수 (기본값: 20000)',
         },
         searchSnippet: {
-          name: '검색(Search) 결과 스니펫 앞뒤 글자 수',
-          desc: '기본값: 300. 매칭된 단어 주변의 텍스트를 이 길이만큼 잘라 반환합니다.',
+          name: '검색(Search) 스니펫 길이',
+          desc: '매칭된 단어 앞뒤로 보여줄 글자 수 (기본값: 300)',
         },
         searchMaxResults: {
-          name: '검색(Search) 최대 반환 결과 개수',
-          desc: '기본값: 10. 너무 포괄적인 검색어로 인해 결과가 폭주하는 것을 방지합니다.',
+          name: '검색(Search) 최대 결과 수',
+          desc: '한 번의 검색에서 반환할 최대 결과 개수 (기본값: 10)',
         },
         maxAppend: {
-          name: '추가(Append) 도구 한 번에 허용하는 최대 글자 수',
-          desc: '기본값: 10000. 외부 클라이언트가 한 번에 너무 많은 내용을 추가하지 못하도록 제한합니다.',
+          name: '추가(Append) 최대 글자 수',
+          desc: '한 번에 추가할 수 있는 최대 글자 수 (기본값: 10000)',
         }
       },
       externalServer: {
@@ -201,7 +202,18 @@ export const ko: Translation = {
         activeNotePrefix: '[현재 노트: {{name}}]',
         canvasFile: '[캔버스 파일: {{name}}]',
         tagFiles: '[태그: {{name}} 가 포함된 파일들 (최대 5개)]',
-        activeNotePrompt: '현재 활성 노트'
+        activeNotePrompt: '현재 활성 노트',
+        categoryActiveNote: '📄 현재 노트 포함',
+        categorySelection: '✂️ 선택된 텍스트',
+        categoryFolder: '📁 폴더 추가',
+        categoryFile: '📝 파일 추가',
+        categoryTag: '🏷️ 태그 추가',
+        categoryUrl: '🔗 URL 입력',
+        categoryCanvas: '🎨 캔버스 추가',
+        categoryBack: '뒤로',
+        categoryTitle: '컨텍스트 유형 선택',
+        urlInputPlaceholder: 'URL 입력 (예: https://...)',
+        urlInputPrompt: 'Enter를 눌러 URL 추가'
       },
       sendMode: {
         name: '메시지 전송 방식',
@@ -233,22 +245,22 @@ export const ko: Translation = {
       },
       memoryLimit: {
         name: '대화 기억 제한 (고급)',
-        desc: '이전 대화를 몇 턴(Turn)까지 기억해서 API로 전송할지 설정합니다.',
+        desc: '이전 대화를 얼마나 기억할지 설정합니다. (턴 수 또는 토큰 수 기준)',
         limitType: '대화 기억 방식',
         turns: '턴(Turn) 수 제한',
         tokens: '토큰 수 제한',
         turnsLabel: '기억할 턴 수',
-        turnsDesc: '1 ~ 15턴. 대화 1턴 = 사용자 메시지 + AI 응답 1세트',
+        turnsDesc: '기억할 대화 턴 수 (사용자+AI 응답 1세트 = 1턴)',
         maxTokens: '최대 컨텍스트 토큰',
       },
       modelParams: {
-        name: '모델 파라미터 조절 (고급)',
-        desc: 'Temperature(창의성/정확성 조절), 최대 출력 길이 등을 설정합니다.',
+        name: '모델 파라미터 (고급)',
+        desc: '응답의 창의성과 출력 길이를 조절합니다.',
         tempLabel: 'Temperature',
-        tempDesc: '낮을수록 정확, 높을수록 창의적 (0.0 ~ 2.0)',
-        maxOutput: '최대 출력 토큰 (Max Output Tokens)',
+        tempDesc: '0에 가까울수록 정확, 2에 가까울수록 창의적',
+        maxOutput: '최대 출력 토큰',
         responseLang: '응답 언어 지정',
-        responseLangDesc: 'AI가 항상 지정된 언어로 답변하도록 합니다. 자동은 시스템 프롬프트를 따릅니다.',
+        responseLangDesc: 'AI 응답 언어를 고정합니다. "자동"은 시스템 프롬프트를 따릅니다.',
         responseLangAuto: '자동',
       },
       streaming: {
@@ -264,7 +276,7 @@ export const ko: Translation = {
       disabledWarning: '⚪ RAG가 비활성화 상태입니다. [연결 및 모델 설정] 탭에서 RAG 엔진을 활성화해 주세요.',
       dataScope: {
         name: '기본 데이터 범위 설정',
-        desc: 'RAG 검색에 포함될 기본 데이터 범위를 설정합니다.',
+        desc: 'RAG 검색에 포함할 데이터 범위를 선택합니다.',
         vaultWide: '전체 저장소',
         activeNote: '현재 활성화된 노트만',
         manual: '수동으로 선택한 파일만',
@@ -274,34 +286,34 @@ export const ko: Translation = {
         desc: '채팅 시 현재 활성화된(열려있는) 노트를 컨텍스트에 기본으로 포함합니다.',
       },
       includePaths: {
-        name: '포함할 경로 (White List)',
-        desc: '쉼표로 구분하여 경로를 입력하세요. 비워두면 볼트 전체가 대상이 됩니다. 경로를 지정하면 해당 폴더들만 인덱싱됩니다.',
+        name: '포함할 경로',
+        desc: '쉼표로 구분, 비워두면 전체 포함',
       },
       ignorePaths: {
-        name: '제외할 경로 (Black List)',
-        desc: '쉼표로 구분하여 제외할 경로를 입력하세요. 이 설정은 포함할 경로 설정보다 우선순위가 높습니다.',
+        name: '제외할 경로',
+        desc: '쉼표로 구분, 포함 경로보다 우선 적용됨',
       },
       chunking: {
-        name: '텍스트 청킹(Chunking) 설정 (고급)',
-        desc: '문서를 나눌 단위 크기(Chunk Size)와 겹치는 구간(Overlap)을 설정합니다.',
-        sizeDesc: '문서를 나눌 단위 크기 (토큰 수)',
-        overlapLabel: '청크 겹침 (Overlap)',
-        overlapDesc: '인접 청크 간 겹치는 토큰 수',
+        name: '청킹(Chunking) 설정 (고급)',
+        desc: '문서를 나눌 단위 크기와 겹침 정도를 설정합니다.',
+        sizeDesc: '청크 크기 (토큰 수)',
+        overlapLabel: '청크 겹침',
+        overlapDesc: '인접 청크 간 겹칠 토큰 수',
       },
       topK: {
         name: 'Top-K 검색 수 (고급)',
-        desc: '질문 시 LLM에게 가장 연관성 높은 문서를 몇 개까지 찾아서 넘길지 설정합니다.',
+        desc: '연관도 높은 상위 문서를 몇 개까지 LLM에 전달할지 설정합니다.',
       },
       syncMode: {
-        name: '인덱싱 동기화 방식 (고급)',
-        desc: 'RAG 인덱싱 동기화 방식을 선택합니다.',
+        name: '인덱싱 동기화 (고급)',
+        desc: '노트 변경 시 인덱스 갱신 방식을 선택합니다.',
         watch: '변경 감지 (권장)',
         manual: '수동 동기화',
         startup: '앱 시작 시 한 번',
       },
       minSimilarity: {
-        name: '최소 유사도 임계값 (고급)',
-        desc: '코사인 유사도 최소값 (0~1). 이 값 미만의 청크는 검색 결과에서 제외됩니다.',
+        name: '최소 유사도 (고급)',
+        desc: '이 값 미만의 연관도는 검색 결과에서 제외 (0~1)',
       },
       reindex: {
         name: '전체 재인덱싱',
@@ -354,7 +366,7 @@ export const ko: Translation = {
       title: '부가 기능 및 기타',
       contextMenu: {
         name: '컨텍스트 메뉴 통합',
-        desc: '에디터에서 텍스트 드래그 후 우클릭 시 Lumina 메뉴를 표시합니다.',
+        desc: '에디터 우클릭 메뉴에 Lumina 항목을 추가합니다.',
       },
       ribbonIcon: {
         name: '리본 아이콘 표시',
@@ -362,11 +374,11 @@ export const ko: Translation = {
       },
       frontmatter: {
         name: '프론트매터 자동 생성 (고급)',
-        desc: '노트의 프론트매터(메타데이터)를 자동으로 생성합니다.',
+        desc: '새 노트 생성 시 프론트매터를 자동으로 추가합니다.',
       },
       debugMode: {
         name: '디버그 모드 (고급)',
-        desc: '백그라운드의 데이터들을 텍스트로 확인합니다.',
+        desc: 'LLM 요청/응답 등 내부 동작 로그를 확인합니다.',
       },
       versionInfo: {
         name: '버전 정보 및 릴리즈 노트 (고급)',
@@ -374,7 +386,7 @@ export const ko: Translation = {
       },
       factoryReset: {
         name: '데이터 초기화 및 플러그인 리셋 (고급)',
-        desc: '플러그인을 전체 초기화합니다.',
+        desc: '모든 설정과 데이터를 초기 상태로 되돌립니다. (채팅 기록은 유지)',
         button: '🔄 초기화',
         devNotice: '⚠️ 플러그인 초기화 기능은 개발 중입니다.',
         confirmTitle: '플러그인 초기화',
@@ -676,7 +688,8 @@ export const ko: Translation = {
     common: {
       truncated: '\\n\\n... (길이 제한 {{limit}}자로 인해 내용이 잘림)',
       unknownTool: '알 수 없는 도구입니다.',
-      executionError: '도구 실행 중 오류 발생: {{error}}'
+      executionError: '도구 실행 중 오류 발생: {{error}}',
+      pathExcluded: 'RAG 제외/포함 설정에 의해 접근이 제한된 경로입니다: {{path}}'
     }
   }
 };

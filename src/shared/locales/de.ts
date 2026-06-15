@@ -55,8 +55,8 @@ export const de: DeepPartial<Translation> = {
       ragEngine: {
         name: 'One-Click-RAG-Engine',
         desc: 'Erstellt Antworten, indem es in Echtzeit auf alle Notizen in Ihrem Vault zugreift, und bietet Smart-Discovery-Funktionen.',
-        privacyNotice: '🔒 Die Dokumentenindexierung erfolgt vollständig lokal. (Hinweis: Beim Chat mit einer Cloud-KI können Auszüge Ihrer Notizen an den KI-Server gesendet werden, um Antworten zu generieren.)',
-        customGuide: '💡 Um das Embedding-Modell manuell zu ändern, aktivieren Sie oben rechts die "Erweiterten Einstellungen".',
+        privacyNotice: '🔒 Dokumentanalyse läuft lokal. (Cloud-KI-Chat kann Notizauszüge zur Antwortgenerierung senden.)',
+        customGuide: '💡 Aktivieren Sie "Erweiterte Einstellungen" (oben rechts), um das Embedding-Modell manuell auszuwählen.',
         mobileWarning: '⚠️ Mobilgeräte unterstützen kein One-Click lokales Embedding (RAG). Bitte wählen Sie in den erweiterten Einstellungen ein Cloud-Embedding-Modell aus.',
         ragDisabledForEmbedding: '⚠️ Die RAG-Engine ist deaktiviert. Bitte aktivieren Sie zuerst die RAG-Engine, um ein Embedding-Modell auszuwählen.',
       },
@@ -64,7 +64,7 @@ export const de: DeepPartial<Translation> = {
         name: 'Benutzerdefiniertes Embedding (Erweitert)',
         desc: 'Wählen Sie ein Embedding-Modell aus der Liste der registrierten Anbieter.',
         auto: '🤖 Automatisch (Eingebaut lokales Modell: ibm-granite/granite-embedding-97m-multilingual-r2)',
-        guide: '※ Um die Modellliste hinzuzufügen oder zu aktualisieren, fügen Sie bitte im Abschnitt "API-Schlüssel & Modellregistrierung" eine LLM-Verbindung hinzu und führen Sie den Verbindungstest durch.',
+        guide: '※ Registrieren Sie eine LLM-Verbindung oben und führen Sie einen Verbindungstest durch.',
         localWarn: '⚠️ Lokale Modelle können nicht automatisch als Embedding-Modelle verifiziert werden.\nWenn die Indexierung fehlschlägt, wählen Sie bitte ein spezifisches Embedding-Modell aus.',
         mobileWarn: '⚠️ Auf Mobilgeräten können keine lokalen Embedding-Modelle verwendet werden. Bitte wählen Sie ein Cloud-Embedding aus.',
       },
@@ -76,8 +76,7 @@ export const de: DeepPartial<Translation> = {
       },
       quickActionProvider: {
         name: 'Quick-Aktion-Anbieter',
-        desc: `🚨 Warnung zum Quick-Aktions-Modell (Latenz & Fehlervermeidung)
-Das Verbinden von großen Modellen oder Reasoning-Modellen führt zu extremen Verzögerungen von mehreren Dutzend Sekunden oder dazu, dass ein leerer Bildschirm aufgrund übermäßigen "Nachdenkens" angezeigt wird. Für sofortiges Feedback MUSS ein schnelles, leichtgewichtiges Spezialmodell verwendet werden (z. B. kleine lokale Instruct-Modelle oder schnelle Flash/Mini-Cloud-APIs).`,
+        desc: '🚨 Große oder Reasoning-Modelle können zu starker Latenz führen. Verwenden Sie ein schnelles, leichtes Modell (Instruct, Flash oder Mini-Tier) für sofortiges Feedback.',
       },
        quickActionModel: {
          name: 'Quick-Aktions-Modell',
@@ -113,22 +112,22 @@ Das Verbinden von großen Modellen oder Reasoning-Modellen führt zu extremen Ve
           desc: 'Token, den externe Clients zur Verbindung benötigen. Halten Sie diesen geheim.',
           regenerate: 'Neu generieren',
         },
-        guide: 'Verbindungsanleitung:\n- SSE-URL: http://localhost:{{port}}/sse\n- Auth: Fügen Sie "Authorization: Bearer <token>" zu den Request-Headern hinzu\n(oder übergeben Sie "?token=<token>" als URL-Query)',
+        guide: 'SSE: http://localhost:{{port}}/sse\nAuth: Header "Authorization: Bearer <token>" (oder ?token=<token>)',
         maxRead: {
-          name: 'Max. zurückgegebene Zeichen für Read-Tool',
-          desc: 'Standard: 20000. Der Dateiinhalt wird abgeschnitten, wenn dieser Wert überschritten wird.',
+          name: 'Read Max. Zeichen',
+          desc: 'Max. Zeichen pro Datei-Lesevorgang (Standard: 20000)',
         },
         searchSnippet: {
-          name: 'Suchausschnitt-Randzeichen',
-          desc: 'Standard: 300. Länge des um übereinstimmende Wörter extrahierten Kontexts.',
+          name: 'Search Snippet-Länge',
+          desc: 'Zeichen um gefundene Begriffe (Standard: 300)',
         },
         searchMaxResults: {
-          name: 'Maximale Ergebnisse für Search-Tool',
-          desc: 'Standard: 10. Verhindert übermäßige Ausgabe bei zu breiten Suchen.',
+          name: 'Search Max. Ergebnisse',
+          desc: 'Max. Ergebnisse pro Suche (Standard: 10)',
         },
         maxAppend: {
-          name: 'Max. erlaubte Zeichen für Append-Tool',
-          desc: 'Standard: 10000. Verhindert, dass externe Clients zu viele Inhalte auf einmal hinzufügen.',
+          name: 'Append Max. Zeichen',
+          desc: 'Max. Zeichen pro Anhänge-Vorgang (Standard: 10000)',
         },
     },
       externalServer: {
@@ -151,9 +150,11 @@ Das Verbinden von großen Modellen oder Reasoning-Modellen führt zu extremen Ve
       },
         agentMode: {
             name: "Agenten-Modus (Agent Mode)",
-            desc: "Ermöglicht dem LLM die Nutzung von MCP-Tools, um Aufgaben autonom auszuführen. (Der integrierte MCP-Server wird automatisch aktiviert, um Tools auszuführen.)\\n⚠️ Die Leistung des Agenten hängt stark von den Fähigkeiten des verwendeten LLMs (Logik und Nutzung von Tools) ab. Es wird empfohlen, die Verwendung kleiner/leichtgewichtiger Modelle nach Möglichkeit zu vermeiden.",
+            desc: "LLM führt Aufgaben autonom mit MCP-Tools aus. ⚠️ Leistung kann bei kleineren Modellen nachlassen.",
             maxSteps: "Maximale Anzahl automatischer Ausführungen",
-            maxStepsDesc: "Die maximale Anzahl der aufeinanderfolgenden Tool-Ausführungen durch den Agenten in einer einzigen Antwort. (Standard: 15)"
+            maxStepsDesc: "Die maximale Anzahl der aufeinanderfolgenden Tool-Ausführungen durch den Agenten in einer einzigen Antwort. (Standard: 15)",
+            respectRagExclusions: "RAG-Pfadausschlüsse/-einschlüsse auf Agent anwenden",
+            respectRagExclusionsDesc: "RAG-Tab-Ausschlussregeln auf Agent-Dateioperationen anwenden.",
         },
         experimental: "Experimentelle Funktionen"
     },
@@ -224,22 +225,22 @@ Das Verbinden von großen Modellen oder Reasoning-Modellen führt zu extremen Ve
        },
       memoryLimit: {
         name: 'Konversations-Speicherlimit (Erweitert)',
-        desc: 'Legt fest, wie viele vorherige Turns erinnert und an die API gesendet werden sollen.',
+        desc: 'Wie viel Konversationsverlauf gespeichert wird (nach Turns oder Tokens).',
         limitType: 'Konversationsspeicher-Modus',
         turns: 'Turn-Limit',
         tokens: 'Token-Limit',
         turnsLabel: 'Zu speichernde Turns',
-        turnsDesc: '1 ~ 15 Turns. 1 Turn = Benutzer-Nachricht + KI-Antwort',
+        turnsDesc: 'Zu speichernde Turns (1 Turn = Benutzer-Nachricht + KI-Antwort)',
         maxTokens: 'Maximale Kontext-Tokens',
        },
       modelParams: {
         name: 'Modellparameter (Erweitert)',
-        desc: 'Passen Sie Temperatur, Max Tokens usw. an.',
+        desc: 'Kreativität und Ausgabelänge der Antwort anpassen.',
         tempLabel: 'Temperatur',
-        tempDesc: 'Niedriger = präziser, höher = kreativer (0,0 ~ 2,0)',
-        maxOutput: 'Maximale Ausgabe-Tokens',
+        tempDesc: 'Näher an 0 = präzise, näher an 2 = kreativ',
+        maxOutput: 'Max. Ausgabe-Tokens',
         responseLang: 'Antwortsprache festlegen',
-        responseLangDesc: 'Zwingt die KI, in der angegebenen Sprache zu antworten. "Automatisch" folgt dem System-Prompt.',
+        responseLangDesc: 'Erzwingt KI-Antworten in einer bestimmten Sprache. "Auto" folgt dem System-Prompt.',
         responseLangAuto: 'Automatisch',
        },
       streaming: {
@@ -254,7 +255,18 @@ Das Verbinden von großen Modellen oder Reasoning-Modellen führt zu extremen Ve
         activeNotePrefix: "[Aktive Notiz: {{name}}]",
         canvasFile: "[Canvas-Datei: {{name}}]",
         tagFiles: "[Dateien mit Tag: {{name}} (Max. 5)]",
-        activeNotePrompt: "Aktive Notiz"}
+        activeNotePrompt: "Aktive Notiz",
+        categoryActiveNote: "📄 Aktuelle Notiz einfügen",
+        categorySelection: "✂️ Ausgewählter Text",
+        categoryFolder: "📁 Ordner hinzufügen",
+        categoryFile: "📝 Datei hinzufügen",
+        categoryTag: "🏷️ Tag hinzufügen",
+        categoryUrl: "🔗 URL eingeben",
+        categoryCanvas: "🎨 Canvas hinzufügen",
+        categoryBack: "Zurück",
+        categoryTitle: "Kontexttyp auswählen",
+        urlInputPlaceholder: "URL eingeben (z. B. https://...)",
+        urlInputPrompt: "Enter drücken, um URL hinzuzufügen"}
     },
     rag: {
       toggleTooltip: 'Wenn aktiviert, liest und referenziert die KI Notizen in Ihrem Vault, um zu antworten.',
@@ -263,7 +275,7 @@ Das Verbinden von großen Modellen oder Reasoning-Modellen führt zu extremen Ve
       disabledWarning: '⚪ RAG ist deaktiviert. Bitte aktivieren Sie die RAG-Engine unter "Verbindungen & Modelle".',
       dataScope: {
         name: 'Standard-Datenbereich',
-        desc: 'Legen Sie den Standardbereich der Notizen für die RAG-Suche fest.',
+        desc: 'Wählen Sie, welche Notizen in die RAG-Suche einbezogen werden.',
         vaultWide: 'Gesamter Vault',
         activeNote: 'Nur aktive Notiz',
         manual: 'Manuell ausgewählte Dateien',
@@ -273,34 +285,34 @@ Das Verbinden von großen Modellen oder Reasoning-Modellen führt zu extremen Ve
         desc: 'Bezieht die aktuell geöffnete Notiz standardmäßig als Kontext in den Chat ein.',
        },
       includePaths: {
-        name: 'Einzuschließende Pfade (Whitelist)',
-        desc: 'Pfade, die für die RAG-Indexierung eingeschlossen werden sollen (z. B. Projekte, Notizen). Leer lassen, um den gesamten Vault zu indizieren. Wenn angegeben, werden nur diese Ordner indiziert.',
+        name: 'Einzuschließende Pfade',
+        desc: 'Kommagetrennt. Leer lassen, um den gesamten Vault einzuschließen.',
        },
       ignorePaths: {
-        name: 'Auszuschließende Pfade (Blacklist)',
-        desc: 'Ordner/Dateien, die von der RAG-Indexierung ausgeschlossen werden sollen. Diese Einstellung hat Vorrang vor den einzuschließenden Pfaden.',
+        name: 'Auszuschließende Pfade',
+        desc: 'Kommagetrennt. Hat Vorrang vor eingeschlossenen Pfaden.',
        },
       chunking: {
-        name: 'Text-Chunking (Erweitert)',
-        desc: 'Konfigurieren Sie Chunk-Größe und Overlap für die Dokumentenindexierung.',
-        sizeDesc: 'Texteinheitgröße zum Aufteilen von Dokumenten (Tokens)',
-        overlapLabel: 'Chunk-Overlap',
-        overlapDesc: 'Anzahl der überlappenden Tokens zwischen benachbarten Chunks',
+        name: 'Chunking (Erweitert)',
+        desc: 'Chunk-Größe und Überlappung für die Dokumentenaufteilung konfigurieren.',
+        sizeDesc: 'Chunk-Größe (Tokens)',
+        overlapLabel: 'Chunk-Überlappung',
+        overlapDesc: 'Überlappende Tokens zwischen benachbarten Chunks',
        },
       topK: {
         name: 'Top-K Retrieval (Erweitert)',
-        desc: 'Legt fest, wie viele relevanteste Dokumente für das LLM abgerufen werden sollen.',
+        desc: 'Anzahl der relevantesten Dokumente, die an das LLM übergeben werden.',
        },
       syncMode: {
-        name: 'Index-Synchronisationsmodus (Erweitert)',
-        desc: 'Legen Sie fest, wann der Dokumentenindex synchronisiert werden soll.',
+        name: 'Index-Sync (Erweitert)',
+        desc: 'Wie der Index bei Notizänderungen aktualisiert wird.',
         watch: 'Änderungen überwachen (Empfohlen)',
         manual: 'Manuell',
         startup: 'Beim App-Start',
        },
       minSimilarity: {
-        name: 'Mindestähnlichkeitsschwelle (Erweitert)',
-        desc: 'Minimale Cosinus-Ähnlichkeit (0~1). Chunks unter diesem Wert werden aus den Ergebnissen ausgeschlossen.',
+        name: 'Min. Ähnlichkeit (Erweitert)',
+        desc: 'Ergebnisse unter diesem Relevanzwert ausschließen (0~1)',
        },
       reindex: {
         name: 'Vollständige Neuindexierung',
@@ -353,7 +365,7 @@ Das Verbinden von großen Modellen oder Reasoning-Modellen führt zu extremen Ve
       title: 'Sonstiges & Erweiterungen',
       contextMenu: {
         name: 'Kontextmenü-Integration',
-        desc: 'Zeigt Lumina-Aktionen im Rechtsklick-Menü des Editors an.',
+        desc: 'Fügt Lumina zum Rechtsklick-Menü des Editors hinzu.',
        },
       ribbonIcon: {
         name: 'Ribbon-Symbol anzeigen',
@@ -361,11 +373,11 @@ Das Verbinden von großen Modellen oder Reasoning-Modellen führt zu extremen Ve
        },
       frontmatter: {
         name: 'Frontmatter automatisch generieren (Erweitert)',
-        desc: 'Generiert automatisch Frontmatter für Notizen.',
+        desc: 'Fügt beim Erstellen neuer Notizen automatisch Frontmatter hinzu.',
        },
       debugMode: {
         name: 'Debug-Modus (Erweitert)',
-        desc: 'Zeigt Hintergrunddaten als Text zum Debuggen an.',
+        desc: 'Interne Logs wie LLM-Anfragen und -Antworten anzeigen.',
        },
       versionInfo: {
         name: 'Versionsinfo & Release Notes (Erweitert)',
@@ -373,7 +385,7 @@ Das Verbinden von großen Modellen oder Reasoning-Modellen führt zu extremen Ve
        },
       factoryReset: {
         name: "Dateninitialisierung & Plugin-Reset (Erweitert)",
-        desc: 'Löscht alle Daten und setzt das Plugin auf die Standardwerte zurück.',
+        desc: 'Setzt alle Einstellungen und Daten auf Standardwerte zurück. (Chat-Verlauf bleibt erhalten)',
         button: '🔄 Zurücksetzen',
         devNotice: '⚠️ Werkseinstellungen wiederherstellen (In Entwicklung)',
         confirmTitle: 'Werkseinstellungen wiederherstellen',
@@ -675,7 +687,8 @@ Das Verbinden von großen Modellen oder Reasoning-Modellen führt zu extremen Ve
         common: {
             truncated: "\\n\\n... (Inhalt aufgrund des Längenlimits von {{limit}} Zeichen abgeschnitten)",
             unknownTool: "Unbekanntes Tool.",
-            executionError: "Beim Ausführen des Tools ist ein Fehler aufgetreten: {{error}}"
+            executionError: "Beim Ausführen des Tools ist ein Fehler aufgetreten: {{error}}",
+            pathExcluded: "pathExcluded",
         }
     }
 };

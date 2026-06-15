@@ -16,6 +16,7 @@
 		sendHint,
 		sessionTokenStats,
 		includeActiveNote,
+		agentEnabled = false,
 		tStore,
 		inputText = $bindable(""),
 		attachments = $bindable<ContextAttachment[]>([]),
@@ -33,6 +34,7 @@
 		sendHint: string;
 		sessionTokenStats: { totalTokens: number; estimatedCost: number };
 		includeActiveNote: boolean;
+		agentEnabled: boolean;
 		tStore: any;
 		inputText: string;
 		attachments: ContextAttachment[];
@@ -316,7 +318,7 @@
 		<div class="lumina-chat__toolbar-group">
 			<button class="lumina-chat__toolbar-btn" aria-label={$tStore("chat.addContext")} use:icon={"lumina-at-sign"} onclick={insertContextMention} type="button">Add Context</button>
 			<button class="lumina-chat__toolbar-btn" aria-label={$tStore("chat.uploadFile")} use:icon={"paperclip"} onclick={triggerFileInput} type="button"></button>
-			<button class="lumina-chat__toolbar-btn" aria-label="MCP Server" use:icon={"lumina-server"} onclick={(e) => { e.stopPropagation(); showMcpPopup = !showMcpPopup; }} type="button"></button>
+			<button class="lumina-chat__toolbar-btn" class:is-agent-active={agentEnabled} aria-label="MCP Server" use:icon={"lumina-server"} onclick={(e) => { e.stopPropagation(); showMcpPopup = !showMcpPopup; }} type="button"></button>
 		</div>
 
 		<input type="file" multiple class="lumina-chat__hidden-file-input" bind:this={fileInputEl} onchange={handleFileSelect} />

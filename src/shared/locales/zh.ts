@@ -55,8 +55,8 @@ export const zh: DeepPartial<Translation> = {
       ragEngine: {
         name: '一键 RAG 引擎',
         desc: '通过实时参考您库中的所有笔记来生成回答，并提供智能发现功能。',
-        privacyNotice: '🔒 文档索引（分析）完全在本地环境中进行。（注意：如果使用云端 AI 进行聊天，为了生成回答，部分摘录的笔记可能会被发送到该 AI 服务器）',
-        customGuide: '💡 若要手动更改嵌入引擎，请启用右上角的"高级设置"。',
+        privacyNotice: '🔒 文档分析在本地运行。（云端 AI 聊天时，笔记摘录可能被发送以生成回答）',
+        customGuide: '💡 启用右上角"高级设置"以手动选择嵌入引擎。',
         mobileWarning: '⚠️ 移动端不支持一键本地嵌入（RAG）。请在高级设置中直接选择云端嵌入模型。',
         ragDisabledForEmbedding: '⚠️ RAG 引擎已禁用。请先启用 RAG 引擎以选择嵌入模型。',
       },
@@ -64,7 +64,7 @@ export const zh: DeepPartial<Translation> = {
         name: '自定义嵌入（高级）',
         desc: '从已注册提供商的模型列表中选择嵌入模型。',
         auto: '🤖 自动 (内置本地模型: ibm-granite/granite-embedding-97m-multilingual-r2)',
-        guide: '※ 若要添加或更改模型列表，请在上面的"API 密钥与模型注册"部分添加 LLM 连接并完成连接测试。',
+        guide: '※ 在上方注册 LLM 连接并完成连接测试。',
         localWarn: '⚠️ 无法自动验证本地模型是否为嵌入模型。\n如果索引失败，请选择专门的嵌入模型。',
         mobileWarn: '⚠️ 移动端无法使用本地嵌入模型。请选择云端嵌入。',
       },
@@ -76,8 +76,7 @@ export const zh: DeepPartial<Translation> = {
        },
       quickActionProvider: {
         name: '快捷操作提供程序',
-        desc: `🚨 快捷操作模型警告（延迟与错误预防）
-连接大型模型或推理模型会导致数十秒以上的严重延迟，或者因过度思考而导致空白屏幕。如需即时反馈，必须使用快速轻量的专用模型（例如小型本地 Instruct 模型或响应快速的 Flash/Mini 级云端 API）。`,
+        desc: '🚨 大型或推理模型可能导致严重延迟。请使用快速轻量的模型（Instruct、Flash 或 Mini 级）以获得即时反馈。',
        },
       quickActionModel: {
         name: '快捷操作模型',
@@ -112,22 +111,22 @@ export const zh: DeepPartial<Translation> = {
           desc: '外部客户端连接时所需的令牌。请勿公开分享此令牌。',
           regenerate: '重新生成',
          },
-        guide: '连接指南:\n- SSE URL: http://localhost:{{port}}/sse\n- Auth: 在请求头中添加 "Authorization: Bearer <token>"\n(或者通过 URL 参数传递 "?token=<token>")',
+        guide: 'SSE: http://localhost:{{port}}/sse\n认证: 请求头添加 "Authorization: Bearer <token>" (或 ?token=<token>)',
         maxRead: {
-          name: '读取(Read)工具最大返回字符数',
-          desc: '默认值: 20000。如果文件内容超过该值，将截断并返回前半部分。',
+          name: 'Read 最大字符数',
+          desc: '单次读取文件返回的最大字符数 (默认: 20000)',
          },
         searchSnippet: {
-          name: '搜索(Search)结果上下文前后字符数',
-          desc: '默认值: 300。提取匹配词周围该长度的文本并返回。',
+          name: 'Search 片段长度',
+          desc: '匹配词前后显示的字符数 (默认: 300)',
          },
         searchMaxResults: {
-          name: '搜索(Search)工具最大返回结果数量',
-          desc: '默认值: 10。防止过宽的搜索词导致结果爆满。',
+          name: 'Search 最大结果数',
+          desc: '单次搜索返回的最大结果数 (默认: 10)',
          },
         maxAppend: {
-          name: '追加(Append)工具单次允许最大字符数',
-          desc: '默认值: 10000。限制外部客户端单次追加过多的内容。',
+          name: 'Append 最大字符数',
+          desc: '单次追加操作的最大字符数 (默认: 10000)',
          },
     },
       externalServer: {
@@ -150,9 +149,11 @@ export const zh: DeepPartial<Translation> = {
        },
         agentMode: {
             name: "代理模式 (Agent Mode)",
-            desc: "允许 LLM 利用 MCP 工具自主执行任务。（将自动激活内置 MCP 服务器以执行工具。）\n⚠️ 代理模式的性能在很大程度上取决于所用 LLM 的能力（推理和工具使用能力），建议尽量避免使用小型模型。",
+            desc: "LLM 利用 MCP 工具自主执行任务。⚠️ 小型模型可能导致性能下降。",
             maxSteps: "最大自动执行次数",
-            maxStepsDesc: "代理在单次响应中可以连续执行工具的最大次数。（默认值：15）"
+            maxStepsDesc: "代理在单次响应中可以连续执行工具的最大次数。（默认值：15）",
+            respectRagExclusions: "将 RAG 路径排除/包含设置应用于代理",
+            respectRagExclusionsDesc: "将 RAG 选项卡的排除规则应用于代理的文件操作。",
         },
         experimental: "实验性功能"
     },
@@ -223,22 +224,22 @@ export const zh: DeepPartial<Translation> = {
        },
       memoryLimit: {
         name: '对话记忆限制（高级）',
-        desc: '设置记住并发送给 API 的历史对话轮数 (Turn)。',
+        desc: '保留多少对话历史（按轮数或 Token 数）。',
         limitType: '对话记忆方式',
         turns: '轮数限制',
         tokens: 'Token 数限制',
         turnsLabel: '要记住的轮数',
-        turnsDesc: '1 ~ 15轮。对话1轮 = 1条用户消息 + 1条 AI 回答',
+        turnsDesc: '要记住的轮数（1轮 = 用户消息 + AI 回答）',
         maxTokens: '最大上下文 Token',
        },
       modelParams: {
-        name: '调整模型参数（高级）',
-        desc: '设置 Temperature（控制创造力/准确性）、最大输出长度等。',
-        tempLabel: 'Temperature (温度)',
-        tempDesc: '值越低越准确，越高越具创造性 (0.0 ~ 2.0)',
-        maxOutput: '最大输出 Token (Max Output Tokens)',
+        name: '模型参数（高级）',
+        desc: '调整回答的创造性和输出长度。',
+        tempLabel: 'Temperature',
+        tempDesc: '越接近 0 = 精确，越接近 2 = 创造性',
+        maxOutput: '最大输出 Token',
         responseLang: '指定响应语言',
-        responseLangDesc: '强制 AI 始终使用指定的语言进行回答。选择自动则遵循系统提示词。',
+        responseLangDesc: '强制 AI 使用指定语言回答。"自动"遵循系统提示词。',
         responseLangAuto: '自动',
        },
       streaming: {
@@ -253,7 +254,18 @@ export const zh: DeepPartial<Translation> = {
         activeNotePrefix: "[当前笔记: {{name}}]",
         canvasFile: "[白板文件: {{name}}]",
         tagFiles: "[含标签的文件: {{name}} (最多 5 个)]",
-        activeNotePrompt: "当前活动笔记"}
+        activeNotePrompt: "当前活动笔记",
+        categoryActiveNote: "📄 包含当前笔记",
+        categorySelection: "✂️ 选中的文本",
+        categoryFolder: "📁 添加文件夹",
+        categoryFile: "📝 添加文件",
+        categoryTag: "🏷️ 添加标签",
+        categoryUrl: "🔗 输入网址",
+        categoryCanvas: "🎨 添加 Canvas",
+        categoryBack: "返回",
+        categoryTitle: "选择上下文类型",
+        urlInputPlaceholder: "输入网址（例：https://...）",
+        urlInputPrompt: "按 Enter 添加网址"}
     },
     rag: {
       toggleTooltip: '开启后，AI 将读取并参考您库中的笔记来回答。',
@@ -262,7 +274,7 @@ export const zh: DeepPartial<Translation> = {
       disabledWarning: '⚪ RAG 目前已禁用。请先在 [连接与模型设置] 选项卡中启用 RAG 引擎。',
       dataScope: {
         name: '默认数据范围设置',
-        desc: '设置 RAG 搜索时包含的默认数据范围。',
+        desc: '选择 RAG 搜索要包含的笔记。',
         vaultWide: '整个库',
         activeNote: '仅当前活动笔记',
         manual: '仅手动选择的文件',
@@ -272,34 +284,34 @@ export const zh: DeepPartial<Translation> = {
         desc: '在聊天时默认将当前活动的（打开的）笔记包含在上下文中。',
        },
       includePaths: {
-        name: '包含的路径（白名单）',
-        desc: '要包含在 RAG 索引中的路径。留空以索引整个仓库。如果指定，则仅索引这些文件夹。',
+        name: '包含的路径',
+        desc: '逗号分隔。留空则包含整个库。',
        },
       ignorePaths: {
-        name: '忽略的文件夹/文件（黑名单）',
-        desc: '从 RAG 索引中排除的文件夹/文件。此设置优先于包含的路径。',
+        name: '忽略的路径',
+        desc: '逗号分隔。优先于包含的路径。',
        },
       chunking: {
-        name: '文本分块（Chunking）设置（高级）',
-        desc: '设置分割文档的单位大小（Chunk Size）及重叠部分（Overlap）。',
-        sizeDesc: '分割文档的单位大小 (Token 数)',
-        overlapLabel: '分块重叠（Overlap）',
-        overlapDesc: '相邻分块之间重叠的 Token 数',
+        name: '分块设置（高级）',
+        desc: '配置文档分割的块大小和重叠。',
+        sizeDesc: '块大小 (Token 数)',
+        overlapLabel: '块重叠',
+        overlapDesc: '相邻块之间重叠的 Token 数',
        },
       topK: {
-        name: 'Top-K 检索数量（高级）',
-        desc: '提问时，设置向 LLM 传递多少个相关度最高的文档。',
+        name: 'Top-K 检索（高级）',
+        desc: '向 LLM 传递的排名最高文档数量。',
        },
       syncMode: {
-        name: '索引同步方式（高级）',
-        desc: '选择 RAG 索引的同步方式。',
+        name: '索引同步（高级）',
+        desc: '笔记变更时索引的更新方式。',
         watch: '监听文件变更（Watch）（推荐）',
         manual: '手动同步',
         startup: '应用启动时执行一次',
        },
       minSimilarity: {
-        name: '最小相似度阈值（高级）',
-        desc: '余弦相似度的最小值 (0~1)。低于此值的分块将被排除在搜索结果之外。',
+        name: '最小相似度（高级）',
+        desc: '低于此相关性分数的结果将被排除 (0~1)',
        },
       reindex: {
         name: '完全重新索引',
@@ -352,7 +364,7 @@ export const zh: DeepPartial<Translation> = {
       title: '附加功能与其他',
       contextMenu: {
         name: '右键菜单集成',
-        desc: '在编辑器中选中文本后右键点击时，显示 Lumina 菜单。',
+        desc: '在编辑器右键菜单中添加 Lumina。',
        },
       ribbonIcon: {
         name: '显示功能区图标',
@@ -360,11 +372,11 @@ export const zh: DeepPartial<Translation> = {
        },
       frontmatter: {
         name: '自动生成 Frontmatter（高级）',
-        desc: '自动生成笔记的 Frontmatter (元数据)。',
+        desc: '创建新笔记时自动添加 Frontmatter。',
        },
       debugMode: {
         name: '调试模式（高级）',
-        desc: '以文本形式查看后台运行的数据。',
+        desc: '查看 LLM 请求/响应等内部日志。',
        },
       versionInfo: {
         name: '版本信息与发布说明（高级）',
@@ -372,7 +384,7 @@ export const zh: DeepPartial<Translation> = {
        },
       factoryReset: {
         name: "数据初始化与插件重置 (高级)",
-        desc: '将插件恢复到初始状态。',
+        desc: '将所有设置和数据重置为默认值。 (聊天记录将保留)',
         button: '🔄 重置',
         devNotice: '⚠️ 插件重置功能正在开发中。',
         confirmTitle: '插件重置',
@@ -674,7 +686,8 @@ export const zh: DeepPartial<Translation> = {
         common: {
             truncated: "\n\n...（由于 {{limit}} 个字符的长度限制，内容被截断）",
             unknownTool: "未知工具。",
-            executionError: "工具执行期间出错：{{error}}"
+            executionError: "工具执行期间出错：{{error}}",
+            pathExcluded: "RAG 排除/包含设置已限制对此路径的访问：{{path}}"
         }
     }
 };

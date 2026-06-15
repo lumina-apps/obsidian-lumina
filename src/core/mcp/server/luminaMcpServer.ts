@@ -8,6 +8,7 @@ import {
 import { TFile, normalizePath } from 'obsidian';
 import type LuminaPlugin from '../../../main';
 import { searchVault, formatRagContext } from '../../../features/rag/search';
+import { isExcluded, isIncluded } from '../../../features/rag/exclusions';
 import { debugLogger } from '../../../shared/debugLogger';
 import { t } from '../../../shared/locales/helpers';
 import { SafeJsonSchemaValidator } from '../safeValidator';
@@ -50,6 +51,25 @@ export class LuminaMcpServer {
 			return norm + '.md';
 		}
 		return norm;
+	}
+
+	/**
+	 * RAG 제외/포함 설정을 기반으로 에이전트 접근이 허용된 경로인지 확인합니다.
+	 * agentRespectRagExclusions이 false이면 모든 경로 허용.
+	 */
+	private isAgentPathAllowed(filePath: string): boolean {
+		const mcpSettings = this.plugin.settings.mcp;
+		if (!mcpSettings.agentRespectRagExclusions) {
+			return true;
+		}
+		const ragSettings = this.plugin.settings.rag;
+		if (!isIncluded(filePath, ragSettings.includedPaths)) {
+			return false;
+		}
+		if (isExcluded(filePath, ragSettings.excludedPaths)) {
+			return false;
+		}
+		return true;
 	}
 
 	private async lock<T>(path: string, fn: () => Promise<T>): Promise<T> {
@@ -185,12 +205,16 @@ export class LuminaMcpServer {
 						if (!activeFile) {
 							return { content: [{ type: 'text', text: t('mcpServerTools.read_active_note.noActive') }] };
 						}
+						// 활성 노트는 항상 읽기 허용 (사용자가 직접 열어둔 파일이므로)
 						const content = await this.plugin.app.vault.read(activeFile);
 						return { content: [{ type: 'text', text: `[${activeFile.path}]\n${applyReadLimit(content)}` }] };
 					}
 
 					case 'read_note': {
 						const path = this.enforceMarkdownExt(args?.path as string);
+						if (!this.isAgentPathAllowed(path)) {
+							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.common.pathExcluded', { path }) }] };
+						}
 						const file = this.plugin.app.vault.getAbstractFileByPath(path);
 						if (!(file instanceof TFile)) {
 							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.read_note.notFound', { path }) }] };
@@ -210,6 +234,10 @@ export class LuminaMcpServer {
 						const parts = path.split('/');
 						const sanitizedParts = parts.map((p, i) => i === parts.length - 1 ? this.sanitizeFilename(p) : p);
 						path = this.enforceMarkdownExt(sanitizedParts.join('/'));
+						
+						if (!this.isAgentPathAllowed(path)) {
+							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.common.pathExcluded', { path }) }] };
+						}
 						
 						const existingFile = this.plugin.app.vault.getAbstractFileByPath(path);
 						if (existingFile) {
@@ -234,6 +262,10 @@ export class LuminaMcpServer {
 						const results: string[] = [];
 						
 						for (const file of files) {
+							// 제외된 경로는 검색 대상에서 제외
+							if (!this.isAgentPathAllowed(file.path)) {
+								continue;
+							}
 							const content = await this.plugin.app.vault.read(file);
 							const lowerContent = content.toLowerCase();
 							const index = lowerContent.indexOf(query);
@@ -259,6 +291,10 @@ export class LuminaMcpServer {
 							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.append_to_note.tooLong', { limit: limitAppend }) }] };
 						}
 
+						if (!this.isAgentPathAllowed(path)) {
+							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.common.pathExcluded', { path }) }] };
+						}
+
 						const file = this.plugin.app.vault.getAbstractFileByPath(path);
 						if (!(file instanceof TFile)) {
 							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.append_to_note.notFound', { path }) }] };
@@ -278,6 +314,7 @@ export class LuminaMcpServer {
 					case 'read_daily_note': {
 						const today = new window.Date().toISOString().split('T')[0];
 						const path = `${today}.md`;
+						// 데일리 노트 읽기는 사용자 일상 기록이므로 항상 허용
 						const file = this.plugin.app.vault.getAbstractFileByPath(path);
 						if (!(file instanceof TFile)) {
 							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.read_daily_note.notFound', { path }) }] };
@@ -295,6 +332,7 @@ export class LuminaMcpServer {
 							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.append_to_daily_note.tooLong', { limit: limitAppend }) }] };
 						}
 
+						// 데일리 노트 추가는 항상 허용
 						return await this.lock(path, async () => {
 							const file = this.plugin.app.vault.getAbstractFileByPath(path);
 							if (file instanceof TFile) {
@@ -327,6 +365,9 @@ export class LuminaMcpServer {
 								return filePath === normalized || filePath.startsWith(normalized + '/');
 							});
 						}
+						
+						// 제외된 경로 필터링
+						filteredFiles = filteredFiles.filter(f => this.isAgentPathAllowed(f.path));
 						
 						if (filteredFiles.length === 0) {
 							return { content: [{ type: 'text', text: t('mcpServerTools.list_notes.noNotes', { path: displayPath }) }] };
