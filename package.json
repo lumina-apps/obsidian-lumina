@@ -1,6 +1,6 @@
 {
 	"name": "lumina",
-	"version": "1.0.17",
+	"version": "1.0.18",
 	"description": "Language-Agnostic RAG & MCP Agent powered by Multilingual Embeddings for local AI semantic search.",
 	"main": "main.js",
 	"scripts": {
