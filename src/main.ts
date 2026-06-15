@@ -726,15 +726,9 @@ export default class LuminaPlugin extends Plugin {
 				const adapter = this.app.vault.adapter;
 				this.embeddingWorker = new EmbeddingWorkerBridge();
 
-				// WASM 파일이 로컬에 존재하는지 확인
-				const mjsPath = normalizePath(`${this.manifest.dir}/ort-wasm-simd-threaded.jsep.mjs`);
-				const wasmPath = normalizePath(`${this.manifest.dir}/ort-wasm-simd-threaded.jsep.wasm`);
-				const hasLocalWasm = (await adapter.exists(mjsPath)) && (await adapter.exists(wasmPath));
-
-				// 로컬 WASM 파일이 없으면 CDN 백업을 사용하도록 pluginDir을 undefined로 설정
-				const pluginDir = hasLocalWasm
-					? this.app.vault.adapter.getResourcePath(this.manifest.dir || '')
-					: undefined;
+				// 항상 pluginDir을 전달합니다.
+				// 로컬에 WASM 파일이 있으면 우선 사용하고, 없으면 Worker에서 CDN 폴백을 시도합니다.
+				const pluginDir = this.app.vault.adapter.getResourcePath(this.manifest.dir || '');
 
 				await this.embeddingWorker.init(
 					modelName,
@@ -757,13 +751,7 @@ export default class LuminaPlugin extends Plugin {
 			if (embedding.mode !== 'custom' && targetFileCount >= PARALLEL_WORKER_THRESHOLD) {
 				try {
 					const cacheDir2 = getModelCacheDir(this.app);
-					const adapter2 = this.app.vault.adapter;
-					const mjsPath2 = normalizePath(`${this.manifest.dir}/ort-wasm-simd-threaded.jsep.mjs`);
-					const wasmPath2 = normalizePath(`${this.manifest.dir}/ort-wasm-simd-threaded.jsep.wasm`);
-					const hasLocalWasm2 = (await adapter2.exists(mjsPath2)) && (await adapter2.exists(wasmPath2));
-					const pluginDir2 = hasLocalWasm2
-						? this.app.vault.adapter.getResourcePath(this.manifest.dir || '')
-						: undefined;
+					const pluginDir2 = this.app.vault.adapter.getResourcePath(this.manifest.dir || '');
 
 					secondaryWorker = new EmbeddingWorkerBridge();
 					await secondaryWorker.init(modelName, cacheDir2, pluginDir2);

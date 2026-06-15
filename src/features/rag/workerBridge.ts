@@ -13,6 +13,17 @@ import { t } from '../../shared/locales/helpers';
 import { WORKER_COMPRESSED_BASE64 } from './worker/workerCode';
 
 
+/** crypto.randomUUID() 폴백: 구형 Electron(Obsidian Stable)에서 undefined인 경우 대응 */
+function generateUUID(): string {
+	if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+		return crypto.randomUUID();
+	}
+	return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+		const r = (Math.random() * 16) | 0;
+		return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+	});
+}
+
 export type EmbeddingProgressCallback = (progress: number, status: string) => void;
 
 /** 임베딩 모델 초기화 최대 대기 시간 (ms) */
@@ -192,7 +203,7 @@ export class EmbeddingWorkerBridge {
 		if (!this.worker || !this.isReady) {
 			throw new Error(t('uiMessages.ragWorkerNotReady'));
 		}
-		const requestId = crypto.randomUUID();
+		const requestId = generateUUID();
 		return new Promise<string>((resolve, reject) => {
 			this.pendingParseRequests.set(requestId, { resolve, reject });
 			this.worker!.postMessage({ type: 'parse', requestId, buffer, ext }, [buffer]);
@@ -206,7 +217,7 @@ export class EmbeddingWorkerBridge {
 		try {
 			while (this.embedQueue.length > 0) {
 				const { texts, resolve, reject } = this.embedQueue.shift()!;
-				const requestId = crypto.randomUUID();
+				const requestId = generateUUID();
 
 				await new Promise<number[][]>((res, rej) => {
 					this.pendingRequests.set(requestId, { resolve: res, reject: rej });

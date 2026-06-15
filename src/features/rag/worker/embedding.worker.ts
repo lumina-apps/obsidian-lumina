@@ -124,9 +124,10 @@ async function initModel(modelName: string, cacheDir: string, pluginDir?: string
 	env.allowLocalModels = false;
 	
 	// transformers.js v3는 외부 WASM 파일을 동적으로 로드해야 합니다.
-	// ⚠️ 항상 로컬(pluginDir) 경로를 사용합니다. CDN을 사용하면
-	//   ort-wasm-simd-threaded.jsep.mjs의 top-level `import('worker_threads')`가
-	//   브라우저 Worker에서 `failed to resolve module specifier` 오류를 발생시킵니다.
+	// 로컬(pluginDir) 경로를 우선 사용하고, 플러그인 디렉토리 정보가 없으면 CDN 폴백을 사용합니다.
+	// CDN에서 로드된 ort-wasm-simd-threaded.jsep.mjs는 top-level `import('worker_threads')`를
+	// 포함하지만, esbuild의 process 폴리필과 stubbing으로 인해 isNode 체크가 false로 평가되어
+	// 해당 코드 경로에 진입하지 않습니다.
 	if (customEnv.backends?.onnx?.wasm) {
 		if (pluginDir) {
 			// Obsidian의 getResourcePath는 끝에 캐시 무효화용 쿼리스트링(?16...)을 붙이므로 제거합니다.
@@ -134,8 +135,11 @@ async function initModel(modelName: string, cacheDir: string, pluginDir?: string
 			const basePath = cleanPluginDir.endsWith('/') ? cleanPluginDir : cleanPluginDir + '/';
 			customEnv.backends.onnx.wasm.wasmPaths = basePath;
 		} else {
-			// pluginDir이 없으면 상대 경로 사용 (워커 번들과 같은 디렉토리)
-			customEnv.backends.onnx.wasm.wasmPaths = './';
+			// pluginDir이 없으면 CDN을 폴백으로 사용합니다.
+			// Blob URL Worker에서는 상대 경로('./')로 import하면 module specifier 해결에 실패하므로
+			// 절대 CDN URL을 사용해야 합니다.
+			// (CDN .mjs 내부의 Node.js import('worker_threads')는 process 폴리필에 의해 무력화됩니다.)
+			customEnv.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/dist/';
 		}
 	}
 	// numThreads=1은 파일 상단에서 이미 설정됨 (중복 제거)
