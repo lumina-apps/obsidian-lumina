@@ -1,9 +1,9 @@
 {
 	"id": "lumina",
 	"name": "Lumina",
-	"version": "1.0.16",
+	"version": "1.0.17",
 	"minAppVersion": "1.11.4",
-	"description": "Your intelligent AI Agent for your vault with RAG and Multi-LLM support.",
+	"description": "Language-Agnostic RAG & MCP Agent powered by Multilingual Embeddings for local AI semantic search.",
 	"author": "Lumina",
 	"fundingUrl": {
 		"Ko-fi": "https://ko-fi.com/luminaapps",
