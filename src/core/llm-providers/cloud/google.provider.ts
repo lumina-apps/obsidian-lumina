@@ -1,7 +1,6 @@
 import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, ToolCall } from '../../../shared/types/llm.types';
 import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
-import { readStreamLines } from '../utils';
 import { debugLogger } from '../../../shared/debugLogger';
 
 interface GeminiToolCallInfo {
