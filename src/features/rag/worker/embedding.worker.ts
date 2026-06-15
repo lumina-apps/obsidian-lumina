@@ -55,6 +55,14 @@ const numThreads = hasSharedArrayBuffer
 		: 2)
 	: 1;
 
+// [proxy=false] Blob URL Worker는 proxy가 아니므로 false로 고정합니다.
+// 주의: transformers.js v3에서 proxy=false인 경우 ONNX 런타임이 Worker 내에서 직접
+// WASM 파일을 로드합니다. import.meta.url이 "app://obsidian.md/"로 치환되어 있으므로
+// wasmPaths를 CDN으로 명시 지정하지 않으면 WASM 파일을 찾을 수 없어 "Failed to fetch" 에러가 발생합니다.
+// transformers.js의 backends/onnx.js 모듈은 ONNX_ENV.wasm.wasmPaths가 없을 때
+// 자동으로 CDN URL을 설정하므로 여기서는 wasmPaths를 설정하지 않습니다.
+// (wasmPaths 설정은 initModel()에서 env.wasm에 전달됩니다)
+
 const wasmConfig: EnvWasmConfig = {
 	numThreads,
 	simd: true,
@@ -62,10 +70,6 @@ const wasmConfig: EnvWasmConfig = {
 };
 
 customEnv.wasm = wasmConfig;
-if (customEnv.backends && customEnv.backends.onnx) {
-	customEnv.backends.onnx.wasm = wasmConfig;
-	customEnv.backends.onnx.executionProviders = ['wasm'];
-}
 
 console.log(`[EmbeddingWorker] WASM config: simd=true, numThreads=${numThreads}, SharedArrayBuffer=${hasSharedArrayBuffer}`);
 
@@ -119,30 +123,25 @@ async function initModel(modelName: string, cacheDir: string, pluginDir?: string
 	// 원격 모델 허용 (첫 실행 시 자동 다운로드)
 	env.allowRemoteModels = true;
 
-	// 환경 설정 (Transformers.js v2.x 기준)
+	// 환경 설정
 	// blob url 형태의 worker에서는 '/models/' 로컬 fetch가 오류를 발생시키므로 false로 설정
 	env.allowLocalModels = false;
 	
 	// transformers.js v3는 외부 WASM 파일을 동적으로 로드해야 합니다.
-	// 로컬(pluginDir) 경로를 우선 사용하고, 플러그인 디렉토리 정보가 없으면 CDN 폴백을 사용합니다.
-	// CDN에서 로드된 ort-wasm-simd-threaded.jsep.mjs는 top-level `import('worker_threads')`를
-	// 포함하지만, esbuild의 process 폴리필과 stubbing으로 인해 isNode 체크가 false로 평가되어
-	// 해당 코드 경로에 진입하지 않습니다.
-	if (customEnv.backends?.onnx?.wasm) {
-		if (pluginDir) {
-			// Obsidian의 getResourcePath는 끝에 캐시 무효화용 쿼리스트링(?16...)을 붙이므로 제거합니다.
-			const cleanPluginDir = pluginDir.split('?')[0];
-			const basePath = cleanPluginDir.endsWith('/') ? cleanPluginDir : cleanPluginDir + '/';
-			customEnv.backends.onnx.wasm.wasmPaths = basePath;
-		} else {
-			// pluginDir이 없으면 CDN을 폴백으로 사용합니다.
-			// Blob URL Worker에서는 상대 경로('./')로 import하면 module specifier 해결에 실패하므로
-			// 절대 CDN URL을 사용해야 합니다.
-			// (CDN .mjs 내부의 Node.js import('worker_threads')는 process 폴리필에 의해 무력화됩니다.)
-			customEnv.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/dist/';
-		}
-	}
-	// numThreads=1은 파일 상단에서 이미 설정됨 (중복 제거)
+	// Blob URL Worker에서는 import.meta.url이 "app://obsidian.md/"로 치환되어(esbuild post-process),
+	// app:// 프로토콜로 fetch 시도 시 CORS/Origin 이슈로 실패합니다.
+	// 
+	// transformers.js의 backends/onnx.js 모듈은 ONNX_ENV.wasm.wasmPaths가 없으면
+	// 자동으로 CDN URL(https://cdn.jsdelivr.net/npm/@huggingface/transformers@${version}/dist/)을
+	// 설정합니다. 따라서 env.wasm.wasmPaths를 명시적으로 설정하여 ONNX 런타임이
+	// Blob URL Worker에서 WASM 파일을 정상적으로 로드할 수 있도록 합니다.
+	// (CDN .mjs 내부의 Node.js import('worker_threads')는 esbuild의 process 폴리필로 무력화됩니다.)
+	const WASM_CDN_BASE = `https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/dist/`;
+	
+	// env.wasm.wasmPaths를 설정하면 transformers.js가 이 값을 ONNX 런타임에 전달합니다.
+	customEnv.wasm!.wasmPaths = WASM_CDN_BASE;
+	
+	console.log(`[EmbeddingWorker] WASM paths set to CDN: ${WASM_CDN_BASE}`);
 	
 	// 파이프라인 생성
 	// transformers.js v3에서는 dtype으로 모델 파일을 선택합니다.
