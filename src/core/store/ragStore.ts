@@ -99,6 +99,15 @@ export function incrementProcessed(): void {
 	indexingState.update(s => ({ ...s, processedFiles: s.processedFiles + 1 }));
 }
 
+/**
+ * 처리된 파일 수를 한 번에 count만큼 증가 (배치 업데이트).
+ * 10,000개 이상 파일 인덱싱 시 store 업데이트 횟수를 count만큼 줄입니다.
+ * (예: PROGRESS_BATCH_SIZE=20 → 10,000회 → 500회)
+ */
+export function incrementProcessedBy(count: number): void {
+	indexingState.update(s => ({ ...s, processedFiles: s.processedFiles + count }));
+}
+
 /** 전체 파일 수 설정 (인덱싱 시작 시) — startTime도 함께 기록 */
 export function setTotalFiles(total: number): void {
 	indexingState.update(s => ({

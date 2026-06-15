@@ -35,17 +35,39 @@ interface HuggingFaceEnv {
 }
 const customEnv = env as unknown as HuggingFaceEnv;
 
-// ─── ONNX Runtime Multi-threading Fix ─────────────────────────────────────────
-// ONNX Runtime의 multi-threaded WASM은 별도 Web Worker를 생성하는데,
-// Electron 환경의 Web Worker에서는 `worker_threads` 모듈을 로드할 수 없음.
-// numThreads=1 + simd=false → single-threaded, non-SIMD WASM만 사용
-// → 서브 워커 미생성, Node 전용 모듈 참조 방지
-// transformers.js v3: env.backends.onnx를 통해 ONNX Runtime 설정
-customEnv.wasm = { numThreads: 1, simd: false, proxy: false };
+// ─── ONNX Runtime WASM 설정 ───────────────────────────────────────────────────────────────
+//
+// [SIMD] Obsidian(Electron) 환경에서 SIMD WASM은 정상 동작합니다.
+//   simd=true 시 ONNX는 자동으로 `ort-wasm-simd-threaded.jsep.wasm`을 선택하며,
+//   SIMD 명령어를 활용해 임베딩 속도가 크게 빨라집니다.
+//
+// [Multi-threading] SharedArrayBuffer 가용 여부를 런타임에서 체크합니다.
+//   Obsidian 1.x는 COOP/COEP 헤더를 설정하므로 SharedArrayBuffer가 지원됩니다.
+//   지원되지 않는 환경에서는 numThreads=1로 자동 폴백합니다.
+//
+// [proxy=false] Blob URL Worker는 proxy가 아니므로 false로 고정합니다.
+
+const hasSharedArrayBuffer = typeof SharedArrayBuffer !== 'undefined';
+// SharedArrayBuffer 지원 시: 로지컈 코어의 절반, 최대 4개 스레드 활용
+const numThreads = hasSharedArrayBuffer
+	? Math.min(4, (typeof navigator !== 'undefined' && navigator.hardwareConcurrency)
+		? Math.max(1, Math.floor(navigator.hardwareConcurrency / 2))
+		: 2)
+	: 1;
+
+const wasmConfig: EnvWasmConfig = {
+	numThreads,
+	simd: true,
+	proxy: false,
+};
+
+customEnv.wasm = wasmConfig;
 if (customEnv.backends && customEnv.backends.onnx) {
-	customEnv.backends.onnx.wasm = { numThreads: 1, simd: false, proxy: false };
+	customEnv.backends.onnx.wasm = wasmConfig;
 	customEnv.backends.onnx.executionProviders = ['wasm'];
 }
+
+console.log(`[EmbeddingWorker] WASM config: simd=true, numThreads=${numThreads}, SharedArrayBuffer=${hasSharedArrayBuffer}`);
 
 // ─── Tokenizer Hotfix ─────────────────────────────────────────────────────────
 // ibm-granite 97m-r2 모델의 tokenizer.json 내 merges가 배열의 배열 형식으로 되어 있어

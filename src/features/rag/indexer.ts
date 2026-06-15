@@ -21,6 +21,7 @@ import {
 	setIndexingStatus,
 	setTotalFiles,
 	incrementProcessed,
+	incrementProcessedBy,
 	resetIndexing,
 } from '../../core/store/ragStore';
 import { isExcluded, isIncluded } from './exclusions';
@@ -38,8 +39,19 @@ function hashString(str: string): number {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-/** 한 번에 워커에 보낼 최대 청크 수 */
-const CHUNK_EMBED_BATCH = 16;
+/**
+ * 한 번에 워커에 보낼 최대 청크 수.
+ * 값이 클수록 Worker 왕복 횟수가 줄어 전체 임베딩 속도가 빨라짐.
+ */
+const CHUNK_EMBED_BATCH = 64;
+/** store 업데이트를 배치로 묶을 파일 수. 10,000개 이상 파일에서 UI 업데이트 폭주 방지 */
+const PROGRESS_BATCH_SIZE = 20;
+/**
+ * 파일 읽기/청킹을 동시에 처리할 최대 파일 수.
+ * I/O 대기 시간을 겹쳐 실행해 전체 인덱싱 시간을 단축함.
+ * Worker는 여전히 1개이므로 메모리 부담 증가 없음.
+ */
+const FILE_READ_CONCURRENCY = 32;
 /**
  * 인덱스 파일 스키마 버전.
  * 청크 구조 변경 시 증가 → 기존 인덱스 자동 무효화.
@@ -74,6 +86,8 @@ export class VaultIndexer {
 
 	/** 인덱싱된 청크 (메모리) */
 	private _chunks: DocumentChunk[] = [];
+	/** 청크가 1개 이상 존재하는 파일 경로 Set — O(1) 존재 여부 확인 */
+	private _indexedPaths: Set<string> = new Set();
 	/** 파일별 마지막 수정 시각 (증분 업데이트 추적) */
 	private fileMtimes: Record<string, number> = {};
 	/** 파일별 본문 해시 */
@@ -132,6 +146,7 @@ export class VaultIndexer {
 	 */
 	async indexVault(): Promise<void> {
 		this._chunks = [];
+		this._indexedPaths = new Set();
 		this.fileMtimes = {};
 		this.fileHashes = {};
 
@@ -186,6 +201,7 @@ export class VaultIndexer {
 
 		if (pathsToDelete.size > 0) {
 			this._chunks = this._chunks.filter(c => !pathsToDelete.has(c.path));
+			pathsToDelete.forEach(p => this._indexedPaths.delete(p));
 		}
 
 		// 변경된 파일 감지
@@ -226,12 +242,14 @@ export class VaultIndexer {
 			if (data.version !== SCHEMA_VERSION || data.modelName !== this.modelName) {
 				debugLogger.logSystem('rag', `인덱스 무효화: schema(${data.version}→${SCHEMA_VERSION}) or 모델 변경(${data.modelName}→${this.modelName}). 전체 재인덱싱 시작.`);
 				this._chunks = [];
+				this._indexedPaths = new Set();
 				this.fileMtimes = {};
 				this.fileHashes = {};
 				return;
 			}
 
 			this._chunks = data.chunks ?? [];
+			this._indexedPaths = new Set(this._chunks.map(c => c.path));
 			this.fileMtimes = data.fileMtimes ?? {};
 			this.fileHashes = data.fileHashes ?? {};
 		} catch {
@@ -242,6 +260,7 @@ export class VaultIndexer {
 	/** 인덱스 전체 초기화 (디스크 + 메모리) */
 	async resetIndex(): Promise<void> {
 		this._chunks = [];
+		this._indexedPaths = new Set();
 		this.fileMtimes = {};
 		this.fileHashes = {};
 		resetIndexing();
@@ -268,80 +287,152 @@ export class VaultIndexer {
 	}
 
 	/**
-	 * 파일 목록을 순서대로 처리:
-	 * 읽기 → 청킹 → CHUNK_EMBED_BATCH 단위 임베딩 → 인덱스 추가
+	 * 파일 목록을 FILE_READ_CONCURRENCY 단위로 병렬 읽기/청킹한 뒤,
+	 * 수집된 청크를 CHUNK_EMBED_BATCH 단위로 일괄 임베딩합니다.
+	 *
+	 * [개선 전] 파일1 읽기 → 임베딩 → 파일2 읽기 → 임베딩 → ...
+	 * [개선 후] (파일1,2,...32 동시 읽기) → 수집된 청크 일괄 임베딩 → 반복
+	 *
+	 * Worker는 여전히 1개이므로 모델 메모리 부담은 동일하며,
+	 * I/O 대기 시간을 겹쳐 실행하는 것만으로 전체 소요 시간이 크게 단축됩니다.
 	 */
 	private async processFiles(files: TFile[]): Promise<void> {
 		this.currentProcessId++;
 		const processId = this.currentProcessId;
+		let progressCounter = 0;
 
-		for (const file of files) {
-			if (this.isDestroyed || this.currentProcessId !== processId) {
-				return;
-			}
-			try {
-				let content = '';
-				const ext = file.extension.toLowerCase();
+		for (let batchStart = 0; batchStart < files.length; batchStart += FILE_READ_CONCURRENCY) {
+			if (this.isDestroyed || this.currentProcessId !== processId) return;
 
-				if (['pdf', 'docx', 'xlsx', 'xls'].includes(ext)) {
-					const buffer = await this.app.vault.readBinary(file);
-					content = await this.parseBinaryFn(buffer, ext);
+			const fileBatch = files.slice(batchStart, batchStart + FILE_READ_CONCURRENCY);
+
+			// ① 파일 읽기 + 청킹을 FILE_READ_CONCURRENCY 단위로 병렬 실행
+			const readResults = await Promise.allSettled(
+				fileBatch.map(file => this.readAndPrepareFile(file)),
+			);
+
+			// ② 결과 분류: 에러 / 스킵 / 임베딩 필요
+			type PendingEmbed = { file: TFile; chunks: DocumentChunk[]; contentHash: number };
+			const toEmbed: PendingEmbed[] = [];
+
+			for (let i = 0; i < fileBatch.length; i++) {
+				const file = fileBatch[i];
+				const result = readResults[i];
+
+				if (result.status === 'rejected') {
+					debugLogger.logError(
+						'rag',
+						result.reason instanceof Error
+							? result.reason
+							: new Error(`파일 인덱싱 실패 (mtime 기록됨): ${file.path}`),
+					);
+					this.fileMtimes[file.path] = file.stat.mtime;
 				} else {
-					const textContent = await this.app.vault.read(file);
-					content = await DocumentParserRouter.parseText(textContent, ext);
+					const { chunks, contentHash, skip } = result.value;
+					if (skip) {
+						// 본문 해시 동일 → mtime만 갱신, 임베딩 생략
+						this.fileMtimes[file.path] = file.stat.mtime;
+					} else if (chunks.length === 0) {
+						// 빈 파일 → mtime만 기록
+						this.fileMtimes[file.path] = file.stat.mtime;
+					} else {
+						// 임베딩 필요: 기존 청크 제거 후 큐에 추가
+						this._chunks = this._chunks.filter(c => c.path !== file.path);
+						this._indexedPaths.delete(file.path);
+						toEmbed.push({ file, chunks, contentHash });
+					}
 				}
-				
-				if (!content || !content.trim()) {
-					this.fileMtimes[file.path] = file.stat.mtime;
-					continue;
-				}
+			}
 
-				const doc: RawDocument = {
-					path: file.path,
-					content,
-					mtime: file.stat.mtime,
-				};
-
-				// 프론트매터 등 전처리 후의 본문 해시 계산
-				const preprocessedText = this.preprocessMarkdown(doc.content);
-				const contentHash = hashString(preprocessedText);
-
-				// 해시가 기존과 동일하고, 기존에 파싱된 청크가 존재한다면 재임베딩 생략 (mtime만 변경된 경우)
-				if (this.fileHashes[file.path] === contentHash && this._chunks.some(c => c.path === file.path)) {
-					this.fileMtimes[file.path] = file.stat.mtime;
-					continue;
-				}
-
-				// 본문이 변경되었으므로 기존 청크 제거
-				this._chunks = this._chunks.filter(c => c.path !== file.path);
-
-				// 문서 청킹
-				// (preprocessMarkdown은 chunkDocument 내부에서도 호출되지만, 중복 호출 비용은 미미함)
-				const chunks = this.chunkDocument(doc);
-
-				if (chunks.length > 0) {
-					for (let i = 0; i < chunks.length; i += CHUNK_EMBED_BATCH) {
-						const batch = chunks.slice(i, i + CHUNK_EMBED_BATCH);
-						if (batch.length > 0) {
-							const texts = batch.map(c => c.text);
-							const embeddings = await this.embedFn(texts);
-							for (let j = 0; j < batch.length; j++) {
-								batch[j].embedding = embeddings[j];
-							}
+			// ③ 수집된 모든 청크를 CHUNK_EMBED_BATCH 단위로 일괄 임베딩
+			if (toEmbed.length > 0 && !this.isDestroyed && this.currentProcessId === processId) {
+				const allChunks = toEmbed.flatMap(e => e.chunks);
+				try {
+					for (let i = 0; i < allChunks.length; i += CHUNK_EMBED_BATCH) {
+						if (this.isDestroyed || this.currentProcessId !== processId) return;
+						const batch = allChunks.slice(i, i + CHUNK_EMBED_BATCH);
+						const embeddings = await this.embedFn(batch.map(c => c.text));
+						for (let j = 0; j < batch.length; j++) {
+							batch[j].embedding = embeddings[j];
 						}
 					}
-					this._chunks.push(...chunks);
+					// 임베딩 완료 → 인덱스에 추가 및 메타데이터 갱신
+					for (const { file, chunks, contentHash } of toEmbed) {
+						this._chunks.push(...chunks);
+						this._indexedPaths.add(file.path);
+						this.fileHashes[file.path] = contentHash;
+						this.fileMtimes[file.path] = file.stat.mtime;
+					}
+				} catch (embedErr) {
+					// 임베딩 실패 시 mtime만 기록 → 다음 실행에서 재시도
+					debugLogger.logError(
+						'rag',
+						embedErr instanceof Error ? embedErr : new Error(`배치 임베딩 실패: ${embedErr}`),
+					);
+					for (const { file } of toEmbed) {
+						this.fileMtimes[file.path] = file.stat.mtime;
+					}
 				}
+			}
 
-				this.fileHashes[file.path] = contentHash;
-				this.fileMtimes[file.path] = file.stat.mtime;
-			} catch (err) {
-				debugLogger.logError('rag', err instanceof Error ? err : new Error(`파일 인덱싱 실패 (무한루프 방지를 위해 mtime 기록됨): ${file.path}`));
-				this.fileMtimes[file.path] = file.stat.mtime;
-			} finally {
-				incrementProcessed();
+			// ④ 진행률 업데이트 (배치 단위)
+			progressCounter += fileBatch.length;
+			if (progressCounter >= PROGRESS_BATCH_SIZE) {
+				incrementProcessedBy(progressCounter);
+				progressCounter = 0;
 			}
 		}
+
+		// 남은 카운터 처리
+		if (progressCounter > 0) {
+			incrementProcessedBy(progressCounter);
+		}
+	}
+
+	/**
+	 * 파일 1개를 읽고 청킹까지 준비합니다. processFiles에서 병렬로 호출됩니다.
+	 *
+	 * @returns
+	 *   - skip=true  : 본문 해시 동일 → mtime만 갱신하면 됨
+	 *   - skip=false, chunks=[] : 빈 파일 → mtime만 기록
+	 *   - skip=false, chunks≠[] : 임베딩 필요
+	 */
+	private async readAndPrepareFile(file: TFile): Promise<{
+		chunks: DocumentChunk[];
+		contentHash: number;
+		skip: boolean;
+	}> {
+		const ext = file.extension.toLowerCase();
+		let content = '';
+
+		if (['pdf', 'docx', 'xlsx', 'xls'].includes(ext)) {
+			const buffer = await this.app.vault.readBinary(file);
+			content = await this.parseBinaryFn(buffer, ext);
+		} else {
+			const textContent = await this.app.vault.read(file);
+			content = await DocumentParserRouter.parseText(textContent, ext);
+		}
+
+		if (!content || !content.trim()) {
+			return { chunks: [], contentHash: 0, skip: false };
+		}
+
+		// 프론트매터 등 전처리 후 해시 계산
+		const preprocessedText = this.preprocessMarkdown(content);
+		const contentHash = hashString(preprocessedText);
+
+		// 해시 동일 + 기존 청크 존재 → 재임베딩 불필요 (mtime만 변경된 경우)
+		if (this.fileHashes[file.path] === contentHash && this._indexedPaths.has(file.path)) {
+			return { chunks: [], contentHash, skip: true };
+		}
+
+		const chunks = this.chunkDocument({
+			path: file.path,
+			content,
+			mtime: file.stat.mtime,
+		});
+
+		return { chunks, contentHash, skip: false };
 	}
 
 	/**

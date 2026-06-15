@@ -82,6 +82,12 @@ async function autoGenerateFrontmatter(plugin: LuminaPlugin, file: TFile, isUpda
  */
 const DEFAULT_EMBEDDING_MODEL = 'ibm-granite/granite-embedding-97m-multilingual-r2';
 
+/**
+ * 이 파일 수 이상일 때 두 번째 임베딩 워커를 임시로 띄워 병렬 처리합니다.
+ * 워커 1개당 ONNX 모델이 RAM에 추가 로드되므로 너무 작은 값은 피합니다.
+ */
+const PARALLEL_WORKER_THRESHOLD = 5000;
+
 export default class LuminaPlugin extends Plugin {
 	settings!: LuminaSettings;
 	embeddingWorker: EmbeddingWorkerBridge | null = null;
@@ -742,6 +748,43 @@ export default class LuminaPlugin extends Plugin {
 				embedFn = (texts: string[]) => this.embeddingWorker!.embed(texts);
 			}
 
+			// ── 대규모 볼트: 두 번째 워커를 임시로 띄워 병렬 임베딩 ─────────────────
+			// 파일 수가 PARALLEL_WORKER_THRESHOLD 이상이면 워커 2개로 분산 처리.
+			// 작은 볼트는 단일 워커로 충분하며, 추가 RAM 부담을 피합니다.
+			const targetFileCount = this.app.vault.getMarkdownFiles().length;
+			let secondaryWorker: EmbeddingWorkerBridge | null = null;
+
+			if (embedding.mode !== 'custom' && targetFileCount >= PARALLEL_WORKER_THRESHOLD) {
+				try {
+					const cacheDir2 = getModelCacheDir(this.app);
+					const adapter2 = this.app.vault.adapter;
+					const mjsPath2 = normalizePath(`${this.manifest.dir}/ort-wasm-simd-threaded.jsep.mjs`);
+					const wasmPath2 = normalizePath(`${this.manifest.dir}/ort-wasm-simd-threaded.jsep.wasm`);
+					const hasLocalWasm2 = (await adapter2.exists(mjsPath2)) && (await adapter2.exists(wasmPath2));
+					const pluginDir2 = hasLocalWasm2
+						? this.app.vault.adapter.getResourcePath(this.manifest.dir || '')
+						: undefined;
+
+					secondaryWorker = new EmbeddingWorkerBridge();
+					await secondaryWorker.init(modelName, cacheDir2, pluginDir2);
+
+					// 라운드로빈: 요청을 두 워커에 교대로 분배
+					let turn = 0;
+					const primaryEmbed = embedFn;
+					const secondaryEmbed = (texts: string[]) => secondaryWorker!.embed(texts);
+					embedFn = (texts: string[]) => {
+						const useSecondary = (turn++ % 2 === 1);
+						return useSecondary ? secondaryEmbed(texts) : primaryEmbed(texts);
+					};
+					debugLogger.logSystem('rag', `대규모 볼트(${targetFileCount}개 파일) 감지 → 워커 2개 병렬 모드 활성화`);
+				} catch (workerErr) {
+					// 두 번째 워커 초기화 실패 시 단일 워커로 폴백
+					debugLogger.logError('rag', workerErr instanceof Error ? workerErr : new Error(`보조 워커 초기화 실패, 단일 워커로 폴백: ${workerErr}`));
+					secondaryWorker?.terminate();
+					secondaryWorker = null;
+				}
+			}
+
 			progressNotice?.hide();
 
 			// ── 인덱서 생성 (modelName 전달 → 스키마 무효화 감지) ─────────────
@@ -770,12 +813,21 @@ export default class LuminaPlugin extends Plugin {
 					.catch((err: Error) => {
 						new Notice(t('settings.rag.init.indexFail', { error: err.message }), 5000);
 						debugLogger.logError('rag', err instanceof Error ? err : new Error(`인덱싱 실패: ${err}`));
-					});
+					})
+					.finally(() => {
+						// 인덱싱 완료(성공/실패 무관) 후 보조 워커 즉시 해제 → RAM 반환
+						if (secondaryWorker) {
+							secondaryWorker.terminate();
+							secondaryWorker = null;
+							debugLogger.logSystem('rag', '보조 워커 종료 완료 (RAM 반환)');
+						}
 
-				// watch 모드: 파일 변경 이벤트 등록
-				if (syncMode === 'watch') {
-					this.registerWatchEvents();
-				}
+						// watch 모드: 초기 인덱싱 완료 후에만 파일 변경 이벤트 등록
+						// (인덱싱 중 watch 발동 시 currentProcessId 증가로 indexVault가 조기 종료되는 레이스 컨디션 방지)
+						if (syncMode === 'watch') {
+							this.registerWatchEvents();
+						}
+					});
 			} else {
 				// manual 모드: 즉시 ready 상태로 설정
 				setIndexingStatus('ready');
