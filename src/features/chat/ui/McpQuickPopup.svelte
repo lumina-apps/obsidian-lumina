@@ -22,6 +22,7 @@
 	let serverEnabled = $state(false);
 	let serverPort = $state(3000);
 	let agentEnabled = $state(false);
+	let showAdvanced = $state(false);
 
 	// 팝업이 열릴 때마다 혹은 settingsStore가 업데이트될 때마다 최신 설정 동기화
 	$effect(() => {
@@ -161,41 +162,50 @@
 				</label>
 			</div>
 		</div>
-		<div class="lumina-mcp-popup__divider"></div>
+		<!-- 고급 설정 접이식 영역 -->
+		<button class="lumina-mcp-popup__advanced-toggle" onclick={() => (showAdvanced = !showAdvanced)} type="button">
+			<span class="lumina-mcp-popup__advanced-arrow" class:is-open={showAdvanced}>▶</span>
+			<span>{t('settings.showAdvanced')}</span>
+		</button>
 
-		<!-- 내장 MCP 서버 -->
-		<div class="lumina-mcp-popup__item lumina-mcp-popup__item-local">
-			<div class="lumina-mcp-popup__item-left">
-				<span class="lumina-mcp-popup__status-dot" style="background-color: {serverEnabled ? 'var(--text-success)' : 'var(--text-muted)'}"></span>
-				<span class="lumina-mcp-popup__item-name" title="{t('settings.mcp.localServerName')}">{t('settings.mcp.localServerName')} (:{serverPort})</span>
-			</div>
-			<div class="lumina-mcp-popup__item-right">
-				<label class="lumina-toggle-switch">
-					<input type="checkbox" bind:checked={serverEnabled} onchange={toggleLocalServer} />
-					<span class="lumina-toggle-slider"></span>
-				</label>
-			</div>
-		</div>
-		<div class="lumina-mcp-popup__divider"></div>
-
-		<!-- 외부 MCP 서버 -->
-		{#if servers.length === 0}
-			<div class="lumina-mcp-popup__empty">{t('settings.mcp.emptyServers')}</div>
-		{:else}
-			{#each servers as server}
-				<div class="lumina-mcp-popup__item">
-					<div class="lumina-mcp-popup__item-left">
-						<span class="lumina-mcp-popup__status-dot" style="background-color: {getStatusColor(server.status)}"></span>
-						<span class="lumina-mcp-popup__item-name" title={server.name}>{server.name}</span>
-					</div>
-					<div class="lumina-mcp-popup__item-right">
-						<label class="lumina-toggle-switch">
-							<input type="checkbox" bind:checked={server.enabled} onchange={() => toggleServer(server)} />
-							<span class="lumina-toggle-slider"></span>
-						</label>
-					</div>
+		{#if showAdvanced}
+			<!-- 내장 MCP 서버 -->
+			<div class="lumina-mcp-popup__item lumina-mcp-popup__item-local">
+				<div class="lumina-mcp-popup__item-left">
+					<span class="lumina-mcp-popup__status-dot" style="background-color: {serverEnabled ? 'var(--text-success)' : 'var(--text-muted)'}"></span>
+					<span class="lumina-mcp-popup__item-name" title="{t('settings.mcp.localServerName')}">{t('settings.mcp.localServerName')} (:{serverPort})</span>
 				</div>
-			{/each}
+				<div class="lumina-mcp-popup__item-right">
+					<label class="lumina-toggle-switch">
+						<input type="checkbox" bind:checked={serverEnabled} onchange={toggleLocalServer} />
+						<span class="lumina-toggle-slider"></span>
+					</label>
+				</div>
+			</div>
+
+			{#if servers.length > 0}
+				<div class="lumina-mcp-popup__divider"></div>
+			{/if}
+
+			<!-- 외부 MCP 서버 -->
+			{#if servers.length === 0}
+				<div class="lumina-mcp-popup__empty">{t('settings.mcp.emptyServers')}</div>
+			{:else}
+				{#each servers as server}
+					<div class="lumina-mcp-popup__item">
+						<div class="lumina-mcp-popup__item-left">
+							<span class="lumina-mcp-popup__status-dot" style="background-color: {getStatusColor(server.status)}"></span>
+							<span class="lumina-mcp-popup__item-name" title={server.name}>{server.name}</span>
+						</div>
+						<div class="lumina-mcp-popup__item-right">
+							<label class="lumina-toggle-switch">
+								<input type="checkbox" bind:checked={server.enabled} onchange={() => toggleServer(server)} />
+								<span class="lumina-toggle-slider"></span>
+							</label>
+						</div>
+					</div>
+				{/each}
+			{/if}
 		{/if}
 	</div>
 </div>
@@ -294,6 +304,33 @@
 		margin: 4px 8px;
 		padding: 6px 8px;
 		font-weight: 600;
+	}
+
+	.lumina-mcp-popup__advanced-toggle {
+		all: unset;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		width: 100%;
+		padding: 6px 12px;
+		font-size: 11px;
+		font-weight: 500;
+		color: var(--text-muted);
+		cursor: pointer;
+		box-sizing: border-box;
+		transition: color 0.1s;
+	}
+	.lumina-mcp-popup__advanced-toggle:hover {
+		color: var(--text-normal);
+		background: var(--background-modifier-hover);
+	}
+	.lumina-mcp-popup__advanced-arrow {
+		display: inline-block;
+		font-size: 8px;
+		transition: transform 0.15s;
+	}
+	.lumina-mcp-popup__advanced-arrow.is-open {
+		transform: rotate(90deg);
 	}
 
 	.lumina-mcp-popup__divider {
