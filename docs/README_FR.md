@@ -26,18 +26,19 @@
 
 ## ⚡ Démarrage Rapide
 
-1. **Installez** et activez `Lumina` depuis les Plugins Communautaires d'Obsidian.
-2. Une fois activé, le modèle RAG intégré commencera automatiquement à analyser vos notes en arrière-plan. (La navigation intelligente devient disponible dans le panneau latéral).
-3. **[Activer le Chat IA]** Accédez aux Paramètres d'Obsidian ➔ `Lumina`.
-4. Ajoutez votre fournisseur LLM préféré et entrez vos clés API.
-   - 💻 **Les LLM Locaux (Ollama, LM Studio, etc.)** peuvent être connectés instantanément sans clé API !
-   - ☁️ **Les LLM Cloud** nécessitent des clés API, qui peuvent facilement être obtenues gratuitement :
-     - 👉 [Obtenir une Clé API Google Gemini (Gratuit)](https://aistudio.google.com/app/apikey)
-     - 👉 [Obtenir une Clé API Groq (Gratuit)](https://console.groq.com/keys)
-5. **[Ouvrir le Chat & Utilisation de Base]** Cliquez sur l'icône 💬 dans le menu ruban de gauche pour ouvrir la Vue de Chat et commencer à interagir avec l'IA, ou surlignez du texte dans l'éditeur et faites un clic droit pour déclencher les Actions Rapides.
-6. **[Activer le Mode Agent]** Tapez la commande `/mcp` dans le chat ou ouvrez le menu contextuel rapide pour activer le **🤖 Mode Agent**.
-   - *Astuce : Le serveur interne Lumina requis pour les opérations autonomes de l'agent démarrera automatiquement en arrière-plan.*
-7. **Attribuer des Tâches Autonomes :** Avec le Mode Agent actif, donnez des instructions complexes telles que : "Trouve toutes les notes liées à 'l'Intelligence Artificielle' dans mon coffre, résume les points clés et organise-les dans une nouvelle note." L'IA déterminera et exécutera de manière autonome les outils nécessaires pour accomplir la tâche.
+Lumina propose deux modes adaptés à votre niveau. Choisissez celui qui vous convient !
+
+### 🟢 Piste 1 : Démarrez en 3 étapes (Recommandé pour les Débutants)
+1. Installez et activez Lumina.
+2. Allez dans Paramètres > Lumina et saisissez votre **clé API gratuite (Gemini ou Groq)** obtenue via les liens ci-dessous.
+   - 👉 [Obtenir une Clé API Google Gemini (Gratuit)](https://aistudio.google.com/app/apikey)
+   - 👉 [Obtenir une Clé API Groq (Gratuit)](https://console.groq.com/keys)
+3. Ouvrez n'importe quelle note et posez une question à Lumina dans le panneau latéral droit. C'est tout ! (Une fois l'indexation RAG locale terminée dans le panneau latéral, les conversations basées sur vos notes seront immédiatement activées.)
+
+### 🔵 Piste 2 : Maîtrisez l'Agent (Recommandé pour les Utilisateurs Avancés)
+1. Connectez un LLM local ou votre IA cloud préférée dans les paramètres.
+2. Tapez `/mcp` dans le chat pour activer le **Mode Agent Intelligent**.
+3. Donnez des commandes autonomes comme : « Trouve tous les comptes rendus de réunion de cette semaine dans mon coffre et compile-les en un seul fichier de résumé. »
 
 > [!IMPORTANT]
 > **🔒 Stockage Sécurisé des Clés API**
@@ -75,7 +76,9 @@
 
 - **Description :** Lorsqu'il est activé, le LLM détermine et orchestre de manière autonome les outils MCP pour effectuer des tâches. Il peut réaliser des opérations complexes à plusieurs étapes en combinant la recherche, la lecture, l'écriture de notes et la récupération RAG.
 - **Prise en charge LLM Local :** Implémente un analyseur dédié qui prend en charge le "tool prompting" basé sur le texte, permettant à l'agent de fonctionner sans problème même dans des environnements LLM Locaux, et pas seulement avec des modèles cloud hautes performances.
-- **Mécanismes de Sécurité :** Pour éviter les boucles infinies ou les coûts d'API excessifs, une limite maximale d'étapes d'exécution par requête (par défaut : 15 étapes) est imposée. L'exécution s'interrompt automatiquement si des appels répétés aux outils sont détectés.
+- **Composition d'Outils Sécurisée :** La version initiale n'inclut que des outils orientés lecture et création sécurisée, éliminant fondamentalement le risque d'écrasement ou de suppression de fichiers existants.
+- **Humain-dans-la-Boucle (Approbation Utilisateur) :** Avant d'effectuer des opérations risquées telles que des modifications de fichiers, une fenêtre de confirmation (approbation) est toujours affichée à l'utilisateur.
+- **Prévention des Coûts et Limites :** Des limites par défaut sur le nombre d'utilisations d'outils et la longueur des caractères ajoutés (Append) sont appliquées pour éviter les dysfonctionnements de l'IA ou les boucles infinies. (Ces limites peuvent être librement ajustées par l'utilisateur dans les paramètres avancés.)
 - **Comment utiliser :** Tapez la commande `/mcp` dans le chat ou utilisez l'icône supérieure pour ouvrir la fenêtre contextuelle rapide et activer le 'Mode Agent'. (Le serveur interne Lumina démarrera automatiquement selon les besoins pour exécuter les outils.)
 </details>
 
@@ -83,14 +86,15 @@
 <summary><b>🤖 Intégration MCP (Prise en charge Bidirectionnelle Client & Serveur) ⚠️</b></summary>
 
 - **Description :** Relie de manière transparente Obsidian au vaste écosystème de l'IA via le Model Context Protocol (MCP). Utilisez Obsidian comme un hub IA tout-en-un, ou tirez-en parti comme le second cerveau de votre IA !
-- **💻 Mode Client (Dirigido par Obsidian) :**
+- **💻 Mode Client (Dirigé par Obsidian) :**
   - Interagissez et travaillez directement avec l'IA au sein d'Obsidian.
   - Connectez de nombreux serveurs MCP externes (GitHub, bases de données locales, recherche web, etc.) pour extraire et organiser instantanément de vastes quantités de données dans vos notes.
-- **🖥️ Mode Serveur (Dirigido par une IA Externe) :**
+- **🖥️ Mode Serveur (Dirigé par une IA Externe) :**
   - Expose 7 outils permettant à des assistants IA externes (Claude, Cursor, etc.) d'accéder directement à votre coffre-fort.
   - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search` : Fournit le contexte et les connaissances de votre coffre-fort à l'IA.
   - `create_note`, `append_to_note` : Permet à l'IA d'écrire en toute sécurité des idées organisées directement dans votre coffre-fort (protection d'écrasement appliquée).
   - `read_daily_note`, `append_to_daily_note` : Intégration de lecture/écriture pour la note quotidienne d'aujourd'hui.
+  - Les opérations dangereuses telles que la suppression, le déplacement ou l'écrasement de fichiers seront implémentées avec des mesures de sécurité supplémentaires dans les futures mises à jour.
 - **Comment utiliser :** Activez les fonctionnalités MCP dans les paramètres du plugin et configurez la méthode de transport client/serveur (SSE).
 - **Remarque :** *Les fonctionnalités d'Agent et de MCP sont actuellement en phase Expérimentale (Bêta). Bien que divers filets de sécurité comme la protection contre l'écrasement et des limites de caractères soient en place, nous recommandons de surveiller étroitement les opérations au début, car des IA externes éditeront directement vos notes.*
 </details>

@@ -26,18 +26,19 @@
 
 ## ⚡ Quick Start
 
-1. **Install** and enable `Lumina` from the Obsidian Community Plugins.
-2. Once enabled, the built-in RAG model will automatically begin analyzing your notes in the background. (Smart navigation becomes available in the side panel).
-3. **[Enable AI Chat]** Navigate to Obsidian Settings ➔ `Lumina`.
-4. Add your preferred LLM provider and enter your API keys.
-   - 💻 **Local LLMs (Ollama, LM Studio, etc.)** can be connected instantly without API keys!
-   - ☁️ **Cloud LLMs** require API keys, which can easily be obtained for free:
-     - 👉 [Get Google Gemini API Key (Free)](https://aistudio.google.com/app/apikey)
-     - 👉 [Get Groq API Key (Free)](https://console.groq.com/keys)
-5. **[Open Chat & Basic Usage]** Click the 💬 icon on the left ribbon menu to open the Chat View and start interacting with the AI, or highlight text in the editor and right-click to trigger Quick Actions.
-6. **[Enable Agent Mode]** Type the `/mcp` command in the chat or open the quick popup menu to activate **🤖 Agent Mode**.
-   - *Tip: The internal Lumina server required for the agent's autonomous operations will automatically start in the background.*
-7. **Issue Autonomous Tasks:** With Agent Mode active, give complex instructions like, "Find all notes related to 'Artificial Intelligence' in my vault, summarize the key points, and organize them into a new note." The AI will autonomously determine and execute the necessary tools to complete the task.
+Lumina offers two tracks tailored to your skill level. Choose the one that suits you best!
+
+### 🟢 Track 1: Start in 3 Steps (Recommended for Beginners)
+1. Install and enable Lumina.
+2. Go to Settings > Lumina and enter your **free API key (Gemini or Groq)** obtained from the links below.
+   - 👉 [Get Google Gemini API Key (Free)](https://aistudio.google.com/app/apikey)
+   - 👉 [Get Groq API Key (Free)](https://console.groq.com/keys)
+3. Open any note and ask Lumina a question in the right sidebar panel. That's it! (Once the local RAG indexing is complete in the side panel, conversations based on your notes will be immediately activated.)
+
+### 🔵 Track 2: Master the Agent (Recommended for Advanced Users)
+1. Connect a local LLM or your cloud AI of choice in the settings.
+2. Type `/mcp` in the chat to activate **Smart Agent Mode**.
+3. Issue autonomous commands like, "Find all this week's meeting notes in my vault and compile them into a single summary file."
 
 > [!IMPORTANT]
 > **🔒 Secure API Key Storage**
@@ -75,7 +76,9 @@
 
 - **Description:** When activated, the LLM autonomously determines and orchestrates MCP tools to perform tasks. It can complete complex, multi-step operations by combining note searching, reading, writing, and RAG retrieval.
 - **Local LLM Support:** Implements a dedicated parser that supports text-based tool prompting, allowing the agent to function smoothly even in Local LLM environments, not just with high-performance cloud models.
-- **Safety Mechanisms:** To prevent infinite loops or excessive API costs, a maximum execution step limit per request (default: 15 steps) is enforced. Execution is automatically aborted if repeated tool calls are detected.
+- **Safe Tool Composition:** The initial version includes only read-focused and safe creation-oriented tools, fundamentally eliminating the risk of existing files being overwritten or deleted.
+- **Human-in-the-Loop (User Approval):** Before performing risky operations such as file modifications, a user confirmation (approval) popup is always displayed.
+- **Cost Prevention & Limits:** Default limits on tool usage count and append character length are applied to prevent AI malfunctions or infinite loops. (These limits can be freely adjusted by the user in advanced settings.)
 - **How to use:** Type the `/mcp` command in the chat or use the top icon to open the quick popup and enable 'Agent Mode'. (The internal Lumina server will automatically start as needed to execute tools.)
 </details>
 
@@ -91,6 +94,7 @@
   - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: Provides your vault's context and knowledge to the AI.
   - `create_note`, `append_to_note`: Allows the AI to safely write organized ideas directly into your vault (overwriting protection applied).
   - `read_daily_note`, `append_to_daily_note`: Read/write integration for today's daily note.
+  - Dangerous operations such as file deletion, moving, or overwriting will be implemented with additional safety measures in future updates.
 - **How to use:** Enable MCP features in the plugin settings and configure the client/server transport method (SSE).
 - **Note:** *Agent and MCP features are currently in Experimental (Beta) phase. While various safety nets like overwrite protection and character limits are in place, we recommend initially monitoring operations closely as external AI will directly edit your notes.*
 </details>

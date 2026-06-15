@@ -26,18 +26,19 @@
 
 ## ⚡ Schnellstart
 
-1. **Installiere** und aktiviere `Lumina` aus den Obsidian Community-Plugins.
-2. Sobald das Plugin aktiviert ist, beginnt das integrierte RAG-Modell automatisch im Hintergrund mit der Analyse deiner Notizen. (Smarte Navigation wird im Seitenpanel verfügbar).
-3. **[KI-Chat aktivieren]** Navigiere zu Obsidian Einstellungen ➔ `Lumina`.
-4. Füge deinen bevorzugten LLM-Anbieter hinzu und gib deine API-Schlüssel ein.
-   - 💻 **Lokale LLMs (Ollama, LM Studio usw.)** können ohne API-Schlüssel sofort verbunden werden!
-   - ☁️ **Cloud-LLMs** erfordern API-Schlüssel, die leicht kostenlos bezogen werden können:
-     - 👉 [Google Gemini API-Schlüssel holen (Kostenlos)](https://aistudio.google.com/app/apikey)
-     - 👉 [Groq API-Schlüssel holen (Kostenlos)](https://console.groq.com/keys)
-5. **[Chat öffnen & Grundlagen]** Klicke auf das 💬-Symbol im linken Ribbon-Menü, um die Chat-Ansicht zu öffnen und mit der KI zu interagieren, oder markiere Text im Editor und klicke mit der rechten Maustaste, um Schnellaktionen auszulösen.
-6. **[Agentenmodus aktivieren]** Gib den Befehl `/mcp` im Chat ein oder öffne das Schnell-Popup-Menü, um den **🤖 Agentenmodus** zu aktivieren.
-   - *Tipp: Der interne Lumina-Server, der für die autonomen Operationen des Agenten erforderlich ist, startet automatisch im Hintergrund.*
-7. **Autonome Aufgaben erteilen:** Wenn der Agentenmodus aktiv ist, kannst du komplexe Anweisungen geben, z. B.: "Finde alle Notizen zum Thema 'Künstliche Intelligenz' in meinem Vault, fasse die wichtigsten Punkte zusammen und organisiere sie in einer neuen Notiz." Die KI bestimmt und führt autonom die zur Erledigung der Aufgabe erforderlichen Tools aus.
+Lumina bietet zwei auf dein Können zugeschnittene Modi. Wähle die Methode, die dir zusagt!
+
+### 🟢 Track 1: In 3 Schritten starten (für Anfänger empfohlen)
+1. Installiere und aktiviere Lumina.
+2. Gehe zu Einstellungen > Lumina und gib deinen **kostenlosen API-Schlüssel (Gemini oder Groq)** ein, den du über die folgenden Links erhalten hast.
+   - 👉 [Google Gemini API-Schlüssel holen (Kostenlos)](https://aistudio.google.com/app/apikey)
+   - 👉 [Groq API-Schlüssel holen (Kostenlos)](https://console.groq.com/keys)
+3. Öffne eine beliebige Notiz und stelle Lumina eine Frage im rechten Seitenpanel. Fertig! (Sobald die lokale RAG-Indizierung im Seitenpanel abgeschlossen ist, werden Unterhaltungen basierend auf deinen Notizen sofort aktiviert.)
+
+### 🔵 Track 2: Den Agenten meistern (für Fortgeschrittene empfohlen)
+1. Verbinde ein lokales LLM oder deine bevorzugte Cloud-KI in den Einstellungen.
+2. Gib `/mcp` im Chat ein, um den **Smart Agent Mode** zu aktivieren.
+3. Erteile autonome Befehle wie: "Finde alle Besprechungsnotizen dieser Woche in meinem Vault und erstelle eine einzige Zusammenfassungsdatei daraus."
 
 > [!IMPORTANT]
 > **🔒 Sichere Speicherung von API-Schlüsseln**
@@ -75,7 +76,9 @@
 
 - **Beschreibung:** Wenn aktiviert, bestimmt und orchestriert das LLM autonom MCP-Tools, um Aufgaben auszuführen. Es kann komplexe, mehrstufige Operationen abschließen, indem es Notizensuche, Lesen, Schreiben und RAG-Abrufe kombiniert.
 - **Lokaler LLM-Support:** Implementiert einen dedizierten Parser, der textbasiertes Tool-Prompting unterstützt, sodass der Agent auch in lokalen LLM-Umgebungen reibungslos funktioniert, nicht nur bei leistungsstarken Cloud-Modellen.
-- **Sicherheitsmechanismen:** Um Endlosschleifen oder übermäßige API-Kosten zu vermeiden, wird ein maximales Limit für Ausführungsschritte pro Anfrage (Standard: 15 Schritte) erzwungen. Die Ausführung wird bei Erkennung wiederholter Tool-Aufrufe automatisch abgebrochen.
+- **Sichere Tool-Zusammenstellung:** Die erste Version enthält nur lese- und sicherheitsorientierte Erstellungswerkzeuge, wodurch das Risiko des Überschreibens oder Löschens vorhandener Dateien grundlegend ausgeschlossen wird.
+- **Human-in-the-Loop (Benutzerfreigabe):** Bevor risikoreiche Operationen wie Dateiänderungen durchgeführt werden, wird immer ein Bestätigungs-Popup (Freigabe) angezeigt.
+- **Kostenverhinderung und -begrenzung:** Standardmäßig sind Begrenzungen für die Anzahl der Tool-Nutzungen und die Zeichenlänge von Anhängen (Append) aktiviert, um Fehlfunktionen der KI oder Endlosschleifen zu verhindern. (Diese Grenzen können in den erweiterten Einstellungen jederzeit angepasst werden.)
 - **Verwendung:** Gib den Befehl `/mcp` im Chat ein oder nutze das obere Symbol, um das Schnell-Popup zu öffnen und den 'Agentenmodus' zu aktivieren. (Der interne Lumina-Server startet nach Bedarf automatisch, um Tools auszuführen).
 </details>
 
@@ -91,6 +94,7 @@
   - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: Bietet der KI den Kontext und das Wissen deines Vaults.
   - `create_note`, `append_to_note`: Erlaubt der KI, organisierte Ideen sicher direkt in deinen Vault zu schreiben (Überschreibschutz aktiv).
   - `read_daily_note`, `append_to_daily_note`: Lese-/Schreibintegration für die heutige Tagesnotiz.
+  - Gefährliche Vorgänge wie Löschen, Verschieben oder Überschreiben von Dateien werden in zukünftigen Updates mit zusätzlichen Sicherheitsmaßnahmen implementiert.
 - **Verwendung:** Aktiviere MCP-Funktionen in den Plugin-Einstellungen und konfiguriere die Client/Server-Transportmethode (SSE).
 - **Hinweis:** *Agenten- und MCP-Funktionen befinden sich derzeit in der experimentellen Phase (Beta). Obwohl verschiedene Sicherheitsnetze wie Überschreibschutz und Zeichenbegrenzungen bestehen, empfehlen wir anfangs, Operationen genau zu überwachen, da externe KI deine Notizen direkt bearbeitet.*
 </details>

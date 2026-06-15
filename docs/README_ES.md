@@ -26,18 +26,19 @@
 
 ## ⚡ Inicio Rápido
 
-1. **Instala** y habilita `Lumina` desde los Plugins Comunitarios de Obsidian.
-2. Una vez habilitado, el modelo RAG integrado comenzará a analizar automáticamente tus notas en segundo plano. (La navegación inteligente estará disponible en el panel lateral).
-3. **[Habilitar el Chat de IA]** Navega a Configuración de Obsidian ➔ `Lumina`.
-4. Agrega tu proveedor de LLM preferido e introduce tus claves de API.
-   - 💻 **LLMs Locales (Ollama, LM Studio, etc.)** ¡Se pueden conectar instantáneamente sin claves de API!
-   - ☁️ **LLMs en la Nube** requieren claves de API, las cuales se pueden obtener fácilmente de forma gratuita:
-     - 👉 [Obtener Clave de API de Google Gemini (Gratis)](https://aistudio.google.com/app/apikey)
-     - 👉 [Obtener Clave de API de Groq (Gratis)](https://console.groq.com/keys)
-5. **[Abrir el Chat y Uso Básico]** Haz clic en el icono 💬 en el menú lateral izquierdo para abrir la Vista de Chat y comenzar a interactuar con la IA, o resalta texto en el editor y haz clic derecho para activar las Acciones Rápidas.
-6. **[Habilitar Modo Agente]** Escribe el comando `/mcp` en el chat o abre el menú emergente rápido para activar el **🤖 Modo Agente**.
-   - *Consejo: El servidor interno de Lumina requerido para las operaciones autónomas del agente se iniciará automáticamente en segundo plano.*
-7. **Emitir Tareas Autónomas:** Con el Modo Agente activo, da instrucciones complejas como, "Encuentra todas las notas relacionadas con 'Inteligencia Artificial' en mi bóveda, resume los puntos clave y organízalos en una nueva nota". La IA determinará y ejecutará de forma autónoma las herramientas necesarias para completar la tarea.
+Lumina ofrece dos modos según tu nivel de experiencia. ¡Elige el que más te guste!
+
+### 🟢 Pista 1: Comienza en 3 Pasos (Recomendado para Principiantes)
+1. Instala y habilita Lumina.
+2. Ve a Configuración > Lumina e ingresa tu **clave API gratuita (Gemini o Groq)** obtenida de los enlaces a continuación.
+   - 👉 [Obtener Clave de API de Google Gemini (Gratis)](https://aistudio.google.com/app/apikey)
+   - 👉 [Obtener Clave de API de Groq (Gratis)](https://console.groq.com/keys)
+3. Abre cualquier nota y hazle una pregunta a Lumina en el panel lateral derecho. ¡Eso es todo! (Una vez que la indexación del RAG local se complete en el panel lateral, las conversaciones basadas en tus notas se activarán inmediatamente.)
+
+### 🔵 Pista 2: Domina el Agente (Recomendado para Usuarios Avanzados)
+1. Conecta un LLM local o tu IA en la nube preferida en la configuración.
+2. Escribe `/mcp` en el chat para activar el **Modo Agente Inteligente**.
+3. Emite comandos autónomos como: "Encuentra todas las notas de reuniones de esta semana en mi bóveda y compílalas en un solo archivo de resumen."
 
 > [!IMPORTANT]
 > **🔒 Almacenamiento Seguro de Claves API**
@@ -75,7 +76,9 @@
 
 - **Descripción:** Cuando se activa, el LLM determina y orquesta de manera autónoma herramientas MCP para realizar tareas. Puede completar operaciones complejas de múltiples pasos combinando la búsqueda, lectura, escritura y recuperación RAG de notas.
 - **Soporte para LLM Local:** Implementa un analizador dedicado que soporta "tool prompting" basado en texto, lo que permite al agente funcionar sin problemas incluso en entornos LLM Locales, no solo con modelos en la nube de alto rendimiento.
-- **Mecanismos de Seguridad:** Para evitar bucles infinitos o costos excesivos de API, se aplica un límite máximo de pasos de ejecución por solicitud (por defecto: 15 pasos). La ejecución se cancela automáticamente si se detectan llamadas de herramientas repetidas.
+- **Composición Segura de Herramientas:** La versión inicial incluye solo herramientas orientadas a la lectura y creación segura, eliminando fundamentalmente el riesgo de sobrescritura o eliminación de archivos existentes.
+- **Aprobación del Usuario (Human-in-the-Loop):** Antes de realizar operaciones riesgosas como modificaciones de archivos, siempre se muestra una ventana de confirmación (aprobación) al usuario.
+- **Prevención de Costos y Límites:** Se aplican límites predeterminados en la cantidad de uso de herramientas y la longitud de caracteres de adición para evitar fallos de IA o bucles infinitos. (Estos límites se pueden ajustar libremente en la configuración avanzada.)
 - **Cómo usar:** Escribe el comando `/mcp` en el chat o utiliza el icono superior para abrir la ventana emergente rápida y habilitar el 'Modo Agente'. (El servidor interno de Lumina se iniciará automáticamente según sea necesario para ejecutar las herramientas).
 </details>
 
@@ -91,6 +94,7 @@
   - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: Proporciona el contexto y conocimiento de tu bóveda a la IA.
   - `create_note`, `append_to_note`: Permite a la IA escribir con seguridad ideas organizadas directamente en tu bóveda (protección de sobrescritura aplicada).
   - `read_daily_note`, `append_to_daily_note`: Integración de lectura/escritura para la nota diaria de hoy.
+  - Operaciones peligrosas como la eliminación, el movimiento o la sobrescritura de archivos se implementarán con medidas de seguridad adicionales en futuras actualizaciones.
 - **Cómo usar:** Habilita las características MCP en la configuración del plugin y configura el método de transporte cliente/servidor (SSE).
 - **Nota:** *Las funciones de Agente y MCP se encuentran actualmente en fase Experimental (Beta). Aunque existen diversas redes de seguridad como la protección contra sobrescritura y límites de caracteres, recomendamos supervisar de cerca las operaciones inicialmente, ya que las IA externas editarán tus notas directamente.*
 </details>
