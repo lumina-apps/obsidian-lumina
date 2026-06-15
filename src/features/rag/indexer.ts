@@ -20,7 +20,6 @@ import type { RagSettings } from '../../core/settings/settings.types';
 import {
 	setIndexingStatus,
 	setTotalFiles,
-	incrementProcessed,
 	incrementProcessedBy,
 	resetIndexing,
 } from '../../core/store/ragStore';

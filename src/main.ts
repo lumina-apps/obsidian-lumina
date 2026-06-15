@@ -1,4 +1,4 @@
-import { Notice, Platform, Plugin, addIcon, TFile, moment, getLanguage, normalizePath } from 'obsidian';
+import { Notice, Platform, Plugin, addIcon, TFile, moment, getLanguage } from 'obsidian';
 import { LuminaSettingTab } from './core/settings/settingTab';
 import { DEFAULT_SETTINGS } from './core/settings/defaultSettings';
 import type { LuminaSettings } from './core/settings/settings.types';
@@ -723,7 +723,6 @@ export default class LuminaPlugin extends Plugin {
 				modelName = DEFAULT_EMBEDDING_MODEL;
 				const cacheDir = getModelCacheDir(this.app);
 
-				const adapter = this.app.vault.adapter;
 				this.embeddingWorker = new EmbeddingWorkerBridge();
 
 				// 항상 pluginDir을 전달합니다.
