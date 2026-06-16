@@ -1,654 +1,108 @@
-import * as http from 'http';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {
 	CallToolRequestSchema,
 	ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { TFile, normalizePath } from 'obsidian';
 import type LuminaPlugin from '../../../main';
-import { searchVault, formatRagContext } from '../../../features/rag/search';
-import { isExcluded, isIncluded } from '../../../features/rag/exclusions';
 import { debugLogger } from '../../../shared/debugLogger';
 import { t } from '../../../shared/locales/helpers';
 import { SafeJsonSchemaValidator } from '../safeValidator';
+import { getToolDefinitions } from './toolDefinitions';
+import { dispatchToolHandler } from './toolHandlers';
+import { HttpTransport } from './httpTransport';
+import { PathGuard } from './pathGuard';
+import type { ToolArguments, ToolHandlerContext, McpLimits } from './types';
 
 export class LuminaMcpServer {
 	private server: McpServer;
-	private httpServer: http.Server | null = null;
-	private transports = new Map<string, StreamableHTTPServerTransport>();
+	private httpTransport: HttpTransport;
+	private pathGuard: PathGuard;
+	private plugin: LuminaPlugin;
 	public port: number;
 	public authToken: string;
-	private plugin: LuminaPlugin;
-	private isRunning: boolean = false;
-	private writeLocks = new Set<string>();
 
 	constructor(plugin: LuminaPlugin, port: number, authToken: string) {
 		this.plugin = plugin;
 		this.port = port;
 		this.authToken = authToken;
 
-		this.server = new McpServer({
-			name: 'Lumina-MCP-Server',
-			version: '1.0.0'
-		}, {
-			capabilities: {
-				tools: {}
+		this.httpTransport = new HttpTransport(port, authToken);
+		this.pathGuard = new PathGuard();
+
+		this.server = new McpServer(
+			{
+				name: 'Lumina-MCP-Server',
+				version: '1.0.0',
 			},
-			jsonSchemaValidator: new SafeJsonSchemaValidator()
-		});
+			{
+				capabilities: {
+					tools: {},
+				},
+				jsonSchemaValidator: new SafeJsonSchemaValidator(),
+			},
+		);
 
 		this.registerTools();
 	}
 
-	private sanitizeFilename(name: string): string {
-		return name.replace(/[\\/:*?"<>|]/g, '_');
-	}
+	// ─── 설정에서 제한값 추출 ────────────────────────────────────────────────
 
-	private enforceMarkdownExt(path: string): string {
-		const norm = normalizePath(path);
-		if (!norm.toLowerCase().endsWith('.md')) {
-			return norm + '.md';
-		}
-		return norm;
-	}
-
-	/**
-	 * RAG 제외/포함 설정을 기반으로 에이전트 접근이 허용된 경로인지 확인합니다.
-	 * agentRespectRagExclusions이 false이면 모든 경로 허용.
-	 */
-	private isAgentPathAllowed(filePath: string): boolean {
+	private getLimits(): McpLimits {
 		const mcpSettings = this.plugin.settings.mcp;
-		if (!mcpSettings.agentRespectRagExclusions) {
-			return true;
-		}
-		const ragSettings = this.plugin.settings.rag;
-		if (!isIncluded(filePath, ragSettings.includedPaths)) {
-			return false;
-		}
-		if (isExcluded(filePath, ragSettings.excludedPaths)) {
-			return false;
-		}
-		return true;
+		return {
+			limitRead: mcpSettings.serverMaxReadChars || 20000,
+			limitAppend: mcpSettings.serverMaxAppendChars || 10000,
+			snippetLen: mcpSettings.serverSearchSnippetLength || 300,
+			maxResults: mcpSettings.serverSearchMaxResults || 10,
+		};
 	}
 
-	private async lock<T>(path: string, fn: () => Promise<T>): Promise<T> {
-		if (this.writeLocks.has(path)) {
-			throw new Error(`File ${path} is currently being modified by another operation.`);
-		}
-		this.writeLocks.add(path);
-		try {
-			return await fn();
-		} finally {
-			this.writeLocks.delete(path);
-		}
+	private buildContext(): ToolHandlerContext {
+		const limits = this.getLimits();
+		return {
+			plugin: this.plugin,
+			...limits,
+		};
 	}
 
-	private registerTools() {
+	// ─── MCP 핸들러 등록 ─────────────────────────────────────────────────────
+
+	private registerTools(): void {
+		// ListTools 핸들러
 		this.server.server.setRequestHandler(ListToolsRequestSchema, async () => {
 			return {
-				tools: [
-					{
-						name: 'read_active_note',
-						description: t('mcpServerTools.read_active_note.desc'),
-						inputSchema: { type: 'object', properties: {} }
-					},
-					{
-						name: 'read_note',
-						description: t('mcpServerTools.read_note.desc'),
-						inputSchema: {
-							type: 'object',
-							properties: {
-								path: { type: 'string', description: t('mcpServerTools.read_note.argPath') }
-							},
-							required: ['path']
-						}
-					},
-					{
-						name: 'create_note',
-						description: t('mcpServerTools.create_note.desc'),
-						inputSchema: {
-							type: 'object',
-							properties: {
-								path: { type: 'string', description: t('mcpServerTools.create_note.argPath') },
-								content: { type: 'string', description: t('mcpServerTools.create_note.argContent') }
-							},
-							required: ['path', 'content']
-						}
-					},
-					{
-						name: 'search_notes',
-						description: t('mcpServerTools.search_notes.desc'),
-						inputSchema: {
-							type: 'object',
-							properties: {
-								query: { type: 'string', description: t('mcpServerTools.search_notes.argQuery') }
-							},
-							required: ['query']
-						}
-					},
-					{
-						name: 'append_to_note',
-						description: t('mcpServerTools.append_to_note.desc'),
-						inputSchema: {
-							type: 'object',
-							properties: {
-								path: { type: 'string', description: t('mcpServerTools.append_to_note.argPath') },
-								content: { type: 'string', description: t('mcpServerTools.append_to_note.argContent') }
-							},
-							required: ['path', 'content']
-						}
-					},
-					{
-						name: 'read_daily_note',
-						description: t('mcpServerTools.read_daily_note.desc'),
-						inputSchema: { type: 'object', properties: {} }
-					},
-					{
-						name: 'append_to_daily_note',
-						description: t('mcpServerTools.append_to_daily_note.desc'),
-						inputSchema: {
-							type: 'object',
-							properties: {
-								content: { type: 'string', description: t('mcpServerTools.append_to_daily_note.argContent') }
-							},
-							required: ['content']
-						}
-					},
-					{
-						name: 'list_notes',
-						description: t('mcpServerTools.list_notes.desc'),
-						inputSchema: {
-							type: 'object',
-							properties: {
-								path: { type: 'string', description: t('mcpServerTools.list_notes.argPath') }
-							},
-							required: []
-						}
-					},
-					{
-						name: 'rag_search',
-						description: t('mcpServerTools.rag_search.desc'),
-						inputSchema: {
-							type: 'object',
-							properties: {
-								query: { type: 'string', description: t('mcpServerTools.rag_search.argQuery') },
-								top_k: { type: 'number', description: t('mcpServerTools.rag_search.argTopK') },
-								min_similarity: { type: 'number', description: t('mcpServerTools.rag_search.argMinSimilarity') }
-							},
-							required: ['query']
-						}
-					}
-				]
+				tools: getToolDefinitions(),
 			};
 		});
 
-		this.server.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-			const { name, arguments: args } = request.params;
-			const limits = this.plugin.settings.mcp;
-			const limitRead = limits.serverMaxReadChars || 20000;
-			const limitAppend = limits.serverMaxAppendChars || 10000;
-			const snippetLen = limits.serverSearchSnippetLength || 300;
-			const maxResults = limits.serverSearchMaxResults || 10;
-
-			const applyReadLimit = (content: string) => {
-				if (content.length > limitRead) {
-					return content.substring(0, limitRead) + t('mcpServerTools.common.truncated', { limit: limitRead });
-				}
-				return content;
-			};
+		// CallTool 핸들러
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		this.server.server.setRequestHandler(CallToolRequestSchema, async (request): Promise<any> => {
+			const { name, arguments: rawArgs } = request.params;
+			const args: ToolArguments = (rawArgs as Record<string, unknown>) ?? {};
+			const ctx = this.buildContext();
 
 			try {
-				switch (name) {
-					case 'read_active_note': {
-						const activeFile = this.plugin.app.workspace.getActiveFile();
-						if (!activeFile) {
-							return { content: [{ type: 'text', text: t('mcpServerTools.read_active_note.noActive') }] };
-						}
-						// 활성 노트는 항상 읽기 허용 (사용자가 직접 열어둔 파일이므로)
-						const content = await this.plugin.app.vault.read(activeFile);
-						return { content: [{ type: 'text', text: `[${activeFile.path}]\n${applyReadLimit(content)}` }] };
-					}
-
-					case 'read_note': {
-						const path = this.enforceMarkdownExt(args?.path as string);
-						if (!this.isAgentPathAllowed(path)) {
-							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.common.pathExcluded', { path }) }] };
-						}
-						const file = this.plugin.app.vault.getAbstractFileByPath(path);
-						if (!(file instanceof TFile)) {
-							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.read_note.notFound', { path }) }] };
-						}
-						const content = await this.plugin.app.vault.read(file);
-						return { content: [{ type: 'text', text: applyReadLimit(content) }] };
-					}
-
-					case 'create_note': {
-						let path = args?.path as string;
-						let content = args?.content as string || '';
-						if (content.length > limitAppend) {
-							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.create_note.tooLong', { limit: limitAppend }) }] };
-						}
-						
-						// 파일명 특수문자 정제 (경로 구분자 / 제외)
-						const parts = path.split('/');
-						const sanitizedParts = parts.map((p, i) => i === parts.length - 1 ? this.sanitizeFilename(p) : p);
-						path = this.enforceMarkdownExt(sanitizedParts.join('/'));
-						
-						if (!this.isAgentPathAllowed(path)) {
-							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.common.pathExcluded', { path }) }] };
-						}
-						
-						const existingFile = this.plugin.app.vault.getAbstractFileByPath(path);
-						if (existingFile) {
-							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.create_note.alreadyExists', { path }) }] };
-						}
-
-						// 부모 폴더가 없다면 에러
-						const parentPath = path.substring(0, path.lastIndexOf('/'));
-						if (parentPath && !this.plugin.app.vault.getAbstractFileByPath(parentPath)) {
-							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.create_note.parentFolderNotFound', { parentPath }) }] };
-						}
-
-						await this.lock(path, async () => {
-							await this.plugin.app.vault.create(path, content);
-						});
-						return { content: [{ type: 'text', text: t('mcpServerTools.create_note.success', { path }) }] };
-					}
-
-					case 'search_notes': {
-						const query = (args?.query as string).toLowerCase();
-						const files = this.plugin.app.vault.getMarkdownFiles();
-						const results: string[] = [];
-						
-						for (const file of files) {
-							// 제외된 경로는 검색 대상에서 제외
-							if (!this.isAgentPathAllowed(file.path)) {
-								continue;
-							}
-							const content = await this.plugin.app.vault.read(file);
-							const lowerContent = content.toLowerCase();
-							const index = lowerContent.indexOf(query);
-							if (index !== -1) {
-								const start = Math.max(0, index - snippetLen);
-								const end = Math.min(content.length, index + query.length + snippetLen);
-								let snippet = content.substring(start, end).replace(/\n/g, ' ');
-								if (start > 0) snippet = '...' + snippet;
-								if (end < content.length) snippet = snippet + '...';
-
-								results.push(`[${file.path}]\n${snippet}\n`);
-								if (results.length >= maxResults) break;
-							}
-						}
-						return { content: [{ type: 'text', text: results.length > 0 ? t('mcpServerTools.search_notes.foundPrefix', { max: maxResults }) + results.join('\n') : t('mcpServerTools.search_notes.noResults') }] };
-					}
-
-					case 'append_to_note': {
-						const path = this.enforceMarkdownExt(args?.path as string);
-						const newContent = args?.content as string;
-						
-						if (newContent.length > limitAppend) {
-							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.append_to_note.tooLong', { limit: limitAppend }) }] };
-						}
-
-						if (!this.isAgentPathAllowed(path)) {
-							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.common.pathExcluded', { path }) }] };
-						}
-
-						const file = this.plugin.app.vault.getAbstractFileByPath(path);
-						if (!(file instanceof TFile)) {
-							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.append_to_note.notFound', { path }) }] };
-						}
-
-						return await this.lock(path, async () => {
-							const currentContent = await this.plugin.app.vault.read(file);
-							if (currentContent.length + newContent.length > 100000) {
-								return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.append_to_note.maxLengthExceeded') }] };
-							}
-							
-							await this.plugin.app.vault.modify(file, currentContent + '\n' + newContent);
-							return { content: [{ type: 'text', text: t('mcpServerTools.append_to_note.success', { path }) }] };
-						});
-					}
-
-					case 'read_daily_note': {
-						const today = new window.Date().toISOString().split('T')[0];
-						const path = `${today}.md`;
-						// 데일리 노트 읽기는 사용자 일상 기록이므로 항상 허용
-						const file = this.plugin.app.vault.getAbstractFileByPath(path);
-						if (!(file instanceof TFile)) {
-							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.read_daily_note.notFound', { path }) }] };
-						}
-						const content = await this.plugin.app.vault.read(file);
-						return { content: [{ type: 'text', text: applyReadLimit(content) }] };
-					}
-
-					case 'append_to_daily_note': {
-						const today = new window.Date().toISOString().split('T')[0];
-						const path = `${today}.md`;
-						const newContent = args?.content as string;
-
-						if (newContent.length > limitAppend) {
-							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.append_to_daily_note.tooLong', { limit: limitAppend }) }] };
-						}
-
-						// 데일리 노트 추가는 항상 허용
-						return await this.lock(path, async () => {
-							const file = this.plugin.app.vault.getAbstractFileByPath(path);
-							if (file instanceof TFile) {
-								const currentContent = await this.plugin.app.vault.read(file);
-								if (currentContent.length + newContent.length > 100000) {
-									return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.append_to_daily_note.maxLengthExceeded') }] };
-								}
-								await this.plugin.app.vault.modify(file, currentContent + '\n' + newContent);
-								return { content: [{ type: 'text', text: t('mcpServerTools.append_to_daily_note.successAppend', { path }) }] };
-							} else {
-								await this.plugin.app.vault.create(path, newContent);
-								return { content: [{ type: 'text', text: t('mcpServerTools.append_to_daily_note.successCreate', { path }) }] };
-							}
-						});
-					}
-
-					case 'list_notes': {
-						const folderPath = args?.path as string | undefined;
-						const allFiles = this.plugin.app.vault.getMarkdownFiles();
-						
-						let filteredFiles = allFiles;
-						let displayPath = '';
-						
-						if (folderPath) {
-							const normalized = normalizePath(folderPath);
-							displayPath = ` in ${normalized}`;
-							filteredFiles = allFiles.filter(f => {
-								const filePath = f.path;
-								// 폴더 내의 파일만 포함 (정확한 폴더 경로 또는 하위 경로)
-								return filePath === normalized || filePath.startsWith(normalized + '/');
-							});
-						}
-						
-						// 제외된 경로 필터링
-						filteredFiles = filteredFiles.filter(f => this.isAgentPathAllowed(f.path));
-						
-						if (filteredFiles.length === 0) {
-							return { content: [{ type: 'text', text: t('mcpServerTools.list_notes.noNotes', { path: displayPath }) }] };
-						}
-						
-						const fileList = filteredFiles.map(f => f.path).sort().join('\n');
-						const result = t('mcpServerTools.list_notes.listPrefix', { path: displayPath, count: filteredFiles.length }) + fileList;
-						return { content: [{ type: 'text', text: applyReadLimit(result) }] };
-					}
-
-					case 'rag_search': {
-						const indexer = this.plugin.indexer;
-						if (!indexer || indexer.indexedChunks.length === 0) {
-							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.rag_search.notReady') }] };
-						}
-
-						const query = args?.query as string;
-						if (!query || !query.trim()) {
-							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.rag_search.emptyQuery') }] };
-						}
-
-						const topK = typeof args?.top_k === 'number' ? Math.min(args.top_k, maxResults) : Math.min(5, maxResults);
-						const minSim = typeof args?.min_similarity === 'number' ? Math.max(0, Math.min(1, args.min_similarity)) : 0.65;
-
-						try {
-							const results = await searchVault(
-								query,
-								indexer.indexedChunks,
-								(texts: string[]) => indexer.embed(texts),
-								topK,
-								minSim,
-							);
-
-							if (results.length === 0) {
-								return { content: [{ type: 'text', text: t('mcpServerTools.rag_search.noResults') }] };
-							}
-
-							const context = formatRagContext(results);
-							const summary = t('mcpServerTools.rag_search.summary', { count: results.length, minSim, context });
-							return { content: [{ type: 'text', text: applyReadLimit(summary) }] };
-						} catch (e) {
-							return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.rag_search.error', { error: (e as Error).message }) }] };
-						}
-					}
-
-					default:
-						return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.common.unknownTool') }] };
-				}
+				return await dispatchToolHandler(name, args, ctx, this.pathGuard);
 			} catch (e) {
-				return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.common.executionError', { error: (e as Error).message }) }] };
+				const message = e instanceof Error ? e.message : String(e);
+				debugLogger.logError('mcp', e instanceof Error ? e : new Error(message));
+				return {
+					isError: true,
+					content: [{ type: 'text' as const, text: t('mcpServerTools.common.executionError', { error: message }) }],
+				};
 			}
 		});
 	}
 
-	private authenticate(req: http.IncomingMessage): boolean {
-		const authHeader = req.headers['authorization'];
-		if (authHeader && authHeader.startsWith('Bearer ')) {
-			const token = authHeader.substring(7);
-			if (token === this.authToken) return true;
-		}
+	// ─── 수명주기 ────────────────────────────────────────────────────────────
 
-		try {
-			if (req.url) {
-				const url = new URL(req.url, `http://localhost`);
-				const token = url.searchParams.get('token');
-				if (token === this.authToken) return true;
-			}
-		} catch {
-			// ignore URL parse errors
-		}
-
-		return false;
+	async start(): Promise<void> {
+		await this.httpTransport.start(this.server);
+		this.port = this.httpTransport.port; // 실제 바인딩된 포트 반영
 	}
 
-	private parseBody(req: http.IncomingMessage): Promise<unknown> {
-		return new Promise((resolve, reject) => {
-			let body = '';
-			req.on('data', chunk => {
-				body += chunk;
-			});
-			req.on('end', () => {
-				try {
-					resolve(body ? JSON.parse(body) : null);
-				} catch (e) {
-					reject(e instanceof Error ? e : new Error(String(e)));
-				}
-			});
-			req.on('error', err => {
-				reject(err instanceof Error ? err : new Error(String(err)));
-			});
-		});
-	}
-
-	public async start() {
-		if (this.isRunning) return;
-		this.isRunning = true;
-
-		this.httpServer = http.createServer((req, res) => {
-			void (async () => {
-				try {
-					// CORS headers
-					res.setHeader('Access-Control-Allow-Origin', '*');
-					res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE');
-					res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, mcp-protocol-version, mcp-session-id');
-					res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id, mcp-protocol-version');
-
-					if (req.method === 'OPTIONS') {
-						res.writeHead(200);
-						res.end();
-						return;
-					}
-
-					let parsedBody: unknown = null;
-					if (req.method === 'POST') {
-						try {
-							parsedBody = await this.parseBody(req);
-						} catch (e) {
-							debugLogger.logError('mcp', e instanceof Error ? e : new Error(`Body parse error: ${e}`));
-							res.writeHead(400, { 'Content-Type': 'application/json' });
-							res.end(JSON.stringify({
-								jsonrpc: '2.0',
-								error: { code: -32700, message: 'Parse error: Invalid JSON' },
-								id: null
-							}));
-							return;
-						}
-					}
-
-					const hasInitializeMethod = (msg: unknown): boolean => {
-						return typeof msg === 'object' && msg !== null && 'method' in msg && (msg as Record<string, unknown>).method === 'initialize';
-					};
-
-					const isInit = req.method === 'POST' && (
-						Array.isArray(parsedBody)
-							? parsedBody.some(hasInitializeMethod)
-							: hasInitializeMethod(parsedBody)
-					);
-
-					if (req.url?.startsWith('/sse')) {
-						if (!this.authenticate(req)) {
-							res.writeHead(401, { 'Content-Type': 'text/plain' });
-							res.end('Unauthorized');
-							return;
-						}
-
-						const sessionId = req.headers['mcp-session-id'] as string | undefined;
-
-						if (isInit) {
-							debugLogger.logSystem('mcp', 'POST /sse: 새로운 SSE 연결 초기화 시작');
-							// 이전 연결이 있으면 모두 닫고 새로 시작 (Local MCP Server는 single-client)
-							for (const oldTransport of this.transports.values()) {
-								try { await oldTransport.close(); } catch { /* ignore */ }
-							}
-							this.transports.clear();
-
-							const newTransport = new StreamableHTTPServerTransport({
-								sessionIdGenerator: () => crypto.randomUUID(),
-								onsessioninitialized: (sid) => {
-									debugLogger.logSystem('mcp', `✅ SSE 세션 초기화 완료: ${sid}`);
-									this.transports.set(sid, newTransport);
-								}
-							});
-
-							newTransport.onclose = () => {
-								const sid = newTransport.sessionId;
-								if (sid && this.transports.has(sid)) {
-									debugLogger.logSystem('mcp', `SSE 세션 종료: ${sid}`);
-									this.transports.delete(sid);
-								}
-							};
-
-							// MCP 서버와 연결 (await로 완료 대기)
-							await this.server.connect(newTransport);
-							await newTransport.handleRequest(req, res, parsedBody);
-							return;
-						}
-
-						// GET / POST / DELETE 요청 처리
-						if (!sessionId) {
-							debugLogger.logSystem('mcp', `${req.method} /sse: mcp-session-id 없음`);
-							res.writeHead(400, { 'Content-Type': 'text/plain' });
-							res.end('Bad Request: Mcp-Session-Id header is required');
-							return;
-						}
-
-						const transport = this.transports.get(sessionId);
-						if (!transport) {
-							debugLogger.logSystem('mcp', `${req.method} /sse: 세션 ${sessionId}을 찾을 수 없음`);
-							res.writeHead(404, { 'Content-Type': 'text/plain' });
-							res.end('Session not found');
-							return;
-						}
-
-						await transport.handleRequest(req, res, parsedBody);
-						return;
-					}
-
-					if (req.url?.startsWith('/message')) {
-						if (req.method === 'POST') {
-							const sessionId = req.headers['mcp-session-id'] as string | undefined;
-							if (!sessionId) {
-								debugLogger.logSystem('mcp', 'POST /message: mcp-session-id 없음');
-								res.writeHead(400, { 'Content-Type': 'text/plain' });
-								res.end('Bad Request: Mcp-Session-Id header is required');
-								return;
-							}
-
-							const transport = this.transports.get(sessionId);
-							if (!transport) {
-								debugLogger.logSystem('mcp', `POST /message: 세션 ${sessionId}을 찾을 수 없음`);
-								res.writeHead(404, { 'Content-Type': 'text/plain' });
-								res.end('Session not found');
-								return;
-							}
-
-							await transport.handleRequest(req, res, parsedBody);
-							return;
-						}
-					}
-
-					res.writeHead(404, { 'Content-Type': 'text/plain' });
-					res.end('Not Found');
-				} catch (err) {
-					debugLogger.logError('mcp', err instanceof Error ? err : new Error(`HTTP 요청 처리 중 예외: ${err}`));
-					if (!res.headersSent) {
-						res.writeHead(500, { 'Content-Type': 'text/plain' });
-						res.end('Internal Server Error');
-					}
-				}
-			})();
-		});
-
-		return new Promise<void>((resolve, reject) => {
-			let currentPort = this.port;
-			let attempts = 0;
-			const maxAttempts = 10;
-
-			const tryListen = () => {
-				this.httpServer?.listen(currentPort, () => {
-					debugLogger.logSystem('mcp', `MCP Server started on port ${currentPort}`);
-					this.port = currentPort; // 실제 바인딩된 포트로 업데이트
-					resolve();
-				});
-			};
-
-			this.httpServer?.on('error', (err: NodeJS.ErrnoException) => {
-				if (err.code === 'EADDRINUSE') {
-					debugLogger.logSystem('mcp', `Port ${currentPort} is in use. Trying next port...`);
-					attempts++;
-					if (attempts < maxAttempts) {
-						currentPort++;
-						tryListen();
-					} else {
-						debugLogger.logError('mcp', new Error(`MCP Server failed to start after ${maxAttempts} attempts.`));
-						this.isRunning = false;
-						reject(err);
-					}
-				} else {
-					debugLogger.logError('mcp', err instanceof Error ? err : new Error(`MCP Server failed to start: ${err}`));
-					this.isRunning = false;
-					reject(err);
-				}
-			});
-
-			tryListen();
-		});
-	}
-
-	public async stop() {
-		this.isRunning = false;
-		for (const transport of this.transports.values()) {
-			try { await transport.close(); } catch { /* ignore */ }
-		}
-		this.transports.clear();
-		if (this.httpServer) {
-			await new Promise<void>((resolve) => {
-				this.httpServer!.close(() => resolve());
-				window.setTimeout(() => resolve(), 3000);
-			});
-			this.httpServer = null;
-		}
-		debugLogger.logSystem('mcp', `MCP Server stopped.`);
+	async stop(): Promise<void> {
+		await this.httpTransport.stop();
 	}
 }
