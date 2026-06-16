@@ -6,6 +6,7 @@ import { ConfirmModal } from '../../../shared/utils/modal';
 import { debugLogger } from '../../../shared/debugLogger';
 import { resetIndexing } from '../../store/ragStore';
 import { loadSystemLocaleCache } from '../../../shared/locales/translator';
+import { initEmbeddingWorker } from '../../../features/rag/ragInitializer';
 
 export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 	const s = tab.plugin.settings.misc;
@@ -48,11 +49,11 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 					s.autoFrontmatter = val;
 					await tab.saveAndSync();
 
-					if (val) {
-						tab.plugin.registerFrontmatterEvents();
-					} else {
-						tab.plugin.clearFrontmatterEvents();
-					}
+				if (val) {
+					tab.plugin.frontmatterManager.registerEvents();
+				} else {
+					tab.plugin.frontmatterManager.clearEvents();
+				}
 
 					tab.refreshDisplay();
 				});
@@ -143,7 +144,7 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 								if (Platform.isMobile && tab.plugin.settings.connections.embedding.mode === 'auto') {
 									new Notice(t('uiMessages.noticeMobileRag'), 10000);
 								} else {
-									tab.plugin.initEmbeddingWorker(false, true).catch(console.error);
+									initEmbeddingWorker(tab.plugin, false, true).catch(console.error);
 								}
 							}
 

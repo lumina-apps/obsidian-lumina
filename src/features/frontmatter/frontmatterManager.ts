@@ -1,0 +1,191 @@
+/**
+ * FrontmatterManager.ts
+ *
+ * 프론트매터 자동 생성 기능을 책임지는 모듈입니다.
+ * main.ts에서 분리되어 LuminaPlugin의 오케스트레이션 부담을 줄입니다.
+ *
+ * - 파일 생성 시 luminaCreated/luminaVersion/tags 자동 추가
+ * - 파일 수정 시 luminaModified/luminaVersion 갱신
+ * - 활성 파일(현재 보고 있는 노트) 수정 시 대기열 처리 (자동 병합 알림 방지)
+ * - rename/delete 이벤트에서 Map/Set 동기화
+ */
+
+import { App, TFile, type EventRef } from 'obsidian';
+import { isMarkdownFile } from '../../shared/utils/fileUtils';
+import { debugLogger } from '../../shared/debugLogger';
+import type LuminaPlugin from '../../main';
+
+/** processFrontMatter에서 다루는 프론트매터 구조 */
+interface LuminaFrontmatter {
+	luminaCreated?: string;
+	luminaModified?: string;
+	luminaVersion?: string;
+	tags?: string | string[];
+}
+
+/**
+ * LuminaPlugin을 대신해 프론트매터 자동생성 관련 모든 상태와
+ * 이벤트 등록/해제를 캡슐화합니다.
+ */
+export class FrontmatterManager {
+	private plugin: LuminaPlugin;
+	private app: App;
+
+	/** 재귀 방지: 이미 프론트매터 생성 중인 파일 경로 집합 */
+	private generatingFiles: Set<string> = new Set();
+	/** 플러그인이 수정한 직후 발생하는 modify 이벤트 무시용 맵 (path → timestamp) */
+	private lastUpdateMap: Map<string, number> = new Map();
+	/** 현재 보고 있는 파일 경로 (자동 병합 알림 방지) */
+	private activeFilePath: string | null = null;
+	/** 탭 전환 시 업데이트할 대기열 */
+	private pendingUpdates: Set<string> = new Set();
+	/** 등록된 이벤트 참조 (해제용) */
+	private eventRefs: EventRef[] = [];
+
+	constructor(plugin: LuminaPlugin) {
+		this.plugin = plugin;
+		this.app = plugin.app;
+	}
+
+	// ── Public API ────────────────────────────────────────────────────────
+
+	/** 프론트매터 자동생성 활성화 여부에 따라 이벤트 등록 */
+	registerIfEnabled(): void {
+		if (this.plugin.settings.misc.autoFrontmatter) {
+			this.registerEvents();
+		}
+	}
+
+	/** 프론트매터 자동생성 이벤트 리스닝 등록 */
+	registerEvents(): void {
+		this.clearEvents();
+
+		const activeFile = this.app.workspace.getActiveFile();
+		this.activeFilePath = activeFile ? activeFile.path : null;
+
+		const refFileOpen = this.app.workspace.on('file-open', (file) => {
+			this.activeFilePath = file ? file.path : null;
+			void this.processPendingUpdates();
+		});
+		this.plugin.registerEvent(refFileOpen);
+		this.eventRefs.push(refFileOpen);
+
+		const refCreate = this.app.vault.on('create', (file) => {
+			if (isMarkdownFile(file)) {
+				this.autoGenerate(file, false).catch(console.error);
+			}
+		});
+		this.plugin.registerEvent(refCreate);
+		this.eventRefs.push(refCreate);
+
+		const refModify = this.app.vault.on('modify', (file) => {
+			if (!isMarkdownFile(file)) return;
+
+			// 플러그인이 수정한 직후 발생하는 modify 이벤트는 무시 (1.5초 이내)
+			const lastUpdate = this.lastUpdateMap.get(file.path) || 0;
+			if (Date.now() - lastUpdate < 1500) return;
+
+			if (this.activeFilePath === file.path) {
+				// 현재 보고 있는 파일이면 업데이트를 대기열에 넣음 (자동 병합 알림 방지)
+				this.pendingUpdates.add(file.path);
+			} else {
+				// 현재 보고 있지 않은 파일이면 즉시 업데이트
+				this.autoGenerate(file, true).catch(console.error);
+			}
+		});
+		this.plugin.registerEvent(refModify);
+		this.eventRefs.push(refModify);
+
+		const refRename = this.app.vault.on('rename', (file, oldPath) => {
+			if (this.lastUpdateMap.has(oldPath)) {
+				const val = this.lastUpdateMap.get(oldPath)!;
+				this.lastUpdateMap.delete(oldPath);
+				this.lastUpdateMap.set(file.path, val);
+			}
+			if (this.pendingUpdates.has(oldPath)) {
+				this.pendingUpdates.delete(oldPath);
+				this.pendingUpdates.add(file.path);
+			}
+		});
+		this.plugin.registerEvent(refRename);
+		this.eventRefs.push(refRename);
+
+		const refDelete = this.app.vault.on('delete', (file) => {
+			this.lastUpdateMap.delete(file.path);
+			this.pendingUpdates.delete(file.path);
+		});
+		this.plugin.registerEvent(refDelete);
+		this.eventRefs.push(refDelete);
+	}
+
+	/** 등록된 프론트매터 이벤트 모두 해제 */
+	clearEvents(): void {
+		for (const ref of this.eventRefs) {
+			this.app.vault.offref(ref);
+		}
+		this.eventRefs = [];
+		this.pendingUpdates.clear();
+		this.lastUpdateMap.clear();
+	}
+
+	/** 완전한 파괴 (onunload) */
+	destroy(): void {
+		this.clearEvents();
+	}
+
+	// ── Private helpers ────────────────────────────────────────────────────
+
+	/**
+	 * 개별 파일에 프론트매터를 자동 생성/갱신합니다.
+	 * Obsidian의 내장 processFrontMatter를 사용하여 안전하게 YAML 업데이트.
+	 */
+	private async autoGenerate(file: TFile, isUpdate: boolean): Promise<void> {
+		if (!this.plugin.settings.misc.autoFrontmatter) return;
+
+		if (this.generatingFiles.has(file.path)) return;
+		this.generatingFiles.add(file.path);
+
+		try {
+			await this.app.fileManager.processFrontMatter(file, (fmObj) => {
+				const fm = fmObj as LuminaFrontmatter;
+				const now = new Date().toISOString();
+
+				if (!isUpdate) {
+					fm.luminaCreated = fm.luminaCreated || now;
+					if (typeof fm.tags === 'string') {
+						fm.tags = fm.tags
+							.split(',')
+							.map((t: string) => t.trim())
+							.filter((t: string) => t.length > 0);
+					} else if (!fm.tags || !Array.isArray(fm.tags)) {
+						fm.tags = [];
+					}
+				}
+
+				fm.luminaModified = now;
+				fm.luminaVersion = this.plugin.manifest.version;
+			});
+
+			this.lastUpdateMap.set(file.path, Date.now());
+		} catch (err) {
+			debugLogger.logError('system', err instanceof Error ? err : new Error(`프론트매터 자동생성 실패: ${err}`));
+		} finally {
+			this.generatingFiles.delete(file.path);
+		}
+	}
+
+	/** 탭 전환 시 대기 중인 프론트매터 업데이트 처리 */
+	private async processPendingUpdates(): Promise<void> {
+		for (const path of this.pendingUpdates) {
+			if (path === this.activeFilePath) continue;
+
+			const file = this.app.vault.getAbstractFileByPath(path);
+			if (file && isMarkdownFile(file)) {
+				this.pendingUpdates.delete(path);
+				await this.autoGenerate(file, true).catch(console.error);
+			} else {
+				this.pendingUpdates.delete(path);
+			}
+		}
+	}
+}

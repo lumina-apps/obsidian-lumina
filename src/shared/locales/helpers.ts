@@ -37,7 +37,7 @@ export const tStore = derived(currentLanguageStore, () => {
   };
 });
 
-export function addDynamicLocale(lang: string, translation: any) {
+export function addDynamicLocale(lang: string, translation: DeepPartial<Translation>) {
   locales[lang] = translation;
 }
 
@@ -84,13 +84,13 @@ export type TranslationKeys = Extract<Paths<Translation>, string>;
  */
 export function t(path: TranslationKeys, params?: Record<string, string | number>): string {
     const keys = path.split('.');
-    let value: any = locales[currentLanguage];
+    let value: unknown = locales[currentLanguage];
     
     // console.log(`[Lumina Localization] t('${path}') using language:`, currentLanguage);
 
     for (const key of keys) {
         if (value && typeof value === 'object') {
-            value = value[key];
+            value = (value as Record<string, unknown>)[key];
         } else {
             value = undefined;
             break;
@@ -102,7 +102,7 @@ export function t(path: TranslationKeys, params?: Record<string, string | number
         value = locales['en'];
         for (const key of keys) {
             if (value && typeof value === 'object') {
-                value = value[key];
+                value = (value as Record<string, unknown>)[key];
             } else {
                 value = undefined;
                 break;

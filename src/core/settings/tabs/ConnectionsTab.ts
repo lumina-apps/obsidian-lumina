@@ -9,6 +9,8 @@ import { ConfirmModal, AgentBetaModal } from '../../../shared/utils/modal';
 import { setLanguage, t } from '../../../shared/locales/helpers';
 import { debugLogger } from '../../../shared/debugLogger';
 import { setIndexingStatus } from '../../store/ragStore';
+import { initEmbeddingWorker } from '../../../features/rag/ragInitializer';
+import { migrateQuickActions } from '../migrations';
 
 export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): void {
 	const s = tab.plugin.settings.connections;
@@ -52,7 +54,7 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 						setLanguage(val); // 언어 변경 즉시 반영
 					}
 					s.language = val as typeof s.language;
-					tab.plugin.migrateQuickActions();
+					migrateQuickActions(tab.plugin);
 					await tab.saveAndSync();
 					tab.refreshDisplay(); // 언어 변경에 따른 UI 리렌더링
 				});
@@ -142,8 +144,8 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 				await tab.saveAndSync();
 				if (val && !Platform.isMobile) {
 					// 워커 초기화는 백그라운드에서 실행 (설정 시 UI 반복 방지)
-					tab.plugin.initEmbeddingWorker().catch((err: Error) =>
-						debugLogger.logError('rag', err instanceof Error ? err : new Error(`RAG 초기화 실패: ${err}`))
+					initEmbeddingWorker(tab.plugin).catch((err: unknown) =>
+						debugLogger.logError('rag', err instanceof Error ? err : new Error(`RAG 초기화 실패: ${String(err)}`))
 					);
 				} else if (!val) {
 					// 비활성화: 워커 및 인덱서 정리
@@ -239,7 +241,7 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 			await tab.saveAndSync();
 
 			if (s.ragEnabled && !Platform.isMobile) {
-				tab.plugin.initEmbeddingWorker().catch(err =>
+				initEmbeddingWorker(tab.plugin).catch((err: unknown) =>
 					debugLogger.logError('rag', err instanceof Error ? err : new Error(`임베딩 모델 변경 후 초기화 실패: ${err}`))
 				);
 			}
