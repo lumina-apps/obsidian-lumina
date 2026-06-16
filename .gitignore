@@ -35,3 +35,9 @@ data.json
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# SonarQube
+.sonarlint/
+.scannerwork/
+.problems/
+sonar-project.properties
