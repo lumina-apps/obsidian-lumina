@@ -4,23 +4,18 @@ import type {
 	ChatOptions,
 	ChatResponse,
 	ILLMProvider,
-	ToolCall,
 	TokenUsage,
 } from '../../../shared/types/llm.types';
 import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
 import { formatOpenAIMessages, formatOpenAITools } from '../openai-formatter';
-import type { OpenAIResponse, OpenAIToolCallInfo } from '../openai-types';
+import type { OpenAIResponse } from '../openai-types';
 import {
-	createReasoningState,
 	raiseApiError,
-	resolveReasoningTag,
+	mapOpenAIUsage,
 	readStreamLines,
-	parseSSEChunk,
-	extractUsage,
-	accumulateToolCalls,
-	convertOpenAIToolCalls,
 	convertNonStreamToolCalls,
+	StreamChunkAccumulator,
 } from '../utils';
 
 /** 로컬 모델에서 사용하는 기본 stop 시퀀스 */
@@ -75,76 +70,9 @@ export class OpenAICompatProvider implements ILLMProvider {
 	): Promise<{ usage?: TokenUsage; finishReason?: string }> {
 		const url = `${this.baseUrl}/v1/chat/completions`;
 		const headers = this.buildHeaders();
-		const payload: Record<string, unknown> = {
-			model: options.model,
-			messages: formatOpenAIMessages(messages),
-			temperature: options.temperature ?? 0.7,
-			max_tokens: options.maxOutputTokens,
-			stream: true,
-		};
+		const payload = this.buildStreamOnlyPayload(options, messages);
 
-		const stopSeq = options.stop ?? LOCAL_STOP_SEQUENCES;
-		if (stopSeq.length > 0) {
-			payload.stop = stopSeq;
-		}
-
-		let usage: TokenUsage | undefined;
-		let finishReason: string | undefined;
-
-		const response = await window.fetch(url, {
-			method: 'POST',
-			headers,
-			body: JSON.stringify(payload),
-			signal: options.signal,
-		});
-
-		if (!response.ok) {
-			const errText = await response.text();
-			throw new Error(`${this.type} Error (HTTP ${response.status}): ${errText}`);
-		}
-
-		const reasoning = createReasoningState();
-		await readStreamLines(response, options.signal, (line) => {
-			const chunk = parseSSEChunk(line);
-			if (!chunk) return;
-
-			const choice = chunk.choices?.[0];
-			if (choice) {
-				if (choice.finish_reason) {
-					finishReason = choice.finish_reason;
-				}
-				const delta = choice.delta;
-				if (delta) {
-					const reasoningText = delta.reasoning_content ?? delta.reasoning ?? undefined;
-					const isReasoning = reasoningText !== undefined && reasoningText.length > 0;
-					let displayText: string | undefined;
-
-					const tagText = resolveReasoningTag(reasoning, reasoningText, isReasoning);
-					if (tagText) {
-						onChunk(tagText);
-					}
-
-					if (isReasoning && reasoning.isThinking) {
-						displayText = reasoningText;
-					} else if (!isReasoning && delta.content) {
-						displayText = delta.content;
-					}
-
-					if (displayText) {
-						onChunk(displayText);
-					}
-				}
-			}
-			const newUsage = extractUsage(chunk);
-			if (newUsage) usage = newUsage;
-		});
-
-		// thinking 블록이 닫히지 않았으면 닫음
-		if (reasoning.isThinking) {
-			onChunk('\n</think>\n');
-		}
-
-		return { usage, finishReason };
+		return this.handleStreamingChatRaw(url, headers, payload, options.signal, onChunk);
 	}
 
 	async embed(texts: string[], options: { model: string }): Promise<number[][]> {
@@ -198,6 +126,26 @@ export class OpenAICompatProvider implements ILLMProvider {
 		return payload;
 	}
 
+	private buildStreamOnlyPayload(
+		options: ChatOptions,
+		messages: ChatMessage[],
+	): Record<string, unknown> {
+		const payload: Record<string, unknown> = {
+			model: options.model,
+			messages: formatOpenAIMessages(messages),
+			temperature: options.temperature ?? 0.7,
+			max_tokens: options.maxOutputTokens,
+			stream: true,
+		};
+
+		const stopSeq = options.stop ?? LOCAL_STOP_SEQUENCES;
+		if (stopSeq.length > 0) {
+			payload.stop = stopSeq;
+		}
+
+		return payload;
+	}
+
 	private async handleStreamingChat(
 		url: string,
 		headers: Record<string, string>,
@@ -205,11 +153,6 @@ export class OpenAICompatProvider implements ILLMProvider {
 		signal: AbortSignal | undefined,
 		onChunk: (chunk: string) => void,
 	): Promise<ChatResponse> {
-		let fullContent = '';
-		const accumulatedToolCalls: OpenAIToolCallInfo[] = [];
-		let usage: TokenUsage | undefined;
-		let finishReason: string | undefined;
-
 		const response = await window.fetch(url, {
 			method: 'POST',
 			headers,
@@ -222,59 +165,51 @@ export class OpenAICompatProvider implements ILLMProvider {
 			throw new Error(`${this.type} Error (HTTP ${response.status}): ${errText}`);
 		}
 
-		const reasoning = createReasoningState();
+		const accumulator = new StreamChunkAccumulator(onChunk, { enableReasoning: true });
+
 		await readStreamLines(response, signal, (line) => {
-			const chunk = parseSSEChunk(line);
-			if (!chunk) return;
-
-			const choice = chunk.choices?.[0];
-			if (choice) {
-				if (choice.finish_reason) {
-					finishReason = choice.finish_reason;
-				}
-				const delta = choice.delta;
-				if (delta) {
-					const reasoningText = delta.reasoning_content ?? delta.reasoning ?? undefined;
-					const isReasoning = reasoningText !== undefined && reasoningText.length > 0;
-					let displayText: string | undefined;
-
-					const tagText = resolveReasoningTag(reasoning, reasoningText, isReasoning);
-					if (tagText) {
-						fullContent += tagText;
-						onChunk(tagText);
-					}
-
-					if (isReasoning && reasoning.isThinking) {
-						displayText = reasoningText;
-					} else if (!isReasoning && delta.content) {
-						displayText = delta.content;
-					}
-
-					if (displayText) {
-						fullContent += displayText;
-						onChunk(displayText);
-					}
-
-					accumulateToolCalls(delta, accumulatedToolCalls);
-				}
-			}
-			const newUsage = extractUsage(chunk);
-			if (newUsage) usage = newUsage;
+			accumulator.processLine(line);
 		});
 
-		// thinking 블록이 닫히지 않았으면 닫음
-		if (reasoning.isThinking) {
-			fullContent += '\n</think>\n';
+		accumulator.finalize();
+
+		const result = accumulator.getResult();
+		return {
+			content: result.content,
+			usage: result.usage,
+			toolCalls: result.toolCalls.length > 0 ? result.toolCalls : undefined,
+			finishReason: result.finishReason,
+		};
+	}
+
+	private async handleStreamingChatRaw(
+		url: string,
+		headers: Record<string, string>,
+		payload: Record<string, unknown>,
+		signal: AbortSignal | undefined,
+		onChunk: (chunk: string) => void,
+	): Promise<{ usage?: TokenUsage; finishReason?: string }> {
+		const response = await window.fetch(url, {
+			method: 'POST',
+			headers,
+			body: JSON.stringify(payload),
+			signal,
+		});
+
+		if (!response.ok) {
+			const errText = await response.text();
+			throw new Error(`${this.type} Error (HTTP ${response.status}): ${errText}`);
 		}
 
-		const toolCalls = convertOpenAIToolCalls(accumulatedToolCalls);
+		const accumulator = new StreamChunkAccumulator(onChunk, { enableReasoning: true });
 
-		return {
-			content: fullContent,
-			usage,
-			toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-			finishReason,
-		};
+		await readStreamLines(response, signal, (line) => {
+			accumulator.processLine(line);
+		});
+
+		accumulator.finalize();
+
+		return { usage: accumulator.usage, finishReason: accumulator.finishReason };
 	}
 
 	private async handleNonStreamingChat(
@@ -297,28 +232,20 @@ export class OpenAICompatProvider implements ILLMProvider {
 		}
 		const finishReason = choice?.finish_reason || undefined;
 
-		const toolCalls: ToolCall[] = message.tool_calls
+		const toolCalls = message.tool_calls
 			? convertNonStreamToolCalls(message.tool_calls)
 			: [];
 
-		let usage: TokenUsage | undefined;
-		if (data.usage) {
-			usage = {
-				inputTokens: data.usage.prompt_tokens,
-				outputTokens: data.usage.completion_tokens,
-				totalTokens: data.usage.total_tokens,
-			};
-		}
+		const usage = mapOpenAIUsage(data.usage);
 
-		let returnContent = '';
 		const reasoning = message.reasoning_content ?? message.reasoning;
+		let content = message.content || '';
 		if (reasoning) {
-			returnContent += `<think>\n${reasoning}\n</think>\n`;
+			content = `<think>\n${reasoning}\n</think>\n${content}`;
 		}
-		returnContent += message.content || '';
 
 		return {
-			content: returnContent,
+			content,
 			usage,
 			toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
 			finishReason,

@@ -185,15 +185,24 @@ export function parseSSEChunk(line: string): OpenAIStreamChunk | null {
 }
 
 /**
+ * OpenAI API 응답의 usage 정보를 TokenUsage로 변환합니다.
+ * 스트리밍 청크와 논스트리밍 응답 모두 동일 구조이므로 공통으로 사용합니다.
+ */
+export function mapOpenAIUsage(usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } | undefined): TokenUsage | undefined {
+	if (!usage) return undefined;
+	return {
+		inputTokens: usage.prompt_tokens,
+		outputTokens: usage.completion_tokens,
+		totalTokens: usage.total_tokens,
+	};
+}
+
+/**
  * OpenAI 스트림 청크에서 usage 정보를 추출하여 TokenUsage로 변환합니다.
+ * @deprecated use mapOpenAIUsage(chunk.usage) instead
  */
 export function extractUsage(chunk: OpenAIStreamChunk): TokenUsage | undefined {
-	if (!chunk.usage) return undefined;
-	return {
-		inputTokens: chunk.usage.prompt_tokens,
-		outputTokens: chunk.usage.completion_tokens,
-		totalTokens: chunk.usage.total_tokens,
-	};
+	return mapOpenAIUsage(chunk.usage);
 }
 
 /**
@@ -261,4 +270,138 @@ export function convertNonStreamToolCalls(
 		}
 	}
 	return result;
+}
+
+// ─── Stream Chunk Accumulator ───────────────────────────────────────────────
+
+/** OpenAI Stream delta 타입 (openai-types에서 추출, non-nullable) */
+type OpenAIDelta = NonNullable<NonNullable<OpenAIStreamChunk['choices']>[number]['delta']>;
+
+export interface StreamChunkAccumulatorOptions {
+	/** reasoning 모델 (DeepSeek-R1 등)의 `<think>` 태그 래핑 활성화 */
+	enableReasoning?: boolean;
+}
+
+/**
+ * OpenAI 호환 SSE 스트림 청크 처리와 상태 누적을 담당하는 클래스입니다.
+ *
+ * OpenAIProvider와 OpenAICompatProvider 양쪽에서 사용하며,
+ * content 누적, tool call 누적, usage 추출, finishReason 추적,
+ * 그리고 reasoning 모델의 `<think>` 태그 래핑을 캡슐화합니다.
+ */
+export class StreamChunkAccumulator {
+	/** 누적된 텍스트 content */
+	fullContent = '';
+	/** 누적 중인 tool call 정보 */
+	toolCalls: OpenAIToolCallInfo[] = [];
+	/** 스트림에서 추출한 토큰 usage */
+	usage: TokenUsage | undefined;
+	/** 스트림 종료 사유 */
+	finishReason: string | undefined;
+
+	private reasoning: ReasoningState | undefined;
+	private onChunk: ((text: string) => void) | undefined;
+
+	constructor(onChunk?: (text: string) => void, options?: StreamChunkAccumulatorOptions) {
+		this.onChunk = onChunk;
+		if (options?.enableReasoning) {
+			this.reasoning = createReasoningState();
+		}
+	}
+
+	/**
+	 * SSE 라인 한 줄을 파싱하여 누적 상태를 갱신합니다.
+	 * @returns 청크가 정상 처리되었으면 true, 빈 라인/파싱 실패면 false
+	 */
+	processLine(line: string): boolean {
+		const chunk = parseSSEChunk(line);
+		if (!chunk) return false;
+
+		const choice = chunk.choices?.[0];
+		if (choice) {
+			if (choice.finish_reason) {
+				this.finishReason = choice.finish_reason;
+			}
+			if (choice.delta) {
+				this.processDelta(choice.delta);
+			}
+		}
+
+		const newUsage = mapOpenAIUsage(chunk.usage);
+		if (newUsage) this.usage = newUsage;
+
+		return true;
+	}
+
+	/**
+	 * 스트림 종료 시 마무리 처리 (누락된 `</think>` 태그 닫기 등)
+	 */
+	finalize(): void {
+		if (this.reasoning?.isThinking) {
+			const closeTag = '\n</think>\n';
+			this.fullContent += closeTag;
+			this.onChunk?.(closeTag);
+		}
+	}
+
+	/**
+	 * 누적 결과를 반환합니다.
+	 */
+	getResult(): {
+		content: string;
+		toolCalls: ToolCall[];
+		usage?: TokenUsage;
+		finishReason?: string;
+	} {
+		const convertedToolCalls = convertOpenAIToolCalls(this.toolCalls);
+		return {
+			content: this.fullContent,
+			toolCalls: convertedToolCalls,
+			usage: this.usage,
+			finishReason: this.finishReason,
+		};
+	}
+
+	// ─── Private ──────────────────────────────────────────────────────────
+
+	private processDelta(delta: OpenAIDelta): void {
+		if (this.reasoning) {
+			this.processDeltaWithReasoning(delta);
+		} else {
+			this.processDeltaPlain(delta);
+		}
+		accumulateToolCalls(delta, this.toolCalls);
+	}
+
+	private processDeltaPlain(delta: OpenAIDelta): void {
+		if (delta.content) {
+			this.fullContent += delta.content;
+			this.onChunk?.(delta.content);
+		}
+	}
+
+	private processDeltaWithReasoning(delta: OpenAIDelta): void {
+		if (!this.reasoning) return;
+
+		const reasoningText = delta.reasoning_content ?? delta.reasoning ?? undefined;
+		const isReasoning = reasoningText !== undefined && reasoningText.length > 0;
+
+		const tagText = resolveReasoningTag(this.reasoning, reasoningText, isReasoning);
+		if (tagText) {
+			this.fullContent += tagText;
+			this.onChunk?.(tagText);
+		}
+
+		let displayText: string | undefined;
+		if (isReasoning && this.reasoning.isThinking) {
+			displayText = reasoningText;
+		} else if (!isReasoning && delta.content) {
+			displayText = delta.content;
+		}
+
+		if (displayText) {
+			this.fullContent += displayText;
+			this.onChunk?.(displayText);
+		}
+	}
 }

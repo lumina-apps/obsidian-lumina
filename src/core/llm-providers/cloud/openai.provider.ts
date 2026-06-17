@@ -1,15 +1,13 @@
 import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, TokenUsage } from '../../../shared/types/llm.types';
 import { requestUrl } from 'obsidian';
 import { formatOpenAIMessages, formatOpenAITools } from '../openai-formatter';
-import type { OpenAIResponse, OpenAIToolCallInfo } from '../openai-types';
+import type { OpenAIResponse } from '../openai-types';
 import {
 	raiseApiError,
+	mapOpenAIUsage,
 	readStreamLines,
-	parseSSEChunk,
-	extractUsage,
-	accumulateToolCalls,
-	convertOpenAIToolCalls,
 	convertNonStreamToolCalls,
+	StreamChunkAccumulator,
 } from '../utils';
 
 export class OpenAIProvider implements ILLMProvider {
@@ -57,52 +55,9 @@ export class OpenAIProvider implements ILLMProvider {
 	): Promise<{ usage?: TokenUsage; finishReason?: string }> {
 		const url = 'https://api.openai.com/v1/chat/completions';
 		const headers = this.buildHeaders();
-		const payload: Record<string, unknown> = {
-			model: options.model,
-			messages: formatOpenAIMessages(messages),
-			temperature: options.temperature ?? 0.7,
-			max_tokens: options.maxOutputTokens,
-			stream: true,
-		};
+		const payload = this.buildStreamOnlyPayload(options, messages);
 
-		if (options.stop && options.stop.length > 0) {
-			payload.stop = options.stop;
-		}
-
-		let usage: TokenUsage | undefined;
-		let finishReason: string | undefined;
-
-		const response = await window.fetch(url, {
-			method: 'POST',
-			headers,
-			body: JSON.stringify(payload),
-			signal: options.signal,
-		});
-
-		if (!response.ok) {
-			const errText = await response.text();
-			throw new Error(`OpenAI Error (HTTP ${response.status}): ${errText}`);
-		}
-
-		await readStreamLines(response, options.signal, (line) => {
-			const chunk = parseSSEChunk(line);
-			if (!chunk) return;
-
-			const choice = chunk.choices?.[0];
-			if (choice) {
-				if (choice.finish_reason) {
-					finishReason = choice.finish_reason;
-				}
-				const delta = choice.delta;
-				if (delta?.content) {
-					onChunk(delta.content);
-				}
-			}
-			const newUsage = extractUsage(chunk);
-			if (newUsage) usage = newUsage;
-		});
-
-		return { usage, finishReason };
+		return this.handleStreamingChatRaw(url, headers, payload, options.signal, onChunk);
 	}
 
 	async embed(texts: string[], options: { model: string }): Promise<number[][]> {
@@ -155,6 +110,25 @@ export class OpenAIProvider implements ILLMProvider {
 		return payload;
 	}
 
+	private buildStreamOnlyPayload(
+		options: ChatOptions,
+		messages: ChatMessage[],
+	): Record<string, unknown> {
+		const payload: Record<string, unknown> = {
+			model: options.model,
+			messages: formatOpenAIMessages(messages),
+			temperature: options.temperature ?? 0.7,
+			max_tokens: options.maxOutputTokens,
+			stream: true,
+		};
+
+		if (options.stop && options.stop.length > 0) {
+			payload.stop = options.stop;
+		}
+
+		return payload;
+	}
+
 	private async handleStreamingChat(
 		url: string,
 		headers: Record<string, string>,
@@ -162,11 +136,6 @@ export class OpenAIProvider implements ILLMProvider {
 		signal: AbortSignal | undefined,
 		onChunk: (chunk: string) => void,
 	): Promise<ChatResponse> {
-		let fullContent = '';
-		const accumulatedToolCalls: OpenAIToolCallInfo[] = [];
-		let usage: TokenUsage | undefined;
-		let finishReason: string | undefined;
-
 		const response = await window.fetch(url, {
 			method: 'POST',
 			headers,
@@ -179,36 +148,51 @@ export class OpenAIProvider implements ILLMProvider {
 			throw new Error(`OpenAI Error (HTTP ${response.status}): ${errText}`);
 		}
 
-		await readStreamLines(response, signal, (line) => {
-			const chunk = parseSSEChunk(line);
-			if (!chunk) return;
+		const accumulator = new StreamChunkAccumulator(onChunk);
 
-			const choice = chunk.choices?.[0];
-			if (choice) {
-				if (choice.finish_reason) {
-					finishReason = choice.finish_reason;
-				}
-				const delta = choice.delta;
-				if (delta) {
-					if (delta.content) {
-						fullContent += delta.content;
-						onChunk(delta.content);
-					}
-					accumulateToolCalls(delta, accumulatedToolCalls);
-				}
-			}
-			const newUsage = extractUsage(chunk);
-			if (newUsage) usage = newUsage;
+		await readStreamLines(response, signal, (line) => {
+			accumulator.processLine(line);
 		});
 
-		const toolCalls = convertOpenAIToolCalls(accumulatedToolCalls);
+		accumulator.finalize();
 
+		const result = accumulator.getResult();
 		return {
-			content: fullContent,
-			usage,
-			toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-			finishReason,
+			content: result.content,
+			usage: result.usage,
+			toolCalls: result.toolCalls.length > 0 ? result.toolCalls : undefined,
+			finishReason: result.finishReason,
 		};
+	}
+
+	private async handleStreamingChatRaw(
+		url: string,
+		headers: Record<string, string>,
+		payload: Record<string, unknown>,
+		signal: AbortSignal | undefined,
+		onChunk: (chunk: string) => void,
+	): Promise<{ usage?: TokenUsage; finishReason?: string }> {
+		const response = await window.fetch(url, {
+			method: 'POST',
+			headers,
+			body: JSON.stringify(payload),
+			signal,
+		});
+
+		if (!response.ok) {
+			const errText = await response.text();
+			throw new Error(`OpenAI Error (HTTP ${response.status}): ${errText}`);
+		}
+
+		const accumulator = new StreamChunkAccumulator(onChunk);
+
+		await readStreamLines(response, signal, (line) => {
+			accumulator.processLine(line);
+		});
+
+		accumulator.finalize();
+
+		return { usage: accumulator.usage, finishReason: accumulator.finishReason };
 	}
 
 	private async handleNonStreamingChat(
@@ -235,14 +219,7 @@ export class OpenAIProvider implements ILLMProvider {
 			? convertNonStreamToolCalls(message.tool_calls)
 			: [];
 
-		let usage: TokenUsage | undefined;
-		if (data.usage) {
-			usage = {
-				inputTokens: data.usage.prompt_tokens,
-				outputTokens: data.usage.completion_tokens,
-				totalTokens: data.usage.total_tokens,
-			};
-		}
+		const usage = mapOpenAIUsage(data.usage);
 
 		return {
 			content: message.content || '',
