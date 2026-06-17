@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { setIcon } from 'obsidian';
 	import type { SearchResult } from '../../../shared/types/rag.types';
 	import { tStore } from '../../../shared/locales/index';
+	import { iconAction } from '../../../shared/utils/domUtils';
+	import { extractFileName } from '../../../shared/utils/fileUtils';
 
 	let {
 		stagedItems,
@@ -18,64 +19,60 @@
 		onRemove: (id: string) => void;
 		onStartChat: () => void;
 	} = $props();
-
-	function icon(node: HTMLElement, iconId: string) {
-		setIcon(node, iconId);
-	}
 </script>
 
 <div class="lumina-discovery__staging-area">
-	<div class="lumina-discovery__staging-header">
-		<div class="lumina-discovery__staging-title">
-			<span use:icon={"layers"}></span>
-			{$tStore('discovery.stagedContext')} ({stagedItems.length})
+		<div class="lumina-discovery__staging-header">
+			<div class="lumina-discovery__staging-title">
+				<span use:iconAction={"layers"}></span>
+				{$tStore('discovery.stagedContext')} ({stagedItems.length})
+			</div>
+			<button class="lumina-discovery__clear-staging-btn" onclick={onClear} aria-label="Clear All">
+				<span use:iconAction={"trash-2"}></span>
+			</button>
 		</div>
-		<button class="lumina-discovery__clear-staging-btn" onclick={onClear} aria-label="Clear All">
-			<span use:icon={"trash-2"}></span>
-		</button>
-	</div>
-	<div class="lumina-discovery__staging-chips">
-		{#each stagedItems as item (item.chunk.id)}
-			<div class="lumina-discovery__staging-chip">
-				<span class="lumina-discovery__staging-chip-text">
-					{item.chunk.path.replace(/\.md$/, '').split('/').pop()}
-				</span>
-				<button
-					class="lumina-discovery__staging-chip-remove"
-					aria-label="Remove"
-					onclick={() => onRemove(item.chunk.id)}
+		<div class="lumina-discovery__staging-chips">
+			{#each stagedItems as item (item.chunk.id)}
+				<div class="lumina-discovery__staging-chip">
+					<span class="lumina-discovery__staging-chip-text">
+						{extractFileName(item.chunk.path)}
+					</span>
+					<button
+						class="lumina-discovery__staging-chip-remove"
+						aria-label="Remove"
+						onclick={() => onRemove(item.chunk.id)}
+					>
+						<span use:iconAction={"x"}></span>
+					</button>
+				</div>
+			{/each}
+		</div>
+		<div class="lumina-discovery__staging-footer">
+			<div class="lumina-discovery__staging-progress-wrapper">
+				<div
+					class="lumina-discovery__staging-progress-bar"
+					style="width: {Math.min(100, (stagedTokenCount / maxTokens) * 100)}%"
+					class:is-danger={stagedTokenCount > maxTokens}
+				></div>
+				<div
+					class="lumina-discovery__staging-progress-text"
+					class:is-danger={stagedTokenCount > maxTokens}
 				>
-					<span use:icon={"x"}></span>
-				</button>
+					{$tStore('discovery.approxTokens', {
+						current: stagedTokenCount.toLocaleString(),
+						max: maxTokens.toLocaleString()
+					})}
+				</div>
 			</div>
-		{/each}
-	</div>
-	<div class="lumina-discovery__staging-footer">
-		<div class="lumina-discovery__staging-progress-wrapper">
-			<div
-				class="lumina-discovery__staging-progress-bar"
-				style="width: {Math.min(100, (stagedTokenCount / maxTokens) * 100)}%"
-				class:is-danger={stagedTokenCount > maxTokens}
-			></div>
-			<div
-				class="lumina-discovery__staging-progress-text"
-				class:is-danger={stagedTokenCount > maxTokens}
+			<button
+				class="lumina-discovery__start-chat-btn"
+				onclick={onStartChat}
+				disabled={stagedTokenCount > maxTokens}
 			>
-				{$tStore('discovery.approxTokens', {
-					current: stagedTokenCount.toLocaleString(),
-					max: maxTokens.toLocaleString()
-				})}
-			</div>
+				<span use:iconAction={"message-square"}></span>
+				{$tStore('discovery.startChat', { count: stagedItems.length })}
+			</button>
 		</div>
-		<button
-			class="lumina-discovery__start-chat-btn"
-			onclick={onStartChat}
-			disabled={stagedTokenCount > maxTokens}
-		>
-			<span use:icon={"message-square"}></span>
-			{$tStore('discovery.startChat', { count: stagedItems.length })}
-		</button>
-	</div>
 </div>
 
 <style>

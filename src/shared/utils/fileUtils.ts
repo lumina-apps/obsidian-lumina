@@ -48,3 +48,11 @@ export function sanitizeFilePath(rawPath: string): string {
 	);
 	return enforceMarkdownExt(sanitizedParts.join('/'));
 }
+
+/**
+ * 파일 경로에서 확장자를 제외한 파일명만 추출합니다.
+ * 예: "folder/my note.md" → "my note"
+ */
+export function extractFileName(path: string): string {
+	return path.replace(/\.md$/, '').split('/').pop() ?? '';
+}

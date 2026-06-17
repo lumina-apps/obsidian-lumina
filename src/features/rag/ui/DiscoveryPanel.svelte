@@ -1,19 +1,22 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Notice, setIcon, MarkdownView, Keymap, TFile } from 'obsidian';
+	import { Notice, MarkdownView, Keymap } from 'obsidian';
 	import type LuminaPlugin from '../../../main';
 	import { discoveryState, updateDiscoveryState, addToStaging, removeFromStaging, clearStaging } from '../../../core/store/discoveryStore';
 	import { isRagEnabled } from '../../../core/store/settingsStore';
 	import { indexingState, indexingProgress, estimatedTimeRemaining, showIndexingIndicator } from '../../../core/store/ragStore';
 	import { addPendingAttachment, activeSidebarTab } from '../../../core/store/chatStore';
 	import { searchVault } from '../search';
-	import { collectRecommendedTags } from '../tagExtractor';
-	import type { SearchResult } from '../../../shared/types/rag.types';
+	import type { SearchResult, DocumentChunk } from '../../../shared/types/rag.types';
 	import { tStore } from '../../../shared/locales/index';
+	import { iconAction } from '../../../shared/utils/domUtils';
+	import { extractFileName } from '../../../shared/utils/fileUtils';
+	import { openNoteFile } from '../utils/openNoteFile';
+	import { buildContextFromActiveFile, applyContextResult } from '../utils/discoveryContext';
 	import DiscoveryCard from './DiscoveryCard.svelte';
 	import DiscoveryStagingArea from './DiscoveryStagingArea.svelte';
 
-	let { plugin, isActive }: { plugin: LuminaPlugin, isActive: boolean } = $props();
+	let { plugin, isActive }: { plugin: LuminaPlugin; isActive: boolean } = $props();
 
 	// ── 로컬 상태 ──
 	let searchQuery = $state('');
@@ -23,7 +26,6 @@
 	let contextTimer: ReturnType<typeof setTimeout> | null = null;
 	let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
-	// 이전에 검색한 activeFile 경로 — 중복 호출 방지
 	let lastSearchedFilePath = $state<string | null>(null);
 
 	// ── Derived ──
@@ -41,7 +43,6 @@
 			}
 		}
 
-		// cleanup: 컴포넌트 언마운트 시 타이머 정리
 		return () => {
 			if (contextTimer) clearTimeout(contextTimer);
 			if (searchTimer) clearTimeout(searchTimer);
@@ -52,66 +53,22 @@
 	async function updateContext() {
 		if (!isActive || !$isRagEnabled || $indexingState.status !== 'ready') return;
 		const file = $discoveryState.activeFile;
-		
+
 		if (!file) {
 			updateDiscoveryState({ similarNotes: [], duplicateNote: null, recommendedTags: [], lastSearchedFilePath: null });
 			lastSearchedFilePath = null;
 			return;
 		}
 
-		// 동일 파일 중복 호출 방지
 		if (file.path === lastSearchedFilePath) return;
 		lastSearchedFilePath = file.path;
 
 		try {
 			updateDiscoveryState({ isSearching: true });
-			
-			if (plugin.indexer) {
-				const allChunks = plugin.indexer.indexedChunks;
-				const otherChunks = filterChunks(allChunks.filter(c => c.path !== file.path));
-
-				let results: SearchResult[] = [];
-
-				if (otherChunks.length > 0) {
-					const myFirstChunk = allChunks.find(c => c.path === file.path && c.chunkIndex === 0);
-					
-					if (myFirstChunk && myFirstChunk.embedding) {
-						results = await searchVault("", otherChunks, async () => [myFirstChunk.embedding!], 20, 0.55);
-					} else {
-						const content = await plugin.app.vault.read(file);
-						const cleanContent = plugin.indexer.preprocessMarkdown(content);
-						const queryContext = cleanContent.substring(0, plugin.settings.rag.chunkSize || 512);
-
-						if (queryContext.trim()) {
-							results = await searchVault(queryContext, otherChunks, (texts) => plugin.indexer!.embed(texts), 20, 0.55);
-						}
-					}
-
-					// 동일 파일 중복 청크 제거 → 상위 8개
-					results = deduplicateByPath(results).slice(0, 8);
-				}
-				
-				const duplicate = results.find(r => r.score >= 0.90) || null;
-				
-				// collectRecommendedTags로 태그 추출 로직 일원화
-				const recommendedTags = collectRecommendedTags({
-					results,
-					metadataCache: plugin.app.metadataCache,
-					activeFilePath: file.path
-				});
-
-				updateDiscoveryState({
-					similarNotes: results,
-					duplicateNote: duplicate,
-					recommendedTags,
-					lastSearchedFilePath: file.path,
-					isSearching: false
-				});
-			} else {
-				updateDiscoveryState({ isSearching: false });
-			}
+			const result = await buildContextFromActiveFile(plugin, file, filterQuery);
+			applyContextResult(result, file.path);
 		} catch (err) {
-			console.error("[Lumina] Context 업데이트 실패:", err);
+			console.error('[Lumina] Context 업데이트 실패:', err);
 			updateDiscoveryState({ isSearching: false });
 		}
 	}
@@ -122,16 +79,15 @@
 			searchResults = [];
 			return;
 		}
-		
+
 		try {
 			isSearching = true;
 			if (plugin.indexer) {
-				const chunks = filterChunks(plugin.indexer.indexedChunks);
-				const results = await searchVault(searchQuery, chunks, (texts) => plugin.indexer!.embed(texts), 15, 0.60);
-				searchResults = results;
+				const chunks = filterChunks(plugin.indexer.indexedChunks, filterQuery);
+				searchResults = await searchVault(searchQuery, chunks, texts => plugin.indexer!.embed(texts), 15, 0.60);
 			}
 		} catch (err) {
-			console.error("[Lumina] Semantic Search 실패:", err);
+			console.error('[Lumina] Semantic Search 실패:', err);
 		} finally {
 			isSearching = false;
 		}
@@ -143,7 +99,6 @@
 		const status = $indexingState.status;
 		const active = isActive;
 
-		// 이전 타이머 정리
 		if (contextTimer) clearTimeout(contextTimer);
 
 		if (active && file && status === 'ready') {
@@ -151,7 +106,7 @@
 				updateContext();
 			}, 1000);
 		} else if (!active || !file || status !== 'ready') {
-			lastSearchedFilePath = null; // 조건이 불충족하면 가드 초기화
+			lastSearchedFilePath = null;
 		}
 
 		return () => {
@@ -180,43 +135,26 @@
 	});
 
 	// ── 유틸리티 함수 ──
-	function deduplicateByPath(results: SearchResult[]): SearchResult[] {
-		const seenPaths = new Set<string>();
-		const unique: SearchResult[] = [];
-		for (const r of results) {
-			if (!seenPaths.has(r.chunk.path)) {
-				seenPaths.add(r.chunk.path);
-				unique.push(r);
-			}
-		}
-		return unique;
-	}
-
-	function filterChunks(chunks: any[]) {
-		const q = filterQuery.trim();
-		if (!q) return chunks;
+	function filterChunks(chunks: DocumentChunk[], q: string): DocumentChunk[] {
+		const trimmed = q.trim();
+		if (!trimmed) return chunks;
 		return chunks.filter(c => {
-			if (q.startsWith('#')) {
+			if (trimmed.startsWith('#')) {
 				const cache = plugin.app.metadataCache.getCache(c.path);
-				const tags = cache?.tags?.map((t: any) => t.tag) || [];
+				const tags = cache?.tags?.map(t => t.tag) ?? [];
 				const fmTags = cache?.frontmatter?.tags;
-				const cleanQ = q.replace('#', '');
-				return tags.includes(q) || (Array.isArray(fmTags) && fmTags.includes(cleanQ));
-			} else {
-				return c.path.toLowerCase().includes(q.toLowerCase());
+				const cleanQ = trimmed.replace('#', '');
+				return tags.includes(trimmed) || (Array.isArray(fmTags) && fmTags.includes(cleanQ));
 			}
+			return c.path.toLowerCase().includes(trimmed.toLowerCase());
 		});
-	}
-
-	function icon(node: HTMLElement, iconId: string) {
-		setIcon(node, iconId);
 	}
 
 	async function insertLink(path: string) {
 		let editor = plugin.app.workspace.activeEditor?.editor;
-		
+
 		if (!editor) {
-			const mdView = plugin.app.workspace.getLeavesOfType("markdown")
+			const mdView = plugin.app.workspace.getLeavesOfType('markdown')
 				.map(leaf => leaf.view as MarkdownView)
 				.find(view => view.editor);
 			if (mdView) editor = mdView.editor;
@@ -224,7 +162,7 @@
 
 		if (editor) {
 			const cursor = editor.getCursor();
-			const fileName = path.replace(/\.md$/, '').split('/').pop();
+			const fileName = extractFileName(path);
 			editor.replaceRange(`[[${fileName}]]`, cursor);
 		} else {
 			new Notice($tStore('discovery.noActiveEditor'));
@@ -234,8 +172,8 @@
 	async function insertTag(tag: string) {
 		const file = $discoveryState.activeFile;
 		if (!file) return;
-		
-		await plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
+
+		await plugin.app.fileManager.processFrontMatter(file, frontmatter => {
 			if (!frontmatter.tags) {
 				frontmatter.tags = [];
 			}
@@ -248,47 +186,15 @@
 		});
 	}
 
-	async function openFile(path: string, e?: MouseEvent, chunkText?: string) {
-		const newLeaf = e ? (Keymap.isModEvent(e) || e.button === 1) : false;
-		const file = plugin.app.vault.getAbstractFileByPath(path);
-		if (file) {
-			let targetLeaf = null;
-			
-			if (newLeaf) {
-				targetLeaf = plugin.app.workspace.getLeaf('tab');
-			} else {
-				const recentLeaf = plugin.app.workspace.getMostRecentLeaf();
-				if (recentLeaf && recentLeaf.getViewState().type === 'markdown') {
-					targetLeaf = recentLeaf;
-				} else {
-					const mdLeaves = plugin.app.workspace.getLeavesOfType('markdown');
-					if (mdLeaves.length > 0) {
-						targetLeaf = mdLeaves[0];
-					} else {
-						targetLeaf = plugin.app.workspace.getLeaf('tab');
-					}
-				}
-			}
-
-			let line = 0;
-			if (chunkText && file instanceof TFile && file.extension === 'md') {
-				try {
-					const content = await plugin.app.vault.read(file);
-					const searchStr = chunkText.substring(0, 30);
-					const index = content.indexOf(searchStr);
-					if (index !== -1) {
-						line = content.substring(0, index).split('\n').length - 1;
-					}
-				} catch (err) {
-					console.error("[Lumina] 스크롤 위치 탐색 실패", err);
-				}
-			}
-			
-			// @ts-ignore
-			await targetLeaf.openFile(file, { eState: { line } });
-		} else {
-			plugin.app.workspace.openLinkText(path, '', newLeaf as boolean);
-		}
+	async function handleOpenFile(path: string, e?: MouseEvent, chunkText?: string) {
+		const newLeaf: boolean = e ? !!(Keymap.isModEvent(e) || e.button === 1) : false;
+		await openNoteFile({
+			workspace: plugin.app.workspace,
+			vault: plugin.app.vault,
+			path,
+			newLeaf,
+			chunkText,
+		});
 	}
 
 	async function openInSplit(path: string) {
@@ -297,11 +203,11 @@
 
 	async function startChatWithStaged() {
 		for (const item of $discoveryState.stagedItems) {
-			const fileName = item.chunk.path.replace(/\.md$/, '').split('/').pop() || item.chunk.path;
+			const fileName = extractFileName(item.chunk.path);
 			addPendingAttachment({
 				type: 'file',
 				path: item.chunk.path,
-				name: fileName
+				name: fileName,
 			});
 		}
 		clearStaging();
@@ -317,6 +223,13 @@
 			addToStaging(result);
 		}
 	}
+
+	function handleSettingsOpen() {
+		// @ts-ignore - Obsidian setting API
+		plugin.app.setting.open();
+		// @ts-ignore
+		plugin.app.setting.openTabById('lumina');
+	}
 </script>
 
 <div class="lumina-discovery">
@@ -325,19 +238,14 @@
 			<div class="lumina-discovery__empty-icon">🔍</div>
 			<p>{$tStore('discovery.emptyStateText')}</p>
 			<p class="lumina-discovery__empty-sub">{$tStore('discovery.emptyStateSub')}</p>
-			<button class="lumina-discovery__setup-btn" onclick={() => {
-				// @ts-ignore
-				plugin.app.setting.open();
-				// @ts-ignore
-				plugin.app.setting.openTabById('lumina');
-			}}>
+			<button class="lumina-discovery__setup-btn" onclick={handleSettingsOpen}>
 				⚙️ {$tStore('common.settings')}
 			</button>
 		</div>
 	{:else}
 		<!-- Search Bar -->
 		<div class="lumina-discovery__search-bar">
-			<span class="lumina-discovery__search-icon" use:icon={"search"}></span>
+			<span class="lumina-discovery__search-icon" use:iconAction={"search"}></span>
 			<input
 				type="text"
 				class="lumina-discovery__search-input"
@@ -346,12 +254,12 @@
 			/>
 			{#if searchQuery}
 				<button class="lumina-discovery__clear-btn" aria-label="Clear Search" onclick={() => searchQuery = ''}>
-					<span use:icon={"x"}></span>
+					<span use:iconAction={"x"}></span>
 				</button>
 			{/if}
 		</div>
 		<div class="lumina-discovery__search-bar" style="margin-top: 4px;">
-			<span class="lumina-discovery__search-icon" use:icon={"filter"}></span>
+			<span class="lumina-discovery__search-icon" use:iconAction={"filter"}></span>
 			<input
 				type="text"
 				class="lumina-discovery__search-input"
@@ -360,7 +268,7 @@
 			/>
 			{#if filterQuery}
 				<button class="lumina-discovery__clear-btn" aria-label="Clear Filter" onclick={() => filterQuery = ''}>
-					<span use:icon={"x"}></span>
+					<span use:iconAction={"x"}></span>
 				</button>
 			{/if}
 		</div>
@@ -369,22 +277,22 @@
 		{#if $showIndexingIndicator}
 			<div class="lumina-discovery__rag-banner">
 				<div class="lumina-discovery__rag-banner-content">
-					{#if $indexingState.status === "loading-model"}
-						<strong>{$tStore("settings.rag.init.loadingModel") || "RAG 모델 다운로드 중..."}</strong>
-						<span>{$tStore("settings.rag.init.loadingModelDesc") || ""}</span>
+					{#if $indexingState.status === 'loading-model'}
+						<strong>{$tStore('settings.rag.init.loadingModel') || 'RAG 모델 다운로드 중...'}</strong>
+						<span>{$tStore('settings.rag.init.loadingModelDesc') || ''}</span>
 					{:else}
-						<strong>{$tStore("settings.rag.init.indexingVault") || "내 노트 인덱싱 중..."}</strong>
+						<strong>{$tStore('settings.rag.init.indexingVault') || '내 노트 인덱싱 중...'}</strong>
 						<span>
-							{($tStore("settings.rag.init.indexingProgressText") || "")
-								.replace("{{processed}}", $indexingState.processedFiles.toString())
-								.replace("{{total}}", $indexingState.totalFiles.toString())
-								.replace("{{pct}}", $indexingProgress.toString())}
+							{($tStore('settings.rag.init.indexingProgressText') || '')
+								.replace('{{processed}}', $indexingState.processedFiles.toString())
+								.replace('{{total}}', $indexingState.totalFiles.toString())
+								.replace('{{pct}}', $indexingProgress.toString())}
 							{#if $estimatedTimeRemaining !== null}
-								{$tStore("settings.rag.init.remainingTimePrefix") || ""}{$estimatedTimeRemaining < 60
-									? ($tStore("settings.rag.init.remainingTimeSec") || "").replace("{{sec}}", $estimatedTimeRemaining.toString())
-									: ($tStore("settings.rag.init.remainingTimeMinSec") || "")
-											.replace("{{min}}", Math.floor($estimatedTimeRemaining / 60).toString())
-											.replace("{{sec}}", ($estimatedTimeRemaining % 60).toString())}
+								{$tStore('settings.rag.init.remainingTimePrefix') || ''}{$estimatedTimeRemaining < 60
+									? ($tStore('settings.rag.init.remainingTimeSec') || '').replace('{{sec}}', $estimatedTimeRemaining.toString())
+									: ($tStore('settings.rag.init.remainingTimeMinSec') || '')
+											.replace('{{min}}', Math.floor($estimatedTimeRemaining / 60).toString())
+											.replace('{{sec}}', ($estimatedTimeRemaining % 60).toString())}
 							{/if}
 						</span>
 					{/if}
@@ -408,7 +316,7 @@
 								<DiscoveryCard
 									{result}
 									isStaged={$discoveryState.stagedItems.some(i => i.chunk.id === result.chunk.id)}
-									onOpen={openFile}
+									onOpen={handleOpenFile}
 									onInsertLink={insertLink}
 									onOpenInSplit={openInSplit}
 									onToggleStage={toggleStage}
@@ -425,13 +333,14 @@
 
 							<!-- 중복 노트 경고 -->
 							{#if $discoveryState.duplicateNote}
+								{@const dupPath = $discoveryState.duplicateNote.chunk.path}
 								<div class="lumina-discovery__warning-box">
 									<div class="lumina-discovery__warning-title">
-										<span use:icon={"alert-triangle"} style="display: flex; align-items: center;"></span>
+										<span use:iconAction={"alert-triangle"} style="display: flex; align-items: center;"></span>
 										<span>{$tStore('discovery.duplicateWarning')}</span>
 									</div>
-									<div class="lumina-discovery__warning-link" onclick={(e) => openFile($discoveryState.duplicateNote!.chunk.path, e)} onauxclick={(e) => openFile($discoveryState.duplicateNote!.chunk.path, e)} role="button" tabindex="0" onkeydown={(e) => { if(e.key === 'Enter' || e.key === ' ') openFile($discoveryState.duplicateNote!.chunk.path); }}>
-										[[{$discoveryState.duplicateNote.chunk.path.replace(/\.md$/, '').split('/').pop()}]]
+									<div class="lumina-discovery__warning-link" onclick={(e) => handleOpenFile(dupPath, e)} onauxclick={(e) => handleOpenFile(dupPath, e)} role="button" tabindex="0" onkeydown={(e) => { if(e.key === 'Enter' || e.key === ' ') handleOpenFile(dupPath); }}>
+										[[{extractFileName(dupPath)}]]
 									</div>
 								</div>
 							{/if}
@@ -440,7 +349,7 @@
 							{#if $discoveryState.recommendedTags.length > 0}
 								<div class="lumina-discovery__section">
 									<div class="lumina-discovery__section-title">
-										<span use:icon={"tags"}></span> {$tStore('discovery.recommendedTags')}
+										<span use:iconAction={"tags"}></span> {$tStore('discovery.recommendedTags')}
 									</div>
 									<div class="lumina-discovery__tags">
 										{#each $discoveryState.recommendedTags as tagObj}
@@ -456,14 +365,14 @@
 							{#if $discoveryState.similarNotes.length > 0}
 								<div class="lumina-discovery__section">
 									<div class="lumina-discovery__section-title">
-										<span use:icon={"network"}></span> {$tStore('discovery.relatedNotes')}
+										<span use:iconAction={"network"}></span> {$tStore('discovery.relatedNotes')}
 									</div>
 									<div class="lumina-discovery__results-list">
 										{#each $discoveryState.similarNotes as result (result.chunk.id)}
 											<DiscoveryCard
 												{result}
 												isStaged={$discoveryState.stagedItems.some(i => i.chunk.id === result.chunk.id)}
-												onOpen={openFile}
+												onOpen={handleOpenFile}
 												onInsertLink={insertLink}
 												onOpenInSplit={openInSplit}
 												onToggleStage={toggleStage}

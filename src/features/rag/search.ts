@@ -109,29 +109,3 @@ export function formatRagContext(results: SearchResult[]): string {
 		.join('\n\n---\n\n');
 }
 
-/**
- * 검색 결과의 텍스트에서 해시태그를 추출하고,
- * 빈도와 문서 유사도를 기반으로 추천 태그 목록을 생성합니다.
- */
-export function extractRecommendedTags(results: SearchResult[]): { tag: string; score: number }[] {
-	const tagScores: Record<string, number> = {};
-
-	for (const result of results) {
-		const text = result.chunk.text;
-		const regex = /#[a-zA-Z0-9가-힣_]+/g;
-		const matches = text.match(regex);
-		
-		if (matches) {
-			const uniqueTags = Array.from(new Set(matches));
-			for (const tag of uniqueTags) {
-				// 유사도가 높은 문서에서 나온 태그일수록 높은 점수
-				tagScores[tag] = (tagScores[tag] || 0) + result.score;
-			}
-		}
-	}
-
-	return Object.entries(tagScores)
-		.map(([tag, score]) => ({ tag, score }))
-		.sort((a, b) => b.score - a.score)
-		.slice(0, 5); // 상위 5개 반환
-}

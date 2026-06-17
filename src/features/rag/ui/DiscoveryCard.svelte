@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { setIcon } from 'obsidian';
 	import type { SearchResult } from '../../../shared/types/rag.types';
 	import { tStore } from '../../../shared/locales/index';
+	import { iconAction } from '../../../shared/utils/domUtils';
+	import { extractFileName } from '../../../shared/utils/fileUtils';
 
 	let {
 		result,
@@ -18,10 +19,6 @@
 		onOpenInSplit: (path: string) => void;
 		onToggleStage: (result: SearchResult) => void;
 	} = $props();
-
-	function icon(node: HTMLElement, iconId: string) {
-		setIcon(node, iconId);
-	}
 
 	function handleOpen(e: MouseEvent) {
 		onOpen(result.chunk.path, e, result.chunk.text);
@@ -49,7 +46,7 @@
 		onkeydown={handleKeydown}
 	>
 		<span class="lumina-discovery__card-title">
-			{result.chunk.path.replace(/\.md$/, '').split('/').pop()}
+			{extractFileName(result.chunk.path)}
 		</span>
 		<span class="lumina-discovery__card-score">{Math.round(result.score * 100)}%</span>
 	</div>
@@ -65,18 +62,18 @@
 	</div>
 	<div class="lumina-discovery__card-actions">
 		<button class="lumina-discovery__action-btn" onclick={() => onInsertLink(result.chunk.path)}>
-			<span use:icon={"link"}></span> {$tStore('discovery.insertLink')}
+			<span use:iconAction={"link"}></span> {$tStore('discovery.insertLink')}
 		</button>
 		<button class="lumina-discovery__action-btn" onclick={() => onOpenInSplit(result.chunk.path)}>
-			<span use:icon={"columns"}></span> {$tStore('discovery.openInSplit')}
+			<span use:iconAction={"columns"}></span> {$tStore('discovery.openInSplit')}
 		</button>
 		{#if isStaged}
 			<button class="lumina-discovery__action-btn is-staged" onclick={handleStage}>
-				<span use:icon={"minus-circle"}></span> {$tStore('common.remove')}
+				<span use:iconAction={"minus-circle"}></span> {$tStore('common.remove')}
 			</button>
 		{:else}
 			<button class="lumina-discovery__action-btn" onclick={handleStage}>
-				<span use:icon={"plus-circle"}></span> {$tStore('common.add')}
+				<span use:iconAction={"plus-circle"}></span> {$tStore('common.add')}
 			</button>
 		{/if}
 	</div>

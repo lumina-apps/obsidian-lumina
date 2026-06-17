@@ -1,3 +1,5 @@
+import { setIcon } from 'obsidian';
+
 /**
  * DOM 생성 공통 유틸리티.
  * 모달(ConfirmModal, AgentBetaModal, McpPermissionModal)에서
@@ -68,4 +70,14 @@ export function createButtonContainer(el: HTMLElement, cls: string): HTMLDivElem
 	const container = el.createDiv({ cls });
 	container.setCssStyles({ display: 'flex', justifyContent: 'center', margin: '10px 0' });
 	return container;
+}
+
+/**
+ * Svelte use: 액션 — setIcon(node, iconId)를 호출합니다.
+ * DiscoveryPanel, DiscoveryCard, DiscoveryStagingArea 등에서 중복 정의되던 패턴을 통합.
+ *
+ * 사용법: <span use:iconAction={"search"}></span>
+ */
+export function iconAction(node: HTMLElement, iconId: string) {
+	setIcon(node, iconId);
 }
