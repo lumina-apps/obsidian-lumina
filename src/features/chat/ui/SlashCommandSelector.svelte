@@ -1,42 +1,31 @@
 <script lang="ts">
-	import { setIcon } from "obsidian";
-	import { onMount, tick } from "svelte";
 	import type { SlashCommand } from "../types/slashCommand.types";
+	import { clickOutside, iconAction } from "../../../shared/utils/domUtils";
+	import { useKeyboardListNav } from "./composables/useKeyboardListNav.svelte";
 
 	let {
 		commands = [],
 		searchQuery = "",
 		onSelect,
-		onClose
-	} = $props<{
+		onClose,
+	}: {
 		commands: SlashCommand[];
 		searchQuery: string;
 		onSelect: (cmd: SlashCommand) => void;
 		onClose: () => void;
-	}>();
+	} = $props();
 
 	let containerEl: HTMLDivElement | null = $state(null);
 	let listEl: HTMLDivElement | null = $state(null);
-	let activeIndex = $state(0);
-	
-	let isKeyboardNavigating = false;
-	let keyboardNavTimer: ReturnType<typeof setTimeout> | null = null;
-	
-	function setKeyboardNav() {
-		isKeyboardNavigating = true;
-		if (keyboardNavTimer) clearTimeout(keyboardNavTimer);
-		keyboardNavTimer = setTimeout(() => {
-			isKeyboardNavigating = false;
-		}, 150);
-	}
 
 	const filteredCommands = $derived.by(() => {
 		const query = searchQuery.toLowerCase().trim();
 		if (!query) return commands;
-		return commands.filter(cmd => 
-			cmd.id.toLowerCase().includes(query) || 
-			cmd.name.toLowerCase().includes(query) ||
-			cmd.description.toLowerCase().includes(query)
+		return commands.filter(
+			(cmd) =>
+				cmd.id.toLowerCase().includes(query) ||
+				cmd.name.toLowerCase().includes(query) ||
+				cmd.description.toLowerCase().includes(query),
 		);
 	});
 
@@ -45,72 +34,44 @@
 		onClose();
 	}
 
+	// ═══════════════════════════════════════════════════════════════════════════
+	// Keyboard list navigation (composable)
+	// ═══════════════════════════════════════════════════════════════════════════
+	const nav = useKeyboardListNav({
+		isOpen: () => true,
+		itemCount: () => filteredCommands.length,
+		onSelect: (index: number) => {
+			const cmd = filteredCommands[index];
+			if (cmd) selectItem(cmd);
+		},
+		onClose: () => onClose(),
+		enableMouseConflict: true,
+	});
+
+	// Global keydown capture (SlashCommandSelector는 capture phase로 등록)
 	function handleGlobalKeydown(e: KeyboardEvent) {
-		if (e.key === "ArrowDown") {
-			e.preventDefault();
+		if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === "Escape") {
 			e.stopPropagation();
-			if (filteredCommands.length > 0) {
-				setKeyboardNav();
-				activeIndex = (activeIndex + 1) % filteredCommands.length;
-				scrollIntoView();
-			}
-		} else if (e.key === "ArrowUp") {
-			e.preventDefault();
-			e.stopPropagation();
-			if (filteredCommands.length > 0) {
-				setKeyboardNav();
-				activeIndex = (activeIndex - 1 + filteredCommands.length) % filteredCommands.length;
-				scrollIntoView();
-			}
-		} else if (e.key === "Enter") {
-			e.preventDefault();
-			e.stopPropagation();
-			if (filteredCommands[activeIndex]) {
-				selectItem(filteredCommands[activeIndex]);
-			}
-		} else if (e.key === "Escape") {
-			e.preventDefault();
-			e.stopPropagation();
-			onClose();
 		}
-	}
-
-	function scrollIntoView() {
-		tick().then(() => {
-			if (!listEl) return;
-			const activeEl = listEl.querySelector(".is-active") as HTMLElement;
-			if (activeEl) {
-				activeEl.scrollIntoView({ block: "nearest" });
-			}
-		});
-	}
-
-	function handleClickOutside(e: MouseEvent) {
-		if (containerEl && !containerEl.contains(e.target as Node)) {
-			onClose();
-		}
+		nav.handleKeydown(e);
+		nav.scrollToActive(listEl);
 	}
 
 	$effect(() => {
-		document.addEventListener("click", handleClickOutside);
 		document.addEventListener("keydown", handleGlobalKeydown, true);
 		return () => {
-			document.removeEventListener("click", handleClickOutside);
 			document.removeEventListener("keydown", handleGlobalKeydown, true);
 		};
 	});
 
+	// Reset activeIndex when search query changes
 	$effect(() => {
-		searchQuery; 
-		activeIndex = 0;
+		searchQuery;
+		nav.resetIndex();
 	});
-
-	function icon(node: HTMLElement, iconId: string) {
-		setIcon(node, iconId);
-	}
 </script>
 
-<div class="lumina-slash-selector" bind:this={containerEl}>
+<div class="lumina-slash-selector" bind:this={containerEl} use:clickOutside={onClose}>
 	<div class="lumina-slash-selector__list" bind:this={listEl}>
 		{#if filteredCommands.length === 0}
 			<div class="lumina-slash-selector__empty">명령어를 찾을 수 없습니다.</div>
@@ -118,13 +79,17 @@
 			{#each filteredCommands as cmd, i}
 				<button
 					class="lumina-slash-selector__item"
-					class:is-active={i === activeIndex}
+					class:is-active={i === nav.activeIndex}
 					onclick={() => selectItem(cmd)}
-					onmouseenter={() => { if (!isKeyboardNavigating) activeIndex = i; }}
-					onmousemove={() => { if (!isKeyboardNavigating && activeIndex !== i) activeIndex = i; }}
+					onmouseenter={() => {
+						if (!nav.isKeyboardNavigating) nav.setActiveIndex(i);
+					}}
+					onmousemove={() => {
+						if (!nav.isKeyboardNavigating && nav.activeIndex !== i) nav.setActiveIndex(i);
+					}}
 					type="button"
 				>
-					<span class="lumina-slash-selector__item-icon" use:icon={cmd.icon}></span>
+					<span class="lumina-slash-selector__item-icon" use:iconAction={cmd.icon}></span>
 					<div class="lumina-slash-selector__item-info">
 						<span class="lumina-slash-selector__item-name">{cmd.name}</span>
 						<span class="lumina-slash-selector__item-desc">{cmd.description}</span>

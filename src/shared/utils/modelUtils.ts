@@ -24,6 +24,36 @@ export interface ParsedProviderModel {
 	modelId: string;
 }
 
+/**
+ * ModelSelector 등에서 사용하는 평탄화된 모델 항목.
+ * 프로바이더 정보와 개별 모델 정보를 결합한 형태입니다.
+ */
+export interface FlattenedModel {
+	providerId: string;
+	providerType: ProviderType;
+	providerName: string;
+	modelId: string;
+	label: string;
+	value: string;
+}
+
+// ─── Provider Label Helpers ────────────────────────────────────────────────────
+
+/**
+ * PROVIDER_LABELS에서 괄호 안 부가 설명을 제거한 짧은 표시명을 반환합니다.
+ * 예: "OpenAI (GPT)" → "OpenAI", "Anthropic (Claude)" → "Anthropic"
+ */
+export function stripProviderSuffix(label: string): string {
+	return label.replace(/\s*\(.*\)\s*/, '');
+}
+
+/**
+ * ProviderType에 해당하는 짧은 표시명을 반환합니다 (괄호 설명 제거).
+ */
+export function getShortProviderLabel(providerType: ProviderType): string {
+	return stripProviderSuffix(PROVIDER_LABELS[providerType] || providerType);
+}
+
 // ─── Embedding Model Detector ─────────────────────────────────────────────────
 
 /**
@@ -126,4 +156,26 @@ export function parseProviderModelValue(raw: string): ParsedProviderModel | null
  */
 export function toProviderModelValue(providerId: string, modelId: string): string {
 	return `${providerId}::${modelId}`;
+}
+
+// ─── Model Flattening ─────────────────────────────────────────────────────────
+
+/**
+ * 프로바이더 배열을 받아 평탄화된 모델 목록을 반환합니다.
+ * ModelSelector 등 UI 컴포넌트에서 프로바이더 + 모델 결합 리스트를 렌더링할 때 사용합니다.
+ *
+ * @param providers - 프로바이더 설정 배열 (isVerified, availableModels 포함)
+ * @returns FlattenedModel[] - providerId, modelId, label, value 등이 포함된 평탄화 배열
+ */
+export function flattenProviderModels(providers: LLMProviderConfig[]): FlattenedModel[] {
+	return providers.flatMap((p) =>
+		p.availableModels.map((m) => ({
+			providerId: p.id,
+			providerType: p.type,
+			providerName: PROVIDER_LABELS[p.type] || p.type,
+			modelId: m,
+			label: m,
+			value: `${p.id}::${m}`,
+		})),
+	);
 }
