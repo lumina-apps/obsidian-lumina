@@ -39,21 +39,15 @@ export function parseSSEChunk(line: string): OpenAIStreamChunk | null {
  * OpenAI API 응답의 usage 정보를 TokenUsage로 변환합니다.
  * 스트리밍 청크와 논스트리밍 응답 모두 동일 구조이므로 공통으로 사용합니다.
  */
-export function mapOpenAIUsage(usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } | undefined): TokenUsage | undefined {
+export function mapOpenAIUsage(
+	usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } | undefined,
+): TokenUsage | undefined {
 	if (!usage) return undefined;
 	return {
 		inputTokens: usage.prompt_tokens,
 		outputTokens: usage.completion_tokens,
 		totalTokens: usage.total_tokens,
 	};
-}
-
-/**
- * OpenAI 스트림 청크에서 usage 정보를 추출하여 TokenUsage로 변환합니다.
- * @deprecated use mapOpenAIUsage(chunk.usage) instead
- */
-export function extractUsage(chunk: OpenAIStreamChunk): TokenUsage | undefined {
-	return mapOpenAIUsage(chunk.usage);
 }
 
 // ─── Tool Call Accumulation ─────────────────────────────────────────────────
@@ -95,7 +89,7 @@ export function convertOpenAIToolCalls(accumulated: OpenAIToolCallInfo[]): ToolC
 			result.push({
 				id: tc.id || crypto.randomUUID(),
 				name: tc.name || '',
-				arguments: tc.arguments ? JSON.parse(tc.arguments) as Record<string, unknown> : {},
+				arguments: tc.arguments ? (JSON.parse(tc.arguments) as Record<string, unknown>) : {},
 			});
 		} catch {
 			console.warn('Failed to parse tool call arguments:', tc.arguments);
@@ -104,28 +98,16 @@ export function convertOpenAIToolCalls(accumulated: OpenAIToolCallInfo[]): ToolC
 	return result;
 }
 
-/**
- * Non-streaming 응답의 message.tool_calls를 ToolCall[]로 변환합니다.
- */
-export function convertNonStreamToolCalls(
-	toolCalls: Array<{ id: string; function: { name: string; arguments: string } }>,
-): ToolCall[] {
-	const result: ToolCall[] = [];
-	for (const tc of toolCalls) {
-		try {
-			result.push({
-				id: tc.id || crypto.randomUUID(),
-				name: tc.function.name,
-				arguments: tc.function.arguments ? JSON.parse(tc.function.arguments) as Record<string, unknown> : {},
-			});
-		} catch {
-			console.warn('Failed to parse tool call arguments:', tc.function.arguments);
-		}
-	}
-	return result;
-}
+// ─── Reasoning Utilities ────────────────────────────────────────────────────
 
-// ─── Reasoning State ────────────────────────────────────────────────────────
+/**
+ * Non-streaming 응답의 reasoning content를 `<think>...</think>` 태그로 래핑합니다.
+ * reasoning이 없으면 content를 그대로 반환합니다.
+ */
+export function wrapReasoningContent(reasoning: string | undefined, content: string): string {
+	if (!reasoning) return content;
+	return `<think>\n${reasoning}\n</think>\n${content}`;
+}
 
 /**
  * reasoning content (예: DeepSeek-R1의 think 태그)를
@@ -144,13 +126,15 @@ export function createReasoningState(): ReasoningState {
  * reasoning delta가 들어왔을 때 `<think>` 태그를 열고,
  * reasoning이 끝나고 일반 content가 들어왔을 때 `</think>` 태그를 닫습니다.
  *
- * @returns onChunk에 전달할 추가 텍스트 (상태 변경 시 태그), 없으면 빈 문자열
+ * @returns onChunk에 전달할 추가 텍스트. 상태 변경 시 태그 문자열,
+ *          reasoning 블록 내 content는 undefined를 반환하여 호출부에서
+ *          displayText를 통해 직접 누적하도록 합니다.
  */
 export function resolveReasoningTag(
 	state: ReasoningState,
 	displayText: string | undefined,
 	isReasoning: boolean,
-): string {
+): string | undefined {
 	// reasoning 블록 시작
 	if (isReasoning && !state.isThinking) {
 		state.isThinking = true;
@@ -163,9 +147,9 @@ export function resolveReasoningTag(
 	}
 	// 블록 내에서 reasoning content 그대로 전달
 	if (isReasoning && state.isThinking && displayText) {
-		return displayText;
+		return undefined; // 호출부에서 displayText를 직접 누적 (중복 방지)
 	}
-	return '';
+	return undefined;
 }
 
 // ─── Stream Chunk Accumulator ───────────────────────────────────────────────
@@ -261,10 +245,11 @@ export class StreamChunkAccumulator {
 	// ─── Private ──────────────────────────────────────────────────────────
 
 	private processDelta(delta: OpenAIDelta): void {
-		if (this.reasoning) {
-			this.processDeltaWithReasoning(delta);
-		} else {
+		// reasoning 처리가 활성화되지 않은 경우 plain 로직으로 처리
+		if (!this.reasoning) {
 			this.processDeltaPlain(delta);
+		} else {
+			this.processDeltaWithReasoning(delta);
 		}
 		accumulateToolCalls(delta, this.toolCalls);
 	}
@@ -277,19 +262,19 @@ export class StreamChunkAccumulator {
 	}
 
 	private processDeltaWithReasoning(delta: OpenAIDelta): void {
-		if (!this.reasoning) return;
-
 		const reasoningText = delta.reasoning_content ?? delta.reasoning ?? undefined;
 		const isReasoning = reasoningText !== undefined && reasoningText.length > 0;
 
-		const tagText = resolveReasoningTag(this.reasoning, reasoningText, isReasoning);
-		if (tagText) {
+		const tagText = resolveReasoningTag(this.reasoning!, reasoningText, isReasoning);
+		if (tagText !== undefined) {
 			this.fullContent += tagText;
 			this.onChunk?.(tagText);
 		}
 
+		// reasoning 컨텐츠는 resolveReasoningTag에서 undefined를 반환하므로,
+		// displayText를 통해 직접 누적 (중복 방지)
 		let displayText: string | undefined;
-		if (isReasoning && this.reasoning.isThinking) {
+		if (isReasoning && this.reasoning!.isThinking) {
 			displayText = reasoningText;
 		} else if (!isReasoning && delta.content) {
 			displayText = delta.content;

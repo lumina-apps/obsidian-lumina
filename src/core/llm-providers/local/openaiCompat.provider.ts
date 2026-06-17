@@ -11,7 +11,8 @@ import { requestUrl } from 'obsidian';
 import { formatOpenAIMessages, formatOpenAITools } from '../openai-formatter';
 import type { OpenAIResponse } from '../openai-types';
 import { raiseApiError, readStreamLines } from '../provider-helpers';
-import { mapOpenAIUsage, convertNonStreamToolCalls, StreamChunkAccumulator } from '../stream-accumulator';
+import { mapOpenAIUsage, convertOpenAIToolCalls, wrapReasoningContent, StreamChunkAccumulator } from '../stream-accumulator';
+import type { OpenAIToolCallInfo } from '../openai-types';
 
 /** 로컬 모델에서 사용하는 기본 stop 시퀀스 */
 const LOCAL_STOP_SEQUENCES: string[] = [
@@ -228,16 +229,17 @@ export class OpenAICompatProvider implements ILLMProvider {
 		const finishReason = choice?.finish_reason || undefined;
 
 		const toolCalls = message.tool_calls
-			? convertNonStreamToolCalls(message.tool_calls)
+			? convertOpenAIToolCalls(message.tool_calls.map((tc): OpenAIToolCallInfo => ({
+					id: tc.id,
+					name: tc.function.name,
+					arguments: tc.function.arguments,
+				})))
 			: [];
 
 		const usage = mapOpenAIUsage(data.usage);
 
-		const reasoning = message.reasoning_content ?? message.reasoning;
-		let content = message.content || '';
-		if (reasoning) {
-			content = `<think>\n${reasoning}\n</think>\n${content}`;
-		}
+		const reasoning = (message.reasoning_content ?? message.reasoning) ?? undefined;
+		const content = wrapReasoningContent(reasoning, message.content || '');
 
 		return {
 			content,

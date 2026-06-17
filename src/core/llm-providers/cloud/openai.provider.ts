@@ -3,7 +3,8 @@ import { requestUrl } from 'obsidian';
 import { formatOpenAIMessages, formatOpenAITools } from '../openai-formatter';
 import type { OpenAIResponse } from '../openai-types';
 import { raiseApiError, readStreamLines } from '../provider-helpers';
-import { mapOpenAIUsage, convertNonStreamToolCalls, StreamChunkAccumulator } from '../stream-accumulator';
+import { mapOpenAIUsage, convertOpenAIToolCalls, StreamChunkAccumulator } from '../stream-accumulator';
+import type { OpenAIToolCallInfo } from '../openai-types';
 
 export class OpenAIProvider implements ILLMProvider {
 	readonly providerId: string;
@@ -211,7 +212,11 @@ export class OpenAIProvider implements ILLMProvider {
 		const finishReason = choice?.finish_reason || undefined;
 
 		const toolCalls = message.tool_calls
-			? convertNonStreamToolCalls(message.tool_calls)
+			? convertOpenAIToolCalls(message.tool_calls.map((tc): OpenAIToolCallInfo => ({
+					id: tc.id,
+					name: tc.function.name,
+					arguments: tc.function.arguments,
+				})))
 			: [];
 
 		const usage = mapOpenAIUsage(data.usage);
