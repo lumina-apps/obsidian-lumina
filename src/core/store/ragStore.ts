@@ -6,6 +6,7 @@
  * - indexingProgress: 0~100 퍼센트 (derived)
  * - indexingStatusText: 사람이 읽기 좋은 상태 문자열 (derived)
  * - estimatedTimeRemaining: 예상 잔여 초 (derived)
+ * - resumedFromCheckpoint: 체크포인트에서 이어서 진행 중인지 여부
  *
  * main.ts → initEmbeddingWorker 콜백에서 업데이트.
  * settingTab / RAG UI에서 반응형 구독.
@@ -23,6 +24,9 @@ const INITIAL_STATE: IndexingState = {
 };
 
 export const indexingState = writable<IndexingState>({ ...INITIAL_STATE });
+
+/** 체크포인트에서 이어서 인덱싱 중인지 여부 */
+export const resumedFromCheckpoint = writable(false);
 
 export const showIndexingIndicator = writable(false);
 let indicatorTimer: number | null = null;
@@ -49,20 +53,26 @@ export const indexingProgress = derived(indexingState, ($s) =>
 );
 
 /** 사람이 읽기 좋은 상태 문자열 */
-export const indexingStatusText = derived(indexingState, ($s): string => {
-	switch ($s.status) {
-		case 'idle':
-			return '대기 중';
-		case 'loading-model':
-			return '임베딩 모델 로딩 중…';
-		case 'indexing':
-			return `인덱싱 중… (${$s.processedFiles} / ${$s.totalFiles}개)`;
-		case 'ready':
-			return `준비 완료 — ${$s.totalFiles}개 파일 인덱싱됨`;
-		case 'error':
-			return `오류: ${$s.errorMessage ?? '알 수 없는 오류'}`;
-	}
-});
+export const indexingStatusText = derived(
+	[indexingState, resumedFromCheckpoint],
+	([$s, $isResuming]): string => {
+		switch ($s.status) {
+			case 'idle':
+				return '대기 중';
+			case 'loading-model':
+				return '임베딩 모델 로딩 중…';
+			case 'indexing':
+				if ($isResuming) {
+					return `이어서 인덱싱 중… (${$s.processedFiles} / ${$s.totalFiles}개)`;
+				}
+				return `인덱싱 중… (${$s.processedFiles} / ${$s.totalFiles}개)`;
+			case 'ready':
+				return `준비 완료 — ${$s.totalFiles}개 파일 인덱싱됨`;
+			case 'error':
+				return `오류: ${$s.errorMessage ?? '알 수 없는 오류'}`;
+		}
+	},
+);
 
 /** 워커가 완전히 준비된 상태인지 여부 */
 export const isRagReady = derived(indexingState, ($s) => $s.status === 'ready');
@@ -75,6 +85,8 @@ export const estimatedTimeRemaining = derived(indexingState, ($s): number | null
 	if ($s.status !== 'indexing') return null;
 	if (!$s.startTime || $s.processedFiles === 0) return null;
 	const elapsed = (Date.now() - $s.startTime) / 1000; // 초
+	// 첫 30초 동안은 rate가 불안정 → 표시 안 함
+	if (elapsed < 30) return null;
 	const rate = $s.processedFiles / elapsed; // 파일/초
 	if (rate <= 0) return null;
 	const remaining = ($s.totalFiles - $s.processedFiles) / rate;
@@ -108,18 +120,28 @@ export function incrementProcessedBy(count: number): void {
 	indexingState.update(s => ({ ...s, processedFiles: s.processedFiles + count }));
 }
 
-/** 전체 파일 수 설정 (인덱싱 시작 시) — startTime도 함께 기록 */
-export function setTotalFiles(total: number): void {
+/**
+ * 전체 파일 수 설정 (인덱싱 시작 시) — startTime도 함께 기록.
+ * @param total 전체 파일 수
+ * @param initialProcessed 체크포인트에서 이어할 때 초기 처리된 파일 수 (기본 0)
+ * @param initialStartTime 체크포인트의 시작 시각 (기본 현재 시각)
+ */
+export function setTotalFiles(
+	total: number,
+	initialProcessed: number = 0,
+	initialStartTime: number = Date.now(),
+): void {
 	indexingState.update(s => ({
 		...s,
 		totalFiles: total,
-		processedFiles: 0,
+		processedFiles: initialProcessed,
 		status: 'indexing',
-		startTime: Date.now(),
+		startTime: initialStartTime,
 	}));
 }
 
 /** 초기 상태로 리셋 */
 export function resetIndexing(): void {
 	indexingState.set({ ...INITIAL_STATE });
+	resumedFromCheckpoint.set(false);
 }

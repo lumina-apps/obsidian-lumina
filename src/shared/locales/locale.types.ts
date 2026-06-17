@@ -392,8 +392,13 @@ export interface TranslationSettingsRagSyncMode {
 }
 
 export interface TranslationSettingsRagMinSimilarity {
-  name: string;
-  desc: string;
+	name: string;
+	desc: string;
+}
+
+export interface TranslationSettingsRagMaxFileSize {
+	name: string;
+	desc: string;
 }
 
 export interface TranslationSettingsRagReindex {
@@ -458,8 +463,9 @@ export interface TranslationSettingsRag {
   chunking: TranslationSettingsRagChunking;
   topK: TranslationSettingsRagTopK;
   syncMode: TranslationSettingsRagSyncMode;
-  minSimilarity: TranslationSettingsRagMinSimilarity;
-  reindex: TranslationSettingsRagReindex;
+	minSimilarity: TranslationSettingsRagMinSimilarity;
+	maxFileSize: TranslationSettingsRagMaxFileSize;
+	reindex: TranslationSettingsRagReindex;
   status: TranslationSettingsRagStatus;
   init: Partial<TranslationSettingsRagInit>;
   reset: TranslationSettingsRagReset;

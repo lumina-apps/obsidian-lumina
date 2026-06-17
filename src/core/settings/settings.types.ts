@@ -87,12 +87,16 @@ export interface RagSettings {
 	chunkSize: number;
 	/** 청크 겹침 크기 (tokens) */
 	chunkOverlap: number;
+	/** 체크포인트 저장 중 임베딩 캐시를 디스크에 저장할 주기 (N번째 체크포인트마다). 1 = 매 체크포인트마다 */
+	cachePersistCheckpointInterval?: number;
 	/** Top-K 검색 수 */
 	topK: number;
 	/** 최소 코사인 유사도 (0~1) — 이 값 미만의 청크는 검색 결과에서 제외 */
 	minSimilarity: number;
 	/** 인덱싱 동기화 방식 */
 	syncMode: RAGSyncMode;
+	/** 대용량 파일 제외 임계값 (MB). 0 = 제외 안 함. 이 값보다 큰 파일은 인덱싱 제외. 기본 50 */
+	maxFileSizeMB: number;
 }
 
 // ─── Section 4: Misc & Extensions ────────────────────────────────────────────

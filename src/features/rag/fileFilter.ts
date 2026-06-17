@@ -12,6 +12,7 @@ import { App, TFile } from 'obsidian';
 import type { RagSettings } from '../../core/settings/settings.types';
 import { SUPPORTED_EXTENSIONS } from './parsers/DocumentParserRouter';
 import { isExcluded, isIncluded } from './exclusions';
+import { debugLogger } from '../../shared/debugLogger';
 
 /**
  * 인덱싱 대상 파일 목록을 반환합니다.
@@ -32,9 +33,17 @@ export function getTargetFiles(
 		return SUPPORTED_EXTENSIONS.has(f.extension.toLowerCase());
 	});
 
-	return files.filter(f =>
-		isIncluded(f.path, includedPaths) && !isExcluded(f.path, finalExcludedPaths),
-	);
+	const maxSizeBytes = settings.maxFileSizeMB > 0 ? settings.maxFileSizeMB * 1024 * 1024 : 0;
+
+	return files.filter(f => {
+		if (!isIncluded(f.path, includedPaths)) return false;
+		if (isExcluded(f.path, finalExcludedPaths)) return false;
+		if (maxSizeBytes > 0 && f.stat.size > maxSizeBytes) {
+			debugLogger.logSystem('rag', `대용량 파일 제외됨 (${(f.stat.size / (1024 * 1024)).toFixed(1)}MB > ${settings.maxFileSizeMB}MB): ${f.path}`);
+			return false;
+		}
+		return true;
+	});
 }
 
 /**

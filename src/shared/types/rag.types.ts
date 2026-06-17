@@ -129,6 +129,20 @@ export type WorkerResponse =
 			message: string;
 	  };
 
+// ─── Indexing Checkpoint ─────────────────────────────────────────────────────
+
+/** 인덱싱 재개를 위한 체크포인트 데이터 */
+export interface IndexingCheckpoint {
+	/** 이미 처리 완료된 파일 경로 목록 */
+	processedPaths: string[];
+	/** 전체 대상 파일 수 */
+	totalFiles: number;
+	/** 인덱싱 시작 시각 (ms) */
+	startedAt: number;
+	/** 마지막 체크포인트 저장 시각 (ms) */
+	lastSavedAt: number;
+}
+
 // ─── Worker Abstraction ──────────────────────────────────────────────────────
 
 /** 메인 스레드와 워커 스레드 간 공통 인터페이스 */
@@ -136,5 +150,23 @@ export interface IWorker {
 	addEventListener(type: string, listener: (evt: MessageEvent) => void): void;
 	terminate(): void;
 	postMessage(message: unknown, transfer?: Transferable[]): void;
+}
+
+// ─── Indexer Type Aliases ────────────────────────────────────────────────────
+
+/** 임베딩 함수 타입: 텍스트 배열 → 임베딩 벡터 배열 */
+export type EmbedFn = (texts: string[]) => Promise<number[][]>;
+
+/** 바이너리 파일 파싱 함수 타입: ArrayBuffer + 확장자 → 텍스트 */
+export type ParseBinaryFn = (buffer: ArrayBuffer, ext: string) => Promise<string>;
+
+// ─── Indexer In-Memory State ─────────────────────────────────────────────────
+
+/** VaultIndexer의 인메모리 상태 묶음 */
+export interface IndexState {
+	chunks: DocumentChunk[];
+	indexedPaths: Set<string>;
+	fileMtimes: Record<string, number>;
+	fileHashes: Record<string, number>;
 }
 

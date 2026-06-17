@@ -66,9 +66,12 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		// Advanced
 		chunkSize: 400,
 		chunkOverlap: 60,
+		// 캐시 디스크 저장 주기: 몇 번째 체크포인트마다 저장할지 (1 = 매 체크포인트)
+		cachePersistCheckpointInterval: 1,
 		topK: 5,
 		minSimilarity: 0.65,
 		syncMode: 'watch',
+		maxFileSizeMB: 50,
 	},
 
 	// ── Section 4: Misc & Extensions ─────────────────────────────────────────

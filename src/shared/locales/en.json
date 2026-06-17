@@ -321,6 +321,10 @@
         "name": "Min Similarity (Advanced)",
         "desc": "Exclude results below this relevance score (0~1)"
       },
+      "maxFileSize": {
+        "name": "Max File Size (MB)",
+        "desc": "Exclude files larger than this size from indexing. 0 = no limit. Default: 50 MB"
+      },
       "reindex": {
         "name": "Full Re-index",
         "desc": "Re-index all vault files from scratch.",

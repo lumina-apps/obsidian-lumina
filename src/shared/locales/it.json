@@ -319,7 +319,11 @@
       },
       "minSimilarity": {
         "name": "Similarità Min (Avanzate)",
-        "desc": "Escludi risultati sotto questo punteggio di rilevanza (0~1)"
+        "desc": "Escludi risultati al di sotto di questo punteggio (0~1)"
+      },
+      "maxFileSize": {
+        "name": "Dimensione max file (MB)",
+        "desc": "Escludi i file più grandi di questa dimensione dall'indicizzazione. 0 = nessun limite. Predefinito: 50 MB"
       },
       "reindex": {
         "name": "Reindicizzazione Completa",

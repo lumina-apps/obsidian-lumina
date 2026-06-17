@@ -49,11 +49,10 @@ const customEnv = env as unknown as HuggingFaceEnv;
 
 const hasSharedArrayBuffer = typeof SharedArrayBuffer !== 'undefined';
 // SharedArrayBuffer 지원 시: 로지컈 코어의 절반, 최대 4개 스레드 활용
-const numThreads = hasSharedArrayBuffer
-	? Math.min(4, (typeof navigator !== 'undefined' && navigator.hardwareConcurrency)
-		? Math.max(1, Math.floor(navigator.hardwareConcurrency / 2))
-		: 2)
-	: 1;
+// 다중 Worker 풀 구조에서는 각 Worker가 numThreads=1로 동작하고,
+// Worker 풀이 병렬 처리를 담당합니다.
+// SharedArrayBuffer가 없는 환경에서도 싱글스레드 WASM은 정상 동작합니다.
+const numThreads = 1;
 
 // [proxy=false] Blob URL Worker는 proxy가 아니므로 false로 고정합니다.
 // 주의: transformers.js v3에서 proxy=false인 경우 ONNX 런타임이 Worker 내에서 직접

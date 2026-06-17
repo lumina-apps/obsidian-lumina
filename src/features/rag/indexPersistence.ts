@@ -5,10 +5,11 @@
  *
  * - JSON 형태로 .obsidian/plugins/lumina/storage/index.json에 저장/로드
  * - schemaVersion + modelName 조합으로 모델 변경 시 자동 무효화
+ * - checkpoint.json을 통한 인덱싱 중간 저장 및 재개 지원
  */
 
 import { App, normalizePath } from 'obsidian';
-import type { DocumentChunk, PersistedIndex } from '../../shared/types/rag.types';
+import type { DocumentChunk, PersistedIndex, IndexingCheckpoint } from '../../shared/types/rag.types';
 import { SCHEMA_VERSION } from '../../shared/types/rag.types';
 import { debugLogger } from '../../shared/debugLogger';
 
@@ -111,5 +112,103 @@ export async function saveIndex(
 			'rag',
 			err instanceof Error ? err : new Error(`인덱스 저장 실패: ${err}`),
 		);
+	}
+}
+
+// ─── Checkpoint (Resume) ─────────────────────────────────────────────────────
+
+/**
+ * 인덱싱 중간 체크포인트를 저장합니다.
+ * 옵시디언 종료 후 재시작 시 이어서 인덱싱할 수 있도록 처리 완료된 파일 경로를 기록합니다.
+ *
+ * @param processedPaths 현재까지 처리 완료된 파일 경로 목록
+ * @param totalFiles     전체 대상 파일 수
+ * @param startedAt      인덱싱 시작 시각 (ms)
+ */
+export async function saveCheckpoint(
+	app: App,
+	processedPaths: string[],
+	totalFiles: number,
+	startedAt: number,
+): Promise<void> {
+	const storageDirPath = normalizePath(
+		`${app.vault.configDir}/${STORAGE_SUBPATH}`,
+	);
+	const checkpointPath = normalizePath(
+		`${app.vault.configDir}/${STORAGE_SUBPATH}/checkpoint.json`,
+	);
+
+	try {
+		if (!(await app.vault.adapter.exists(storageDirPath))) {
+			await app.vault.adapter.mkdir(storageDirPath);
+		}
+
+		const checkpoint: IndexingCheckpoint = {
+			processedPaths,
+			totalFiles,
+			startedAt,
+			lastSavedAt: Date.now(),
+		};
+
+		await app.vault.adapter.write(checkpointPath, JSON.stringify(checkpoint));
+	} catch (err) {
+		// 체크포인트 저장 실패는 치명적이지 않음 — 인덱싱은 계속 진행
+		debugLogger.logError(
+			'rag',
+			err instanceof Error ? err : new Error(`체크포인트 저장 실패: ${err}`),
+		);
+	}
+}
+
+/**
+ * 디스크에서 체크포인트를 로드합니다.
+ *
+ * @returns 저장된 체크포인트, 없으면 null
+ */
+export async function loadCheckpoint(app: App): Promise<IndexingCheckpoint | null> {
+	const checkpointPath = normalizePath(
+		`${app.vault.configDir}/${STORAGE_SUBPATH}/checkpoint.json`,
+	);
+
+	try {
+		const exists = await app.vault.adapter.exists(checkpointPath);
+		if (!exists) return null;
+
+		const raw = await app.vault.adapter.read(checkpointPath);
+		const checkpoint = JSON.parse(raw) as IndexingCheckpoint;
+
+		// 기본 필드 검증
+		if (
+			!Array.isArray(checkpoint.processedPaths) ||
+			typeof checkpoint.totalFiles !== 'number' ||
+			typeof checkpoint.startedAt !== 'number'
+		) {
+			debugLogger.logSystem('rag', '체크포인트 데이터 손상 → 무시');
+			return null;
+		}
+
+		return checkpoint;
+	} catch {
+		debugLogger.logSystem('rag', '체크포인트 로드 실패 (없으면 정상)');
+		return null;
+	}
+}
+
+/**
+ * 체크포인트 파일을 삭제합니다.
+ * 인덱싱이 완전히 완료된 후 호출하여 더 이상 이어할 필요가 없음을 표시합니다.
+ */
+export async function deleteCheckpoint(app: App): Promise<void> {
+	const checkpointPath = normalizePath(
+		`${app.vault.configDir}/${STORAGE_SUBPATH}/checkpoint.json`,
+	);
+
+	try {
+		const exists = await app.vault.adapter.exists(checkpointPath);
+		if (exists) {
+			await app.vault.adapter.remove(checkpointPath);
+		}
+	} catch {
+		// 삭제 실패는 무시 — 다음 인덱싱 시 체크포인트 검증에서 처리됨
 	}
 }

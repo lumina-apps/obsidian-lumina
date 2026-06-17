@@ -128,6 +128,18 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			wrapAsync(async (val) => { s.minSimilarity = val; await tab.saveAndSync(); }),
 		);
 
+		addSliderWithInput(
+			new Setting(el)
+				.setName(t('settings.rag.maxFileSize.name'))
+				.setDesc(t('settings.rag.maxFileSize.desc')),
+			{ min: 0, max: 500, step: 5, value: s.maxFileSizeMB },
+			wrapAsync(async (val) => {
+				s.maxFileSizeMB = val;
+				await tab.saveAndSync();
+				if (tab.plugin.indexer) triggerReindexAfterPathChange(tab);
+			}),
+		);
+
 		new Setting(el)
 			.setName(t('settings.rag.syncMode.name'))
 			.setDesc(t('settings.rag.syncMode.desc'))

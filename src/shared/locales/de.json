@@ -319,7 +319,11 @@
       },
       "minSimilarity": {
         "name": "Min. Ähnlichkeit (Erweitert)",
-        "desc": "Ergebnisse unter diesem Relevanzwert ausschließen (0~1)"
+        "desc": "Ergebnisse unterhalb dieses Relevanzwerts ausschließen (0~1)"
+      },
+      "maxFileSize": {
+        "name": "Max. Dateigröße (MB)",
+        "desc": "Dateien, die größer sind, werden von der Indizierung ausgeschlossen. 0 = kein Limit. Standard: 50 MB"
       },
       "reindex": {
         "name": "Vollständige Neuindexierung",

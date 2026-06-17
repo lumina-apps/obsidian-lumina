@@ -319,7 +319,11 @@
       },
       "minSimilarity": {
         "name": "Similitud mínima (Avanzado)",
-        "desc": "Excluir resultados por debajo de esta puntuación de relevancia (0~1)"
+        "desc": "Excluir resultados por debajo de este puntaje (0~1)"
+      },
+      "maxFileSize": {
+        "name": "Tamaño máx. de archivo (MB)",
+        "desc": "Excluir archivos más grandes que este tamaño de la indexación. 0 = sin límite. Predeterminado: 50 MB"
       },
       "reindex": {
         "name": "Reindexación completa",
