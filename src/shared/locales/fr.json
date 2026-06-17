@@ -449,6 +449,7 @@
       "unauthorized": "⚠️ La clé API est invalide ou a expiré. Veuillez vérifier votre clé API dans les paramètres sous \"Connexions & Modèles\".",
       "forbidden": "⚠️ Accès refusé ou requête interdite. Veuillez vérifier les autorisations de votre clé API, votre plan de service ou les restrictions régionales.",
       "notFound": "⚠️ Modèle demandé introuvable ou URL de l'endpoint API incorrecte. Veuillez vérifier le modèle sélectionné et l'url de connexion dans les paramètres.",
+      "serviceUnavailable": "⚠️ Le modèle est temporairement indisponible en raison d'une forte demande. C'est généralement temporaire, veuillez réessayer plus tard.",
       "networkError": "⚠️ Échec de la connexion réseau. Veuillez vérifier votre connexion Internet ou si votre serveur LLM local fonctionne.",
       "notReadable": "Le corps de la réponse n'est pas lisible"
     }

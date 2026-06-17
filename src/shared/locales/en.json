@@ -449,6 +449,7 @@
       "unauthorized": "⚠️ API key is invalid or has expired. Please check your API key in settings under \"Connections & Models\".",
       "forbidden": "⚠️ Access denied or request forbidden. Please check your API key permissions, service plan, or regional restrictions.",
       "notFound": "⚠️ Requested model not found or API endpoint URL is incorrect. Please check your selected model and connection URL in settings.",
+      "serviceUnavailable": "⚠️ The model is temporarily unavailable due to high demand. This is usually temporary — please try again shortly.",
       "networkError": "⚠️ Network connection failed. Please check your internet connection, or verify if your local LLM server is running.",
       "notReadable": "Response body is not readable"
     }

@@ -3,6 +3,7 @@
 	import { tStore } from '../../../shared/locales/index';
 	import { iconAction } from '../../../shared/utils/domUtils';
 	import { extractFileName } from '../../../shared/utils/fileUtils';
+	import TokenProgressBar from './TokenProgressBar.svelte';
 
 	let {
 		stagedItems,
@@ -19,18 +20,29 @@
 		onRemove: (id: string) => void;
 		onStartChat: () => void;
 	} = $props();
+
+	const safeTokenCount = $derived(Number.isFinite(stagedTokenCount) ? stagedTokenCount : 0);
+	const isOverLimit = $derived(safeTokenCount > maxTokens);
 </script>
 
 <div class="lumina-discovery__staging-area">
-		<div class="lumina-discovery__staging-header">
-			<div class="lumina-discovery__staging-title">
-				<span use:iconAction={"layers"}></span>
-				{$tStore('discovery.stagedContext')} ({stagedItems.length})
-			</div>
-			<button class="lumina-discovery__clear-staging-btn" onclick={onClear} aria-label="Clear All">
-				<span use:iconAction={"trash-2"}></span>
-			</button>
+	<!-- 헤더: 타이틀 + 전체 삭제 -->
+	<div class="lumina-discovery__staging-header">
+		<div class="lumina-discovery__staging-title">
+			<span use:iconAction={"layers"}></span>
+			{$tStore('discovery.stagedContext')} ({stagedItems.length})
 		</div>
+		<button
+			class="lumina-discovery__clear-staging-btn"
+			onclick={onClear}
+			aria-label={$tStore('common.remove')}
+		>
+			<span use:iconAction={"trash-2"}></span>
+		</button>
+	</div>
+
+	<!-- 칩 목록: stagedItems가 없으면 아무것도 렌더링하지 않음 -->
+	{#if stagedItems.length > 0}
 		<div class="lumina-discovery__staging-chips">
 			{#each stagedItems as item (item.chunk.id)}
 				<div class="lumina-discovery__staging-chip">
@@ -39,7 +51,7 @@
 					</span>
 					<button
 						class="lumina-discovery__staging-chip-remove"
-						aria-label="Remove"
+						aria-label={$tStore('common.remove')}
 						onclick={() => onRemove(item.chunk.id)}
 					>
 						<span use:iconAction={"x"}></span>
@@ -47,32 +59,24 @@
 				</div>
 			{/each}
 		</div>
-		<div class="lumina-discovery__staging-footer">
-			<div class="lumina-discovery__staging-progress-wrapper">
-				<div
-					class="lumina-discovery__staging-progress-bar"
-					style="width: {Math.min(100, (stagedTokenCount / maxTokens) * 100)}%"
-					class:is-danger={stagedTokenCount > maxTokens}
-				></div>
-				<div
-					class="lumina-discovery__staging-progress-text"
-					class:is-danger={stagedTokenCount > maxTokens}
-				>
-					{$tStore('discovery.approxTokens', {
-						current: stagedTokenCount.toLocaleString(),
-						max: maxTokens.toLocaleString()
-					})}
-				</div>
-			</div>
-			<button
-				class="lumina-discovery__start-chat-btn"
-				onclick={onStartChat}
-				disabled={stagedTokenCount > maxTokens}
-			>
-				<span use:iconAction={"message-square"}></span>
-				{$tStore('discovery.startChat', { count: stagedItems.length })}
-			</button>
-		</div>
+	{/if}
+
+	<!-- 푸터: 토큰 진행률 + 채팅 시작 버튼 -->
+	<div class="lumina-discovery__staging-footer">
+		<TokenProgressBar
+			current={safeTokenCount}
+			max={maxTokens}
+		/>
+
+		<button
+			class="lumina-discovery__start-chat-btn"
+			onclick={onStartChat}
+			disabled={isOverLimit || stagedItems.length === 0}
+		>
+			<span use:iconAction={"message-square"}></span>
+			{$tStore('discovery.startChat', { count: stagedItems.length })}
+		</button>
+	</div>
 </div>
 
 <style>
@@ -161,34 +165,6 @@
 		flex-direction: column;
 		gap: 8px;
 		margin-top: 4px;
-	}
-
-	.lumina-discovery__staging-progress-wrapper {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-
-	.lumina-discovery__staging-progress-bar {
-		height: 4px;
-		background: var(--interactive-accent);
-		border-radius: 2px;
-		transition: width 0.3s ease, background-color 0.3s ease;
-	}
-
-	.lumina-discovery__staging-progress-bar.is-danger {
-		background: var(--text-error);
-	}
-
-	.lumina-discovery__staging-progress-text {
-		font-size: 10px;
-		color: var(--text-muted);
-		text-align: right;
-	}
-
-	.lumina-discovery__staging-progress-text.is-danger {
-		color: var(--text-error);
-		font-weight: 600;
 	}
 
 	.lumina-discovery__start-chat-btn {

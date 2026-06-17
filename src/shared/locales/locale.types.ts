@@ -564,6 +564,7 @@ export interface TranslationErrorsLlm {
   unauthorized: string;
   forbidden: string;
   notFound: string;
+  serviceUnavailable: string;
   networkError: string;
   notReadable: string;
 }

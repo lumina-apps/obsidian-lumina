@@ -449,6 +449,7 @@
       "unauthorized": "⚠️ La clave API no es válida o ha caducado. Por favor, verifique su clave API en la configuración en \"Conexiones y modelos\".",
       "forbidden": "⚠️ Acceso denegado o solicitud prohibida. Por favor, verifique los permisos de su clave API, plan de servicio o restricciones regionales.",
       "notFound": "⚠️ Modelo solicitado no encontrado o la URL del extremo de la API es incorrecta. Por favor, verifique el modelo seleccionado y la URL de conexión en la configuración.",
+      "serviceUnavailable": "⚠️ El modelo no está disponible temporalmente debido a la alta demanda. Esto suele ser temporal, inténtalo de nuevo más tarde.",
       "networkError": "⚠️ Conexión de red fallida. Por favor, compruebe su conexión a Internet o verifique si su servidor LLM local se está ejecutando.",
       "notReadable": "El cuerpo de la respuesta no es legible"
     }

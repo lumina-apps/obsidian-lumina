@@ -449,6 +449,7 @@
       "unauthorized": "⚠️ La chiave API non è valida o è scaduta. Controlla la tua chiave API nelle impostazioni sotto \"Connessioni e modelli\".",
       "forbidden": "⚠️ Accesso negato o richiesta vietata. Verifica i permessi della tua chiave API, il piano di serviço o le restrizioni regionali.",
       "notFound": "⚠️ Modello richiesto non trovato o URL dell'endpoint API errato. Controlla il modello selezionato e l'URL di connessione nelle impostazioni.",
+      "serviceUnavailable": "⚠️ Il modello è temporaneamente non disponibile a causa dell'elevata richiesta. Di solito è temporaneo, riprova più tardi.",
       "networkError": "⚠️ Connessione di rete non riuscita. Controlla la tua connessione Internet o verifica se il tuo server LLM locale è in esecuzione.",
       "notReadable": "Il corpo della risposta non è leggibile"
     }

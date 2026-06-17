@@ -26,6 +26,10 @@ export function formatLlmError(err: unknown): string {
 	if (rawMessage.includes('HTTP 404')) {
 		return t('errors.llm.notFound');
 	}
+	// HTTP 503: Service Unavailable / High demand
+	if (rawMessage.includes('HTTP 503')) {
+		return t('errors.llm.serviceUnavailable');
+	}
 	// Network Error
 	if (
 		rawMessage.toLowerCase().includes('failed to fetch') ||

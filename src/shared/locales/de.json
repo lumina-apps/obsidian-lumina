@@ -449,6 +449,7 @@
       "unauthorized": "⚠️ API-Schlüssel ist ungültig oder abgelaufen. Bitte überprüfen Sie Ihren API-Schlüssel in den Einstellungen unter \"Verbindungen & Modelle\".",
       "forbidden": "⚠️ Zugriff verweigert oder Anfrage verboten. Bitte überprüfen Sie Ihre API-Schlüsselberechtigungen, Ihren Service-Plan oder regionale Einschränkungen.",
       "notFound": "⚠️ Angeforschtes Modell nicht gefunden oder API-Endpunkt-URL ist fehlerhaft. Bitte überprüfen Sie Ihr Modell und die Verbindungs-URL in den Einstellungen.",
+      "serviceUnavailable": "⚠️ Das Modell ist aufgrund hoher Nachfrage vorübergehend nicht verfügbar. Dies ist in der Regel vorübergehend, bitte versuchen Sie es später erneut.",
       "networkError": "⚠️ Netzwerkverbindung fehlgeschlagen. Bitte überprüfen Sie Ihre Internetverbindung oder ob Ihr lokaler LLM-Server läuft.",
       "notReadable": "Antwort-Body ist nicht lesbar"
     }
