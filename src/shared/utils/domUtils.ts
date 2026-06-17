@@ -35,6 +35,32 @@ export function renderDescriptionLines(
 }
 
 /**
+ * 개행 포함 텍스트를 DocumentFragment로 변환합니다.
+ * Obsidian의 activeDocument를 사용하여 생성합니다.
+ * (Setting.setDesc()에 DocumentFragment를 전달할 때 사용)
+ *
+ * @param text 개행(\n)을 포함한 설명 텍스트
+ * @returns DocumentFragment
+ */
+export function createMultilineDesc(text: string): DocumentFragment {
+	const frag = activeDocument.createDocumentFragment();
+	text.split('\n').forEach((line, i) => {
+		if (i > 0) frag.createEl('br');
+		frag.appendText(line);
+	});
+	return frag;
+}
+
+/**
+ * feature-card 생성: is-active 클래스는 active일 때만 추가합니다.
+ * MCP 탭의 LocalServerSection, AgentSection에서 사용.
+ */
+export function createFeatureCard(el: HTMLElement, active: boolean): HTMLDivElement {
+	const cls = 'lumina-feature-card' + (active ? ' is-active' : '');
+	return el.createDiv({ cls });
+}
+
+/**
  * 중앙 정렬된 버튼 컨테이너를 생성합니다.
  * display: flex, justify-content: center, margin: 10px 0
  */
