@@ -7,9 +7,28 @@
  * - IME 입력 안전 텍스트 핸들러
  */
 
+import { TextComponent } from 'obsidian';
 import { PROVIDER_LABELS, PROVIDER_CATEGORIES } from '../types/settings.types';
 import type { LLMProviderConfig, ProviderType } from '../types/settings.types';
 import { isEmbeddingModel } from '../../core/settings/settingTab';
+
+// ─── UI Helpers ───────────────────────────────────────────────────────────────
+
+/** feature-card 생성: is-active 클래스는 active일 때만 추가 */
+export function createFeatureCard(el: HTMLElement, active: boolean): HTMLDivElement {
+	const cls = 'lumina-feature-card' + (active ? ' is-active' : '');
+	return el.createDiv({ cls });
+}
+
+/** multiline document fragment 생성 (개행 포함) */
+export function createMultilineDesc(text: string): DocumentFragment {
+	const frag = activeDocument.createDocumentFragment();
+	text.split('\n').forEach((line, i) => {
+		if (i > 0) frag.createEl('br');
+		frag.appendText(line);
+	});
+	return frag;
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -159,6 +178,61 @@ export function createComposingSafeTextHandler(
 		},
 		isComposing: () => composing,
 	};
+}
+
+// ─── IME-safe Obsidian Setting Binding ─────────────────────────────────────────
+
+/**
+ * Obsidian Setting.addText() 콜백에서 받은 TextComponent에 IME-safe 바인딩을 적용합니다.
+ * 초기값을 설정하고, composition 이벤트로 IME 입력 중에는 onChange가 발동하지 않도록 합니다.
+ *
+ * Usage:
+ * ```
+ * setting.addText(text => {
+ *   createImeTextBinding(text, myValue, async (val) => {
+ *     myValue = val;
+ *     await tab.saveAndSync();
+ *   });
+ * });
+ * ```
+ */
+export function createImeTextBinding(
+	text: TextComponent,
+	initialValue: string,
+	onChange: (val: string) => Promise<void>,
+): void {
+	const handler = createComposingSafeTextHandler(text.inputEl, (val) => {
+		void onChange(val);
+	});
+	text.setValue(initialValue);
+	text.onChange((val: string) => {
+		if (handler.isComposing()) return;
+		handler.dispose();
+		void onChange(val);
+	});
+}
+
+/**
+ * Obsidian Setting.addText() 콜백에서 받은 TextComponent에 IME-safe + password 타입 바인딩을 적용합니다.
+ * inputEl.type을 'password'로 설정하고 placeholder도 함께 지정합니다.
+ */
+export function createImePasswordBinding(
+	text: TextComponent,
+	initialValue: string,
+	placeholder: string,
+	onChange: (val: string) => Promise<void>,
+): void {
+	text.inputEl.type = 'password';
+	const handler = createComposingSafeTextHandler(text.inputEl, (val) => {
+		void onChange(val);
+	});
+	text.setValue(initialValue);
+	text.setPlaceholder(placeholder);
+	text.onChange((val: string) => {
+		if (handler.isComposing()) return;
+		handler.dispose();
+		void onChange(val);
+	});
 }
 
 // ─── Error Normalizer ─────────────────────────────────────────────────────────
