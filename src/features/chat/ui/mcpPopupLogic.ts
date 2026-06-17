@@ -63,12 +63,27 @@ export async function toggleServer(
 	}
 
 	const server = plugin.settings.mcp.servers.find((s) => s.id === serverId);
-	if (server) {
-		server.enabled = !server.enabled;
+	if (!server) {
+		return plugin.settings.mcp.servers;
 	}
 
-	await plugin.mcpManager.syncServers();
-	return [...plugin.settings.mcp.servers];
+	server.enabled = !server.enabled;
+
+	try {
+		await plugin.mcpManager.syncServers();
+	} catch {
+		// syncServers 전체 실패 시 enabled 복구
+		server.enabled = !server.enabled;
+		plugin.settings.mcp.servers = [...plugin.settings.mcp.servers];
+		new Notice(t("uiMessages.mcpConnectFailed", { name: server.name }));
+	}
+
+	// syncServers 내 connectNewClients에서 연결 실패 시
+	// 이미 config.enabled = false로 되돌려 놓았으므로, 여기서 결과 확인
+	await plugin.saveSettings();
+
+	// Svelte {#each} 반응성을 위해 각 객체를 얕은 복사하여 새 참조로 만듦
+	return plugin.settings.mcp.servers.map((s) => ({ ...s }));
 }
 
 // ─── 내장 MCP 서버 토글 ────────────────────────────────────────────────────────
@@ -99,7 +114,12 @@ export async function toggleLocalServer(plugin: LuminaPlugin): Promise<ToggleLoc
 		plugin.settings.mcp.serverAuthToken = crypto.randomUUID();
 	}
 
-	await plugin.mcpManager.syncServers();
+	try {
+		await plugin.mcpManager.syncServers();
+	} catch {
+		plugin.settings.mcp.serverEnabled = !plugin.settings.mcp.serverEnabled;
+		new Notice(t("uiMessages.mcpConnectFailed", { name: t("settings.mcp.localServerName") }));
+	}
 
 	// 에이전트가 켜져 있는데 서버를 수동으로 껐다면 에이전트도 끔
 	if (!plugin.settings.mcp.serverEnabled && plugin.settings.chat.agentEnabled) {

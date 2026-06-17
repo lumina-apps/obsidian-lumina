@@ -3,6 +3,7 @@
 	import type { UIChatMessage } from "../../../shared/types/chat.types";
 	import { t } from "../../../shared/locales/helpers";
 	import { copyToClipboard } from "../../../shared/utils/clipboardUtils";
+	import { sanitizeDisplayContent } from "../../../shared/utils/llmTextSanitizer";
 	import { icon } from "./utils/iconAction";
 	import { insertToNote } from "./utils/messageActions";
 
@@ -19,11 +20,13 @@
 	} = $props();
 
 	async function handleCopy(): Promise<void> {
-		await copyToClipboard(message.content, t("uiMessages.copiedToClipboard"));
+		const contentToCopy = sanitizeDisplayContent(message.content);
+		await copyToClipboard(contentToCopy, t("uiMessages.copiedToClipboard"));
 	}
 
 	function handleInsertToNote(): void {
-		insertToNote(app, message.content);
+		const contentToInsert = sanitizeDisplayContent(message.content);
+		insertToNote(app, contentToInsert);
 	}
 
 	function handleRegenerate(): void {

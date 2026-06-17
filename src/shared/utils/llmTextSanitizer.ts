@@ -24,11 +24,14 @@ export function stripMaskTokens(text: string): string {
 }
 
 /**
- * DeepSeek 등 추론 모델의 <think>...</think> 블록을 제거한다.
+ * DeepSeek 등 추론 모델의 <think>...</think> 또는 <thinking>...</thinking> 블록을 제거한다.
  * API 호환성 문제 방지 (DeepSeek API는 assistant 메시지에 <think> 포함 시 오류 발생).
  */
 export function stripThinkTags(text: string): string {
-	return text.replace(/<think>([\s\S]*?)(?:<\/think>|$)/gi, '').trim();
+	return text
+		.replace(/<think>([\s\S]*?)(?:<\/think>|$)/gi, '')
+		.replace(/<thinking>([\s\S]*?)(?:<\/thinking>|$)/gi, '')
+		.trim();
 }
 
 /**
@@ -41,12 +44,13 @@ export function stripToolCallTags(text: string): string {
 }
 
 /**
- * 텍스트에서 <think>...</think> 블록의 내용만 추출하여 배열로 반환한다.
+ * 텍스트에서 <think>...</think> 또는 <thinking>...</thinking> 블록의 내용만 추출하여 배열로 반환한다.
  * UI에서 추론 과정을 별도로 표시할 때 사용.
  */
 export function extractThinkBlocks(text: string): string[] {
-	const matches = Array.from(text.matchAll(/<think>([\s\S]*?)(?:<\/think>|$)/gi));
-	return matches.map(m => m[1].trim()).filter(Boolean);
+	const matches1 = Array.from(text.matchAll(/<think>([\s\S]*?)(?:<\/think>|$)/gi));
+	const matches2 = Array.from(text.matchAll(/<thinking>([\s\S]*?)(?:<\/thinking>|$)/gi));
+	return [...matches1, ...matches2].map(m => m[1].trim()).filter(Boolean);
 }
 
 /**

@@ -39,12 +39,16 @@
 		}
 	});
 
-	async function handleToggleServer(server: McpServerConfig) {
+	async function handleToggleServer(event: Event, server: McpServerConfig) {
+		const target = event.target as HTMLInputElement;
+		server.enabled = target.checked;
 		const updated = await toggleServer(plugin, server.id);
 		servers = updated;
 	}
 
-	async function handleToggleLocalServer() {
+	async function handleToggleLocalServer(event: Event) {
+		const target = event.target as HTMLInputElement;
+		serverEnabled = target.checked;
 		const result = await toggleLocalServer(plugin);
 		serverEnabled = result.state.serverEnabled;
 		serverPort = result.state.serverPort;
@@ -52,7 +56,9 @@
 		servers = result.servers;
 	}
 
-	async function handleToggleAgent() {
+	async function handleToggleAgent(event: Event) {
+		const target = event.target as HTMLInputElement;
+		agentEnabled = target.checked;
 		const result = await toggleAgent(plugin);
 		if (result.rejected) {
 			agentEnabled = false;
@@ -122,7 +128,7 @@
 						</div>
 						<div class="lumina-mcp-popup__item-right">
 							<label class="lumina-toggle-switch">
-								<input type="checkbox" checked={server.enabled} onchange={() => handleToggleServer(server)} />
+								<input type="checkbox" checked={server.enabled} onchange={(e) => handleToggleServer(e, server)} />
 								<span class="lumina-toggle-slider"></span>
 							</label>
 						</div>

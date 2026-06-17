@@ -45,3 +45,50 @@
 		</div>
 	{/each}
 </div>
+
+<style>
+	.lumina-message__attachments {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		margin-bottom: 8px;
+	}
+
+	.lumina-message__attachment-chip {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		padding: 3px 8px;
+		background: var(--background-primary);
+		border: 1px solid var(--background-modifier-border);
+		border-radius: 6px;
+		font-size: 11px;
+		color: var(--text-muted);
+		max-width: 200px;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.lumina-message__attachment-chip:hover {
+		background: var(--background-modifier-hover);
+		color: var(--text-normal);
+		border-color: rgba(139, 92, 246, 0.3);
+	}
+
+	.lumina-message__attachment-icon {
+		display: flex;
+		align-items: center;
+	}
+
+	.lumina-message__attachment-icon :global(svg) {
+		width: 12px !important;
+		height: 12px !important;
+		opacity: 0.8;
+	}
+
+	.lumina-message__attachment-name {
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+</style>
