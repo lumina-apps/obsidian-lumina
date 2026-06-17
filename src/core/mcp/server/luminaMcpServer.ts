@@ -2,16 +2,18 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
 	CallToolRequestSchema,
 	ListToolsRequestSchema,
+	type CallToolResult,
 } from '@modelcontextprotocol/sdk/types.js';
 import type LuminaPlugin from '../../../main';
 import { debugLogger } from '../../../shared/debugLogger';
+import { formatMcpError } from '../../../shared/utils/mcpUtils';
 import { t } from '../../../shared/locales/helpers';
 import { SafeJsonSchemaValidator } from '../safeValidator';
 import { getToolDefinitions } from './toolDefinitions';
-import { dispatchToolHandler } from './toolHandlers';
+import { dispatchToolHandler } from './handlerRegistry';
 import { HttpTransport } from './httpTransport';
 import { PathGuard } from './pathGuard';
-import type { ToolArguments, ToolHandlerContext, McpLimits } from './types';
+import type { ToolArguments, ToolHandlerContext, McpLimits } from './toolTypes';
 
 export class LuminaMcpServer {
 	private server: McpServer;
@@ -76,21 +78,21 @@ export class LuminaMcpServer {
 		});
 
 		// CallTool 핸들러
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		this.server.server.setRequestHandler(CallToolRequestSchema, async (request): Promise<any> => {
+		this.server.server.setRequestHandler(CallToolRequestSchema, async (request): Promise<CallToolResult> => {
 			const { name, arguments: rawArgs } = request.params;
 			const args: ToolArguments = (rawArgs as Record<string, unknown>) ?? {};
 			const ctx = this.buildContext();
 
 			try {
-				return await dispatchToolHandler(name, args, ctx, this.pathGuard);
+				const result = await dispatchToolHandler(name, args, ctx, this.pathGuard);
+				return result as CallToolResult;
 			} catch (e) {
-				const message = e instanceof Error ? e.message : String(e);
-				debugLogger.logError('mcp', e instanceof Error ? e : new Error(message));
+				const message = formatMcpError(e).message;
+				debugLogger.logError('mcp', formatMcpError(e));
 				return {
 					isError: true,
 					content: [{ type: 'text' as const, text: t('mcpServerTools.common.executionError', { error: message }) }],
-				};
+				} as CallToolResult;
 			}
 		});
 	}

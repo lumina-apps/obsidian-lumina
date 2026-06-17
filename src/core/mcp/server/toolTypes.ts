@@ -1,4 +1,5 @@
 import type LuminaPlugin from '../../../main';
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 
 /**
  * luminaMcpServer 모듈 내부 타입 정의.
@@ -20,11 +21,8 @@ export type ToolName =
 /** CallTool 요청에서 전달되는 원시 인자 */
 export type ToolArguments = Record<string, unknown>;
 
-/** MCP 툴 실행 결과 (MCP SDK 스펙 호환) */
-export interface ToolResult {
-	content: Array<{ type: 'text'; text: string }>;
-	isError?: boolean;
-}
+/** MCP 툴 실행 결과 (MCP SDK CallToolResult 타입 재노출) */
+export type ToolResult = CallToolResult;
 
 /** 툴 핸들러가 공통으로 필요로 하는 의존성 컨텍스트 */
 export interface ToolHandlerContext {
@@ -38,12 +36,6 @@ export interface ToolHandlerContext {
 	/** 검색 최대 결과 수 */
 	maxResults: number;
 }
-
-/** 개별 툴 핸들러 함수 시그니처 */
-export type ToolHandler = (
-	args: ToolArguments,
-	ctx: ToolHandlerContext,
-) => Promise<ToolResult>;
 
 /** 설정에서 추출한 제한 값 모음 */
 export interface McpLimits {

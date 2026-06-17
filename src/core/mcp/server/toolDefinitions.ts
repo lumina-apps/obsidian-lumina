@@ -1,5 +1,5 @@
 import { t } from '../../../shared/locales/helpers';
-import type { ToolName } from './types';
+import type { ToolName } from './toolTypes';
 
 /** 툴 메타데이터 (ListTools 응답용) */
 export interface ToolDefinition {
