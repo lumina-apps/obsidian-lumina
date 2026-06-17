@@ -481,8 +481,7 @@
       "settings": {
         "name": "설정",
         "desc": "Lumina 설정 화면을 엽니다."
-      },
-      "quickActionDesc": "프롬프트 템플릿 추가"
+      }
     },
     "sessionUsage": "현재 세션 누적 사용량",
     "sessionTokens": "누적: {{tokens}} 토큰",

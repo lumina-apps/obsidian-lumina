@@ -481,8 +481,7 @@
       "settings": {
         "name": "Settings",
         "desc": "Open the Lumina settings screen."
-      },
-      "quickActionDesc": "Insert prompt template"
+      }
     },
     "sessionUsage": "Current Session Usage",
     "sessionTokens": "Total: {{tokens}} tokens",

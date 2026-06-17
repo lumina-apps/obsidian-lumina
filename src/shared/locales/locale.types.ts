@@ -600,7 +600,6 @@ export interface TranslationChatSlashCommands {
   rag: TranslationChatSlashCommand;
   mcp: TranslationChatSlashCommand;
   settings: TranslationChatSlashCommand;
-  quickActionDesc: string;
 }
 
 export interface TranslationChat {

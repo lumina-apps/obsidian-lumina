@@ -481,8 +481,7 @@
       "settings": {
         "name": "設定",
         "desc": "開啟 Lumina 設定畫面。"
-      },
-      "quickActionDesc": "插入提示詞範本"
+      }
     },
     "sessionUsage": "目前會話累計用量",
     "sessionTokens": "累計: {{tokens}} tokens",

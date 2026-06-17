@@ -481,8 +481,7 @@
       "settings": {
         "name": "Impostazioni",
         "desc": "Apri la schermata delle impostazioni di Lumina."
-      },
-      "quickActionDesc": "Inserisci modello di prompt"
+      }
     },
     "sessionUsage": "Uso accumulato della sessione attuale",
     "sessionTokens": "Totale: {{tokens}} token",

@@ -177,14 +177,10 @@
 		buildSlashCommands(
 			plugin,
 			tProxy,
-			() => slashStartIndex,
-			() => inputText,
-			(v) => { inputText = v; },
 			onClearChat,
 			onToggleRagMode,
 			onOpenSettings,
 			(v) => { showMcpPopup = v; },
-			() => textareaEl,
 		)
 	);
 

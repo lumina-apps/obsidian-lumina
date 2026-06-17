@@ -481,8 +481,7 @@
       "settings": {
         "name": "設定",
         "desc": "Luminaの設定画面を開きます。"
-      },
-      "quickActionDesc": "プロンプトテンプレートを挿入"
+      }
     },
     "sessionUsage": "現在のセッションの累積使用量",
     "sessionTokens": "累積: {{tokens}} トークン",

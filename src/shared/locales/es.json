@@ -481,8 +481,7 @@
       "settings": {
         "name": "Ajustes",
         "desc": "Abrir la pantalla de ajustes de Lumina."
-      },
-      "quickActionDesc": "Insertar plantilla de prompt"
+      }
     },
     "sessionUsage": "Uso acumulado de la sesión actual",
     "sessionTokens": "Total: {{tokens}} tokens",

@@ -1,18 +1,13 @@
 import type { SlashCommand } from "../types/slashCommand.types";
 import type LuminaPlugin from "../../../main";
-import { resizeTextarea } from "./textareaUtils";
 
 export function buildSlashCommands(
 	plugin: LuminaPlugin,
 	t: (key: string, params?: Record<string, string | number>) => string,
-	getSlashStartIndex: () => number,
-	getInputText: () => string,
-	setInputText: (v: string) => void,
 	onClearChat: () => void,
 	onToggleRagMode: () => void,
 	onOpenSettings: () => void,
 	setShowMcpPopup: (v: boolean) => void,
-	getTextareaEl: () => HTMLTextAreaElement | null,
 ): SlashCommand[] {
 	const cmds: SlashCommand[] = [
 		{
@@ -46,32 +41,6 @@ export function buildSlashCommands(
 			action: () => onOpenSettings(),
 		},
 	];
-
-	const quickActions = plugin.settings.chat.quickActions || [];
-	for (const qa of quickActions) {
-		const prompt = qa.prompt;
-		cmds.push({
-			id: qa.id.replace(/^qa-/, ""),
-			name: qa.name,
-			description: t("chat.slashCommands.quickActionDesc"),
-			icon: "message-square",
-			action: () => {
-				const startIdx = getSlashStartIndex();
-				const currentInput = getInputText();
-				const before =
-					startIdx === -1
-						? currentInput
-						: currentInput.slice(0, startIdx);
-				const after =
-					startIdx === -1
-						? ""
-						: currentInput.slice(startIdx);
-				setInputText(before + prompt + after);
-				const el = getTextareaEl();
-				if (el) resizeTextarea(el);
-			},
-		});
-	}
 
 	return cmds;
 }

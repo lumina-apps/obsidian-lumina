@@ -481,8 +481,7 @@
       "settings": {
         "name": "Paramètres",
         "desc": "Ouvrez l'écran des paramètres de Lumina."
-      },
-      "quickActionDesc": "Insérer un modèle de prompt"
+      }
     },
     "sessionUsage": "Utilisation cumulée de la session actuelle",
     "sessionTokens": "Total: {{tokens}} jetons",

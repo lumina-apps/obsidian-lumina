@@ -481,8 +481,7 @@
       "settings": {
         "name": "Configurações",
         "desc": "Abre a tela de configurações do Lumina."
-      },
-      "quickActionDesc": "Inserir modelo de prompt"
+      }
     },
     "sessionUsage": "Uso acumulado da sessão atual",
     "sessionTokens": "Total: {{tokens}} tokens",

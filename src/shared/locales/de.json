@@ -481,8 +481,7 @@
       "settings": {
         "name": "Einstellungen",
         "desc": "Öffnet den Einstellungsbildschirm von Lumina."
-      },
-      "quickActionDesc": "Prompt-Vorlage einfügen"
+      }
     },
     "sessionUsage": "Kumulierte Nutzung der aktuellen Sitzung",
     "sessionTokens": "Gesamt: {{tokens}} Tokens",

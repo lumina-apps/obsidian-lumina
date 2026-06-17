@@ -481,8 +481,7 @@
       "settings": {
         "name": "Настройки",
         "desc": "Открыть экран настроек Lumina."
-      },
-      "quickActionDesc": "Вставить шаблон промпта"
+      }
     },
     "sessionUsage": "Текущее использование сессии",
     "sessionTokens": "Всего: {{tokens}} токенов",
