@@ -9,6 +9,7 @@
 	import ChatInputArea from "./ChatInputArea.svelte";
 	import type { ContextAttachment } from "../../../shared/types/chat.types";
 	import { splitProviderModel } from "../utils/inputUtils";
+	import { resizeTextarea } from "../utils/textareaUtils";
 	import { createAutoScroll } from "./utils/useAutoScroll";
 	import { openSettingsTab } from "../../../shared/utils/openSettingsTab";
 
@@ -150,8 +151,7 @@
 			attachments = [...attachments, ...newAtts];
 			tick().then(() => {
 				if (textareaEl) {
-					textareaEl.style.height = "auto";
-					textareaEl.style.height = Math.min(textareaEl.scrollHeight, 160) + "px";
+					resizeTextarea(textareaEl);
 					textareaEl.focus();
 				}
 			});
@@ -264,9 +264,7 @@
 	}
 
 	function resetTextareaHeight(): void {
-		if (!textareaEl) return;
-		textareaEl.style.height = "auto";
-		textareaEl.style.height = Math.min(textareaEl.scrollHeight, 160) + "px";
+		resizeTextarea(textareaEl);
 	}
 </script>
 

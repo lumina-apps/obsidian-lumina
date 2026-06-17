@@ -95,6 +95,19 @@ export async function processFiles(
 	return newAttachments;
 }
 
+/**
+ * 붙여넣기된 파일의 이름을 보정합니다. (클립보드 이미지 등)
+ */
+export function normalizePastedFile(file: File): File {
+	const ext = file.type.split("/")[1] || "png";
+	if (file.name === "image.png" || !file.name.includes(".")) {
+		return new File([file], `Pasted_Image_${Date.now()}.${ext}`, {
+			type: file.type,
+		});
+	}
+	return file;
+}
+
 export function getAttachmentIcon(type: string): string {
 	switch (type) {
 		case "file": return "file-text";

@@ -1,14 +1,7 @@
 <script lang="ts">
 	import { setIcon } from "obsidian";
 	import { onMount, tick } from "svelte";
-
-	export interface SlashCommand {
-		id: string;
-		name: string;
-		description: string;
-		icon: string;
-		action: () => void;
-	}
+	import type { SlashCommand } from "../types/slashCommand.types";
 
 	let {
 		commands = [],

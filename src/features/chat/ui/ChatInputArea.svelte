@@ -2,12 +2,35 @@
 	import { tick } from "svelte";
 	import { setIcon } from "obsidian";
 	import type LuminaPlugin from "../../../main";
-	import ContextSelector from "./ContextSelector.svelte";
-	import SlashCommandSelector, { type SlashCommand } from "./SlashCommandSelector.svelte";
-	import McpQuickPopup from "./McpQuickPopup.svelte";
+	import type { Readable } from "svelte/store";
+	import type { TranslationKeys } from "../../../shared/locales/locale.types";
 	import type { ContextAttachment } from "../../../shared/types/chat.types";
-	import { processFiles, getAttachmentIcon } from "../utils/fileAttachmentUtils";
-	import { detectMention, detectSlashCommand } from "../utils/inputUtils";
+	import ContextSelector from "./ContextSelector.svelte";
+	import SlashCommandSelector from "./SlashCommandSelector.svelte";
+	import McpQuickPopup from "./McpQuickPopup.svelte";
+	import { getAttachmentIcon } from "../utils/fileAttachmentUtils";
+	import { resizeTextarea } from "../utils/textareaUtils";
+	import { buildSlashCommands } from "../utils/slashCommandUtils";
+	import {
+		createKeydownHandler,
+		createInputHandler,
+		createContextMentionInserter,
+		createContextSelectHandler,
+		createSlashSelectHandler,
+	} from "./composables/useInputHandler";
+	import {
+		createFileInputTrigger,
+		createFileSelectHandler,
+		createDropHandler,
+		createDragOverHandler,
+		createPasteHandler,
+		createRemoveAttachment,
+	} from "./composables/useFileAttachment";
+	import { handleMcpPopupToggle } from "./composables/useInputPopups";
+
+	type TStore = Readable<
+		(key: TranslationKeys, params?: Record<string, string | number>) => string
+	>;
 
 	let {
 		plugin,
@@ -35,7 +58,7 @@
 		sessionTokenStats: { totalTokens: number; estimatedCost: number };
 		includeActiveNote: boolean;
 		agentEnabled: boolean;
-		tStore: any;
+		tStore: TStore;
 		inputText: string;
 		attachments: ContextAttachment[];
 		textareaEl: HTMLTextAreaElement | null;
@@ -47,6 +70,7 @@
 		onOpenSettings: () => void;
 	}>();
 
+	// ── UI state (컴포넌트 내에 유지) ──────────────────────────────────────
 	let showContextSelector = $state(false);
 	let contextSearchQuery = $state("");
 	let mentionStartIndex = $state(-1);
@@ -58,245 +82,124 @@
 	let showMcpPopup = $state(false);
 	let fileInputEl: HTMLInputElement | null = $state(null);
 
-	export function resizeTextarea() {
-		if (!textareaEl) return;
-		textareaEl.style.height = "auto";
-		textareaEl.style.height = Math.min(textareaEl.scrollHeight, 160) + "px";
+	// ── 공통 리사이즈 래퍼 ─────────────────────────────────────────────────
+	function onResize() {
+		resizeTextarea(textareaEl);
 	}
 
-	function handleKeydown(e: KeyboardEvent) {
-		if (showSlashSelector && ["Enter", "ArrowUp", "ArrowDown", "Escape"].includes(e.key)) {
-			if (e.key === "Enter") e.preventDefault();
-			return;
-		}
-
-		if (showContextSelector && ["Enter", "ArrowUp", "ArrowDown", "Escape"].includes(e.key)) {
-			if (e.key === "Enter") e.preventDefault();
-			return;
-		}
-
-		const sendKey = plugin.settings.chat.sendKey;
-
-		if (sendKey === "enter" && e.key === "Enter" && !e.shiftKey) {
-			e.preventDefault();
-			if (e.isComposing || e.keyCode === 229) {
-				setTimeout(() => onSendMessage(), 50);
-			} else {
-				onSendMessage();
-			}
-		} else if (sendKey === "ctrl_enter" && e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-			e.preventDefault();
-			if (e.isComposing || e.keyCode === 229) {
-				setTimeout(() => onSendMessage(), 50);
-			} else {
-				onSendMessage();
-			}
-		}
-	}
-
-	function handleInput() {
-		resizeTextarea();
-
-		if (!textareaEl) return;
-		const val = textareaEl.value;
-		const cursor = textareaEl.selectionStart;
-
-		const lastAt = val.lastIndexOf("@", cursor - 1);
-		const lastSlash = val.lastIndexOf("/", cursor - 1);
-
-		if (lastAt >= lastSlash) {
-			const res = detectMention(val, cursor, lastAt);
-			if (res.detected) {
-				showContextSelector = true;
-				showSlashSelector = false;
-				contextSearchQuery = res.query;
-				mentionStartIndex = res.startIndex;
-				return;
-			}
-		} else {
-			const res = detectSlashCommand(val, cursor, lastSlash);
-			if (res.detected) {
-				showSlashSelector = true;
-				showContextSelector = false;
-				slashSearchQuery = res.query;
-				slashStartIndex = res.startIndex;
-				return;
-			}
-		}
-		
-		showContextSelector = false;
-		showSlashSelector = false;
-	}
-
-	function handleContextSelect(attachment: ContextAttachment) {
-		if (!attachments.find((a) => a.path === attachment.path && a.type === attachment.type)) {
-			attachments = [...attachments, attachment];
-		}
-
-		if (mentionStartIndex !== -1 && textareaEl) {
-			const val = inputText;
-			const before = val.slice(0, mentionStartIndex);
-			const after = val.slice(textareaEl.selectionStart);
-			inputText = before + after;
-
-			showContextSelector = false;
-			mentionStartIndex = -1;
-
-			tick().then(() => textareaEl?.focus());
-		}
-	}
-
-	const slashCommands = $derived.by(() => {
-		const cmds: SlashCommand[] = [
-			{ id: "clear", name: $tStore("chat.slashCommands.clear.name"), description: $tStore("chat.slashCommands.clear.desc"), icon: "trash-2", action: () => onClearChat() },
-			{ id: "rag", name: $tStore("chat.slashCommands.rag.name"), description: $tStore("chat.slashCommands.rag.desc"), icon: "database", action: () => onToggleRagMode() },
-			{ id: "mcp", name: $tStore("chat.slashCommands.mcp.name"), description: $tStore("chat.slashCommands.mcp.desc"), icon: "lumina-server", action: () => { showMcpPopup = true; } },
-			{ id: "settings", name: $tStore("chat.slashCommands.settings.name"), description: $tStore("chat.slashCommands.settings.desc"), icon: "settings", action: () => onOpenSettings() }
-		];
-
-		const quickActions = plugin.settings.chat.quickActions || [];
-		for (const qa of quickActions) {
-			const prompt = qa.prompt;
-			cmds.push({
-				id: qa.id.replace(/^qa-/, ''),
-				name: qa.name,
-				description: $tStore("chat.slashCommands.quickActionDesc"),
-				icon: "message-square",
-				get action() {
-					return () => {
-						const startIdx = slashStartIndex;
-						const before = inputText.slice(0, startIdx === -1 ? inputText.length : startIdx);
-						const after = inputText.slice(startIdx === -1 ? inputText.length : startIdx);
-						inputText = before + prompt + after;
-						tick().then(() => resizeTextarea());
-					};
-				},
-			});
-		}
-
-		return cmds;
+	// ── 입력 핸들러들 (composable) ─────────────────────────────────────────
+	const handleKeydown = createKeydownHandler({
+		get plugin() { return plugin; },
+		get showSlashSelector() { return showSlashSelector; },
+		get showContextSelector() { return showContextSelector; },
+		get onSendMessage() { return onSendMessage; },
 	});
 
-	function handleSlashCommandSelect(cmd: SlashCommand) {
-		if (slashStartIndex !== -1 && textareaEl) {
-			const val = inputText;
-			const before = val.slice(0, slashStartIndex);
-			const after = val.slice(textareaEl.selectionStart);
-			inputText = before + after;
-			
+	const handleInput = createInputHandler({
+		getTextareaEl: () => textareaEl,
+		setShowContextSelector: (v) => { showContextSelector = v; },
+		setContextSearchQuery: (v) => { contextSearchQuery = v; },
+		setMentionStartIndex: (v) => { mentionStartIndex = v; },
+		setShowSlashSelector: (v) => { showSlashSelector = v; },
+		setSlashSearchQuery: (v) => { slashSearchQuery = v; },
+		setSlashStartIndex: (v) => { slashStartIndex = v; },
+	});
+
+	const insertContextMention = createContextMentionInserter({
+		getTextareaEl: () => textareaEl,
+		getInputText: () => inputText,
+		setInputText: (v) => { inputText = v; },
+		afterInsert: handleInput,
+	});
+
+	const handleContextSelect = createContextSelectHandler({
+		get attachments() { return attachments; },
+		setAttachments: (a) => { attachments = a; },
+		get mentionStartIndex() { return mentionStartIndex; },
+		getTextareaEl: () => textareaEl,
+		getInputText: () => inputText,
+		setInputText: (v) => { inputText = v; },
+		afterSelect: () => {
+			showContextSelector = false;
+			mentionStartIndex = -1;
+		},
+	});
+
+	const handleSlashCommandSelect = createSlashSelectHandler({
+		get slashStartIndex() { return slashStartIndex; },
+		getTextareaEl: () => textareaEl,
+		getInputText: () => inputText,
+		setInputText: (v) => { inputText = v; },
+		afterSelect: () => {
 			showSlashSelector = false;
 			slashStartIndex = -1;
+		},
+	});
 
-			tick().then(() => {
-				if (textareaEl) textareaEl.focus();
-				cmd.action();
-			});
+	// ── 파일 첨부 핸들러들 (composable) ────────────────────────────────────
+	const tProxy = (key: string, vars?: Record<string, string | number>) => {
+		let text = $tStore(key);
+		if (vars) {
+			for (const [k, v] of Object.entries(vars)) {
+				text = text.replace(`{{${k}}}`, v);
+			}
 		}
-	}
+		return text;
+	};
 
+	const fileCtx = {
+		get plugin() { return plugin; },
+		get attachments() { return attachments; },
+		setAttachments: (a: ContextAttachment[]) => { attachments = a; },
+		t: tProxy,
+		onResizeTextarea: onResize,
+	};
+
+	const triggerFileInput = createFileInputTrigger(() => fileInputEl);
+	const handleFileSelect = createFileSelectHandler(fileCtx);
+	const handleDrop = createDropHandler(fileCtx);
+	const handleDragOver = createDragOverHandler();
+	const handlePaste = createPasteHandler(fileCtx);
+	/** createRemoveAttachment는 attachments를 클로저로 참조하므로,
+	 *  $derived로 attachments 변경 시 재생성한다. */
+	const removeAttachmentFn = $derived(
+		createRemoveAttachment(
+			attachments,
+			(a: ContextAttachment[]) => { attachments = a; },
+		)
+	);
 	function removeAttachment(index: number) {
-		attachments = attachments.filter((_, i) => i !== index);
+		removeAttachmentFn(index);
 	}
 
-	function insertContextMention(e: MouseEvent) {
-		e.stopPropagation();
-		const cursor = textareaEl?.selectionStart ?? inputText.length;
-		const prefix = cursor > 0 && !/\s/.test(inputText[cursor - 1]) ? " @" : "@";
-		inputText = inputText.slice(0, cursor) + prefix + inputText.slice(cursor);
-		const newCursor = cursor + prefix.length;
-		tick().then(() => {
-			if (textareaEl) {
-				textareaEl.focus();
-				textareaEl.selectionStart = newCursor;
-				textareaEl.selectionEnd = newCursor;
-				handleInput();
-			}
-		});
-	}
+	// ── 슬래시 명령어 빌드 ─────────────────────────────────────────────────
+	const slashCommands = $derived(
+		buildSlashCommands(
+			plugin,
+			tProxy,
+			() => slashStartIndex,
+			() => inputText,
+			(v) => { inputText = v; },
+			onClearChat,
+			onToggleRagMode,
+			onOpenSettings,
+			(v) => { showMcpPopup = v; },
+			() => textareaEl,
+		)
+	);
 
-	function triggerFileInput() {
-		if (fileInputEl) fileInputEl.click();
-	}
-
-	async function handleFileSelect(e: Event) {
-		const target = e.target as HTMLInputElement;
-		if (!target.files || target.files.length === 0) return;
-		const newAtts = await processFiles(target.files, attachments, (key, vars) => {
-			let text = $tStore(key);
-			if (vars) {
-				for (const [k, v] of Object.entries(vars)) {
-					text = text.replace(`{{${k}}}`, v);
-				}
-			}
-			return text;
-		}, plugin);
-		if (newAtts.length > 0) {
-			attachments = [...attachments, ...newAtts];
-			tick().then(() => resizeTextarea());
-		}
-		target.value = "";
-	}
-
-	async function handleDrop(e: DragEvent) {
-		e.preventDefault();
-		const files = e.dataTransfer?.files;
-		if (files && files.length > 0) {
-			const newAtts = await processFiles(files, attachments, (key, vars) => {
-				let text = $tStore(key);
-				if (vars) {
-					for (const [k, v] of Object.entries(vars)) {
-						text = text.replace(`{{${k}}}`, v);
-					}
-				}
-				return text;
-			}, plugin);
-			if (newAtts.length > 0) {
-				attachments = [...attachments, ...newAtts];
-				tick().then(() => resizeTextarea());
+	// ── MCP 팝업 토글 ──────────────────────────────────────────────────────
+	const toggleMcpPopup = handleMcpPopupToggle(
+		(v) => {
+			if (typeof v === "function") {
+				showMcpPopup = v(showMcpPopup);
+			} else {
+				showMcpPopup = v;
 			}
 		}
-	}
+	);
 
-	function handleDragOver(e: DragEvent) {
-		e.preventDefault();
-	}
-
-	async function handlePaste(e: ClipboardEvent) {
-		const items = e.clipboardData?.items;
-		if (!items) return;
-
-		const files: File[] = [];
-		for (let i = 0; i < items.length; i++) {
-			if (items[i].kind === "file") {
-				const file = items[i].getAsFile();
-				if (file) {
-					const ext = file.type.split("/")[1] || "png";
-					let finalFile = file;
-					if (file.name === "image.png" || !file.name.includes(".")) {
-						finalFile = new File([file], `Pasted_Image_${Date.now()}.${ext}`, { type: file.type });
-					}
-					files.push(finalFile);
-				}
-			}
-		}
-
-		if (files.length > 0) {
-			const newAtts = await processFiles(files, attachments, (key, vars) => {
-				let text = $tStore(key);
-				if (vars) {
-					for (const [k, v] of Object.entries(vars)) {
-						text = text.replace(`{{${k}}}`, v);
-					}
-				}
-				return text;
-			}, plugin);
-			if (newAtts.length > 0) {
-				attachments = [...attachments, ...newAtts];
-				tick().then(() => resizeTextarea());
-			}
-		}
-	}
-
+	// ── Obsidian 아이콘 액션 ──────────────────────────────────────────────
 	function icon(node: HTMLElement, iconId: string) {
 		setIcon(node, iconId);
 		return {
@@ -318,7 +221,7 @@
 		<div class="lumina-chat__toolbar-group">
 			<button class="lumina-chat__toolbar-btn" aria-label={$tStore("chat.addContext")} use:icon={"lumina-at-sign"} onclick={insertContextMention} type="button">Add Context</button>
 			<button class="lumina-chat__toolbar-btn" aria-label={$tStore("chat.uploadFile")} use:icon={"paperclip"} onclick={triggerFileInput} type="button"></button>
-			<button class="lumina-chat__toolbar-btn" class:is-agent-active={agentEnabled} aria-label="Agent & MCP Tools" use:icon={"bot"} onclick={(e) => { e.stopPropagation(); showMcpPopup = !showMcpPopup; }} type="button"></button>
+			<button class="lumina-chat__toolbar-btn" class:is-agent-active={agentEnabled} aria-label="Agent & MCP Tools" use:icon={"bot"} onclick={toggleMcpPopup} type="button"></button>
 		</div>
 
 		<input type="file" multiple class="lumina-chat__hidden-file-input" bind:this={fileInputEl} onchange={handleFileSelect} />
@@ -382,7 +285,7 @@
 				></textarea>
 
 				{#if inputText.length > 0 && !isLoading}
-					<button class="lumina-chat__clear-btn" aria-label={$tStore("chat.clearInput")} onclick={() => { inputText = ""; tick().then(() => { resizeTextarea(); textareaEl?.focus(); }); }} type="button" use:icon={"x"}></button>
+					<button class="lumina-chat__clear-btn" aria-label={$tStore("chat.clearInput")} onclick={() => { inputText = ""; tick().then(() => { onResize(); textareaEl?.focus(); }); }} type="button" use:icon={"x"}></button>
 				{/if}
 
 				{#if isLoading}
