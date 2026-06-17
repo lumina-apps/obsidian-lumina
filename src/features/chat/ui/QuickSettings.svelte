@@ -1,41 +1,37 @@
 <script lang="ts">
-	import { setIcon } from "obsidian";
 	import { settingsStore } from "../../../core/store/settingsStore";
 	import { tStore } from "../../../shared/locales/index";
+	import { iconAction, clickOutside } from "../../../shared/utils/domUtils";
+	import { openSettingsTab } from "../../../shared/utils/openSettingsTab";
 	import type LuminaPlugin from "../../../main";
+	import QuickSettingsGroup from "./lib/quickSettings/QuickSettingsGroup.svelte";
+	import { TEMPERATURE_PRESETS, TOKEN_PRESETS } from "./lib/quickSettings/constants";
+	import type { PresetItem } from "./lib/quickSettings/QuickSettingsGroup.svelte";
 
 	let { plugin, isOpen = $bindable(false) } = $props<{ plugin: LuminaPlugin; isOpen: boolean }>();
 
-	let containerEl: HTMLDivElement | null = $state(null);
+	// ── Store derived 값 직접 참조 (local state 복사 제거) ──────────
+	let systemPrompts = $derived($settingsStore?.chat.systemPrompts ?? []);
+	let activePromptId = $derived($settingsStore?.chat.activeSystemPromptId ?? "default");
+	let temperature = $derived($settingsStore?.chat.temperature ?? 0.7);
+	let maxTokens = $derived($settingsStore?.chat.maxOutputTokens ?? 2000);
 
-	// Derived states from settingsStore
-	const systemPrompts = $derived($settingsStore?.chat.systemPrompts || []);
-	let activePromptId = $state($settingsStore?.chat.activeSystemPromptId || "default");
-	let temperature = $state($settingsStore?.chat.temperature ?? 0.7);
-	let maxTokens = $state($settingsStore?.chat.maxOutputTokens ?? 2000);
+	// ── Preset → 번역된 레이블 주입 ──────────────────────────────────
+	function buildPresets(presets: typeof TEMPERATURE_PRESETS): PresetItem[] {
+		return presets.map((p) => ({
+			value: p.value,
+			threshold: p.threshold,
+			label: $tStore(`settings.chat.quickSettings.${p.i18nKey}` as Parameters<typeof $tStore>[0]),
+		}));
+	}
 
-	// Sync local state when store changes
-	$effect(() => {
-		if ($settingsStore) {
-			activePromptId = $settingsStore.chat.activeSystemPromptId;
-			temperature = $settingsStore.chat.temperature;
-			maxTokens = $settingsStore.chat.maxOutputTokens;
-		}
-	});
-
-	async function saveSettings(updates: Partial<{ activeSystemPromptId: string, temperature: number, maxOutputTokens: number }>) {
-		if (updates.activeSystemPromptId !== undefined) {
-			plugin.settings.chat.activeSystemPromptId = updates.activeSystemPromptId;
-			activePromptId = updates.activeSystemPromptId;
-		}
-		if (updates.temperature !== undefined) {
-			plugin.settings.chat.temperature = updates.temperature;
-			temperature = updates.temperature;
-		}
-		if (updates.maxOutputTokens !== undefined) {
-			plugin.settings.chat.maxOutputTokens = updates.maxOutputTokens;
-			maxTokens = updates.maxOutputTokens;
-		}
+	// ── 설정 저장 ────────────────────────────────────────────────────
+	async function saveSettings(updates: Partial<{
+		activeSystemPromptId: string;
+		temperature: number;
+		maxOutputTokens: number;
+	}>) {
+		Object.assign(plugin.settings.chat, updates);
 		await plugin.saveSettings();
 	}
 
@@ -44,79 +40,69 @@
 		saveSettings({ activeSystemPromptId: target.value });
 	}
 
-	function setTemperature(val: number) {
-		saveSettings({ temperature: val });
-	}
-
-	function setMaxTokens(val: number) {
-		saveSettings({ maxOutputTokens: val });
-	}
-
-	function openFullSettings() {
+	function closePopup() {
 		isOpen = false;
-		const appCompat = plugin.app as unknown as { setting: { open: () => void; openTabById: (id: string) => void } };
-		appCompat.setting.open();
-		appCompat.setting.openTabById('lumina');
-	}
-
-	// Click outside handler
-	function handleClickOutside(e: MouseEvent) {
-		if (isOpen && containerEl && !containerEl.contains(e.target as Node)) {
-			isOpen = false;
-		}
-	}
-
-	$effect(() => {
-		if (isOpen) {
-			setTimeout(() => {
-				document.addEventListener("click", handleClickOutside);
-			}, 0);
-		} else {
-			document.removeEventListener("click", handleClickOutside);
-		}
-		return () => {
-			document.removeEventListener("click", handleClickOutside);
-		};
-	});
-
-	function iconAction(node: HTMLElement, iconId: string) {
-		setIcon(node, iconId);
 	}
 </script>
 
 {#if isOpen}
-	<div class="lumina-qs" bind:this={containerEl} role="presentation" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
+	<!--
+		role="presentation" + stopPropagation 유지.
+		clickOutside action이 외부 클릭 감지 → closePopup 호출.
+	-->
+	<div
+		class="lumina-qs"
+		role="presentation"
+		onclick={(e) => e.stopPropagation()}
+		onkeydown={(e) => e.stopPropagation()}
+		use:clickOutside={closePopup}
+	>
+		<!-- 시스템 프롬프트 선택 -->
 		<div class="lumina-qs__section">
-			<label class="lumina-qs__label" for="qs-system-prompt">{$tStore("settings.chat.quickSettings.systemPrompt")}</label>
-			<select id="qs-system-prompt" class="lumina-qs__select" value={activePromptId} onchange={handlePromptChange}>
+			<label class="lumina-qs__label" for="qs-system-prompt">
+				{$tStore("settings.chat.quickSettings.systemPrompt" as Parameters<typeof $tStore>[0])}
+			</label>
+			<select
+				id="qs-system-prompt"
+				class="lumina-qs__select"
+				value={activePromptId}
+				onchange={handlePromptChange}
+			>
 				{#each systemPrompts as prompt}
 					<option value={prompt.id}>{prompt.name}</option>
 				{/each}
 			</select>
 		</div>
 
-		<div class="lumina-qs__section">
-			<span class="lumina-qs__label" id="qs-temp-label">{$tStore("settings.chat.quickSettings.temperature")}</span>
-			<div class="lumina-qs__btn-group" role="group" aria-labelledby="qs-temp-label">
-				<button class="lumina-qs__btn" class:is-active={temperature <= 0.3} onclick={() => setTemperature(0.2)} data-tooltip="0.2">{$tStore("settings.chat.quickSettings.precise")}</button>
-				<button class="lumina-qs__btn" class:is-active={temperature > 0.3 && temperature <= 0.7} onclick={() => setTemperature(0.7)} data-tooltip="0.7">{$tStore("settings.chat.quickSettings.balanced")}</button>
-				<button class="lumina-qs__btn" class:is-active={temperature > 0.7} onclick={() => setTemperature(1.0)} data-tooltip="1.0">{$tStore("settings.chat.quickSettings.creative")}</button>
-			</div>
-		</div>
+		<!-- 온도 버튼 그룹 -->
+		<QuickSettingsGroup
+			label={$tStore("settings.chat.quickSettings.temperature" as Parameters<typeof $tStore>[0])}
+			labelId="qs-temp-label"
+			presets={buildPresets(TEMPERATURE_PRESETS)}
+			currentValue={temperature}
+			onSelect={(val) => saveSettings({ temperature: val })}
+		/>
 
-		<div class="lumina-qs__section">
-			<span class="lumina-qs__label" id="qs-max-label">{$tStore("settings.chat.quickSettings.maxLength")}</span>
-			<div class="lumina-qs__btn-group" role="group" aria-labelledby="qs-max-label">
-				<button class="lumina-qs__btn" class:is-active={maxTokens <= 1000} onclick={() => setMaxTokens(500)} data-tooltip="500">{$tStore("settings.chat.quickSettings.short")}</button>
-				<button class="lumina-qs__btn" class:is-active={maxTokens > 1000 && maxTokens <= 2500} onclick={() => setMaxTokens(2000)} data-tooltip="2000">{$tStore("settings.chat.quickSettings.medium")}</button>
-				<button class="lumina-qs__btn" class:is-active={maxTokens > 2500} onclick={() => setMaxTokens(4000)} data-tooltip="4000">{$tStore("settings.chat.quickSettings.long")}</button>
-			</div>
-		</div>
+		<!-- 최대 토큰 버튼 그룹 -->
+		<QuickSettingsGroup
+			label={$tStore("settings.chat.quickSettings.maxLength" as Parameters<typeof $tStore>[0])}
+			labelId="qs-max-label"
+			presets={buildPresets(TOKEN_PRESETS)}
+			currentValue={maxTokens}
+			onSelect={(val) => saveSettings({ maxOutputTokens: val })}
+		/>
 
+		<!-- 전체 설정 열기 -->
 		<div class="lumina-qs__footer">
-			<button class="lumina-qs__full-settings" onclick={openFullSettings}>
+			<button
+				class="lumina-qs__full-settings"
+				onclick={() => {
+					closePopup();
+					openSettingsTab(plugin.app, "lumina");
+				}}
+			>
 				<span class="lumina-qs__icon" use:iconAction={"settings"}></span>
-				{$tStore("settings.chat.quickSettings.allSettings")}
+				{$tStore("settings.chat.quickSettings.allSettings" as Parameters<typeof $tStore>[0])}
 			</button>
 		</div>
 	</div>
@@ -179,65 +165,6 @@
 
 	.lumina-qs__select:focus {
 		border-color: var(--interactive-accent);
-	}
-
-	.lumina-qs__btn-group {
-		display: flex;
-		background: var(--background-secondary);
-		border-radius: 6px;
-		padding: 2px;
-		gap: 2px;
-	}
-
-	.lumina-qs__btn {
-		flex: 1;
-		background: transparent;
-		border: none;
-		border-radius: 4px;
-		padding: 4px 0;
-		font-size: 11px;
-		font-weight: 500;
-		color: var(--text-muted);
-		cursor: pointer;
-		transition: all 0.2s ease;
-		text-align: center;
-		position: relative;
-	}
-
-	.lumina-qs__btn[data-tooltip]::before {
-		content: attr(data-tooltip);
-		position: absolute;
-		bottom: calc(100% + 4px);
-		left: 50%;
-		transform: translateX(-50%);
-		background: var(--text-normal);
-		color: var(--background-primary);
-		padding: 3px 6px;
-		border-radius: 4px;
-		font-size: 11px;
-		font-weight: 600;
-		white-space: nowrap;
-		opacity: 0;
-		visibility: hidden;
-		pointer-events: none;
-		z-index: 10;
-		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-	}
-
-	.lumina-qs__btn[data-tooltip]:hover::before {
-		opacity: 1;
-		visibility: visible;
-	}
-
-	.lumina-qs__btn:hover {
-		color: var(--text-normal);
-	}
-
-	.lumina-qs__btn.is-active {
-		background: var(--interactive-accent);
-		color: white;
-		font-weight: 600;
-		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 	}
 
 	.lumina-qs__footer {
