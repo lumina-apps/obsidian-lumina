@@ -30,3 +30,65 @@
 		}}>{t("uiMessages.saveAndSend")}</button>
 	</div>
 </div>
+
+<style>
+	.lumina-message__edit-area {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		margin-top: 4px;
+	}
+
+	.lumina-message__edit-textarea {
+		width: 100%;
+		background: var(--background-primary);
+		border: 1px solid var(--interactive-accent);
+		border-radius: 6px;
+		padding: 8px;
+		color: var(--text-normal);
+		font-size: 13px;
+		resize: vertical;
+		font-family: var(--font-interface);
+		box-sizing: border-box;
+	}
+
+	.lumina-message__edit-textarea:focus {
+		outline: none;
+		box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+	}
+
+	.lumina-message__edit-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 6px;
+	}
+
+	.lumina-message__edit-btn {
+		background: var(--background-secondary-alt);
+		border: 1px solid var(--background-modifier-border);
+		color: var(--text-muted);
+		padding: 4px 10px;
+		border-radius: 4px;
+		font-size: 11px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.lumina-message__edit-btn:hover {
+		background: var(--background-modifier-hover);
+		color: var(--text-normal);
+	}
+
+	.lumina-message__edit-btn--primary {
+		background: var(--interactive-accent);
+		color: white;
+		border-color: var(--interactive-accent);
+	}
+
+	.lumina-message__edit-btn--primary:hover {
+		background: var(--interactive-accent-hover);
+		color: white;
+		border-color: var(--interactive-accent-hover);
+	}
+</style>

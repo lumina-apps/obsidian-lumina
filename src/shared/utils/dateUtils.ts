@@ -16,3 +16,13 @@ export function formatTime(ts: number, locale?: string): string {
 		minute: "2-digit",
 	});
 }
+
+/**
+ * 타임스탬프를 "M월 D일 HH:MM" 형식으로 포맷합니다.
+ * ChatHistoryList, Message 등에서 공통 사용.
+ * @param ts Unix epoch milliseconds
+ */
+export function formatDate(ts: number): string {
+	const d = new Date(ts);
+	return `${d.getMonth() + 1}월 ${d.getDate()}일 ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+}

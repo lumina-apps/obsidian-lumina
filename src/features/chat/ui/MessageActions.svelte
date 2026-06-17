@@ -48,3 +48,12 @@
 		<button class="clickable-icon lumina-message__action-btn" aria-label={t("uiMessages.edit")} use:icon={"pencil"} onclick={handleEditStart}></button>
 	{/if}
 </div>
+
+<style>
+	.lumina-message__actions {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 6px;
+	}
+</style>

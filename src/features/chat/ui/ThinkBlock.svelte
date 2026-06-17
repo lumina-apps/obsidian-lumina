@@ -22,18 +22,21 @@
 	const compRef: { current: Component | null } = { current: null };
 
 	let isThinkOpen = $state(false);
+	let autoClosed = $state(false);
 
 	// 스트리밍 중 think 태그가 열리면 자동으로 펼침
 	$effect(() => {
 		if (isThinking) {
 			isThinkOpen = true;
+			autoClosed = false;
 		}
 	});
 
-	// 스트리밍 완료 시 접기
+	// 스트리밍 완료 시 한 번만 자동 접기 (사용자가 수동으로 열면 다시 닫지 않음)
 	$effect(() => {
-		if (!isStreaming && isThinkOpen) {
+		if (!isStreaming && !isThinking && !autoClosed) {
 			isThinkOpen = false;
+			autoClosed = true;
 		}
 	});
 
@@ -59,3 +62,49 @@
 		{/if}
 	</div>
 </details>
+
+<style>
+	.lumina-message__think-block {
+		margin-bottom: 8px;
+		background: rgba(var(--mono-rgb-100), 0.03);
+		border-radius: 8px;
+		border-left: 3px solid var(--text-muted);
+		overflow: hidden;
+	}
+
+	.lumina-message__think-summary {
+		padding: 8px 12px;
+		font-size: 11.5px;
+		font-weight: 600;
+		color: var(--text-muted);
+		cursor: pointer;
+		user-select: none;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		transition: background 0.2s;
+	}
+
+	.lumina-message__think-summary:hover {
+		background: rgba(var(--mono-rgb-100), 0.05);
+		color: var(--text-normal);
+	}
+
+	.lumina-message__think-content-wrapper {
+		padding: 0 12px 10px 12px;
+	}
+
+	.lumina-message__think-content {
+		font-size: 12.5px;
+		line-height: 1.5;
+		color: var(--text-muted);
+	}
+
+	.lumina-message__think-content :global(p) {
+		margin: 0 0 6px;
+	}
+
+	.lumina-message__think-content :global(p:last-child) {
+		margin-bottom: 0;
+	}
+</style>

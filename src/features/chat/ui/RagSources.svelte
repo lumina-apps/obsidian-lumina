@@ -25,3 +25,29 @@
 		</button>
 	{/each}
 </div>
+
+<style>
+	.lumina-message__rag-sources {
+		display: flex;
+		gap: 8px;
+		margin-top: 10px;
+		flex-wrap: wrap;
+	}
+
+	.lumina-message__rag-source {
+		font-size: 9.5px;
+		padding: 3px 8px;
+		background: var(--background-primary);
+		border: 1px solid var(--background-modifier-border);
+		border-radius: 4px;
+		color: var(--text-muted);
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.lumina-message__rag-source:hover {
+		background: var(--background-modifier-hover);
+		color: var(--interactive-accent);
+		border-color: rgba(139, 92, 246, 0.3);
+	}
+</style>

@@ -299,6 +299,8 @@
 
 	.lumina-message__actions {
 		display: flex;
+		flex-direction: row;
+		align-items: center;
 		gap: 6px;
 		margin-top: 6px;
 		opacity: 1; /* 마우스 오버 없이 항상 보이도록 변경 */
