@@ -1,13 +1,6 @@
 /**
- * ragInitializer.ts
- *
- * RAG (Retrieval-Augmented Generation) 임베딩 워커 + 인덱서 초기화 모듈.
- * main.ts의 initEmbeddingWorker 메서드(~180줄)를 분리하여
- * LuminaPlugin의 오케스트레이션 부담을 줄입니다.
- *
- * - 임베딩 워커 초기화 (auto/custom)
- * - VaultIndexer 생성 및 인덱싱 시작
- * - watch/on-start/manual sync 모드 처리
+ * RAG 임베딩 워커 + 인덱서 초기화 모듈.
+ * 임베딩 워커(auto/custom) 초기화, VaultIndexer 생성, 동기화 모드(watch/on-start/manual) 처리를 담당합니다.
  */
 
 import { Notice, Platform } from 'obsidian';
@@ -20,15 +13,11 @@ import { setIndexingStatus } from '../../core/store/ragStore';
 import { debugLogger } from '../../shared/debugLogger';
 import type LuminaPlugin from '../../main';
 
-/**
- * 기본 임베딩 모델 (원클릭 RAG auto 모드).
- * 한국어 포함 다국어 지원.
- */
+/** 기본 임베딩 모델 (auto 모드). 다국어 지원. */
 export const DEFAULT_EMBEDDING_MODEL = 'ibm-granite/granite-embedding-97m-multilingual-r2';
 
 /**
- * RAG 임베딩 워커를 초기화하고, 완료 후 VaultIndexer를 생성하여 인덱싱을 시작합니다.
- * 설정에서 ragEnabled를 켤 때 settingTab이 직접 호출합니다.
+ * RAG 임베딩 워커 초기화 후 VaultIndexer를 생성하여 인덱싱을 시작합니다.
  */
 export async function initEmbeddingWorker(
 	plugin: LuminaPlugin,
@@ -75,8 +64,7 @@ export async function initEmbeddingWorker(
 
 			plugin.embeddingWorker = new EmbeddingWorkerBridge();
 
-			// 항상 pluginDir을 전달합니다.
-			// 로컬에 WASM 파일이 있으면 우선 사용하고, 없으면 Worker에서 CDN 폴백을 시도합니다.
+			// 로컬에 WASM 파일 우선, 없으면 Worker에서 CDN 폴백
 			const pluginDir = plugin.app.vault.adapter.getResourcePath(plugin.manifest.dir || '');
 
 			await plugin.embeddingWorker.init(
@@ -88,7 +76,7 @@ export async function initEmbeddingWorker(
 					if (!isStartup) progressNotice?.setMessage(t('settings.rag.init.loadingProgress', { pct: pct, status: status }));
 				},
 			);
-			const worker = plugin.embeddingWorker; // 클로저 캡처
+			const worker = plugin.embeddingWorker;
 			embedFn = (texts: string[]) => {
 				if (!worker) throw new Error('임베딩 워커가 종료되었습니다.');
 				return worker.embed(texts);
@@ -97,14 +85,13 @@ export async function initEmbeddingWorker(
 
 		progressNotice?.hide();
 
-		// ── 인덱서 생성 (modelName 전달 → 스키마 무효화 감지) ─────────────
+		// 인덱서 생성 (modelName 전달로 스키마 무효화 감지)
 		plugin.indexer = new VaultIndexer(
 			plugin.app,
 			embedFn,
 			(buffer, ext) => plugin.embeddingWorker!.parse(buffer, ext),
 			plugin.settings.rag,
 			modelName,
-			// persist cache callback
 			plugin.embeddingWorker ? () => plugin.embeddingWorker!.persistCache() : undefined,
 		);
 
@@ -115,7 +102,7 @@ export async function initEmbeddingWorker(
 		if (syncMode === 'watch' || syncMode === 'on-start') {
 			if (!isStartup || isFirstRun) new Notice(t('settings.rag.init.indexingVault'), 2000);
 
-			// 최초 실행일 경우 전체 볼트 인덱싱(indexVault) 강제 실행, 아닐 경우 증분 업데이트(updateIndex) 실행
+			// 최초 실행 시 전체 인덱싱, 아니면 증분 업데이트
 			const indexPromise = isFirstRun ? plugin.indexer.indexVault() : plugin.indexer.updateIndex();
 
 			indexPromise
@@ -127,7 +114,7 @@ export async function initEmbeddingWorker(
 					debugLogger.logError('rag', err instanceof Error ? err : new Error(`인덱싱 실패: ${err}`));
 				})
 				.finally(() => {
-					// watch 모드: 초기 인덱싱 완료 후에만 파일 변경 이벤트 등록
+					// watch 모드: 초기 인덱싱 완료 후 파일 변경 이벤트 등록
 					if (syncMode === 'watch') {
 						plugin.registerWatchEvents();
 					}
@@ -145,7 +132,7 @@ export async function initEmbeddingWorker(
 		new Notice(t('settings.rag.init.initFail', { error: (err as Error).message }), 5000);
 		debugLogger.logError('rag', err instanceof Error ? err : new Error(`embedding worker init failed: ${err}`));
 		plugin.embeddingWorker = null;
-		// 임베딩 워커 초기화 실패 시 RAG 토글을 false로 되돌려 UI 불일치 방지
+		// 초기화 실패 시 RAG 토글을 false로 되돌림
 		if (plugin.settings.connections.ragEnabled) {
 			plugin.settings.connections.ragEnabled = false;
 			await plugin.saveSettings();

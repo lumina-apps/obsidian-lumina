@@ -1,8 +1,5 @@
 /**
- * mcpToolHelper.ts
- *
- * MCP 툴 수집, 프롬프트 주입 관련 순수 함수와 헬퍼 로직.
- * chatController.ts에서 추출.
+ * MCP 툴 수집 및 프롬프트 주입 헬퍼.
  */
 
 import { debugLogger } from '../../../shared/debugLogger';
@@ -10,10 +7,7 @@ import { buildTextToolPrompt } from './textToolParser';
 import type { ChatMessage, ToolDefinition } from '../../../shared/types/llm.types';
 import type { McpTool } from '../../../core/mcp/mcpClient';
 
-/**
- * MCP 툴 목록을 수집하고 toolServerMap을 구성한다.
- * agentEnabled가 false이거나 mcpManager가 없으면 빈 배열을 반환한다.
- */
+/** MCP 툴 목록 수집 및 toolServerMap 구성 */
 export function collectMcpTools(params: {
 	agentEnabled: boolean;
 	clientToolsEnabled: boolean;
@@ -54,11 +48,7 @@ export function collectMcpTools(params: {
 	return { mcpTools, toolServerMap };
 }
 
-/**
- * 모델 타입에 따라 적절한 툴 사용 지침을 system 메시지에 주입한다.
- * - 로컬/추론 모델: buildTextToolPrompt() 결과를 system 메시지 말미에 추가
- * - 클라우드 모델: 간략한 tool use instruction 추가
- */
+/** 모델 타입에 따라 툴 사용 지침을 system 메시지에 주입 */
 export function injectToolPrompts(
 	llmMessages: ChatMessage[],
 	mcpTools: ToolDefinition[],

@@ -1,8 +1,4 @@
-/**
- * Footer.ts
- *
- * 설정 창 하단의 후원/링크 푸터를 렌더링합니다.
- */
+/** 설정 창 하단의 후원/링크 푸터 렌더링 */
 
 export function renderDonationFooter(el: HTMLElement, langSuffix: string): void {
 	const footer = el.createDiv({ cls: 'lumina-settings__footer' });

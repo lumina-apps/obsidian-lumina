@@ -65,10 +65,10 @@ export class QuickActionHandler {
 		try {
 			const provider = createProvider(providerConfig);
 
-			// 1. Assign strict system prompt to force output-only behavior for local/small models
+			// 로컬/소형 모델용 엄격한 시스템 프롬프트
 			const sysPrompt = "You are a direct AI assistant. Execute the requested action on the provided text. Output ONLY the final result. Do not output spaces, conversational filler, or markdown blocks unless requested.";
 
-			// 2. Format user prompt with explicit anchors to prevent trailing whitespace hallucinations
+			// 명시적 앵커로 후행 공백 환각 방지
 			const userPrompt = action.prompt
 				? `Task: ${action.prompt}\n\nInput Text:\n${selection.trim()}\n\nOutput:\n`
 				: selection.trim();
@@ -92,6 +92,7 @@ export class QuickActionHandler {
 				messages: llmMessages.map(m => ({ role: m.role, content: m.content as string })) as { role: string; content: string }[],
 			});
 
+			// 스트리밍 응답 중 로딩 표시
 			const indicatorText = t('uiMessages.qaWaitingAI');
 			let isFirstChunk = true;
 
@@ -109,6 +110,7 @@ export class QuickActionHandler {
 				}
 
 				let chunkCount = 0;
+				// 청크 단위로 UI에 점진적 출력
 				const streamRes = await provider.stream(
 					llmMessages,
 					{
@@ -120,7 +122,7 @@ export class QuickActionHandler {
 						if (!chunk) return;
 						fullResponse += chunk;
 
-						// 추론형 모델(<think>) 감지 시 스트리밍 강제 중단
+						// <think> 태그 감지 시 중단 (추론형 모델)
 						if (fullResponse.includes('<think>') || fullResponse.includes('&lt;think&gt;')) {
 							throw new Error('REASONING_DETECTED');
 						}
@@ -132,7 +134,7 @@ export class QuickActionHandler {
 								isFirstChunk = false;
 								const startPos = editor.offsetToPos(currentOffset);
 								const endPos = editor.offsetToPos(currentOffset + indicatorText.length);
-								editor.replaceRange('', startPos, endPos); // Remove indicator
+								editor.replaceRange('', startPos, endPos); // 인디케이터 제거
 							}
 							const pos = editor.offsetToPos(currentOffset);
 							editor.replaceRange(cleanChunk, pos);
@@ -142,8 +144,7 @@ export class QuickActionHandler {
 				);
 				tokenUsage = streamRes?.usage;
 
-				// Fallback: If the local server ignores stream: true or fails to yield chunks, 
-				// we fall back to a standard chat request to ensure the action completes.
+				// 스트리밍 청크가 없으면 일반 chat 요청으로 폴백
 				if (chunkCount === 0) {
 					const response = await provider.chat(
 						llmMessages,
@@ -161,7 +162,7 @@ export class QuickActionHandler {
 						throw new Error('REASONING_DETECTED');
 					}
 
-					// Remove indicator
+					// 인디케이터 제거
 					const startPos = editor.offsetToPos(currentOffset);
 					const endPos = editor.offsetToPos(currentOffset + indicatorText.length);
 					editor.replaceRange('', startPos, endPos);
@@ -214,7 +215,7 @@ export class QuickActionHandler {
 			const msg = err instanceof Error ? err.message : t('uiMessages.qaUnknownError');
 			if (msg === 'REASONING_DETECTED') {
 				new Notice(t('uiMessages.qaReasoningDetected'), 10000);
-				// 에디터 상태 원복 (indicator 또는 삽입된 텍스트 제거)
+				// 에디터 상태 복구
 				if (action.actionType === 'replace') {
 					editor.undo();
 					editor.undo(); // 선택 영역 제거와 indicator 삽입이 2단계일 수 있으므로 안전하게 복구

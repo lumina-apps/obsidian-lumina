@@ -1,11 +1,7 @@
 /**
- * indexPersistence.ts
- *
- * RAG 인덱스의 디스크 영속화를 담당합니다.
- *
- * - JSON 형태로 .obsidian/plugins/lumina/storage/index.json에 저장/로드
- * - schemaVersion + modelName 조합으로 모델 변경 시 자동 무효화
- * - checkpoint.json을 통한 인덱싱 중간 저장 및 재개 지원
+ * RAG 인덱스의 디스크 영속화 담당.
+ * index.json에 JSON 저장/로드, schemaVersion+modelName 변경 시 자동 무효화,
+ * checkpoint.json으로 중간 저장 및 재개를 지원합니다.
  */
 
 import { App, normalizePath } from 'obsidian';
@@ -13,7 +9,7 @@ import type { DocumentChunk, PersistedIndex, IndexingCheckpoint } from '../../sh
 import { SCHEMA_VERSION } from '../../shared/types/rag.types';
 import { debugLogger } from '../../shared/debugLogger';
 
-/** 플러그인 스토리지 경로 (볼트 configDir 기준 상대경로) */
+/** 플러그인 스토리지 경로 */
 const STORAGE_SUBPATH = 'plugins/lumina/storage';
 
 export interface LoadResult {
@@ -21,15 +17,13 @@ export interface LoadResult {
 	indexedPaths: Set<string>;
 	fileMtimes: Record<string, number>;
 	fileHashes: Record<string, number>;
-	/** true = 스키마/모델 변경으로 전체 재인덱싱 필요 */
+	/** 스키마/모델 변경 시 전체 재인덱싱 필요 */
 	needsFullReindex: boolean;
 }
 
 /**
  * 디스크에서 기존 인덱스를 로드합니다.
- *
- * @returns 로드된 인덱스 데이터. 최초 실행 시 빈 상태 반환.
- *          needsFullReindex=true 이면 스키마 버전 또는 모델명 불일치로 전체 재인덱싱 필요.
+ * 최초 실행 시 빈 상태, needsFullReindex=true면 전체 재인덱싱 필요.
  */
 export async function loadIndex(
 	app: App,
@@ -75,9 +69,7 @@ export async function loadIndex(
 	}
 }
 
-/**
- * 인덱스를 JSON으로 직렬화하여 디스크에 저장합니다.
- */
+/** 인덱스를 JSON으로 직렬화하여 디스크에 저장합니다. */
 export async function saveIndex(
 	app: App,
 	modelName: string,
@@ -118,11 +110,7 @@ export async function saveIndex(
 
 /**
  * 인덱싱 중간 체크포인트를 저장합니다.
- * 옵시디언 종료 후 재시작 시 이어서 인덱싱할 수 있도록 처리 완료된 파일 경로를 기록합니다.
- *
- * @param processedPaths 현재까지 처리 완료된 파일 경로 목록
- * @param totalFiles     전체 대상 파일 수
- * @param startedAt      인덱싱 시작 시각 (ms)
+ * 처리 완료된 파일 경로를 기록하여 재시작 시 이어서 인덱싱 가능하게 합니다.
  */
 export async function saveCheckpoint(
 	app: App,
@@ -151,7 +139,6 @@ export async function saveCheckpoint(
 
 		await app.vault.adapter.write(checkpointPath, JSON.stringify(checkpoint));
 	} catch (err) {
-		// 체크포인트 저장 실패는 치명적이지 않음 — 인덱싱은 계속 진행
 		debugLogger.logError(
 			'rag',
 			err instanceof Error ? err : new Error(`체크포인트 저장 실패: ${err}`),
@@ -159,11 +146,7 @@ export async function saveCheckpoint(
 	}
 }
 
-/**
- * 디스크에서 체크포인트를 로드합니다.
- *
- * @returns 저장된 체크포인트, 없으면 null
- */
+/** 디스크에서 체크포인트를 로드합니다. 없으면 null. */
 export async function loadCheckpoint(app: App): Promise<IndexingCheckpoint | null> {
 	const checkpointPath = normalizePath(
 		`${app.vault.configDir}/${STORAGE_SUBPATH}/checkpoint.json`,
@@ -176,7 +159,6 @@ export async function loadCheckpoint(app: App): Promise<IndexingCheckpoint | nul
 		const raw = await app.vault.adapter.read(checkpointPath);
 		const checkpoint = JSON.parse(raw) as IndexingCheckpoint;
 
-		// 기본 필드 검증
 		if (
 			!Array.isArray(checkpoint.processedPaths) ||
 			typeof checkpoint.totalFiles !== 'number' ||
@@ -191,10 +173,7 @@ export async function loadCheckpoint(app: App): Promise<IndexingCheckpoint | nul
 	}
 }
 
-/**
- * 체크포인트 파일을 삭제합니다.
- * 인덱싱이 완전히 완료된 후 호출하여 더 이상 이어할 필요가 없음을 표시합니다.
- */
+/** 체크포인트 파일을 삭제합니다. 인덱싱 완료 후 호출. */
 export async function deleteCheckpoint(app: App): Promise<void> {
 	const checkpointPath = normalizePath(
 		`${app.vault.configDir}/${STORAGE_SUBPATH}/checkpoint.json`,
@@ -206,6 +185,6 @@ export async function deleteCheckpoint(app: App): Promise<void> {
 			await app.vault.adapter.remove(checkpointPath);
 		}
 	} catch {
-		// 삭제 실패는 무시 — 다음 인덱싱 시 체크포인트 검증에서 처리됨
+		// 삭제 실패는 무시
 	}
 }

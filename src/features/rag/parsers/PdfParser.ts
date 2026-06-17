@@ -1,16 +1,12 @@
 import * as pdfjsLib from 'pdfjs-dist';
 
-// 모바일/브라우저 환경에서 워커를 직접 불러오기 위해 CDN 사용
-// (오프라인 환경 지원이 필요한 경우 esbuild를 통한 워커 파일 복사 방식 도입 필요)
+// 모바일/브라우저 환경에서 워커를 CDN으로 로드
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 export class PdfParser {
-	/**
-	 * PDF ArrayBuffer에서 텍스트를 추출합니다.
-	 */
+	/** PDF ArrayBuffer에서 텍스트를 추출합니다. */
 	static async parse(buffer: ArrayBuffer): Promise<string> {
 		try {
-			// ArrayBuffer를 Uint8Array로 변환
 			const data = new Uint8Array(buffer);
 			const loadingTask = pdfjsLib.getDocument({ data });
 			const pdf = await loadingTask.promise;

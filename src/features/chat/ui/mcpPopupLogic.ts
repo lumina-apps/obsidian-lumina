@@ -1,8 +1,5 @@
 /**
- * McpQuickPopup 비즈니스 로직 모듈.
- *
- * UI 컴포넌트에서 분리된 MCP 서버/에이전트 토글 로직과 유틸리티 함수.
- * 모든 함수는 LuminaPlugin 인스턴스를 주입받아 동작하는 클로저 패턴.
+ * McpQuickPopup 비즈니스 로직. MCP 서버/에이전트 토글과 상태 동기화 헬퍼.
  */
 
 import { Notice } from "obsidian";
@@ -10,7 +7,8 @@ import type LuminaPlugin from "../../../main";
 import type { McpServerConfig } from "../../../shared/types/settings.types";
 import { t } from "../../../shared/locales/helpers";
 
-// ─── 상태 색상 유틸리티 ────────────────────────────────────────────────────────
+// ─── 상태별 색상 ─────────────────────────────────────────────────────────────
+
 
 export function getStatusColor(status: McpServerConfig["status"]): string {
 	switch (status) {
@@ -25,7 +23,8 @@ export function getStatusColor(status: McpServerConfig["status"]): string {
 	}
 }
 
-// ─── 상태 동기화 헬퍼 ──────────────────────────────────────────────────────────
+// ─── 상태 동기화 ─────────────────────────────────────────────────────────────
+
 
 interface PopupStateSync {
 	serverEnabled: boolean;
@@ -33,10 +32,7 @@ interface PopupStateSync {
 	agentEnabled: boolean;
 }
 
-/**
- * settingsStore에서 최신 상태를 읽어 PopupStateSync 객체로 반환합니다.
- * 토글 완료 후 McpQuickPopup의 $state에 반영할 때 사용.
- */
+/** 설정에서 최신 MCP/Agent 상태 읽기 */
 export function readPopupState(plugin: LuminaPlugin): PopupStateSync {
 	return {
 		serverEnabled: plugin.settings.mcp.serverEnabled,
@@ -47,12 +43,7 @@ export function readPopupState(plugin: LuminaPlugin): PopupStateSync {
 
 // ─── 외부 MCP 서버 토글 ────────────────────────────────────────────────────────
 
-/**
- * 외부 MCP 서버의 enabled 상태를 토글합니다.
- * @param plugin LuminaPlugin 인스턴스
- * @param serverId 토글할 서버 ID
- * @returns 토글 후 McpServerConfig[] (UI 갱신용)
- */
+/** 외부 MCP 서버 enabled 토글. @returns 갱신된 서버 목록 */
 export async function toggleServer(
 	plugin: LuminaPlugin,
 	serverId: string,

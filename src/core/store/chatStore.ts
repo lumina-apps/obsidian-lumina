@@ -1,13 +1,4 @@
-/**
- * chatStore.ts
- *
- * 채팅 도메인의 런타임 전역 상태.
- * - messages: 현재 대화 기록 (스트리밍 포함)
- * - isLoading: LLM 응답 대기 여부
- *
- * chatController가 직접 액션을 호출하여 업데이트.
- * ChatPanel.svelte는 $messages, $isLoading으로 반응형 구독.
- */
+/** 채팅 런타임 전역 상태. chatController가 액션 호출, ChatPanel.svelte가 구독 */
 
 import { writable, get } from 'svelte/store';
 import type { UIChatMessage, ContextAttachment, ChatRagSource } from '../../shared/types/chat.types';

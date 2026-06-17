@@ -1,9 +1,4 @@
-/**
- * ProviderCard.ts
- *
- * LLM 프로바이더 카드 렌더링 + 연결 테스트.
- * ConnectionsTab에서 분리.
- */
+/** LLM 프로바이더 카드 렌더링 + 연결 테스트 */
 
 import { Notice, Platform, Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';

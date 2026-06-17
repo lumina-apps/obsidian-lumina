@@ -1,12 +1,6 @@
-/**
- * llmErrorFormatter.ts
- * LLM 에러 메시지를 사용자 친화적인 문자열로 포맷팅합니다.
- */
+/** LLM 에러 메시지를 사용자 친화적인 문자열로 변환 */
 import { t } from '../locales/helpers';
 
-/**
- * 에러 객체 또는 메시지를 파싱하여 사용자 친화적인 한국어/영어 등으로 포맷팅합니다.
- */
 export function formatLlmError(err: unknown): string {
 	const rawMessage = err instanceof Error ? err.message : String(err);
 

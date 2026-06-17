@@ -1,11 +1,6 @@
 /**
- * promptBuilder.ts
- *
- * UIChatMessage[] + 설정 정보 → LLM API로 전송할 ChatMessage[] 변환
- * - 시스템 프롬프트 삽입
- * - 대화 기억 제한 (턴 수 / 토큰 기반)
- * - 응답 언어 지정 주입
- * - RAG 컨텍스트 주입 (추후 연결)
+ * UIChatMessage[] + 설정 정보 → LLM API 전송용 ChatMessage[] 변환.
+ * 시스템 프롬프트, 컨텍스트 길이 제한, RAG 컨텍스트 주입을 처리한다.
  */
 
 import type { ChatMessage } from '../../shared/types/llm.types';

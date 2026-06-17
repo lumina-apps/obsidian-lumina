@@ -1,8 +1,5 @@
 /**
- * multimodalHelper.ts
- *
- * 멀티모달 이미지 주입 관련 순수 함수.
- * chatController.ts에서 추출.
+ * 멀티모달 이미지를 마지막 user 메시지에 주입하는 헬퍼.
  */
 
 import type { ChatMessage, MultiModalContent } from '../../../shared/types/llm.types';

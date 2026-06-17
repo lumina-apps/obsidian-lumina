@@ -6,9 +6,7 @@ import en from './en.json';
 import { ConfirmModal } from '../utils/modal';
 import { addDynamicLocale, setLanguage, t } from './helpers';
 
-/**
- * Initializes the translation flow. Prompts the user for confirmation and then translates.
- */
+/** LLM 번역 플로우 시작. 사용자 확인 후 번역 실행 */
 export async function translatePluginLocales(app: App, settings: LuminaSettings): Promise<void> {
     let providerConfig: LLMProviderConfig | undefined;
     let modelName = '';
@@ -67,9 +65,7 @@ export async function translatePluginLocales(app: App, settings: LuminaSettings)
     });
 }
 
-/**
- * Executes the LLM translation and saves the JSON to cache.
- */
+/** LLM으로 번역 실행 후 캐시에 저장 */
 async function executeTranslation(app: App, providerConfig: LLMProviderConfig, model: string) {
     const provider = createProvider(providerConfig);
     const systemLocale = window.navigator.language;
@@ -126,9 +122,7 @@ ${sourceJson}
     new Notice(t('settings.translation.success'));
 }
 
-/**
- * Loads the cached translation from disk into memory.
- */
+/** 캐시된 번역을 디스크에서 메모리로 로드 */
 export async function loadSystemLocaleCache(app: App): Promise<boolean> {
     const configDir = app.vault.configDir;
     const cacheFile = `${configDir}/plugins/lumina/locales/system.json`;
@@ -147,9 +141,7 @@ export async function loadSystemLocaleCache(app: App): Promise<boolean> {
     return false;
 }
 
-/**
- * Deletes the cached translation from disk.
- */
+/** 캐시된 번역 삭제 */
 export async function deleteSystemLocaleCache(app: App): Promise<boolean> {
     const configDir = app.vault.configDir;
     const cacheFile = `${configDir}/plugins/lumina/locales/system.json`;

@@ -1,19 +1,13 @@
 /**
- * blockParsers.ts
- *
- * 텍스트 tool call 블록을 파싱하는 전략 함수들.
- * JSON, Python, XML 포맷을 순차적으로 시도한다.
- *
- * textToolParser.ts에서 분리되어 독립적으로 테스트/유지보수 가능.
+ * 텍스트 tool call 블록 파싱 전략. JSON → Python → XML 순으로 시도.
  */
 
 import type { ToolCall } from '../../../../shared/types/llm.types';
 import { parsePythonCall } from './pythonArgsParser';
 import { debugLogger } from '../../../../shared/debugLogger';
 
-// ─── 전략: JSON 블록 ──────────────────────────────────────────────────────────
+// ─── 전략: JSON ──────────────────────────────────────────────────────────────
 
-/** JSON 포맷의 tool call 블록을 파싱한다. */
 function tryParseJsonBlock(blockContent: string): ToolCall | null {
 	try {
 		const json = JSON.parse(blockContent) as { name?: string; arguments?: Record<string, unknown> } | null;
@@ -30,9 +24,8 @@ function tryParseJsonBlock(blockContent: string): ToolCall | null {
 	return null;
 }
 
-// ─── 전략: Python 호출 ────────────────────────────────────────────────────────
+// ─── 전략: Python ────────────────────────────────────────────────────────────
 
-/** Python 함수 호출 스타일의 tool call 블록을 파싱한다. */
 function tryParsePythonBlock(blockContent: string): ToolCall | null {
 	const parsedPy = parsePythonCall(blockContent);
 	if (parsedPy) {
@@ -45,9 +38,8 @@ function tryParsePythonBlock(blockContent: string): ToolCall | null {
 	return null;
 }
 
-// ─── 전략: XML 폴백 ───────────────────────────────────────────────────────────
+// ─── 전략: XML 폴백 ──────────────────────────────────────────────────────────
 
-/** XML 스타일(<name>tool</name><arguments>{}</arguments>) 폴백 파싱. */
 function tryParseXmlBlock(blockContent: string): ToolCall | null {
 	const nameMatch =
 		blockContent.match(/<name>\s*(.*?)\s*<\/name>/i) ||
@@ -77,11 +69,7 @@ function tryParseXmlBlock(blockContent: string): ToolCall | null {
 
 // ─── 공개 API ─────────────────────────────────────────────────────────────────
 
-/**
- * 단일 tool call 블록 내용을 파싱한다.
- * JSON → Python → XML 순서로 시도하며, 첫 성공 시 즉시 반환한다.
- * 모든 전략이 실패하면 null을 반환하고 경고 로그를 남긴다.
- */
+/** 단일 tool call 블록 파싱. JSON → Python → XML 순, 실패 시 null */
 export function tryParseBlock(blockContent: string): ToolCall | null {
 	const trimmed = blockContent.trim();
 	if (!trimmed) return null;

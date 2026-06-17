@@ -1,7 +1,7 @@
 import { normalizePath, type App, TFolder, TFile } from 'obsidian';
 import type { ChatSession, UIChatMessage } from '../../shared/types/chat.types';
 
-// Helper function to get history files in the target directory to avoid vault-wide getFiles() scanning
+/** 특정 디렉토리 내 .md 파일만 가져온다 (vault 전체 스캔 방지) */
 function getHistoryFiles(app: App, basePath: string): TFile[] {
 	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
 	const folder = app.vault.getAbstractFileByPath(normalBase);
@@ -19,7 +19,7 @@ function getHistoryFiles(app: App, basePath: string): TFile[] {
 // ─── Save ─────────────────────────────────────────────────────────────────────
 
 export async function saveSession(app: App, session: ChatSession, basePath: string): Promise<void> {
-	// 포맷: YYMMDD_HHMM - [title]
+	// 파일명: YYMMDD_HHMM - [title]
 	const dateObj = new Date(session.createdAt);
 	const yy = String(dateObj.getFullYear()).slice(2);
 	const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -29,25 +29,23 @@ export async function saveSession(app: App, session: ChatSession, basePath: stri
 	const safeTitle = session.title.replace(/[\\/:*?"<>|]/g, '_').trim();
 	const filename = `${yy}${mm}${dd}_${hh}${min} - ${safeTitle}.md`;
 
-	// 사용자 입력 경로 정규화 (중복 슬래시, 선행/후행 슬래시 제거)
 	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
 	const filePath = normalizePath(`${normalBase}/${filename}`);
 
 	const content = serializeSession(session);
 
-	// 폴더가 없으면 생성
 	if (!(await app.vault.adapter.exists(normalBase))) {
 		await app.vault.createFolder(normalBase);
 	}
 
-	// 기존 파일 찾기 (sessionId 기준)
+	// 기존 파일 탐색 (frontmatter id + 텍스트 폴백)
 	const files = getHistoryFiles(app, normalBase);
 	let existingFile = files.find(f => {
 		const cache = app.metadataCache.getFileCache(f);
 		return cache?.frontmatter?.id === session.id;
 	});
 
-	// 캐시가 아직 동기화되지 않은 경우를 대비한 텍스트 기반 폴백 검색
+	// 캐시 미동기 대비 텍스트 폴백
 	if (!existingFile) {
 		for (const f of files) {
 			try {
@@ -73,7 +71,7 @@ export async function saveSession(app: App, session: ChatSession, basePath: stri
 
 // ─── Load & Delete ─────────────────────────────────────────────────────────────
 
-/** 히스토리 폴더의 모든 마크다운 파일을 읽어 세션 메타데이터 목록을 반환합니다. */
+/** 히스토리 폴더의 모든 .md 파일에서 세션 메타데이터 목록 반환 */
 export async function loadSessionsList(app: App, basePath: string): Promise<ChatSession[]> {
 	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
 	const folderExists = await app.vault.adapter.exists(normalBase);
@@ -95,7 +93,7 @@ export async function loadSessionsList(app: App, basePath: string): Promise<Chat
 		const cache = app.metadataCache.getFileCache(file);
 		let fm = cache?.frontmatter as HistoryFrontmatter | undefined;
 
-		// Obsidian 캐시가 아직 동기화되지 않은 경우 (새로 생성 직후 등)
+		// 캐시 미동기 시 텍스트 파싱 폴백
 		if (!fm) {
 			try {
 				const content = await app.vault.cachedRead(file);
@@ -121,9 +119,7 @@ export async function loadSessionsList(app: App, basePath: string): Promise<Chat
 						provider: providerMatch ? providerMatch[1].trim() : ''
 					};
 				}
-			} catch {
-				// 읽기 실패 시 무시
-			}
+			} catch { /* 읽기 실패 시 무시 */ }
 		}
 
 		if (fm && fm.id) {
@@ -143,7 +139,7 @@ export async function loadSessionsList(app: App, basePath: string): Promise<Chat
 	return sessions.sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
-/** 특정 세션 ID를 가진 파일을 찾아 파싱하여 전체 ChatSession 객체(메시지 포함)를 복원합니다. */
+/** 세션 파일에서 숨김 JSON을 파싱해 ChatSession(메시지 포함) 복원 */
 export async function loadSession(app: App, sessionId: string, basePath: string): Promise<ChatSession | null> {
 	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
 	const files = getHistoryFiles(app, normalBase);
@@ -157,12 +153,11 @@ export async function loadSession(app: App, sessionId: string, basePath: string)
 
 	const content = await app.vault.read(file);
 	
-	// HTML 주석으로 숨겨둔 JSON 블록 찾기 (ES5 호환을 위해 /s 대신 [\\s\\S]* 사용)
+	// 숨김 JSON 데이터 블록에서 복원
 	const match = content.match(/<!-- LUMINA_HISTORY_DATA:\s*([\s\S]*?)\s*-->/);
 	if (match && match[1]) {
 		try {
 			const parsed = JSON.parse(match[1]) as ChatSession;
-			// 저장된 전체 세션을 반환 (포맷에 맞춤)
 			return parsed;
 		} catch (e) {
 			console.error('Lumina: Failed to parse history JSON data', e);
@@ -172,7 +167,7 @@ export async function loadSession(app: App, sessionId: string, basePath: string)
 	return null;
 }
 
-/** 특정 세션 파일을 삭제합니다. */
+/** 세션 파일 삭제 */
 export async function deleteSession(app: App, sessionId: string, basePath: string): Promise<boolean> {
 	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
 	const files = getHistoryFiles(app, normalBase);

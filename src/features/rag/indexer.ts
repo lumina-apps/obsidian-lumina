@@ -1,7 +1,5 @@
 /**
- * indexer.ts
- *
- * 볼트의 마크다운 파일을 청킹 + 임베딩하여 벡터 인덱스를 관리합니다.
+ * 볼트 파일을 청킹 + 임베딩하여 벡터 인덱스를 관리합니다.
  */
 
 import { App, TFile } from 'obsidian';
@@ -94,7 +92,17 @@ export class VaultIndexer {
 		}
 
 		const currentPaths = new Set(files.map(f => f.path));
+
+		// 디스크에서 삭제된 파일 감지
 		const pathsToDelete = await detectDeletedPaths(this.app, currentPaths, Object.keys(this.fileMtimes));
+
+		// 제외 경로가 변경되어 더 이상 인덱싱 대상이 아닌 파일도 제거
+		for (const indexedPath of Object.keys(this.fileMtimes)) {
+			if (!currentPaths.has(indexedPath)) {
+				pathsToDelete.add(indexedPath);
+			}
+		}
+
 		if (pathsToDelete.size > 0) { this.removePaths(pathsToDelete); }
 
 		const changed = files.filter(f => {

@@ -1,8 +1,5 @@
 /**
- * ragSearchHelper.ts
- *
- * RAG 벡터 검색 관련 순수 함수와 헬퍼 로직.
- * chatController.ts에서 추출.
+ * RAG 벡터 검색 헬퍼. 검색 여부 결정 및 검색 수행을 담당한다.
  */
 
 import { searchVault, formatRagContext } from '../../rag/search';
@@ -12,16 +9,7 @@ import type { RagChunkMeta } from '../../../shared/types/debug.types';
 import type { RagSettings } from '../../../core/settings/settings.types';
 import type { DocumentChunk } from '../../../shared/types/rag.types';
 
-/**
- * RAG 검색 수행 여부를 결정하는 순수 함수.
- *
- * 규칙:
- *   - ragEnabled가 false이면 검색하지 않는다.
- *   - useRagContext가 명시적으로 false이면 검색하지 않는다 (UI 토글 OFF).
- *   - useRagContext가 명시적으로 true이면 dataScope 무관하게 검색한다.
- *   - dataScope가 'manual'이고 useRagContext가 명시되지 않았으면 검색하지 않는다.
- *   - 그 외(useRagContext가 undefined)에는 ragEnabled를 따른다.
- */
+/** RAG 검색 수행 여부 결정 */
 export function resolveRagSearchFlag(opts: {
 	ragEnabled: boolean;
 	dataScope: string;

@@ -1,16 +1,12 @@
 /**
- * toolPromptBuilder.ts
- *
- * 로컬/추론 모델용 시스템 프롬프트에 삽입할 텍스트 기반 툴 사용 안내를 생성한다.
- *
- * textToolParser.ts에서 분리되어 독립적으로 테스트/유지보수 가능.
+ * 로컬/추론 모델용 텍스트 기반 툴 사용 안내 프롬프트 생성.
  */
 
 import type { ToolDefinition } from '../../../../shared/types/llm.types';
 
 // ─── 내부 헬퍼 ────────────────────────────────────────────────────────────────
 
-/** 단일 툴의 인자 설명 문자열을 생성한다. */
+/** 툴 인자 설명 생성 */
 function formatArgsDescription(
 	properties: Record<string, { description?: string; type?: string }>,
 	required: string[],
@@ -25,7 +21,7 @@ function formatArgsDescription(
 	return entries.join('\n') || '    (none)';
 }
 
-/** 단일 툴의 설명 문자열을 생성한다. */
+/** 단일 툴 설명 생성 */
 function formatToolDescription(tool: ToolDefinition): string {
 	const props = tool.inputSchema?.properties ?? {};
 	const required = tool.inputSchema?.required ?? [];
@@ -33,7 +29,7 @@ function formatToolDescription(tool: ToolDefinition): string {
 	return `- ${tool.name}: ${tool.description}\n  Arguments:\n${argsDesc}`;
 }
 
-/** 모든 툴의 설명을 모아 하나의 문자열로 생성한다. */
+/** 전체 툴 설명 병합 */
 function formatAllToolDescriptions(tools: ToolDefinition[]): string {
 	return tools.map(formatToolDescription).join('\n');
 }
@@ -70,9 +66,7 @@ CRITICAL: If you decide to use a tool, you MUST output the <lumina_tool_call> JS
 
 // ─── 공개 API ─────────────────────────────────────────────────────────────────
 
-/**
- * 로컬/추론 모델용 시스템 프롬프트에 삽입할 텍스트 기반 툴 사용 안내를 생성한다.
- */
+/** 로컬/추론 모델용 텍스트 기반 툴 사용 안내 생성 */
 export function buildTextToolPrompt(tools: ToolDefinition[]): string {
 	const toolDescs = formatAllToolDescriptions(tools);
 	return SYSTEM_PROMPT_TEMPLATE.replace('{{TOOL_DESCRIPTIONS}}', toolDescs);

@@ -1,9 +1,4 @@
-/**
- * debugView.ts
- *
- * Obsidian ItemView 래퍼. 오른쪽 사이드바에 Lumina DevLog 패널을 등록합니다.
- * main.ts에서 registerView()로 등록하고, activateDebugView()로 열 수 있습니다.
- */
+/** Obsidian ItemView 래퍼. 우측 사이드바에 Lumina DevLog 패널 등록 */
 
 import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { mount, unmount } from 'svelte';

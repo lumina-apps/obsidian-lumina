@@ -1,10 +1,5 @@
 /**
- * search.ts
- *
- * 임베딩 벡터 기반 코사인 유사도 검색.
- * - cosineSimilarity(): 두 벡터 간 유사도 계산 (0 ~ 1)
- * - searchVault(): 쿼리를 임베딩해서 top-K 청크 반환
- * - formatRagContext(): 결과를 LLM 컨텍스트 문자열로 변환
+ * 임베딩 벡터 기반 코사인 유사도 검색 + BM25 하이브리드.
  */
 
 import type { DocumentChunk, SearchResult } from '../../shared/types/rag.types';
@@ -13,10 +8,7 @@ import { t } from '../../shared/locales/helpers';
 
 // ─── Similarity ───────────────────────────────────────────────────────────────
 
-/**
- * 두 벡터 간 코사인 유사도 계산 (0 ~ 1).
- * 벡터 길이가 다르거나 비어있으면 0 반환.
- */
+/** 두 벡터 간 코사인 유사도 계산 (0~1). 길이가 다르거나 비어있으면 0. */
 export function cosineSimilarity(a: number[], b: number[]): number {
 	if (a.length !== b.length || a.length === 0) return 0;
 
@@ -37,14 +29,13 @@ export function cosineSimilarity(a: number[], b: number[]): number {
 // ─── Search ───────────────────────────────────────────────────────────────────
 
 /**
- * 쿼리 텍스트에 대한 벡터 검색 + BM25 하이브리드 검색.
- *
- * @param query         검색 쿼리 텍스트
- * @param chunks        임베딩이 채워진 청크 목록
- * @param embedFn       텍스트를 임베딩 벡터로 변환하는 함수
- * @param topK          반환할 최대 결과 수
- * @param minSimilarity 최소 유사도 임계값 (0~1). (벡터 점수 기준)
- * @param alpha         하이브리드 점수 가중치 (1.0: 임베딩 전용, 0.0: BM25 전용)
+ * 쿼리 텍스트에 대한 벡터 + BM25 하이브리드 검색.
+ * @param query 검색 쿼리
+ * @param chunks 임베딩이 채워진 청크 목록
+ * @param embedFn 텍스트 → 임베딩 벡터 변환 함수
+ * @param topK 반환 최대 결과 수
+ * @param minSimilarity 최소 유사도 임계값 (0~1, 벡터 점수 기준)
+ * @param alpha 하이브리드 점수 가중치 (1.0: 임베딩 전용, 0.0: BM25 전용)
  */
 export async function searchVault(
 	query: string,
@@ -69,7 +60,7 @@ export async function searchVault(
 	// 3. BM25 점수 계산
 	const bm25Results = calculateBM25(query, embeddedChunks);
 
-	// 4. 점수 정규화 (Max 비율 정규화)
+	// 4. 점수 정규화 (Max 비율 기반)
 	const maxVectorScore = Math.max(...vectorResults.map(r => r.vectorScore), 0.0001);
 	const maxBm25Score = Math.max(...bm25Results.map(r => r.score), 0.0001);
 
@@ -77,8 +68,6 @@ export async function searchVault(
 		const br = bm25Results[i];
 		const normalizedVector = Math.max(0, vr.vectorScore / maxVectorScore);
 		const normalizedBm25 = Math.max(0, br.score / maxBm25Score);
-
-		// 하이브리드 점수 결합
 		const hybridScore = (alpha * normalizedVector) + ((1 - alpha) * normalizedBm25);
 
 		return {
@@ -89,7 +78,7 @@ export async function searchVault(
 		};
 	});
 
-	// 벡터 점수가 임계값을 넘거나 BM25 텍스트 매칭 점수가 존재하는 경우만 필터링 후 정렬
+	// 벡터 점수 ≥ 임계값 또는 BM25 점수 > 0 인 결과만 필터링 후 정렬
 	return hybridResults
 		.filter(r => (r.vectorScore !== undefined && r.vectorScore >= minSimilarity) || (r.bm25Score !== undefined && r.bm25Score > 0))
 		.sort((a, b) => b.score - a.score)
@@ -98,9 +87,7 @@ export async function searchVault(
 
 // ─── Formatting ───────────────────────────────────────────────────────────────
 
-/**
- * SearchResult 배열을 LLM에게 전달할 RAG 컨텍스트 문자열로 변환.
- */
+/** SearchResult 배열을 LLM RAG 컨텍스트 문자열로 변환합니다. */
 export function formatRagContext(results: SearchResult[]): string {
 	if (results.length === 0) return '';
 

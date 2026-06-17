@@ -1,21 +1,11 @@
-/**
- * FrontmatterManager.ts
- *
- * 프론트매터 자동 생성 기능을 책임지는 모듈입니다.
- * main.ts에서 분리되어 LuminaPlugin의 오케스트레이션 부담을 줄입니다.
- *
- * - 파일 생성 시 luminaCreated/luminaVersion/tags 자동 추가
- * - 파일 수정 시 luminaModified/luminaVersion 갱신
- * - 활성 파일(현재 보고 있는 노트) 수정 시 대기열 처리 (자동 병합 알림 방지)
- * - rename/delete 이벤트에서 Map/Set 동기화
- */
+/** 프론트매터 자동 생성 모듈. 생성/수정 시 luminaCreated, luminaModified, luminaVersion, tags 관리 */
 
 import { App, TFile, type EventRef } from 'obsidian';
 import { isMarkdownFile } from '../../shared/utils/fileUtils';
 import { debugLogger } from '../../shared/debugLogger';
 import type LuminaPlugin from '../../main';
 
-/** processFrontMatter에서 다루는 프론트매터 구조 */
+/** processFrontMatter용 프론트매터 구조 */
 interface LuminaFrontmatter {
 	luminaCreated?: string;
 	luminaModified?: string;
@@ -23,17 +13,12 @@ interface LuminaFrontmatter {
 	tags?: string | string[];
 }
 
-/**
- * LuminaPlugin을 대신해 프론트매터 자동생성 관련 모든 상태와
- * 이벤트 등록/해제를 캡슐화합니다.
- */
+/** 프론트매터 자동생성 상태와 이벤트 등록/해제를 캡슐화 */
 export class FrontmatterManager {
 	private plugin: LuminaPlugin;
 	private app: App;
 
-	/** 재귀 방지: 이미 프론트매터 생성 중인 파일 경로 집합 */
 	private generatingFiles: Set<string> = new Set();
-	/** 플러그인이 수정한 직후 발생하는 modify 이벤트 무시용 맵 (path → timestamp) */
 	private lastUpdateMap: Map<string, number> = new Map();
 	/** 현재 보고 있는 파일 경로 (자동 병합 알림 방지) */
 	private activeFilePath: string | null = null;
@@ -135,10 +120,7 @@ export class FrontmatterManager {
 
 	// ── Private helpers ────────────────────────────────────────────────────
 
-	/**
-	 * 개별 파일에 프론트매터를 자동 생성/갱신합니다.
-	 * Obsidian의 내장 processFrontMatter를 사용하여 안전하게 YAML 업데이트.
-	 */
+	/** processFrontMatter로 파일별 프론트매터 생성/갱신 */
 	private async autoGenerate(file: TFile, isUpdate: boolean): Promise<void> {
 		if (!this.plugin.settings.misc.autoFrontmatter) return;
 
@@ -174,7 +156,7 @@ export class FrontmatterManager {
 		}
 	}
 
-	/** 탭 전환 시 대기 중인 프론트매터 업데이트 처리 */
+	/** 탭 전환 시 대기 중인 프론트매터 업데이트 일괄 처리 */
 	private async processPendingUpdates(): Promise<void> {
 		for (const path of this.pendingUpdates) {
 			if (path === this.activeFilePath) continue;

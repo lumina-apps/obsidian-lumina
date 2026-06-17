@@ -1,9 +1,5 @@
 /**
- * chatView.ts
- *
- * Obsidian의 ItemView를 상속하여 ChatPanel.svelte를 사이드바 탭으로 마운트.
- * - 뷰 타입: 'lumina-chat'
- * - 아이콘: 'message-circle'
+ * Obsidian ItemView를 상속해 Svelte ChatPanel을 사이드바 탭으로 마운트한다.
  */
 
 import { ItemView, WorkspaceLeaf } from 'obsidian';

@@ -5,9 +5,7 @@ export interface TagScore {
 	score: number;
 }
 
-/**
- * 검색 결과의 본문에서 #태그를 추출합니다.
- */
+/** 검색 결과 본문에서 #태그를 추출합니다. */
 export function extractBodyTags(results: SearchResult[]): TagScore[] {
 	const tagMap = new Map<string, number>();
 	for (const result of results) {
@@ -26,10 +24,7 @@ export function extractBodyTags(results: SearchResult[]): TagScore[] {
 		.slice(0, 10);
 }
 
-/**
- * 추천 태그 수집 인터페이스 - 메타데이터 캐시 접근이 필요하므로
- * 외부에서 주입받아 사용합니다.
- */
+/** 추천 태그 수집 인터페이스. 메타데이터 캐시 접근을 위해 외부 주입. */
 export interface TagCollectorInput {
 	results: SearchResult[];
 	metadataCache: {
@@ -41,20 +36,17 @@ export interface TagCollectorInput {
 	activeFilePath: string | null;
 }
 
-/**
- * 유사 문서와 현재 활성 파일의 메타데이터를 종합하여 추천 태그 생성
- */
+/** 유사 문서와 현재 활성 파일의 메타데이터를 종합하여 추천 태그를 생성합니다. */
 export function collectRecommendedTags(input: TagCollectorInput): TagScore[] {
 	const { results, metadataCache, activeFilePath } = input;
 	
-	// 1. 본문 태그 우선 수집
 	const tagScoreMap = new Map<string, number>();
 	const bodyTagScores = extractBodyTags(results);
 	for (const t of bodyTagScores) {
 		tagScoreMap.set(t.tag, t.score);
 	}
 
-	// 2. 유사 문서의 프론트매터/캐시 태그 수집
+	// 유사 문서의 프론트매터/캐시 태그 수집
 	for (const result of results) {
 		const cache = metadataCache.getCache(result.chunk.path);
 		if (!cache) continue;
@@ -65,7 +57,7 @@ export function collectRecommendedTags(input: TagCollectorInput): TagScore[] {
 		collectPathTags(result.chunk.path, result.score, tagScoreMap);
 	}
 
-	// 3. 현재 활성 파일의 태그도 높은 우선순위로 포함
+	// 현재 활성 파일의 태그도 높은 우선순위로 포함
 	if (activeFilePath) {
 		const ownCache = metadataCache.getCache(activeFilePath);
 		if (ownCache) {
@@ -123,7 +115,7 @@ function collectExtraFrontmatterTags(
 	baseScore: number,
 	map: Map<string, number>
 ): void {
-	if (!frontmatter || frontmatter.tags) return; // tags가 있으면 중복 방지
+	if (!frontmatter || frontmatter.tags) return;
 	
 	const altKeys = ['tag', 'category', 'categories', 'type', 'types', 'topic', 'topics', 'keyword', 'keywords'];
 	for (const key of altKeys) {

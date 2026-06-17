@@ -1,9 +1,6 @@
 import { addIcon } from 'obsidian';
 
-/**
- * Lumina 플러그인에서 사용하는 커스텀 아이콘들을 등록합니다.
- * main.ts onload() 상단에서 호출됩니다.
- */
+/** Lumina 플러그인 커스텀 아이콘 등록. main.ts onload()에서 호출 */
 export function registerLuminaIcons(): void {
 	addIcon('lumina-send', `<g transform="scale(4.1667)"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>`);
 	addIcon('lumina-square', `<g transform="scale(4.1667)"><rect x="4.5" y="4.5" width="15" height="15" rx="2.5" fill="currentColor"/></g>`);

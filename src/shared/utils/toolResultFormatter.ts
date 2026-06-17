@@ -1,21 +1,12 @@
-/**
- * toolResultFormatter.ts
- *
- * MCP 툴 실행 결과를 텍스트로 변환하고 최대 길이로 자르는 유틸리티.
- * agentLoop.ts의 executeToolCall / truncateToolResult 로직에서 추출.
- */
+/** MCP 툴 실행 결과 텍스트 변환 및 길이 제한 유틸리티 */
 
 import { t } from '../locales/helpers';
 import { stripMaskTokens } from './llmTextSanitizer';
 import { debugLogger } from '../debugLogger';
 
-/** 툴 결과 텍스트 최대 길이 */
 export const MAX_TOOL_RESULT_CHARS = 4000;
 
-/**
- * MCP tool call 결과(unknown)에서 텍스트를 추출한다.
- * content 배열 또는 문자열 지원.
- */
+/** MCP tool call 결과에서 텍스트 추출 */
 export function extractToolResultText(toolResult: unknown): string {
 	const typedResult = toolResult as {
 		content?: Array<{ text?: string }>;
@@ -28,10 +19,7 @@ export function extractToolResultText(toolResult: unknown): string {
 	return JSON.stringify(toolResult);
 }
 
-/**
- * 툴 결과 텍스트를 최대 길이로 자르고, 초과 시 truncation 안내를 추가한다.
- * 마스크 토큰도 함께 제거한다.
- */
+/** 툴 결과 텍스트를 최대 길이로 자르고 마스크 토큰 제거 */
 export function truncateToolResult(text: string, toolName: string): string {
 	const sanitized = stripMaskTokens(text);
 	if (sanitized.length <= MAX_TOOL_RESULT_CHARS) return sanitized;

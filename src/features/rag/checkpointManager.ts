@@ -1,6 +1,4 @@
 /**
- * checkpointManager.ts
- *
  * 인덱싱 체크포인트 복원 및 저장 로직을 통합합니다.
  */
 
@@ -15,11 +13,7 @@ import {
 import type { DocumentChunk } from '../../shared/types/rag.types';
 import { setIndexingStatus, setTotalFiles, resumedFromCheckpoint } from '../../core/store/ragStore';
 
-/**
- * 체크포인트 저장 간격 (파일 수).
- * saveCheckpoint는 경로 목록만 저장하므로 부담이 거의 없습니다 (약 1MB/1만개).
- * saveIndex(전체 청크+임베딩)는 persistIndexInterval로 별도 조절됩니다.
- */
+/** 체크포인트 저장 간격 (파일 수) */
 const CHECKPOINT_INTERVAL = 500;
 
 function getCheckpointInterval(_totalFiles: number): number {

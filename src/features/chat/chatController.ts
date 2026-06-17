@@ -1,25 +1,7 @@
 /**
- * chatController.ts
- *
- * Chat 도메인의 메인 컨트롤러.
- * UI → controller → store 흐름:
- *   ChatPanel이 sendMessage() 호출
- *   → controller가 chatStore 액션으로 직접 상태 업데이트
- *   → ChatPanel은 $messages/$isLoading 구독으로 반응형 렌더링
- *
- * 콜백이 필요 없으므로 ChatPanel이 단순해짐.
- *
- * 리팩토링 내역:
- *   - 첨부파일 처리 → ChatAttachmentHandler.buildAttachmentContext()로 위임
- *   - MCP 툴 루프 → agentLoop.ts의 runAgentLoop()로 위임
- *   - isTokenLimit 중복 → isTokenLimitReached() 헬퍼 공유 사용
- *   - RAG shouldSearchRag 결정 → ragSearchHelper.ts의 resolveRagSearchFlag()로 추출
- *   - buildTextToolPrompt, parseTextToolCalls → textToolParser.ts로 분리
- *   - collectMcpTools, injectToolPrompts → mcpToolHelper.ts로 추출
- *   - performRagSearch, resolveRagSearchFlag → ragSearchHelper.ts로 추출
- *   - injectMultimodalImages → multimodalHelper.ts로 추출
- *   - debugLogger 타입 우회 제거 (IDebugLogger 제거)
- *   - getActiveNoteContext() deprecated 메서드 제거
+ * Chat 도메인 메인 컨트롤러.
+ * UI → controller → chatStore 액션으로 상태를 직접 관리하며,
+ * ChatPanel은 $messages/$isLoading 구독으로 반응형 렌더링한다.
  */
 
 import { Notice, type App } from 'obsidian';

@@ -1,8 +1,5 @@
 /**
- * svgIcons.ts
- *
- * UI 컴포넌트에서 공통 사용하는 SVG 아이콘의 내부 path를 상수로 관리합니다.
- * 24x24 viewBox 기준이며, wrapper <svg> 태그 없이 내부 요소만 정의합니다.
+ * UI 컴포넌트에서 공통 사용하는 SVG 아이콘 문자열 (24x24 viewBox 기준)
  */
 
 export const SVG_BACK_ARROW = `<line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline>`;

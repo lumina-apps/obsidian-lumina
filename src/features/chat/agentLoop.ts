@@ -1,21 +1,7 @@
 /**
- * agentLoop.ts
- *
  * MCP tool-calling 에이전트 루프.
- * chatController.ts의 sendMessage에서 분리된 while-loop 로직을 담당한다.
- *
- * 역할:
- *   - LLM 호출 → tool call 감지 → tool 실행 → 결과 주입 → 반복
- *   - 최대 라운드(maxRounds) 또는 tool call 없음 → 루프 종료
- *   - 중복 tool call 3회 연속 감지 시 강제 종료
- *   - streaming / non-streaming, cloud(bindTools) / local(textTools) 모드 모두 지원
- *
- * 리팩토링:
- *   - buildAssistantToolMessage → utils/toolMessageBuilder.ts
- *   - executeToolCall → utils/toolExecutor.ts
- *   - stripMaskTokens, stripThinkTags → shared/utils/llmTextSanitizer.ts
- *   - extractToolResultText, truncateToolResult → shared/utils/toolResultFormatter.ts
- *   - buildToolCallKey → shared/utils/toolCallUtils.ts
+ * LLM 호출 → tool call 감지 → 실행 → 결과 주입을 반복하며,
+ * 최대 라운드 도달, tool call 없음, 중복 3회 연속 감지 시 종료된다.
  */
 
 import { t } from '../../shared/locales/helpers';

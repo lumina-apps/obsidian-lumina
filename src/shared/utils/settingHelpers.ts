@@ -1,28 +1,4 @@
-/**
- * settingHelpers.ts — 배럴 파일 (backward compatibility)
- *
- * 이 파일은 하위 호환성을 유지하기 위한 re-export 전용 배럴입니다.
- * 각 기능은 다음 모듈로 분리되었습니다:
- *   - asyncUtils.ts    → wrapAsync
- *   - errorUtils.ts    → normalizeError
- *   - modelUtils.ts    → ModelOption, ModelFilterFn, ParsedProviderModel,
- *                        isEmbeddingModel, buildProviderModelOptions,
- *                        buildChatModelOptions, buildEmbeddingModelOptions,
- *                        parseProviderModelValue, toProviderModelValue
- *   - imeUtils.ts      → ComposingSafeHandler, createComposingSafeTextHandler,
- *                        createImeTextBinding, createImePasswordBinding
- *   - domUtils.ts      → createFeatureCard, createMultilineDesc
- *   - settingsUIHelpers.ts → FUZZY_MODAL_THRESHOLD, MCP_REFRESH_DELAY,
- *                            REASONING_MODEL_NOTICE_DURATION,
- *                            addSliderWithInput, addModelSelector,
- *                            FuzzyModelSuggestModal, ModelSuggestItem
- *   - fuzzyModelSuggestModal.ts → FUZZY_MODAL_THRESHOLD, FuzzyModelSuggestModal,
- *                                 addModelSelector
- *   - connectionNoticeUtils.ts  → showConnectionSuccess, showSyncFailNotice,
- *                                 showDisconnectedNotice, showConnectedNotice,
- *                                 getConnectionStatus, refreshAfterConnectionToggle,
- *                                 refreshAfterMcpConnectionToggle
- */
+/** 배럴 파일: 하위 호환성을 위한 re-export 전용 */
 
 // Async
 export { wrapAsync } from './asyncUtils';

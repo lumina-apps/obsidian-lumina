@@ -1,9 +1,7 @@
 import * as xlsx from 'xlsx-js-style';
 
 export class XlsxParser {
-	/**
-	 * XLSX, XLS, CSV ArrayBuffer에서 텍스트를 추출합니다.
-	 */
+	/** XLSX, XLS, CSV ArrayBuffer에서 텍스트를 추출합니다. */
 	static async parse(buffer: ArrayBuffer): Promise<string> {
 		try {
 			const workbook = xlsx.read(buffer, { type: 'buffer' });

@@ -1,12 +1,8 @@
 /**
  * debugLogger.ts
  *
- * 전역 싱글턴 로거. EventEmitter 패턴으로 구현.
- *
- * - settingsStore의 misc.debugMode가 false이면 모든 메서드가 no-op
- * - LLM 요청/응답, RAG 검색, System 이벤트, 에러를 수집하여 구독자에게 emit
- * - DebugPanel.svelte가 subscribe하여 실시간 표시
- * - 링 버퍼: 최대 MAX_ENTRIES 개까지 유지 (메모리 안전)
+ * 전역 싱글턴 로거. debugMode가 꺼져 있으면 모든 메서드가 no-op으로 동작.
+ * LLM 요청/응답, RAG 검색, 시스템 이벤트, 에러를 링 버퍼에 쌓고 구독자에게 전달.
  */
 
 import { get } from 'svelte/store';
@@ -24,17 +20,10 @@ import type {
 
 export type { DebugLogEntry, LLMRequestLog, LLMResponseLog, RAGSearchLog, RagChunkMeta, SystemLog, ErrorLog, MCPLog };
 
-// ─── Config ───────────────────────────────────────────────────────────────────
-
-/** 링 버퍼 최대 항목 수 */
 const MAX_ENTRIES = 200;
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 type LogListener = (entry: DebugLogEntry) => void;
 type ClearListener = () => void;
-
-// ─── DebugLogger ──────────────────────────────────────────────────────────────
 
 class DebugLogger {
 	private entries: DebugLogEntry[] = [];
@@ -42,23 +31,17 @@ class DebugLogger {
 	private clearListeners: Set<ClearListener> = new Set();
 	private counter = 0;
 
-	// ── 활성 여부 ────────────────────────────────────────────────────────────
-
 	get isEnabled(): boolean {
 		const settings = get(settingsStore);
 		return settings?.misc.debugMode ?? false;
 	}
 
-	// ── ID 생성 ──────────────────────────────────────────────────────────────
-
 	private nextId(): string {
 		return `dbg-${Date.now()}-${++this.counter}`;
 	}
 
-	// ── 내부 emit ────────────────────────────────────────────────────────────
-
+	/** 항목을 링 버퍼에 추가 (초과 시 가장 오래된 항목 제거) */
 	private push(entry: DebugLogEntry): void {
-		// 링 버퍼: 초과 시 가장 오래된 항목 제거
 		if (this.entries.length >= MAX_ENTRIES) {
 			this.entries.shift();
 		}
@@ -66,12 +49,7 @@ class DebugLogger {
 		this.logListeners.forEach(fn => fn(entry));
 	}
 
-	// ── 공개 로깅 API ────────────────────────────────────────────────────────
-
-	/**
-	 * LLM 요청 직전 호출. 모델 설정 및 프롬프트 전체를 기록.
-	 * @returns requestId — 응답 로그와 매칭에 사용
-	 */
+	/** LLM 요청 기록. 응답과 매칭할 requestId 반환 */
 	logRequest(params: Omit<LLMRequestLog, 'id' | 'type' | 'timestamp'>): string {
 		if (!this.isEnabled) return '';
 		const id = this.nextId();
@@ -84,10 +62,7 @@ class DebugLogger {
 		return id;
 	}
 
-	/**
-	 * LLM 응답 수신 완료 후 호출.
-	 * @param requestId logRequest()가 반환한 ID
-	 */
+	/** LLM 응답 기록 */
 	logResponse(requestId: string, params: Omit<LLMResponseLog, 'id' | 'type' | 'timestamp' | 'requestId'>): void {
 		if (!this.isEnabled || !requestId) return;
 		this.push({
@@ -99,7 +74,7 @@ class DebugLogger {
 		});
 	}
 
-	/** RAG 벡터 검색 완료 후 호출 */
+	/** RAG 벡터 검색 기록 */
 	logRagSearch(params: Omit<RAGSearchLog, 'id' | 'type' | 'timestamp'>): void {
 		if (!this.isEnabled) return;
 		this.push({
@@ -110,7 +85,7 @@ class DebugLogger {
 		});
 	}
 
-	/** 시스템 이벤트 (인덱싱 시작/완료, 워커 초기화 등) */
+	/** 시스템 이벤트 기록 */
 	logSystem(event: string, message: string, meta?: Record<string, unknown>): void {
 		if (!this.isEnabled) return;
 		const entry: SystemLog = {
@@ -124,7 +99,7 @@ class DebugLogger {
 		this.push(entry);
 	}
 
-	/** 에러 로그 */
+	/** 에러 기록 */
 	logError(domain: string, error: Error | string): void {
 		if (!this.isEnabled) return;
 		const msg = error instanceof Error ? error.message : error;
@@ -140,7 +115,7 @@ class DebugLogger {
 		this.push(entry);
 	}
 
-	/** MCP 로그 */
+	/** MCP 로그 기록 */
 	logMcp(action: string, message: string, data?: unknown): void {
 		if (!this.isEnabled) return;
 		const entry: MCPLog = {
@@ -154,9 +129,7 @@ class DebugLogger {
 		this.push(entry);
 	}
 
-	// ── 조회 ─────────────────────────────────────────────────────────────────
-
-	/** 현재까지 쌓인 모든 로그 (읽기 전용 복사본) */
+	/** 현재까지 쌓인 모든 로그 반환 */
 	getEntries(): readonly DebugLogEntry[] {
 		return this.entries;
 	}
@@ -167,21 +140,17 @@ class DebugLogger {
 		this.clearListeners.forEach(fn => fn());
 	}
 
-	// ── 구독 ─────────────────────────────────────────────────────────────────
-
-	/** 새 로그 항목이 추가될 때마다 호출 */
+	/** 새 로그 항목 구독. 구독 해제 함수 반환 */
 	onLog(fn: LogListener): () => void {
 		this.logListeners.add(fn);
 		return () => this.logListeners.delete(fn);
 	}
 
-	/** clear() 호출 시 알림 */
+	/** clear() 호출 시 알림 구독 */
 	onClear(fn: ClearListener): () => void {
 		this.clearListeners.add(fn);
 		return () => this.clearListeners.delete(fn);
 	}
 }
-
-// ─── 싱글턴 export ────────────────────────────────────────────────────────────
 
 export const debugLogger = new DebugLogger();

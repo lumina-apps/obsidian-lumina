@@ -1,14 +1,5 @@
 /**
- * ChatAttachmentHandler.ts
- *
- * 모든 ContextAttachment 타입을 처리하여 텍스트 또는 이미지(base64)로 변환한다.
- *
- * - file / url / external_file: 파일 파싱 + 이미지 base64
- * - folder: 폴더 내 md 파일 전부 읽기
- * - selection: 현재 에디터 선택 텍스트
- * - active_note: 현재 열린 노트 전체
- * - canvas: canvas JSON에서 텍스트 노드 추출
- * - tag: 태그가 붙은 파일 최대 5개 읽기
+ * 모든 ContextAttachment 타입을 텍스트/이미지(base64)로 변환하는 핸들러.
  */
 
 import { App, TFile, TFolder, MarkdownView, requestUrl } from 'obsidian';

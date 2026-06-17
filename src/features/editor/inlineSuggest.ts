@@ -31,7 +31,7 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 		const line = editor.getLine(cursor.line);
 		const sub = line.substring(0, cursor.ch);
 
-		// 트리거(예: /ai)로 끝나면 제안 시작
+		// 트리거로 끝나면 제안 시작
 		if (sub.endsWith(trigger)) {
 			return {
 				start: { line: cursor.line, ch: cursor.ch - trigger.length },
@@ -129,11 +129,7 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 		const view = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
 		if (view) {
 			void this.plugin.quickActionHandler.executeAction(action, editor, view);
-			
-			// 덧붙이기(append) 모드 등일 때 전체가 선택되어 있으면 UX가 좋지 않으므로
-			// 실행 완료 후 커서를 문서의 끝이나 적절한 위치로 옮길 수 있습니다.
-			// 단, QuickActionHandler가 비동기로 동작하고 replaceSelection을 사용하므로,
-			// 선택 영역이 처리 결과로 대체되면서 자연스럽게 커서가 끝으로 이동합니다.
+			// QuickActionHandler가 비동기로 선택 영역을 결과로 대체하므로 커서는 자연스럽게 이동됨
 		}
 	}
 }

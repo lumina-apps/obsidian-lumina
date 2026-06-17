@@ -1,9 +1,4 @@
-/**
- * DefaultChatModelSection.ts
- *
- * 기본 채팅 모델 선택 섹션 렌더링.
- * ConnectionsTab에서 분리.
- */
+/** 기본 채팅 모델 선택 섹션 */
 
 import { Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';

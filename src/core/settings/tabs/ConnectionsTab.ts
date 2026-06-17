@@ -1,14 +1,4 @@
-/**
- * ConnectionsTab.ts — 오케스트레이터
- *
- * LuminaSettingTab의 connections 탭 전체를 렌더링하는 진입점.
- * 각 섹션은 하위 모듈로 분리되어 있습니다:
- *   - LanguageSection.ts
- *   - ProviderCard.ts
- *   - RagEngineSection.ts
- *   - DefaultChatModelSection.ts
- *   - QuickActionModelSection.ts
- */
+/** ConnectionsTab — connections 탭 진입점. 하위 섹션 모듈에 렌더링 위임 */
 
 import { Platform, Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../settingTab';

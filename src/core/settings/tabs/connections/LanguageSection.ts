@@ -1,9 +1,4 @@
-/**
- * LanguageSection.ts
- *
- * 언어 설정 섹션 렌더링.
- * ConnectionsTab에서 분리.
- */
+/** 언어 설정 섹션 */
 
 import { Notice, Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';

@@ -1,11 +1,6 @@
 /**
- * workerBridge.ts
- *
- * 메인 스레드에서 embedding.worker.js 와 통신하는 브릿지.
- * - 다중 Worker 인스턴스 풀 관리 (CPU 코어 수만큼 병렬 처리)
- * - Promise 기반 embed() API 제공
- * - 라운드로빈 분배 + 캐시 공유
- * - init() 타임아웃: 60초 초과 시 자동 reject (무한 대기 방지)
+ * 메인 스레드 ↔ embedding.worker.js 통신 브릿지.
+ * 다중 Worker 풀 관리, Promise 기반 embed() API, 라운드로빈 분배, 캐시 공유를 담당합니다.
  */
 
 import type { WorkerRequest, WorkerResponse, IWorker } from '../../shared/types/rag.types';
@@ -18,12 +13,10 @@ import { debugLogger } from '../../shared/debugLogger';
 
 export type EmbeddingProgressCallback = (progress: number, status: string) => void;
 
-/** 임베딩 모델 초기화 최대 대기 시간 (ms) */
+/** 초기화 최대 대기 시간 (ms) */
 const INIT_TIMEOUT_MS = 120_000;
 
-/**
- * Promise에 타임아웃을 적용합니다.
- */
+/** Promise에 타임아웃을 적용합니다. */
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
 	return new Promise<T>((resolve, reject) => {
 		const timer = window.setTimeout(() => {
@@ -43,7 +36,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string)
 	});
 }
 
-/** 개별 Worker 인스턴스와 요청 관리 */
+/** 개별 Worker 인스턴스 및 요청 관리 */
 interface WorkerInstance {
 	worker: IWorker;
 	url: string;
@@ -59,18 +52,16 @@ export class EmbeddingWorkerBridge {
 	private workerCount = 0;
 	private roundRobinIndex = 0;
 
-	// 텍스트 → embedding 캐시 (메모리 기반, 모든 Worker가 공유)
+	// 텍스트 → 임베딩 메모리 캐시 (Worker 간 공유)
 	private embedCache = new Map<string, number[]>();
 	private readonly MAX_CACHE_ENTRIES = 100_000;
 
-	// LRU용 접근 기록
+	// LRU 접근 기록
 	private embedAccess = new Map<string, number>();
 	private accessCounter = 1;
 
-	// 디스크 캐시 파일 경로
 	private cacheFilePath: string | null = null;
 
-	// 저장 세마포어
 	private saveInProgress = false;
 	private pendingSave = false;
 	private saveWaiters: Array<() => void> = [];
@@ -84,9 +75,7 @@ export class EmbeddingWorkerBridge {
 
 	// ─── Lifecycle ────────────────────────────────────────────────────────────
 
-	/**
-	 * Worker 풀을 생성하고 모든 Worker에 모델을 로드합니다.
-	 */
+	/** Worker 풀 생성 및 모든 Worker에 모델 로드 */
 	async init(
 		modelName: string,
 		cacheDir: string,
@@ -95,7 +84,6 @@ export class EmbeddingWorkerBridge {
 	): Promise<void> {
 		this.terminate();
 
-		// 캐시 파일 경로
 		try {
 			const safeName = modelName.replace(/[^a-zA-Z0-9._-]/g, '_');
 			this.cacheFilePath = `${cacheDir.replace(/\\/g, '/')}/embed_cache_${safeName}.json`;
@@ -108,7 +96,6 @@ export class EmbeddingWorkerBridge {
 
 		this.onProgress = onProgress ?? null;
 
-		// Worker 코드 압축 해제
 		let workerCode: string;
 		try {
 			workerCode = await decompressWorkerCode(WORKER_COMPRESSED_BASE64);
@@ -119,8 +106,7 @@ export class EmbeddingWorkerBridge {
 			);
 		}
 
-		// Worker 개수: 논리 코어 -1 (메인 스레드 여유분), 최소 1, 최대 4
-		// ONNX WASM은 각 Worker가 numThreads를 사용하므로 너무 많은 Worker는 역효과
+		// Worker 수: 논리 코어 절반, 최소 1, 최대 4
 		const hwConcurrency = (typeof navigator !== 'undefined' && navigator.hardwareConcurrency)
 			? navigator.hardwareConcurrency : 4;
 		this.workerCount = Math.max(1, Math.min(4, Math.floor(hwConcurrency / 2)));
@@ -157,7 +143,6 @@ export class EmbeddingWorkerBridge {
 				instance.readyReject = reject;
 			});
 
-			// init 전송
 			worker.postMessage({
 				type: 'init',
 				cacheDir,
@@ -170,7 +155,6 @@ export class EmbeddingWorkerBridge {
 			);
 		}
 
-		// 모든 Worker가 ready 될 때까지 대기
 		try {
 			await Promise.all(initPromises);
 		} catch (e) {
@@ -182,7 +166,7 @@ export class EmbeddingWorkerBridge {
 		this.initPromiseResolve?.();
 	}
 
-	/** 모든 Worker 정리 */
+	/** 모든 Worker 종료 */
 	terminate(): void {
 		for (const inst of this.workers) {
 			try {
@@ -206,24 +190,20 @@ export class EmbeddingWorkerBridge {
 		return this.isReady;
 	}
 
-	/** 활성 Worker 개수 */
+	/** 활성 Worker 수 */
 	get activeWorkerCount(): number {
 		return this.workers.filter(w => w.isReady).length;
 	}
 
 	// ─── Public API ───────────────────────────────────────────────────────────
 
-	/**
-	 * 텍스트 배열을 임베딩 벡터로 변환합니다.
-	 * 라운드로빈으로 Worker에 분배하여 병렬 처리.
-	 */
+	/** 텍스트 배열 → 임베딩 벡터 변환 (라운드로빈 병렬 처리) */
 	async embed(texts: string[]): Promise<number[][]> {
 		if (this.workers.length === 0 || !this.isReady) {
 			throw new Error(t('uiMessages.ragWorkerNotReady'));
 		}
 		if (texts.length === 0) return [];
 
-		// 1) 캐시된 항목 분리
 		const results: Array<number[] | null> = new Array(texts.length).fill(null);
 		const toRequestTexts: string[] = [];
 		const toRequestIndices: number[] = [];
@@ -243,10 +223,7 @@ export class EmbeddingWorkerBridge {
 			return results as number[][];
 		}
 
-		// 2) 요청을 각 Worker에 분산
-		// 작은 배치는 하나의 Worker로, 큰 배치는 Worker 간에 나눔
 		if (toRequestTexts.length <= 8 || this.workerCount === 1) {
-			// 작은 요청: 단일 Worker로 처리
 			const embeddings = await this.sendEmbedToWorker(
 				this.getNextWorker(),
 				toRequestTexts,
@@ -256,7 +233,6 @@ export class EmbeddingWorkerBridge {
 				this.setCachedEmbedding(toRequestTexts[k], embeddings[k]);
 			}
 		} else {
-			// 큰 요청: Worker 간에 균등 분할
 			const chunkSize = Math.ceil(toRequestTexts.length / this.workerCount);
 			const subTasks: Promise<{ offset: number; embeddings: number[][] }>[] = [];
 
@@ -285,7 +261,6 @@ export class EmbeddingWorkerBridge {
 			}
 		}
 
-		// 캐시 크기 제한 정리
 		if (this.embedCache.size > this.MAX_CACHE_ENTRIES) {
 			let toRemove = Math.floor(this.MAX_CACHE_ENTRIES / 2);
 			const it = this.embedCache.keys();
@@ -299,7 +274,7 @@ export class EmbeddingWorkerBridge {
 		return results as number[][];
 	}
 
-	/** 캐시에서 꺼내고 접근 순서 갱신 */
+	/** 캐시 조회 및 접근 순서 갱신 */
 	private getCachedEmbedding(key: string): number[] | undefined {
 		const v = this.embedCache.get(key);
 		if (!v) return undefined;
@@ -314,7 +289,7 @@ export class EmbeddingWorkerBridge {
 		} catch {}
 	}
 
-	/** 라운드로빈으로 Worker 선택 */
+	/** 라운드로빈 Worker 선택 */
 	private getNextWorker(): WorkerInstance {
 		const ready = this.workers.filter(w => w.isReady);
 		if (ready.length === 0) {
@@ -325,7 +300,7 @@ export class EmbeddingWorkerBridge {
 		return inst;
 	}
 
-	/** 특정 Worker에 임베딩 요청 전송 */
+	/** 특정 Worker에 embed 요청 전송 */
 	private async sendEmbedToWorker(inst: WorkerInstance, texts: string[]): Promise<number[][]> {
 		const requestId = generateUUID();
 		return new Promise<number[][]>((resolve, reject) => {
@@ -334,7 +309,7 @@ export class EmbeddingWorkerBridge {
 		});
 	}
 
-	/** 디스크에서 캐시 로드 */
+	/** 디스크에서 임베딩 캐시 로드 */
 	private async loadEmbedCache(): Promise<void> {
 		if (!this.cacheFilePath) return;
 		let fs: any;
@@ -360,7 +335,7 @@ export class EmbeddingWorkerBridge {
 		}
 	}
 
-	/** 디스크에 캐시 저장 */
+	/** 디스크에 임베딩 캐시 저장 */
 	private async saveEmbedCache(): Promise<void> {
 		if (!this.cacheFilePath) return;
 		let fs: any;
@@ -387,7 +362,7 @@ export class EmbeddingWorkerBridge {
 		}
 	}
 
-	/** 메모리 캐시를 디스크에 영속화 */
+	/** 메모리 캐시 → 디스크 영속화 */
 	public async persistCache(): Promise<void> {
 		if (!this.cacheFilePath) return;
 		if (this.saveInProgress) {
@@ -413,10 +388,7 @@ export class EmbeddingWorkerBridge {
 		}
 	}
 
-	/**
-	 * ArrayBuffer 문서를 Worker에서 비동기 파싱합니다.
-	 * parse 요청은 첫 번째 ready Worker로 전송.
-	 */
+	/** ArrayBuffer 문서를 Worker에서 비동기 파싱합니다. */
 	async parse(buffer: ArrayBuffer, ext: string): Promise<string> {
 		const inst = this.workers.find(w => w.isReady);
 		if (!inst || !this.isReady) {

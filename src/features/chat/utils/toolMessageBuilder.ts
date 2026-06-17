@@ -1,23 +1,12 @@
 /**
- * toolMessageBuilder.ts
- *
- * tool call이 있는 assistant 메시지를 구성하는 유틸리티.
- * agentLoop.ts의 buildAssistantToolMessage()에서 추출.
- *
- * - 로컬(textTools): <lumina_tool_call> 블록 포함 텍스트
- * - 클라우드: tool_calls 필드 사용, <think> 블록 제거
+ * tool call이 포함된 assistant 메시지 구성.
+ * 로컬(textTools)은 <lumina_tool_call> 블록, 클라우드는 tool_calls 필드를 사용한다.
  */
 
 import { stripThinkTags } from '../../../shared/utils/llmTextSanitizer';
 import type { ChatMessage, ToolCall } from '../../../shared/types/llm.types';
 
-/**
- * tool call이 포함된 라운드의 assistant 메시지를 구성한다.
- *
- * @param resolvedToolCalls 이번 라운드에서 실행할 tool call 목록
- * @param currentRoundText assistant의 자연어 응답 텍스트
- * @param useTextTools true = 로컬 모델 텍스트 파싱 모드, false = 클라우드 bindTools 모드
- */
+/** tool call이 포함된 라운드의 assistant 메시지 구성 */
 export function buildAssistantToolMessage(
 	resolvedToolCalls: ToolCall[],
 	currentRoundText: string,

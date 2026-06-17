@@ -1,10 +1,6 @@
 /**
- * pythonArgsParser.ts
- *
- * Python 스타일 키워드 인자 문자열 파서.
- * 예: `path="foo.md", content="bar"` → `{ path: "foo.md", content: "bar" }`
- *
- * textToolParser.ts에서 분리되어 독립적으로 테스트/유지보수 가능.
+ * Python 스타일 키워드 인자 파서.
+ * `path="foo.md", content="bar"` → `{ path: "foo.md", content: "bar" }`
  */
 
 // ─── 내부 헬퍼 ────────────────────────────────────────────────────────────────

@@ -1,11 +1,7 @@
 /**
- * Translation 타입 정의 — en.json을 기반으로 한 번역 키 구조를 나타냅니다.
- * 실제 데이터는 en.json 파일에서 JSON import로 가져옵니다.
+ * en.json과 동기화되는 번역 키 구조 타입 정의.
+ * 새 키 추가 시 이 파일도 수동 업데이트 필요.
  */
-
-// en.json의 구조를 나타내는 타입
-// 주의: 이 타입은 en.json과 수동으로 동기화해야 합니다.
-// 새 번역 키를 추가할 때 이 타입도 함께 업데이트하세요.
 
 export interface TranslationSettingsConnectionsLanguageOption {
   en: string;

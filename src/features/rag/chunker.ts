@@ -1,15 +1,12 @@
 /**
- * chunker.ts
- *
- * 마크다운 문서를 overlap이 있는 청크로 분할합니다.
+ * 마크다운 문서를 overlap 청크로 분할합니다.
  */
 
 import type { DocumentChunk, RawDocument } from '../../shared/types/rag.types';
 import { preprocessMarkdown } from '../../shared/utils/markdownPreprocessor';
 
 /**
- * 마크다운 문서를 overlap이 있는 청크로 분할.
- * chunkSize/chunkOverlap은 문자 수 기준 (토큰 수 근사값으로 사용).
+ * 마크다운 문서를 overlap 청크로 분할. chunkSize/chunkOverlap은 문자 수 기준.
  */
 export function chunkDocument(
 	doc: RawDocument,
@@ -39,7 +36,6 @@ export function chunkDocument(
 		}
 
 		if (end >= text.length) break;
-		// 다음 청크 시작점 = 현재 끝 - overlap (최소 1자 전진 보장)
 		start = Math.max(start + 1, end - chunkOverlap);
 	}
 

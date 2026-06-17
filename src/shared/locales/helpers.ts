@@ -1,8 +1,7 @@
 import { writable, derived } from 'svelte/store';
 import type { Translation, DeepPartial, TranslationKeys } from './locale.types';
 
-// 동적 JSON import를 위한 로더 함수들
-// esbuild는 import()를 코드 스플리팅하여 별도 청크로 분리함
+// 동적 JSON import 로더. esbuild에서 코드 스플리팅으로 별도 청크 분리
 const localeLoaders: Record<string, () => Promise<{ default: DeepPartial<Translation> }>> = {
   en: () => import('./en.json'),
   ko: () => import('./ko.json'),
@@ -32,17 +31,12 @@ export const tStore = derived(currentLanguageStore, () => {
   };
 });
 
-/**
- * 동적 로캘을 런타임에 추가 (system 언어 번역 등)
- */
+/** 런타임에 동적 로캘 추가 */
 export function addDynamicLocale(lang: string, translation: DeepPartial<Translation>) {
   loadedLocales[lang] = translation;
 }
 
-/**
- * setLanguage: 언어를 설정하고 필요한 JSON을 미리 로드합니다.
- * 로드가 완료되면 currentLanguageStore를 업데이트합니다.
- */
+/** 언어 설정 및 해당 locale JSON 로드. 실패 시 en 폴백 */
 export async function setLanguage(lang: string): Promise<void> {
   console.log('[Lumina Localization] setLanguage called with:', lang);
 
@@ -101,9 +95,7 @@ export function getLanguage(): string {
   return currentLanguage;
 }
 
-/**
- * en 로캘을 동기적으로 프리로드 (앱 시작 시 필수)
- */
+/** en locale 프리로드 (앱 시작 시 필수) */
 export async function preloadDefaultLocale(): Promise<void> {
   if (!loadedLocales['en']) {
     try {
@@ -115,11 +107,7 @@ export async function preloadDefaultLocale(): Promise<void> {
   }
 }
 
-/**
- * 키 경로(예: 'settings.connections.title')를 기반으로 번역된 텍스트를 가져옵니다.
- * 현재 언어에 해당 번역이 누락된 경우 영어(en)로 폴백합니다.
- * {{key}} 문법을 사용한 템플릿 변수 치환을 지원합니다.
- */
+/** 점 경로 키로 번역 텍스트 조회. 누락 시 en 폴백, {{key}} 치환 지원 */
 export function t(path: TranslationKeys, params?: Record<string, string | number>): string {
   const keys = path.split('.') as string[];
 
@@ -159,9 +147,7 @@ export function t(path: TranslationKeys, params?: Record<string, string | number
   return path;
 }
 
-/**
- * 중첩 객체에서 점 경로로 값을 찾습니다.
- */
+/** 중첩 객체에서 점 경로로 값 조회 */
 function resolvePath(obj: Record<string, unknown>, keys: string[]): unknown {
   let value: unknown = obj;
   for (const key of keys) {
@@ -174,9 +160,7 @@ function resolvePath(obj: Record<string, unknown>, keys: string[]): unknown {
   return value;
 }
 
-/**
- * {{key}} 템플릿 변수 치환
- */
+/** {{key}} 템플릿 변수 치환 */
 function interpolate(template: string, params?: Record<string, string | number>): string {
   if (!params) return template;
   let result = template;

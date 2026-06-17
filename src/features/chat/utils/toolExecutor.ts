@@ -1,10 +1,5 @@
 /**
- * toolExecutor.ts
- *
- * 단일 MCP tool call을 실행하고 결과 ChatMessage를 반환하는 유틸리티.
- * agentLoop.ts의 executeToolCall()에서 추출.
- *
- * 실패 시에도 오류 메시지를 포함한 tool result를 반환 (루프 중단하지 않음).
+ * 단일 MCP tool call을 실행하고 결과 ChatMessage를 반환. 실패 시에도 오류 메시지 반환.
  */
 
 import { t } from '../../../shared/locales/helpers';
@@ -13,15 +8,7 @@ import { extractToolResultText, truncateToolResult } from '../../../shared/utils
 import type { ChatMessage, ToolCall } from '../../../shared/types/llm.types';
 import type { McpManager } from '../../../core/mcp/mcpManager';
 
-/**
- * 단일 tool call을 실행하고 tool result ChatMessage를 반환한다.
- * 실패 시에도 오류 메시지를 포함한 tool result를 반환 (상위 루프에서 처리).
- *
- * @param tc 실행할 tool call
- * @param mcpManager MCP 매니저 인스턴스 (null이면 툴 없음 응답)
- * @param toolServerMap toolName → serverId 매핑
- * @param useTextTools 로컬 텍스트 파싱 모드 여부 (role: user/tool, 응답 포맷 결정)
- */
+/** 단일 tool call 실행 → tool result ChatMessage 반환 */
 export async function executeToolCall(
 	tc: ToolCall,
 	mcpManager: McpManager | null,
