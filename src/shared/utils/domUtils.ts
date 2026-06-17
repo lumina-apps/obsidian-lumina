@@ -81,3 +81,27 @@ export function createButtonContainer(el: HTMLElement, cls: string): HTMLDivElem
 export function iconAction(node: HTMLElement, iconId: string) {
 	setIcon(node, iconId);
 }
+
+/**
+ * Svelte use: 액션 — 요소 외부 클릭 감지.
+ * setTimeout(0)으로 이벤트 등록 타이밍을 지연시켜
+ * 팝업을 연 동일 클릭 이벤트에서 즉시 닫히는 것을 방지합니다.
+ *
+ * 사용법: <div use:clickOutside={onClose}></div>
+ */
+export function clickOutside(node: HTMLElement, callback: () => void) {
+	function handler(e: MouseEvent) {
+		if (!node.contains(e.target as Node)) {
+			callback();
+		}
+	}
+	const timer = setTimeout(() => {
+		document.addEventListener('click', handler);
+	}, 0);
+	return {
+		destroy() {
+			clearTimeout(timer);
+			document.removeEventListener('click', handler);
+		},
+	};
+}

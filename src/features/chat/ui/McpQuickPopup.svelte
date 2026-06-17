@@ -1,14 +1,20 @@
 <script lang="ts">
-	import { setIcon, Notice } from "obsidian";
 	import type LuminaPlugin from "../../../main";
 	import type { McpServerConfig } from "../../../shared/types/settings.types";
 	import { t } from "../../../shared/locales/helpers";
 	import { settingsStore } from "../../../core/store/settingsStore";
+	import { iconAction, clickOutside } from "../../../shared/utils/domUtils";
+	import {
+		getStatusColor,
+		toggleServer,
+		toggleLocalServer,
+		toggleAgent,
+	} from "./mcpPopupLogic";
 
 	let {
 		plugin,
 		onClose,
-		onOpenSettings
+		onOpenSettings,
 	} = $props<{
 		plugin: LuminaPlugin;
 		onClose: () => void;
@@ -17,14 +23,13 @@
 
 	let containerEl: HTMLDivElement | null = $state(null);
 
-	// ── $state로 관리하여 syncServers 후 재할당으로 반응형 트리거 ──
 	let servers = $state<McpServerConfig[]>([]);
 	let serverEnabled = $state(false);
 	let serverPort = $state(3000);
 	let agentEnabled = $state(false);
 	let showAdvanced = $state(false);
 
-	// 팝업이 열릴 때마다 혹은 settingsStore가 업데이트될 때마다 최신 설정 동기화
+	// settingsStore 변경 감지 → UI 동기화
 	$effect(() => {
 		if ($settingsStore) {
 			servers = $settingsStore.mcp.servers;
@@ -34,118 +39,36 @@
 		}
 	});
 
-	function handleClickOutside(e: MouseEvent) {
-		if (containerEl && !containerEl.contains(e.target as Node)) {
-			onClose();
-		}
+	async function handleToggleServer(server: McpServerConfig) {
+		const updated = await toggleServer(plugin, server.id);
+		servers = updated;
 	}
 
-	$effect(() => {
-		const timer = setTimeout(() => {
-			document.addEventListener("click", handleClickOutside);
-		}, 0);
-		return () => {
-			clearTimeout(timer);
-			document.removeEventListener("click", handleClickOutside);
-		};
-	});
-
-	function icon(node: HTMLElement, iconId: string) {
-		setIcon(node, iconId);
+	async function handleToggleLocalServer() {
+		const result = await toggleLocalServer(plugin);
+		serverEnabled = result.state.serverEnabled;
+		serverPort = result.state.serverPort;
+		agentEnabled = result.state.agentEnabled;
+		servers = result.servers;
 	}
 
-	/** 외부 MCP 서버 토글: syncServers 후 항상 최신 상태를 다시 읽어 UI에 반영 */
-	async function toggleServer(server: McpServerConfig) {
-		if (!plugin.mcpManager) {
-			new Notice(t('uiMessages.mcpManagerNotInitialized'));
-			return;
-		}
-		
-		// Svelte 5의 $state proxy에서 변경된 값을 원본 설정 객체에 반영
-		const originalServer = plugin.settings.mcp.servers.find(s => s.id === server.id);
-		if (originalServer) {
-			originalServer.enabled = server.enabled;
-		}
-		
-		await plugin.mcpManager.syncServers();
-		
-		// syncServers(내부적으로 상태 변경) 후 Svelte UI 강제 업데이트를 위해 배열 복제 할당
-		servers = [...plugin.settings.mcp.servers];
-	}
-
-	/** 내장 MCP 서버 토글 */
-	async function toggleLocalServer() {
-		if (!plugin.mcpManager) {
-			new Notice(t('uiMessages.mcpManagerNotInitialized'));
-			return;
-		}
-		// bind:checked로 인해 serverEnabled는 이미 UI 상태를 반영합니다.
-		plugin.settings.mcp.serverEnabled = serverEnabled;
-		if (plugin.settings.mcp.serverEnabled && !plugin.settings.mcp.serverAuthToken) {
-			plugin.settings.mcp.serverAuthToken = crypto.randomUUID();
-		}
-		await plugin.mcpManager.syncServers();
-		// 에이전트가 켜져 있는데 서버를 수동으로 껐다면 에이전트도 끔
-		if (!plugin.settings.mcp.serverEnabled && plugin.settings.chat.agentEnabled) {
-			plugin.settings.chat.agentEnabled = false;
-			new Notice(t('uiMessages.agentModeLocalServerStoppedDisabledShort'));
-		}
-		// syncServers 후 최신 상태 반영
-		serverEnabled = plugin.settings.mcp.serverEnabled;
-		serverPort = plugin.settings.mcp.serverPort;
-		agentEnabled = plugin.settings.chat.agentEnabled;
-		await plugin.saveSettings();
-	}
-
-	/** 에이전트 토글 */
-	async function toggleAgent() {
-		const isConfigured = plugin.settings.connections.providers.some(p => p.isVerified);
-		if (!isConfigured) {
-			new Notice(t('uiMessages.agentModeLlmRequired'));
-			// UI 토글을 다시 원래대로 되돌림
+	async function handleToggleAgent() {
+		const result = await toggleAgent(plugin);
+		if (result.rejected) {
 			agentEnabled = false;
 			return;
 		}
-
-		// bind:checked로 인해 agentEnabled는 이미 새 상태를 반영합니다.
-		plugin.settings.chat.agentEnabled = agentEnabled;
-		
-		if (plugin.settings.chat.agentEnabled && !plugin.settings.mcp.serverEnabled) {
-			plugin.settings.mcp.serverEnabled = true;
-			if (!plugin.settings.mcp.serverAuthToken) {
-				plugin.settings.mcp.serverAuthToken = crypto.randomUUID();
-			}
-			new Notice(t('uiMessages.agentModeLocalServerStarting'));
-			if (plugin.mcpManager) {
-				await plugin.mcpManager.syncServers();
-			}
-		} else if (plugin.settings.chat.agentEnabled) {
-			new Notice(t('uiMessages.agentModeEnabled'));
-		} else {
-			new Notice(t('uiMessages.agentModeDisabled'));
-		}
-		
-		serverEnabled = plugin.settings.mcp.serverEnabled;
-		serverPort = plugin.settings.mcp.serverPort;
-		agentEnabled = plugin.settings.chat.agentEnabled;
-		await plugin.saveSettings();
-	}
-
-	function getStatusColor(status: string) {
-		switch(status) {
-			case 'connected': return 'var(--text-success)';
-			case 'connecting': return 'var(--text-warning)';
-			case 'error': return 'var(--text-error)';
-			default: return 'var(--text-muted)';
-		}
+		serverEnabled = result.state.serverEnabled;
+		serverPort = result.state.serverPort;
+		agentEnabled = result.state.agentEnabled;
 	}
 </script>
 
-<div class="lumina-mcp-popup" bind:this={containerEl}>
+<div class="lumina-mcp-popup" bind:this={containerEl} use:clickOutside={onClose}>
 	<div class="lumina-mcp-popup__header">
 		<span class="lumina-mcp-popup__title">{t('settings.mcp.title')}</span>
 		<button class="lumina-mcp-popup__btn-settings" onclick={onOpenSettings} title={t('common.settings')}>
-			<span use:icon={"settings"}></span>
+			<span use:iconAction={"settings"}></span>
 		</button>
 	</div>
 	<div class="lumina-mcp-popup__list">
@@ -157,7 +80,7 @@
 			</div>
 			<div class="lumina-mcp-popup__item-right">
 				<label class="lumina-toggle-switch">
-					<input type="checkbox" bind:checked={agentEnabled} onchange={toggleAgent} />
+					<input type="checkbox" checked={agentEnabled} onchange={handleToggleAgent} />
 					<span class="lumina-toggle-slider"></span>
 				</label>
 			</div>
@@ -177,7 +100,7 @@
 				</div>
 				<div class="lumina-mcp-popup__item-right">
 					<label class="lumina-toggle-switch">
-						<input type="checkbox" bind:checked={serverEnabled} onchange={toggleLocalServer} />
+						<input type="checkbox" checked={serverEnabled} onchange={handleToggleLocalServer} />
 						<span class="lumina-toggle-slider"></span>
 					</label>
 				</div>
@@ -199,7 +122,7 @@
 						</div>
 						<div class="lumina-mcp-popup__item-right">
 							<label class="lumina-toggle-switch">
-								<input type="checkbox" bind:checked={server.enabled} onchange={() => toggleServer(server)} />
+								<input type="checkbox" checked={server.enabled} onchange={() => handleToggleServer(server)} />
 								<span class="lumina-toggle-slider"></span>
 							</label>
 						</div>

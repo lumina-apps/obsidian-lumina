@@ -1,0 +1,164 @@
+/**
+ * McpQuickPopup 비즈니스 로직 모듈.
+ *
+ * UI 컴포넌트에서 분리된 MCP 서버/에이전트 토글 로직과 유틸리티 함수.
+ * 모든 함수는 LuminaPlugin 인스턴스를 주입받아 동작하는 클로저 패턴.
+ */
+
+import { Notice } from "obsidian";
+import type LuminaPlugin from "../../../main";
+import type { McpServerConfig } from "../../../shared/types/settings.types";
+import { t } from "../../../shared/locales/helpers";
+
+// ─── 상태 색상 유틸리티 ────────────────────────────────────────────────────────
+
+export function getStatusColor(status: McpServerConfig["status"]): string {
+	switch (status) {
+		case "connected":
+			return "var(--text-success)";
+		case "connecting":
+			return "var(--text-warning)";
+		case "error":
+			return "var(--text-error)";
+		default:
+			return "var(--text-muted)";
+	}
+}
+
+// ─── 상태 동기화 헬퍼 ──────────────────────────────────────────────────────────
+
+interface PopupStateSync {
+	serverEnabled: boolean;
+	serverPort: number;
+	agentEnabled: boolean;
+}
+
+/**
+ * settingsStore에서 최신 상태를 읽어 PopupStateSync 객체로 반환합니다.
+ * 토글 완료 후 McpQuickPopup의 $state에 반영할 때 사용.
+ */
+export function readPopupState(plugin: LuminaPlugin): PopupStateSync {
+	return {
+		serverEnabled: plugin.settings.mcp.serverEnabled,
+		serverPort: plugin.settings.mcp.serverPort,
+		agentEnabled: plugin.settings.chat.agentEnabled,
+	};
+}
+
+// ─── 외부 MCP 서버 토글 ────────────────────────────────────────────────────────
+
+/**
+ * 외부 MCP 서버의 enabled 상태를 토글합니다.
+ * @param plugin LuminaPlugin 인스턴스
+ * @param serverId 토글할 서버 ID
+ * @returns 토글 후 McpServerConfig[] (UI 갱신용)
+ */
+export async function toggleServer(
+	plugin: LuminaPlugin,
+	serverId: string,
+): Promise<McpServerConfig[]> {
+	if (!plugin.mcpManager) {
+		new Notice(t("uiMessages.mcpManagerNotInitialized"));
+		return plugin.settings.mcp.servers;
+	}
+
+	const server = plugin.settings.mcp.servers.find((s) => s.id === serverId);
+	if (server) {
+		server.enabled = !server.enabled;
+	}
+
+	await plugin.mcpManager.syncServers();
+	return [...plugin.settings.mcp.servers];
+}
+
+// ─── 내장 MCP 서버 토글 ────────────────────────────────────────────────────────
+
+export interface ToggleLocalServerResult {
+	state: PopupStateSync;
+	servers: McpServerConfig[];
+}
+
+/**
+ * 내장 MCP 서버의 enabled 상태를 토글합니다.
+ * authToken 자동 생성, 에이전트 자동 비활성화 로직 포함.
+ *
+ * @returns 갱신된 상태와 서버 목록
+ */
+export async function toggleLocalServer(plugin: LuminaPlugin): Promise<ToggleLocalServerResult> {
+	if (!plugin.mcpManager) {
+		new Notice(t("uiMessages.mcpManagerNotInitialized"));
+		return {
+			state: readPopupState(plugin),
+			servers: plugin.settings.mcp.servers,
+		};
+	}
+
+	plugin.settings.mcp.serverEnabled = !plugin.settings.mcp.serverEnabled;
+
+	if (plugin.settings.mcp.serverEnabled && !plugin.settings.mcp.serverAuthToken) {
+		plugin.settings.mcp.serverAuthToken = crypto.randomUUID();
+	}
+
+	await plugin.mcpManager.syncServers();
+
+	// 에이전트가 켜져 있는데 서버를 수동으로 껐다면 에이전트도 끔
+	if (!plugin.settings.mcp.serverEnabled && plugin.settings.chat.agentEnabled) {
+		plugin.settings.chat.agentEnabled = false;
+		new Notice(t("uiMessages.agentModeLocalServerStoppedDisabledShort"));
+	}
+
+	await plugin.saveSettings();
+
+	return {
+		state: readPopupState(plugin),
+		servers: [...plugin.settings.mcp.servers],
+	};
+}
+
+// ─── 에이전트 토글 ────────────────────────────────────────────────────────────
+
+export interface ToggleAgentResult {
+	state: PopupStateSync;
+	/** 에이전트 토글이 거부되었는지 여부 (LLM 미설정 등) */
+	rejected: boolean;
+}
+
+/**
+ * 에이전트 모드의 enabled 상태를 토글합니다.
+ * LLM 제공자가 설정되지 않았으면 거부하고 rejected: true를 반환합니다.
+ * 에이전트 ON 시 내장 MCP 서버도 자동으로 켜집니다.
+ */
+export async function toggleAgent(plugin: LuminaPlugin): Promise<ToggleAgentResult> {
+	const isConfigured = plugin.settings.connections.providers.some((p) => p.isVerified);
+	if (!isConfigured) {
+		new Notice(t("uiMessages.agentModeLlmRequired"));
+		return {
+			state: readPopupState(plugin),
+			rejected: true,
+		};
+	}
+
+	plugin.settings.chat.agentEnabled = !plugin.settings.chat.agentEnabled;
+
+	if (plugin.settings.chat.agentEnabled && !plugin.settings.mcp.serverEnabled) {
+		plugin.settings.mcp.serverEnabled = true;
+		if (!plugin.settings.mcp.serverAuthToken) {
+			plugin.settings.mcp.serverAuthToken = crypto.randomUUID();
+		}
+		new Notice(t("uiMessages.agentModeLocalServerStarting"));
+		if (plugin.mcpManager) {
+			await plugin.mcpManager.syncServers();
+		}
+	} else if (plugin.settings.chat.agentEnabled) {
+		new Notice(t("uiMessages.agentModeEnabled"));
+	} else {
+		new Notice(t("uiMessages.agentModeDisabled"));
+	}
+
+	await plugin.saveSettings();
+
+	return {
+		state: readPopupState(plugin),
+		rejected: false,
+	};
+}
