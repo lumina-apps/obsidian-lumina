@@ -154,7 +154,7 @@
 				/>
 			</div>
 
-			<div class="lumina-model-selector__list" bind:this={listEl}>
+			<div class="lumina-model-selector__list lumina-scrollbar-thin" bind:this={listEl}>
 				{#if filteredModels.length === 0}
 					<div class="lumina-model-selector__empty">{$tStore('uiMessages.noSearchResults')}</div>
 				{:else}
@@ -247,18 +247,7 @@
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
-		animation: popover-fade-in 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-	}
-
-	@keyframes popover-fade-in {
-		from {
-			opacity: 0;
-			transform: translateY(-4px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
+		animation: lumina-popover-fade-in 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
 	.lumina-model-selector__search-wrap {
@@ -287,15 +276,6 @@
 		max-height: 220px;
 		overflow-y: auto;
 		padding: 4px 0;
-	}
-
-	.lumina-model-selector__list::-webkit-scrollbar {
-		width: 4px;
-	}
-
-	.lumina-model-selector__list::-webkit-scrollbar-thumb {
-		background: var(--background-modifier-border);
-		border-radius: 2px;
 	}
 
 	.lumina-model-selector__empty {

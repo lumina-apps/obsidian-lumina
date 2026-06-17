@@ -1590,3 +1590,28 @@ body div.modal-overlay .suggestion-container .suggestion-item.is-selected-defaul
 	border-radius: 4px;
 	border: 1px solid var(--background-modifier-border);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Shared popover / dropdown utilities
+   SlashCommandSelector, ModelSelector 등에서 공통 사용
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes lumina-popover-fade-in {
+	from {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* 얇은 스크롤바 유틸리티 (4px) */
+.lumina-scrollbar-thin::-webkit-scrollbar {
+	width: 4px;
+}
+.lumina-scrollbar-thin::-webkit-scrollbar-thumb {
+	background: var(--background-modifier-border);
+	border-radius: 2px;
+}

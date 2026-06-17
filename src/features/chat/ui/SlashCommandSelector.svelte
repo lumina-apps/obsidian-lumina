@@ -72,7 +72,7 @@
 </script>
 
 <div class="lumina-slash-selector" bind:this={containerEl} use:clickOutside={onClose}>
-	<div class="lumina-slash-selector__list" bind:this={listEl}>
+	<div class="lumina-slash-selector__list lumina-scrollbar-thin" bind:this={listEl} role="listbox">
 		{#if filteredCommands.length === 0}
 			<div class="lumina-slash-selector__empty">명령어를 찾을 수 없습니다.</div>
 		{:else}
@@ -80,6 +80,8 @@
 				<button
 					class="lumina-slash-selector__item"
 					class:is-active={i === nav.activeIndex}
+					role="option"
+					aria-selected={i === nav.activeIndex}
 					onclick={() => selectItem(cmd)}
 					onmouseenter={() => {
 						if (!nav.isKeyboardNavigating) nav.setActiveIndex(i);
@@ -117,33 +119,13 @@
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
-		animation: popover-fade-in 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-	}
-
-	@keyframes popover-fade-in {
-		from {
-			opacity: 0;
-			transform: translateY(4px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
+		animation: lumina-popover-fade-in 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
 	.lumina-slash-selector__list {
 		max-height: 280px;
 		overflow-y: auto;
 		padding: 4px 0;
-	}
-
-	.lumina-slash-selector__list::-webkit-scrollbar {
-		width: 4px;
-	}
-
-	.lumina-slash-selector__list::-webkit-scrollbar-thumb {
-		background: var(--background-modifier-border);
-		border-radius: 2px;
 	}
 
 	.lumina-slash-selector__empty {
