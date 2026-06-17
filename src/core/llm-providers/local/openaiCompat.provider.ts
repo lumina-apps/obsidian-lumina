@@ -13,6 +13,7 @@ import { formatOpenAIMessages, formatOpenAITools } from '../openai-formatter';
 import type { OpenAIResponse, OpenAIToolCallInfo } from '../openai-types';
 import {
 	createReasoningState,
+	raiseApiError,
 	resolveReasoningTag,
 	readStreamLines,
 	parseSSEChunk,
@@ -336,10 +337,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 			if (!data.models?.length) throw new Error(t('settings.providerErrors.ollamaNoModel'));
 			return data.models.map((m) => m.name);
 		} catch (error) {
-			const err = error as { status?: string | number; message?: string };
-			const status = err.status ? String(err.status) : 'unknown';
-			const text = err.message || '';
-			throw new Error(t('settings.providerErrors.apiError', { provider: 'Ollama', status, text }));
+			raiseApiError(error, 'Ollama');
 		}
 	}
 
@@ -353,10 +351,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 			const data = res.json as { data: { id: string }[] };
 			return data.data.map((m) => m.id);
 		} catch (error) {
-			const err = error as { status?: string | number; message?: string };
-			const status = err.status ? String(err.status) : 'unknown';
-			const text = err.message || '';
-			throw new Error(t('settings.providerErrors.connectFail', { status, text }));
+			raiseApiError(error, this.type);
 		}
 	}
 }

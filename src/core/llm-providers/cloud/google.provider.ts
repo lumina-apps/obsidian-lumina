@@ -1,10 +1,10 @@
 import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, TokenUsage, ToolCall } from '../../../shared/types/llm.types';
-import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
 import { GOOGLE_MODELS, mapUsageMetadata } from './google.types';
 import type { GeminiResponse, GeminiStreamChunk, GeminiToolCallInfo } from './google.types';
 import { formatGeminiMessages, formatGeminiTools, getGeminiSystemInstruction } from './google-message-formatter';
 import { readGeminiStreamChunks } from './google-stream-parser';
+import { raiseApiError } from '../utils';
 
 type GeminiCandidate = NonNullable<GeminiResponse['candidates']>[number];
 
@@ -35,10 +35,7 @@ export class GoogleProvider implements ILLMProvider {
 
 			return apiModels.length > 0 ? apiModels : GOOGLE_MODELS;
 		} catch (error) {
-			const err = error as { status?: string | number; message?: string };
-			const status = err.status ? String(err.status) : 'unknown';
-			const text = err.message || '';
-			throw new Error(t('settings.providerErrors.apiError', { provider: 'Google', status, text }));
+			raiseApiError(error, 'Google');
 		}
 	}
 

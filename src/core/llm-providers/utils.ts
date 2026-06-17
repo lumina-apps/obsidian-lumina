@@ -43,6 +43,17 @@ export function formatLlmError(err: unknown): string {
 	return rawMessage;
 }
 
+/**
+ * listModels() 등 API 호출 실패 시 프로바이더별 에러 메시지로 throw합니다.
+ * 모든 프로바이더에서 중복되는 catch 블록을 대체합니다.
+ */
+export function raiseApiError(error: unknown, providerName: string): never {
+	const err = error as { status?: string | number; message?: string };
+	const status = err.status ? String(err.status) : 'unknown';
+	const text = err.message || '';
+	throw new Error(t('settings.providerErrors.apiError', { provider: providerName, status, text }));
+}
+
 // ─── Mock Tool Text Detection ───────────────────────────────────────────────
 
 /**

@@ -1,9 +1,9 @@
 import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, TokenUsage } from '../../../shared/types/llm.types';
-import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
 import { formatOpenAIMessages, formatOpenAITools } from '../openai-formatter';
 import type { OpenAIResponse, OpenAIToolCallInfo } from '../openai-types';
 import {
+	raiseApiError,
 	readStreamLines,
 	parseSSEChunk,
 	extractUsage,
@@ -35,10 +35,7 @@ export class OpenAIProvider implements ILLMProvider {
 				.sort((a, b) => b.created - a.created)
 				.map((m) => m.id);
 		} catch (error) {
-			const err = error as { status?: string | number; message?: string };
-			const status = err.status ? String(err.status) : 'unknown';
-			const text = err.message || '';
-			throw new Error(t('settings.providerErrors.apiError', { provider: 'OpenAI', status, text }));
+			raiseApiError(error, 'OpenAI');
 		}
 	}
 
