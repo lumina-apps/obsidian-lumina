@@ -2,7 +2,7 @@ import { Notice, Editor, MarkdownView } from 'obsidian';
 import type { MarkdownFileInfo } from 'obsidian';
 import type LuminaPlugin from '../../main';
 import { createProvider } from '../../core/llm-providers';
-import { formatLlmError } from '../../core/llm-providers/utils';
+import { formatLlmError } from '../../shared/utils/llmErrorFormatter';
 import { ChatController } from '../chat/chatController';
 import type { QuickAction } from '../../shared/types/settings.types';
 import { t } from '../../shared/locales/helpers';

@@ -4,7 +4,14 @@
  */
 
 import type { ChatMessage, ToolDefinition } from '../../shared/types/llm.types';
-import { isMockToolText } from './utils';
+
+/**
+ * assistant content가 mock tool call 텍스트인지 판별합니다.
+ * "Calling tool"로 시작하는 텍스트는 실제 응답이 아닌 UI 표시용입니다.
+ */
+export function isMockToolText(content: string): boolean {
+	return content.startsWith('Calling tool');
+}
 
 /**
  * ChatMessage 배열을 OpenAI 호환 messages 배열로 변환합니다.

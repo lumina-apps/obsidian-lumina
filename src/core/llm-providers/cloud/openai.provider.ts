@@ -2,13 +2,8 @@ import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, TokenUsage }
 import { requestUrl } from 'obsidian';
 import { formatOpenAIMessages, formatOpenAITools } from '../openai-formatter';
 import type { OpenAIResponse } from '../openai-types';
-import {
-	raiseApiError,
-	mapOpenAIUsage,
-	readStreamLines,
-	convertNonStreamToolCalls,
-	StreamChunkAccumulator,
-} from '../utils';
+import { raiseApiError, readStreamLines } from '../provider-helpers';
+import { mapOpenAIUsage, convertNonStreamToolCalls, StreamChunkAccumulator } from '../stream-accumulator';
 
 export class OpenAIProvider implements ILLMProvider {
 	readonly providerId: string;

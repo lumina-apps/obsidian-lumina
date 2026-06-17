@@ -5,7 +5,7 @@
 import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, TokenUsage, ToolCall } from '../../../shared/types/llm.types';
 import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
-import { extractSystemContent, raiseApiError, readStreamLines } from '../utils';
+import { extractSystemContent, raiseApiError, readStreamLines } from '../provider-helpers';
 import { ANTHROPIC_MODELS } from './anthropic.types';
 import type { AnthropicResponse } from './anthropic.types';
 import { formatAnthropicMessages, formatAnthropicTools } from './anthropic-message-formatter';

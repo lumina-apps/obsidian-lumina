@@ -1,167 +1,16 @@
 /**
- * utils.ts
- * LLM REST API Provider 전용 유틸리티 함수
+ * stream-accumulator.ts
+ * OpenAI 호환 SSE 스트림 청크 처리와 상태 누적
+ *
+ * OpenAIProvider와 OpenAICompatProvider 양쪽에서 사용하며,
+ * content 누적, tool call 누적, usage 추출, finishReason 추적,
+ * 그리고 reasoning 모델(DeepSeek-R1 등)의 `<think>` 태그 래핑을 캡슐화합니다.
  */
-import type { ChatMessage, TokenUsage, ToolCall } from '../../shared/types/llm.types';
+import type { TokenUsage, ToolCall } from '../../shared/types/llm.types';
 import type { OpenAIStreamChunk, OpenAIToolCallInfo } from './openai-types';
-import { t } from '../../shared/locales/helpers';
 import { debugLogger } from '../../shared/debugLogger';
 
-// ─── Error Formatting ────────────────────────────────────────────────────────
-
-/**
- * 에러 객체 또는 메시지를 파싱하여 사용자 친화적인 한국어/영어 등으로 포맷팅합니다.
- */
-export function formatLlmError(err: unknown): string {
-	const rawMessage = err instanceof Error ? err.message : String(err);
-
-	// HTTP 429: Rate Limit / Quota Exceeded
-	if (rawMessage.includes('HTTP 429')) {
-		return t('errors.llm.rateLimit');
-	}
-	// HTTP 401: Unauthorized / API Key issue
-	if (rawMessage.includes('HTTP 401')) {
-		return t('errors.llm.unauthorized');
-	}
-	// HTTP 403: Forbidden / Permission denied
-	if (rawMessage.includes('HTTP 403')) {
-		return t('errors.llm.forbidden');
-	}
-	// HTTP 404: Model not found / Endpoint issue
-	if (rawMessage.includes('HTTP 404')) {
-		return t('errors.llm.notFound');
-	}
-	// Network Error
-	if (
-		rawMessage.toLowerCase().includes('failed to fetch') ||
-		rawMessage.toLowerCase().includes('net::err') ||
-		rawMessage.toLowerCase().includes('connection refused')
-	) {
-		return t('errors.llm.networkError');
-	}
-
-	return rawMessage;
-}
-
-/**
- * listModels() 등 API 호출 실패 시 프로바이더별 에러 메시지로 throw합니다.
- * 모든 프로바이더에서 중복되는 catch 블록을 대체합니다.
- */
-export function raiseApiError(error: unknown, providerName: string): never {
-	const err = error as { status?: string | number; message?: string };
-	const status = err.status ? String(err.status) : 'unknown';
-	const text = err.message || '';
-	throw new Error(t('settings.providerErrors.apiError', { provider: providerName, status, text }));
-}
-
-// ─── Mock Tool Text Detection ───────────────────────────────────────────────
-
-/**
- * assistant content가 mock tool call 텍스트인지 판별합니다.
- * "Calling tool"로 시작하는 텍스트는 실제 응답이 아닌 UI 표시용입니다.
- */
-export function isMockToolText(content: string): boolean {
-	return content.startsWith('Calling tool');
-}
-
-// ─── System Content Extraction ──────────────────────────────────────────────
-
-/**
- * messages 배열에서 system role 메시지를 추출하여 하나의 문자열로 합칩니다.
- * Gemini/Anthropic 등 system instruction을 별도 필드로 전송하는 API에 사용합니다.
- */
-export function extractSystemContent(messages: ChatMessage[]): string | undefined {
-	const systemMsgs = messages.filter(m => m.role === 'system');
-	if (systemMsgs.length === 0) return undefined;
-	return systemMsgs.map(m => m.content).join('\n');
-}
-
-// ─── Stream Reading ─────────────────────────────────────────────────────────
-
-/**
- * ReadableStream의 응답을 한 라인씩 분할하여 콜백으로 전달합니다.
- */
-export async function readStreamLines(
-	response: Response,
-	signal: AbortSignal | undefined,
-	onLine: (line: string) => void
-): Promise<void> {
-	const reader = response.body?.getReader();
-	if (!reader) {
-		throw new Error(t('errors.llm.notReadable'));
-	}
-	const decoder = new TextDecoder('utf-8');
-	let buffer = '';
-
-	try {
-		while (true) {
-			if (signal?.aborted) {
-				await reader.cancel();
-				break;
-			}
-			const { done, value } = await reader.read();
-			if (done) break;
-
-			buffer += decoder.decode(value, { stream: true });
-			const lines = buffer.split('\n');
-			buffer = lines.pop() ?? '';
-
-			for (const line of lines) {
-				onLine(line);
-			}
-		}
-		if (buffer) {
-			onLine(buffer);
-		}
-	} finally {
-		reader.releaseLock();
-	}
-}
-
-// ─── Reasoning State ────────────────────────────────────────────────────────
-
-/**
- * reasoning content (예: DeepSeek-R1의 think 태그)를
- * `<think>...</think>` 태그로 래핑하기 위한 상태 머신입니다.
- */
-export interface ReasoningState {
-	/** 현재 think 블록 안에 있는지 여부 */
-	isThinking: boolean;
-}
-
-export function createReasoningState(): ReasoningState {
-	return { isThinking: false };
-}
-
-/**
- * reasoning delta가 들어왔을 때 `<think>` 태그를 열고,
- * reasoning이 끝나고 일반 content가 들어왔을 때 `</think>` 태그를 닫습니다.
- *
- * @returns onChunk에 전달할 추가 텍스트 (상태 변경 시 태그), 없으면 빈 문자열
- */
-export function resolveReasoningTag(
-	state: ReasoningState,
-	displayText: string | undefined,
-	isReasoning: boolean,
-): string {
-	// reasoning 블록 시작
-	if (isReasoning && !state.isThinking) {
-		state.isThinking = true;
-		return '<think>\n';
-	}
-	// reasoning 블록 종료 (일반 content 시작)
-	if (!isReasoning && state.isThinking) {
-		state.isThinking = false;
-		return '\n</think>\n';
-	}
-	// 블록 내에서 reasoning content 그대로 전달
-	if (isReasoning && state.isThinking && displayText) {
-		return displayText;
-	}
-	return '';
-}
-
-// ─── OpenAI Stream Chunk Processing ─────────────────────────────────────────
+// ─── SSE Parsing ────────────────────────────────────────────────────────────
 
 /**
  * 단일 SSE 라인을 파싱하여 `OpenAIStreamChunk`로 변환합니다.
@@ -184,6 +33,8 @@ export function parseSSEChunk(line: string): OpenAIStreamChunk | null {
 	}
 }
 
+// ─── Usage Mapping ──────────────────────────────────────────────────────────
+
 /**
  * OpenAI API 응답의 usage 정보를 TokenUsage로 변환합니다.
  * 스트리밍 청크와 논스트리밍 응답 모두 동일 구조이므로 공통으로 사용합니다.
@@ -204,6 +55,8 @@ export function mapOpenAIUsage(usage: { prompt_tokens: number; completion_tokens
 export function extractUsage(chunk: OpenAIStreamChunk): TokenUsage | undefined {
 	return mapOpenAIUsage(chunk.usage);
 }
+
+// ─── Tool Call Accumulation ─────────────────────────────────────────────────
 
 /**
  * 스트리밍 델타에서 tool_calls를 누적 배열에 병합합니다.
@@ -270,6 +123,49 @@ export function convertNonStreamToolCalls(
 		}
 	}
 	return result;
+}
+
+// ─── Reasoning State ────────────────────────────────────────────────────────
+
+/**
+ * reasoning content (예: DeepSeek-R1의 think 태그)를
+ * `<think>...</think>` 태그로 래핑하기 위한 상태 머신입니다.
+ */
+export interface ReasoningState {
+	/** 현재 think 블록 안에 있는지 여부 */
+	isThinking: boolean;
+}
+
+export function createReasoningState(): ReasoningState {
+	return { isThinking: false };
+}
+
+/**
+ * reasoning delta가 들어왔을 때 `<think>` 태그를 열고,
+ * reasoning이 끝나고 일반 content가 들어왔을 때 `</think>` 태그를 닫습니다.
+ *
+ * @returns onChunk에 전달할 추가 텍스트 (상태 변경 시 태그), 없으면 빈 문자열
+ */
+export function resolveReasoningTag(
+	state: ReasoningState,
+	displayText: string | undefined,
+	isReasoning: boolean,
+): string {
+	// reasoning 블록 시작
+	if (isReasoning && !state.isThinking) {
+		state.isThinking = true;
+		return '<think>\n';
+	}
+	// reasoning 블록 종료 (일반 content 시작)
+	if (!isReasoning && state.isThinking) {
+		state.isThinking = false;
+		return '\n</think>\n';
+	}
+	// 블록 내에서 reasoning content 그대로 전달
+	if (isReasoning && state.isThinking && displayText) {
+		return displayText;
+	}
+	return '';
 }
 
 // ─── Stream Chunk Accumulator ───────────────────────────────────────────────

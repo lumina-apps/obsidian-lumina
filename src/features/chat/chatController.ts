@@ -26,7 +26,7 @@ import { Notice, type App } from 'obsidian';
 import { t } from '../../shared/locales/helpers';
 import type LuminaPlugin from '../../main';
 import { createProvider, isLocalProvider } from '../../core/llm-providers/index';
-import { formatLlmError } from '../../core/llm-providers/utils';
+import { formatLlmError } from '../../shared/utils/llmErrorFormatter';
 import { buildMessages } from './promptBuilder';
 import { VISION_UNSUPPORTED_PROVIDERS, PROVIDER_LABELS } from '../../shared/types/settings.types';
 import {

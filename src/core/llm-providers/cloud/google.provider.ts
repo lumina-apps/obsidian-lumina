@@ -4,7 +4,7 @@ import { GOOGLE_MODELS, mapUsageMetadata } from './google.types';
 import type { GeminiResponse, GeminiStreamChunk, GeminiToolCallInfo } from './google.types';
 import { formatGeminiMessages, formatGeminiTools, getGeminiSystemInstruction } from './google-message-formatter';
 import { readGeminiStreamChunks } from './google-stream-parser';
-import { raiseApiError } from '../utils';
+import { raiseApiError } from '../provider-helpers';
 
 type GeminiCandidate = NonNullable<GeminiResponse['candidates']>[number];
 

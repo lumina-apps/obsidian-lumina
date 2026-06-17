@@ -10,13 +10,8 @@ import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
 import { formatOpenAIMessages, formatOpenAITools } from '../openai-formatter';
 import type { OpenAIResponse } from '../openai-types';
-import {
-	raiseApiError,
-	mapOpenAIUsage,
-	readStreamLines,
-	convertNonStreamToolCalls,
-	StreamChunkAccumulator,
-} from '../utils';
+import { raiseApiError, readStreamLines } from '../provider-helpers';
+import { mapOpenAIUsage, convertNonStreamToolCalls, StreamChunkAccumulator } from '../stream-accumulator';
 
 /** 로컬 모델에서 사용하는 기본 stop 시퀀스 */
 const LOCAL_STOP_SEQUENCES: string[] = [

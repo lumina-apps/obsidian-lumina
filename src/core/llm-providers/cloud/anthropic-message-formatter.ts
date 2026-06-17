@@ -3,7 +3,7 @@
  * ChatMessage → Anthropic API 메시지 포맷 변환
  */
 import type { ChatMessage, ToolDefinition } from '../../../shared/types/llm.types';
-import { isMockToolText } from '../utils';
+import { isMockToolText } from '../openai-formatter';
 
 /**
  * ChatMessage 배열을 Anthropic API messages 배열로 변환합니다.

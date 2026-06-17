@@ -3,7 +3,7 @@
  * ChatMessage 배열을 Gemini API 요청 형식으로 변환
  */
 import type { ChatMessage, ToolDefinition } from '../../../shared/types/llm.types';
-import { isMockToolText } from '../utils';
+import { isMockToolText } from '../openai-formatter';
 
 /**
  * system instruction 추출 (Gemini 전용: { parts: [{ text }] } 형식)
