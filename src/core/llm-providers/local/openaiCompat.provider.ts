@@ -1,64 +1,34 @@
 import type { ProviderType } from '../../../shared/types/settings.types';
-import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, ToolCall } from '../../../shared/types/llm.types';
+import type {
+	ChatMessage,
+	ChatOptions,
+	ChatResponse,
+	ILLMProvider,
+	ToolCall,
+	TokenUsage,
+} from '../../../shared/types/llm.types';
 import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
-import { readStreamLines } from '../utils';
-import { debugLogger } from '../../../shared/debugLogger';
+import { formatOpenAIMessages, formatOpenAITools } from '../openai-formatter';
+import type { OpenAIResponse, OpenAIToolCallInfo } from '../openai-types';
+import {
+	createReasoningState,
+	resolveReasoningTag,
+	readStreamLines,
+	parseSSEChunk,
+	extractUsage,
+	accumulateToolCalls,
+	convertOpenAIToolCalls,
+	convertNonStreamToolCalls,
+} from '../utils';
 
-interface OpenAIToolCallInfo {
-	id?: string;
-	name?: string;
-	arguments: string;
-}
-
-interface OpenAIStreamChunk {
-	choices?: Array<{
-		delta?: {
-			content?: string | null;
-			reasoning_content?: string | null;
-			reasoning?: string | null;
-			tool_calls?: Array<{
-				index: number;
-				id?: string;
-				function?: {
-					name?: string;
-					arguments?: string;
-				};
-			}>;
-		};
-		finish_reason?: string | null;
-	}>;
-	usage?: {
-		prompt_tokens: number;
-		completion_tokens: number;
-		total_tokens: number;
-	};
-}
-
-interface OpenAIResponse {
-	choices?: Array<{
-		message?: {
-			role?: string;
-			content?: string | null;
-			reasoning_content?: string | null;
-			reasoning?: string | null;
-			tool_calls?: Array<{
-				id: string;
-				type: 'function';
-				function: {
-					name: string;
-					arguments: string;
-				};
-			}>;
-		};
-		finish_reason?: string | null;
-	}>;
-	usage?: {
-		prompt_tokens: number;
-		completion_tokens: number;
-		total_tokens: number;
-	};
-}
+/** 로컬 모델에서 사용하는 기본 stop 시퀀스 */
+const LOCAL_STOP_SEQUENCES: string[] = [
+	'<|im_end|>',
+	'<|endoftext|>',
+	'<|eot_id|>',
+	'<|end_of_text|>',
+];
 
 export class OpenAICompatProvider implements ILLMProvider {
 	readonly providerId: string;
@@ -76,230 +46,48 @@ export class OpenAICompatProvider implements ILLMProvider {
 	}
 
 	async listModels(): Promise<string[]> {
-		// Ollama는 /api/tags 를 우선 시도
 		if (this.type === 'ollama') {
 			return this.listOllamaModels();
 		}
-		// 나머지는 OpenAI 호환 /v1/models
 		return this.listOpenAICompatModels();
 	}
 
-	async chat(messages: ChatMessage[], options: ChatOptions, onChunk?: (chunk: string) => void): Promise<ChatResponse> {
+	async chat(
+		messages: ChatMessage[],
+		options: ChatOptions,
+		onChunk?: (chunk: string) => void,
+	): Promise<ChatResponse> {
 		const url = `${this.baseUrl}/v1/chat/completions`;
-		const headers: Record<string, string> = {
-			'Content-Type': 'application/json',
-			Authorization: `Bearer ${this.apiKey}`,
-		};
-
-		const formattedMessages = formatOpenAIMessages(messages);
-		const formattedTools = formatOpenAITools(options.tools);
-
-		const stopSeq = options.stop ?? ["<|im_end|>", "<|endoftext|>", "<|eot_id|>", "<|end_of_text|>"];
-
-		const payload: Record<string, unknown> = {
-			model: options.model,
-			messages: formattedMessages,
-			temperature: options.temperature ?? 0.7,
-			max_tokens: options.maxOutputTokens,
-			tools: formattedTools,
-			stream: !!onChunk,
-		};
-
-		if (stopSeq.length > 0) {
-			payload.stop = stopSeq;
-		}
+		const headers = this.buildHeaders();
+		const payload = this.buildPayload(options, messages, !!onChunk);
 
 		if (onChunk) {
-			let fullContent = '';
-			const accumulatedToolCalls: OpenAIToolCallInfo[] = [];
-			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
-			let finishReason: string | undefined;
-
-			const response = await window.fetch(url, {
-				method: 'POST',
-				headers,
-				body: JSON.stringify(payload),
-				signal: options.signal,
-			});
-
-			if (!response.ok) {
-				const errText = await response.text();
-				throw new Error(`${this.type} Error (HTTP ${response.status}): ${errText}`);
-			}
-
-			let isThinking = false;
-			await readStreamLines(response, options.signal, (line) => {
-				const cleanLine = line.trim();
-				if (!cleanLine || !cleanLine.startsWith('data: ')) return;
-				const dataStr = cleanLine.slice(6);
-				if (dataStr === '[DONE]') return;
-
-				try {
-					const chunk = JSON.parse(dataStr) as OpenAIStreamChunk;
-					const choice = chunk.choices?.[0];
-					if (choice) {
-						if (choice.finish_reason) {
-							finishReason = choice.finish_reason;
-						}
-						const delta = choice.delta;
-						if (delta) {
-							const reasoning = delta.reasoning_content || delta.reasoning;
-							if (reasoning) {
-								if (!isThinking) {
-									isThinking = true;
-									fullContent += '<think>\n';
-									onChunk('<think>\n');
-								}
-								fullContent += reasoning;
-								onChunk(reasoning);
-							} else {
-								if (isThinking) {
-									isThinking = false;
-									fullContent += '\n</think>\n';
-									onChunk('\n</think>\n');
-								}
-								if (delta.content) {
-									fullContent += delta.content;
-									onChunk(delta.content);
-								}
-							}
-							if (delta.tool_calls) {
-								for (const tc of delta.tool_calls) {
-									const index = tc.index ?? 0;
-									if (!accumulatedToolCalls[index]) {
-										accumulatedToolCalls[index] = {
-											id: tc.id || '',
-											name: tc.function?.name || '',
-											arguments: tc.function?.arguments || '',
-										};
-									} else {
-										if (tc.id) accumulatedToolCalls[index].id = tc.id;
-										if (tc.function?.name) accumulatedToolCalls[index].name = tc.function.name;
-										if (tc.function?.arguments) accumulatedToolCalls[index].arguments += tc.function.arguments;
-									}
-								}
-							}
-						}
-					}
-					if (chunk.usage) {
-						usage = {
-							inputTokens: chunk.usage.prompt_tokens,
-							outputTokens: chunk.usage.completion_tokens,
-							totalTokens: chunk.usage.total_tokens,
-						};
-					}
-				} catch (e) {
-					debugLogger.logError('OpenAICompat Stream Parse', `Failed to parse line: "${cleanLine}". Error: ${e instanceof Error ? e.message : String(e)}`);
-				}
-			});
-			if (isThinking) {
-				fullContent += '\n</think>\n';
-			}
-
-			const toolCalls: ToolCall[] = [];
-			for (const tc of accumulatedToolCalls) {
-				if (tc) {
-					try {
-						toolCalls.push({
-							id: tc.id || crypto.randomUUID(),
-							name: tc.name || '',
-							arguments: tc.arguments ? JSON.parse(tc.arguments) as Record<string, unknown> : {},
-						});
-					} catch {
-						console.warn('Failed to parse tool call arguments:', tc.arguments);
-					}
-				}
-			}
-
-			return {
-				content: fullContent,
-				usage,
-				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-				finishReason,
-			};
-		} else {
-			// non-streaming
-			const res = await requestUrl({
-				url,
-				method: 'POST',
-				headers,
-				body: JSON.stringify(payload),
-			});
-
-			const data = res.json as OpenAIResponse;
-			const choice = data.choices?.[0];
-			const message = choice?.message;
-			if (!message) {
-				throw new Error(`${this.type} API returned an empty response. Response: ${res.text}`);
-			}
-			const finishReason = choice?.finish_reason || undefined;
-
-			const toolCalls: ToolCall[] = [];
-			if (message.tool_calls) {
-				for (const tc of message.tool_calls) {
-					try {
-						toolCalls.push({
-							id: tc.id || crypto.randomUUID(),
-							name: tc.function.name,
-							arguments: tc.function.arguments ? JSON.parse(tc.function.arguments) as Record<string, unknown> : {},
-						});
-					} catch {
-						console.warn('Failed to parse tool call arguments:', tc.function.arguments);
-					}
-				}
-			}
-
-			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
-			if (data.usage) {
-				usage = {
-					inputTokens: data.usage.prompt_tokens,
-					outputTokens: data.usage.completion_tokens,
-					totalTokens: data.usage.total_tokens,
-				};
-			}
-
-			let returnContent = '';
-			const reasoning = message.reasoning_content || message.reasoning;
-			if (reasoning) {
-				returnContent += `<think>\n${reasoning}\n</think>\n`;
-			}
-			returnContent += message.content || '';
-
-			return {
-				content: returnContent,
-				usage,
-				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-				finishReason,
-			};
+			return this.handleStreamingChat(url, headers, payload, options.signal, onChunk);
 		}
+		return this.handleNonStreamingChat(url, headers, payload);
 	}
 
 	async stream(
 		messages: ChatMessage[],
 		options: ChatOptions,
 		onChunk: (chunk: string) => void,
-	): Promise<{ usage?: import('../../../shared/types/llm.types').TokenUsage; finishReason?: string }> {
+	): Promise<{ usage?: TokenUsage; finishReason?: string }> {
 		const url = `${this.baseUrl}/v1/chat/completions`;
-		const headers: Record<string, string> = {
-			'Content-Type': 'application/json',
-			Authorization: `Bearer ${this.apiKey}`,
-		};
-
-		const formattedMessages = formatOpenAIMessages(messages);
+		const headers = this.buildHeaders();
 		const payload: Record<string, unknown> = {
 			model: options.model,
-			messages: formattedMessages,
+			messages: formatOpenAIMessages(messages),
 			temperature: options.temperature ?? 0.7,
 			max_tokens: options.maxOutputTokens,
 			stream: true,
 		};
 
-		const stopSeq = options.stop ?? ["<|im_end|>", "<|endoftext|>", "<|eot_id|>", "<|end_of_text|>"];
+		const stopSeq = options.stop ?? LOCAL_STOP_SEQUENCES;
 		if (stopSeq.length > 0) {
 			payload.stop = stopSeq;
 		}
 
-		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+		let usage: TokenUsage | undefined;
 		let finishReason: string | undefined;
 
 		const response = await window.fetch(url, {
@@ -314,52 +102,44 @@ export class OpenAICompatProvider implements ILLMProvider {
 			throw new Error(`${this.type} Error (HTTP ${response.status}): ${errText}`);
 		}
 
-		let isThinking = false;
+		const reasoning = createReasoningState();
 		await readStreamLines(response, options.signal, (line) => {
-			const cleanLine = line.trim();
-			if (!cleanLine || !cleanLine.startsWith('data: ')) return;
-			const dataStr = cleanLine.slice(6);
-			if (dataStr === '[DONE]') return;
+			const chunk = parseSSEChunk(line);
+			if (!chunk) return;
 
-			try {
-				const chunk = JSON.parse(dataStr) as OpenAIStreamChunk;
-				const choice = chunk.choices?.[0];
-				if (choice) {
-					if (choice.finish_reason) {
-						finishReason = choice.finish_reason;
+			const choice = chunk.choices?.[0];
+			if (choice) {
+				if (choice.finish_reason) {
+					finishReason = choice.finish_reason;
+				}
+				const delta = choice.delta;
+				if (delta) {
+					const reasoningText = delta.reasoning_content ?? delta.reasoning ?? undefined;
+					const isReasoning = reasoningText !== undefined && reasoningText.length > 0;
+					let displayText: string | undefined;
+
+					const tagText = resolveReasoningTag(reasoning, reasoningText, isReasoning);
+					if (tagText) {
+						onChunk(tagText);
 					}
-					const delta = choice.delta;
-					if (delta) {
-						const reasoning = delta.reasoning_content || delta.reasoning;
-						if (reasoning) {
-							if (!isThinking) {
-								isThinking = true;
-								onChunk('<think>\n');
-							}
-							onChunk(reasoning);
-						} else {
-							if (isThinking) {
-								isThinking = false;
-								onChunk('\n</think>\n');
-							}
-							if (delta.content) {
-								onChunk(delta.content);
-							}
-						}
+
+					if (isReasoning && reasoning.isThinking) {
+						displayText = reasoningText;
+					} else if (!isReasoning && delta.content) {
+						displayText = delta.content;
+					}
+
+					if (displayText) {
+						onChunk(displayText);
 					}
 				}
-				if (chunk.usage) {
-					usage = {
-						inputTokens: chunk.usage.prompt_tokens,
-						outputTokens: chunk.usage.completion_tokens,
-						totalTokens: chunk.usage.total_tokens,
-					};
-				}
-			} catch (e) {
-				debugLogger.logError('OpenAICompat Stream Parse', `Failed to parse line in stream(): "${cleanLine}". Error: ${e instanceof Error ? e.message : String(e)}`);
 			}
+			const newUsage = extractUsage(chunk);
+			if (newUsage) usage = newUsage;
 		});
-		if (isThinking) {
+
+		// thinking 블록이 닫히지 않았으면 닫음
+		if (reasoning.isThinking) {
 			onChunk('\n</think>\n');
 		}
 
@@ -371,10 +151,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 			const res = await requestUrl({
 				url: `${this.baseUrl}/v1/embeddings`,
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${this.apiKey}`,
-				},
+				headers: this.buildHeaders(),
 				body: JSON.stringify({
 					input: texts,
 					model: options.model,
@@ -389,7 +166,165 @@ export class OpenAICompatProvider implements ILLMProvider {
 		}
 	}
 
-	// ─── Model listing ────────────────────────────────────────────────────────
+	// ─── Private helpers ─────────────────────────────────────────────────────
+
+	private buildHeaders(): Record<string, string> {
+		return {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${this.apiKey}`,
+		};
+	}
+
+	private buildPayload(
+		options: ChatOptions,
+		messages: ChatMessage[],
+		stream: boolean,
+	): Record<string, unknown> {
+		const payload: Record<string, unknown> = {
+			model: options.model,
+			messages: formatOpenAIMessages(messages),
+			temperature: options.temperature ?? 0.7,
+			max_tokens: options.maxOutputTokens,
+			tools: formatOpenAITools(options.tools),
+			stream,
+		};
+
+		const stopSeq = options.stop ?? LOCAL_STOP_SEQUENCES;
+		if (stopSeq.length > 0) {
+			payload.stop = stopSeq;
+		}
+
+		return payload;
+	}
+
+	private async handleStreamingChat(
+		url: string,
+		headers: Record<string, string>,
+		payload: Record<string, unknown>,
+		signal: AbortSignal | undefined,
+		onChunk: (chunk: string) => void,
+	): Promise<ChatResponse> {
+		let fullContent = '';
+		const accumulatedToolCalls: OpenAIToolCallInfo[] = [];
+		let usage: TokenUsage | undefined;
+		let finishReason: string | undefined;
+
+		const response = await window.fetch(url, {
+			method: 'POST',
+			headers,
+			body: JSON.stringify(payload),
+			signal,
+		});
+
+		if (!response.ok) {
+			const errText = await response.text();
+			throw new Error(`${this.type} Error (HTTP ${response.status}): ${errText}`);
+		}
+
+		const reasoning = createReasoningState();
+		await readStreamLines(response, signal, (line) => {
+			const chunk = parseSSEChunk(line);
+			if (!chunk) return;
+
+			const choice = chunk.choices?.[0];
+			if (choice) {
+				if (choice.finish_reason) {
+					finishReason = choice.finish_reason;
+				}
+				const delta = choice.delta;
+				if (delta) {
+					const reasoningText = delta.reasoning_content ?? delta.reasoning ?? undefined;
+					const isReasoning = reasoningText !== undefined && reasoningText.length > 0;
+					let displayText: string | undefined;
+
+					const tagText = resolveReasoningTag(reasoning, reasoningText, isReasoning);
+					if (tagText) {
+						fullContent += tagText;
+						onChunk(tagText);
+					}
+
+					if (isReasoning && reasoning.isThinking) {
+						displayText = reasoningText;
+					} else if (!isReasoning && delta.content) {
+						displayText = delta.content;
+					}
+
+					if (displayText) {
+						fullContent += displayText;
+						onChunk(displayText);
+					}
+
+					accumulateToolCalls(delta, accumulatedToolCalls);
+				}
+			}
+			const newUsage = extractUsage(chunk);
+			if (newUsage) usage = newUsage;
+		});
+
+		// thinking 블록이 닫히지 않았으면 닫음
+		if (reasoning.isThinking) {
+			fullContent += '\n</think>\n';
+		}
+
+		const toolCalls = convertOpenAIToolCalls(accumulatedToolCalls);
+
+		return {
+			content: fullContent,
+			usage,
+			toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+			finishReason,
+		};
+	}
+
+	private async handleNonStreamingChat(
+		url: string,
+		headers: Record<string, string>,
+		payload: Record<string, unknown>,
+	): Promise<ChatResponse> {
+		const res = await requestUrl({
+			url,
+			method: 'POST',
+			headers,
+			body: JSON.stringify(payload),
+		});
+
+		const data = res.json as OpenAIResponse;
+		const choice = data.choices?.[0];
+		const message = choice?.message;
+		if (!message) {
+			throw new Error(`${this.type} API returned an empty response. Response: ${res.text}`);
+		}
+		const finishReason = choice?.finish_reason || undefined;
+
+		const toolCalls: ToolCall[] = message.tool_calls
+			? convertNonStreamToolCalls(message.tool_calls)
+			: [];
+
+		let usage: TokenUsage | undefined;
+		if (data.usage) {
+			usage = {
+				inputTokens: data.usage.prompt_tokens,
+				outputTokens: data.usage.completion_tokens,
+				totalTokens: data.usage.total_tokens,
+			};
+		}
+
+		let returnContent = '';
+		const reasoning = message.reasoning_content ?? message.reasoning;
+		if (reasoning) {
+			returnContent += `<think>\n${reasoning}\n</think>\n`;
+		}
+		returnContent += message.content || '';
+
+		return {
+			content: returnContent,
+			usage,
+			toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+			finishReason,
+		};
+	}
+
+	// ─── Model listing ──────────────────────────────────────────────────────
 
 	private async listOllamaModels(): Promise<string[]> {
 		try {
@@ -424,56 +359,4 @@ export class OpenAICompatProvider implements ILLMProvider {
 			throw new Error(t('settings.providerErrors.connectFail', { status, text }));
 		}
 	}
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function formatOpenAIMessages(messages: ChatMessage[]) {
-	return messages.map((m) => {
-		if (m.role === 'system') {
-			return { role: 'system', content: m.content };
-		}
-		if (m.role === 'user') {
-			return { role: 'user', content: m.content };
-		}
-		if (m.role === 'assistant') {
-			const contentText = typeof m.content === 'string' ? m.content : '';
-			const isMockToolText = contentText.startsWith('Calling tool');
-			const payload: Record<string, unknown> = {
-				role: 'assistant',
-				content: (contentText && !isMockToolText) ? contentText : null,
-			};
-			if (m.tool_calls && m.tool_calls.length > 0) {
-				payload.tool_calls = m.tool_calls.map((tc) => ({
-					id: tc.id,
-					type: 'function',
-					function: {
-						name: tc.name,
-						arguments: JSON.stringify(tc.arguments),
-					},
-				}));
-			}
-			return payload;
-		}
-		if (m.role === 'tool') {
-			return {
-				role: 'tool',
-				tool_call_id: m.tool_call_id,
-				content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
-			};
-		}
-		return { role: 'user', content: String(m.content) };
-	});
-}
-
-function formatOpenAITools(tools?: import('../../../shared/types/llm.types').ToolDefinition[]) {
-	if (!tools || tools.length === 0) return undefined;
-	return tools.map((td) => ({
-		type: 'function' as const,
-		function: {
-			name: td.name,
-			description: td.description,
-			parameters: td.inputSchema,
-		},
-	}));
 }

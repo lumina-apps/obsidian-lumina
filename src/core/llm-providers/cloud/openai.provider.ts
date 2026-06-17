@@ -1,58 +1,16 @@
-import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, TokenUsage, ToolCall } from '../../../shared/types/llm.types';
+import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, TokenUsage } from '../../../shared/types/llm.types';
 import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
-import { isMockToolText, readStreamLines } from '../utils';
-
-interface OpenAIToolCallInfo {
-	id?: string;
-	name?: string;
-	arguments: string;
-}
-
-interface OpenAIStreamChunk {
-	choices?: Array<{
-		delta?: {
-			content?: string | null;
-			tool_calls?: Array<{
-				index: number;
-				id?: string;
-				function?: {
-					name?: string;
-					arguments?: string;
-				};
-			}>;
-		};
-		finish_reason?: string | null;
-	}>;
-	usage?: {
-		prompt_tokens: number;
-		completion_tokens: number;
-		total_tokens: number;
-	};
-}
-
-interface OpenAIResponse {
-	choices?: Array<{
-		message?: {
-			role?: string;
-			content?: string | null;
-			tool_calls?: Array<{
-				id: string;
-				type: 'function';
-				function: {
-					name: string;
-					arguments: string;
-				};
-			}>;
-		};
-		finish_reason?: string | null;
-	}>;
-	usage?: {
-		prompt_tokens: number;
-		completion_tokens: number;
-		total_tokens: number;
-	};
-}
+import { formatOpenAIMessages, formatOpenAITools } from '../openai-formatter';
+import type { OpenAIResponse, OpenAIToolCallInfo } from '../openai-types';
+import {
+	readStreamLines,
+	parseSSEChunk,
+	extractUsage,
+	accumulateToolCalls,
+	convertOpenAIToolCalls,
+	convertNonStreamToolCalls,
+} from '../utils';
 
 export class OpenAIProvider implements ILLMProvider {
 	readonly providerId: string;
@@ -86,163 +44,13 @@ export class OpenAIProvider implements ILLMProvider {
 
 	async chat(messages: ChatMessage[], options: ChatOptions, onChunk?: (chunk: string) => void): Promise<ChatResponse> {
 		const url = 'https://api.openai.com/v1/chat/completions';
-		const headers: Record<string, string> = {
-			'Content-Type': 'application/json',
-			Authorization: `Bearer ${this.apiKey}`,
-		};
-
-		const formattedMessages = formatOpenAIMessages(messages);
-		const formattedTools = formatOpenAITools(options.tools);
-
-		const payload: Record<string, unknown> = {
-			model: options.model,
-			messages: formattedMessages,
-			temperature: options.temperature ?? 0.7,
-			max_tokens: options.maxOutputTokens,
-			tools: formattedTools,
-			stream: !!onChunk,
-		};
-
-		if (options.stop && options.stop.length > 0) {
-			payload.stop = options.stop;
-		}
+		const headers = this.buildHeaders();
+		const payload = this.buildPayload(options, messages, !!onChunk);
 
 		if (onChunk) {
-			let fullContent = '';
-			const accumulatedToolCalls: OpenAIToolCallInfo[] = [];
-			let usage: TokenUsage | undefined;
-			let finishReason: string | undefined;
-
-			const response = await window.fetch(url, {
-				method: 'POST',
-				headers,
-				body: JSON.stringify(payload),
-				signal: options.signal,
-			});
-
-			if (!response.ok) {
-				const errText = await response.text();
-				throw new Error(`OpenAI Error (HTTP ${response.status}): ${errText}`);
-			}
-
-			await readStreamLines(response, options.signal, (line) => {
-				const cleanLine = line.trim();
-				if (!cleanLine || !cleanLine.startsWith('data: ')) return;
-				const dataStr = cleanLine.slice(6);
-				if (dataStr === '[DONE]') return;
-
-				try {
-					const chunk = JSON.parse(dataStr) as OpenAIStreamChunk;
-					const choice = chunk.choices?.[0];
-					if (choice) {
-						if (choice.finish_reason) {
-							finishReason = choice.finish_reason;
-						}
-						const delta = choice.delta;
-						if (delta) {
-							if (delta.content) {
-								fullContent += delta.content;
-								onChunk(delta.content);
-							}
-							if (delta.tool_calls) {
-								for (const tc of delta.tool_calls) {
-									const index = tc.index ?? 0;
-									if (!accumulatedToolCalls[index]) {
-										accumulatedToolCalls[index] = {
-											id: tc.id || '',
-											name: tc.function?.name || '',
-											arguments: tc.function?.arguments || '',
-										};
-									} else {
-										if (tc.id) accumulatedToolCalls[index].id = tc.id;
-										if (tc.function?.name) accumulatedToolCalls[index].name = tc.function.name;
-										if (tc.function?.arguments) accumulatedToolCalls[index].arguments += tc.function.arguments;
-									}
-								}
-							}
-						}
-					}
-					if (chunk.usage) {
-						usage = {
-							inputTokens: chunk.usage.prompt_tokens,
-							outputTokens: chunk.usage.completion_tokens,
-							totalTokens: chunk.usage.total_tokens,
-						};
-					}
-				} catch {
-					// Ignore json parsing errors
-				}
-			});
-
-			const toolCalls: ToolCall[] = [];
-			for (const tc of accumulatedToolCalls) {
-				if (tc) {
-					try {
-						toolCalls.push({
-							id: tc.id || crypto.randomUUID(),
-							name: tc.name || '',
-							arguments: tc.arguments ? JSON.parse(tc.arguments) as Record<string, unknown> : {},
-						});
-					} catch {
-						console.warn('Failed to parse tool call arguments:', tc.arguments);
-					}
-				}
-			}
-
-			return {
-				content: fullContent,
-				usage,
-				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-				finishReason,
-			};
-		} else {
-			// non-streaming
-			const res = await requestUrl({
-				url,
-				method: 'POST',
-				headers,
-				body: JSON.stringify(payload),
-			});
-
-			const data = res.json as OpenAIResponse;
-			const choice = data.choices?.[0];
-			const message = choice?.message;
-			if (!message) {
-				throw new Error(`OpenAI API returned an empty response. Response: ${res.text}`);
-			}
-			const finishReason = choice?.finish_reason || undefined;
-
-			const toolCalls: ToolCall[] = [];
-			if (message.tool_calls) {
-				for (const tc of message.tool_calls) {
-					try {
-						toolCalls.push({
-							id: tc.id || crypto.randomUUID(),
-							name: tc.function.name,
-							arguments: tc.function.arguments ? JSON.parse(tc.function.arguments) as Record<string, unknown> : {},
-						});
-					} catch {
-						console.warn('Failed to parse tool call arguments:', tc.function.arguments);
-					}
-				}
-			}
-
-			let usage: TokenUsage | undefined;
-			if (data.usage) {
-				usage = {
-					inputTokens: data.usage.prompt_tokens,
-					outputTokens: data.usage.completion_tokens,
-					totalTokens: data.usage.total_tokens,
-				};
-			}
-
-			return {
-				content: message.content || '',
-				usage,
-				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-				finishReason,
-			};
+			return this.handleStreamingChat(url, headers, payload, options.signal, onChunk);
 		}
+		return this.handleNonStreamingChat(url, headers, payload);
 	}
 
 	async stream(
@@ -251,15 +59,10 @@ export class OpenAIProvider implements ILLMProvider {
 		onChunk: (chunk: string) => void,
 	): Promise<{ usage?: TokenUsage; finishReason?: string }> {
 		const url = 'https://api.openai.com/v1/chat/completions';
-		const headers: Record<string, string> = {
-			'Content-Type': 'application/json',
-			Authorization: `Bearer ${this.apiKey}`,
-		};
-
-		const formattedMessages = formatOpenAIMessages(messages);
+		const headers = this.buildHeaders();
 		const payload: Record<string, unknown> = {
 			model: options.model,
-			messages: formattedMessages,
+			messages: formatOpenAIMessages(messages),
 			temperature: options.temperature ?? 0.7,
 			max_tokens: options.maxOutputTokens,
 			stream: true,
@@ -285,33 +88,21 @@ export class OpenAIProvider implements ILLMProvider {
 		}
 
 		await readStreamLines(response, options.signal, (line) => {
-			const cleanLine = line.trim();
-			if (!cleanLine || !cleanLine.startsWith('data: ')) return;
-			const dataStr = cleanLine.slice(6);
-			if (dataStr === '[DONE]') return;
+			const chunk = parseSSEChunk(line);
+			if (!chunk) return;
 
-			try {
-				const chunk = JSON.parse(dataStr) as OpenAIStreamChunk;
-				const choice = chunk.choices?.[0];
-				if (choice) {
-					if (choice.finish_reason) {
-						finishReason = choice.finish_reason;
-					}
-					const delta = choice.delta;
-					if (delta && delta.content) {
-						onChunk(delta.content);
-					}
+			const choice = chunk.choices?.[0];
+			if (choice) {
+				if (choice.finish_reason) {
+					finishReason = choice.finish_reason;
 				}
-				if (chunk.usage) {
-					usage = {
-						inputTokens: chunk.usage.prompt_tokens,
-						outputTokens: chunk.usage.completion_tokens,
-						totalTokens: chunk.usage.total_tokens,
-					};
+				const delta = choice.delta;
+				if (delta?.content) {
+					onChunk(delta.content);
 				}
-			} catch {
-				// Ignore JSON parse errors
 			}
+			const newUsage = extractUsage(chunk);
+			if (newUsage) usage = newUsage;
 		});
 
 		return { usage, finishReason };
@@ -322,10 +113,7 @@ export class OpenAIProvider implements ILLMProvider {
 			const res = await requestUrl({
 				url: 'https://api.openai.com/v1/embeddings',
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${this.apiKey}`,
-				},
+				headers: this.buildHeaders(),
 				body: JSON.stringify({
 					input: texts,
 					model: options.model,
@@ -339,56 +127,131 @@ export class OpenAIProvider implements ILLMProvider {
 			throw new Error(`OpenAI Embedding Error: ${error instanceof Error ? error.message : String(error)}`);
 		}
 	}
-}
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+	// ─── Private helpers ─────────────────────────────────────────────────────
 
+	private buildHeaders(): Record<string, string> {
+		return {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${this.apiKey}`,
+		};
+	}
 
-function formatOpenAIMessages(messages: ChatMessage[]) {
-	return messages.map((m) => {
-		if (m.role === 'system') {
-			return { role: 'system', content: m.content };
+	private buildPayload(
+		options: ChatOptions,
+		messages: ChatMessage[],
+		stream: boolean,
+	): Record<string, unknown> {
+		const payload: Record<string, unknown> = {
+			model: options.model,
+			messages: formatOpenAIMessages(messages),
+			temperature: options.temperature ?? 0.7,
+			max_tokens: options.maxOutputTokens,
+			tools: formatOpenAITools(options.tools),
+			stream,
+		};
+
+		if (options.stop && options.stop.length > 0) {
+			payload.stop = options.stop;
 		}
-		if (m.role === 'user') {
-			return { role: 'user', content: m.content };
+
+		return payload;
+	}
+
+	private async handleStreamingChat(
+		url: string,
+		headers: Record<string, string>,
+		payload: Record<string, unknown>,
+		signal: AbortSignal | undefined,
+		onChunk: (chunk: string) => void,
+	): Promise<ChatResponse> {
+		let fullContent = '';
+		const accumulatedToolCalls: OpenAIToolCallInfo[] = [];
+		let usage: TokenUsage | undefined;
+		let finishReason: string | undefined;
+
+		const response = await window.fetch(url, {
+			method: 'POST',
+			headers,
+			body: JSON.stringify(payload),
+			signal,
+		});
+
+		if (!response.ok) {
+			const errText = await response.text();
+			throw new Error(`OpenAI Error (HTTP ${response.status}): ${errText}`);
 		}
-		if (m.role === 'assistant') {
-			const contentText = typeof m.content === 'string' ? m.content : '';
-			const payload: Record<string, unknown> = {
-				role: 'assistant',
-				content: (contentText && !isMockToolText(contentText)) ? contentText : null,
-			};
-			if (m.tool_calls && m.tool_calls.length > 0) {
-				payload.tool_calls = m.tool_calls.map((tc) => ({
-					id: tc.id,
-					type: 'function',
-					function: {
-						name: tc.name,
-						arguments: JSON.stringify(tc.arguments),
-					},
-				}));
+
+		await readStreamLines(response, signal, (line) => {
+			const chunk = parseSSEChunk(line);
+			if (!chunk) return;
+
+			const choice = chunk.choices?.[0];
+			if (choice) {
+				if (choice.finish_reason) {
+					finishReason = choice.finish_reason;
+				}
+				const delta = choice.delta;
+				if (delta) {
+					if (delta.content) {
+						fullContent += delta.content;
+						onChunk(delta.content);
+					}
+					accumulateToolCalls(delta, accumulatedToolCalls);
+				}
 			}
-			return payload;
+			const newUsage = extractUsage(chunk);
+			if (newUsage) usage = newUsage;
+		});
+
+		const toolCalls = convertOpenAIToolCalls(accumulatedToolCalls);
+
+		return {
+			content: fullContent,
+			usage,
+			toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+			finishReason,
+		};
+	}
+
+	private async handleNonStreamingChat(
+		url: string,
+		headers: Record<string, string>,
+		payload: Record<string, unknown>,
+	): Promise<ChatResponse> {
+		const res = await requestUrl({
+			url,
+			method: 'POST',
+			headers,
+			body: JSON.stringify(payload),
+		});
+
+		const data = res.json as OpenAIResponse;
+		const choice = data.choices?.[0];
+		const message = choice?.message;
+		if (!message) {
+			throw new Error(`OpenAI API returned an empty response. Response: ${res.text}`);
 		}
-		if (m.role === 'tool') {
-			return {
-				role: 'tool',
-				tool_call_id: m.tool_call_id,
-				content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+		const finishReason = choice?.finish_reason || undefined;
+
+		const toolCalls = message.tool_calls
+			? convertNonStreamToolCalls(message.tool_calls)
+			: [];
+
+		let usage: TokenUsage | undefined;
+		if (data.usage) {
+			usage = {
+				inputTokens: data.usage.prompt_tokens,
+				outputTokens: data.usage.completion_tokens,
+				totalTokens: data.usage.total_tokens,
 			};
 		}
-		return { role: 'user', content: String(m.content) };
-	});
-}
 
-function formatOpenAITools(tools?: import('../../../shared/types/llm.types').ToolDefinition[]) {
-	if (!tools || tools.length === 0) return undefined;
-	return tools.map((td) => ({
-		type: 'function' as const,
-		function: {
-			name: td.name,
-			description: td.description,
-			parameters: td.inputSchema,
-		},
-	}));
+		return {
+			content: message.content || '',
+			usage,
+			toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+			finishReason,
+		};
+	}
 }
