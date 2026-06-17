@@ -57,64 +57,7 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 	}
 }
 
-/* 3. Advanced Toggle Container & Custom Sliding Switch */
-.lumina-settings__advanced-toggle {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	font-size: 0.9em;
-	color: var(--text-muted);
-	flex-shrink: 0;
-	white-space: nowrap;
-}
-
-.lumina-toggle-btn {
-	background: none;
-	border: none;
-	padding: 0;
-	margin: 0;
-	outline: none;
-	appearance: none;
-	-webkit-appearance: none;
-	position: relative;
-	width: 52px;
-	height: 28px;
-	border-radius: 14px;
-	background-color: var(--background-modifier-border-hover);
-	cursor: pointer;
-	transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
-	box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.lumina-toggle-btn:hover {
-	box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15), 0 0 0 2px var(--interactive-accent-hover);
-}
-
-/* Hidden text, styling handled by notch and background */
-.lumina-toggle-btn::before {
-	content: '';
-	position: absolute;
-	top: 3px;
-	left: 3px;
-	width: 22px;
-	height: 22px;
-	border-radius: 50%;
-	background-color: #ffffff;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-	transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
-}
-
-.lumina-toggle-btn.is-active {
-	background: linear-gradient(135deg, var(--interactive-accent) 0%, #8b5cf6 100%);
-	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(139, 92, 246, 0.3);
-}
-
-.lumina-toggle-btn.is-active::before {
-	transform: translateX(24px);
-	background-color: #ffffff;
-}
-
-/* 4. Tab Navigation Menu (Horizontal Segmented Control) */
+/* 3. Tab Navigation Menu (Horizontal Segmented Control) */
 .lumina-settings__nav {
 	display: flex;
 	flex-wrap: wrap;
@@ -1025,17 +968,7 @@ body div.modal-overlay .suggestion-container .suggestion-item.is-selected-defaul
 	font-size: 1.1em;
 }
 
-/* 14. Chat Panel Overrides */
-.lumina-chat-view .lumina-chat__send-btn {
-	padding: 0;
-}
-
-.lumina-chat-view .lumina-chat__send-btn svg {
-	width: 22px;
-	height: 22px;
-}
-
-/* 15. Agent Beta Activation Modal */
+/* 14. Agent Beta Activation Modal */
 .modal-container .modal.lumina-agent-beta-modal,
 .lumina-agent-beta-modal .modal-content {
 	max-width: 420px;
