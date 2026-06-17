@@ -8,78 +8,64 @@
  * - init() 타임아웃: 60초 초과 시 자동 reject (무한 대기 방지)
  */
 
-import type { WorkerRequest, WorkerResponse } from '../../shared/types/rag.types';
+import type { WorkerRequest, WorkerResponse, IWorker } from '../../shared/types/rag.types';
+import { generateUUID } from '../../shared/utils/uuid';
 import { t } from '../../shared/locales/helpers';
 import { WORKER_COMPRESSED_BASE64 } from './worker/workerCode';
-
-
-/** crypto.randomUUID() 폴백: 구형 Electron(Obsidian Stable)에서 undefined인 경우 대응 */
-function generateUUID(): string {
-	if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-		return crypto.randomUUID();
-	}
-	return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-		const r = (Math.random() * 16) | 0;
-		return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
-	});
-}
+import { decompressWorkerCode } from './utils/workerCodec';
+import { PendingRequestManager } from './utils/PendingRequestManager';
+import { SerialQueue } from './utils/SerialQueue';
 
 export type EmbeddingProgressCallback = (progress: number, status: string) => void;
 
 /** 임베딩 모델 초기화 최대 대기 시간 (ms) */
 const INIT_TIMEOUT_MS = 60_000;
 
-interface IWorker {
-	addEventListener(type: string, listener: (evt: MessageEvent) => void): void;
-	terminate(): void;
-	postMessage(message: unknown, transfer?: Transferable[]): void;
-}
-
 /**
- * Deflate 압축된 Base64 워커 소스코드를 브라우저 네이티브 DecompressionStream을 사용하여 압축 해제합니다.
+ * Promise에 타임아웃을 적용합니다.
+ * timeoutMs를 초과하면 message로 reject합니다.
  */
-async function decompressWorkerCode(base64: string): Promise<string> {
-	const binString = atob(base64);
-	const len = binString.length;
-	const bytes = new Uint8Array(len);
-	for (let i = 0; i < len; i++) {
-		bytes[i] = binString.charCodeAt(i);
-	}
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+	return new Promise<T>((resolve, reject) => {
+		const timer = window.setTimeout(() => {
+			reject(new Error(message));
+		}, timeoutMs);
 
-	const stream = new ReadableStream({
-		start(controller) {
-			controller.enqueue(bytes);
-			controller.close();
-		}
+		promise.then(
+			(value) => {
+				window.clearTimeout(timer);
+				resolve(value);
+			},
+			(err) => {
+				window.clearTimeout(timer);
+				reject(err);
+			},
+		);
 	});
-
-	const decompressedStream = stream.pipeThrough(new DecompressionStream('deflate'));
-	const response = new Response(decompressedStream);
-	return response.text();
 }
 
 export class EmbeddingWorkerBridge {
 	private worker: IWorker | null = null;
 	private workerUrl: string | null = null;
-	private pendingRequests = new Map<
-		string,
-		{ resolve: (embeddings: number[][]) => void; reject: (err: Error) => void }
-	>();
-	private pendingParseRequests = new Map<
-		string,
-		{ resolve: (text: string) => void; reject: (err: Error) => void }
-	>();
+
+	private embedRequests = new PendingRequestManager<number[][]>();
+	private parseRequests = new PendingRequestManager<string>();
+	private embedQueue: SerialQueue<string[], number[][]>;
+
 	private onProgress: EmbeddingProgressCallback | null = null;
 	private isReady = false;
-	private readyPromise: Promise<void> | null = null;
 	private readyResolve: (() => void) | null = null;
 	private readyReject: ((err: Error) => void) | null = null;
-	/** init() 타임아웃 타이머 ID */
-	private initTimeoutId: number | null = null;
 
-	// 요청 큐
-	private embedQueue: Array<{ texts: string[], resolve: (res: number[][]) => void, reject: (err: Error) => void }> = [];
-	private isProcessingQueue = false;
+	constructor() {
+		this.embedQueue = new SerialQueue<string[], number[][]>(async (texts) => {
+			const requestId = generateUUID();
+			return new Promise<number[][]>((resolve, reject) => {
+				this.embedRequests.add(requestId, resolve, reject);
+				this.send({ type: 'embed', requestId, texts });
+			});
+		});
+	}
 
 	// ─── Lifecycle ────────────────────────────────────────────────────────────
 
@@ -87,6 +73,7 @@ export class EmbeddingWorkerBridge {
 	 * 워커를 생성하고 모델을 로드합니다.
 	 * @param modelName   사용할 HuggingFace 모델
 	 * @param cacheDir    모델 캐시 저장 절대 경로
+	 * @param pluginDir   플러그인 로컬 디렉토리 URL (옵션)
 	 * @param onProgress  모델 로딩 진행률 콜백 (0 ~ 1)
 	 */
 	async init(
@@ -99,12 +86,14 @@ export class EmbeddingWorkerBridge {
 
 		this.onProgress = onProgress ?? null;
 
-		let workerCode = '';
+		let workerCode: string;
 		try {
 			workerCode = await decompressWorkerCode(WORKER_COMPRESSED_BASE64);
 		} catch (decompErr) {
 			console.error('[EmbeddingWorker] decompression failed:', decompErr);
-			throw new Error(`워커 코드 압축 해제 실패: ${decompErr instanceof Error ? decompErr.message : String(decompErr)}`);
+			throw new Error(
+				`워커 코드 압축 해제 실패: ${decompErr instanceof Error ? decompErr.message : String(decompErr)}`,
+			);
 		}
 
 		// Electron 환경에서 file:// 절대 경로로 Worker 생성 시 Origin 에러 발생.
@@ -123,36 +112,21 @@ export class EmbeddingWorkerBridge {
 			this.readyReject?.(new Error(`Worker 오류: ${msg}`));
 		});
 
-		// 준비 완료를 기다리는 Promise 세팅
-		this.readyPromise = new Promise<void>((resolve, reject) => {
+		const readyPromise = new Promise<void>((resolve, reject) => {
 			this.readyResolve = resolve;
 			this.readyReject = reject;
 		});
 
-		// 타임아웃: 모델 로딩이 60초를 초과하면 자동 reject
-		this.initTimeoutId = window.setTimeout(() => {
-			this.initTimeoutId = null;
-			this.readyReject?.(
-				new Error(
-					t('uiMessages.ragWorkerTimeout')
-				),
-			);
-		}, INIT_TIMEOUT_MS);
-
 		// 워커에 초기화 요청
 		this.send({ type: 'init', cacheDir, modelName, pluginDir });
 
-		return this.readyPromise;
+		return withTimeout(readyPromise, INIT_TIMEOUT_MS, t('uiMessages.ragWorkerTimeout'));
 	}
 
 	/** 워커를 정리합니다. 플러그인 unload 시 반드시 호출. */
 	terminate(): void {
 		if (!this.worker) return;
-		// 타임아웃 클리어
-		if (this.initTimeoutId) {
-			window.clearTimeout(this.initTimeoutId);
-			this.initTimeoutId = null;
-		}
+
 		this.send({ type: 'terminate' });
 		this.worker.terminate();
 		this.worker = null;
@@ -163,15 +137,10 @@ export class EmbeddingWorkerBridge {
 		}
 
 		this.isReady = false;
-		this.pendingRequests.forEach(({ reject }) =>
-			reject(new Error(t('uiMessages.ragWorkerTerm')))
-		);
-		this.pendingRequests.clear();
 
-		this.pendingParseRequests.forEach(({ reject }) =>
-			reject(new Error(t('uiMessages.ragWorkerTerm')))
-		);
-		this.pendingParseRequests.clear();
+		const termErr = new Error(t('uiMessages.ragWorkerTerm'));
+		this.embedRequests.rejectAll(termErr);
+		this.parseRequests.rejectAll(termErr);
 	}
 
 	get ready(): boolean {
@@ -189,11 +158,7 @@ export class EmbeddingWorkerBridge {
 			throw new Error(t('uiMessages.ragWorkerNotReady'));
 		}
 		if (texts.length === 0) return [];
-
-		return new Promise<number[][]>((resolve, reject) => {
-			this.embedQueue.push({ texts, resolve, reject });
-			void this.processQueue();
-		});
+		return this.embedQueue.enqueue(texts);
 	}
 
 	/**
@@ -205,28 +170,9 @@ export class EmbeddingWorkerBridge {
 		}
 		const requestId = generateUUID();
 		return new Promise<string>((resolve, reject) => {
-			this.pendingParseRequests.set(requestId, { resolve, reject });
+			this.parseRequests.add(requestId, resolve, reject);
 			this.worker!.postMessage({ type: 'parse', requestId, buffer, ext }, [buffer]);
 		});
-	}
-
-	private async processQueue() {
-		if (this.isProcessingQueue || this.embedQueue.length === 0) return;
-		this.isProcessingQueue = true;
-
-		try {
-			while (this.embedQueue.length > 0) {
-				const { texts, resolve, reject } = this.embedQueue.shift()!;
-				const requestId = generateUUID();
-
-				await new Promise<number[][]>((res, rej) => {
-					this.pendingRequests.set(requestId, { resolve: res, reject: rej });
-					this.send({ type: 'embed', requestId, texts });
-				}).then(resolve).catch(reject);
-			}
-		} finally {
-			this.isProcessingQueue = false;
-		}
 	}
 
 	// ─── Internals ────────────────────────────────────────────────────────────
@@ -240,62 +186,44 @@ export class EmbeddingWorkerBridge {
 
 		switch (msg.type) {
 			case 'ready':
-				// 타임아웃 클리어
-				if (this.initTimeoutId) {
-					window.clearTimeout(this.initTimeoutId);
-					this.initTimeoutId = null;
-				}
-				this.isReady = true;
-				this.readyResolve?.();
+				this.handleReady();
 				break;
 
 			case 'progress':
 				this.onProgress?.(msg.progress, msg.status);
 				break;
 
-			case 'result': {
-				const pending = this.pendingRequests.get(msg.requestId);
-				if (pending) {
-					pending.resolve(msg.embeddings);
-					this.pendingRequests.delete(msg.requestId);
-				}
+			case 'result':
+				this.embedRequests.resolve(msg.requestId, msg.embeddings);
 				break;
-			}
 
-			case 'parseResult': {
-				const pending = this.pendingParseRequests.get(msg.requestId);
-				if (pending) {
-					pending.resolve(msg.text);
-					this.pendingParseRequests.delete(msg.requestId);
-				}
+			case 'parseResult':
+				this.parseRequests.resolve(msg.requestId, msg.text);
 				break;
-			}
 
-			case 'error': {
-				const err = new Error(msg.message);
-				if (msg.requestId === 'init') {
-					// init 실패 시 타임아웃 클리어
-					if (this.initTimeoutId) {
-						window.clearTimeout(this.initTimeoutId);
-						this.initTimeoutId = null;
-					}
-					this.readyReject?.(err);
-				} else {
-					const pending = this.pendingRequests.get(msg.requestId);
-					if (pending) {
-						pending.reject(err);
-						this.pendingRequests.delete(msg.requestId);
-					} else {
-						const pendingParse = this.pendingParseRequests.get(msg.requestId);
-						if (pendingParse) {
-							pendingParse.reject(err);
-							this.pendingParseRequests.delete(msg.requestId);
-						}
-					}
-				}
-				console.error('[EmbeddingWorker] error:', msg.message);
+			case 'error':
+				this.handleError(msg.requestId, msg.message);
 				break;
+		}
+	}
+
+	private handleReady(): void {
+		this.isReady = true;
+		this.readyResolve?.();
+	}
+
+	private handleError(requestId: string, message: string): void {
+		const err = new Error(message);
+
+		if (requestId === 'init') {
+			this.readyReject?.(err);
+		} else {
+			const handledByEmbed = this.embedRequests.reject(requestId, err);
+			if (!handledByEmbed) {
+				this.parseRequests.reject(requestId, err);
 			}
 		}
+
+		console.error('[EmbeddingWorker] error:', message);
 	}
 }

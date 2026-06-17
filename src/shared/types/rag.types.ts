@@ -129,3 +129,12 @@ export type WorkerResponse =
 			message: string;
 	  };
 
+// ─── Worker Abstraction ──────────────────────────────────────────────────────
+
+/** 메인 스레드와 워커 스레드 간 공통 인터페이스 */
+export interface IWorker {
+	addEventListener(type: string, listener: (evt: MessageEvent) => void): void;
+	terminate(): void;
+	postMessage(message: unknown, transfer?: Transferable[]): void;
+}
+
