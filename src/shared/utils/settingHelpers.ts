@@ -131,7 +131,7 @@ export interface ComposingSafeHandler {
 }
 
 export function createComposingSafeTextHandler(
-	inputEl: HTMLInputElement,
+	inputEl: HTMLInputElement | HTMLTextAreaElement,
 	onCommit: (value: string) => void,
 ): ComposingSafeHandler {
 	let composing = false;

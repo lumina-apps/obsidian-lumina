@@ -33,3 +33,13 @@ export function renderDescriptionLines(
 		}
 	}
 }
+
+/**
+ * 중앙 정렬된 버튼 컨테이너를 생성합니다.
+ * display: flex, justify-content: center, margin: 10px 0
+ */
+export function createButtonContainer(el: HTMLElement, cls: string): HTMLDivElement {
+	const container = el.createDiv({ cls });
+	container.setCssStyles({ display: 'flex', justifyContent: 'center', margin: '10px 0' });
+	return container;
+}

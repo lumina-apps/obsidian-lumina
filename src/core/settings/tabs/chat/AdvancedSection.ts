@@ -1,0 +1,111 @@
+import { Setting } from 'obsidian';
+import type { LuminaSettingTab } from '../../settingTab';
+import { wrapAsync, addSliderWithInput } from '../../settingTab';
+import { t } from '../../../../shared/locales/helpers';
+
+export function renderAdvancedSection(tab: LuminaSettingTab, el: HTMLElement): void {
+	const s = tab.plugin.settings.chat;
+
+	tab.advancedLabel(el);
+
+	new Setting(el)
+		.setName(t('settings.chat.memoryLimit.limitType'))
+		.setDesc(t('settings.chat.memoryLimit.desc'))
+		.addDropdown(drop => {
+			drop
+				.addOption('turns', t('settings.chat.memoryLimit.turns'))
+				.addOption('tokens', t('settings.chat.memoryLimit.tokens'))
+				.setValue(s.useTokenLimit ? 'tokens' : 'turns')
+				.onChange(async (val) => {
+					s.useTokenLimit = val === 'tokens';
+					await tab.saveAndSync();
+					tab.refreshDisplay();
+				});
+		});
+
+	if (!s.useTokenLimit) {
+		addSliderWithInput(
+			new Setting(el)
+				.setName(t('settings.chat.memoryLimit.turnsLabel'))
+				.setDesc(t('settings.chat.memoryLimit.turnsDesc')),
+			{ min: 1, max: 15, step: 1, value: s.contextWindowTurns },
+			wrapAsync(async (val) => { s.contextWindowTurns = val; await tab.saveAndSync(); })
+		);
+	} else {
+		new Setting(el)
+			.setName(t('settings.chat.memoryLimit.maxTokens'))
+			.addText(text => {
+				let composing = false;
+				const inputEl = text.inputEl;
+				inputEl.type = 'number';
+				inputEl.addEventListener('compositionstart', () => { composing = true; });
+				inputEl.addEventListener('compositionend', () => {
+					composing = false;
+					const n = parseInt(inputEl.value);
+					if (!isNaN(n)) { s.maxContextTokens = n; void tab.saveAndSync(); }
+				});
+				text.setValue(String(s.maxContextTokens)).onChange(wrapAsync(async (val) => {
+					if (composing) return;
+					const n = parseInt(val);
+					if (!isNaN(n)) { s.maxContextTokens = n; await tab.saveAndSync(); }
+				}));
+			});
+	}
+
+	addSliderWithInput(
+		new Setting(el)
+			.setName(t('settings.chat.modelParams.tempLabel'))
+			.setDesc(t('settings.chat.modelParams.tempDesc')),
+		{ min: 0, max: 2, step: 0.1, value: s.temperature },
+		wrapAsync(async (val) => { s.temperature = val; await tab.saveAndSync(); })
+	);
+
+	new Setting(el)
+		.setName(t('settings.chat.modelParams.maxOutput'))
+		.addText(text => {
+			let composing = false;
+			const inputEl = text.inputEl;
+			inputEl.type = 'number';
+			inputEl.addEventListener('compositionstart', () => { composing = true; });
+			inputEl.addEventListener('compositionend', () => {
+				composing = false;
+				const n = parseInt(inputEl.value);
+				if (!isNaN(n)) { s.maxOutputTokens = n; void tab.saveAndSync(); }
+			});
+			text.setValue(String(s.maxOutputTokens)).onChange(wrapAsync(async (val) => {
+				if (composing) return;
+				const n = parseInt(val);
+				if (!isNaN(n)) { s.maxOutputTokens = n; await tab.saveAndSync(); }
+			}));
+		});
+
+	new Setting(el)
+		.setName(t('settings.chat.streaming.name'))
+		.setDesc(t('settings.chat.streaming.desc'))
+		.addToggle(toggle => {
+			toggle.setValue(s.streaming).onChange(wrapAsync(async (val) => {
+				s.streaming = val;
+				await tab.saveAndSync();
+			}));
+		});
+
+	new Setting(el)
+		.setName(t('settings.chat.modelParams.responseLang'))
+		.setDesc(t('settings.chat.modelParams.responseLangDesc'))
+		.addDropdown(drop => {
+			drop
+				.addOption('auto', t('settings.chat.modelParams.responseLangAuto'))
+				.addOption('ko', t('settings.connections.language.option.ko'))
+				.addOption('en', t('settings.connections.language.option.en'))
+				.addOption('ja', t('settings.connections.language.option.ja'))
+				.addOption('zh', '中文')
+				.addOption('fr', 'Français')
+				.addOption('de', 'Deutsch')
+				.addOption('es', 'Español')
+				.setValue(s.responseLanguage)
+				.onChange(wrapAsync(async (val) => {
+					s.responseLanguage = val as typeof s.responseLanguage;
+					await tab.saveAndSync();
+				}));
+		});
+}
