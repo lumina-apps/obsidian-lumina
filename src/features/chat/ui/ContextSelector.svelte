@@ -1,9 +1,28 @@
 <script lang="ts">
-	import { setIcon, MarkdownView } from "obsidian";
+	import { setIcon } from "obsidian";
 	import type LuminaPlugin from "../../../main";
 	import type { ContextAttachment } from "../../../shared/types/chat.types";
+	import type { TFile } from "obsidian";
 	import { tick } from "svelte";
 	import { tStore } from "../../../shared/locales/index";
+	import { getAttachmentIcon } from "../utils/fileAttachmentUtils";
+	import {
+		buildCategoryContext,
+		buildCategories,
+		filterCategories,
+		isImmediateCategory,
+		type CategoryItem,
+	} from "./lib/contextSelector/categories";
+	import {
+		buildCategoryItems,
+		filterItems,
+	} from "./lib/contextSelector/items";
+	import {
+		createKeyboardNavState,
+		createKeyboardNavHandler,
+		scrollActiveIntoView,
+		type KeyboardNavState,
+	} from "./lib/contextSelector/keyboardNav";
 
 	let {
 		plugin,
@@ -24,229 +43,50 @@
 	let urlText = $state("");
 
 	// Navigation state: 'categories' | 'items' | 'url_input'
-	let view = $state<'categories' | 'items' | 'url_input'>('categories');
+	let view = $state<"categories" | "items" | "url_input">("categories");
 	let activeCategory = $state<string | null>(null);
 
-	let isKeyboardNavigating = false;
-	let keyboardNavTimer: ReturnType<typeof setTimeout> | null = null;
+	// Keyboard navigation state (shared utility)
+	let navState = $state<KeyboardNavState>(createKeyboardNavState());
 
-	function setKeyboardNav() {
-		isKeyboardNavigating = true;
-		if (keyboardNavTimer) clearTimeout(keyboardNavTimer);
-		keyboardNavTimer = setTimeout(() => {
-			isKeyboardNavigating = false;
-		}, 150);
-	}
+	// ── Category context (built once, reused) ─────────────────────────────────
+	const context = $derived(buildCategoryContext(plugin));
+	const files: TFile[] = $derived(context.files);
+	const tagsInfo = $derived(context.tagsInfo);
 
 	// ── Category definitions ──────────────────────────────────────────────────
-	interface CategoryItem {
-		id: string;
-		icon: string;
-		label: string;
-		show: boolean;
-		type: ContextAttachment['type'] | 'category';
-	}
-
-	const categories = $derived.by(() => {
-		const cats: CategoryItem[] = [];
-
-		// Active Note
-		const activeFile = plugin.app.workspace.getActiveFile();
-		if (activeFile) {
-			cats.push({
-				id: 'active_note',
-				icon: 'file-edit',
-				label: $tStore('settings.chat.context.categoryActiveNote'),
-				show: true,
-				type: 'active_note'
-			});
-		}
-
-		// Selected Text
-		const activeView = plugin.app.workspace.getActiveViewOfType(MarkdownView);
-		// @ts-ignore
-		const selection = activeView?.editor?.getSelection();
-		if (selection) {
-			cats.push({
-				id: 'selection',
-				icon: 'mouse-pointer-2',
-				label: $tStore('settings.chat.context.categorySelection'),
-				show: true,
-				type: 'selection'
-			});
-		}
-
-		// Folder
-		cats.push({
-			id: 'folder',
-			icon: 'folder',
-			label: $tStore('settings.chat.context.categoryFolder'),
-			show: true,
-			type: 'folder'
-		});
-
-		// File
-		cats.push({
-			id: 'file',
-			icon: 'file-text',
-			label: $tStore('settings.chat.context.categoryFile'),
-			show: true,
-			type: 'file'
-		});
-
-		// Tag
-		// @ts-ignore
-		const tagsInfo = plugin.app.metadataCache.getTags();
-		if (tagsInfo && Object.keys(tagsInfo).length > 0) {
-			cats.push({
-				id: 'tag',
-				icon: 'hash',
-				label: $tStore('settings.chat.context.categoryTag'),
-				show: true,
-				type: 'tag'
-			});
-		}
-
-		// Canvas - check if any canvas files exist
-		const files = plugin.app.vault.getFiles();
-		const hasCanvas = files.some((f: any) => f.extension === 'canvas');
-		if (hasCanvas) {
-			cats.push({
-				id: 'canvas',
-				icon: 'layout',
-				label: $tStore('settings.chat.context.categoryCanvas'),
-				show: true,
-				type: 'canvas'
-			});
-		}
-
-		// URL
-		cats.push({
-			id: 'url',
-			icon: 'globe',
-			label: $tStore('settings.chat.context.categoryUrl'),
-			show: true,
-			type: 'url'
-		});
-
-		return cats;
-	});
+	const categories = $derived(
+		buildCategories(context, (key) => $tStore(key)),
+	);
 
 	// ── Category filtering ────────────────────────────────────────────────────
-	const filteredCategories = $derived.by(() => {
-		const query = searchQuery.toLowerCase().trim();
-		if (!query) return categories;
-		return categories.filter(cat =>
-			cat.label.toLowerCase().includes(query)
-		);
-	});
+	const filteredCategories = $derived(
+		filterCategories(categories, searchQuery),
+	);
 
 	// ── Items for selected category ───────────────────────────────────────────
 	const categoryItems = $derived.by(() => {
 		if (!activeCategory) return [];
-
-		const files = plugin.app.vault.getFiles();
-		const query = searchQuery.toLowerCase().trim();
-		const items: ContextAttachment[] = [];
-
-		switch (activeCategory) {
-			case 'active_note': {
-				const activeFile = plugin.app.workspace.getActiveFile();
-				if (activeFile) {
-					items.push({
-						type: 'active_note',
-						path: activeFile.path,
-						name: $tStore('settings.chat.context.activeNote', { name: activeFile.basename })
-					});
-				}
-				break;
-			}
-			case 'selection': {
-				const activeView = plugin.app.workspace.getActiveViewOfType(MarkdownView);
-				// @ts-ignore
-				const sel = activeView?.editor?.getSelection();
-				if (sel) {
-					items.push({
-						type: 'selection',
-						path: 'selection',
-						name: $tStore('settings.chat.context.selectedText', { length: sel.length })
-					});
-				}
-				break;
-			}
-			case 'folder': {
-				const folders = new Set<string>();
-				files.forEach((f: any) => {
-					if (f.parent && f.parent.path !== "/") {
-						folders.add(f.parent.path);
-					}
-				});
-				folders.forEach(folderPath => {
-					items.push({
-						type: 'folder',
-						path: folderPath,
-						name: folderPath
-					});
-				});
-				break;
-			}
-			case 'file': {
-				files.forEach((f: any) => {
-					if (f.extension !== 'canvas') {
-						items.push({
-							type: 'file',
-							path: f.path,
-							name: f.basename
-						});
-					}
-				});
-				break;
-			}
-			case 'canvas': {
-				files.forEach((f: any) => {
-					if (f.extension === 'canvas') {
-						items.push({
-							type: 'canvas',
-							path: f.path,
-							name: f.basename
-						});
-					}
-				});
-				break;
-			}
-			case 'tag': {
-				// @ts-ignore
-				const tagsInfo = plugin.app.metadataCache.getTags();
-				if (tagsInfo) {
-					Object.keys(tagsInfo).forEach(t => {
-						items.push({
-							type: 'tag',
-							path: t,
-							name: t
-						});
-					});
-				}
-				break;
-			}
-		}
-
-		if (!query) return items.slice(0, 50);
-
-		return items.filter(item =>
-			item.name.toLowerCase().includes(query) || item.path.toLowerCase().includes(query)
-		).slice(0, 50);
+		const items = buildCategoryItems(
+			activeCategory,
+			files,
+			tagsInfo,
+			plugin,
+			(key, vars) => $tStore(key, vars as Record<string, string>),
+		);
+		return filterItems(items, searchQuery);
 	});
 
 	// Total selectable items count (categories or items depending on view)
 	const selectableCount = $derived(
-		view === 'categories' ? filteredCategories.length : categoryItems.length
+		view === "categories" ? filteredCategories.length : categoryItems.length,
 	);
 
 	// ── Actions ───────────────────────────────────────────────────────────────
 	function selectCategory(cat: CategoryItem) {
-		if (cat.id === 'url') {
-			view = 'url_input';
-			activeCategory = 'url';
+		if (cat.id === "url") {
+			view = "url_input";
+			activeCategory = "url";
 			urlText = searchQuery;
 			activeIndex = 0;
 			tick().then(() => urlInputEl?.focus());
@@ -254,53 +94,28 @@
 		}
 
 		// For single-item categories (active_note, selection), select immediately
-		if (cat.id === 'active_note' || cat.id === 'selection') {
-			const items = getImmediateItem(cat.id);
-			if (items) {
-				selectItem(items);
+		if (isImmediateCategory(cat.id)) {
+			const items = buildCategoryItems(
+				cat.id,
+				files,
+				tagsInfo,
+				plugin,
+				(key, vars) => $tStore(key, vars as Record<string, string>),
+			);
+			if (items.length > 0) {
+				selectItem(items[0]);
 				return;
 			}
 		}
 
 		// Navigate to items view
-		view = 'items';
+		view = "items";
 		activeCategory = cat.id;
 		activeIndex = 0;
 	}
 
-	function getImmediateItem(id: string): ContextAttachment | null {
-		const files = plugin.app.vault.getFiles();
-		switch (id) {
-			case 'active_note': {
-				const activeFile = plugin.app.workspace.getActiveFile();
-				if (activeFile) {
-					return {
-						type: 'active_note',
-						path: activeFile.path,
-						name: $tStore('settings.chat.context.activeNote', { name: activeFile.basename })
-					};
-				}
-				return null;
-			}
-			case 'selection': {
-				const activeView = plugin.app.workspace.getActiveViewOfType(MarkdownView);
-				// @ts-ignore
-				const sel = activeView?.editor?.getSelection();
-				if (sel) {
-					return {
-						type: 'selection',
-						path: 'selection',
-						name: $tStore('settings.chat.context.selectedText', { length: sel.length })
-					};
-				}
-				return null;
-			}
-		}
-		return null;
-	}
-
 	function goBack() {
-		view = 'categories';
+		view = "categories";
 		activeCategory = null;
 		activeIndex = 0;
 	}
@@ -310,98 +125,91 @@
 		onClose();
 	}
 
+	function isValidUrl(text: string): boolean {
+		try {
+			const url = new URL(text);
+			return url.protocol === "http:" || url.protocol === "https:";
+		} catch {
+			return false;
+		}
+	}
+
 	function submitUrl() {
 		const trimmed = urlText.trim();
 		if (!trimmed) return;
 
-		if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
-			urlText = 'https://' + trimmed;
+		if (!isValidUrl(trimmed)) {
+			// Try prepending https:// only if the text doesn't already look like a URL
+			if (!trimmed.includes("://")) {
+				const withHttps = `https://${trimmed}`;
+				if (isValidUrl(withHttps)) {
+					urlText = withHttps;
+					return;
+				}
+			}
 			return;
 		}
 
 		selectItem({
-			type: 'url',
+			type: "url",
 			path: trimmed,
-			name: trimmed
+			name: trimmed,
 		});
 	}
 
 	function handleUrlKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter') {
+		if (e.key === "Enter") {
 			e.preventDefault();
 			submitUrl();
-		} else if (e.key === 'Escape') {
+		} else if (e.key === "Escape") {
 			e.preventDefault();
-			view = 'categories';
+			view = "categories";
 			activeCategory = null;
 		}
 	}
 
 	// ── Icon helper ───────────────────────────────────────────────────────────
-	function getIcon(type: string) {
-		switch (type) {
-			case 'file': return 'file-text';
-			case 'folder': return 'folder';
-			case 'active_note': return 'file-edit';
-			case 'selection': return 'mouse-pointer-2';
-			case 'canvas': return 'layout';
-			case 'tag': return 'hash';
-			case 'url': return 'globe';
-			default: return 'file';
-		}
-	}
-
 	function icon(node: HTMLElement, iconId: string) {
 		setIcon(node, iconId);
 	}
 
-	// ── Keyboard handling ─────────────────────────────────────────────────────
-	function handleGlobalKeydown(e: KeyboardEvent) {
-		if (view === 'url_input') return; // handled by url input
+	// ── Keyboard handling (using shared utility) ──────────────────────────────
+	function handleSelectCurrent() {
+		if (view === "categories") {
+			const cat = filteredCategories[activeIndex];
+			if (cat) selectCategory(cat);
+		} else if (view === "items") {
+			const item = categoryItems[activeIndex];
+			if (item) selectItem(item);
+		}
+	}
 
-		if (e.key === 'ArrowDown') {
-			e.preventDefault();
-			if (selectableCount > 0) {
-				setKeyboardNav();
-				activeIndex = (activeIndex + 1) % selectableCount;
-				tick().then(() => scrollIntoView());
-			}
-		} else if (e.key === 'ArrowUp') {
-			e.preventDefault();
-			if (selectableCount > 0) {
-				setKeyboardNav();
-				activeIndex = (activeIndex - 1 + selectableCount) % selectableCount;
-				tick().then(() => scrollIntoView());
-			}
-		} else if (e.key === 'Enter') {
-			e.preventDefault();
-			if (view === 'categories') {
-				const cat = filteredCategories[activeIndex];
-				if (cat) selectCategory(cat);
-			} else {
-				const item = categoryItems[activeIndex];
-				if (item) selectItem(item);
-			}
-		} else if (e.key === 'Escape') {
-			e.preventDefault();
-			if (view === 'items') {
-				goBack();
-			} else {
-				onClose();
-			}
-		} else if (e.key === 'Backspace' && view === 'items' && !searchQuery) {
-			e.preventDefault();
+	function handleEscape() {
+		if (view === "items") {
+			goBack();
+		} else {
+			onClose();
+		}
+	}
+
+	function handleBack() {
+		if (view === "items" && !searchQuery) {
 			goBack();
 		}
 	}
 
-	function scrollIntoView() {
-		if (!listEl) return;
-		const activeEl = listEl.querySelector(".is-active") as HTMLElement;
-		if (activeEl) {
-			activeEl.scrollIntoView({ block: "nearest" });
-		}
-	}
+	const handleGlobalKeydown = createKeyboardNavHandler({
+		selectableCount: () => selectableCount,
+		activeIndex: {
+			get: () => activeIndex,
+			set: (v: number) => { activeIndex = v; },
+		},
+		onSelectCurrent: handleSelectCurrent,
+		onEscape: handleEscape,
+		onBack: handleBack,
+		scrollIntoView: () => scrollActiveIntoView(listEl),
+		navState,
+	});
 
 	function handleClickOutside(e: MouseEvent) {
 		if (containerEl && !containerEl.contains(e.target as Node)) {
@@ -428,10 +236,10 @@
 	// ── Check for URL pattern on search query ─────────────────────────────────
 	$effect(() => {
 		const q = searchQuery.trim();
-		if (view === 'categories' && (q.startsWith('http://') || q.startsWith('https://'))) {
+		if (view === "categories" && (q.startsWith("http://") || q.startsWith("https://"))) {
 			// Auto-switch to URL input mode
-			view = 'url_input';
-			activeCategory = 'url';
+			view = "url_input";
+			activeCategory = "url";
 			urlText = q;
 			tick().then(() => urlInputEl?.focus());
 		}
@@ -452,8 +260,8 @@
 						class="lumina-context-selector__item lumina-context-selector__item--category"
 						class:is-active={i === activeIndex}
 						onclick={() => selectCategory(cat)}
-						onmouseenter={() => { if (!isKeyboardNavigating) activeIndex = i; }}
-						onmousemove={() => { if (!isKeyboardNavigating && activeIndex !== i) activeIndex = i; }}
+						onmouseenter={() => { if (!navState.isKeyboardNavigating) activeIndex = i; }}
+						onmousemove={() => { if (!navState.isKeyboardNavigating && activeIndex !== i) activeIndex = i; }}
 						type="button"
 					>
 						<span class="lumina-context-selector__item-icon" use:icon={cat.icon}></span>
@@ -481,11 +289,11 @@
 						class="lumina-context-selector__item"
 						class:is-active={i === activeIndex}
 						onclick={() => selectItem(item)}
-						onmouseenter={() => { if (!isKeyboardNavigating) activeIndex = i; }}
-						onmousemove={() => { if (!isKeyboardNavigating && activeIndex !== i) activeIndex = i; }}
+						onmouseenter={() => { if (!navState.isKeyboardNavigating) activeIndex = i; }}
+						onmousemove={() => { if (!navState.isKeyboardNavigating && activeIndex !== i) activeIndex = i; }}
 						type="button"
 					>
-						<span class="lumina-context-selector__item-icon" use:icon={getIcon(item.type)}></span>
+						<span class="lumina-context-selector__item-icon" use:icon={getAttachmentIcon(item.type)}></span>
 						<div class="lumina-context-selector__item-info">
 							<span class="lumina-context-selector__item-name">{item.name}</span>
 							{#if item.type === 'file' || item.type === 'folder' || item.type === 'canvas'}
