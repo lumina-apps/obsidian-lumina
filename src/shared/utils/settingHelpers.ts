@@ -16,6 +16,12 @@
  *                            REASONING_MODEL_NOTICE_DURATION,
  *                            addSliderWithInput, addModelSelector,
  *                            FuzzyModelSuggestModal, ModelSuggestItem
+ *   - fuzzyModelSuggestModal.ts → FUZZY_MODAL_THRESHOLD, FuzzyModelSuggestModal,
+ *                                 addModelSelector
+ *   - connectionNoticeUtils.ts  → showConnectionSuccess, showSyncFailNotice,
+ *                                 showDisconnectedNotice, showConnectedNotice,
+ *                                 getConnectionStatus, refreshAfterConnectionToggle,
+ *                                 refreshAfterMcpConnectionToggle
  */
 
 // Async
@@ -35,6 +41,6 @@ export type { ComposingSafeHandler } from './imeUtils';
 // DOM
 export { createFeatureCard, createMultilineDesc } from './domUtils';
 
-// Settings UI
+// Settings UI (re-exported from settingsUIHelpers → fuzzyModelSuggestModal / connectionNoticeUtils)
 export { FUZZY_MODAL_THRESHOLD, MCP_REFRESH_DELAY, REASONING_MODEL_NOTICE_DURATION, addSliderWithInput, addModelSelector, FuzzyModelSuggestModal } from './settingsUIHelpers';
 export type { ModelSuggestItem } from './settingsUIHelpers';
