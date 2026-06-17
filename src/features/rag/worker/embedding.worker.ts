@@ -1,5 +1,3 @@
-console.log("HELLO_WORLD_WORKER");
-
 /**
  * embedding.worker.ts
  *
@@ -69,8 +67,6 @@ const wasmConfig: EnvWasmConfig = {
 };
 
 customEnv.wasm = wasmConfig;
-
-console.log(`[EmbeddingWorker] WASM config: simd=true, numThreads=${numThreads}, SharedArrayBuffer=${hasSharedArrayBuffer}`);
 
 // ─── Tokenizer Hotfix ─────────────────────────────────────────────────────────
 // ibm-granite 97m-r2 모델의 tokenizer.json 내 merges가 배열의 배열 형식으로 되어 있어

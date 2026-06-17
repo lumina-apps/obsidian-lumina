@@ -71,7 +71,6 @@ export async function loadIndex(
 			needsFullReindex: false,
 		};
 	} catch {
-		debugLogger.logSystem('rag', '인덱스 로드 실패 (최초 실행이면 정상)');
 		return emptyResult;
 	}
 }
@@ -183,13 +182,11 @@ export async function loadCheckpoint(app: App): Promise<IndexingCheckpoint | nul
 			typeof checkpoint.totalFiles !== 'number' ||
 			typeof checkpoint.startedAt !== 'number'
 		) {
-			debugLogger.logSystem('rag', '체크포인트 데이터 손상 → 무시');
 			return null;
 		}
 
 		return checkpoint;
 	} catch {
-		debugLogger.logSystem('rag', '체크포인트 로드 실패 (없으면 정상)');
 		return null;
 	}
 }

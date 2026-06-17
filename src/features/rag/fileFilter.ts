@@ -39,7 +39,6 @@ export function getTargetFiles(
 		if (!isIncluded(f.path, includedPaths)) return false;
 		if (isExcluded(f.path, finalExcludedPaths)) return false;
 		if (maxSizeBytes > 0 && f.stat.size > maxSizeBytes) {
-			debugLogger.logSystem('rag', `대용량 파일 제외됨 (${(f.stat.size / (1024 * 1024)).toFixed(1)}MB > ${settings.maxFileSizeMB}MB): ${f.path}`);
 			return false;
 		}
 		return true;

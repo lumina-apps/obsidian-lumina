@@ -14,6 +14,7 @@ import { t } from '../../shared/locales/helpers';
 import { WORKER_COMPRESSED_BASE64 } from './worker/workerCode';
 import { decompressWorkerCode } from './utils/workerCodec';
 import { PendingRequestManager } from './utils/PendingRequestManager';
+import { debugLogger } from '../../shared/debugLogger';
 
 export type EmbeddingProgressCallback = (progress: number, status: string) => void;
 
@@ -123,7 +124,6 @@ export class EmbeddingWorkerBridge {
 		const hwConcurrency = (typeof navigator !== 'undefined' && navigator.hardwareConcurrency)
 			? navigator.hardwareConcurrency : 4;
 		this.workerCount = Math.max(1, Math.min(4, Math.floor(hwConcurrency / 2)));
-		console.log(`[EmbeddingWorker] Creating ${this.workerCount} worker instances`);
 
 		const blob = new Blob([workerCode], { type: 'application/javascript' });
 		const WorkerCtor = window.Worker as unknown as new (url: string) => IWorker;
@@ -180,7 +180,6 @@ export class EmbeddingWorkerBridge {
 
 		this.isReady = true;
 		this.initPromiseResolve?.();
-		console.log(`[EmbeddingWorker] All ${this.workerCount} workers ready`);
 	}
 
 	/** 모든 Worker 정리 */
@@ -439,7 +438,6 @@ export class EmbeddingWorkerBridge {
 			case 'ready':
 				inst.isReady = true;
 				inst.readyResolve?.();
-				console.log(`[EmbeddingWorker] Worker ready (${this.workers.filter(w => w.isReady).length}/${this.workers.length})`);
 				break;
 
 			case 'progress':
