@@ -16,13 +16,8 @@ import type { ChatMessage, ChatOptions, ToolCall, TokenUsage, ILLMProvider } fro
 import type { ChatSettings } from '../../core/settings/settings.types';
 import type { McpManager } from '../../core/mcp/mcpManager';
 import { appendChunk, syncMessageContent } from '../../core/store/chatStore';
-import { debugLogger as originalDebugLogger } from '../../shared/debugLogger';
+import { debugLogger } from '../../shared/debugLogger';
 import { parseTextToolCalls } from './utils/textToolParser';
-
-interface IDebugLogger {
-	logMcp(action: string, message: string, data?: unknown): void;
-}
-const debugLogger = originalDebugLogger as unknown as IDebugLogger;
 
 const MAX_TOOL_RESULT_CHARS = 4000;
 

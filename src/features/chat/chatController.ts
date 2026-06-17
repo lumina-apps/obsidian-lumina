@@ -13,8 +13,13 @@
  *   - 첨부파일 처리 → ChatAttachmentHandler.buildAttachmentContext()로 위임
  *   - MCP 툴 루프 → agentLoop.ts의 runAgentLoop()로 위임
  *   - isTokenLimit 중복 → isTokenLimitReached() 헬퍼 공유 사용
- *   - RAG shouldSearchRag 결정 → resolveRagSearchFlag() 순수 함수로 추출
+ *   - RAG shouldSearchRag 결정 → ragSearchHelper.ts의 resolveRagSearchFlag()로 추출
  *   - buildTextToolPrompt, parseTextToolCalls → textToolParser.ts로 분리
+ *   - collectMcpTools, injectToolPrompts → mcpToolHelper.ts로 추출
+ *   - performRagSearch, resolveRagSearchFlag → ragSearchHelper.ts로 추출
+ *   - injectMultimodalImages → multimodalHelper.ts로 추출
+ *   - debugLogger 타입 우회 제거 (IDebugLogger 제거)
+ *   - getActiveNoteContext() deprecated 메서드 제거
  */
 
 import { Notice, type App } from 'obsidian';
@@ -23,14 +28,12 @@ import type LuminaPlugin from '../../main';
 import { createProvider, isLocalProvider } from '../../core/llm-providers/index';
 import { formatLlmError } from '../../core/llm-providers/utils';
 import { buildMessages } from './promptBuilder';
-import { searchVault, formatRagContext } from '../rag/search';
 import { VISION_UNSUPPORTED_PROVIDERS, PROVIDER_LABELS } from '../../shared/types/settings.types';
 import {
 	addMessage,
 	appendChunk,
 	setMessageStreaming,
 	setMessageError,
-	setMessageSources,
 	setMessageTokenUsage,
 	syncMessageContent,
 	isLoading,
@@ -45,28 +48,29 @@ import { get } from 'svelte/store';
 import { indexingState } from '../../core/store/ragStore';
 import { saveSession, generateTitle, loadSessionsList, loadSession, deleteSession } from './history';
 import type { UIChatMessage, ChatSession, ContextAttachment } from '../../shared/types/chat.types';
-import type { ChatOptions, ChatMessage, ToolDefinition, MultiModalContent } from '../../shared/types/llm.types';
-import type { McpTool } from '../../core/mcp/mcpClient';
-import { debugLogger as originalDebugLogger } from '../../shared/debugLogger';
-
-interface IDebugLogger {
-	logMcp(action: string, message: string, data?: unknown): void;
-	logRequest(params: unknown): string;
-	logResponse(requestId: string, params: unknown): void;
-	logError(domain: string, error: unknown): void;
-	logSystem(event: string, message: string, meta?: unknown): void;
-	logRagSearch(params: unknown): void;
-}
-const debugLogger = originalDebugLogger as unknown as IDebugLogger;
+import type { ChatOptions, ChatMessage, ToolDefinition, TokenUsage } from '../../shared/types/llm.types';
+import type { LLMProviderConfig } from '../../shared/types/settings.types';
+import { debugLogger } from '../../shared/debugLogger';
 import type { RagChunkMeta } from '../../shared/types/debug.types';
 import { ChatAttachmentHandler } from './utils/ChatAttachmentHandler';
 import { calculateEstimatedCost } from '../../shared/pricing';
 import { runAgentLoop, isTokenLimitReached } from './agentLoop';
-import { buildTextToolPrompt } from './utils/textToolParser';
-import type { TokenUsage } from '../../shared/types/llm.types';
-import type { RagSettings } from '../../core/settings/settings.types';
+import { resolveRagSearchFlag, performRagSearch } from './utils/ragSearchHelper';
+import { collectMcpTools, injectToolPrompts } from './utils/mcpToolHelper';
+import { injectMultimodalImages } from './utils/multimodalHelper';
 
+// ─── Internal types ───────────────────────────────────────────────────────────
 
+/** resolveContext() → executeLlmCall() 간 전달용 컨텍스트 번들 */
+interface ResolvedContext {
+	llmMessages: ChatMessage[];
+	ragChunksForLog: RagChunkMeta[] | undefined;
+	useTextTools: boolean;
+	mcpTools: ToolDefinition[];
+	toolServerMap: Record<string, string>;
+}
+
+// ─── ChatController ───────────────────────────────────────────────────────────
 
 export class ChatController {
 	private app: App;
@@ -80,13 +84,6 @@ export class ChatController {
 	/**
 	 * 사용자 메시지를 전송하고 스트리밍으로 응답을 받습니다.
 	 * 메시지 추가 / 스트리밍 업데이트 / 완료 처리를 모두 chatStore에 직접 반영.
-	 *
-	 * @param userText     사용자 입력 텍스트
-	 * @param attachments  컨텍스트 첨부파일 목록
-	 * @param providerId   사용할 프로바이더 ID
-	 * @param modelId      사용할 모델 ID
-	 * @param options      RAG/활성 노트 포함 여부
-	 * @param signal       AbortSignal (취소용)
 	 */
 	async sendMessage(
 		userText: string,
@@ -96,22 +93,16 @@ export class ChatController {
 		options?: { useRagContext?: boolean; includeActiveNote?: boolean },
 		signal?: AbortSignal,
 	): Promise<void> {
-		const { connections, chat, rag } = this.plugin.settings;
+		const { chat, rag, connections } = this.plugin.settings;
 
 		const providerConfig = connections.providers.find(p => p.id === providerId);
-		const resolvedModelId = providerConfig?.isVerified ? (modelId || providerConfig.availableModels[0] || '') : '';
-
-		// 활성 노트를 attachments에 추가할지 판단.
-		// RAG가 글로벌로 꺼져 있으면 includeActiveNote 토글 상태와 무관하게 주입을 건너뜀.
-		// (active note 주입은 RAG 컨텍스트 시스템의 일부로 취급)
-		const shouldIncludeActiveNote =
-			connections.ragEnabled && (options?.includeActiveNote ?? rag.includeActiveNote);
-		const updatedAttachments = await this.resolveAttachmentsWithActiveNote(
-			attachments,
-			shouldIncludeActiveNote,
-		);
 
 		// ── 1. 사용자 메시지를 store에 추가 ──────────────────────────────────
+		const updatedAttachments = await this.resolveAttachmentsWithActiveNote(
+			attachments,
+			connections.ragEnabled && (options?.includeActiveNote ?? rag.includeActiveNote),
+		);
+
 		const userMsg: UIChatMessage = {
 			id: crypto.randomUUID(),
 			role: 'user',
@@ -122,7 +113,8 @@ export class ChatController {
 		};
 		addMessage(userMsg);
 
-		// ── 2. 어시스턴트 placeholder 추가 ──────────────────────────────────
+		// ── 2. 모델 검증 & 어시스턴트 placeholder 추가 ─────────────────────
+		const resolvedModelId = this.resolveModelId(providerConfig, modelId);
 		const assistantId = crypto.randomUUID();
 		addMessage({
 			id: assistantId,
@@ -151,148 +143,48 @@ export class ChatController {
 				m => m.id !== userMsg.id && m.id !== assistantId,
 			);
 
-			// ── 5. 컨텍스트 구성 (첨부파일 + 활성 노트 + RAG 검색) ──────────────────────
-			// 활성 노트는 resolveAttachmentsWithActiveNote()에서 이미 updatedAttachments에
-			// active_note 타입으로 추가됐고, buildAttachmentContext()가 단일 경로로 처리한다.
-			// 별도 getActiveNoteContext() 호출은 제거하여 이중 주입 경로를 통합했음.
-			const { attachmentContext, multimodalImages } =
-				await ChatAttachmentHandler.buildAttachmentContext(this.app, updatedAttachments, this.plugin);
+			// ── 5. 컨텍스트 & LLM 메시지 구성 ─────────────────────────────────
+			const ctx = await this.resolveContext(
+				userText,
+				updatedAttachments,
+				history,
+				providerConfig,
+				resolvedModelId,
+				chat,
+				rag,
+				connections.ragEnabled,
+				options?.useRagContext,
+				assistantId,
+			);
 
-			let ragContext: string | undefined = attachmentContext || undefined;
+			// ── 6. LLM 호출 ────────────────────────────────────────────────────
+			const { fullResponse, tokenUsage, hasTokenLimitBeenHit } =
+				await this.executeLlmCall(ctx, providerConfig, resolvedModelId, chat, signal, assistantId);
 
-			// RAG 벡터 검색
-			let ragChunksForLog: RagChunkMeta[] | undefined;
-			const shouldSearchRag = resolveRagSearchFlag({
-				ragEnabled: connections.ragEnabled,
-				dataScope: rag.dataScope,
-				useRagContext: options?.useRagContext,
-			});
+			// ── 7. 응답 후처리 ──────────────────────────────────────────────────
+			this.finalizeResponse(assistantId, fullResponse, tokenUsage, hasTokenLimitBeenHit, resolvedModelId);
 
-			if (shouldSearchRag && this.plugin.indexer && get(indexingState).status === 'ready') {
-				({ ragContext, ragChunksForLog } = await this.performRagSearch(
-					userText,
-					rag,
-					ragContext,
-					assistantId,
-				));
-			}
-
-			// ── 6. MCP 툴 목록 가져오기 ─────────────────────────────────────────
-			const { mcpTools, toolServerMap } = this.collectMcpTools(chat.agentEnabled);
-
-			// ── 7. 프롬프트 빌드 & LLM 대화 메시지 구성 ──────────────────────────
-			const useLocal = isLocalProvider(providerConfig?.type ?? 'custom');
-			const modelName = (modelId || providerConfig?.availableModels?.[0] || '').toLowerCase();
-			const isReasoningModel = modelName.includes('reasoner') || modelName.includes('r1');
-			const useTextTools = useLocal || isReasoningModel;
-
-			let llmMessages: ChatMessage[] = buildMessages(history, userText, { chat, ragContext });
-
-			// 툴 사용 지침 주입
-			llmMessages = this.injectToolPrompts(llmMessages, mcpTools, useTextTools);
-
-			// 멀티모달 이미지 주입
-			if (multimodalImages.length > 0) {
-				// 비전을 지원하지 않는 프로바이더에서 이미지 첨부 시 명확한 에러를 반환
-				if (VISION_UNSUPPORTED_PROVIDERS.has(providerConfig.type)) {
-					const providerLabel = PROVIDER_LABELS[providerConfig.type] ?? providerConfig.type;
-					throw new Error(t('settings.providerErrors.visionNotSupported', { provider: providerLabel }));
-				}
-				llmMessages = injectMultimodalImages(llmMessages, multimodalImages);
-			}
-
-			// ── 8. LLM 호출 ────────────────────────────────────────────────────
-			const provider = createProvider(providerConfig);
-
-			const chatOptions: ChatOptions = {
-				model: modelId || providerConfig.availableModels[0] || '',
-				temperature: chat.temperature,
-				maxOutputTokens: chat.maxOutputTokens,
-				signal,
-				tools: (!useTextTools && mcpTools.length > 0) ? mcpTools : undefined,
-				stop: (useTextTools && mcpTools.length > 0) ? [] : undefined,
-			};
-
-			// 디버그: LLM 요청 로그
+			// ── 8. 디버그: LLM 요청/응답 로그 ─────────────────────────────────
 			const activePreset = chat.systemPrompts.find(p => p.id === chat.activeSystemPromptId);
 			const requestId = debugLogger.logRequest({
 				provider: providerConfig.type,
-				model: chatOptions.model,
+				model: resolvedModelId,
 				temperature: chat.temperature,
 				maxTokens: chat.maxOutputTokens,
 				stream: chat.streaming,
 				systemPrompt: activePreset?.content ?? '',
-				messages: llmMessages.map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) })),
-				...(ragChunksForLog ? { ragChunks: ragChunksForLog } : {}),
+				messages: ctx.llmMessages.map(m => ({
+					role: m.role,
+					content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+				})),
+				...(ctx.ragChunksForLog ? { ragChunks: ctx.ragChunksForLog } : {}),
 			});
-
-			const hasTools = mcpTools.length > 0;
-			let fullResponse = '';
-			let tokenUsage: TokenUsage | undefined;
-			let hasTokenLimitBeenHit = false;
-
-			debugLogger.logMcp('Loop Start', `MCP 툴 루프 시작`, { hasTools, streaming: chat.streaming, toolsCount: mcpTools.length, useTextTools, method: useTextTools ? '텍스트' : 'bindTools' });
-
-			if (hasTools) {
-				// ── Tool calling 루프 ──────────────────────────────────────────
-				({ fullResponse, tokenUsage, hasTokenLimitBeenHit } = await runAgentLoop({
-					assistantId,
-					messagesForLLM: [...llmMessages],
-					chatOptions,
-					provider,
-					chatSettings: chat,
-					mcpManager: this.plugin.mcpManager ?? null,
-					toolServerMap,
-					useTextTools,
-					signal,
-				}));
-			} else if (chat.streaming) {
-				// ── Streaming (no tools) ──────────────────────────────────────
-				const streamRes = await provider.stream(llmMessages, chatOptions, (chunk) => {
-					fullResponse += chunk;
-					appendChunk(assistantId, chunk);
-				});
-				tokenUsage = streamRes?.usage;
-				hasTokenLimitBeenHit = isTokenLimitReached(streamRes?.finishReason);
-			} else {
-				// ── Non-streaming (no tools) ──────────────────────────────────
-				const response = await provider.chat(llmMessages, chatOptions);
-				fullResponse = response.content;
-				tokenUsage = response?.usage;
-				appendChunk(assistantId, fullResponse);
-				hasTokenLimitBeenHit = isTokenLimitReached(response.finishReason);
-			}
-
-			// ── 토큰 사용량 기록 ──────────────────────────────────────────────
-			if (tokenUsage) {
-				const estimatedCost = calculateEstimatedCost(chatOptions.model, tokenUsage.inputTokens, tokenUsage.outputTokens);
-				setMessageTokenUsage(assistantId, {
-					...tokenUsage,
-					...(estimatedCost !== undefined ? { estimatedCost } : {}),
-				});
-			}
-
-			// ── 빈 응답 / 토큰 한도 처리 ─────────────────────────────────────
-			if (!fullResponse.trim()) {
-				fullResponse = hasTokenLimitBeenHit
-					? t('uiMessages.emptyResponseTokenLimit')
-					: t('settings.chat.emptyResponseFallback');
-				appendChunk(assistantId, fullResponse);
-			} else if (hasTokenLimitBeenHit) {
-				fullResponse += t('uiMessages.tokenLimitHitWarning');
-				syncMessageContent(assistantId, fullResponse);
-			}
-
-			// 디버그: LLM 응답 로그
 			debugLogger.logResponse(requestId, {
-				model: chatOptions.model,
+				model: resolvedModelId,
 				content: fullResponse,
 				durationMs: 0,
 				usage: tokenUsage,
 			});
-
-			// ── 9. 스트리밍 완료 표시 ────────────────────────────────────────
-			setMessageStreaming(assistantId, false);
 		} catch (err: unknown) {
 			if (err instanceof Error && err.name === 'AbortError') {
 				setMessageStreaming(assistantId, false);
@@ -400,27 +292,19 @@ export class ChatController {
 		return success;
 	}
 
-	/**
-	 * 활성 노트 파일 내용을 읽어 반환합니다.
-	 * includeActiveNote 설정이 꺼져있으면 null 반환.
-	 *
-	 * @deprecated sendMessage 내부에서는 더 이상 직접 호출하지 않습니다.
-	 *   활성 노트 주입은 resolveAttachmentsWithActiveNote() → buildAttachmentContext()
-	 *   단일 경로로 통합되었습니다. 외부(예: 테스트/디버그)에서만 사용하세요.
-	 */
-	async getActiveNoteContext(useActiveNote?: boolean): Promise<string | null> {
-		const shouldInclude = useActiveNote ?? this.plugin.settings.rag.includeActiveNote;
-		if (!shouldInclude) return null;
-		const file = this.app.workspace.getActiveFile();
-		if (!file) return null;
-		try {
-			return await this.app.vault.read(file);
-		} catch {
-			return null;
-		}
-	}
-
 	// ─── Private helpers ─────────────────────────────────────────────────────
+
+	/**
+	 * 프로바이더 설정에서 유효한 모델 ID를 결정한다.
+	 * fallback: modelId → availableModels[0] → ''
+	 */
+	private resolveModelId(
+		providerConfig: LLMProviderConfig | undefined,
+		modelId: string,
+	): string {
+		if (!providerConfig?.isVerified) return '';
+		return modelId || providerConfig.availableModels[0] || '';
+	}
 
 	/**
 	 * includeActiveNote가 활성화된 경우 attachments에 active_note를 추가한다.
@@ -451,181 +335,193 @@ export class ChatController {
 	}
 
 	/**
-	 * RAG 벡터 검색을 수행하고 결과를 ragContext에 병합한다.
-	 * 검색 결과가 있으면 assistantId 메시지에 RAG 소스도 설정한다.
+	 * 컨텍스트(첨부파일 + RAG)와 LLM 메시지를 구성한다.
+	 * attachmentContext 생성, RAG 검색, 프롬프트 빌드, 툴/멀티모달 주입까지 일괄 처리.
 	 */
-	private async performRagSearch(
+	private async resolveContext(
 		userText: string,
-		rag: RagSettings,
-		existingContext: string | undefined,
+		updatedAttachments: ContextAttachment[],
+		history: UIChatMessage[],
+		providerConfig: LLMProviderConfig,
+		resolvedModelId: string,
+		chat: LuminaPlugin['settings']['chat'],
+		rag: LuminaPlugin['settings']['rag'],
+		ragEnabled: boolean,
+		useRagContext: boolean | undefined,
 		assistantId: string,
-	): Promise<{ ragContext: string | undefined; ragChunksForLog: RagChunkMeta[] | undefined }> {
-		try {
-			let chunksToSearch = this.plugin.indexer!.indexedChunks;
+	): Promise<ResolvedContext> {
+		// 첨부파일 컨텍스트 빌드
+		const { attachmentContext, multimodalImages } =
+			await ChatAttachmentHandler.buildAttachmentContext(this.app, updatedAttachments, this.plugin);
 
-			if (rag.dataScope === 'active-note') {
-				const activeFile = this.app.workspace.getActiveFile();
-				chunksToSearch = activeFile
-					? chunksToSearch.filter(c => c.path === activeFile.path)
-					: [];
-			}
+		let ragContext: string | undefined = attachmentContext || undefined;
+		let ragChunksForLog: RagChunkMeta[] | undefined;
 
-			const ragStart = Date.now();
-			const results = await searchVault(
+		// RAG 벡터 검색
+		const shouldSearchRag = resolveRagSearchFlag({
+			ragEnabled,
+			dataScope: rag.dataScope,
+			useRagContext,
+		});
+
+		if (shouldSearchRag && this.plugin.indexer && get(indexingState).status === 'ready') {
+			const result = await performRagSearch({
 				userText,
-				chunksToSearch,
-				(texts) => this.plugin.indexer!.embed(texts),
-				rag.topK,
-			);
-
-			if (results.length === 0) {
-				return { ragContext: existingContext, ragChunksForLog: undefined };
-			}
-
-			const ragText = formatRagContext(results);
-			const ragContext = existingContext
-				? `${existingContext}\n\n---\n\n${ragText}`
-				: ragText;
-
-			const ragChunksForLog: RagChunkMeta[] = results.map((r) => ({
-				filePath: r.chunk?.path ?? '',
-				score: r.score ?? 0,
-				preview: (r.chunk?.text ?? '').slice(0, 200),
-				fullContent: r.chunk?.text ?? '',
-			}));
-
-			debugLogger.logRagSearch({
-				query: userText,
-				topK: rag.topK,
-				chunks: ragChunksForLog,
-				durationMs: Date.now() - ragStart,
+				rag,
+				existingContext: ragContext,
+				assistantId,
+				indexer: this.plugin.indexer,
+				activeFilePath: this.app.workspace.getActiveFile()?.path ?? null,
 			});
-
-			const uniquePaths = Array.from(new Set(ragChunksForLog.map(c => c.filePath).filter(Boolean)));
-			if (uniquePaths.length > 0) {
-				setMessageSources(assistantId, uniquePaths.map(p => ({ filePath: p })));
-			}
-
-			return { ragContext, ragChunksForLog };
-		} catch (err) {
-			debugLogger.logError('rag', err instanceof Error ? err : new Error(`RAG 검색 실패: ${err}`));
-			return { ragContext: existingContext, ragChunksForLog: undefined };
+			ragContext = result.ragContext;
+			ragChunksForLog = result.ragChunksForLog;
 		}
-	}
 
-	/**
-	 * MCP 툴 목록을 수집하고 toolServerMap을 구성한다.
-	 * agentEnabled가 false이거나 mcpManager가 없으면 빈 배열을 반환한다.
-	 */
-	private collectMcpTools(agentEnabled: boolean): {
-		mcpTools: ToolDefinition[];
-		toolServerMap: Record<string, string>;
-	} {
-		const mcpTools: ToolDefinition[] = [];
-		const toolServerMap: Record<string, string> = {};
-
+		// MCP 툴 수집
 		const { mcp } = this.plugin.settings;
-		if (!agentEnabled || !this.plugin.mcpManager || !mcp.clientToolsEnabled) {
-			debugLogger.logMcp('Tools Init', 'MCP 툴 비활성화됨 (clientToolsEnabled=false 또는 mcpManager 없음)');
-			return { mcpTools, toolServerMap };
+		const { mcpTools, toolServerMap } = collectMcpTools({
+			agentEnabled: chat.agentEnabled,
+			clientToolsEnabled: mcp.clientToolsEnabled,
+			mcpManager: this.plugin.mcpManager ?? null,
+		});
+
+		// 프롬프트 빌드
+		const useLocal = isLocalProvider(providerConfig.type ?? 'custom');
+		const modelName = resolvedModelId.toLowerCase();
+		const isReasoningModel = modelName.includes('reasoner') || modelName.includes('r1');
+		const useTextTools = useLocal || isReasoningModel;
+
+		let llmMessages: ChatMessage[] = buildMessages(history, userText, { chat, ragContext });
+
+		// 툴 사용 지침 주입
+		llmMessages = injectToolPrompts(llmMessages, mcpTools, useTextTools);
+
+		// 멀티모달 이미지 주입
+		if (multimodalImages.length > 0) {
+			if (VISION_UNSUPPORTED_PROVIDERS.has(providerConfig.type)) {
+				const providerLabel = PROVIDER_LABELS[providerConfig.type];
+				throw new Error(t('settings.providerErrors.visionNotSupported', { provider: providerLabel }));
+			}
+			llmMessages = injectMultimodalImages(llmMessages, multimodalImages);
 		}
 
-		const rawTools = this.plugin.mcpManager.getAllTools();
-		debugLogger.logMcp('Tools Init', `MCP 툴 ${rawTools.length}개 수집`, rawTools.map((t: McpTool) => t.name));
-
-		for (const tool of rawTools) {
-			const schema = tool.inputSchema ?? { type: 'object', properties: {} };
-			const properties: Record<string, unknown> & { _serverId?: unknown } = { ...(schema.properties ?? {}) };
-			// _serverId를 inputSchema에 숨겨서 LLM이 tool call 시 arguments에 포함하도록 함
-			properties._serverId = { type: 'string', description: 'DO NOT FILL - internal use' };
-			mcpTools.push({
-				name: tool.name,
-				description: tool.description ?? '',
-				inputSchema: {
-					type: 'object',
-					properties: properties as Record<string, { type: string; description: string }>,
-					required: schema.required ?? [],
-				},
-			});
-			toolServerMap[tool.name] = tool._serverId ?? '';
-		}
-
-		return { mcpTools, toolServerMap };
+		return { llmMessages, ragChunksForLog, useTextTools, mcpTools, toolServerMap };
 	}
 
 	/**
-	 * 모델 타입에 따라 적절한 툴 사용 지침을 system 메시지에 주입한다.
-	 * - 로컬/추론 모델: buildTextToolPrompt() 결과를 system 메시지 말미에 추가
-	 * - 클라우드 모델: 간략한 tool use instruction 추가
+	 * LLM 호출을 실행한다.
+	 * streaming / non-streaming / agent-loop 분기를 처리한다.
 	 */
-	private injectToolPrompts(
-		llmMessages: ChatMessage[],
-		mcpTools: ToolDefinition[],
-		useTextTools: boolean,
-	): ChatMessage[] {
-		if (mcpTools.length === 0) return llmMessages;
+	private async executeLlmCall(
+		ctx: ResolvedContext,
+		providerConfig: LLMProviderConfig,
+		resolvedModelId: string,
+		chat: LuminaPlugin['settings']['chat'],
+		signal: AbortSignal | undefined,
+		assistantId: string,
+	): Promise<{
+		fullResponse: string;
+		tokenUsage: TokenUsage | undefined;
+		hasTokenLimitBeenHit: boolean;
+	}> {
+		const { llmMessages, useTextTools, mcpTools, toolServerMap } = ctx;
 
-		let systemContent = llmMessages.length > 0 && llmMessages[0].role === 'system'
-			? (llmMessages[0].content as string)
-			: null;
+		const provider = createProvider(providerConfig);
 
-		if (useTextTools) {
-			const textToolPrompt = buildTextToolPrompt(mcpTools);
-			if (systemContent !== null) {
-				llmMessages[0].content = systemContent + textToolPrompt;
-			} else {
-				llmMessages.unshift({ role: 'system', content: textToolPrompt });
-			}
+		const chatOptions: ChatOptions = {
+			model: resolvedModelId,
+			temperature: chat.temperature,
+			maxOutputTokens: chat.maxOutputTokens,
+			signal,
+			tools: (!useTextTools && mcpTools.length > 0) ? mcpTools : undefined,
+			stop: (useTextTools && mcpTools.length > 0) ? [] : undefined,
+		};
+
+		const hasTools = mcpTools.length > 0;
+		let fullResponse = '';
+		let tokenUsage: TokenUsage | undefined;
+		let hasTokenLimitBeenHit = false;
+
+		debugLogger.logMcp('Loop Start', `MCP 툴 루프 시작`, {
+			hasTools,
+			streaming: chat.streaming,
+			toolsCount: mcpTools.length,
+			useTextTools,
+			method: useTextTools ? '텍스트' : 'bindTools',
+		});
+
+		if (hasTools) {
+			// ── Tool calling 루프 ──────────────────────────────────────────
+			const result = await runAgentLoop({
+				assistantId,
+				messagesForLLM: [...llmMessages],
+				chatOptions,
+				provider,
+				chatSettings: chat,
+				mcpManager: this.plugin.mcpManager ?? null,
+				toolServerMap,
+				useTextTools,
+				signal,
+			});
+			fullResponse = result.fullResponse;
+			tokenUsage = result.tokenUsage;
+			hasTokenLimitBeenHit = result.hasTokenLimitBeenHit;
+		} else if (chat.streaming) {
+			// ── Streaming (no tools) ──────────────────────────────────────
+			const streamRes = await provider.stream(llmMessages, chatOptions, (chunk) => {
+				fullResponse += chunk;
+				appendChunk(assistantId, chunk);
+			});
+			tokenUsage = streamRes?.usage;
+			hasTokenLimitBeenHit = isTokenLimitReached(streamRes?.finishReason);
 		} else {
-			const cloudToolPrompt =
-				`\n\n[Tool Use Instruction]\nYou have access to tools. If the user asks you to do something that can be done with a tool (e.g., modifying, writing, appending to, or reading Obsidian notes/files, or running a search), you MUST call the appropriate tool to execute the action. Do not just describe what you would do or output the raw text in the chat; always execute it via tool calling.`;
-			if (systemContent !== null) {
-				llmMessages[0].content = systemContent + cloudToolPrompt;
-			} else {
-				llmMessages.unshift({ role: 'system', content: cloudToolPrompt });
-			}
+			// ── Non-streaming (no tools) ──────────────────────────────────
+			const response = await provider.chat(llmMessages, chatOptions);
+			fullResponse = response.content;
+			tokenUsage = response?.usage;
+			appendChunk(assistantId, fullResponse);
+			hasTokenLimitBeenHit = isTokenLimitReached(response.finishReason);
 		}
 
-		return llmMessages;
+		return { fullResponse, tokenUsage, hasTokenLimitBeenHit };
 	}
-}
 
-// ─── 모듈 스코프 순수 함수 ────────────────────────────────────────────────────
+	/**
+	 * LLM 응답 후처리: 토큰 사용량 기록, 빈 응답/토큰 한도 처리, 스트리밍 완료 표시.
+	 */
+	private finalizeResponse(
+		assistantId: string,
+		fullResponse: string,
+		tokenUsage: TokenUsage | undefined,
+		hasTokenLimitBeenHit: boolean,
+		resolvedModelId: string,
+	): void {
+		// 토큰 사용량 기록
+		if (tokenUsage) {
+			const estimatedCost = calculateEstimatedCost(
+				resolvedModelId,
+				tokenUsage.inputTokens,
+				tokenUsage.outputTokens,
+			);
+			setMessageTokenUsage(assistantId, {
+				...tokenUsage,
+				...(estimatedCost !== undefined ? { estimatedCost } : {}),
+			});
+		}
 
-/**
- * RAG 검색 수행 여부를 결정하는 순수 함수.
- *
- * 규칙:
- *   - ragEnabled가 false이면 검색하지 않는다.
- *   - useRagContext가 명시적으로 false이면 검색하지 않는다 (UI 토글 OFF).
- *   - useRagContext가 명시적으로 true이면 dataScope 무관하게 검색한다.
- *   - dataScope가 'manual'이고 useRagContext가 명시되지 않았으면 검색하지 않는다.
- *   - 그 외(useRagContext가 undefined)에는 ragEnabled를 따른다.
- */
-function resolveRagSearchFlag(opts: {
-	ragEnabled: boolean;
-	dataScope: string;
-	useRagContext?: boolean;
-}): boolean {
-	const { ragEnabled, dataScope, useRagContext } = opts;
-	if (!ragEnabled) return false;
-	if (useRagContext === false) return false; // UI 토글이 명시적으로 꺼진 경우
-	if (useRagContext === true) return true;
-	if (dataScope === 'manual') return false;
-	return ragEnabled;
-}
+		// 빈 응답 / 토큰 한도 처리
+		let finalContent = fullResponse;
+		if (!finalContent.trim()) {
+			finalContent = hasTokenLimitBeenHit
+				? t('uiMessages.emptyResponseTokenLimit')
+				: t('settings.chat.emptyResponseFallback');
+			appendChunk(assistantId, finalContent);
+		} else if (hasTokenLimitBeenHit) {
+			finalContent += t('uiMessages.tokenLimitHitWarning');
+			syncMessageContent(assistantId, finalContent);
+		}
 
-/**
- * 멀티모달 이미지를 마지막 user 메시지에 주입한다.
- */
-function injectMultimodalImages(llmMessages: ChatMessage[], imageUrls: string[]): ChatMessage[] {
-	const lastMsg = llmMessages[llmMessages.length - 1];
-	if (!lastMsg || lastMsg.role !== 'user') return llmMessages;
-
-	const multiContent: MultiModalContent[] = [
-		{ type: 'text', text: lastMsg.content as string },
-		...imageUrls.map(url => ({ type: 'image_url' as const, image_url: { url } })),
-	];
-	lastMsg.content = multiContent;
-	return llmMessages;
+		// 스트리밍 완료 표시
+		setMessageStreaming(assistantId, false);
+	}
 }
