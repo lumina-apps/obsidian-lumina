@@ -22,6 +22,26 @@ export interface DocumentChunk {
 	embedding?: number[];
 }
 
+// ─── Persistence ──────────────────────────────────────────────────────────────
+
+/**
+ * 인덱스 파일 스키마 버전.
+ * 청크 구조 변경 시 증가 → 기존 인덱스 자동 무효화.
+ */
+export const SCHEMA_VERSION = 2;
+
+export interface PersistedIndex {
+	/** 스키마 버전 */
+	version: number;
+	/** 인덱싱에 사용된 임베딩 모델명 — 모델 변경 시 자동 무효화 */
+	modelName: string;
+	chunks: DocumentChunk[];
+	/** 파일 경로 → 마지막 수정 시각 (ms) — 증분 업데이트 추적 */
+	fileMtimes: Record<string, number>;
+	/** 파일 경로 → 텍스트 본문 해시 — mtime이 변경되어도 본문이 같으면 임베딩 건너뜀 */
+	fileHashes?: Record<string, number>;
+}
+
 // ─── Search ──────────────────────────────────────────────────────────────────
 
 export interface SearchResult {
