@@ -1,7 +1,7 @@
 import { Notice, Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
 import { t } from '../../../../shared/locales/helpers';
-import type { TranslationKeys } from '../../../../shared/locales/helpers';
+import type { TranslationKeys } from '../../../../shared/locales/locale.types';
 import {
 	createFeatureCard,
 	createImePasswordBinding,

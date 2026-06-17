@@ -2,7 +2,7 @@ import { App, Notice, Modal } from 'obsidian';
 import type { LLMProviderConfig } from '../types/settings.types';
 import type { LuminaSettings } from '../../core/settings/settings.types';
 import { createProvider } from '../../core/llm-providers/index';
-import { en } from './en';
+import en from './en.json';
 import { ConfirmModal } from '../utils/modal';
 import { addDynamicLocale, setLanguage, t } from './helpers';
 
@@ -111,8 +111,6 @@ ${sourceJson}
     const configDir = app.vault.configDir;
     const cacheDir = `${configDir}/plugins/lumina/locales`;
 
-    // Obsidian's FileSystem API uses Vault adapter for paths relative to the vault root.
-    // configDir itself is a path (usually '.obsidian').
     const exists = await app.vault.adapter.exists(cacheDir);
     if (!exists) {
         await app.vault.adapter.mkdir(cacheDir);
@@ -123,7 +121,7 @@ ${sourceJson}
 
     // Load into memory
     addDynamicLocale('system', translatedData);
-    setLanguage('system');
+    await setLanguage('system');
 
     new Notice(t('settings.translation.success'));
 }

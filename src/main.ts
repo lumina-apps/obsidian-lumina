@@ -54,12 +54,12 @@ export default class LuminaPlugin extends Plugin {
 		if (this.settings.connections.language === 'system') {
 			const success = await loadSystemLocaleCache(this.app);
 			if (success) {
-				setLanguage('system');
+				await setLanguage('system');
 			} else {
-				setLanguage('en');
+				await setLanguage('en');
 			}
 		} else {
-			setLanguage(this.settings.connections.language);
+			await setLanguage(this.settings.connections.language);
 		}
 
 		// ── 설정 마이그레이션 ──────────────────────────────────────────

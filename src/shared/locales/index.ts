@@ -1,12 +1,12 @@
-export { en, type Translation } from './en';
-export { ko } from './ko';
-export { ja } from './ja';
-export { zh } from './zh';
-export { zhTW } from './zh-tw';
-export { es } from './es';
-export { pt } from './pt';
-export { de } from './de';
-export { fr } from './fr';
-export { ru } from './ru';
-export { it } from './it';
-export * from './helpers';
+// 로캘 타입과 헬퍼를 re-export
+export type { Translation, DeepPartial, TranslationKeys } from './locale.types';
+export {
+  currentLanguageStore,
+  tStore,
+  setLanguage,
+  getLanguage,
+  t,
+  addDynamicLocale,
+  preloadDefaultLocale,
+  type Language,
+} from './helpers';

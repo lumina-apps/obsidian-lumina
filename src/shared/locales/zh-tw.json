@@ -1,0 +1,701 @@
+{
+  "settings": {
+    "showAdvanced": "進階設定",
+    "connections": {
+      "title": "連線與模型設定",
+      "provider": "提供者",
+      "language": {
+        "name": "外掛語言",
+        "desc": "選擇外掛的介面語言。",
+        "systemTranslate": "翻譯為系統語言",
+        "llmRequired": "需要連接 LLM 才能使用翻譯功能。",
+        "warningCost": "使用翻譯功能可能會產生 LLM API 費用。",
+        "option": {
+          "en": "English",
+          "ko": "한국어",
+          "ja": "日本語",
+          "zh": "简体中文",
+          "zh-tw": "繁體中文",
+          "es": "Español",
+          "pt": "Português",
+          "de": "Deutsch",
+          "fr": "Français",
+          "ru": "Русский",
+          "it": "Italiano",
+          "system": "系統語言"
+        },
+        "current": "目前：{{lang}}",
+        "deleteCache": "清除快取 (Clear Cache)",
+        "deleteCacheTooltip": "刪除並重置已快取的系統語言翻譯資料。",
+        "deleteCacheTitle": "刪除翻譯快取",
+        "deleteCacheConfirm": "您確定要刪除已快取的系統語言翻譯資料嗎？\n刪除後如果再次選擇系統語言，將會重新進行翻譯。"
+      },
+      "apiKey": {
+        "name": "API 金鑰與模型註冊",
+        "desc": "註冊雲端提供商的 API 金鑰或本地 LLM 的 URL。",
+        "mobileLocalWarning": "行動端無法使用本地 LLM。",
+        "addConnection": "+ 新增 LLM 連線",
+        "apiKey": "API 金鑰",
+        "endpointUrl": "端點 URL",
+        "hiddenDesc": "輸入時將會隱藏。",
+        "testConnection": "測試連線",
+        "testing": "測試中...",
+        "deleteConnection": "刪除此連線",
+        "connected": "已連線",
+        "notConnected": "未連線",
+        "selectModel": "選擇模型",
+        "endpointPlaceholder": "例：http://localhost:11434",
+        "newConnection": "新連線",
+        "success": "連線成功！",
+        "fail": "連線失敗：",
+        "noModels": "沒有可用的模型。"
+      },
+      "ragEngine": {
+        "name": "一鍵 RAG 引擎",
+        "desc": "透過即時參考您庫中的所有筆記來生成回答。",
+        "privacyNotice": "🔒 文件分析在本地執行。（雲端 AI 聊天時，筆記摘錄可能被發送以生成回答）",
+        "customGuide": "💡 啟用右上角的「進階設定」以手動選擇嵌入引擎。",
+        "mobileWarning": "⚠️ 行動端不支援一鍵本地嵌入（RAG）。請在進階設定中直接選擇雲端嵌入模型。",
+        "ragDisabledForEmbedding": "⚠️ RAG 引擎已停用。請先啟用 RAG 引擎以選擇嵌入模型。"
+      },
+      "customEmbedding": {
+        "name": "自訂嵌入（進階）",
+        "desc": "從已註冊提供商的模型列表中選擇嵌入模型。",
+        "auto": "🤖 自動 (內建本地模型: ibm-granite/granite-embedding-97m-multilingual-r2)",
+        "guide": "※ 在上方註冊 LLM 連線並完成連線測試。",
+        "localWarn": "⚠️ 無法自動驗證本地模型是否為嵌入模型。\n如果索引失敗，請選擇專門的嵌入模型。",
+        "mobileWarn": "⚠️ 行動端無法使用本地嵌入模型。請選擇雲端嵌入。"
+      },
+      "defaultChatModel": {
+        "name": "預設聊天模型",
+        "desc": "選擇側邊欄聊天預設使用的 LLM 模型。",
+        "sidebarDefault": "側邊欄聊天預設模型",
+        "noConnections": "新增 LLM 連線並通過測試後，即可選擇預設模型。"
+      },
+      "quickActionProvider": {
+        "name": "快速操作提供者",
+        "desc": "🚨 大型或推理模型可能導致嚴重延遲。請使用快速輕量的模型（Instruct、Flash 或 Mini 級）以獲得即時回饋。"
+      },
+      "quickActionModel": {
+        "name": "快速操作模型",
+        "desc": "選擇用於快速操作的專用模型。（建議使用輕量快速的模型）",
+        "noneSelected": "未選擇（必填）",
+        "reasoningWarning": "⚠️ 警告：偵測到推理型模型！快速操作需要速度；使用此模型可能會導致嚴重延遲或無限迴圈。強烈建議使用一般 Instruct 模型。"
+      }
+    },
+    "mcp": {
+      "title": "代理與 MCP",
+      "desc": "連接 Model Context Protocol (MCP) 伺服器以允許 AI 使用本地工具。",
+      "addServer": "+ 新增 MCP 伺服器",
+      "serverName": "伺服器名稱",
+      "transport": "傳輸方式",
+      "enableDesc": "啟用 (將工具注入聊天)",
+      "deleteServer": "刪除此伺服器",
+      "emptyServers": "未註冊伺服器。",
+      "localServerName": "Lumina 本地伺服器",
+      "restart": "重新啟動",
+      "localServer": {
+        "sectionTitle": "Lumina 內建 MCP 伺服器 (代管)",
+        "desc": "開啟本地伺服器，以便外部用戶端（如 AI 代理）能夠存取 Obsidian 功能。",
+        "enable": {
+          "name": "啟用伺服器"
+        },
+        "port": {
+          "name": "伺服器埠",
+          "desc": "預設值: 3000 (設定後需重新啟動以生效)"
+        },
+        "token": {
+          "name": "認證權杖",
+          "desc": "外部用戶端連線時所需的權杖。請勿公開分享此權杖。",
+          "regenerate": "重新產生"
+        },
+        "guide": "SSE: http://localhost:{{port}}/sse\n認證: 請求頭加入 \"Authorization: Bearer <token>\" (或 ?token=<token>)",
+        "maxRead": {
+          "name": "Read 最大字元數",
+          "desc": "單次讀取檔案回傳的最大字元數 (預設: 20000)"
+        },
+        "searchSnippet": {
+          "name": "Search 片段長度",
+          "desc": "符合字詞前後顯示的字元數 (預設: 300)"
+        },
+        "searchMaxResults": {
+          "name": "Search 最大結果數",
+          "desc": "單次搜尋回傳的最大結果數 (預設: 10)"
+        },
+        "maxAppend": {
+          "name": "Append 最大字元數",
+          "desc": "單次附加操作的最大字元數 (預設: 10000)"
+        }
+      },
+      "externalServer": {
+        "sectionTitle": "外部 MCP 伺服器 (用戶端連線)",
+        "sseUrl": {
+          "name": "SSE URL",
+          "desc": "例如 http://localhost:8080/sse"
+        },
+        "token": {
+          "name": "認證權杖 (Auth Token) (選用)",
+          "desc": "如果伺服器需要認證，請輸入權杖。"
+        }
+      },
+      "permission": {
+        "title": "工具執行權限",
+        "desc": "AI 正在請求執行一個具有潛在危險的工具的權限。\\n\\n伺服器: {{server}}\\n工具: {{tool}}",
+        "args": "參數:",
+        "approve": "批准",
+        "reject": "拒絕"
+      },
+      "agentMode": {
+        "name": "代理模式 (Agent Mode)",
+        "desc": "LLM 利用 MCP 工具自主執行任務。⚠️ 小型模型可能導致效能下降。",
+        "maxSteps": "最大自動執行次數",
+        "maxStepsDesc": "代理在單次回應中可以連續執行工具的最大次數。（預設值：15）",
+        "respectRagExclusions": "將 RAG 路徑排除/包含設定套用至代理",
+        "respectRagExclusionsDesc": "將 RAG 頁籤的排除規則套用至代理的檔案操作。"
+      },
+      "experimental": "實驗性功能"
+    },
+    "chat": {
+      "quickSettings": {
+        "systemPrompt": "系統提示詞",
+        "temperature": "溫度 (Temperature)",
+        "precise": "精確",
+        "balanced": "平衡",
+        "creative": "創意",
+        "maxLength": "最大長度",
+        "short": "短",
+        "medium": "中",
+        "long": "長",
+        "allSettings": "所有設定"
+      },
+      "title": "聊天與提示詞",
+      "currentNote": "包含目前筆記",
+      "systemPrompt": {
+        "name": "系統提示詞",
+        "desc": "註冊並管理系統提示詞。",
+        "active": "✅ 目前啟用",
+        "activate": "啟用",
+        "addPrompt": "+ 新增提示詞",
+        "defaultName": "系統提示詞"
+      },
+      "history": {
+        "name": "自動儲存聊天記錄",
+        "desc": "將聊天記錄自動儲存到指定路徑。",
+        "pathPlaceholder": "例：/chatHistory",
+        "savePath": "儲存路徑",
+        "saveFail": "⚠️ 儲存聊天記錄失敗：{{error}}",
+        "loadFail": "⚠️ 預載入會話失敗。",
+        "deleteSuccess": "✅ 聊天記錄已刪除。",
+        "deleteFail": "⚠️ 刪除會話失敗",
+        "deleteConfirm": "您確定要刪除此聊天記錄嗎？",
+        "title": "聊天記錄",
+        "empty": "沒有儲存的聊天記錄。",
+        "unknownModel": "未知模型"
+      },
+      "sendMode": {
+        "name": "訊息發送方式",
+        "desc": "選擇聊天訊息的發送方式。",
+        "enter": "按 Enter 發送",
+        "ctrlEnter": "按 Ctrl + Enter 發送"
+      },
+      "quickActions": {
+        "name": "使用者自訂快速操作 (命令)",
+        "desc": "將常用的提示詞註冊為 Obsidian 命令，以便在編輯器中選取文字後立即執行。",
+        "add": "+ 新增快速操作",
+        "actionName": "操作名稱",
+        "actionPrompt": "提示詞",
+        "actionType": "運作方式",
+        "typeReplace": "文字覆蓋",
+        "typeAppend": "文字附加",
+        "typeChat": "傳送至聊天視窗",
+        "newAction": "新動作",
+        "deleteAction": "刪除此動作",
+        "defaults": {
+          "summarize": {
+            "name": "總結",
+            "prompt": "請簡明扼要地總結以下文本：\n\n"
+          },
+          "translate": {
+            "name": "翻譯為繁體中文",
+            "prompt": "請將以下文本翻譯成自然流暢的繁體中文：\n\n"
+          },
+          "explain": {
+            "name": "解釋",
+            "prompt": "請詳細解釋以下文本：\n\n"
+          }
+        }
+      },
+      "inlineTrigger": {
+        "name": "內嵌命令觸發字元",
+        "desc": "在編輯器中呼叫快速操作自動完成 pop-up 時使用的關鍵字。"
+      },
+      "memoryLimit": {
+        "name": "對話記憶限制（進階）",
+        "desc": "保留多少對話歷史（按輪數或 Token 數）。",
+        "limitType": "對話記憶方式",
+        "turns": "輪數限制",
+        "tokens": "Token 數限制",
+        "turnsLabel": "要記住的輪數",
+        "turnsDesc": "要記住的輪數（1輪 = 用戶訊息 + AI 回答）",
+        "maxTokens": "最大上下文 Token"
+      },
+      "modelParams": {
+        "name": "模型參數（進階）",
+        "desc": "調整回答的創造性與輸出長度。",
+        "tempLabel": "Temperature",
+        "tempDesc": "越接近 0 = 精確，越接近 2 = 創造性",
+        "maxOutput": "最大輸出 Token",
+        "responseLang": "指定回應語言",
+        "responseLangDesc": "強制 AI 使用指定語言回答。「自動」遵循系統提示詞。",
+        "responseLangAuto": "自動"
+      },
+      "streaming": {
+        "name": "串流輸出",
+        "desc": "啟用串流回應。"
+      },
+      "emptyResponseFallback": "⚠️ The model returned an empty response. (This may be due to an unsupported language/format, prompt filtering, or exceeding the context limit.)",
+      "context": {
+        "activeNote": "包含目前筆記：{{name}}",
+        "selectedText": "選取的文字 ({{length}} 個字元)",
+        "folderFiles": "[資料夾內的檔案: {{name}}]",
+        "activeNotePrefix": "[目前筆記: {{name}}]",
+        "canvasFile": "[白板檔案: {{name}}]",
+        "tagFiles": "[含標籤的檔案: {{name}} (最多 5 個)]",
+        "activeNotePrompt": "目前活動筆記",
+        "categoryActiveNote": "📄 包含當前筆記",
+        "categorySelection": "✂️ 選取的文字",
+        "categoryFolder": "📁 新增資料夾",
+        "categoryFile": "📝 新增檔案",
+        "categoryTag": "🏷️ 新增標籤",
+        "categoryUrl": "🔗 輸入網址",
+        "categoryCanvas": "🎨 新增 Canvas",
+        "categoryBack": "返回",
+        "categoryTitle": "選擇上下文類型",
+        "urlInputPlaceholder": "輸入網址（例：https://...）",
+        "urlInputPrompt": "按 Enter 新增網址"
+      }
+    },
+    "rag": {
+      "toggleTooltip": "開啟後，AI 將讀取並參考您庫中的筆記來回答。",
+      "title": "RAG 與上下文",
+      "embeddingWarning": "RAG 用的嵌入模型設定在 [連線與模型設定] 索引標籤中。",
+      "disabledWarning": "⚪ RAG 目前已停用。請先在 [連線與模型設定] 索引標籤中啟用 RAG 引擎。",
+      "dataScope": {
+        "name": "預設資料範圍設定",
+        "desc": "選擇 RAG 搜尋要包含的筆記。",
+        "vaultWide": "整個庫",
+        "activeNote": "僅目前活動筆記",
+        "manual": "僅手動選擇的檔案"
+      },
+      "autoIncludeActive": {
+        "name": "自動包含目前筆記",
+        "desc": "在聊天時預設將目前活動的（打開的）筆記包含在上下文中。"
+      },
+      "includePaths": {
+        "name": "包含的路徑",
+        "desc": "逗號分隔。留空則包含整個庫。"
+      },
+      "ignorePaths": {
+        "name": "忽略的路徑",
+        "desc": "逗號分隔。優先於包含的路徑。"
+      },
+      "chunking": {
+        "name": "分塊設定（進階）",
+        "desc": "設定文件分割的區塊大小與重疊。",
+        "sizeDesc": "區塊大小 (Token 數)",
+        "overlapLabel": "區塊重疊",
+        "overlapDesc": "相鄰區塊之間重疊的 Token 數"
+      },
+      "topK": {
+        "name": "Top-K 檢索（進階）",
+        "desc": "向 LLM 傳遞的排名最高文件數量。"
+      },
+      "syncMode": {
+        "name": "索引同步（進階）",
+        "desc": "筆記變更時索引的更新方式。",
+        "watch": "監控檔案變更 (Watch)（推薦）",
+        "manual": "手動同步",
+        "startup": "應用啟動時執行一次"
+      },
+      "minSimilarity": {
+        "name": "最小相似度（進階）",
+        "desc": "低於此相關性分數的結果將被排除 (0~1)"
+      },
+      "reindex": {
+        "name": "完全重新索引",
+        "desc": "從頭開始對庫中的所有筆記重新建立索引。",
+        "button": "🔄 完全重新索引",
+        "notActivated": "❌ RAG 引擎未啟用。",
+        "started": "🔄 開始完全重新索引...",
+        "success": "✅ 重新索引完成",
+        "fail": "❌ 重新索引失敗："
+      },
+      "status": {
+        "name": "索引狀態（進階）",
+        "desc": "顯示目前的索引大小及檔案數量。",
+        "statusLabel": "狀態",
+        "indexing": "索引中... ({{processed}}/{{total}})",
+        "files": "📄 已索引檔案：{{count}}個",
+        "size": "💾 儲存使用量：{{size}} KB",
+        "ready": "RAG 已就緒",
+        "indexingShort": "索引中",
+        "error": "RAG 錯誤",
+        "waiting": "等待 RAG"
+      },
+      "init": {
+        "loadingModel": "Lumina: 正在載入嵌入模型...",
+        "loadingModelDesc": "首次執行時，下載和載入本地模型可能需要幾分鐘時間。",
+        "cloudSuccess": "Lumina: 雲端嵌入連線成功",
+        "loadingProgress": "Lumina: 模型載入中 {{pct}}% — {{status}}",
+        "indexingVault": "Lumina: 正在對庫進行索引...",
+        "indexingProgressText": " ({{processed}}/{{total}}) - {{pct}}%",
+        "remainingTimePrefix": " - 剩餘時間: ",
+        "remainingTimeSec": "{{sec}}秒",
+        "remainingTimeMinSec": "{{min}}分 {{sec}}秒",
+        "ready": "✅ Lumina: RAG 引擎準備就緒",
+        "indexFail": "❌ Lumina: 索引失敗\n{{error}}",
+        "readyManual": "✅ Lumina: RAG 引擎準備就緒 (手動索引模式)",
+        "initFail": "❌ Lumina: RAG Worker 初始化失敗\n{{error}}",
+        "downloading": "正在下載 RAG 模型...",
+        "indexingNotes": "正在索引我的筆記..."
+      },
+      "reset": {
+        "name": "重置索引（進階）",
+        "desc": "清除所有已索引的資料。",
+        "button": "🗑 重置索引",
+        "devNotice": "⚠️ 索引已重置。（開發中）",
+        "resetConfirm": "您確定要重置索引嗎？此操作無法復原。",
+        "resetSuccess": "🗑 索引已重置。"
+      }
+    },
+    "misc": {
+      "title": "附加功能與其他",
+      "contextMenu": {
+        "name": "右鍵選單整合",
+        "desc": "在編輯器右鍵選單中加入 Lumina。"
+      },
+      "ribbonIcon": {
+        "name": "顯示功能區圖示",
+        "desc": "在左側邊欄顯示外掛圖示。"
+      },
+      "frontmatter": {
+        "name": "自動生成 Frontmatter（進階）",
+        "desc": "建立新筆記時自動加入 Frontmatter。"
+      },
+      "debugMode": {
+        "name": "除錯模式（進階）",
+        "desc": "查看 LLM 請求/回應等內部日誌。"
+      },
+      "versionInfo": {
+        "name": "版本資訊與發布說明（進階）",
+        "desc": "發布說明與更新記錄"
+      },
+      "factoryReset": {
+        "name": "資料初始化與外掛重置 (進階)",
+        "desc": "將所有設定和資料重置為預設值。（聊天記錄將保留）",
+        "button": "🔄 重置",
+        "devNotice": "⚠️ 外掛重置功能正在開發中。",
+        "confirmTitle": "外掛重置",
+        "confirmMsg": "您確定要重置所有設定嗎？已註冊的 API 金鑰、設定選項、RAG 索引、已下載的本地模型以及系統語言翻譯快取將被全部刪除。（聊天記錄將保留）",
+        "success": "✅ 外掛設定已重置。"
+      },
+      "donate": {
+        "name": "贊助與支持",
+        "desc": "如果您覺得 Lumina 很有用，請考慮贊助支持我們的開發！",
+        "supportTitle": "支持 Lumina：",
+        "kofi": "☕ Ko-fi",
+        "ctee": "☕ Ctee",
+        "githubSponsors": "💖 GitHub Sponsors"
+      }
+    },
+    "providerErrors": {
+      "missingUrl": "請輸入端點 URL。",
+      "missingKey": "請輸入 API 金鑰。",
+      "unknownType": "未知的提供商類型：{{type}}",
+      "apiError": "{{provider}} API 錯誤：{{status}} {{text}}",
+      "ollamaNoModel": "Ollama 中沒有正在運行的模型。請先使用 `ollama run <model>` 執行模型。",
+      "connectFail": "連線失敗：{{status}} {{text}}",
+      "anthropicNoEmbed": "Anthropic 不支援嵌入 API。",
+      "visionNotSupported": "⚠️ 所選的提供商（{{provider}}）不支援圖像分析。如需使用圖片，請選擇 OpenAI、Anthropic 或 Google（支援視覺的模型）。"
+    },
+    "translation": {
+      "confirmTitle": "系統語言翻譯",
+      "confirmMsg": "將使用 [{{provider}}] {{model}} 模型進行翻譯。\n\n可能會產生 API Token 費用。是否繼續？",
+      "progressTitle": "正在翻譯",
+      "progressMsg": "🔄 正在將語言資料翻譯為系統語言。即使關閉視窗，它也會在後台繼續進行。",
+      "delayLocal": "此過程使用的是本地模型，根據您的系統配置，可能需要 1~5 分鐘以上的時間。",
+      "delayCloud": "此過程根據所用模型和網路狀況，可能需要 1~2 分鐘左右。",
+      "success": "✅ 語言翻譯並應用完成。",
+      "fail": "❌ 翻譯失敗：",
+      "noValidModel": "⚠️ 沒有已連線的 LLM，或未選擇有效的模型。",
+      "cacheDeleted": "✅ 系統語言翻譯快取已刪除。",
+      "cacheDeleteFail": "❌ 快取刪除失敗：",
+      "noCache": "⚠️ 沒有要刪除的翻譯快取。"
+    }
+  },
+  "errors": {
+    "llmNotConnected": "未連線 LLM。",
+    "ragIndexingFailed": "RAG 索引失敗。",
+    "llmConnectRequired": "請在設定中新增 LLM 並完成連線測試。",
+    "resetChat": "重置對話",
+    "chatPlaceholder": "輸入訊息...",
+    "chatEmptyWelcome": "向 Lumina 提問任何事情。",
+    "cancelStreaming": "中止",
+    "send": "發送",
+    "underDevelopment": "此功能正在開發中。",
+    "ragDisabledGlobally": "全域 RAG 引擎已關閉。請先在設定中啟用。",
+    "llm": {
+      "rateLimit": "⚠️ 超出 API 配額或請求頻率限制。請稍後再試。若為免費套餐，請檢查分鐘/日度額度或帳戶帳單狀態。",
+      "unauthorized": "⚠️ API 金鑰無效或已過期。請在「連接與模型」設定中檢查您的 API 金鑰。",
+      "forbidden": "⚠️ 拒絕存取或請求被禁止。請檢查您的 API 金鑰權限、服務計劃或地區限制。",
+      "notFound": "⚠️ 未找到所請求的模型或 API 終點 URL 不正確。請檢查設定中選定的模型 and 連接 URL。",
+      "networkError": "⚠️ 網路連線失敗。請檢查您的網際網路連線，或者確認您的本地 LLM 伺服器是否正常運行。",
+      "notReadable": "無法讀取回應本文"
+    }
+  },
+  "chat": {
+    "newChat": "新對話",
+    "history": "對話記錄",
+    "settings": "聊天設定",
+    "addContext": "新增上下文 (@)",
+    "uploadFile": "上傳檔案",
+    "clearInput": "清除輸入內容",
+    "slashCommands": {
+      "clear": {
+        "name": "清除聊天",
+        "desc": "清除目前對話並開始新的聊天。"
+      },
+      "rag": {
+        "name": "切換 RAG",
+        "desc": "啟用或停用 RAG 上下文的使用。"
+      },
+      "mcp": {
+        "name": "MCP 伺服器",
+        "desc": "開啟 MCP 伺服器列表快顯視窗。"
+      },
+      "settings": {
+        "name": "設定",
+        "desc": "開啟 Lumina 設定畫面。"
+      },
+      "quickActionDesc": "插入提示詞範本"
+    },
+    "sessionUsage": "目前會話累計用量",
+    "sessionTokens": "累計: {{tokens}} tokens",
+    "sessionCost": "(約 ${{cost}})"
+  },
+  "common": {
+    "save": "儲存",
+    "cancel": "取消",
+    "delete": "刪除",
+    "remove": "移除",
+    "add": "新增",
+    "copy": "複製",
+    "success": "成功",
+    "error": "錯誤",
+    "history": "對話記錄",
+    "back": "返回",
+    "settings": "設定",
+    "loading": "載入中...",
+    "refresh": "重新整理"
+  },
+  "discovery": {
+    "tabName": "智能探索",
+    "chatTabName": "AI 聊天",
+    "searchPlaceholder": "基於語意進行提問/搜尋...",
+    "duplicateWarning": "⚠️ 存在高度相似的筆記：",
+    "duplicateCompare": "進行比較",
+    "recommendedTags": "推薦標籤",
+    "relatedNotes": "相關筆記",
+    "insertLink": "插入連結",
+    "openInSplit": "分割畫面查看",
+    "chatWithNote": "開始聊天",
+    "filterPlaceholder": "過濾器（資料夾路徑或 #標籤）",
+    "emptyStateText": "RAG 搜尋功能已關閉。",
+    "emptyStateSub": "請在設定中開啟嵌入（RAG）引擎。",
+    "noResults": "未找到相關的筆記。",
+    "stagedContext": "暫存的上下文 (Staged)",
+    "approxTokens": "預計 Token 數：{{current}} / {{max}}",
+    "startChat": "與 {{count}} 個項目開始聊天",
+    "indexing": "RAG 索引中... ({{processed}} / {{total}})",
+    "loadingModel": "正在載入嵌入模型...",
+    "noActiveEditor": "未找到活動的 Markdown 編輯器。"
+  },
+  "uiMessages": {
+    "emptyResponseTokenLimit": "⚠️ 模組傳回了空回應。由於達到最大輸出 Token 限制，生成已停止。請在設定中增加「最大輸出 Token」限制。",
+    "tokenLimitHitWarning": "\n\n⚠️ (由於達到最大輸出 Token 限制，生成已中斷。請在設定中增加「最大輸出 Token」值。)",
+    "toolExecutionRejected": "使用者已拒絕執行工具。",
+    "inlineReplace": "覆蓋",
+    "inlineAppend": "附加",
+    "inlineSend": "傳送至聊天",
+    "inlineEmpty": "目前列上找不到套用目標文字。請撰寫或選取文字。",
+    "qaEmptySel": "未選取文字。",
+    "qaNotConfigured": "快速操作模型尚未設定。請在設定中選擇專用模型。",
+    "qaWaitingAI": "⏳ 等待 AI 回應...",
+    "qaEmptyResponse": "⚠️ 模型回傳了空白文字。（無限迴圈或提示詞相容性問題）",
+    "qaUnknownError": "未知錯誤",
+    "qaReasoningDetected": "🚫 偵測到推理型模型的思考過程（<think>）。已強制終止快速操作。請在設定中更換為一般 Instruct 模型。",
+    "qaNoProvider": "未配置 LLM 提供者。",
+    "qaInvalidProvider": "無效或未經認證的 LLM 提供者。",
+    "qaNoModel": "沒有可用的模型。",
+    "qaSelectedText": "已選取文字",
+    "qaExecuting": "正在執行 {{name}}...",
+    "qaCompleted": "{{name}} 完成",
+    "qaError": "發生錯誤：{{msg}}",
+    "modalCancel": "取消",
+    "modalProceed": "進行",
+    "modelPlaceholder": "輸入要搜尋的模型名稱...（例如：claude, gpt-4）",
+    "fsAdapterErr": "找不到 FileSystemAdapter。僅支援桌面環境。",
+    "searchSource": "來源",
+    "debugDelAllMsg": "您確定要刪除所有除錯日誌嗎？",
+    "debugAutoScroll": "自動捲動",
+    "debugExport": "匯出為 JSON",
+    "debugDelAll": "刪除全部日誌",
+    "debugNoLogs": "無日誌",
+    "debugWaitLlm": "發出 LLM 請求時將在此顯示",
+    "debugTurnOn": "請在設定 › 進階中開啟除錯模式",
+    "debugChunks": "分塊",
+    "debugExpandAll": "全部展開",
+    "debugCollapseAll": "全部收合",
+    "ragTooLong": "[Lumina] RAG 上下文過長，已截斷至 {{max}} 字元。",
+    "ragWorkerInitErr": "未知的 Worker 初始化錯誤（請檢查控制台）",
+    "ragWorkerTimeout": "嵌入模型載入逾時（超過 60 秒）。請檢查網路連線或清除快取後重試。",
+    "ragWorkerTerm": "Worker 已終止。",
+    "ragWorkerNotReady": "EmbeddingWorker 尚未就緒。請先呼叫 init()。",
+    "ragWorkerNotInit": "模型尚未初始化。請先傳送 init 訊息。",
+    "ragWorkerLoadFail": "模型載入失敗：",
+    "localizedPrompt": "Always respond in Traditional Chinese (繁體中文).",
+    "cmdCtxMenu": "💬 傳送至 Lumina 聊天",
+    "cmdChatTitle": "開啟聊天",
+    "cmdLogTitle": "開啟開發日誌",
+    "cmdReindex": "重新索引整個庫",
+    "cmdClearIdx": "清除索引",
+    "ribbonTitle": "開啟 Lumina 聊天",
+    "noticeMobileRag": "行動端已封鎖本地嵌入。請在設定中配置雲端嵌入以使用 RAG。",
+    "noticeLargeVault": "目前庫中的筆記數量非常多（{{count}} 筆）。背景首次索引可能需要一些時間與資源。",
+    "noticeIndexing": "Lumina：正在於背景進行初始設定與我的筆記索引...",
+    "errNoProvider": "找不到所選的嵌入提供者設定。",
+    "errMobileAuto": "行動端不支援本地嵌入（自動模式）。請在設定中選擇雲端嵌入。",
+    "mcpTokenCopied": "認證權杖已複製到剪貼簿。",
+    "mcpConnectFailed": "MCP 伺服器 \"{{name}}\" 連線失敗，已停用。",
+    "mcpLocalServerStartFailed": "啟動內建 MCP 伺服器失敗：{{error}}",
+    "mcpDisconnectedDuringExecution": "執行工具時 MCP 伺服器 \"{{name}}\" 連線中斷，已停用該伺服器。",
+    "mcpToolExecutionFailed": "在 MCP 伺服器 \"{{name}}\" 上執行工具失敗。該伺服器已被停用。請檢查您的設定。",
+    "searchModelShort": "搜尋模型...",
+    "noSearchResults": "沒有搜尋結果。",
+    "unsupportedFileType": "不支援的檔案類型：{{ext}}",
+    "attachFileFailed": "附加檔案失敗：{{file}}",
+    "mcpManagerNotInitialized": "⚠️ MCP Manager 未初始化。",
+    "mcpSyncError": "⚠️ 同步 MCP 伺服器時出錯。",
+    "mcpLocalServerRestarted": "✅ 內建 MCP 伺服器已重新啟動（連接埠：{{port}}）",
+    "mcpLocalServerStarted": "✅ 內建 MCP 伺服器已啟動（連接埠：{{port}}）",
+    "mcpLocalServerStopped": "🛑 內建 MCP 伺服器已停止（連接埠：{{port}}）",
+    "mcpLocalServerDisconnectAgentDisabled": "⚠️ 由於內建伺服器連線錯誤，代理模式已被停用。",
+    "mcpClientDisconnected": "🔌 MCP 伺服器「{{name}}」已斷線。",
+    "mcpClientConnected": "✅ MCP 伺服器「{{name}}」已成功連線。",
+    "mcpClientToolExecutionFailedStatusError": "⚠️ MCP 伺服器「{{name}}」工具執行失敗，狀態已設定為錯誤。",
+    "mcpClientToolExecuteFailedTryReconnect": "在 MCP 伺服器「{{name}}」上執行工具失敗。請嘗試重新連線。",
+    "agentModeLlmRequired": "⚠️ 要使用代理，您必須先設定並驗證 LLM 供應商。",
+    "agentModeLocalServerStarting": "🚀 代理已啟用：正在連接本機 MCP 伺服器...",
+    "agentModeLocalServerConnecting": "🚀 代理已啟用：正在連接本機 MCP 伺服器...",
+    "agentModeEnabled": "🤖 代理模式已啟用。",
+    "agentModeDisabled": "🤖 代理模式已停用。",
+    "agentModeLocalServerStoppedDisabled": "⚠️ 由於內建 MCP 伺服器已停止，代理模式也被停用。",
+    "agentModeLocalServerStoppedDisabledShort": "⚠️ 由於本機伺服器已停止，代理功能已停用。",
+    "mcpLocalServerTokenInputFromLocal": "已輸入本機伺服器權杖。",
+    "mcpLocalServerTokenInputFromLocalTooltip": "自動輸入內建 MCP 伺服器認證權杖",
+    "thoughtProcess": "思考過程",
+    "agentMaxStepsReached": "⚠️ 達到最大工具執行次數。",
+    "agentRepeatedToolCalls": "⚠️ 偵測到重複的工具呼叫並已終止。請換個說法提問。",
+    "agentToolNotFound": "在任何已連接的 MCP 伺服器上均未找到工具「{{name}}」。",
+    "agentToolTruncatedNote": "\n\n⚠️ 注意：工具輸出已從 {{total}} 個字元截斷為 {{max}} 個字元。完整內容可在儲存庫檔案中查看。請不要再次呼叫此工具，直接使用被截斷的內容回覆使用者。",
+    "agentToolResultFor": "「{{name}}」的工具結果：",
+    "agentToolError": "工具「{{name}}」出錯：{{error}}",
+    "agentToolExecuteError": "執行工具時出錯：{{error}}",
+    "agentBetaActivateTitle": "🤖 啟用代理（測試版）？",
+    "agentBetaActivateDesc": "LLM 已連線！是否啟用代理模式？\n\n代理可以自動讀取筆記、建立新筆記以及向筆記追加內容。\n\n您可以隨時透過聊天中的 MCP 按鈕開啟或關閉此功能。",
+    "agentBetaActivateConfirm": "啟用",
+    "agentBetaActivateSkip": "暫不",
+    "agentBetaEnabled": "🤖 代理模式已啟用！代理已準備好協助您處理筆記。",
+    "copiedToClipboard": "已複製到剪貼簿。",
+    "contentInserted": "內容已插入筆記中。",
+    "noActiveMarkdown": "沒有活動的 Markdown 視窗。請先點選一個筆記。",
+    "editConfirm": "在此之後的所有訊息都將被刪除。是否繼續？",
+    "regenerateConfirm": "在此之後的所有對話都將被刪除並重新產生回覆。是否繼續？",
+    "fileNotFound": "找不到檔案。",
+    "saveAndSend": "儲存並傳送",
+    "insertToNote": "插入到筆記",
+    "regenerate": "重新產生",
+    "edit": "編輯",
+    "openReferenceNote": "開啟參考筆記"
+  },
+  "mcpServerTools": {
+    "read_active_note": {
+      "desc": "讀取 Obsidian 中目前活動（開啟）的筆記內容。",
+      "noActive": "沒有找到活動的筆記。"
+    },
+    "read_note": {
+      "desc": "讀取庫中的特定筆記。",
+      "argPath": "要讀取的檔案的路徑（例如 folder/note.md）",
+      "notFound": "找不到檔案：{{path}}"
+    },
+    "create_note": {
+      "desc": "建立新筆記。如果檔案已存在，則返回錯誤而不覆寫。",
+      "argPath": "要建立的檔案的路徑（例如 folder/new_note.md）",
+      "argContent": "筆記的初始內容",
+      "tooLong": "要建立的內容超出了限制（{{limit}} 個字元）。",
+      "alreadyExists": "檔案已存在。不允許覆寫：{{path}}",
+      "parentFolderNotFound": "父資料夾不存在：{{parentPath}}",
+      "success": "已建立筆記：{{path}}"
+    },
+    "search_notes": {
+      "desc": "在庫中的所有 Markdown 檔案中搜尋特定的文字。",
+      "argQuery": "要搜尋的文字",
+      "foundPrefix": "在以下檔案中找到（最多 {{max}} 個）：\n\n",
+      "noResults": "沒有找到搜尋結果。"
+    },
+    "append_to_note": {
+      "desc": "在現有筆記的末尾附加內容。為了防止無限迴圈，存在最大檔案長度限制（100,000 個字元）。",
+      "argPath": "要附加內容的檔案的路徑",
+      "argContent": "要附加的內容",
+      "tooLong": "一次可以附加的最大長度為 {{limit}} 個字元。",
+      "notFound": "找不到檔案：{{path}}",
+      "maxLengthExceeded": "無法繼續附加，因為檔案已超出最大長度（100,000 個字元）以防止無限迴圈。",
+      "success": "內容已成功附加：{{path}}"
+    },
+    "read_daily_note": {
+      "desc": "讀取今天的每日筆記（格式：YYYY-MM-DD.md）。",
+      "notFound": "今天的每日筆記不存在：{{path}}"
+    },
+    "append_to_daily_note": {
+      "desc": "向今天的每日筆記附加內容。如果筆記不存在則建立它。",
+      "argContent": "要附加的內容",
+      "tooLong": "一次可以附加的最大長度為 {{limit}} 個字元。",
+      "maxLengthExceeded": "無法繼續附加，因為檔案已超出最大長度（100,000 個字元）。",
+      "successAppend": "已將內容附加到每日筆記：{{path}}",
+      "successCreate": "已建立每日筆記並附加內容：{{path}}"
+    },
+    "list_notes": {
+      "desc": "列出庫中的所有 Markdown 筆記。您可以指定一個資料夾路徑來僅列出該資料夾中的筆記。",
+      "argPath": "要列出筆記的資料夾路徑（例如 資料夾/子資料夾）。如果不提供，則列出庫中的所有筆記。",
+      "noNotes": "未找到筆記{{path}}。",
+      "listPrefix": "筆記列表{{path}}（共 {{count}} 筆）：\n\n"
+    },
+    "rag_search": {
+      "desc": "使用 RAG（檢索增強生成）對庫中的筆記進行語意搜尋。透過混合向量搜尋 + BM25，找到與查詢最相似的檔案區塊，而不是簡單的關鍵字比對。僅在 RAG 索引完成時有效。",
+      "argQuery": "要執行語意搜尋的查詢字串",
+      "argTopK": "要返回的最大結果數（預設：5）",
+      "argMinSimilarity": "最小相似度閾值（0~1，預設：0.65）",
+      "notReady": "RAG 索引未準備好。請先在設定中啟用 RAG 並完成索引。",
+      "emptyQuery": "搜尋查詢為空。",
+      "noResults": "沒有找到 RAG 搜尋結果。請嘗試更改查詢或降低 min_similarity 的值。",
+      "error": "RAG 搜尋期間出錯：{{error}}",
+      "summary": "RAG 搜尋結果（找到 {{count}} 個文字區塊，相似度 >= {{minSim}}）：\n\n{{context}}"
+    },
+    "common": {
+      "truncated": "\n\n...（由於 {{limit}} 個字元的長度限制，內容被截斷）",
+      "unknownTool": "未知工具。",
+      "executionError": "工具執行期間出錯：{{error}}",
+      "pathExcluded": "RAG 排除/包含設定已限制對此路徑的存取：{{path}}"
+    }
+  }
+}

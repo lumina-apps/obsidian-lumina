@@ -48,10 +48,10 @@ export function renderLanguageSection(tab: LuminaSettingTab, el: HTMLElement): v
 							// LLM 번역 및 캐시 적용 실행 (내부에서 모달로 진행 여부 확인)
 							await translatePluginLocales(tab.app, tab.plugin.settings);
 						} else {
-							setLanguage('system');
+							await setLanguage('system');
 						}
 					} else {
-						setLanguage(val); // 언어 변경 즉시 반영
+						await setLanguage(val); // 언어 변경 즉시 반영
 					}
 					s.language = val as PluginLanguage;
 					migrateQuickActions(tab.plugin);

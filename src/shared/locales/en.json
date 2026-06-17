@@ -1,0 +1,701 @@
+{
+  "settings": {
+    "showAdvanced": "Advanced Settings",
+    "connections": {
+      "title": "Connections & Models",
+      "provider": "Provider",
+      "language": {
+        "name": "Plugin Language",
+        "desc": "Select the language for the plugin interface.",
+        "systemTranslate": "Translate to system language",
+        "llmRequired": "LLM connection is required for translation.",
+        "warningCost": "Using translation may incur LLM API costs.",
+        "option": {
+          "en": "English",
+          "ko": "한국어",
+          "ja": "日本語",
+          "zh": "简体中文",
+          "zh-tw": "繁體中文",
+          "es": "Español",
+          "pt": "Português",
+          "de": "Deutsch",
+          "fr": "Français",
+          "ru": "Русский",
+          "it": "Italiano",
+          "system": "System language"
+        },
+        "current": "Current: {{lang}}",
+        "deleteCache": "Delete Cache",
+        "deleteCacheTooltip": "Delete the cached system language translation and reset.",
+        "deleteCacheTitle": "Delete Translation Cache",
+        "deleteCacheConfirm": "Are you sure you want to delete the cached system language translation data?\\nIf you select System Language again after deletion, a new translation will be performed."
+      },
+      "apiKey": {
+        "name": "API Key & Model Registration",
+        "desc": "Register API keys for cloud providers or local LLM URLs.",
+        "mobileLocalWarning": "Local LLMs cannot be used on mobile devices.",
+        "addConnection": "+ Add new LLM connection",
+        "apiKey": "API Key",
+        "endpointUrl": "Endpoint URL",
+        "hiddenDesc": "Hidden when typing.",
+        "testConnection": "Test Connection",
+        "testing": "Testing...",
+        "deleteConnection": "Delete this connection",
+        "connected": "Connected",
+        "notConnected": "Not Connected",
+        "selectModel": "Select Model",
+        "endpointPlaceholder": "e.g., http://localhost:11434",
+        "newConnection": "New Connection",
+        "success": "Connection successful!",
+        "fail": "Connection failed: ",
+        "noModels": "No models available."
+      },
+      "ragEngine": {
+        "name": "One-Click RAG Engine",
+        "desc": "Generates answers by referencing all notes in your vault in real-time and provides Smart Discovery features.",
+        "privacyNotice": "🔒 Document analysis runs locally. (Cloud AI chat may send note excerpts to generate answers.)",
+        "customGuide": "💡 Enable \"Advanced Settings\" (top right) to manually select an embedding engine.",
+        "mobileWarning": "⚠️ Mobile devices do not support one-click local embedding (RAG). Please select a cloud embedding model in Advanced Settings.",
+        "ragDisabledForEmbedding": "⚠️ RAG engine is disabled. Please enable the RAG engine first to select an embedding model."
+      },
+      "customEmbedding": {
+        "name": "Custom Embedding (Advanced)",
+        "desc": "Select an embedding model from registered providers.",
+        "auto": "🤖 Auto (Built-in Local Model: ibm-granite/granite-embedding-97m-multilingual-r2)",
+        "guide": "※ Register an LLM connection above and run a connection test to add models.",
+        "localWarn": "⚠️ Local models cannot be automatically verified as embedding models.\\nIf indexing fails, please select an embedding-specific model.",
+        "mobileWarn": "⚠️ Mobile devices cannot use local embedding models. Please select a cloud embedding."
+      },
+      "defaultChatModel": {
+        "name": "Default Chat Model",
+        "desc": "Select the default LLM model for the sidebar chat.",
+        "sidebarDefault": "Sidebar Chat Default Model",
+        "noConnections": "Please add an LLM connection in settings and complete the connection test."
+      },
+      "quickActionProvider": {
+        "name": "Quick Action Provider",
+        "desc": "🚨 Large or Reasoning models may cause severe latency. Use a fast, lightweight model (Instruct, Flash, or Mini-tier) for instant feedback."
+      },
+      "quickActionModel": {
+        "name": "Quick Action Model",
+        "desc": "Select a dedicated model to use for Quick Actions. (Fast and lightweight models recommended)",
+        "noneSelected": "None (Required)",
+        "reasoningWarning": "⚠️ Warning: Reasoning Model detected! Quick Actions require speed; using this model may cause severe delays or infinite loops. A standard Instruct model is highly recommended."
+      }
+    },
+    "mcp": {
+      "title": "Agent & MCP",
+      "desc": "Connect external Model Context Protocol (MCP) servers to use local tools, or enable the built-in server to allow other apps to control Lumina.",
+      "agentMode": {
+        "name": "Agent Mode",
+        "desc": "LLM autonomously performs tasks using MCP tools. ⚠️ Performance may degrade with smaller models.",
+        "maxSteps": "Max Auto-Execution Steps",
+        "maxStepsDesc": "The maximum number of consecutive tool executions the agent can run in a single turn. (Default: 15)",
+        "respectRagExclusions": "Apply RAG path exclusions/inclusions to Agent",
+        "respectRagExclusionsDesc": "Apply RAG tab exclusion rules to Agent file operations."
+      },
+      "addServer": "+ Add new MCP server",
+      "serverName": "Server Name",
+      "transport": "Transport",
+      "enableDesc": "Enable (Inject tools into chat)",
+      "deleteServer": "Delete this server",
+      "emptyServers": "No servers registered.",
+      "localServerName": "Lumina Local Server",
+      "restart": "Restart",
+      "localServer": {
+        "sectionTitle": "Lumina Built-in MCP Server (Hosting)",
+        "desc": "Open a local server to access Obsidian features from external clients (AI agents, etc.).",
+        "enable": {
+          "name": "Enable Server"
+        },
+        "port": {
+          "name": "Server Port",
+          "desc": "Default: 3000 (Applied on restart after setting)"
+        },
+        "token": {
+          "name": "Auth Token",
+          "desc": "Token required for external clients to connect. Keep this private.",
+          "regenerate": "Regenerate"
+        },
+        "guide": "SSE: http://localhost:{{port}}/sse\nAuth: Header \"Authorization: Bearer <token>\" (or ?token=<token>)",
+        "maxRead": {
+          "name": "Read Max Characters",
+          "desc": "Max characters returned per file read (Default: 20000)"
+        },
+        "searchSnippet": {
+          "name": "Search Snippet Length",
+          "desc": "Characters shown around matched terms (Default: 300)"
+        },
+        "searchMaxResults": {
+          "name": "Search Max Results",
+          "desc": "Max results returned per search (Default: 10)"
+        },
+        "maxAppend": {
+          "name": "Append Max Characters",
+          "desc": "Max characters per append operation (Default: 10000)"
+        }
+      },
+      "externalServer": {
+        "sectionTitle": "External MCP Servers (Client Connection)",
+        "sseUrl": {
+          "name": "SSE URL",
+          "desc": "e.g. http://localhost:8080/sse"
+        },
+        "token": {
+          "name": "Auth Token (Optional)",
+          "desc": "Enter a token if the server requires authentication."
+        }
+      },
+      "permission": {
+        "title": "Tool Execution Permission",
+        "desc": "The AI is requesting permission to execute a potentially dangerous tool.\\n\\nServer: {{server}}\\nTool: {{tool}}",
+        "args": "Arguments:",
+        "approve": "Approve",
+        "reject": "Reject"
+      },
+      "experimental": "Experimental"
+    },
+    "chat": {
+      "quickSettings": {
+        "systemPrompt": "System Prompt",
+        "temperature": "Temperature",
+        "precise": "Precise",
+        "balanced": "Balanced",
+        "creative": "Creative",
+        "maxLength": "Max Length",
+        "short": "Short",
+        "medium": "Medium",
+        "long": "Long",
+        "allSettings": "All Settings"
+      },
+      "title": "Chat & Prompt",
+      "currentNote": "Include Current Note",
+      "systemPrompt": {
+        "name": "System Prompts",
+        "desc": "Manage multiple system prompts.",
+        "active": "✅ Active",
+        "activate": "Activate",
+        "addPrompt": "+ Add Prompt",
+        "defaultName": "System Prompt"
+      },
+      "history": {
+        "name": "Auto-save Chat History",
+        "desc": "Automatically save chat history to a specified path.",
+        "pathPlaceholder": "e.g., /chatHistory",
+        "savePath": "Save Path",
+        "saveFail": "⚠️ Failed to save chat history: {{error}}",
+        "loadFail": "⚠️ Failed to load session.",
+        "deleteSuccess": "✅ Chat history deleted.",
+        "deleteFail": "⚠️ Failed to delete session.",
+        "deleteConfirm": "Are you sure you want to delete this chat history?",
+        "title": "Chat History",
+        "empty": "No saved chat history.",
+        "unknownModel": "Unknown Model"
+      },
+      "context": {
+        "activeNote": "Include Current Note: {{name}}",
+        "selectedText": "Selected Text ({{length}} chars)",
+        "folderFiles": "[Files in Folder: {{name}}]",
+        "activeNotePrefix": "[Active Note: {{name}}]",
+        "canvasFile": "[Canvas File: {{name}}]",
+        "tagFiles": "[Files with Tag: {{name}} (Max 5)]",
+        "activeNotePrompt": "Active Note",
+        "categoryActiveNote": "📄 Include Current Note",
+        "categorySelection": "✂️ Selected Text",
+        "categoryFolder": "📁 Add Folder",
+        "categoryFile": "📝 Add File",
+        "categoryTag": "🏷️ Add Tag",
+        "categoryUrl": "🔗 Enter URL",
+        "categoryCanvas": "🎨 Add Canvas",
+        "categoryBack": "Back",
+        "categoryTitle": "Select Context Type",
+        "urlInputPlaceholder": "Enter URL (e.g., https://...)",
+        "urlInputPrompt": "Press Enter to add URL"
+      },
+      "sendMode": {
+        "name": "Send Message Mode",
+        "desc": "Choose how to send messages in chat.",
+        "enter": "Enter to send",
+        "ctrlEnter": "Ctrl + Enter to send"
+      },
+      "quickActions": {
+        "name": "User Custom Quick Actions (Commands)",
+        "desc": "Register custom prompts as Obsidian commands to execute directly on selected text.",
+        "add": "+ Add Quick Action",
+        "actionName": "Action Name",
+        "actionPrompt": "Prompt",
+        "actionType": "Action Type",
+        "typeReplace": "Replace text",
+        "typeAppend": "Append text",
+        "typeChat": "Send to Chat",
+        "newAction": "New Action",
+        "deleteAction": "Delete this action",
+        "defaults": {
+          "summarize": {
+            "name": "Summarize",
+            "prompt": "Summarize the following text concisely:\n\n"
+          },
+          "translate": {
+            "name": "Translate to English",
+            "prompt": "Translate the following text into natural English:\n\n"
+          },
+          "explain": {
+            "name": "Explain",
+            "prompt": "Explain the following text in detail:\n\n"
+          }
+        }
+      },
+      "inlineTrigger": {
+        "name": "Inline Command Trigger",
+        "desc": "Keyword to invoke the quick action autocomplete popup in the editor."
+      },
+      "memoryLimit": {
+        "name": "Conversation Memory Limit (Advanced)",
+        "desc": "How much conversation history to retain (by turns or tokens).",
+        "limitType": "Conversation Memory Mode",
+        "turns": "Turn Limit",
+        "tokens": "Token Limit",
+        "turnsLabel": "Turns to Remember",
+        "turnsDesc": "Turns to remember (1 turn = user message + AI response)",
+        "maxTokens": "Max Context Tokens"
+      },
+      "modelParams": {
+        "name": "Model Parameters (Advanced)",
+        "desc": "Adjust response creativity and output length.",
+        "tempLabel": "Temperature",
+        "tempDesc": "Closer to 0 = precise, closer to 2 = creative",
+        "maxOutput": "Max Output Tokens",
+        "responseLang": "Specify Response Language",
+        "responseLangDesc": "Force AI responses to a specific language. \"Auto\" follows the system prompt.",
+        "responseLangAuto": "Auto"
+      },
+      "streaming": {
+        "name": "Streaming",
+        "desc": "Enable streaming responses."
+      },
+      "emptyResponseFallback": "⚠️ The model returned an empty response. (This may be due to an unsupported language/format, prompt filtering, or exceeding the context limit.)"
+    },
+    "rag": {
+      "toggleTooltip": "When enabled, the AI will read and reference notes in your vault to answer.",
+      "title": "RAG & Context",
+      "embeddingWarning": "RAG embedding model can be configured in the Connections & Models tab.",
+      "disabledWarning": "⚪ RAG is disabled. Please enable RAG engine in the Connections & Models tab.",
+      "dataScope": {
+        "name": "Default Data Scope",
+        "desc": "Choose which notes to include in RAG search.",
+        "vaultWide": "Entire Vault",
+        "activeNote": "Active Note Only",
+        "manual": "Manually Selected Files"
+      },
+      "autoIncludeActive": {
+        "name": "Auto-include Active Note",
+        "desc": "Automatically include the currently active note as context in chat."
+      },
+      "includePaths": {
+        "name": "Include Paths",
+        "desc": "Comma-separated. Leave empty to include the entire vault."
+      },
+      "ignorePaths": {
+        "name": "Ignore Paths",
+        "desc": "Comma-separated. Takes precedence over included paths."
+      },
+      "chunking": {
+        "name": "Chunking (Advanced)",
+        "desc": "Configure chunk size and overlap for document splitting.",
+        "sizeDesc": "Chunk size (tokens)",
+        "overlapLabel": "Chunk Overlap",
+        "overlapDesc": "Overlapping tokens between adjacent chunks"
+      },
+      "topK": {
+        "name": "Top-K Retrieval (Advanced)",
+        "desc": "Number of top-ranked documents to pass to the LLM."
+      },
+      "syncMode": {
+        "name": "Indexing Sync (Advanced)",
+        "desc": "How the index updates when notes change.",
+        "watch": "Watch for changes (recommended)",
+        "manual": "Manual",
+        "startup": "On App Startup"
+      },
+      "minSimilarity": {
+        "name": "Min Similarity (Advanced)",
+        "desc": "Exclude results below this relevance score (0~1)"
+      },
+      "reindex": {
+        "name": "Full Re-index",
+        "desc": "Re-index all vault files from scratch.",
+        "button": "🔄 Re-index Now",
+        "notActivated": "❌ RAG engine is not activated.",
+        "started": "🔄 Starting full re-indexing...",
+        "success": "✅ Re-indexing completed",
+        "fail": "❌ Re-indexing failed: "
+      },
+      "status": {
+        "name": "Indexing Status (Advanced)",
+        "desc": "Shows current index size and file count.",
+        "statusLabel": "Status",
+        "indexing": "Indexing... ({{processed}}/{{total}})",
+        "files": "📄 Indexed Files: {{count}}",
+        "size": "💾 Storage Size: {{size}} KB",
+        "ready": "RAG Ready",
+        "indexingShort": "Indexing",
+        "error": "RAG Error",
+        "waiting": "Waiting for RAG"
+      },
+      "init": {
+        "loadingModel": "Lumina: Loading embedding model...",
+        "loadingModelDesc": "Downloading and loading the local model for the first time may take a few minutes.",
+        "cloudSuccess": "Lumina: Cloud embedding connected",
+        "loadingProgress": "Lumina: Loading model {{pct}}% — {{status}}",
+        "indexingVault": "Lumina: Indexing vault...",
+        "indexingProgressText": " ({{processed}}/{{total}}) - {{pct}}%",
+        "remainingTimePrefix": " - Estimated time: ",
+        "remainingTimeSec": "{{sec}}s",
+        "remainingTimeMinSec": "{{min}}m {{sec}}s",
+        "ready": "✅ Lumina: RAG engine ready",
+        "indexFail": "❌ Lumina: Indexing failed\\n{{error}}",
+        "readyManual": "✅ Lumina: RAG engine ready (Manual indexing mode)",
+        "initFail": "❌ Lumina: RAG worker initialization failed\\n{{error}}",
+        "downloading": "Downloading RAG Model...",
+        "indexingNotes": "Indexing my notes..."
+      },
+      "reset": {
+        "name": "Reset Index (Advanced)",
+        "desc": "Clear all indexed data.",
+        "button": "🗑 Reset Index",
+        "devNotice": "⚠️ Index cleared (Under development)",
+        "resetConfirm": "Are you sure you want to reset the index? This action cannot be undone.",
+        "resetSuccess": "🗑 Index has been reset."
+      }
+    },
+    "misc": {
+      "title": "Misc & Extensions",
+      "contextMenu": {
+        "name": "Context Menu Integration",
+        "desc": "Add Lumina to the editor right-click menu."
+      },
+      "ribbonIcon": {
+        "name": "Show Ribbon Icon",
+        "desc": "Display plugin icon in the left sidebar."
+      },
+      "frontmatter": {
+        "name": "Auto-generate Frontmatter (Advanced)",
+        "desc": "Automatically add frontmatter when creating new notes."
+      },
+      "debugMode": {
+        "name": "Debug Mode (Advanced)",
+        "desc": "View internal logs such as LLM requests and responses."
+      },
+      "versionInfo": {
+        "name": "Version Info & Release Notes (Advanced)",
+        "desc": "Release notes and update history"
+      },
+      "factoryReset": {
+        "name": "Data Initialization & Plugin Reset (Advanced)",
+        "desc": "Reset all settings and data to defaults. (Chat history is preserved)",
+        "button": "🔄 Reset",
+        "devNotice": "⚠️ Factory reset (Under development)",
+        "confirmTitle": "Factory Reset",
+        "confirmMsg": "Are you sure you want to reset all settings? Registered API keys, options, RAG index, downloaded local models, and system language translation cache will be deleted. (Chat history will be preserved)",
+        "success": "✅ Plugin settings have been reset."
+      },
+      "donate": {
+        "name": "Donate & Support",
+        "desc": "If you find Lumina useful, please consider supporting its development!",
+        "supportTitle": "Support Lumina:",
+        "kofi": "☕ Ko-fi",
+        "ctee": "☕ Ctee",
+        "githubSponsors": "💖 GitHub Sponsors"
+      }
+    },
+    "providerErrors": {
+      "missingUrl": "Please enter the endpoint URL.",
+      "missingKey": "Please enter the API key.",
+      "unknownType": "Unknown provider type: {{type}}",
+      "apiError": "{{provider}} API Error: {{status}} {{text}}",
+      "ollamaNoModel": "There are no running models in Ollama. Please start a model with `ollama run <model>` first.",
+      "connectFail": "Connection failed: {{status}} {{text}}",
+      "anthropicNoEmbed": "Anthropic does not support the embedding API.",
+      "visionNotSupported": "⚠️ The selected provider ({{provider}}) does not support image analysis. Please use OpenAI, Anthropic, or Google with a vision-capable model."
+    },
+    "translation": {
+      "confirmTitle": "System Language Translation",
+      "confirmMsg": "Translation will be performed using the [{{provider}}] {{model}} model.\\n\\nAPI token costs may apply. Do you want to proceed?",
+      "progressTitle": "Translation in Progress",
+      "progressMsg": "🔄 Translating language data to system language. The process will continue in the background even if you close this window.",
+      "delayLocal": "This process uses a local model, so it may take 1~5 minutes or more depending on system specs.",
+      "delayCloud": "This process may take 1~2 minutes depending on the model and network conditions.",
+      "success": "✅ Language translation and application completed.",
+      "fail": "❌ Translation failed: ",
+      "noValidModel": "⚠️ No connected LLM or valid model selected.",
+      "cacheDeleted": "✅ System language translation cache deleted.",
+      "cacheDeleteFail": "❌ Cache deletion failed: ",
+      "noCache": "⚠️ No translation cache to delete."
+    }
+  },
+  "errors": {
+    "llmNotConnected": "LLM is not connected.",
+    "ragIndexingFailed": "RAG indexing failed.",
+    "llmConnectRequired": "Please add an LLM in settings and complete the connection test.",
+    "resetChat": "Reset Chat",
+    "chatPlaceholder": "Enter a message… (@: Context, /: Commands)",
+    "chatEmptyWelcome": "Ask Lumina anything.",
+    "cancelStreaming": "Cancel",
+    "send": "Send",
+    "underDevelopment": "This feature is under development.",
+    "ragDisabledGlobally": "Global RAG engine is disabled. Turn it on in Settings.",
+    "llm": {
+      "rateLimit": "⚠️ API quota or rate limit exceeded. Please try again in a moment. For free tier accounts, check your daily/minutely limits or verify your credit card/billing status.",
+      "unauthorized": "⚠️ API key is invalid or has expired. Please check your API key in settings under \"Connections & Models\".",
+      "forbidden": "⚠️ Access denied or request forbidden. Please check your API key permissions, service plan, or regional restrictions.",
+      "notFound": "⚠️ Requested model not found or API endpoint URL is incorrect. Please check your selected model and connection URL in settings.",
+      "networkError": "⚠️ Network connection failed. Please check your internet connection, or verify if your local LLM server is running.",
+      "notReadable": "Response body is not readable"
+    }
+  },
+  "chat": {
+    "newChat": "New Chat",
+    "history": "Chat History",
+    "settings": "Chat Settings",
+    "addContext": "Add Context (@)",
+    "uploadFile": "Upload File",
+    "clearInput": "Clear Input",
+    "slashCommands": {
+      "clear": {
+        "name": "Clear Chat",
+        "desc": "Clear the current conversation and start a new chat."
+      },
+      "rag": {
+        "name": "Toggle RAG",
+        "desc": "Enable or disable the use of RAG context."
+      },
+      "mcp": {
+        "name": "MCP Servers",
+        "desc": "Open the MCP servers list popup."
+      },
+      "settings": {
+        "name": "Settings",
+        "desc": "Open the Lumina settings screen."
+      },
+      "quickActionDesc": "Insert prompt template"
+    },
+    "sessionUsage": "Current Session Usage",
+    "sessionTokens": "Total: {{tokens}} tokens",
+    "sessionCost": "(approx. ${{cost}})"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "remove": "Remove",
+    "add": "Add",
+    "copy": "Copy",
+    "success": "Success",
+    "error": "Error",
+    "history": "Chat History",
+    "back": "Back",
+    "settings": "Settings",
+    "loading": "Loading...",
+    "refresh": "Refresh"
+  },
+  "discovery": {
+    "tabName": "Smart Discovery",
+    "chatTabName": "AI Chat",
+    "searchPlaceholder": "Search by meaning...",
+    "duplicateWarning": "⚠️ Highly similar note found:",
+    "duplicateCompare": "Compare",
+    "recommendedTags": "Recommended Tags",
+    "relatedNotes": "Related Notes",
+    "insertLink": "Insert Link",
+    "openInSplit": "Split View",
+    "chatWithNote": "Chat",
+    "filterPlaceholder": "Filter (Path or #tag)",
+    "emptyStateText": "RAG engine is disabled.",
+    "emptyStateSub": "Enable it in settings to use Smart Discovery.",
+    "noResults": "No related notes found.",
+    "stagedContext": "Staged Context",
+    "approxTokens": "approx. {{current}} / {{max}} tokens",
+    "startChat": "Start chat with {{count}} items",
+    "indexing": "RAG Indexing... ({{processed}} / {{total}})",
+    "loadingModel": "Loading Embedding Model...",
+    "noActiveEditor": "No active Markdown editor found."
+  },
+  "uiMessages": {
+    "emptyResponseTokenLimit": "⚠️ The model returned an empty response. Generation was stopped because the Max Output Tokens limit was reached. Please increase the \"Max Output Tokens\" limit in settings.",
+    "tokenLimitHitWarning": "\n\n⚠️ (Generation was interrupted because the Max Output Tokens limit was reached. Please increase the \"Max Output Tokens\" value in settings.)",
+    "toolExecutionRejected": "Tool execution was rejected by the user.",
+    "inlineReplace": "Replace",
+    "inlineAppend": "Append",
+    "inlineSend": "Send to Chat",
+    "inlineEmpty": "No target text found on current line. Please write or select text.",
+    "qaEmptySel": "No text selected.",
+    "qaNotConfigured": "Quick Action model is not configured. Please select a dedicated model in settings.",
+    "qaNoProvider": "No LLM provider configured.",
+    "qaInvalidProvider": "Invalid or unauthenticated LLM provider.",
+    "qaNoModel": "No available models.",
+    "qaSelectedText": "Selected text",
+    "qaExecuting": "Executing {{name}}...",
+    "qaCompleted": "{{name}} completed",
+    "qaError": "Error occurred: {{msg}}",
+    "qaWaitingAI": "⏳ Waiting for AI response...",
+    "qaEmptyResponse": "⚠️ Model returned empty text. (Infinite loop or prompt compatibility issue)",
+    "qaUnknownError": "Unknown error",
+    "qaReasoningDetected": "🚫 Reasoning model's thought process (<think>) detected. Quick action aborted. Please change to a standard Instruct model in settings.",
+    "modalCancel": "Cancel",
+    "modalProceed": "Proceed",
+    "modelPlaceholder": "Enter model name... (e.g., claude, gpt-4)",
+    "searchModelShort": "Search models...",
+    "noSearchResults": "No search results.",
+    "unsupportedFileType": "Unsupported file type: {{ext}}",
+    "attachFileFailed": "Failed to attach file: {{file}}",
+    "fsAdapterErr": "FileSystemAdapter not found. Only supported in desktop environment.",
+    "searchSource": "Source",
+    "debugDelAllMsg": "Are you sure you want to delete all debug logs?",
+    "debugAutoScroll": "Auto Scroll",
+    "debugExport": "Export to JSON",
+    "debugDelAll": "Delete All Logs",
+    "debugNoLogs": "No logs",
+    "debugWaitLlm": "Displayed here upon LLM request",
+    "debugTurnOn": "Please enable Debug Mode in Settings › Advanced",
+    "debugChunks": "chunks",
+    "debugExpandAll": "Expand All",
+    "debugCollapseAll": "Collapse All",
+    "ragTooLong": "[Lumina] RAG context too long, truncated to {{max}} chars.",
+    "ragWorkerInitErr": "Unknown Worker init error (Check console)",
+    "ragWorkerTimeout": "Embedding model load timeout (>60s). Check network or clear cache and retry.",
+    "ragWorkerTerm": "Worker terminated.",
+    "ragWorkerNotReady": "EmbeddingWorker not ready. Call init() first.",
+    "ragWorkerNotInit": "Model not initialized. Send init message first.",
+    "ragWorkerLoadFail": "Model load failed: ",
+    "localizedPrompt": "Always respond in English.",
+    "cmdCtxMenu": "💬 Send to Lumina Chat",
+    "cmdChatTitle": "Open Chat",
+    "cmdLogTitle": "Open DevLog",
+    "cmdReindex": "Reindex Vault",
+    "cmdClearIdx": "Clear Index",
+    "ribbonTitle": "Open Lumina Chat",
+    "noticeMobileRag": "Local embeddings are blocked on mobile. Please configure cloud embeddings in settings to use RAG.",
+    "noticeLargeVault": "Your vault contains a large number of notes ({{count}}). The initial background indexing may take some time and resources.",
+    "noticeIndexing": "Lumina: Initial setup and note indexing are in progress in the background...",
+    "errNoProvider": "Selected embedding provider configuration not found.",
+    "errMobileAuto": "Local embedding (Auto mode) is not supported on mobile devices. Please select a cloud embedding in settings.",
+    "mcpTokenCopied": "Auth token copied to clipboard.",
+    "mcpManagerNotInitialized": "⚠️ MCP Manager is not initialized.",
+    "mcpConnectFailed": "MCP Server \"{{name}}\" connection failed. Disabled.",
+    "mcpLocalServerStartFailed": "Failed to start built-in MCP server: {{error}}",
+    "mcpDisconnectedDuringExecution": "MCP Server \"{{name}}\" disconnected during tool execution and has been disabled.",
+    "mcpToolExecutionFailed": "Failed to execute tool on MCP server \"{{name}}\". The server has been disabled. Please check your settings.",
+    "mcpSyncError": "⚠️ Error syncing MCP servers.",
+    "mcpLocalServerRestarted": "✅ Built-in MCP server restarted (Port: {{port}})",
+    "mcpLocalServerStarted": "✅ Built-in MCP server started (Port: {{port}})",
+    "mcpLocalServerStopped": "🛑 Built-in MCP server stopped (Port: {{port}})",
+    "mcpLocalServerDisconnectAgentDisabled": "⚠️ Agent mode disabled due to built-in server connection error.",
+    "mcpClientDisconnected": "🔌 MCP Server \"{{name}}\" disconnected.",
+    "mcpClientConnected": "✅ MCP Server \"{{name}}\" connected successfully.",
+    "mcpClientToolExecutionFailedStatusError": "⚠️ MCP Server \"{{name}}\" tool execution failed. Status set to error.",
+    "mcpClientToolExecuteFailedTryReconnect": "Failed to execute tool on MCP server \"{{name}}\". Please try reconnecting.",
+    "agentModeLlmRequired": "⚠️ To use the agent, you must first configure and verify an LLM provider.",
+    "agentModeLocalServerStarting": "🚀 Agent enabled: Connecting to local MCP server...",
+    "agentModeLocalServerConnecting": "🚀 Agent enabled: Connecting to local MCP server...",
+    "agentModeEnabled": "🤖 Agent mode enabled.",
+    "agentModeDisabled": "🤖 Agent mode disabled.",
+    "agentModeLocalServerStoppedDisabled": "⚠️ Agent mode disabled because the built-in MCP server was stopped.",
+    "agentModeLocalServerStoppedDisabledShort": "⚠️ Agent mode disabled because the local server was stopped.",
+    "mcpLocalServerTokenInputFromLocal": "Local server token has been entered.",
+    "mcpLocalServerTokenInputFromLocalTooltip": "Automatically input the built-in MCP server authentication token",
+    "thoughtProcess": "Thought Process",
+    "agentMaxStepsReached": "⚠️ Maximum tool execution limit reached.",
+    "agentRepeatedToolCalls": "⚠️ Repeated tool executions detected and halted. Please rephrase your query.",
+    "agentToolNotFound": "Tool \"{{name}}\" not found on any connected MCP server.",
+    "agentToolTruncatedNote": "\n\n⚠️ NOTE: The tool output was truncated from {{total}} to {{max}} characters. The full content is available in the vault file. DO NOT call this tool again - use the truncated content to respond to the user.",
+    "agentToolResultFor": "Tool result for \"{{name}}\":",
+    "agentToolError": "Tool \"{{name}}\" error: {{error}}",
+    "agentToolExecuteError": "Error executing tool: {{error}}",
+    "agentBetaActivateTitle": "🤖 Enable Agent (Beta)?",
+    "agentBetaActivateDesc": "LLM connected! Would you like to enable Agent mode?\n\nThe agent can read notes, create notes, and append content to notes automatically.\n\nYou can turn this on or off anytime from the MCP button in chat.",
+    "agentBetaActivateConfirm": "Enable",
+    "agentBetaActivateSkip": "Not now",
+    "agentBetaEnabled": "🤖 Agent mode enabled! The agent is ready to help with your notes.",
+    "copiedToClipboard": "Copied to clipboard.",
+    "contentInserted": "Content inserted into note.",
+    "noActiveMarkdown": "No active Markdown window. Please click on a note first.",
+    "editConfirm": "All messages after this will be deleted. Do you want to continue?",
+    "regenerateConfirm": "All conversations after this will be deleted and the response will be regenerated. Do you want to continue?",
+    "fileNotFound": "File not found.",
+    "saveAndSend": "Save & Send",
+    "insertToNote": "Insert into Note",
+    "regenerate": "Regenerate",
+    "edit": "Edit",
+    "openReferenceNote": "Open reference note"
+  },
+  "mcpServerTools": {
+    "read_active_note": {
+      "desc": "Reads the content of the currently active (open) note in Obsidian.",
+      "noActive": "No active note found."
+    },
+    "read_note": {
+      "desc": "Reads a specific note in the vault.",
+      "argPath": "The path of the file to read (e.g. folder/note.md)",
+      "notFound": "File not found: {{path}}"
+    },
+    "create_note": {
+      "desc": "Creates a new note. If the file already exists, returns an error without overwriting.",
+      "argPath": "The path of the file to create (e.g. folder/new_note.md)",
+      "argContent": "The initial content of the note",
+      "tooLong": "The content to create exceeds the limit ({{limit}} characters).",
+      "alreadyExists": "File already exists. Overwriting is not allowed: {{path}}",
+      "parentFolderNotFound": "Parent folder does not exist: {{parentPath}}",
+      "success": "Note created: {{path}}"
+    },
+    "search_notes": {
+      "desc": "Searches for a specific text in all Markdown files in the vault.",
+      "argQuery": "The text to search for",
+      "foundPrefix": "Found in the following files (max {{max}}):\\n\\n",
+      "noResults": "No search results found."
+    },
+    "append_to_note": {
+      "desc": "Appends content to the end of an existing note. There is a maximum file length limit (100,000 characters) to prevent infinite loops.",
+      "argPath": "The path of the file to append content to",
+      "argContent": "The content to append",
+      "tooLong": "The maximum length that can be appended at once is {{limit}} characters.",
+      "notFound": "File not found: {{path}}",
+      "maxLengthExceeded": "Cannot append further as the file has exceeded the maximum length (100,000 characters) to prevent infinite loops.",
+      "success": "Content successfully appended: {{path}}"
+    },
+    "read_daily_note": {
+      "desc": "Reads today's daily note (Format: YYYY-MM-DD.md).",
+      "notFound": "Today's daily note does not exist: {{path}}"
+    },
+    "append_to_daily_note": {
+      "desc": "Appends content to today's daily note. Creates the note if it doesn't exist.",
+      "argContent": "The content to append",
+      "tooLong": "The maximum length that can be appended at once is {{limit}} characters.",
+      "maxLengthExceeded": "Cannot append further as the file has exceeded the maximum length (100,000 characters).",
+      "successAppend": "Content appended to daily note: {{path}}",
+      "successCreate": "Daily note created and content appended: {{path}}"
+    },
+    "list_notes": {
+      "desc": "Lists all Markdown notes in the vault. You can optionally specify a folder path to list notes within that folder.",
+      "argPath": "The folder path to list notes from (e.g. folder/subfolder). If not provided, lists all notes in the vault.",
+      "noNotes": "No notes found{{path}}.",
+      "listPrefix": "Notes{{path}} ({{count}} total):\n\n"
+    },
+    "rag_search": {
+      "desc": "Semantically searches notes in the vault using RAG (Retrieval-Augmented Generation). Finds document chunks most similar to the query using hybrid vector search + BM25, not simple keyword matching. Only works when RAG indexing is complete.",
+      "argQuery": "The query string to perform semantic search on",
+      "argTopK": "The maximum number of results to return (Default: 5)",
+      "argMinSimilarity": "Minimum similarity threshold (0~1, Default: 0.65)",
+      "notReady": "RAG index is not ready. Please enable RAG in settings and complete indexing first.",
+      "emptyQuery": "Search query is empty.",
+      "noResults": "No RAG search results found. Try changing your query or lowering the min_similarity value.",
+      "error": "Error occurred during RAG search: {{error}}",
+      "summary": "RAG Search Results ({{count}} chunks found, similarity >= {{minSim}}):\n\n{{context}}"
+    },
+    "common": {
+      "truncated": "\\n\\n... (Content truncated due to length limit of {{limit}} characters)",
+      "unknownTool": "Unknown tool.",
+      "executionError": "Error occurred during tool execution: {{error}}",
+      "pathExcluded": "Access to this path is restricted by RAG exclusion/inclusion settings: {{path}}"
+    }
+  }
+}

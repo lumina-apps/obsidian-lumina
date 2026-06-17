@@ -1,31 +1,26 @@
 import { writable, derived } from 'svelte/store';
-import { en, type Translation, type DeepPartial } from './en';
-import { ko } from './ko';
-import { ja } from './ja';
-import { zh } from './zh';
-import { zhTW } from './zh-tw';
-import { es } from './es';
-import { pt } from './pt';
-import { it } from './it';
-import { de } from './de';
-import { fr } from './fr';
-import { ru } from './ru';
+import type { Translation, DeepPartial, TranslationKeys } from './locale.types';
+
+// 동적 JSON import를 위한 로더 함수들
+// esbuild는 import()를 코드 스플리팅하여 별도 청크로 분리함
+const localeLoaders: Record<string, () => Promise<{ default: DeepPartial<Translation> }>> = {
+  en: () => import('./en.json'),
+  ko: () => import('./ko.json'),
+  ja: () => import('./ja.json'),
+  zh: () => import('./zh.json'),
+  'zh-tw': () => import('./zh-tw.json'),
+  es: () => import('./es.json'),
+  pt: () => import('./pt.json'),
+  it: () => import('./it.json'),
+  de: () => import('./de.json'),
+  fr: () => import('./fr.json'),
+  ru: () => import('./ru.json'),
+};
 
 export type Language = 'en' | 'ko' | 'ja' | 'zh' | 'zh-tw' | 'es' | 'pt' | 'it' | 'de' | 'fr' | 'ru';
 
-const locales: Record<string, DeepPartial<Translation>> = {
-  en,
-  ko,
-  ja,
-  zh,
-  'zh-tw': zhTW,
-  es,
-  pt,
-  it,
-  de,
-  fr,
-  ru,
-};
+// 로드된 로캘 캐시
+const loadedLocales: Record<string, DeepPartial<Translation>> = {};
 
 let currentLanguage: Language | 'system' = 'en';
 
@@ -37,22 +32,68 @@ export const tStore = derived(currentLanguageStore, () => {
   };
 });
 
+/**
+ * 동적 로캘을 런타임에 추가 (system 언어 번역 등)
+ */
 export function addDynamicLocale(lang: string, translation: DeepPartial<Translation>) {
-  locales[lang] = translation;
+  loadedLocales[lang] = translation;
 }
 
 /**
- * 옵시디언 설정이나 시스템 언어를 기반으로 플러그인 언어를 초기화합니다.
+ * setLanguage: 언어를 설정하고 필요한 JSON을 미리 로드합니다.
+ * 로드가 완료되면 currentLanguageStore를 업데이트합니다.
  */
-export function setLanguage(lang: string) {
+export async function setLanguage(lang: string): Promise<void> {
   console.log('[Lumina Localization] setLanguage called with:', lang);
-  console.log('[Lumina Localization] available locales:', Object.keys(locales));
-  if (locales[lang]) {
-    currentLanguage = lang as Language | 'system';
-  } else {
-    currentLanguage = 'en'; // 지원하지 않는 언어일 경우 영어로 폴백
+
+  if (lang === 'system') {
+    currentLanguage = 'system';
+    currentLanguageStore.set('system');
+    return;
   }
-  console.log('[Lumina Localization] currentLanguage is now:', currentLanguage);
+
+  // 이미 캐시되어 있으면 즉시 설정
+  if (loadedLocales[lang]) {
+    currentLanguage = lang as Language;
+    currentLanguageStore.set(currentLanguage);
+    return;
+  }
+
+  // 동적 로드
+  const loader = localeLoaders[lang];
+  if (loader) {
+    try {
+      const mod = await loader();
+      loadedLocales[lang] = mod.default || mod;
+      currentLanguage = lang as Language;
+      console.log('[Lumina Localization] Loaded locale:', lang);
+    } catch (e) {
+      console.warn(`[Lumina Localization] Failed to load locale "${lang}", falling back to en:`, e);
+      currentLanguage = 'en';
+      // en 로드 보장
+      if (!loadedLocales['en']) {
+        try {
+          const enMod = await localeLoaders['en']();
+          loadedLocales['en'] = enMod.default || enMod;
+        } catch {
+          // 최후의 fallback
+        }
+      }
+    }
+  } else {
+    // 지원되지 않는 언어 → en 폴백
+    console.warn(`[Lumina Localization] Unsupported language: "${lang}", falling back to en`);
+    currentLanguage = 'en';
+    if (!loadedLocales['en']) {
+      try {
+        const enMod = await localeLoaders['en']();
+        loadedLocales['en'] = enMod.default || enMod;
+      } catch {
+        // 최후의 fallback
+      }
+    }
+  }
+
   currentLanguageStore.set(currentLanguage);
 }
 
@@ -60,22 +101,19 @@ export function getLanguage(): string {
   return currentLanguage;
 }
 
-// Translation 객체에서 점(.) 표기법 경로를 추출하기 위한 타입 유틸리티
-type Join<K, P> = K extends string | number ?
-    P extends string | number ?
-    `${K}${"" extends P ? "" : "."}${P}`
-    : never : never;
-
-type Prev = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-    11, 12, 13, 14, 15, 16, 17, 18, 19, 20, ...0[]]
-
-type Paths<T, D extends number = 10> = [D] extends [never] ? never : T extends object ?
-    { [K in keyof T]-?: K extends string | number ?
-        `${K}` | Join<K, Paths<T[K], Prev[D]>>
-        : never
-    }[keyof T] : ""
-
-export type TranslationKeys = Extract<Paths<Translation>, string>;
+/**
+ * en 로캘을 동기적으로 프리로드 (앱 시작 시 필수)
+ */
+export async function preloadDefaultLocale(): Promise<void> {
+  if (!loadedLocales['en']) {
+    try {
+      const enMod = await localeLoaders['en']();
+      loadedLocales['en'] = enMod.default || enMod;
+    } catch (e) {
+      console.error('[Lumina Localization] CRITICAL: Failed to load en locale', e);
+    }
+  }
+}
 
 /**
  * 키 경로(예: 'settings.connections.title')를 기반으로 번역된 텍스트를 가져옵니다.
@@ -83,46 +121,67 @@ export type TranslationKeys = Extract<Paths<Translation>, string>;
  * {{key}} 문법을 사용한 템플릿 변수 치환을 지원합니다.
  */
 export function t(path: TranslationKeys, params?: Record<string, string | number>): string {
-    const keys = path.split('.');
-    let value: unknown = locales[currentLanguage];
-    
-    // console.log(`[Lumina Localization] t('${path}') using language:`, currentLanguage);
+  const keys = path.split('.') as string[];
 
-    for (const key of keys) {
-        if (value && typeof value === 'object') {
-            value = (value as Record<string, unknown>)[key];
-        } else {
-            value = undefined;
-            break;
-        }
+  // 현재 언어로 먼저 시도
+  const lang = currentLanguage;
+  if (lang !== 'en' && lang !== 'system') {
+    const locale = loadedLocales[lang];
+    if (locale) {
+      const val = resolvePath(locale, keys);
+      if (typeof val === 'string') {
+        return interpolate(val, params);
+      }
     }
+  }
 
-    if (value === undefined || typeof value === 'object') {
-        // 영어로 폴백
-        value = locales['en'];
-        for (const key of keys) {
-            if (value && typeof value === 'object') {
-                value = (value as Record<string, unknown>)[key];
-            } else {
-                value = undefined;
-                break;
-            }
-        }
+  // system 언어 fallback
+  if (lang === 'system') {
+    const systemLocale = loadedLocales['system'];
+    if (systemLocale) {
+      const val = resolvePath(systemLocale, keys);
+      if (typeof val === 'string') {
+        return interpolate(val, params);
+      }
     }
+  }
 
-    // 영어에도 없는 키거나 객체인 경우 경로 자체를 반환
-    if (value === undefined || typeof value === 'object') {
-        return path;
+  // en 폴백
+  const enLocale = loadedLocales['en'];
+  if (enLocale) {
+    const val = resolvePath(enLocale, keys);
+    if (typeof val === 'string') {
+      return interpolate(val, params);
     }
+  }
 
-    let result = String(value);
-    
-    // 파라미터가 있다면 템플릿 변수 치환
-    if (params) {
-        for (const [k, v] of Object.entries(params)) {
-            result = result.replace(new RegExp(`{{${k}}}`, 'g'), String(v));
-        }
+  // 어떤 로캘에도 없으면 키 경로 자체 반환
+  return path;
+}
+
+/**
+ * 중첩 객체에서 점 경로로 값을 찾습니다.
+ */
+function resolvePath(obj: Record<string, unknown>, keys: string[]): unknown {
+  let value: unknown = obj;
+  for (const key of keys) {
+    if (value && typeof value === 'object') {
+      value = (value as Record<string, unknown>)[key];
+    } else {
+      return undefined;
     }
-    
-    return result;
+  }
+  return value;
+}
+
+/**
+ * {{key}} 템플릿 변수 치환
+ */
+function interpolate(template: string, params?: Record<string, string | number>): string {
+  if (!params) return template;
+  let result = template;
+  for (const [k, v] of Object.entries(params)) {
+    result = result.replace(new RegExp(`{{${k}}}`, 'g'), String(v));
+  }
+  return result;
 }

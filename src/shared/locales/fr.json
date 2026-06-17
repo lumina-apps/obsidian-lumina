@@ -1,0 +1,701 @@
+{
+  "settings": {
+    "showAdvanced": "Paramètres avancés",
+    "connections": {
+      "title": "Connexions et Modèles",
+      "provider": "Fournisseur",
+      "language": {
+        "name": "Langue de l'extension",
+        "desc": "Sélectionnez la langue de l'interface de l'extension.",
+        "systemTranslate": "Traduire dans la langue du système",
+        "llmRequired": "Une connexion LLM est requise pour la traduction.",
+        "warningCost": "L'utilisation de la traduction peut entraîner des coûts d'API LLM.",
+        "option": {
+          "en": "English",
+          "ko": "한국어",
+          "ja": "日本語",
+          "zh": "简体中文",
+          "zh-tw": "繁體中文",
+          "es": "Español",
+          "pt": "Português",
+          "de": "Deutsch",
+          "fr": "Français",
+          "ru": "Русский",
+          "it": "Italiano",
+          "system": "Langue du système"
+        },
+        "current": "Actuelle : {{lang}}",
+        "deleteCache": "Supprimer le cache",
+        "deleteCacheTooltip": "Supprimez les données de traduction en cache de la langue du système et réinitialisez.",
+        "deleteCacheTitle": "Suppression du cache de traduction",
+        "deleteCacheConfirm": "Êtes-vous sûr de vouloir supprimer les données de traduction en cache de la langue du système ?\nSi vous sélectionnez à nouveau la langue du système après suppression, une nouvelle traduction sera effectuée."
+      },
+      "apiKey": {
+        "name": "Clé API et Enregistrement des modèles",
+        "desc": "Enregistrez les clés API des fournisseurs cloud ou les URL des LLM locaux.",
+        "mobileLocalWarning": "Les LLM locaux ne peuvent pas être utilisés sur les appareils mobiles.",
+        "addConnection": "+ Ajouter une nouvelle connexion LLM",
+        "apiKey": "Clé API",
+        "endpointUrl": "URL du point de terminaison",
+        "hiddenDesc": "Masqué lors de la saisie.",
+        "testConnection": "Tester la connexion",
+        "testing": "Test en cours...",
+        "deleteConnection": "Supprimer cette connexion",
+        "connected": "Connecté",
+        "notConnected": "Non connecté",
+        "selectModel": "Sélectionner le modèle",
+        "endpointPlaceholder": "ex : http://localhost:11434",
+        "newConnection": "Nouvelle connexion",
+        "success": "Connexion réussie !",
+        "fail": "Échec de la connexion : ",
+        "noModels": "Aucun modèle disponible."
+      },
+      "ragEngine": {
+        "name": "Moteur RAG en un clic",
+        "desc": "Génère des réponses en consultant toutes les notes de votre coffre en temps réel et offre des fonctionnalités de découverte intelligente.",
+        "privacyNotice": "🔒 L'analyse des documents s'exécute localement. (Le chat IA cloud peut envoyer des extraits de notes pour générer des réponses.)",
+        "customGuide": "💡 Activez \"Paramètres avancés\" (en haut à droite) pour sélectionner manuellement le moteur d'embedding.",
+        "mobileWarning": "⚠️ Les appareils mobiles ne prennent pas en charge l'embedding local en un clic (RAG). Veuillez sélectionner un modèle d'embedding cloud dans les Paramètres avancés.",
+        "ragDisabledForEmbedding": "⚠️ Le moteur RAG est désactivé. Veuillez d'abord activer le moteur RAG pour sélectionner un modèle d'embedding."
+      },
+      "customEmbedding": {
+        "name": "Embedding personnalisé (Avancé)",
+        "desc": "Sélectionnez un modèle d'embedding parmi les fournisseurs enregistrés.",
+        "auto": "🤖 Auto (Modèle local intégré : ibm-granite/granite-embedding-97m-multilingual-r2)",
+        "guide": "※ Enregistrez une connexion LLM ci-dessus et exécutez un test de connexion.",
+        "localWarn": "⚠️ Les modèles locaux ne peuvent pas être automatiquement vérifiés comme modèles d'embedding.\nSi l'indexation échoue, veuillez sélectionner un modèle dédié à l'embedding.",
+        "mobileWarn": "⚠️ Les appareils mobiles ne peuvent pas utiliser de modèles d'embedding locaux. Veuillez sélectionner un embedding cloud."
+      },
+      "defaultChatModel": {
+        "name": "Modèle de chat par défaut",
+        "desc": "Sélectionnez le modèle LLM par défaut pour le chat de la barre latérale.",
+        "sidebarDefault": "Modèle par défaut du chat latéral",
+        "noConnections": "Veuillez ajouter une connexion LLM dans les paramètres et terminer le test de connexion."
+      },
+      "quickActionProvider": {
+        "name": "Fournisseur d'actions rapides",
+        "desc": "🚨 Les grands modèles ou modèles de raisonnement peuvent causer une latence sévère. Utilisez un modèle rapide et léger (Instruct, Flash ou Mini) pour un retour instantané."
+      },
+      "quickActionModel": {
+        "name": "Modèle d'action rapide",
+        "desc": "Sélectionnez un modèle dédié à utiliser pour les actions rapides. (Modèles rapides et légers recommandés)",
+        "noneSelected": "Aucun (Requis)",
+        "reasoningWarning": "⚠️ Avertissement : Modèle de raisonnement détecté ! Les actions rapides nécessitent de la vitesse ; l'utilisation de ce modèle peut causer des retards importants ou des boucles infinies. Un modèle Instruct standard est fortement recommandé."
+      }
+    },
+    "mcp": {
+      "title": "Agent & MCP",
+      "desc": "Connectez des serveurs Model Context Protocol (MCP) externes pour utiliser des outils locaux, ou activez le serveur intégré pour permettre à d'autres applications de contrôler Lumina.",
+      "addServer": "+ Ajouter un nouveau serveur MCP",
+      "serverName": "Nom du serveur",
+      "transport": "Transport",
+      "enableDesc": "Activer (Injecter les outils dans le chat)",
+      "deleteServer": "Supprimer ce serveur",
+      "emptyServers": "Aucun serveur enregistré.",
+      "localServerName": "Serveur local Lumina",
+      "restart": "Redémarrer",
+      "localServer": {
+        "sectionTitle": "Serveur MCP intégré Lumina (Hébergement)",
+        "desc": "Ouvrez un serveur local pour accéder aux fonctionnalités d'Obsidian depuis des clients externes (agents IA, etc.).",
+        "enable": {
+          "name": "Activer le serveur"
+        },
+        "port": {
+          "name": "Port du serveur",
+          "desc": "Par défaut : 3000 (Appliqué au redémarrage après la configuration)"
+        },
+        "token": {
+          "name": "Jeton d'authentification",
+          "desc": "Jeton requis pour la connexion des clients externes. Gardez-le confidentiel.",
+          "regenerate": "Régénérer"
+        },
+        "guide": "SSE : http://localhost:{{port}}/sse\nAuth : Header \"Authorization: Bearer <token>\" (ou ?token=<token>)",
+        "maxRead": {
+          "name": "Read - Caractères max",
+          "desc": "Caractères max retournés par lecture de fichier (Défaut : 20000)"
+        },
+        "searchSnippet": {
+          "name": "Search - Longueur d'extrait",
+          "desc": "Caractères affichés autour des termes correspondants (Défaut : 300)"
+        },
+        "searchMaxResults": {
+          "name": "Search - Résultats max",
+          "desc": "Résultats max retournés par recherche (Défaut : 10)"
+        },
+        "maxAppend": {
+          "name": "Append - Caractères max",
+          "desc": "Caractères max par opération d'ajout (Défaut : 10000)"
+        }
+      },
+      "externalServer": {
+        "sectionTitle": "Serveurs MCP externes (Connexion client)",
+        "sseUrl": {
+          "name": "URL SSE",
+          "desc": "ex : http://localhost:8080/sse"
+        },
+        "token": {
+          "name": "Jeton d'authentification (Optionnel)",
+          "desc": "Si le serveur nécessite une authentification, saisissez le jeton."
+        }
+      },
+      "permission": {
+        "title": "Autorisation d'exécution d'outil",
+        "desc": "L'IA demande l'autorisation d'exécuter un outil potentiellement dangereux.\\n\\nServeur : {{server}}\\nOutil : {{tool}}",
+        "args": "Arguments :",
+        "approve": "Approuver",
+        "reject": "Rejeter"
+      },
+      "agentMode": {
+        "name": "Mode Agent (Agent Mode)",
+        "desc": "Le LLM exécute des tâches de manière autonome avec les outils MCP. ⚠️ Les performances peuvent se dégrader avec les petits modèles.",
+        "maxSteps": "Nombre maximal d'exécutions automatiques",
+        "maxStepsDesc": "Le nombre maximum de fois que l'agent peut exécuter des outils consécutivement dans une seule réponse. (Par défaut : 15)",
+        "respectRagExclusions": "Appliquer les exclusions/inclusions de chemin RAG à l'Agent",
+        "respectRagExclusionsDesc": "Appliquer les règles d'exclusion RAG aux opérations de fichiers de l'Agent."
+      },
+      "experimental": "Fonctionnalités expérimentales"
+    },
+    "chat": {
+      "quickSettings": {
+        "systemPrompt": "Prompt système",
+        "temperature": "Température",
+        "precise": "Précis",
+        "balanced": "Équilibré",
+        "creative": "Créatif",
+        "maxLength": "Longueur maximale",
+        "short": "Court",
+        "medium": "Moyen",
+        "long": "Long",
+        "allSettings": "Tous les paramètres"
+      },
+      "title": "Chat et Invite de système",
+      "currentNote": "Inclure la note actuelle",
+      "systemPrompt": {
+        "name": "Prompts système",
+        "desc": "Gérez plusieurs prompts système.",
+        "active": "✅ Actif",
+        "activate": "Activer",
+        "addPrompt": "+ Ajouter un prompt",
+        "defaultName": "Prompt système"
+      },
+      "history": {
+        "name": "Sauvegarde automatique de l'historique de chat",
+        "desc": "Sauvegardez automatiquement l'historique du chat dans un chemin spécifié.",
+        "pathPlaceholder": "ex : /chatHistory",
+        "savePath": "Chemin de sauvegarde",
+        "saveFail": "⚠️ Échec de la sauvegarde de l'historique du chat : {{error}}",
+        "loadFail": "⚠️ Échec du chargement de la session.",
+        "deleteSuccess": "✅ Historique du chat supprimé.",
+        "deleteFail": "⚠️ Échec de la suppression de la session.",
+        "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cet historique de discussion ?",
+        "title": "Historique de discussion",
+        "empty": "Aucun historique de discussion enregistré.",
+        "unknownModel": "Modèle inconnu"
+      },
+      "sendMode": {
+        "name": "Mode d'envoi de message",
+        "desc": "Choisissez comment envoyer des messages dans le chat.",
+        "enter": "Entrée pour envoyer",
+        "ctrlEnter": "Ctrl + Entrée pour envoyer"
+      },
+      "quickActions": {
+        "name": "Actions rapides personnalisées par l'utilisateur (Commandes)",
+        "desc": "Enregistrez des prompts personnalisés en tant que commandes Obsidian pour les exécuter directement sur le texte sélectionné.",
+        "add": "+ Ajouter une action rapide",
+        "actionName": "Nom de l'action",
+        "actionPrompt": "Invite",
+        "actionType": "Type d'action",
+        "typeReplace": "Remplacer le texte",
+        "typeAppend": "Ajouter du texte",
+        "typeChat": "Envoyer au chat",
+        "newAction": "Nouvelle action",
+        "deleteAction": "Supprimer cette action",
+        "defaults": {
+          "summarize": {
+            "name": "Résumer",
+            "prompt": "Résumez le texte suivant de manière concise :\n\n"
+          },
+          "translate": {
+            "name": "Traduire en français",
+            "prompt": "Traduisez le texte suivant en français naturel :\n\n"
+          },
+          "explain": {
+            "name": "Expliquer",
+            "prompt": "Expliquez le texte suivant en détail :\n\n"
+          }
+        }
+      },
+      "inlineTrigger": {
+        "name": "Déclencheur de commande en ligne",
+        "desc": "Mot-clé pour afficher le pop-up d'auto-complétion des actions rapides dans l'éditeur."
+      },
+      "memoryLimit": {
+        "name": "Limite de mémoire de conversation (Avancé)",
+        "desc": "Combien d'historique de conversation conserver (par tours ou tokens).",
+        "limitType": "Mode de mémoire de conversation",
+        "turns": "Limite de tours",
+        "tokens": "Limite de tokens",
+        "turnsLabel": "Nombre de tours à mémoriser",
+        "turnsDesc": "Tours à mémoriser (1 tour = message utilisateur + réponse IA)",
+        "maxTokens": "Tokens contextuels maximum"
+      },
+      "modelParams": {
+        "name": "Paramètres du modèle (Avancé)",
+        "desc": "Ajuster la créativité et la longueur de la réponse.",
+        "tempLabel": "Température",
+        "tempDesc": "Proche de 0 = précis, proche de 2 = créatif",
+        "maxOutput": "Tokens de sortie max",
+        "responseLang": "Spécifier la langue de réponse",
+        "responseLangDesc": "Forcer les réponses de l'IA dans une langue spécifique. « Auto » suit le prompt système.",
+        "responseLangAuto": "Auto"
+      },
+      "streaming": {
+        "name": "Streaming",
+        "desc": "Activez les réponses en streaming."
+      },
+      "emptyResponseFallback": "⚠️ The model returned an empty response. (This may be due to an unsupported language/format, prompt filtering, or exceeding the context limit.)",
+      "context": {
+        "activeNote": "Inclure la note actuelle : {{name}}",
+        "selectedText": "Texte sélectionné ({{length}} caractères)",
+        "folderFiles": "[Fichiers dans le dossier : {{name}}]",
+        "activeNotePrefix": "[Note active : {{name}}]",
+        "canvasFile": "[Fichier Canvas : {{name}}]",
+        "tagFiles": "[Fichiers avec tag : {{name}} (Max 5)]",
+        "activeNotePrompt": "Note active",
+        "categoryActiveNote": "📄 Inclure la note actuelle",
+        "categorySelection": "✂️ Texte sélectionné",
+        "categoryFolder": "📁 Ajouter un dossier",
+        "categoryFile": "📝 Ajouter un fichier",
+        "categoryTag": "🏷️ Ajouter un tag",
+        "categoryUrl": "🔗 Saisir une URL",
+        "categoryCanvas": "🎨 Ajouter un Canvas",
+        "categoryBack": "Retour",
+        "categoryTitle": "Sélectionner le type de contexte",
+        "urlInputPlaceholder": "Saisir une URL (ex. https://...)",
+        "urlInputPrompt": "Appuyez sur Entrée pour ajouter l'URL"
+      }
+    },
+    "rag": {
+      "toggleTooltip": "Lorsqu'activé, l'IA lira et consultera les notes de votre coffre pour répondre.",
+      "title": "RAG et Contexte",
+      "embeddingWarning": "Le modèle d'embedding RAG peut être configuré dans l'onglet Connexions et Modèles.",
+      "disabledWarning": "⚪ RAG est désactivé. Veuillez activer le moteur RAG dans l'onglet Connexions et Modèles.",
+      "dataScope": {
+        "name": "Portée des données par défaut",
+        "desc": "Choisissez les notes à inclure dans la recherche RAG.",
+        "vaultWide": "Coffre entier",
+        "activeNote": "Note active uniquement",
+        "manual": "Fichiers sélectionnés manuellement"
+      },
+      "autoIncludeActive": {
+        "name": "Inclusion automatique de la note active",
+        "desc": "Inclut automatiquement la note actuellement active comme contexte dans le chat."
+      },
+      "includePaths": {
+        "name": "Chemins à inclure",
+        "desc": "Séparés par des virgules. Laisser vide pour inclure tout le coffre."
+      },
+      "ignorePaths": {
+        "name": "Chemins à ignorer",
+        "desc": "Séparés par des virgules. Priorité sur les chemins inclus."
+      },
+      "chunking": {
+        "name": "Chunking (Avancé)",
+        "desc": "Configurer la taille et le chevauchement des chunks pour le découpage des documents.",
+        "sizeDesc": "Taille des chunks (tokens)",
+        "overlapLabel": "Chevauchement des chunks",
+        "overlapDesc": "Tokens se chevauchant entre chunks adjacents"
+      },
+      "topK": {
+        "name": "Récupération Top-K (Avancé)",
+        "desc": "Nombre de documents les mieux classés à transmettre au LLM."
+      },
+      "syncMode": {
+        "name": "Synchronisation d'index (Avancé)",
+        "desc": "Comment l'index se met à jour lorsque les notes changent.",
+        "watch": "Surveiller les modifications (recommandé)",
+        "manual": "Manuel",
+        "startup": "Au démarrage de l'application"
+      },
+      "minSimilarity": {
+        "name": "Similarité min (Avancé)",
+        "desc": "Exclure les résultats sous ce score de pertinence (0~1)"
+      },
+      "reindex": {
+        "name": "Réindexation complète",
+        "desc": "Réindexez tous les fichiers du coffre à partir de zéro.",
+        "button": "🔄 Réindexer maintenant",
+        "notActivated": "❌ Le moteur RAG n'est pas activé.",
+        "started": "🔄 Début de la réindexation complète...",
+        "success": "✅ Réindexation terminée",
+        "fail": "❌ Échec de la réindexation : "
+      },
+      "status": {
+        "name": "Statut d'indexation (Avancé)",
+        "desc": "Affiche la taille actuelle de l'index et le nombre de fichiers.",
+        "statusLabel": "Statut",
+        "indexing": "Indexation... ({{processed}}/{{total}})",
+        "files": "📄 Fichiers indexés : {{count}}",
+        "size": "💾 Taille de stockage : {{size}} Ko",
+        "ready": "RAG Prêt",
+        "indexingShort": "Indexation",
+        "error": "Erreur RAG",
+        "waiting": "En attente de RAG"
+      },
+      "init": {
+        "loadingModel": "Lumina : Chargement du modèle d'embedding...",
+        "loadingModelDesc": "Le téléchargement et le chargement du modèle local pour la première fois peuvent prendre quelques minutes.",
+        "cloudSuccess": "Lumina : Embedding cloud connecté",
+        "loadingProgress": "Lumina : Chargement du modèle {{pct}}% — {{status}}",
+        "indexingVault": "Lumina : Indexation du coffre...",
+        "indexingProgressText": " ({{processed}}/{{total}}) - {{pct}}%",
+        "remainingTimePrefix": " - Temps estimé : ",
+        "remainingTimeSec": "{{sec}}s",
+        "remainingTimeMinSec": "{{min}}m {{sec}}s",
+        "ready": "✅ Lumina : Moteur RAG prêt",
+        "indexFail": "❌ Lumina : Échec de l'indexation\n{{error}}",
+        "readyManual": "✅ Lumina : Moteur RAG prêt (Mode d'indexation manuel)",
+        "initFail": "❌ Lumina : Échec de l'initialisation du worker RAG\n{{error}}",
+        "downloading": "Téléchargement du modèle RAG...",
+        "indexingNotes": "Indexation de mes notes..."
+      },
+      "reset": {
+        "name": "Réinitialiser l'index (Avancé)",
+        "desc": "Effacez toutes les données indexées.",
+        "button": "🗑 Réinitialiser l'index",
+        "devNotice": "⚠️ Index effacé (En cours de développement)",
+        "resetConfirm": "Êtes-vous sûr de vouloir réinitialiser l'index ? Cette action est irréversible.",
+        "resetSuccess": "🗑 L'index a été réinitialisé."
+      }
+    },
+    "misc": {
+      "title": "Divers et Extensions",
+      "contextMenu": {
+        "name": "Intégration du menu contextuel",
+        "desc": "Ajouter Lumina au menu clic droit de l'éditeur."
+      },
+      "ribbonIcon": {
+        "name": "Afficher l'icône du ruban",
+        "desc": "Afficher l'icône de l'extension dans la barre latérale gauche."
+      },
+      "frontmatter": {
+        "name": "Générer automatiquement le frontmatter (Avancé)",
+        "desc": "Ajouter automatiquement le frontmatter lors de la création de nouvelles notes."
+      },
+      "debugMode": {
+        "name": "Mode débogage (Avancé)",
+        "desc": "Voir les logs internes tels que les requêtes et réponses LLM."
+      },
+      "versionInfo": {
+        "name": "Informations de version et Notes de mise à jour (Avancé)",
+        "desc": "Notes de mise à jour et historique des mises à jour"
+      },
+      "factoryReset": {
+        "name": "Initialisation des données et réinitialisation du plugin (Avancé)",
+        "desc": "Réinitialiser tous les paramètres et données aux valeurs par défaut. (L'historique de chat est conservé)",
+        "button": "🔄 Réinitialiser",
+        "devNotice": "⚠️ Réinitialisation d'usine (En cours de développement)",
+        "confirmTitle": "Réinitialisation d'usine",
+        "confirmMsg": "Êtes-vous sûr de vouloir réinitialiser tous les paramètres ? Les clés API enregistrées, les options, l'index RAG, les modèles locaux téléchargés et le cache de traduction du système seront supprimés. (L'historique des chats sera conservé)",
+        "success": "✅ Les paramètres de l'extension ont été réinitialisés."
+      },
+      "donate": {
+        "name": "Faire un don et soutenir",
+        "desc": "Si vous trouvez Lumina utile, veuillez soutenir son développement !",
+        "supportTitle": "Soutenir Lumina :",
+        "kofi": "☕ Ko-fi",
+        "ctee": "☕ Ctee",
+        "githubSponsors": "💖 GitHub Sponsors"
+      }
+    },
+    "providerErrors": {
+      "missingUrl": "Veuillez entrer l'URL du point de terminaison.",
+      "missingKey": "Veuillez entrer la clé API.",
+      "unknownType": "Type de fournisseur inconnu : {{type}}",
+      "apiError": "Erreur d'API {{provider}} : {{status}} {{text}}",
+      "ollamaNoModel": "Aucun modèle en cours d'exécution dans Ollama. Veuillez d'abord démarrer un modèle avec `ollama run <model>`.",
+      "connectFail": "Échec de la connexion : {{status}} {{text}}",
+      "anthropicNoEmbed": "Anthropic ne prend pas en charge l'API d'embedding.",
+      "visionNotSupported": "⚠️ Le fournisseur sélectionné ({{provider}}) ne prend pas en charge l'analyse d'images. Veuillez utiliser OpenAI, Anthropic ou Google avec un modèle compatible avec la vision."
+    },
+    "translation": {
+      "confirmTitle": "Traduction dans la langue du système",
+      "confirmMsg": "La traduction sera effectuée à l'aide du modèle [{{provider}}] {{model}}.\\n\\nDes coûts d'API peuvent s'appliquer. Voulez-vous continuer ?",
+      "progressTitle": "Traduction en cours",
+      "progressMsg": "🔄 Traduction des données linguistiques vers la langue du système. Le processus se poursuivra en arrière-plan même si vous fermez cette fenêtre.",
+      "delayLocal": "Ce processus utilise un modèle local, il peut donc prendre 1 à 5 minutes ou plus selon les spécifications du système.",
+      "delayCloud": "Ce processus peut prendre 1 à 2 minutes selon le modèle et les conditions réseau.",
+      "success": "✅ Traduction et application de la langue terminées.",
+      "fail": "❌ Échec de la traduction : ",
+      "noValidModel": "⚠️ Aucun LLM connecté ou modèle valide sélectionné.",
+      "cacheDeleted": "✅ Cache de traduction du système supprimé.",
+      "cacheDeleteFail": "❌ Échec de la suppression du cache : ",
+      "noCache": "⚠️ Aucun cache de traduction à supprimer."
+    }
+  },
+  "errors": {
+    "llmNotConnected": "Le LLM n'est pas connecté.",
+    "ragIndexingFailed": "L'indexation RAG a échoué.",
+    "llmConnectRequired": "Veuillez ajouter un LLM dans les paramètres et terminer le test de connexion.",
+    "resetChat": "Réinitialiser le chat",
+    "chatPlaceholder": "Saisissez un message… (@ : Contexte, / : Commandes)",
+    "chatEmptyWelcome": "Posez n'importe quelle question à Lumina.",
+    "cancelStreaming": "Annuler",
+    "send": "Envoyer",
+    "underDevelopment": "Cette fonctionnalité est en cours de développement.",
+    "ragDisabledGlobally": "Le moteur RAG global est désactivé. Activez-le dans les Paramètres.",
+    "llm": {
+      "rateLimit": "⚠️ Quota API ou limite de débit dépassée. Veuillez réessayer dans un instant. Pour les comptes gratuits, vérifiez vos limites quotidiennes/minutaires ou votre statut de facturation.",
+      "unauthorized": "⚠️ La clé API est invalide ou a expiré. Veuillez vérifier votre clé API dans les paramètres sous \"Connexions & Modèles\".",
+      "forbidden": "⚠️ Accès refusé ou requête interdite. Veuillez vérifier les autorisations de votre clé API, votre plan de service ou les restrictions régionales.",
+      "notFound": "⚠️ Modèle demandé introuvable ou URL de l'endpoint API incorrecte. Veuillez vérifier le modèle sélectionné et l'url de connexion dans les paramètres.",
+      "networkError": "⚠️ Échec de la connexion réseau. Veuillez vérifier votre connexion Internet ou si votre serveur LLM local fonctionne.",
+      "notReadable": "Le corps de la réponse n'est pas lisible"
+    }
+  },
+  "chat": {
+    "newChat": "Nouveau chat",
+    "history": "Historique des chats",
+    "settings": "Paramètres du chat",
+    "addContext": "Ajouter du contexte (@)",
+    "uploadFile": "Importer un fichier",
+    "clearInput": "Effacer la saisie",
+    "slashCommands": {
+      "clear": {
+        "name": "Effacer le chat",
+        "desc": "Effacez la conversation en cours et démarrez un nouveau chat."
+      },
+      "rag": {
+        "name": "Basculer RAG",
+        "desc": "Activer ou désactiver l'utilisation du contexte RAG."
+      },
+      "mcp": {
+        "name": "Serveurs MCP",
+        "desc": "Ouvrir la fenêtre contextuelle de la liste des serveurs MCP."
+      },
+      "settings": {
+        "name": "Paramètres",
+        "desc": "Ouvrez l'écran des paramètres de Lumina."
+      },
+      "quickActionDesc": "Insérer un modèle de prompt"
+    },
+    "sessionUsage": "Utilisation cumulée de la session actuelle",
+    "sessionTokens": "Total: {{tokens}} jetons",
+    "sessionCost": "(env. ${{cost}})"
+  },
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "remove": "Retirer",
+    "add": "Ajouter",
+    "copy": "Copier",
+    "success": "Succès",
+    "error": "Erreur",
+    "history": "Historique des chats",
+    "back": "Retour",
+    "settings": "Paramètres",
+    "loading": "Chargement...",
+    "refresh": "Actualiser"
+  },
+  "discovery": {
+    "tabName": "Découverte intelligente",
+    "chatTabName": "Chat IA",
+    "searchPlaceholder": "Rechercher par signification...",
+    "duplicateWarning": "⚠️ Note très similaire trouvée :",
+    "duplicateCompare": "Comparer",
+    "recommendedTags": "Tags recommandés",
+    "relatedNotes": "Notes associées",
+    "insertLink": "Insérer un lien",
+    "openInSplit": "Vue en deux parties",
+    "chatWithNote": "Chat",
+    "filterPlaceholder": "Filtrer (Chemin ou #tag)",
+    "emptyStateText": "Le moteur RAG est désactivé.",
+    "emptyStateSub": "Activez-le dans les paramètres pour utiliser la Découverte intelligente.",
+    "noResults": "Aucune note associée trouvée.",
+    "stagedContext": "Contexte préparé",
+    "approxTokens": "env. {{current}} / {{max}} tokens",
+    "startChat": "Démarrer le chat avec {{count}} éléments",
+    "indexing": "Indexation RAG... ({{processed}} / {{total}})",
+    "loadingModel": "Chargement du modèle d'embedding...",
+    "noActiveEditor": "Aucun éditeur Markdown actif trouvé."
+  },
+  "uiMessages": {
+    "emptyResponseTokenLimit": "⚠️ Le modèle a renvoyé une réponse vide. La génération a été arrêtée car la limite de jetons de sortie maximaux a été atteinte. Veuillez augmenter la limite de \"jetons de sortie maximaux\" dans les paramètres.",
+    "tokenLimitHitWarning": "\n\n⚠️ (La génération a été interrompue car la limite de jetons de sortie maximaux a été atteinte. Veuillez augmenter la valeur de \"jetons de sortie maximaux\" dans les paramètres.)",
+    "toolExecutionRejected": "L'exécution de l'outil a été rejetée par l'utilisateur.",
+    "inlineReplace": "Remplacer",
+    "inlineAppend": "Ajouter",
+    "inlineSend": "Envoyer au chat",
+    "inlineEmpty": "Aucun texte cible trouvé sur la ligne actuelle. Veuillez écrire ou sélectionner un texte.",
+    "qaEmptySel": "Aucun texte sélectionné.",
+    "qaNotConfigured": "Le modèle d'action rapide n'est pas configuré. Veuillez sélectionner un modèle dédié dans les paramètres.",
+    "qaNoProvider": "Aucun fournisseur LLM configuré.",
+    "qaInvalidProvider": "Fournisseur LLM invalide ou non authentifié.",
+    "qaNoModel": "Aucun modèle disponible.",
+    "qaSelectedText": "Texte sélectionné",
+    "qaExecuting": "Exécution de {{name}}...",
+    "qaCompleted": "{{name}} terminé",
+    "qaError": "Une erreur s'est produite : {{msg}}",
+    "qaWaitingAI": "⏳ En attente de la réponse de l'IA...",
+    "qaEmptyResponse": "⚠️ Le modèle a renvoyé un texte vide. (Boucle infinie ou problème de compatibilité du prompt)",
+    "qaUnknownError": "Erreur inconnue",
+    "qaReasoningDetected": "🚫 Processus de réflexion du modèle de raisonnement (<think>) détecté. Action rapide annulée. Veuillez changer vers un modèle Instruct standard dans les paramètres.",
+    "modalCancel": "Annuler",
+    "modalProceed": "Continuer",
+    "modelPlaceholder": "Entrez le nom du modèle... (ex : claude, gpt-4)",
+    "fsAdapterErr": "FileSystemAdapter introuvable. Pris en charge uniquement dans l'environnement de bureau.",
+    "searchSource": "Source",
+    "debugDelAllMsg": "Êtes-vous sûr de vouloir supprimer tous les journaux de débogage ?",
+    "debugAutoScroll": "Défilement automatique",
+    "debugExport": "Exporter en JSON",
+    "debugDelAll": "Supprimer tous les journaux",
+    "debugNoLogs": "Aucun journal",
+    "debugWaitLlm": "S'affichera ici lors d'une demande LLM",
+    "debugTurnOn": "Veuillez activer le Mode débogage dans Paramètres › Avancé",
+    "debugChunks": "chunks",
+    "debugExpandAll": "Tout développer",
+    "debugCollapseAll": "Tout réduire",
+    "ragTooLong": "[Lumina] Contexte RAG trop long, tronqué à {{max}} caractères.",
+    "ragWorkerInitErr": "Erreur d'initialisation du Worker inconnue (Vérifier la console)",
+    "ragWorkerTimeout": "Délai d'attente du chargement du modèle d'embedding (>60s). Vérifiez le réseau ou supprimez le cache et réessayez.",
+    "ragWorkerTerm": "Worker terminé.",
+    "ragWorkerNotReady": "EmbeddingWorker non prêt. Appelez d'abord init().",
+    "ragWorkerNotInit": "Modèle non initialisé. Envoyez d'abord le message init.",
+    "ragWorkerLoadFail": "Échec du chargement du modèle : ",
+    "localizedPrompt": "Always respond in French (Français).",
+    "cmdCtxMenu": "💬 Envoyer au chat Lumina",
+    "cmdChatTitle": "Ouvrir le chat",
+    "cmdLogTitle": "Ouvrir DevLog",
+    "cmdReindex": "Réindexer le coffre",
+    "cmdClearIdx": "Effacer l'index",
+    "ribbonTitle": "Ouvrir le chat Lumina",
+    "noticeMobileRag": "Les embeddings locaux sont bloqués sur mobile. Veuillez configurer des embeddings cloud dans les paramètres pour utiliser RAG.",
+    "noticeLargeVault": "Votre coffre contient un grand nombre de notes ({{count}}). L'indexation initiale en arrière-plan peut prendre du temps et des ressources.",
+    "noticeIndexing": "Lumina : La configuration initiale et l'indexation de vos notes sont en cours en arrière-plan...",
+    "errNoProvider": "Configuration du fournisseur d'embedding sélectionné introuvable.",
+    "errMobileAuto": "Les embeddings locaux (Mode Auto) ne sont pas pris en charge sur les appareils mobiles. Veuillez sélectionner un embedding cloud dans les paramètres.",
+    "mcpTokenCopied": "Jeton d'authentification copié dans le presse-papiers.",
+    "mcpConnectFailed": "Échec de connexion au serveur MCP \"{{name}}\". Désactivé.",
+    "mcpLocalServerStartFailed": "Échec du démarrage du serveur MCP intégré : {{error}}",
+    "mcpDisconnectedDuringExecution": "Le serveur MCP \"{{name}}\" s'est déconnecté pendant l'exécution de l'outil et a été désactivé.",
+    "mcpToolExecutionFailed": "Échec de l'exécution de l'outil sur le serveur MCP \"{{name}}\". Le serveur a été désactivé. Veuillez vérifier vos paramètres.",
+    "searchModelShort": "Rechercher des modèles...",
+    "noSearchResults": "Aucun résultat de recherche.",
+    "unsupportedFileType": "Type de fichier non pris en charge : {{ext}}",
+    "attachFileFailed": "Échec de la pièce jointe du fichier : {{file}}",
+    "mcpManagerNotInitialized": "⚠️ Le gestionnaire MCP n'est pas initialisé.",
+    "mcpSyncError": "⚠️ Erreur lors de la synchronisation des serveurs MCP.",
+    "mcpLocalServerRestarted": "✅ Serveur MCP intégré redémarré (Port : {{port}})",
+    "mcpLocalServerStarted": "✅ Serveur MCP intégré démarré (Port : {{port}})",
+    "mcpLocalServerStopped": "🛑 Serveur MCP intégré arrêté (Port : {{port}})",
+    "mcpLocalServerDisconnectAgentDisabled": "⚠️ Le mode agent a été désactivé en raison d'une erreur de connexion au serveur intégré.",
+    "mcpClientDisconnected": "🔌 Serveur MCP \"{{name}}\" déconnecté.",
+    "mcpClientConnected": "✅ Serveur MCP \"{{name}}\" connecté avec succès.",
+    "mcpClientToolExecutionFailedStatusError": "⚠️ L'exécution de l'outil sur le serveur MCP \"{{name}}\" a échoué. Le statut a été défini sur erreur.",
+    "mcpClientToolExecuteFailedTryReconnect": "Échec de l'exécution de l'outil sur le serveur MCP \"{{name}}\". Veuillez essayer de vous reconnecter.",
+    "agentModeLlmRequired": "⚠️ Pour utiliser l'agent, vous devez d'abord configurer et vérifier un fournisseur de LLM.",
+    "agentModeLocalServerStarting": "🚀 Agent activé : Connexion au serveur MCP local...",
+    "agentModeLocalServerConnecting": "🚀 Agent activé : Connexion au serveur MCP local...",
+    "agentModeEnabled": "🤖 Mode agent activé.",
+    "agentModeDisabled": "🤖 Mode agent désactivé.",
+    "agentModeLocalServerStoppedDisabled": "⚠️ Le mode agent a été désactivé car le serveur MCP intégré a été arrêté.",
+    "agentModeLocalServerStoppedDisabledShort": "⚠️ Fonctionnalité d'agent désactivée car le serveur local a été arrêté.",
+    "mcpLocalServerTokenInputFromLocal": "Le jeton du serveur local a été saisi.",
+    "mcpLocalServerTokenInputFromLocalTooltip": "Saisir automatiquement le jeton d'authentification du serveur MCP intégré",
+    "thoughtProcess": "Processus de réflexion",
+    "agentMaxStepsReached": "⚠️ Limite maximale d'exécutions d'outils atteinte.",
+    "agentRepeatedToolCalls": "⚠️ Appels d'outils répétés détectés et arrêtés. Veuillez reformuler votre requête.",
+    "agentToolNotFound": "L'outil \"{{name}}\" est introuvable sur aucun serveur MCP connecté.",
+    "agentToolTruncatedNote": "\\n\\n⚠️ REMARQUE : la sortie de l'outil a été tronquée de {{total}} à {{max}} caractères. Le contenu complet est disponible dans le fichier du coffre-fort. Ne rappelez pas cet outil, utilisez le contenu tronqué pour répondre à l'utilisateur.",
+    "agentToolResultFor": "Résultat de l'outil pour \"{{name}}\" :",
+    "agentToolError": "Erreur de l'outil \"{{name}}\" : {{error}}",
+    "agentToolExecuteError": "Erreur lors de l'exécution de l'outil : {{error}}",
+    "agentBetaActivateTitle": "🤖 Activer l'Agent (Bêta) ?",
+    "agentBetaActivateDesc": "LLM connecté ! Voulez-vous activer le mode Agent ?\n\nL'agent peut lire des notes, créer de nouvelles notes et ajouter du contenu aux notes automatiquement.\n\nVous pouvez l'activer ou le désactiver à tout moment depuis le bouton MCP dans le chat.",
+    "agentBetaActivateConfirm": "Activer",
+    "agentBetaActivateSkip": "Pas maintenant",
+    "agentBetaEnabled": "🤖 Mode Agent activé ! L'agent est prêt à vous aider avec vos notes.",
+    "copiedToClipboard": "Copié dans le presse-papiers.",
+    "contentInserted": "Contenu inséré dans la note.",
+    "noActiveMarkdown": "Aucune fenêtre Markdown active. Veuillez d'abord cliquer sur une note.",
+    "editConfirm": "Tous les messages après celui-ci seront supprimés. Voulez-vous continuer ?",
+    "regenerateConfirm": "Toutes les conversations après cela seront supprimées et la réponse sera régénérée. Voulez-vous continuer ?",
+    "fileNotFound": "Fichier introuvable.",
+    "saveAndSend": "Enregistrer et envoyer",
+    "insertToNote": "Insérer dans la note",
+    "regenerate": "Régénérer",
+    "edit": "Modifier",
+    "openReferenceNote": "Ouvrir la note de référence"
+  },
+  "mcpServerTools": {
+    "read_active_note": {
+      "desc": "Lit le contenu de la note actuellement active (ouverte) dans Obsidian.",
+      "noActive": "Aucune note active trouvée."
+    },
+    "read_note": {
+      "desc": "Lit une note spécifique dans le coffre.",
+      "argPath": "Le chemin du fichier à lire (ex. folder/note.md)",
+      "notFound": "Fichier introuvable : {{path}}"
+    },
+    "create_note": {
+      "desc": "Crée une nouvelle note. Si le fichier existe déjà, renvoie une erreur sans l'écraser.",
+      "argPath": "Le chemin du fichier à créer (ex. folder/new_note.md)",
+      "argContent": "Le contenu initial de la note",
+      "tooLong": "Le contenu à créer dépasse la limite ({{limit}} caractères).",
+      "alreadyExists": "Le fichier existe déjà. Écrasement non autorisé : {{path}}",
+      "parentFolderNotFound": "Le dossier parent n'existe pas : {{parentPath}}",
+      "success": "Note créée : {{path}}"
+    },
+    "search_notes": {
+      "desc": "Recherche un texte spécifique dans tous les fichiers Markdown du coffre.",
+      "argQuery": "Le texte à rechercher",
+      "foundPrefix": "Trouvé dans les fichiers suivants (max. {{max}}) :\\n\\n",
+      "noResults": "Aucun résultat de recherche trouvé."
+    },
+    "append_to_note": {
+      "desc": "Ajoute du contenu à la fin d'une note existante. Il y a une limite de longueur maximale de fichier (100 000 caractères) pour éviter les boucles infinies.",
+      "argPath": "Le chemin du fichier auquel ajouter du contenu",
+      "argContent": "Le contenu à ajouter",
+      "tooLong": "La longueur maximale pouvant être ajoutée en une seule fois est de {{limit}} caractères.",
+      "notFound": "Fichier introuvable : {{path}}",
+      "maxLengthExceeded": "Impossible d'ajouter plus de contenu car le fichier a dépassé la longueur maximale (100 000 caractères) pour empêcher les boucles infinies.",
+      "success": "Contenu ajouté avec succès : {{path}}"
+    },
+    "read_daily_note": {
+      "desc": "Lit la note quotidienne d'aujourd'hui (Format : AAAA-MM-JJ.md).",
+      "notFound": "La note quotidienne d'aujourd'hui n'existe pas : {{path}}"
+    },
+    "append_to_daily_note": {
+      "desc": "Ajoute du contenu à la note quotidienne d'aujourd'hui. Crée la note si elle n'existe pas.",
+      "argContent": "Le contenu à ajouter",
+      "tooLong": "La longueur maximale pouvant être ajoutée en une seule fois est de {{limit}} caractères.",
+      "maxLengthExceeded": "Impossible d'ajouter plus de contenu car le fichier a dépassé la longueur maximale (100 000 caractères).",
+      "successAppend": "Contenu ajouté à la note quotidienne : {{path}}",
+      "successCreate": "Note quotidienne créée et contenu ajouté : {{path}}"
+    },
+    "list_notes": {
+      "desc": "Liste toutes les notes Markdown dans le coffre. Vous pouvez optionnellement spécifier un chemin de dossier pour n'afficher que les notes de ce dossier.",
+      "argPath": "Le chemin du dossier à partir duquel lister les notes (ex. dossier/sous-dossier). Si non fourni, liste toutes les notes du coffre.",
+      "noNotes": "Aucune note trouvée{{path}}.",
+      "listPrefix": "Notes{{path}} ({{count}} au total) :\n\n"
+    },
+    "rag_search": {
+      "desc": "Effectue des recherches sémantiques de notes dans le coffre à l'aide du RAG (Retrieval-Augmented Generation). Trouve les extraits de documents les plus similaires à la requête en utilisant une recherche hybride vectorielle + BM25, pas une simple correspondance de mots-clés. Ne fonctionne que lorsque l'indexation RAG est terminée.",
+      "argQuery": "La chaîne de requête pour effectuer la recherche sémantique",
+      "argTopK": "Le nombre maximum de résultats à renvoyer (Par défaut : 5)",
+      "argMinSimilarity": "Seuil de similarité minimal (0~1, Par défaut : 0.65)",
+      "notReady": "L'index RAG n'est pas prêt. Veuillez activer le RAG dans les paramètres et terminer l'indexation d'abord.",
+      "emptyQuery": "La requête de recherche est vide.",
+      "noResults": "Aucun résultat de recherche RAG trouvé. Essayez de modifier votre requête ou de baisser la valeur de min_similarity.",
+      "error": "Erreur survenue pendant la recherche RAG : {{error}}",
+      "summary": "Résultats de la recherche RAG ({{count}} extraits trouvés, similarité >= {{minSim}}) :\\n\\n{{context}}"
+    },
+    "common": {
+      "truncated": "\\n\\n... (Contenu tronqué en raison de la limite de longueur de {{limit}} caractères)",
+      "unknownTool": "Outil inconnu.",
+      "executionError": "Une erreur s'est produite lors de l'exécution de l'outil : {{error}}",
+      "pathExcluded": "L'accès à ce chemin est restreint par les paramètres d'exclusion/inclusion RAG : {{path}}"
+    }
+  }
+}

@@ -156,12 +156,12 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 							if (tab.plugin.settings.connections.language === 'system') {
 								const success = await loadSystemLocaleCache(tab.app);
 								if (success) {
-									setLanguage('system');
+									await setLanguage('system');
 								} else {
-									setLanguage('en');
+									await setLanguage('en');
 								}
 							} else {
-								setLanguage(tab.plugin.settings.connections.language);
+								await setLanguage(tab.plugin.settings.connections.language);
 							}
 
 							new Notice(t('settings.misc.factoryReset.success'), 3000);
