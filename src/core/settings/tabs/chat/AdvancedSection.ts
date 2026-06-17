@@ -1,6 +1,6 @@
 import { Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
-import { wrapAsync, addSliderWithInput } from '../../settingTab';
+import { wrapAsync, addSliderWithInput } from '../../../../shared/utils/settingHelpers';
 import { t } from '../../../../shared/locales/helpers';
 
 export function renderAdvancedSection(tab: LuminaSettingTab, el: HTMLElement): void {

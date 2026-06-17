@@ -7,7 +7,7 @@
 
 import { Notice, Platform, Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
-import { wrapAsync } from '../../settingTab';
+import { wrapAsync } from '../../../../shared/utils/settingHelpers';
 import { t } from '../../../../shared/locales/helpers';
 import { setIndexingStatus } from '../../../store/ragStore';
 import { initEmbeddingWorker } from '../../../../features/rag/ragInitializer';

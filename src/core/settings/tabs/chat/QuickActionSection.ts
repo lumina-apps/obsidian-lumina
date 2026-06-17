@@ -1,6 +1,6 @@
 import { Setting, ButtonComponent } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
-import { wrapAsync } from '../../settingTab';
+import { wrapAsync } from '../../../../shared/utils/settingHelpers';
 import { t } from '../../../../shared/locales/helpers';
 import { createButtonContainer } from '../../../../shared/utils/domUtils';
 

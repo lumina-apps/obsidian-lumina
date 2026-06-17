@@ -1,5 +1,5 @@
-import { App, Modal, Setting, FuzzySuggestModal, type FuzzyMatch } from 'obsidian';
-import { t } from '../../shared/locales/helpers';
+import { App, Modal, Setting } from 'obsidian';
+import { t } from '../locales/helpers';
 
 export class ConfirmModal extends Modal {
 	private onConfirm: () => void;
@@ -107,57 +107,5 @@ export class AgentBetaModal extends Modal {
 	onClose() {
 		const { contentEl } = this;
 		contentEl.empty();
-	}
-}
-
-export interface ModelSuggestItem {
-	value: string;
-	label: string;
-}
-
-export class FuzzyModelSuggestModal extends FuzzySuggestModal<ModelSuggestItem> {
-	private items: ModelSuggestItem[];
-	private onChoose: (item: ModelSuggestItem) => void;
-	private defaultItemValue?: string;
-
-	constructor(app: App, items: ModelSuggestItem[], onChoose: (item: ModelSuggestItem) => void, defaultItemValue?: string) {
-		super(app);
-		this.items = items;
-		this.onChoose = onChoose;
-		this.defaultItemValue = defaultItemValue;
-		this.setPlaceholder(t('uiMessages.modelPlaceholder'));
-	}
-
-	getItems(): ModelSuggestItem[] {
-		return this.items;
-	}
-
-	getItemText(item: ModelSuggestItem): string {
-		return item.label;
-	}
-
-	renderSuggestion(match: FuzzyMatch<ModelSuggestItem>, el: HTMLElement) {
-		super.renderSuggestion(match, el);
-		if (this.defaultItemValue !== undefined && match.item.value === this.defaultItemValue) {
-			el.classList.add('is-selected-default');
-		}
-	}
-
-	onChooseItem(item: ModelSuggestItem, evt: MouseEvent | KeyboardEvent): void {
-		this.onChoose(item);
-	}
-
-	onOpen(): void {
-		void super.onOpen();
-
-		if (this.defaultItemValue) {
-			// give it a bit of time to render suggestions
-			window.setTimeout(() => {
-				const selectedEl = this.containerEl.querySelector('.is-selected-default');
-				if (selectedEl) {
-					selectedEl.scrollIntoView({ behavior: 'auto', block: 'center' });
-				}
-			}, 50);
-		}
 	}
 }

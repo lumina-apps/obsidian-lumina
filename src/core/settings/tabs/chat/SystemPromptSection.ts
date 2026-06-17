@@ -1,4 +1,4 @@
-import { wrapAsync } from '../../settingTab';
+import { wrapAsync } from '../../../../shared/utils/settingHelpers';
 import type { LuminaSettingTab } from '../../settingTab';
 import { t } from '../../../../shared/locales/helpers';
 import { createButtonContainer } from '../../../../shared/utils/domUtils';

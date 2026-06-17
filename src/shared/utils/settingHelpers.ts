@@ -5,12 +5,28 @@
  * - 모델 옵션 빌더
  * - 프로바이더-모델 값 파싱
  * - IME 입력 안전 텍스트 핸들러
+ * - 슬라이더+숫자입력 콤보
+ * - 모델 셀렉터 (FuzzyModal / Dropdown)
+ * - 비동기 래퍼 (wrapAsync)
+ * - 임베딩 모델 판별기
  */
 
-import { TextComponent } from 'obsidian';
+import { App, FuzzySuggestModal, Notice, Setting, TextComponent } from 'obsidian';
 import { PROVIDER_LABELS, PROVIDER_CATEGORIES } from '../types/settings.types';
 import type { LLMProviderConfig, ProviderType } from '../types/settings.types';
-import { isEmbeddingModel } from '../../core/settings/settingTab';
+import { debugLogger } from '../debugLogger';
+import type { FuzzyMatch } from 'obsidian';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Constants
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** FuzzyModelSuggestModal로 전환할 옵션 개수 임계값 */
+export const FUZZY_MODAL_THRESHOLD = 30;
+/** MCP 서버 토글 후 UI 리프레시 대기 시간 (ms) */
+export const MCP_REFRESH_DELAY = 1500;
+/** 추론형 모델 경고 Notice 표시 시간 (ms) */
+export const REASONING_MODEL_NOTICE_DURATION = 10000;
 
 // ─── UI Helpers ───────────────────────────────────────────────────────────────
 
@@ -42,6 +58,27 @@ export type ModelFilterFn = (providerType: ProviderType, modelId: string) => boo
 export interface ParsedProviderModel {
 	providerId: string;
 	modelId: string;
+}
+
+// ─── Embedding Model Detector ─────────────────────────────────────────────────
+
+/**
+ * 프로바이더 타입별로 임베딩 전용 모델인지 판별합니다.
+ * 클라우드 프로바이더는 모델명 패턴으로 필터링.
+ * 로컬/커스텀은 판별 불가 → 전체 허용 + ⚠️ 표시.
+ */
+export function isEmbeddingModel(providerType: ProviderType, modelId: string): boolean {
+	const category = PROVIDER_CATEGORIES[providerType];
+	if (category === 'local' || providerType === 'custom') return true;
+
+	switch (providerType) {
+		case 'anthropic':
+		case 'xai':
+		case 'groq':
+			return false; // 임베딩 모델 없음
+		default:
+			return modelId.toLowerCase().includes('embedding');
+	}
 }
 
 // ─── Model Option Builders ────────────────────────────────────────────────────
@@ -125,6 +162,161 @@ export function parseProviderModelValue(raw: string): ParsedProviderModel | null
  */
 export function toProviderModelValue(providerId: string, modelId: string): string {
 	return `${providerId}::${modelId}`;
+}
+
+// ─── Async Wrapper ────────────────────────────────────────────────────────────
+
+/**
+ * Promise를 반환하는 비동기 함수를 void 반환 함수로 래핑합니다.
+ * 이벤트 핸들러나 Obsidian onChange 콜백에서 async 함수를 안전하게 호출하기 위해 사용.
+ */
+export function wrapAsync<T extends unknown[]>(fn: (...args: T) => Promise<unknown>): (...args: T) => void {
+	return (...args) => {
+		void fn(...args);
+	};
+}
+
+// ─── Slider + Number Input Combo ──────────────────────────────────────────────
+
+/** 슬라이더 + 숫자 입력 콤보를 Settings에 추가하는 헬퍼 */
+export function addSliderWithInput(
+	setting: Setting,
+	opts: { min: number; max: number; step: number; value: number },
+	onChange: (val: number) => void,
+): void {
+	const state = { val: opts.value };
+	setting
+		.addSlider(slider => {
+			slider
+				.setLimits(opts.min, opts.max, opts.step)
+				.setValue(opts.value)
+				.onChange(val => {
+					state.val = val;
+					// 숫자 인풋 동기화
+					const inp = slider.sliderEl.parentElement?.querySelector<HTMLInputElement>('.lumina-slider-number');
+					if (inp) inp.value = String(val);
+					onChange(val);
+				});
+			slider.sliderEl.setCssStyles({ minWidth: '200px' });
+		})
+		.addText(text => {
+			text.inputEl.type = 'number';
+			text.inputEl.className = 'lumina-slider-number';
+			text.inputEl.min = String(opts.min);
+			text.inputEl.max = String(opts.max);
+			text.inputEl.step = String(opts.step);
+			text.inputEl.value = String(opts.value);
+			text.inputEl.setCssStyles({ width: '60px', textAlign: 'right' });
+			text.onChange(raw => {
+				const n = parseFloat(raw);
+				if (!isNaN(n) && n >= opts.min && n <= opts.max) {
+					onChange(n);
+				}
+			});
+		});
+}
+
+// ─── Fuzzy Model Suggest Modal ────────────────────────────────────────────────
+
+export interface ModelSuggestItem {
+	value: string;
+	label: string;
+}
+
+export class FuzzyModelSuggestModal extends FuzzySuggestModal<ModelSuggestItem> {
+	private items: ModelSuggestItem[];
+	private onChoose: (item: ModelSuggestItem) => void;
+	private defaultItemValue?: string;
+
+	constructor(app: App, items: ModelSuggestItem[], onChoose: (item: ModelSuggestItem) => void, defaultItemValue?: string) {
+		super(app);
+		this.items = items;
+		this.onChoose = onChoose;
+		this.defaultItemValue = defaultItemValue;
+		this.setPlaceholder('Search models...');
+	}
+
+	getItems(): ModelSuggestItem[] {
+		return this.items;
+	}
+
+	getItemText(item: ModelSuggestItem): string {
+		return item.label;
+	}
+
+	renderSuggestion(match: FuzzyMatch<ModelSuggestItem>, el: HTMLElement) {
+		super.renderSuggestion(match, el);
+		if (this.defaultItemValue !== undefined && match.item.value === this.defaultItemValue) {
+			el.classList.add('is-selected-default');
+		}
+	}
+
+	onChooseItem(item: ModelSuggestItem, _evt: MouseEvent | KeyboardEvent): void {
+		this.onChoose(item);
+	}
+
+	onOpen(): void {
+		void super.onOpen();
+
+		if (this.defaultItemValue) {
+			// give it a bit of time to render suggestions
+			window.setTimeout(() => {
+				const selectedEl = this.containerEl.querySelector('.is-selected-default');
+				if (selectedEl) {
+					selectedEl.scrollIntoView({ behavior: 'auto', block: 'center' });
+				}
+			}, 50);
+		}
+	}
+}
+
+// ─── Model Selector (FuzzyModal / Dropdown) ───────────────────────────────────
+
+/**
+ * 모델 선택 UI를 옵션 개수에 따라 FuzzyModal 또는 Dropdown으로 자동 렌더링합니다.
+ * @param setting - 대상 Setting 인스턴스
+ * @param options - 선택 옵션 배열
+ * @param currentValue - 현재 선택된 값
+ * @param currentLabel - 현재 표시될 라벨
+ * @param onChange - 값 변경 시 호출 (value: string)
+ * @param getDynamicValue - FuzzyModal open 시점에 동적으로 현재 값을 가져오는 함수
+ * @param app - Obsidian App 인스턴스
+ */
+export function addModelSelector(
+	setting: Setting,
+	options: { value: string; label: string }[],
+	currentValue: string,
+	currentLabel: string,
+	onChange: (val: string) => Promise<void>,
+	getDynamicValue: () => string,
+	app: App,
+): void {
+	if (options.length >= FUZZY_MODAL_THRESHOLD) {
+		setting.addButton(btn => {
+			btn.setButtonText(currentLabel)
+				.onClick(() => {
+					new FuzzyModelSuggestModal(
+						app,
+						options,
+						wrapAsync(async (item) => {
+							await onChange(item.value);
+							btn.setButtonText(item.label);
+						}),
+						getDynamicValue(),
+					).open();
+				});
+		});
+	} else {
+		setting.addDropdown(drop => {
+			for (const opt of options) {
+				drop.addOption(opt.value, opt.label);
+			}
+			drop.setValue(currentValue)
+				.onChange(wrapAsync(async (val) => {
+					await onChange(val);
+				}));
+		});
+	}
 }
 
 // ─── IME-safe Text Handler ────────────────────────────────────────────────────

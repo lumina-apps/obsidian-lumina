@@ -1,7 +1,7 @@
 import { Notice, Setting, Platform, ButtonComponent } from 'obsidian';
 import type { LuminaSettingTab } from '../settingTab';
 import { t, setLanguage } from '../../../shared/locales/helpers';
-import { wrapAsync } from '../settingTab';
+import { wrapAsync } from '../../../shared/utils/settingHelpers';
 import { ConfirmModal } from '../../../shared/utils/modal';
 import { debugLogger } from '../../../shared/debugLogger';
 import { resetIndexing } from '../../store/ragStore';

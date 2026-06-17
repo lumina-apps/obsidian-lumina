@@ -1,6 +1,6 @@
 import { Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
-import { wrapAsync } from '../../settingTab';
+import { wrapAsync } from '../../../../shared/utils/settingHelpers';
 import { t } from '../../../../shared/locales/helpers';
 
 export function renderChatHistorySection(tab: LuminaSettingTab, el: HTMLElement): void {

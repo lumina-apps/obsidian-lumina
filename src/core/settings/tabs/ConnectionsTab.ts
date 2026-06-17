@@ -12,7 +12,7 @@
 
 import { Platform, Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../settingTab';
-import { wrapAsync } from '../settingTab';
+import { wrapAsync } from '../../../shared/utils/settingHelpers';
 import { t } from '../../../shared/locales/helpers';
 import type { LLMProviderConfig } from '../../../shared/types/settings.types';
 import { renderLanguageSection } from './connections/LanguageSection';
