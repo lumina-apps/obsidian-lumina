@@ -1,8 +1,16 @@
 <script lang="ts">
-	import { Component, MarkdownRenderer, setIcon, type App, TFile, Notice, MarkdownView } from "obsidian";
-	import { onMount, onDestroy } from "svelte";
+	import { Component, type App } from "obsidian";
+	import { onDestroy } from "svelte";
 	import type { UIChatMessage } from "../../../shared/types/chat.types";
-	import { t, getLanguage } from "../../../shared/locales/helpers";
+	import { getLanguage } from "../../../shared/locales/helpers";
+	import { formatTime } from "../../../shared/utils/dateUtils";
+	import { extractThinkBlocks, sanitizeDisplayContent } from "../../../shared/utils/llmTextSanitizer";
+	import { renderMessageContent } from "./utils/markdownRendererHelper";
+	import AttachmentChips from "./AttachmentChips.svelte";
+	import ThinkBlock from "./ThinkBlock.svelte";
+	import RagSources from "./RagSources.svelte";
+	import MessageActions from "./MessageActions.svelte";
+	import MessageEditArea from "./MessageEditArea.svelte";
 
 	let {
 		message,
@@ -17,189 +25,39 @@
 	} = $props();
 
 	let isEditing = $state(false);
-	let editContent = $state("");
 
 	let rawContent = $derived(message.content || "");
-	let thinkContent = $derived.by(() => {
-		const matches = Array.from(rawContent.matchAll(/<think>([\s\S]*?)(?:<\/think>|$)/gi));
-		if (matches.length > 0) {
-			return matches.map(m => m[1].trim()).filter(Boolean).join('\n\n---\n\n');
-		}
-		return "";
-	});
-	let displayContent = $derived.by(() => {
-		let content = rawContent.replace(/<think>([\s\S]*?)(?:<\/think>|$)/gi, '');
-		content = content.replace(/<(lumina_tool_call|tool_code|tool_call)>([\s\S]*?)(?:<\/\1>|$)/gi, '');
-		// 로컬 LLM(Qwen, Mistral 등)의 컨텍스트 마스킹 토큰 제거
-		content = content.replace(/<\|mask_start\|>[\s\S]*?<\|mask_end\|>/g, '');
-		content = content.replace(/<\|mask_start\|>/g, '').replace(/<\|mask_end\|>/g, '');
-		return content.trim();
-	});
+	let thinkBlocks = $derived(extractThinkBlocks(rawContent));
+	let thinkContent = $derived(thinkBlocks.join('\n\n---\n\n'));
+	let displayContent = $derived(sanitizeDisplayContent(rawContent));
 	let isThinking = $derived(
 		message.isStreaming && rawContent.toLowerCase().includes('<think>') && !rawContent.toLowerCase().includes('</think>')
 	);
 
 	let contentEl: HTMLElement | null = $state(null);
-	let thinkEl: HTMLElement | null = $state(null);
-	let comp: Component | null = null;
-	let thinkComp: Component | null = null;
+	const compRef: { current: Component | null } = { current: null };
 
-	let isThinkOpen = $state(false);
-	let hasFinishedStreaming = $state(false);
-
-	$effect(() => {
-		if (isThinking) {
-			isThinkOpen = true;
-		}
-	});
-
-	$effect(() => {
-		if (!message.isStreaming && !hasFinishedStreaming) {
-			hasFinishedStreaming = true;
-			isThinkOpen = false;
-		}
-	});
-
-	// 스트리밍 중/완료 후 마크다운 렌더링 (본문)
+	// 본문 마크다운 렌더링
 	$effect(() => {
 		if (!contentEl) return;
-
-		const dContent = displayContent;
-		const streaming = message.isStreaming;
-		const role = message.role;
-
-		if (streaming) {
-			if (comp) {
-				comp.unload();
-				comp = null;
-			}
-			contentEl.textContent = dContent;
-		} else {
-			if (role === "assistant" && dContent) {
-				comp?.unload();
-				comp = new Component();
-				comp.load();
-				contentEl.empty();
-				MarkdownRenderer.render(app, dContent, contentEl, "", comp);
-			} else {
-				if (comp) {
-					comp.unload();
-					comp = null;
-				}
-				contentEl.textContent = dContent;
-			}
-		}
-	});
-
-	// 스트리밍 중/완료 후 마크다운 렌더링 (추론 과정)
-	$effect(() => {
-		if (!thinkEl) return;
-
-		const tContent = thinkContent;
-		const streaming = message.isStreaming;
-
-		if (streaming) {
-			if (thinkComp) {
-				thinkComp.unload();
-				thinkComp = null;
-			}
-			thinkEl.textContent = tContent;
-		} else {
-			if (message.role === "assistant" && tContent) {
-				thinkComp?.unload();
-				thinkComp = new Component();
-				thinkComp.load();
-				thinkEl.empty();
-				MarkdownRenderer.render(app, tContent, thinkEl, "", thinkComp);
-			} else {
-				if (thinkComp) {
-					thinkComp.unload();
-					thinkComp = null;
-				}
-				thinkEl.textContent = tContent;
-			}
-		}
+		renderMessageContent(contentEl, compRef, app, displayContent, message.isStreaming, message.role);
 	});
 
 	onDestroy(() => {
-		comp?.unload();
-		thinkComp?.unload();
+		compRef.current?.unload();
 	});
 
-	function formatTime(ts: number): string {
-		return new Date(ts).toLocaleTimeString(getLanguage(), {
-			hour: "2-digit",
-			minute: "2-digit",
-		});
-	}
-	function icon(node: HTMLElement, iconId: string) {
-		setIcon(node, iconId);
-		return {
-			update(newIconId: string) {
-				node.empty();
-				setIcon(node, newIconId);
-			}
-		};
+	function handleEditStart(_id: string, content: string): void {
+		isEditing = true;
 	}
 
-	function getAttachmentIcon(type: string) {
-		switch (type) {
-			case 'file': return 'file-text';
-			case 'folder': return 'folder';
-			case 'active_note': return 'file-edit';
-			case 'selection': return 'mouse-pointer-2';
-			case 'canvas': return 'layout';
-			case 'tag': return 'hash';
-			case 'url': return 'globe';
-			case 'external_file': return 'paperclip';
-			default: return 'file';
-		}
+	function handleEditSave(newContent: string): void {
+		isEditing = false;
+		onEdit?.(message.id, newContent);
 	}
 
-	async function openFile(e: MouseEvent | KeyboardEvent, filePath: string) {
-		const file = app.vault.getAbstractFileByPath(filePath);
-		if (file instanceof TFile) {
-			const leaf = app.workspace.getLeaf(e.ctrlKey || e.metaKey || ('button' in e && e.button === 1) ? 'tab' : false);
-			await leaf.openFile(file);
-		} else {
-			new Notice(t("uiMessages.fileNotFound"));
-		}
-	}
-
-	async function copyContent() {
-		await navigator.clipboard.writeText(displayContent);
-		new Notice(t("uiMessages.copiedToClipboard"));
-	}
-
-	function insertToNote() {
-		const activeEditor = app.workspace.activeEditor?.editor;
-		if (activeEditor) {
-			activeEditor.replaceSelection(displayContent);
-			new Notice(t("uiMessages.contentInserted"));
-			return;
-		}
-
-		let activeView = app.workspace.getActiveViewOfType(MarkdownView);
-		if (!activeView) {
-			const activeFile = app.workspace.getActiveFile();
-			if (activeFile) {
-				const leaves = app.workspace.getLeavesOfType("markdown");
-				for (const leaf of leaves) {
-					const viewCompat = leaf.view as unknown as { file?: { path: string } };
-					if (viewCompat.file?.path === activeFile.path) {
-						activeView = leaf.view as MarkdownView;
-						break;
-					}
-				}
-			}
-		}
-
-		if (activeView && activeView.editor) {
-			activeView.editor.replaceSelection(displayContent);
-			new Notice(t("uiMessages.contentInserted"));
-		} else {
-			new Notice(t("uiMessages.noActiveMarkdown"));
-		}
+	function handleEditCancel(): void {
+		isEditing = false;
 	}
 </script>
 
@@ -215,67 +73,28 @@
 				>✦ Lumina{message.model ? ` · ${message.model}` : ""}</span
 			>
 		{/if}
-		<span class="lumina-message__time">{formatTime(message.timestamp)}</span>
+		<span class="lumina-message__time">{formatTime(message.timestamp, getLanguage())}</span>
 	</div>
 
 	<div class="lumina-message__body">
 		{#if isEditing}
-			<div class="lumina-message__edit-area">
-				<textarea bind:value={editContent} class="lumina-message__edit-textarea" rows="3"></textarea>
-				<div class="lumina-message__edit-actions">
-					<button class="lumina-message__edit-btn" onclick={() => isEditing = false}>{t("common.cancel")}</button>
-					<button class="lumina-message__edit-btn lumina-message__edit-btn--primary" onclick={() => {
-						if (window.confirm(t("uiMessages.editConfirm"))) {
-							isEditing = false;
-							onEdit?.(message.id, editContent);
-						}
-					}}>{t("uiMessages.saveAndSend")}</button>
-				</div>
-			</div>
+			<MessageEditArea
+				content={message.content}
+				onSave={handleEditSave}
+				onCancel={handleEditCancel}
+			/>
 		{:else}
 			{#if message.attachments && message.attachments.length > 0}
-				<div class="lumina-message__attachments">
-					{#each message.attachments as att}
-						<div 
-							class="lumina-message__attachment-chip" 
-							title={att.path}
-							onclick={(e) => {
-								if (att.type === 'file' || att.type === 'active_note') {
-									openFile(e, att.path);
-								}
-							}}
-							onauxclick={(e) => {
-								if (att.type === 'file' || att.type === 'active_note') {
-									openFile(e, att.path);
-								}
-							}}
-							onkeydown={(e) => {
-								if (e.key === 'Enter' || e.key === ' ') {
-									e.preventDefault();
-									if (att.type === 'file' || att.type === 'active_note') {
-										openFile(e, att.path);
-									}
-								}
-							}}
-							role="button"
-							tabindex="0"
-						>
-							<span class="lumina-message__attachment-icon" use:icon={getAttachmentIcon(att.type)}></span>
-							<span class="lumina-message__attachment-name">{att.name}</span>
-						</div>
-					{/each}
-				</div>
+				<AttachmentChips attachments={message.attachments} {app} />
 			{/if}
 			{#if thinkContent}
-				<details class="lumina-message__think-block" bind:open={isThinkOpen}>
-					<summary class="lumina-message__think-summary">🧠 {t("uiMessages.thoughtProcess")} {isThinking ? '...' : ''}</summary>
-					<div class="lumina-message__think-content-wrapper">
-						<div class="lumina-message__think-content" bind:this={thinkEl}></div>
-						{#if isThinking}
-							<span class="lumina-message__cursor">▋</span>
-						{/if}
-					</div>
-				</details>
+				<ThinkBlock
+					{thinkContent}
+					{app}
+					{isThinking}
+					isStreaming={message.isStreaming}
+					role={message.role}
+				/>
 			{/if}
 			<div class="lumina-message__content" bind:this={contentEl}></div>
 			{#if message.isStreaming && !isThinking}
@@ -286,40 +105,14 @@
 
 	{#if !message.isStreaming}
 		{#if message.role === "assistant" && message.ragSources && message.ragSources.length > 0}
-			<div class="lumina-message__rag-sources">
-				{#each message.ragSources as source}
-					<button 
-						class="lumina-message__rag-source" 
-						aria-label={t("uiMessages.openReferenceNote")}
-						onclick={(e) => openFile(e, source.filePath)}
-						onauxclick={(e) => openFile(e, source.filePath)}
-					>
-						📄 {source.filePath.split('/').pop()?.replace('.md', '') || source.filePath}
-					</button>
-				{/each}
-			</div>
+			<RagSources sources={message.ragSources} {app} />
 		{/if}
-
-		<div class="lumina-message__actions">
-			{#if message.role === "assistant"}
-				<button class="clickable-icon lumina-message__action-btn" aria-label={t("common.copy")} use:icon={"copy"} onclick={copyContent}></button>
-				<button class="clickable-icon lumina-message__action-btn" aria-label={t("uiMessages.insertToNote")} use:icon={"arrow-down"} onclick={insertToNote}></button>
-				<button class="clickable-icon lumina-message__action-btn" aria-label={t("uiMessages.regenerate")} use:icon={"refresh-cw"} onclick={() => {
-					if (window.confirm(t("uiMessages.regenerateConfirm"))) {
-						onRegenerate?.(message.id);
-					}
-				}}></button>
-			{:else}
-				{#if !isEditing}
-					<button class="clickable-icon lumina-message__action-btn" aria-label={t("common.copy")} use:icon={"copy"} onclick={copyContent}></button>
-					<button class="clickable-icon lumina-message__action-btn" aria-label={t("uiMessages.insertToNote")} use:icon={"arrow-down"} onclick={insertToNote}></button>
-					<button class="clickable-icon lumina-message__action-btn" aria-label={t("uiMessages.edit")} use:icon={"pencil"} onclick={() => {
-						isEditing = true;
-						editContent = message.content;
-					}}></button>
-				{/if}
-			{/if}
-		</div>
+		<MessageActions
+			{message}
+			{app}
+			onEditStart={handleEditStart}
+			{onRegenerate}
+		/>
 	{/if}
 </div>
 
@@ -581,11 +374,11 @@
 		border-color: rgba(139, 92, 246, 0.3);
 	}
 
-	.lumina-message:hover .lumina-message__actions {
+	.lumina-message:hover :global(.lumina-message__actions) {
 		opacity: 1;
 	}
 
-	.lumina-message--user .lumina-message__actions {
+	.lumina-message--user :global(.lumina-message__actions) {
 		justify-content: flex-end;
 	}
 
