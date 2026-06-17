@@ -1,7 +1,7 @@
-import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, ToolCall } from '../../../shared/types/llm.types';
+import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, TokenUsage, ToolCall } from '../../../shared/types/llm.types';
 import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
-import { readStreamLines } from '../utils';
+import { extractSystemContent, isMockToolText, readStreamLines } from '../utils';
 
 interface AnthropicBlock {
 	type?: string;
@@ -103,7 +103,7 @@ export class AnthropicProvider implements ILLMProvider {
 			'anthropic-version': '2023-06-01',
 		};
 
-		const system = getSystemPrompt(messages);
+		const system = extractSystemContent(messages);
 		const formattedMessages = formatAnthropicMessages(messages);
 		const formattedTools = formatAnthropicTools(options.tools);
 
@@ -123,7 +123,7 @@ export class AnthropicProvider implements ILLMProvider {
 		if (onChunk) {
 			let fullContent = '';
 			const accumulatedBlocks: AnthropicBlock[] = [];
-			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+			let usage: TokenUsage | undefined;
 			let finishReason: string | undefined;
 
 			const response = await window.fetch(url, {
@@ -242,7 +242,7 @@ export class AnthropicProvider implements ILLMProvider {
 				}
 			}
 
-			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+			let usage: TokenUsage | undefined;
 			if (data.usage) {
 				usage = {
 					inputTokens: data.usage.input_tokens || 0,
@@ -264,7 +264,7 @@ export class AnthropicProvider implements ILLMProvider {
 		messages: ChatMessage[],
 		options: ChatOptions,
 		onChunk: (chunk: string) => void,
-	): Promise<{ usage?: import('../../../shared/types/llm.types').TokenUsage; finishReason?: string }> {
+	): Promise<{ usage?: TokenUsage; finishReason?: string }> {
 		const url = 'https://api.anthropic.com/v1/messages';
 		const headers: Record<string, string> = {
 			'content-type': 'application/json',
@@ -272,7 +272,7 @@ export class AnthropicProvider implements ILLMProvider {
 			'anthropic-version': '2023-06-01',
 		};
 
-		const system = getSystemPrompt(messages);
+		const system = extractSystemContent(messages);
 		const formattedMessages = formatAnthropicMessages(messages);
 
 		const payload: Record<string, unknown> = {
@@ -287,7 +287,7 @@ export class AnthropicProvider implements ILLMProvider {
 			payload.system = system;
 		}
 
-		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+		let usage: TokenUsage | undefined;
 		let finishReason: string | undefined;
 
 		const response = await window.fetch(url, {
@@ -347,14 +347,7 @@ export class AnthropicProvider implements ILLMProvider {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function getSystemPrompt(messages: ChatMessage[]): string | undefined {
-	const systemMsgs = messages.filter(m => m.role === 'system');
-	if (systemMsgs.length === 0) return undefined;
-	return systemMsgs.map(m => m.content).join('\n');
-}
-
 function formatAnthropicMessages(messages: ChatMessage[]) {
-	// Filter out system messages
 	const filtered = messages.filter(m => m.role !== 'system');
 	return filtered.map((m) => {
 		if (m.role === 'user') {
@@ -366,8 +359,7 @@ function formatAnthropicMessages(messages: ChatMessage[]) {
 				| { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
 			> = [];
 			const contentText = typeof m.content === 'string' ? m.content : '';
-			const isMockToolText = contentText.startsWith('Calling tool');
-			if (contentText && !isMockToolText) {
+			if (contentText && !isMockToolText(contentText)) {
 				contentArray.push({ type: 'text', text: contentText });
 			}
 			if (m.tool_calls && m.tool_calls.length > 0) {

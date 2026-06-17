@@ -1,7 +1,7 @@
-import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, ToolCall } from '../../../shared/types/llm.types';
+import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, TokenUsage, ToolCall } from '../../../shared/types/llm.types';
 import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
-import { readStreamLines } from '../utils';
+import { isMockToolText, readStreamLines } from '../utils';
 
 interface OpenAIToolCallInfo {
 	id?: string;
@@ -110,7 +110,7 @@ export class OpenAIProvider implements ILLMProvider {
 		if (onChunk) {
 			let fullContent = '';
 			const accumulatedToolCalls: OpenAIToolCallInfo[] = [];
-			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+			let usage: TokenUsage | undefined;
 			let finishReason: string | undefined;
 
 			const response = await window.fetch(url, {
@@ -227,7 +227,7 @@ export class OpenAIProvider implements ILLMProvider {
 				}
 			}
 
-			let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+			let usage: TokenUsage | undefined;
 			if (data.usage) {
 				usage = {
 					inputTokens: data.usage.prompt_tokens,
@@ -249,7 +249,7 @@ export class OpenAIProvider implements ILLMProvider {
 		messages: ChatMessage[],
 		options: ChatOptions,
 		onChunk: (chunk: string) => void,
-	): Promise<{ usage?: import('../../../shared/types/llm.types').TokenUsage; finishReason?: string }> {
+	): Promise<{ usage?: TokenUsage; finishReason?: string }> {
 		const url = 'https://api.openai.com/v1/chat/completions';
 		const headers: Record<string, string> = {
 			'Content-Type': 'application/json',
@@ -269,7 +269,7 @@ export class OpenAIProvider implements ILLMProvider {
 			payload.stop = options.stop;
 		}
 
-		let usage: import('../../../shared/types/llm.types').TokenUsage | undefined;
+		let usage: TokenUsage | undefined;
 		let finishReason: string | undefined;
 
 		const response = await window.fetch(url, {
@@ -354,10 +354,9 @@ function formatOpenAIMessages(messages: ChatMessage[]) {
 		}
 		if (m.role === 'assistant') {
 			const contentText = typeof m.content === 'string' ? m.content : '';
-			const isMockToolText = contentText.startsWith('Calling tool');
 			const payload: Record<string, unknown> = {
 				role: 'assistant',
-				content: (contentText && !isMockToolText) ? contentText : null,
+				content: (contentText && !isMockToolText(contentText)) ? contentText : null,
 			};
 			if (m.tool_calls && m.tool_calls.length > 0) {
 				payload.tool_calls = m.tool_calls.map((tc) => ({

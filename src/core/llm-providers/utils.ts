@@ -2,6 +2,7 @@
  * utils.ts
  * LLM REST API Provider 전용 유틸리티 함수
  */
+import type { ChatMessage } from '../../shared/types/llm.types';
 import { t } from '../../shared/locales/helpers';
 
 /**
@@ -38,6 +39,23 @@ export function formatLlmError(err: unknown): string {
 	return rawMessage;
 }
 
+/**
+ * assistant content가 mock tool call 텍스트인지 판별합니다.
+ * "Calling tool"로 시작하는 텍스트는 실제 응답이 아닌 UI 표시용입니다.
+ */
+export function isMockToolText(content: string): boolean {
+	return content.startsWith('Calling tool');
+}
+
+/**
+ * messages 배열에서 system role 메시지를 추출하여 하나의 문자열로 합칩니다.
+ * Gemini/Anthropic 등 system instruction을 별도 필드로 전송하는 API에 사용합니다.
+ */
+export function extractSystemContent(messages: ChatMessage[]): string | undefined {
+	const systemMsgs = messages.filter(m => m.role === 'system');
+	if (systemMsgs.length === 0) return undefined;
+	return systemMsgs.map(m => m.content).join('\n');
+}
 
 /**
  * ReadableStream의 응답을 한 라인씩 분할하여 콜백으로 전달합니다.
