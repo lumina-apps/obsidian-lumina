@@ -139,7 +139,7 @@ export class VaultIndexer {
 	async resetIndex(): Promise<void> {
 		this.isDestroyed = true;
 		this.currentProcessId++;
-		await new Promise<void>(resolve => setTimeout(resolve, 0));
+		await new Promise<void>(resolve => window.setTimeout(resolve, 0));
 		this.clearState();
 		resetIndexing();
 		await deleteCheckpoint(this.app);

@@ -34,11 +34,12 @@ export function createFileInputTrigger(
 export function createFileSelectHandler(
 	ctx: FileAttachmentContext,
 ): (e: Event) => void {
-	return async (e: Event) => {
+	return (e: Event) => {
 		const target = e.target as HTMLInputElement;
 		if (!target.files || target.files.length === 0) return;
-		await handleFiles(target.files, ctx);
-		target.value = "";
+		void handleFiles(target.files, ctx).then(() => {
+			target.value = "";
+		});
 	};
 }
 
@@ -48,11 +49,11 @@ export function createFileSelectHandler(
 export function createDropHandler(
 	ctx: FileAttachmentContext,
 ): (e: DragEvent) => void {
-	return async (e: DragEvent) => {
+	return (e: DragEvent) => {
 		e.preventDefault();
 		const files = e.dataTransfer?.files;
 		if (files && files.length > 0) {
-			await handleFiles(files, ctx);
+			void handleFiles(files, ctx);
 		}
 	};
 }
@@ -72,7 +73,7 @@ export function createDragOverHandler(): (e: DragEvent) => void {
 export function createPasteHandler(
 	ctx: FileAttachmentContext,
 ): (e: ClipboardEvent) => void {
-	return async (e: ClipboardEvent) => {
+	return (e: ClipboardEvent) => {
 		const items = e.clipboardData?.items;
 		if (!items) return;
 
@@ -87,7 +88,7 @@ export function createPasteHandler(
 		}
 
 		if (files.length > 0) {
-			await handleFiles(files, ctx);
+			void handleFiles(files, ctx);
 		}
 	};
 }
@@ -116,6 +117,6 @@ async function handleFiles(
 	if (newAtts.length > 0) {
 		setAttachments([...attachments, ...newAtts]);
 		// tick().then(() => resizeTextarea()) 와 동일하게
-		setTimeout(() => onResizeTextarea(), 0);
+		window.setTimeout(() => onResizeTextarea(), 0);
 	}
 }

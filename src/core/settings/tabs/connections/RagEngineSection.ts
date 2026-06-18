@@ -7,7 +7,6 @@
 
 import { Notice, Platform, Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
-import { wrapAsync } from '../../../../shared/utils/settingHelpers';
 import { t } from '../../../../shared/locales/helpers';
 import { setIndexingStatus } from '../../../store/ragStore';
 import { initEmbeddingWorker } from '../../../../features/rag/ragInitializer';
@@ -25,7 +24,7 @@ export function renderRagEngineSection(tab: LuminaSettingTab, el: HTMLElement): 
 
 	tab.sectionHeading(el, t('settings.connections.ragEngine.name'));
 
-	const descEl = document.createDocumentFragment();
+	const descEl = activeDocument.createDocumentFragment();
 	descEl.createEl('div', {
 		text: t('settings.connections.ragEngine.desc'),
 		attr: { style: 'margin-bottom: 6px;' }
@@ -101,7 +100,7 @@ function renderEmbeddingModelSelector(tab: LuminaSettingTab, el: HTMLElement): v
 	const s = tab.plugin.settings.connections;
 
 	tab.advancedLabel(el);
-	const customDesc = document.createDocumentFragment();
+	const customDesc = activeDocument.createDocumentFragment();
 	customDesc.createEl('div', { text: t('settings.connections.customEmbedding.desc') });
 	customDesc.createEl('div', {
 		text: t('settings.connections.customEmbedding.guide'),

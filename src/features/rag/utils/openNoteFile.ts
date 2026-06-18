@@ -65,12 +65,12 @@ export async function openNoteFile({
 	const abstractFile = vault.getAbstractFileByPath(path);
 
 	if (!abstractFile) {
-		workspace.openLinkText(path, '', newLeaf);
+		void workspace.openLinkText(path, '', newLeaf);
 		return;
 	}
 
 	if (!(abstractFile instanceof TFile)) {
-		workspace.openLinkText(path, '', newLeaf);
+		void workspace.openLinkText(path, '', newLeaf);
 		return;
 	}
 

@@ -57,13 +57,13 @@ export function clickOutside(node: HTMLElement, callback: () => void) {
 			callback();
 		}
 	}
-	const timer = setTimeout(() => {
-		document.addEventListener('click', handler);
+	const timer = window.setTimeout(() => {
+		activeDocument.addEventListener('click', handler);
 	}, 0);
 	return {
 		destroy() {
-			clearTimeout(timer);
-			document.removeEventListener('click', handler);
+			window.clearTimeout(timer);
+			activeDocument.removeEventListener('click', handler);
 		},
 	};
 }

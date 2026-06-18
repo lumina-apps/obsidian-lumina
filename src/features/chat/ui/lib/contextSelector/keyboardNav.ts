@@ -6,7 +6,7 @@
 /** 키보드 네비게이션 활성 상태를 추적하기 위한 상태 객체 */
 export interface KeyboardNavState {
 	isKeyboardNavigating: boolean;
-	keyboardNavTimer: ReturnType<typeof setTimeout> | null;
+	keyboardNavTimer: number | null;
 }
 
 /** 키보드 네비게이션 상태 초기값을 생성합니다. */
@@ -24,9 +24,9 @@ export function createKeyboardNavState(): KeyboardNavState {
 export function setKeyboardNav(state: KeyboardNavState): void {
 	state.isKeyboardNavigating = true;
 	if (state.keyboardNavTimer) {
-		clearTimeout(state.keyboardNavTimer);
+		window.clearTimeout(state.keyboardNavTimer);
 	}
-	state.keyboardNavTimer = setTimeout(() => {
+	state.keyboardNavTimer = window.setTimeout(() => {
 		state.isKeyboardNavigating = false;
 	}, 150);
 }
@@ -36,7 +36,7 @@ export function setKeyboardNav(state: KeyboardNavState): void {
  */
 export function clearKeyboardNav(state: KeyboardNavState): void {
 	if (state.keyboardNavTimer) {
-		clearTimeout(state.keyboardNavTimer);
+		window.clearTimeout(state.keyboardNavTimer);
 		state.keyboardNavTimer = null;
 	}
 	state.isKeyboardNavigating = false;
@@ -111,7 +111,7 @@ export function createKeyboardNavHandler(config: KeyboardNavConfig): (e: Keyboar
  */
 export function scrollActiveIntoView(listEl: HTMLElement | null): void {
 	if (!listEl) return;
-	const activeEl = listEl.querySelector(".is-active") as HTMLElement | null;
+	const activeEl: HTMLElement | null = listEl.querySelector(".is-active");
 	if (activeEl) {
 		activeEl.scrollIntoView({ block: "nearest" });
 	}

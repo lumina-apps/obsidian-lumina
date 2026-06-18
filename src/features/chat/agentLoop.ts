@@ -115,7 +115,6 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 		const rawResponse = await provider.chat(messagesForLLM, chatOptions, (chunk) => {
 			if (chatSettings.streaming) {
 				currentChunkText += chunk;
-				const full = accumulatedText + (accumulatedText && currentChunkText ? '\n\n' : '') + currentChunkText;
 				appendChunk(assistantId, chunk);
 			}
 		});

@@ -30,7 +30,7 @@ export function renderMessageContent(
 			comp.load();
 			compRef.current = comp;
 			el.empty();
-			MarkdownRenderer.render(app, content, el, "", comp);
+			void MarkdownRenderer.render(app, content, el, "", comp);
 		} else {
 			if (compRef.current) {
 				compRef.current.unload();

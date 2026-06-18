@@ -84,7 +84,7 @@ export class HttpTransport {
 			await new Promise<void>((resolve) => {
 				this.httpServer!.close(() => resolve());
 				// 3초 후 강제 해제 (Fallback)
-				setTimeout(() => resolve(), 3000);
+				window.setTimeout(() => resolve(), 3000);
 			});
 			this.httpServer = null;
 		}

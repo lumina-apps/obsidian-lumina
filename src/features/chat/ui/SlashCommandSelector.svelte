@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { SlashCommand } from "../types/slashCommand.types";
 	import { clickOutside, iconAction } from "../../../shared/utils/domUtils";
-	import { useKeyboardListNav } from "./composables/useKeyboardListNav.svelte";
+	import { useKeyboardListNav } from "./composables/useKeyboardListNav";
 
 	let {
 		commands = [],
@@ -36,7 +36,11 @@
 
 	// ═══════════════════════════════════════════════════════════════════════════
 	// Keyboard list navigation (composable)
+	// reactive state를 Svelte 5 runes로 관리하고 getter/setter로 전달
 	// ═══════════════════════════════════════════════════════════════════════════
+	let _navActiveIndex = $state(0);
+	let _navIsKeyboardNavigating = $state(false);
+
 	const nav = useKeyboardListNav({
 		isOpen: () => true,
 		itemCount: () => filteredCommands.length,
@@ -46,6 +50,14 @@
 		},
 		onClose: () => onClose(),
 		enableMouseConflict: true,
+		activeIndex: {
+			get: () => _navActiveIndex,
+			set: (v) => { _navActiveIndex = v; },
+		},
+		isKeyboardNavigating: {
+			get: () => _navIsKeyboardNavigating,
+			set: (v) => { _navIsKeyboardNavigating = v; },
+		},
 	});
 
 	// Global keydown capture (SlashCommandSelector는 capture phase로 등록)
@@ -79,16 +91,16 @@
 			{#each filteredCommands as cmd, i}
 				<button
 					class="lumina-slash-selector__item"
-					class:is-active={i === nav.activeIndex}
-					role="option"
-					aria-selected={i === nav.activeIndex}
-					onclick={() => selectItem(cmd)}
-					onmouseenter={() => {
-						if (!nav.isKeyboardNavigating) nav.setActiveIndex(i);
-					}}
-					onmousemove={() => {
-						if (!nav.isKeyboardNavigating && nav.activeIndex !== i) nav.setActiveIndex(i);
-					}}
+				class:is-active={i === _navActiveIndex}
+				role="option"
+				aria-selected={i === _navActiveIndex}
+				onclick={() => selectItem(cmd)}
+				onmouseenter={() => {
+					if (!_navIsKeyboardNavigating) _navActiveIndex = i;
+				}}
+				onmousemove={() => {
+					if (!_navIsKeyboardNavigating && _navActiveIndex !== i) _navActiveIndex = i;
+				}}
 					type="button"
 				>
 					<span class="lumina-slash-selector__item-icon" use:iconAction={cmd.icon}></span>

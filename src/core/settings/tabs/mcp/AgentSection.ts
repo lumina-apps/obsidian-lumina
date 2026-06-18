@@ -1,4 +1,4 @@
-import { Notice, Setting, TextComponent } from 'obsidian';
+import { Notice, Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
 import { t } from '../../../../shared/locales/helpers';
 import { createFeatureCard, createMultilineDesc } from '../../../../shared/utils/settingHelpers';

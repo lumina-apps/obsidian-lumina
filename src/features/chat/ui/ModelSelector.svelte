@@ -3,7 +3,7 @@
 	import type { LLMProviderConfig } from "../../../shared/types/settings.types";
 	import { flattenProviderModels, stripProviderSuffix } from "../../../shared/utils/modelUtils";
 	import { clickOutside, iconAction } from "../../../shared/utils/domUtils";
-	import { useKeyboardListNav } from "./composables/useKeyboardListNav.svelte";
+	import { useKeyboardListNav } from "./composables/useKeyboardListNav";
 	import type { FlattenedModel } from "../../../shared/utils/modelUtils";
 
 	// ═══════════════════════════════════════════════════════════════════════════
@@ -61,7 +61,11 @@
 
 	// ═══════════════════════════════════════════════════════════════════════════
 	// Keyboard list navigation (composable)
+	// reactive state를 Svelte 5 runes로 관리하고 getter/setter로 전달
 	// ═══════════════════════════════════════════════════════════════════════════
+	let _navActiveIndex = $state(0);
+	let _navIsKeyboardNavigating = $state(false);
+
 	const nav = useKeyboardListNav({
 		isOpen: () => isOpen,
 		itemCount: () => filteredModels.length,
@@ -71,6 +75,14 @@
 		},
 		onClose: () => {
 			isOpen = false;
+		},
+		activeIndex: {
+			get: () => _navActiveIndex,
+			set: (v) => { _navActiveIndex = v; },
+		},
+		isKeyboardNavigating: {
+			get: () => _navIsKeyboardNavigating,
+			set: (v) => { _navIsKeyboardNavigating = v; },
 		},
 	});
 
@@ -162,11 +174,11 @@
 						<button
 							class="lumina-model-selector__item"
 							class:is-selected={item.providerId === selectedProviderId && item.modelId === selectedModelId}
-							class:is-active={i === nav.activeIndex}
+							class:is-active={i === _navActiveIndex}
 							data-provider-id={item.providerId}
 							data-model-id={item.modelId}
 							onclick={() => selectItem(item)}
-							onmouseenter={() => nav.setActiveIndex(i)}
+							onmouseenter={() => _navActiveIndex = i}
 							type="button"
 						>
 							<div class="lumina-model-selector__item-info">

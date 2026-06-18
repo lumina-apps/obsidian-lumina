@@ -40,7 +40,7 @@ export function createAutoScroll(
 		const el = getMessagesEl();
 		if (!el) return;
 
-		scrollRafId = requestAnimationFrame(() => {
+		scrollRafId = window.requestAnimationFrame(() => {
 			scrollRafId = null;
 			const el2 = getMessagesEl();
 			if (!el2) return;

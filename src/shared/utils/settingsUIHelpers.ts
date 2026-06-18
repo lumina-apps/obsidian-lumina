@@ -68,7 +68,7 @@ export function getSystemLocale(): string {
 }
 
 /** README URL 언어 suffix 반환 */
-export function getLangSuffix(language: PluginLanguage | string): string {
+export function getLangSuffix(language: string): string {
 	if (language === 'system') {
 		const navLang = (window.navigator.language || 'en').toLowerCase();
 		if (navLang.startsWith('zh')) {
@@ -171,7 +171,6 @@ export function addSliderRange(opts: SliderRangeOptions): void {
 				.onChange(wrapAsync(async (val) => {
 					await opts.onChange(val);
 				}));
-			slider.setDynamicTooltip();
 		});
 }
 

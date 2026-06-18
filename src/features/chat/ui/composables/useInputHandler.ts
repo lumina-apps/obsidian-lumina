@@ -31,19 +31,19 @@ export function createKeydownHandler(ctx: KeydownContext): (e: KeyboardEvent) =>
 		}
 
 		const sendKey = plugin.settings.chat.sendKey;
-		const isComposing = e.isComposing || e.keyCode === 229;
+		const isComposing = e.isComposing;
 
 		if (sendKey === "enter" && e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
 			if (isComposing) {
-				setTimeout(() => onSendMessage(), 50);
+				window.setTimeout(() => onSendMessage(), 50);
 			} else {
 				onSendMessage();
 			}
 		} else if (sendKey === "ctrl_enter" && e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
 			e.preventDefault();
 			if (isComposing) {
-				setTimeout(() => onSendMessage(), 50);
+				window.setTimeout(() => onSendMessage(), 50);
 			} else {
 				onSendMessage();
 			}
@@ -126,7 +126,7 @@ export function createContextMentionInserter(
 		ctx.setInputText(newInput);
 
 		const newCursor = cursor + prefix.length;
-		tick().then(() => {
+		void tick().then(() => {
 			const el = ctx.getTextareaEl();
 			if (el) {
 				el.focus();
@@ -174,7 +174,7 @@ export function createContextSelectHandler(
 
 		ctx.afterSelect?.();
 
-		tick().then(() => ctx.getTextareaEl()?.focus());
+		void tick().then(() => ctx.getTextareaEl()?.focus());
 	};
 }
 
@@ -205,7 +205,7 @@ export function createSlashSelectHandler(
 
 		ctx.afterSelect?.();
 
-		tick().then(() => {
+		void tick().then(() => {
 			ctx.getTextareaEl()?.focus();
 			cmd.action();
 		});

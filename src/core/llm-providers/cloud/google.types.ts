@@ -2,7 +2,7 @@
  * google.types.ts
  * Google Gemini API 전용 타입과 상수
  */
-import type { ChatMessage, TokenUsage } from '../../../shared/types/llm.types';
+import type { TokenUsage } from '../../../shared/types/llm.types';
 
 export interface GeminiToolCallInfo {
 	name: string;

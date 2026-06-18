@@ -9,7 +9,21 @@ import { t } from '../../shared/locales/helpers';
 import { WORKER_COMPRESSED_BASE64 } from './worker/workerCode';
 import { decompressWorkerCode } from './utils/workerCodec';
 import { PendingRequestManager } from './utils/PendingRequestManager';
-import { debugLogger } from '../../shared/debugLogger';
+
+interface NodeFS {
+	promises: {
+		readFile(path: string, encoding: string): Promise<string>;
+		writeFile(path: string, data: string, encoding: string): Promise<void>;
+		mkdir(path: string, options?: { recursive: boolean }): Promise<void>;
+	};
+}
+
+interface NodePath {
+	dirname(path: string): string;
+}
+
+/** 디스크 캐시 파일의 각 항목 타입 */
+type CacheEntry = [string, number[] | undefined, number];
 
 export type EmbeddingProgressCallback = (progress: number, status: string) => void;
 
@@ -28,9 +42,9 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string)
 				window.clearTimeout(timer);
 				resolve(value);
 			},
-			(err) => {
+			(err: unknown) => {
 				window.clearTimeout(timer);
-				reject(err);
+				reject(err instanceof Error ? err : new Error(String(err)));
 			},
 		);
 	});
@@ -87,7 +101,7 @@ export class EmbeddingWorkerBridge {
 		try {
 			const safeName = modelName.replace(/[^a-zA-Z0-9._-]/g, '_');
 			this.cacheFilePath = `${cacheDir.replace(/\\/g, '/')}/embed_cache_${safeName}.json`;
-			void this.loadEmbedCache().catch((e) => {
+			void this.loadEmbedCache().catch((e: unknown) => {
 				console.warn('[EmbeddingWorker] embed cache load failed:', e);
 			});
 		} catch (e) {
@@ -99,7 +113,7 @@ export class EmbeddingWorkerBridge {
 		let workerCode: string;
 		try {
 			workerCode = await decompressWorkerCode(WORKER_COMPRESSED_BASE64);
-		} catch (decompErr) {
+		} catch (decompErr: unknown) {
 			console.error('[EmbeddingWorker] decompression failed:', decompErr);
 			throw new Error(
 				`워커 코드 압축 해제 실패: ${decompErr instanceof Error ? decompErr.message : String(decompErr)}`,
@@ -130,7 +144,7 @@ export class EmbeddingWorkerBridge {
 			worker.addEventListener('message', (event: MessageEvent<WorkerResponse>) => {
 				this.handleMessage(event, instance);
 			});
-			worker.addEventListener('error', (e) => {
+			worker.addEventListener('error', (e: Event) => {
 				console.error(`[EmbeddingWorker] worker #${i} uncaught error:`, e);
 				const msg = e instanceof ErrorEvent ? e.message : t('uiMessages.ragWorkerInitErr');
 				this.initPromiseReject?.(new Error(`Worker 오류: ${msg}`));
@@ -173,8 +187,8 @@ export class EmbeddingWorkerBridge {
 				inst.worker.postMessage({ type: 'terminate' });
 				inst.worker.terminate();
 				URL.revokeObjectURL(inst.url);
-			} catch (e) {
-				// 무시
+			} catch {
+				// Worker가 이미 종료된 경우 무시
 			}
 			inst.embedRequests.rejectAll(new Error(t('uiMessages.ragWorkerTerm')));
 			inst.parseRequests.rejectAll(new Error(t('uiMessages.ragWorkerTerm')));
@@ -183,7 +197,9 @@ export class EmbeddingWorkerBridge {
 		this.workerCount = 0;
 		this.isReady = false;
 
-		void this.persistCache().catch(() => {});
+		void this.persistCache().catch(() => {
+			// 종료 중 캐시 저장 실패는 무시
+		});
 	}
 
 	get ready(): boolean {
@@ -211,7 +227,7 @@ export class EmbeddingWorkerBridge {
 		for (let i = 0; i < texts.length; i++) {
 			const tstr = texts[i];
 			const cached = this.getCachedEmbedding(tstr);
-			if (cached) {
+			if (cached !== undefined) {
 				results[i] = cached;
 			} else {
 				toRequestTexts.push(tstr);
@@ -286,7 +302,9 @@ export class EmbeddingWorkerBridge {
 		try {
 			this.embedCache.set(key, embedding);
 			this.embedAccess.set(key, this.accessCounter++);
-		} catch {}
+		} catch {
+			// 맵 용량 초과 등으로 set 실패 시 무시 (LRU 정리가 이후 처리)
+		}
 	}
 
 	/** 라운드로빈 Worker 선택 */
@@ -312,25 +330,33 @@ export class EmbeddingWorkerBridge {
 	/** 디스크에서 임베딩 캐시 로드 */
 	private async loadEmbedCache(): Promise<void> {
 		if (!this.cacheFilePath) return;
-		let fs: any;
+		let nodeFS: NodeFS;
 		try {
-			fs = (window as any).require ? (window as any).require('fs') : require('fs');
-		} catch (e) {
+			const win = window as unknown as Record<string, unknown>;
+			// eslint-disable-next-line @typescript-eslint/no-require-imports
+			const requireFn = (typeof win.require === 'function' ? win.require : require) as (id: string) => unknown;
+			nodeFS = requireFn('fs') as NodeFS;
+		} catch {
 			return;
 		}
 		try {
-			const data = await fs.promises.readFile(this.cacheFilePath, 'utf-8');
-			const parsed = JSON.parse(data);
+			const data = await nodeFS.promises.readFile(this.cacheFilePath, 'utf-8');
+			const parsed: unknown = JSON.parse(data);
 			if (!Array.isArray(parsed)) return;
 			for (const entry of parsed) {
-				if (!entry || typeof entry[0] !== 'string' || !Array.isArray(entry[1])) continue;
-				this.embedCache.set(entry[0], entry[1]);
-				this.embedAccess.set(entry[0], typeof entry[2] === 'number' ? entry[2] : this.accessCounter++);
+				if (!Array.isArray(entry) || typeof entry[0] !== 'string' || !Array.isArray(entry[1])) continue;
+				const key = entry[0] as string;
+				const embedding = entry[1] as number[];
+				this.embedCache.set(key, embedding);
+				const accessVal = typeof entry[2] === 'number' ? (entry[2] as number) : this.accessCounter++;
+				this.embedAccess.set(key, accessVal);
 			}
 			let max = 0;
-			for (const v of this.embedAccess.values()) if (v > max) max = v;
+			for (const v of this.embedAccess.values()) {
+				if (v > max) max = v;
+			}
 			this.accessCounter = max + 1;
-		} catch (e) {
+		} catch (e: unknown) {
 			console.warn('[EmbeddingWorker] loadEmbedCache failed:', e);
 		}
 	}
@@ -338,26 +364,32 @@ export class EmbeddingWorkerBridge {
 	/** 디스크에 임베딩 캐시 저장 */
 	private async saveEmbedCache(): Promise<void> {
 		if (!this.cacheFilePath) return;
-		let fs: any;
-		let pathMod: any;
+		let nodeFS: NodeFS;
+		let nodePath: NodePath;
 		try {
-			fs = (window as any).require ? (window as any).require('fs') : require('fs');
-			pathMod = (window as any).require ? (window as any).require('path') : require('path');
-		} catch (e) {
+			const win = window as unknown as Record<string, unknown>;
+			// eslint-disable-next-line @typescript-eslint/no-require-imports
+			const requireFn = (typeof win.require === 'function' ? win.require : require) as (id: string) => unknown;
+			nodeFS = requireFn('fs') as NodeFS;
+			nodePath = requireFn('path') as NodePath;
+		} catch {
 			return;
 		}
 		try {
-			const entries = Array.from(this.embedCache.keys()).map(k => ({ k, access: this.embedAccess.get(k) || 0 }));
+			const entries = Array.from(this.embedCache.keys()).map(k => ({
+				k,
+				access: this.embedAccess.get(k) ?? 0,
+			}));
 			entries.sort((a, b) => (b.access - a.access));
 			const toSaveKeys = entries.slice(0, this.MAX_CACHE_ENTRIES).map(e => e.k);
-			const out: any[] = [];
+			const out: CacheEntry[] = [];
 			for (const k of toSaveKeys) {
-				out.push([k, this.embedCache.get(k), this.embedAccess.get(k) || 0]);
+				out.push([k, this.embedCache.get(k), this.embedAccess.get(k) ?? 0]);
 			}
-			const dir = pathMod.dirname(this.cacheFilePath);
-			await fs.promises.mkdir(dir, { recursive: true });
-			await fs.promises.writeFile(this.cacheFilePath, JSON.stringify(out), 'utf-8');
-		} catch (e) {
+			const dir = nodePath.dirname(this.cacheFilePath);
+			await nodeFS.promises.mkdir(dir, { recursive: true });
+			await nodeFS.promises.writeFile(this.cacheFilePath, JSON.stringify(out), 'utf-8');
+		} catch (e: unknown) {
 			console.warn('[EmbeddingWorker] saveEmbedCache failed:', e);
 		}
 	}
@@ -383,7 +415,9 @@ export class EmbeddingWorkerBridge {
 			this.saveInProgress = false;
 			const waiters = this.saveWaiters.splice(0);
 			for (const w of waiters) {
-				try { w(); } catch {}
+				try { w(); } catch {
+					// waiter 실행 실패는 무시
+				}
 			}
 		}
 	}

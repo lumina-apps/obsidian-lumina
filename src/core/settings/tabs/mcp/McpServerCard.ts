@@ -1,4 +1,4 @@
-import { Notice, Setting } from 'obsidian';
+import { Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
 import { t } from '../../../../shared/locales/helpers';
 import type { McpServerConfig } from '../../../../shared/types/settings.types';

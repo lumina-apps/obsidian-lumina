@@ -45,8 +45,6 @@ const customEnv = env as unknown as HuggingFaceEnv;
 //
 // [proxy=false] Blob URL Worker는 proxy가 아니므로 false로 고정합니다.
 
-const hasSharedArrayBuffer = typeof SharedArrayBuffer !== 'undefined';
-// SharedArrayBuffer 지원 시: 로지컈 코어의 절반, 최대 4개 스레드 활용
 // 다중 Worker 풀 구조에서는 각 Worker가 numThreads=1로 동작하고,
 // Worker 풀이 병렬 처리를 담당합니다.
 // SharedArrayBuffer가 없는 환경에서도 싱글스레드 WASM은 정상 동작합니다.

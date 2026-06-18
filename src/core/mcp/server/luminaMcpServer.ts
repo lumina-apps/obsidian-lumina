@@ -85,7 +85,7 @@ export class LuminaMcpServer {
 
 			try {
 				const result = await dispatchToolHandler(name, args, ctx, this.pathGuard);
-				return result as CallToolResult;
+				return result;
 			} catch (e) {
 				const message = formatMcpError(e).message;
 				debugLogger.logError('mcp', formatMcpError(e));

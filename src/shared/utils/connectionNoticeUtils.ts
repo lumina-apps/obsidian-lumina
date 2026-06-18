@@ -1,7 +1,7 @@
 /** Provider 연결 상태 Notice 및 UI 갱신 헬퍼 */
 
 import { Notice } from 'obsidian';
-import type { LLMProviderConfig, ProviderType } from '../types/settings.types';
+import type { LLMProviderConfig } from '../types/settings.types';
 import { PROVIDER_LABELS, PROVIDER_CATEGORIES } from '../types/settings.types';
 import { t } from '../locales/helpers';
 
@@ -62,7 +62,7 @@ export function refreshAfterMcpConnectionToggle(
 	refreshSettingTab: () => void,
 ): void {
 	showDisconnectedNotice();
-	setTimeout(() => {
+	window.setTimeout(() => {
 		refreshSettingTab();
 		if (isCurrentlyConnected) {
 			showConnectedNotice();

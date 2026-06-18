@@ -1,4 +1,4 @@
-import { Notice, Platform, Plugin, TFile, moment, getLanguage } from 'obsidian';
+import { Notice, Platform, Plugin, moment, getLanguage } from 'obsidian';
 import { Editor, MarkdownView } from 'obsidian';
 import type { MarkdownFileInfo } from 'obsidian';
 import { LuminaSettingTab } from './core/settings/settingTab';
@@ -9,7 +9,6 @@ import { VaultIndexer } from './features/rag/indexer';
 import { ChatView, CHAT_VIEW_TYPE } from './features/chat/chatView';
 import { DebugView, DEBUG_VIEW_TYPE } from './features/debug/debugView';
 import { initSettingsStore, syncSettingsStore } from './core/store/settingsStore';
-import { setIndexingStatus } from './core/store/ragStore';
 import { loadSystemLocaleCache } from './shared/locales/translator';
 import { setLanguage, t } from './shared/locales/helpers';
 import { addPendingAttachment } from './core/store/chatStore';

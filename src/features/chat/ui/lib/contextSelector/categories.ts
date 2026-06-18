@@ -42,12 +42,22 @@ export function collectFolderPaths(files: TFile[]): string[] {
 /**
  * 현재 활성 노트/선택 영역 존재 여부를 포함한 컨텍스트 정보를 생성합니다.
  */
+interface MetadataCacheWithTags {
+	getTags?: () => Record<string, unknown>;
+}
+
+interface EditorWithGetSelection {
+	getSelection?: () => string;
+}
+
 export function buildCategoryContext(plugin: LuminaPlugin): CategoryContext {
 	const activeFile = plugin.app.workspace.getActiveFile();
 	const activeView = plugin.app.workspace.getActiveViewOfType(MarkdownView);
-	const selection = (activeView?.editor as { getSelection?: () => string } | undefined)?.getSelection?.();
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const tagsInfo = (plugin.app.metadataCache as any).getTags?.() ?? null;
+	const editor = activeView?.editor as EditorWithGetSelection | undefined;
+	const selection = editor?.getSelection?.();
+	// metadataCache.getTags()는 Obsidian API에 존재하지만 타입 정의에 누락되어 있습니다.
+	const metadataCache = plugin.app.metadataCache as unknown as MetadataCacheWithTags;
+	const tagsInfo = metadataCache.getTags?.() ?? null;
 	const files = plugin.app.vault.getFiles();
 
 	return {

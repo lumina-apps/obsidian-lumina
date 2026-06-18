@@ -1,4 +1,4 @@
-import { Setting, ButtonComponent } from 'obsidian';
+import { Setting, type ButtonComponent } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
 import { wrapAsync } from '../../../../shared/utils/settingHelpers';
 import { t } from '../../../../shared/locales/helpers';
@@ -7,13 +7,12 @@ import { createButtonContainer } from '../../../../shared/utils/domUtils';
 /**
  * ButtonComponent에 setWarning()이 있으면 호출합니다.
  * Obsidian 1.x API 기준으로 존재하는 메서드이지만, 타입 정의에 따라
- * 누락되었을 수 있으므로 안전하게 in 연산자로 체크합니다.
+ * 누락되었을 수 있으므로 안전하게 타입 확인 후 호출합니다.
  */
 function applyWarningStyle(btn: ButtonComponent): void {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	if ('setWarning' in btn && typeof (btn as any).setWarning === 'function') {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		(btn as any).setWarning();
+	const b = btn as unknown as Record<string, unknown>;
+	if (typeof b.setWarning === 'function') {
+		(b.setWarning as () => void)();
 	}
 }
 

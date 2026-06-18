@@ -7,7 +7,8 @@ export function resizeTextarea(
 	maxHeight = 160,
 ): void {
 	if (!textareaEl) return;
-	textareaEl.style.height = "auto";
-	textareaEl.style.height =
-		Math.min(textareaEl.scrollHeight, maxHeight) + "px";
+	textareaEl.setCssStyles({ height: "auto" });
+	textareaEl.setCssStyles({
+		height: Math.min(textareaEl.scrollHeight, maxHeight) + "px",
+	});
 }

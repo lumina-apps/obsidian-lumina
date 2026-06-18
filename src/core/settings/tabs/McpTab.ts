@@ -2,7 +2,6 @@ import type { LuminaSettingTab } from '../settingTab';
 import { renderAgentSection } from './mcp/AgentSection';
 import { renderLocalServerSection } from './mcp/LocalServerSection';
 import { renderExternalServersSection } from './mcp/ExternalServersSection';
-import { renderMcpServerCard } from './mcp/McpServerCard';
 
 export { renderMcpServerCard } from './mcp/McpServerCard';
 

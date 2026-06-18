@@ -7,7 +7,6 @@ import { App, TFile } from 'obsidian';
 import type { RagSettings } from '../../core/settings/settings.types';
 import { SUPPORTED_EXTENSIONS } from './parsers/DocumentParserRouter';
 import { isExcluded, isIncluded } from './exclusions';
-import { debugLogger } from '../../shared/debugLogger';
 
 /**
  * 지원 확장자 + 포함/제외 경로 필터를 적용해 인덱싱 대상 파일 목록을 반환합니다.
