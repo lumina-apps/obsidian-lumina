@@ -81,8 +81,8 @@
 	}
 
 	.lumina-message__attachment-icon :global(svg) {
-		width: 12px !important;
-		height: 12px !important;
+		width: 12px;
+		height: 12px;
 		opacity: 0.8;
 	}
 

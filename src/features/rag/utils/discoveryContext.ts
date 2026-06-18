@@ -102,8 +102,10 @@ function filterChunks(
 		if (q.startsWith('#')) {
 			const cache = plugin.app.metadataCache.getCache(c.path);
 			const tags = cache?.tags?.map(t => t.tag) ?? [];
-			const rawTags = cache?.frontmatter?.tags;
-			const fmTags: string[] | undefined = Array.isArray(rawTags) ? (rawTags as string[]) : undefined;
+			const rawTags: unknown = cache?.frontmatter?.tags;
+			const fmTags: string[] | undefined = Array.isArray(rawTags) && rawTags.every((v): v is string => typeof v === 'string')
+				? rawTags
+				: undefined;
 			const cleanQ = q.replace('#', '');
 			return tags.includes(q) || (fmTags !== undefined && fmTags.includes(cleanQ));
 		}

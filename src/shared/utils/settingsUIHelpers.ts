@@ -5,7 +5,6 @@ import { debugLogger } from '../debugLogger';
 import { normalizeError } from './errorUtils';
 import { wrapAsync } from './asyncUtils';
 import { t } from '../locales/helpers';
-import type { PluginLanguage } from '../types/settings.types';
 
 
 export type {

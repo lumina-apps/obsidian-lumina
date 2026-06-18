@@ -111,10 +111,8 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 		debugLogger.logMcp('Loop Round', `🔄 툴 루프 라운드 ${toolRound}/${maxRounds} 시작`);
 
 		// ── LLM 호출 ──────────────────────────────────────────────────────────
-		let currentChunkText = '';
 		const rawResponse = await provider.chat(messagesForLLM, chatOptions, (chunk) => {
 			if (chatSettings.streaming) {
-				currentChunkText += chunk;
 				appendChunk(assistantId, chunk);
 			}
 		});

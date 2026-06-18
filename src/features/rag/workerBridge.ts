@@ -101,10 +101,10 @@ export class EmbeddingWorkerBridge {
 		try {
 			const safeName = modelName.replace(/[^a-zA-Z0-9._-]/g, '_');
 			this.cacheFilePath = `${cacheDir.replace(/\\/g, '/')}/embed_cache_${safeName}.json`;
-			void this.loadEmbedCache().catch((e: unknown) => {
-				console.warn('[EmbeddingWorker] embed cache load failed:', e);
+			void this.loadEmbedCache().catch((err: unknown) => {
+				console.warn('[EmbeddingWorker] embed cache load failed:', err);
 			});
-		} catch (e) {
+		} catch {
 			this.cacheFilePath = null;
 		}
 
@@ -220,7 +220,7 @@ export class EmbeddingWorkerBridge {
 		}
 		if (texts.length === 0) return [];
 
-		const results: Array<number[] | null> = new Array(texts.length).fill(null);
+		const results: Array<number[] | null> = new Array<number[] | null>(texts.length).fill(null);
 		const toRequestTexts: string[] = [];
 		const toRequestIndices: number[] = [];
 
@@ -279,9 +279,11 @@ export class EmbeddingWorkerBridge {
 
 		if (this.embedCache.size > this.MAX_CACHE_ENTRIES) {
 			let toRemove = Math.floor(this.MAX_CACHE_ENTRIES / 2);
-			const it = this.embedCache.keys();
+			const keysIter = this.embedCache.keys();
 			while (toRemove-- > 0) {
-				const key = it.next().value;
+				const next = keysIter.next();
+				if (next.done ?? false) break;
+				const key: string = next.value;
 				if (!key) break;
 				this.embedCache.delete(key);
 			}
@@ -333,7 +335,7 @@ export class EmbeddingWorkerBridge {
 		let nodeFS: NodeFS;
 		try {
 			const win = window as unknown as Record<string, unknown>;
-			// eslint-disable-next-line @typescript-eslint/no-require-imports
+			// eslint-disable-next-line @typescript-eslint/no-require-imports -- Obsidian 데스크탑 환경의 Node.js require 사용
 			const requireFn = (typeof win.require === 'function' ? win.require : require) as (id: string) => unknown;
 			nodeFS = requireFn('fs') as NodeFS;
 		} catch {
@@ -345,10 +347,10 @@ export class EmbeddingWorkerBridge {
 			if (!Array.isArray(parsed)) return;
 			for (const entry of parsed) {
 				if (!Array.isArray(entry) || typeof entry[0] !== 'string' || !Array.isArray(entry[1])) continue;
-				const key = entry[0] as string;
-				const embedding = entry[1] as number[];
+				const key: string = entry[0];
+				const embedding: number[] = entry[1];
 				this.embedCache.set(key, embedding);
-				const accessVal = typeof entry[2] === 'number' ? (entry[2] as number) : this.accessCounter++;
+				const accessVal: number = typeof entry[2] === 'number' ? entry[2] : this.accessCounter++;
 				this.embedAccess.set(key, accessVal);
 			}
 			let max = 0;
@@ -368,7 +370,7 @@ export class EmbeddingWorkerBridge {
 		let nodePath: NodePath;
 		try {
 			const win = window as unknown as Record<string, unknown>;
-			// eslint-disable-next-line @typescript-eslint/no-require-imports
+			// eslint-disable-next-line @typescript-eslint/no-require-imports -- Obsidian 데스크탑 환경의 Node.js require 사용
 			const requireFn = (typeof win.require === 'function' ? win.require : require) as (id: string) => unknown;
 			nodeFS = requireFn('fs') as NodeFS;
 			nodePath = requireFn('path') as NodePath;

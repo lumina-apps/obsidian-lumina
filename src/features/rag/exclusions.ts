@@ -10,7 +10,6 @@ export const DEFAULT_EXCLUDED_PATHS: readonly string[] = [
 	'attachments',
 	'Attachments',
 	'chatHistory',
-	'.obsidian',
 ];
 
 /**

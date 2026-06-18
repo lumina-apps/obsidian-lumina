@@ -360,23 +360,22 @@
 		border-color: var(--background-modifier-border);
 	}
 
-	/* Svelte 스코프 문제 및 Obsidian 전역 스타일 충돌을 방지하기 위해 :global 사용 */
 	.lumina-message__action-btn :global(svg) {
-		width: 14px !important;
-		height: 14px !important;
-		stroke-width: 2px !important;
-		stroke: currentColor !important;
-		fill: none !important;
-		display: inline-block !important;
-		opacity: 1 !important;
-		visibility: visible !important;
+		width: 14px;
+		height: 14px;
+		stroke-width: 2px;
+		stroke: currentColor;
+		fill: none;
+		display: inline-block;
+		opacity: 1;
+		visibility: visible;
 	}
 	
 	.lumina-message__action-btn :global(path),
 	.lumina-message__action-btn :global(rect),
 	.lumina-message__action-btn :global(polyline),
 	.lumina-message__action-btn :global(line) {
-		stroke: currentColor !important;
+		stroke: currentColor;
 	}
 
 	.lumina-message__edit-area {

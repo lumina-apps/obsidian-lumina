@@ -1201,9 +1201,9 @@ body div.modal-overlay .suggestion-container .suggestion-item.is-selected-defaul
 	color: var(--text-normal);
 }
 
-.lumina-chat__empty-sub {
+.lumina-chat__empty .lumina-chat__empty-sub {
 	font-size: 11px;
-	color: var(--text-muted) !important;
+	color: var(--text-muted);
 	opacity: 0.8;
 }
 
@@ -1408,13 +1408,13 @@ body div.modal-overlay .suggestion-container .suggestion-item.is-selected-defaul
 
 /* Send / Clear buttons */
 
-.lumina-chat__send-btn {
+button.lumina-chat__send-btn {
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	width: 30px;
 	height: 30px;
-	padding: 0 !important;
+	padding: 0;
 	border-radius: 8px;
 	border: none;
 	background: var(--background-modifier-border);
@@ -1424,10 +1424,10 @@ body div.modal-overlay .suggestion-container .suggestion-item.is-selected-defaul
 	transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.lumina-chat__send-btn svg {
-	width: 22px !important;
-	height: 22px !important;
-	stroke-width: 2.2px !important;
+button.lumina-chat__send-btn svg.lucide-icon {
+	width: 22px;
+	height: 22px;
+	stroke-width: 2.2px;
 }
 
 .lumina-chat__clear-btn {
@@ -1451,10 +1451,10 @@ body div.modal-overlay .suggestion-container .suggestion-item.is-selected-defaul
 	color: var(--text-normal);
 }
 
-.lumina-chat__clear-btn svg {
-	width: 18px !important;
-	height: 18px !important;
-	stroke-width: 2px !important;
+button.lumina-chat__clear-btn svg.lucide-icon {
+	width: 18px;
+	height: 18px;
+	stroke-width: 2px;
 }
 
 .lumina-chat__send-btn.is-active {
@@ -1470,26 +1470,26 @@ body div.modal-overlay .suggestion-container .suggestion-item.is-selected-defaul
 
 .lumina-chat__send-btn:active { transform: scale(0.92); }
 
-.lumina-chat__send-btn:disabled {
+button.lumina-chat__send-btn:disabled {
 	opacity: 0.4;
 	cursor: default;
-	background: var(--background-modifier-border) !important;
-	color: var(--text-muted) !important;
-	box-shadow: none !important;
-	transform: none !important;
+	background: var(--background-modifier-border);
+	color: var(--text-muted);
+	box-shadow: none;
+	transform: none;
 }
 
-.lumina-chat__send-btn--cancel {
-	background: var(--color-red) !important;
-	color: white !important;
-	opacity: 0.9 !important;
-	box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3) !important;
+button.lumina-chat__send-btn.lumina-chat__send-btn--cancel {
+	background: var(--color-red);
+	color: white;
+	opacity: 0.9;
+	box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
 
-.lumina-chat__send-btn--cancel:hover {
-	opacity: 1 !important;
+button.lumina-chat__send-btn.lumina-chat__send-btn--cancel:hover {
+	opacity: 1;
 	transform: translateY(-1px);
-	box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4) !important;
+	box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
 }
 
 /* Attachments */

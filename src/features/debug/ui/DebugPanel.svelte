@@ -331,7 +331,7 @@
 	}
 
 	:global(.lumina-debug__empty-sub) {
-		font-size: 10px !important;
+		font-size: 10px;
 		opacity: 0.7;
 	}
 
@@ -611,6 +611,6 @@
 	}
 
 	:global(.lumina-debug__error-text) {
-		color: #f87171 !important;
+		color: #f87171;
 	}
 </style>
