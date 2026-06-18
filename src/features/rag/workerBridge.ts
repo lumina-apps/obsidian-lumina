@@ -348,7 +348,9 @@ export class EmbeddingWorkerBridge {
 			for (const entry of parsed) {
 				if (!Array.isArray(entry) || typeof entry[0] !== 'string' || !Array.isArray(entry[1])) continue;
 				const key: string = entry[0];
-				const embedding: number[] = entry[1];
+				const rawEmbedding: unknown[] = entry[1];
+				if (!rawEmbedding.every((v): v is number => typeof v === 'number')) continue;
+				const embedding: number[] = rawEmbedding;
 				this.embedCache.set(key, embedding);
 				const accessVal: number = typeof entry[2] === 'number' ? entry[2] : this.accessCounter++;
 				this.embedAccess.set(key, accessVal);
