@@ -21,13 +21,46 @@ const OPEN_TAG_REGEX = new RegExp(
 	'i',
 );
 
+// ─── $...$ 구분자 정규화 ─────────────────────────────────────────────────────
+
+/**
+ * $lumina_tool_call$ ... $lumina_tool_call$ 형식을
+ * <lumina_tool_call> ... </lumina_tool_call> 형식으로 정규화한다.
+ * $/tag$ → </tag>, 짝이 맞지 않는 $tag$는 <tag> / </tag> 교대로 변환.
+ */
+function normalizeDollarDelimiters(content: string): string {
+	// 1) $/tag$ → </tag>
+	let result = content.replace(
+		new RegExp(`\\$/(${TOOL_CALL_TAG_ALT})\\$`, 'gi'),
+		'</$1>',
+	);
+
+	// 2) 남은 $tag$ 패턴: 첫 번째는 <tag>, 이후는 </tag> 교대로 변환
+	let isOpen = false;
+	result = result.replace(
+		new RegExp(`\\$(${TOOL_CALL_TAG_ALT})\\$`, 'gi'),
+		(_match, tag) => {
+			if (!isOpen) {
+				isOpen = true;
+				return `<${tag}>`;
+			}
+			isOpen = false;
+			return `</${tag}>`;
+		},
+	);
+
+	return result;
+}
+
 // ─── 공개 API ─────────────────────────────────────────────────────────────────
 
-/** <lumina_tool_call> 블록 파싱. @returns 파싱된 toolCall 목록과 순수 텍스트 */
+/** <lumina_tool_call> 블록 파싱. $...$ 구분자도 지원. @returns 파싱된 toolCall 목록과 순수 텍스트 */
 export function parseTextToolCalls(content: string): {
 	toolCalls: ToolCall[];
 	cleanContent: string;
 } {
+	// $...$ 구분자를 XML 태그로 정규화
+	content = normalizeDollarDelimiters(content);
 	const toolCalls: ToolCall[] = [];
 
 	// 1차: 닫는 태그가 있는 완전한 블록 파싱

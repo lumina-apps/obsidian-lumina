@@ -61,11 +61,8 @@
 
 	// ═══════════════════════════════════════════════════════════════════════════
 	// Keyboard list navigation (composable)
-	// reactive state를 Svelte 5 runes로 관리하고 getter/setter로 전달
+	// $state를 composable 내부에서 직접 소유하므로 외부 상태 주입 불필요
 	// ═══════════════════════════════════════════════════════════════════════════
-	let _navActiveIndex = $state(0);
-	let _navIsKeyboardNavigating = $state(false);
-
 	const nav = useKeyboardListNav({
 		isOpen: () => isOpen,
 		itemCount: () => filteredModels.length,
@@ -75,14 +72,6 @@
 		},
 		onClose: () => {
 			isOpen = false;
-		},
-		activeIndex: {
-			get: () => _navActiveIndex,
-			set: (v) => { _navActiveIndex = v; },
-		},
-		isKeyboardNavigating: {
-			get: () => _navIsKeyboardNavigating,
-			set: (v) => { _navIsKeyboardNavigating = v; },
 		},
 	});
 
@@ -174,11 +163,11 @@
 						<button
 							class="lumina-model-selector__item"
 							class:is-selected={item.providerId === selectedProviderId && item.modelId === selectedModelId}
-							class:is-active={i === _navActiveIndex}
+							class:is-active={i === nav.activeIndex}
 							data-provider-id={item.providerId}
 							data-model-id={item.modelId}
 							onclick={() => selectItem(item)}
-							onmouseenter={() => _navActiveIndex = i}
+							onmouseenter={() => nav.setActiveIndex(i)}
 							type="button"
 						>
 							<div class="lumina-model-selector__item-info">

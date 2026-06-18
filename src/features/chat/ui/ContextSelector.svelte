@@ -17,12 +17,7 @@
 		buildCategoryItems,
 		filterItems,
 	} from "./lib/contextSelector/items";
-	import {
-		createKeyboardNavState,
-		createKeyboardNavHandler,
-		scrollActiveIntoView,
-		type KeyboardNavState,
-	} from "./lib/contextSelector/keyboardNav";
+	import { useKeyboardNav } from "./lib/contextSelector/keyboardNav.svelte.ts";
 
 	let {
 		plugin,
@@ -39,15 +34,11 @@
 	let containerEl: HTMLDivElement | null = $state(null);
 	let listEl: HTMLDivElement | null = $state(null);
 	let urlInputEl: HTMLInputElement | null = $state(null);
-	let activeIndex = $state(0);
 	let urlText = $state("");
 
 	// Navigation state: 'categories' | 'items' | 'url_input'
 	let view = $state<"categories" | "items" | "url_input">("categories");
 	let activeCategory = $state<string | null>(null);
-
-	// Keyboard navigation state (shared utility)
-	let navState = $state<KeyboardNavState>(createKeyboardNavState());
 
 	// ── Category context (built once, reused) ─────────────────────────────────
 	const context = $derived(buildCategoryContext(plugin));
@@ -88,7 +79,7 @@
 			view = "url_input";
 			activeCategory = "url";
 			urlText = searchQuery;
-			activeIndex = 0;
+			nav.resetIndex();
 			tick().then(() => urlInputEl?.focus());
 			return;
 		}
@@ -111,13 +102,13 @@
 		// Navigate to items view
 		view = "items";
 		activeCategory = cat.id;
-		activeIndex = 0;
+		nav.resetIndex();
 	}
 
 	function goBack() {
 		view = "categories";
 		activeCategory = null;
-		activeIndex = 0;
+		nav.resetIndex();
 	}
 
 	function selectItem(item: ContextAttachment) {
@@ -173,13 +164,13 @@
 		setIcon(node, iconId);
 	}
 
-	// ── Keyboard handling (using shared utility) ──────────────────────────────
+	// ── Keyboard handling (using Runes composable) ─────────────────────────────
 	function handleSelectCurrent() {
 		if (view === "categories") {
-			const cat = filteredCategories[activeIndex];
+			const cat = filteredCategories[nav.activeIndex];
 			if (cat) selectCategory(cat);
 		} else if (view === "items") {
-			const item = categoryItems[activeIndex];
+			const item = categoryItems[nav.activeIndex];
 			if (item) selectItem(item);
 		}
 	}
@@ -198,17 +189,13 @@
 		}
 	}
 
-	const handleGlobalKeydown = createKeyboardNavHandler({
+	const nav = useKeyboardNav({
 		selectableCount: () => selectableCount,
-		activeIndex: {
-			get: () => activeIndex,
-			set: (v: number) => { activeIndex = v; },
-		},
 		onSelectCurrent: handleSelectCurrent,
 		onEscape: handleEscape,
 		onBack: handleBack,
-		scrollIntoView: () => scrollActiveIntoView(listEl),
-		navState,
+		scrollIntoView: () => nav.scrollActiveIntoView(listEl),
+		enableMouseConflict: true,
 	});
 
 	function handleClickOutside(e: MouseEvent) {
@@ -219,10 +206,10 @@
 
 	$effect(() => {
 		document.addEventListener("click", handleClickOutside);
-		document.addEventListener("keydown", handleGlobalKeydown, true);
+		document.addEventListener("keydown", nav.handleKeydown, true);
 		return () => {
 			document.removeEventListener("click", handleClickOutside);
-			document.removeEventListener("keydown", handleGlobalKeydown, true);
+			document.removeEventListener("keydown", nav.handleKeydown, true);
 		};
 	});
 
@@ -230,7 +217,7 @@
 		// Reset active index when search query or view changes
 		searchQuery;
 		view;
-		activeIndex = 0;
+		nav.resetIndex();
 	});
 
 	// ── Check for URL pattern on search query ─────────────────────────────────
@@ -258,10 +245,10 @@
 				{#each filteredCategories as cat, i}
 					<button
 						class="lumina-context-selector__item lumina-context-selector__item--category"
-						class:is-active={i === activeIndex}
+						class:is-active={i === nav.activeIndex}
 						onclick={() => selectCategory(cat)}
-						onmouseenter={() => { if (!navState.isKeyboardNavigating) activeIndex = i; }}
-						onmousemove={() => { if (!navState.isKeyboardNavigating && activeIndex !== i) activeIndex = i; }}
+						onmouseenter={() => { if (!nav.isKeyboardNavigating) nav.activeIndex = i; }}
+						onmousemove={() => { if (!nav.isKeyboardNavigating && nav.activeIndex !== i) nav.activeIndex = i; }}
 						type="button"
 					>
 						<span class="lumina-context-selector__item-icon" use:icon={cat.icon}></span>
@@ -287,10 +274,10 @@
 				{#each categoryItems as item, i}
 					<button
 						class="lumina-context-selector__item"
-						class:is-active={i === activeIndex}
+						class:is-active={i === nav.activeIndex}
 						onclick={() => selectItem(item)}
-						onmouseenter={() => { if (!navState.isKeyboardNavigating) activeIndex = i; }}
-						onmousemove={() => { if (!navState.isKeyboardNavigating && activeIndex !== i) activeIndex = i; }}
+						onmouseenter={() => { if (!nav.isKeyboardNavigating) nav.activeIndex = i; }}
+						onmousemove={() => { if (!nav.isKeyboardNavigating && nav.activeIndex !== i) nav.activeIndex = i; }}
 						type="button"
 					>
 						<span class="lumina-context-selector__item-icon" use:icon={getAttachmentIcon(item.type)}></span>

@@ -10,7 +10,7 @@
 	import type { ContextAttachment } from "../../../shared/types/chat.types";
 	import { splitProviderModel } from "../utils/inputUtils";
 	import { resizeTextarea } from "../utils/textareaUtils";
-	import { createAutoScroll } from "./utils/useAutoScroll";
+	import { useAutoScroll } from "./utils/useAutoScroll.svelte.ts";
 	import { openSettingsTab } from "../../../shared/utils/openSettingsTab";
 
 	import {
@@ -48,8 +48,8 @@
 	let messagesEl: HTMLElement | null = $state(null);
 	let textareaEl: HTMLTextAreaElement | null = $state(null);
 
-	// ── Auto-scroll controller ─────────────────────────────────────────────
-	const autoScroll = createAutoScroll(() => messagesEl);
+	// ── Auto-scroll controller (Svelte 5 Runes) ────────────────────────────
+	const autoScroll = useAutoScroll(() => messagesEl);
 
 	let scrollTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -64,7 +64,7 @@
 		if (!scrollTimer) {
 			scrollTimer = setTimeout(() => {
 				scrollTimer = null;
-				if (!autoScroll.state.isUserScrolledUp) {
+				if (!autoScroll.isUserScrolledUp) {
 					void autoScroll.scrollToBottom("auto");
 				}
 			}, 50);

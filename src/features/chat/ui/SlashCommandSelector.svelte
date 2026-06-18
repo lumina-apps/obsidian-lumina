@@ -36,11 +36,8 @@
 
 	// ═══════════════════════════════════════════════════════════════════════════
 	// Keyboard list navigation (composable)
-	// reactive state를 Svelte 5 runes로 관리하고 getter/setter로 전달
+	// $state를 composable 내부에서 직접 소유하므로 외부 상태 주입 불필요
 	// ═══════════════════════════════════════════════════════════════════════════
-	let _navActiveIndex = $state(0);
-	let _navIsKeyboardNavigating = $state(false);
-
 	const nav = useKeyboardListNav({
 		isOpen: () => true,
 		itemCount: () => filteredCommands.length,
@@ -50,14 +47,6 @@
 		},
 		onClose: () => onClose(),
 		enableMouseConflict: true,
-		activeIndex: {
-			get: () => _navActiveIndex,
-			set: (v) => { _navActiveIndex = v; },
-		},
-		isKeyboardNavigating: {
-			get: () => _navIsKeyboardNavigating,
-			set: (v) => { _navIsKeyboardNavigating = v; },
-		},
 	});
 
 	// Global keydown capture (SlashCommandSelector는 capture phase로 등록)
@@ -91,15 +80,15 @@
 			{#each filteredCommands as cmd, i}
 				<button
 					class="lumina-slash-selector__item"
-				class:is-active={i === _navActiveIndex}
+				class:is-active={i === nav.activeIndex}
 				role="option"
-				aria-selected={i === _navActiveIndex}
+				aria-selected={i === nav.activeIndex}
 				onclick={() => selectItem(cmd)}
 				onmouseenter={() => {
-					if (!_navIsKeyboardNavigating) _navActiveIndex = i;
+					if (!nav.isKeyboardNavigating) nav.setActiveIndex(i);
 				}}
 				onmousemove={() => {
-					if (!_navIsKeyboardNavigating && _navActiveIndex !== i) _navActiveIndex = i;
+					if (!nav.isKeyboardNavigating && nav.activeIndex !== i) nav.setActiveIndex(i);
 				}}
 					type="button"
 				>

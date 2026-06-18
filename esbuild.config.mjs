@@ -111,6 +111,24 @@ export const WORKER_COMPRESSED_BASE64 = "${base64}";
 	}
 }
 
+// Handle .svelte.ts files - load as TypeScript modules.
+// .svelte.ts modules DO NOT use Svelte runes ($state etc.) because:
+//   - Module-level $state runs once and shares state across all component instances.
+//   - These composables return plain objects with getters/setters,
+//     and the calling .svelte components manage reactivity via their own $state/$effect.
+// The .svelte.ts extension serves as an organizational convention for
+// Svelte-adjacent composable modules.
+const svelteTsPlugin = {
+	name: 'svelte-ts-module',
+	setup(build) {
+		build.onLoad({ filter: /\.svelte\.ts$/ }, async (args) => {
+			const fs = await import('fs');
+			const source = fs.readFileSync(args.path, 'utf8');
+			return { contents: source, loader: 'ts' };
+		});
+	},
+};
+
 const postProcessPlugin = {
 	name: 'post-process-plugin',
 	setup(build) {
@@ -158,12 +176,14 @@ const mainContext = await esbuild.context({
 	entryPoints: ["src/main.ts"],
 	bundle: true,
 	plugins: [
+		svelteTsPlugin,
 		esbuildSvelte({
 			compilerOptions: { css: 'injected' },
 			preprocess: sveltePreprocess(),
 		}),
 		postProcessPlugin,
 	],
+	resolveExtensions: ['.svelte.ts', '.ts', '.js', '.svelte'],
 	alias: {
 		"bluebird/js/release/promise": "./src/core/mocks/bluebird.js",
 		"bluebird": "./src/core/mocks/bluebird.js",
