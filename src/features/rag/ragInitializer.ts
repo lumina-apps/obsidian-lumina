@@ -9,6 +9,7 @@ import { createProvider } from '../../core/llm-providers';
 import { EmbeddingWorkerBridge } from './workerBridge';
 import { getModelCacheDir } from './storage';
 import { VaultIndexer } from './indexer';
+import { EmbeddingStore } from './embeddingStore';
 import { setIndexingStatus } from '../../core/store/ragStore';
 import { debugLogger } from '../../shared/debugLogger';
 import type LuminaPlugin from '../../main';
@@ -85,6 +86,10 @@ export async function initEmbeddingWorker(
 
 		progressNotice?.hide();
 
+		// IndexedDB 임베딩 저장소 초기화
+		const embeddingStore = new EmbeddingStore();
+		await embeddingStore.init(modelName);
+
 		// 인덱서 생성 (modelName 전달로 스키마 무효화 감지)
 		plugin.indexer = new VaultIndexer(
 			plugin.app,
@@ -92,6 +97,7 @@ export async function initEmbeddingWorker(
 			(buffer, ext) => plugin.embeddingWorker!.parse(buffer, ext),
 			plugin.settings.rag,
 			modelName,
+			embeddingStore,
 			plugin.embeddingWorker ? () => plugin.embeddingWorker!.persistCache() : undefined,
 		);
 

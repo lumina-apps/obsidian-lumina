@@ -38,7 +38,8 @@ export async function buildContextFromActiveFile(
 		const myFirstChunk = allChunks.find(c => c.path === file.path && c.chunkIndex === 0);
 
 		if (myFirstChunk?.embedding) {
-			results = await searchVault('', otherChunks, async () => [myFirstChunk.embedding!], 20, 0.55);
+			const cachedEmbedding = myFirstChunk.embedding;
+			results = await searchVault('', otherChunks, async () => [Array.from(cachedEmbedding)], 20, 0.55);
 		} else {
 			const content = await plugin.app.vault.read(file);
 			const cleanContent = preprocessMarkdown(content);

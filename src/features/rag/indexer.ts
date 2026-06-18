@@ -10,6 +10,7 @@ import { loadIndex, saveIndex, deleteCheckpoint } from './indexPersistence';
 import { getTargetFiles, detectDeletedPaths } from './fileFilter';
 import { restoreFromCheckpoint } from './checkpointManager';
 import { processFiles } from './indexProcessing';
+import type { EmbeddingStore } from './embeddingStore';
 
 export class VaultIndexer {
 	private readonly app: App;
@@ -17,6 +18,7 @@ export class VaultIndexer {
 	private readonly parseBinaryFn: ParseBinaryFn;
 	private readonly settings: RagSettings;
 	private readonly modelName: string;
+	private readonly embeddingStore: EmbeddingStore;
 
 	private chunks: DocumentChunk[] = [];
 	private indexedPaths: Set<string> = new Set();
@@ -27,12 +29,13 @@ export class VaultIndexer {
 	private currentProcessId: number = 0;
 	private indexingStartedAt: number = 0;
 
-	constructor(app: App, embedFn: EmbedFn, parseBinaryFn: ParseBinaryFn, settings: RagSettings, modelName: string, persistCacheFn?: () => Promise<void>) {
+	constructor(app: App, embedFn: EmbedFn, parseBinaryFn: ParseBinaryFn, settings: RagSettings, modelName: string, embeddingStore: EmbeddingStore, persistCacheFn?: () => Promise<void>) {
 		this.app = app;
 		this.embedFn = embedFn;
 		this.parseBinaryFn = parseBinaryFn;
 		this.settings = settings;
 		this.modelName = modelName;
+		this.embeddingStore = embeddingStore;
 		this.persistCacheFn = persistCacheFn;
 	}
 
@@ -56,8 +59,13 @@ export class VaultIndexer {
 			this.indexedPaths = loadResult.indexedPaths;
 			this.fileMtimes = loadResult.fileMtimes;
 			this.fileHashes = loadResult.fileHashes;
+			// IndexedDB에서 embedding 복원
+			await this.embeddingStore.loadEmbeddings(this.chunks).catch(() => {
+				// 로드 실패는 무시 → embedding 없이 인덱싱 계속
+			});
 		} else {
 			this.clearState();
+			await this.embeddingStore.clear();
 		}
 
 		this.indexingStartedAt = restoreResult.alreadyProcessed > 0 ? restoreResult.startedAt : Date.now();
@@ -82,6 +90,11 @@ export class VaultIndexer {
 		this.indexedPaths = loadResult.indexedPaths;
 		this.fileMtimes = loadResult.fileMtimes;
 		this.fileHashes = loadResult.fileHashes;
+
+		// IndexedDB에서 embedding 복원
+		await this.embeddingStore.loadEmbeddings(this.chunks).catch(() => {
+			// 로드 실패는 무시 → embedding 없이 인덱싱 계속
+		});
 
 
 		const files = getTargetFiles(this.app, this.settings);
@@ -143,6 +156,7 @@ export class VaultIndexer {
 		this.clearState();
 		resetIndexing();
 		await deleteCheckpoint(this.app);
+		await this.embeddingStore.clear();
 		await this.persist();
 	}
 
@@ -155,12 +169,17 @@ export class VaultIndexer {
 	}
 
 	private removePaths(paths: Set<string>): void {
+		const removedChunks = this.chunks.filter(c => paths.has(c.path));
 		this.chunks = this.chunks.filter(c => !paths.has(c.path));
 		paths.forEach(p => {
 			this.indexedPaths.delete(p);
 			delete this.fileMtimes[p];
 			delete this.fileHashes[p];
 		});
+		// IndexedDB에서 해당 청크 임베딩 삭제
+		if (removedChunks.length > 0) {
+			void this.embeddingStore.deleteEmbeddings(removedChunks.map(c => c.id)).catch(() => {});
+		}
 	}
 
 	private async runProcessing(
@@ -195,6 +214,11 @@ export class VaultIndexer {
 	}
 
 	private async persist(): Promise<void> {
+		// 1. 메타데이터를 JSON으로 저장 (embedding 제외)
 		await saveIndex(this.app, this.modelName, this.chunks, this.fileMtimes, this.fileHashes);
+		// 2. 임베딩을 IndexedDB에 저장
+		await this.embeddingStore.storeEmbeddings(this.chunks).catch((err) => {
+			console.warn('[VaultIndexer] embeddingStore.storeEmbeddings failed:', err);
+		});
 	}
 }

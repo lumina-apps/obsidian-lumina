@@ -11,13 +11,13 @@ export interface DocumentChunk {
 	path: string;
 	text: string;
 	chunkIndex: number;
-	embedding?: number[];
+	embedding?: number[] | Float32Array;
 }
 
 // ─── Persistence ─────────────────────────────────
 
 /** 스키마 버전. 청크 구조 변경 시 증가 → 기존 인덱스 자동 무효화 */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export interface PersistedIndex {
 	version: number;

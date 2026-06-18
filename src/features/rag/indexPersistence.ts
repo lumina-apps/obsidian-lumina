@@ -89,10 +89,13 @@ export async function saveIndex(
 			await app.vault.adapter.mkdir(storageDirPath);
 		}
 
+		// embedding은 IndexedDB에서 별도 관리되므로 JSON에서 제외
+		const chunksWithoutEmbedding = chunks.map(({ embedding, ...rest }) => rest);
+
 		const data: PersistedIndex = {
 			version: SCHEMA_VERSION,
 			modelName,
-			chunks,
+			chunks: chunksWithoutEmbedding,
 			fileMtimes,
 			fileHashes,
 		};

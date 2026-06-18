@@ -118,7 +118,9 @@ async function processSequential(
 				ctx.indexedPaths.delete(file.path);
 				try {
 					const embeddings = await ctx.embedFn(result.chunks.map(c => c.text));
-					for (let j = 0; j < result.chunks.length; j++) { result.chunks[j].embedding = embeddings[j]; }
+					for (let j = 0; j < result.chunks.length; j++) {
+						result.chunks[j].embedding = new Float32Array(embeddings[j]);
+					}
 					ctx.chunks.push(...result.chunks);
 					registerChunksInMap(chunkPathMap, ctx.chunks, result.chunks);
 					ctx.indexedPaths.add(file.path);
@@ -200,7 +202,9 @@ async function processBatched(
 					if (ctx.isDestroyed) break;
 					const batch = toEmbedChunks.slice(i, i + CHUNK_EMBED_BATCH);
 					const embeddings = await ctx.embedFn(batch.map(c => c.text));
-					for (let j = 0; j < batch.length; j++) { batch[j].embedding = embeddings[j]; }
+					for (let j = 0; j < batch.length; j++) {
+						batch[j].embedding = new Float32Array(embeddings[j]);
+					}
 				}
 				ctx.chunks.push(...toEmbedChunks);
 				registerChunksInMap(chunkPathMap, ctx.chunks, toEmbedChunks);
