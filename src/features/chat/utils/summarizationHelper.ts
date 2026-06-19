@@ -67,8 +67,21 @@ export async function triggerAutoSummarization(
 		{ role: 'user', content: prompt.trim() }
 	];
 
+	// 태스크 모델이 설정되어 있다면 우선 사용하고, 없으면 전달받은 메인 모델 사용
+	let actualProviderConfig = providerConfig;
+	let actualModelId = modelId;
+	const { taskProviderId, taskModelId, providers } = plugin.settings.connections;
+	
+	if (taskProviderId && taskModelId) {
+		const tpConfig = providers.find(p => p.id === taskProviderId);
+		if (tpConfig) {
+			actualProviderConfig = tpConfig;
+			actualModelId = taskModelId;
+		}
+	}
+
 	const chatOptions: ChatOptions = {
-		model: modelId,
+		model: actualModelId,
 		temperature: 0.3, // 요약은 비교적 정확성을 요구하므로 낮게 설정
 		maxOutputTokens: 2000,
 	};
@@ -79,7 +92,7 @@ export async function triggerAutoSummarization(
 			targetMessageCount: targetMessagesToSummarize.length
 		});
 
-		const provider = createProvider(providerConfig);
+		const provider = createProvider(actualProviderConfig);
 		const response = await provider.chat(llmMessages, chatOptions);
 		const newSummary = response.content.trim();
 

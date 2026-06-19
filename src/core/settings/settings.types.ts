@@ -30,6 +30,10 @@ export interface ConnectionsSettings {
 	quickActionProviderId: string;
 	/** 퀵 액션 전용 모델 ID */
 	quickActionModelId: string;
+	/** Task 전용 프로바이더 ID (선택) */
+	taskProviderId: string;
+	/** Task 전용 모델 ID (선택) */
+	taskModelId: string;
 }
 
 // ─── Section 2: Chat & Prompt ────────────────────────────────────────────────

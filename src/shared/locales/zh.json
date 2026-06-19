@@ -81,6 +81,11 @@
         "desc": "选择用于快捷操作的专用模型。（建议使用快速轻量的模型）",
         "noneSelected": "未选择（必需）",
         "reasoningWarning": "⚠️ 警告：检测到推理型模型！快捷操作需要速度；使用此模型可能会导致严重延迟或无限循环。强烈建议使用标准 Instruct 模型。"
+      },
+      "taskModel": {
+        "name": "Task Model (Optional)",
+        "desc": "Select a lightweight and fast model for various background AI tasks (e.g., summarization, context processing). If left blank, basic system methods will be used to save costs.",
+        "noneSelected": "None Selected (Use basic system methods)"
       }
     },
     "mcp": {

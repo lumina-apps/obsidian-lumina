@@ -90,6 +90,12 @@ export interface TranslationSettingsConnectionsQuickActionModel {
   reasoningWarning: string;
 }
 
+export interface TranslationSettingsConnectionsTaskModel {
+  name: string;
+  desc: string;
+  noneSelected: string;
+}
+
 export interface TranslationSettingsConnections {
   title: string;
   provider: string;
@@ -100,6 +106,7 @@ export interface TranslationSettingsConnections {
   defaultChatModel: TranslationSettingsConnectionsDefaultChatModel;
   quickActionProvider: TranslationSettingsConnectionsQuickActionProvider;
   quickActionModel: TranslationSettingsConnectionsQuickActionModel;
+  taskModel: TranslationSettingsConnectionsTaskModel;
 }
 
 // MCP

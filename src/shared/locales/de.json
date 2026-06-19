@@ -81,6 +81,11 @@
         "desc": "Wählen Sie ein dediziertes Modell für Quick Actions. (Schnelle und leichtgewichtige Modelle empfohlen)",
         "noneSelected": "Keins (Erforderlich)",
         "reasoningWarning": "⚠️ Warnung: Reasoning-Modell erkannt! Quick Actions erfordern Geschwindigkeit; die Verwendung dieses Modells kann zu schweren Verzögerungen oder Endlosschleifen führen. Ein standard Instruct-Modell wird dringend empfohlen."
+      },
+      "taskModel": {
+        "name": "Task Model (Optional)",
+        "desc": "Select a lightweight and fast model for various background AI tasks (e.g., summarization, context processing). If left blank, basic system methods will be used to save costs.",
+        "noneSelected": "None Selected (Use basic system methods)"
       }
     },
     "mcp": {

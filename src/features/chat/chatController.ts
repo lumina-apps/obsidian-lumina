@@ -30,7 +30,7 @@ import {
 } from '../../core/store/chatStore';
 import { get } from 'svelte/store';
 import { indexingState } from '../../core/store/ragStore';
-import { saveSession, generateTitle, loadSessionsList, loadSession, deleteSession } from './history';
+import { saveSession, generateTitle, generateTitleWithLLM, loadSessionsList, loadSession, deleteSession } from './history';
 import type { UIChatMessage, ChatSession, ContextAttachment } from '../../shared/types/chat.types';
 import type { ChatOptions, ChatMessage, ToolDefinition, TokenUsage } from '../../shared/types/llm.types';
 import type { LLMProviderConfig } from '../../shared/types/settings.types';
@@ -231,7 +231,18 @@ export class ChatController {
 
 		let title = get(currentSessionTitle);
 		if (!title) {
-			title = generateTitle(msgs);
+			const { taskProviderId, taskModelId, providers } = this.plugin.settings.connections;
+			if (taskProviderId && taskModelId) {
+				const providerConfig = providers.find(p => p.id === taskProviderId);
+				if (providerConfig) {
+					title = await generateTitleWithLLM(msgs, providerConfig, taskModelId, this.plugin.settings);
+					currentSessionTitle.set(title);
+				} else {
+					title = generateTitle(msgs);
+				}
+			} else {
+				title = generateTitle(msgs);
+			}
 		}
 
 		const session: ChatSession = {

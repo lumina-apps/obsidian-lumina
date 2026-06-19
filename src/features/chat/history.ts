@@ -235,3 +235,36 @@ export function generateTitle(messages: UIChatMessage[]): string {
 	return first.content.slice(0, 40) + (first.content.length > 40 ? '…' : '');
 }
 
+export async function generateTitleWithLLM(
+	messages: UIChatMessage[],
+	providerConfig: any,
+	modelId: string,
+	options: any
+): Promise<string> {
+	const first = messages.find(m => m.role === 'user');
+	if (!first || !first.content.trim()) return '새 대화';
+
+	const prompt = `다음 사용자의 메시지를 바탕으로 대화의 주제를 3~5단어 이내의 매우 짧은 제목으로 요약해줘. 따옴표나 부연 설명 없이 오직 제목 텍스트만 출력해야 해.\n\n사용자 메시지: "${first.content}"`;
+
+	try {
+		const { createProvider } = await import('../../core/llm-providers/index');
+		const provider = createProvider(providerConfig);
+		const response = await provider.chat(
+			[
+				{ role: 'system', content: 'You are an AI that summarizes conversation titles.' },
+				{ role: 'user', content: prompt }
+			],
+			{
+				model: modelId,
+				temperature: 0.3,
+				maxOutputTokens: 20
+			}
+		);
+		const title = response.content.replace(/["']/g, '').trim();
+		return title || generateTitle(messages);
+	} catch (e) {
+		console.warn('Lumina: Failed to generate title with LLM, falling back to text extraction.', e);
+		return generateTitle(messages);
+	}
+}
+

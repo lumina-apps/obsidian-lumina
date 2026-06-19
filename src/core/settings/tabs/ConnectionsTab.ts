@@ -10,6 +10,7 @@ import { renderProviderCard } from './connections/ProviderCard';
 import { renderRagEngineSection } from './connections/RagEngineSection';
 import { renderDefaultChatModelSection } from './connections/DefaultChatModelSection';
 import { renderQuickActionModelSection } from './connections/QuickActionModelSection';
+import { renderTaskModelSection } from './connections/TaskModelSection';
 
 export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): void {
 	const s = tab.plugin.settings.connections;
@@ -59,4 +60,10 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 
 	// ── 퀵 액션 전용 모델 ──────────────────────────────────────────────────
 	renderQuickActionModelSection(tab, el);
+
+	// ── Task 전용 모델 (고급 설정) ─────────────────────────────────────────────
+	if (tab.showAdvanced) {
+		tab.advancedLabel(el);
+		renderTaskModelSection(tab, el);
+	}
 }
