@@ -1,5 +1,7 @@
 import { normalizePath, type App, TFolder, TFile } from 'obsidian';
 import type { ChatSession, UIChatMessage } from '../../shared/types/chat.types';
+import type { LLMProviderConfig } from '../../shared/types/settings.types';
+import type { ChatOptions } from '../../shared/types/llm.types';
 
 /** 특정 디렉토리 내 .md 파일만 가져온다 (vault 전체 스캔 방지) */
 function getHistoryFiles(app: App, basePath: string): TFile[] {
@@ -237,9 +239,9 @@ export function generateTitle(messages: UIChatMessage[]): string {
 
 export async function generateTitleWithLLM(
 	messages: UIChatMessage[],
-	providerConfig: any,
+	providerConfig: LLMProviderConfig,
 	modelId: string,
-	options: any
+	options: ChatOptions
 ): Promise<string> {
 	const first = messages.find(m => m.role === 'user');
 	if (!first || !first.content.trim()) return '새 대화';

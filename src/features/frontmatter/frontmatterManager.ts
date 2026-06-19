@@ -3,6 +3,7 @@
 import { App, TFile, type EventRef } from 'obsidian';
 import { isMarkdownFile } from '../../shared/utils/fileUtils';
 import { debugLogger } from '../../shared/debugLogger';
+import { createProvider } from '../../core/llm-providers';
 import type LuminaPlugin from '../../main';
 
 /** processFrontMatter용 프론트매터 구조 */
@@ -11,6 +12,7 @@ interface LuminaFrontmatter {
 	luminaModified?: string;
 	luminaVersion?: string;
 	tags?: string | string[];
+	description?: string;
 }
 
 /** 프론트매터 자동생성 상태와 이벤트 등록/해제를 캡슐화 */
@@ -24,6 +26,10 @@ export class FrontmatterManager {
 	private activeFilePath: string | null = null;
 	/** 탭 전환 시 업데이트할 대기열 */
 	private pendingUpdates: Set<string> = new Set();
+	/** LLM 자동생성 디바운스 타이머 */
+	private llmDebounceTimers: Map<string, number> = new Map();
+	/** LLM 생성 데이터 캐시 */
+	private llmGeneratedCache: Map<string, { tags: string[], description: string }> = new Map();
 	/** 등록된 이벤트 참조 (해제용) */
 	private eventRefs: EventRef[] = [];
 
@@ -73,9 +79,19 @@ export class FrontmatterManager {
 			if (this.activeFilePath === file.path) {
 				// 현재 보고 있는 파일이면 업데이트를 대기열에 넣음 (자동 병합 알림 방지)
 				this.pendingUpdates.add(file.path);
+				
+				// LLM 자동생성 디바운스 설정 (8초)
+				if (this.llmDebounceTimers.has(file.path)) {
+					window.clearTimeout(this.llmDebounceTimers.get(file.path)!);
+				}
+				const timer = window.setTimeout(() => {
+					this.llmDebounceTimers.delete(file.path);
+					this.generateFrontmatterData(file as TFile).catch(console.error);
+				}, 8000);
+				this.llmDebounceTimers.set(file.path, timer);
 			} else {
 				// 현재 보고 있지 않은 파일이면 즉시 업데이트
-				this.autoGenerate(file, true).catch(console.error);
+				this.autoGenerate(file as TFile, true).catch(console.error);
 			}
 		});
 		this.plugin.registerEvent(refModify);
@@ -98,6 +114,11 @@ export class FrontmatterManager {
 		const refDelete = this.app.vault.on('delete', (file) => {
 			this.lastUpdateMap.delete(file.path);
 			this.pendingUpdates.delete(file.path);
+			this.llmGeneratedCache.delete(file.path);
+			if (this.llmDebounceTimers.has(file.path)) {
+				window.clearTimeout(this.llmDebounceTimers.get(file.path)!);
+				this.llmDebounceTimers.delete(file.path);
+			}
 		});
 		this.plugin.registerEvent(refDelete);
 		this.eventRefs.push(refDelete);
@@ -111,6 +132,11 @@ export class FrontmatterManager {
 		this.eventRefs = [];
 		this.pendingUpdates.clear();
 		this.lastUpdateMap.clear();
+		this.llmGeneratedCache.clear();
+		for (const timer of this.llmDebounceTimers.values()) {
+			window.clearTimeout(timer);
+		}
+		this.llmDebounceTimers.clear();
 	}
 
 	/** 완전한 파괴 (onunload) */
@@ -119,6 +145,53 @@ export class FrontmatterManager {
 	}
 
 	// ── Private helpers ────────────────────────────────────────────────────
+	
+	/** Task 모델을 호출해 프론트매터 데이터 생성 후 캐시에 저장 */
+	private async generateFrontmatterData(file: TFile): Promise<void> {
+		const { taskProviderId, taskModelId, providers } = this.plugin.settings.connections;
+		if (!taskProviderId || !taskModelId) return;
+
+		const providerConfig = providers.find(p => p.id === taskProviderId);
+		if (!providerConfig) return;
+
+		try {
+			// 본문만 읽기 (토큰 절약을 위해 프론트매터 제거)
+			const fullContent = await this.app.vault.read(file);
+			const contentWithoutFm = fullContent.replace(/^---[\s\S]+?---\n/, '').trim();
+			if (contentWithoutFm.length < 50) return; // 내용이 너무 짧으면 무시
+
+			const prompt = `다음 마크다운 문서를 분석하여 핵심 태그 3개 이내와 1문장 요약(description)을 JSON 형식으로 반환해.
+반드시 아래 JSON 포맷을 지키고 다른 말은 하지 마.
+{
+  "tags": ["태그1", "태그2"],
+  "description": "문서의 핵심 내용 1문장 요약"
+}
+
+문서 내용:
+${contentWithoutFm.substring(0, 3000)}`;
+
+			const provider = createProvider(providerConfig);
+			const response = await provider.chat([{ role: 'user', content: prompt }], {
+				model: taskModelId,
+				temperature: 0.1,
+				maxOutputTokens: 150
+			});
+
+			const match = response.content.match(/\{[\s\S]*\}/);
+			if (match) {
+				const data = JSON.parse(match[0]);
+				if (Array.isArray(data.tags) && typeof data.description === 'string') {
+					this.llmGeneratedCache.set(file.path, {
+						tags: data.tags,
+						description: data.description
+					});
+					debugLogger.logMcp('Frontmatter', 'Generated LLM data cached for ' + file.path);
+				}
+			}
+		} catch (error) {
+			debugLogger.logError('system', new Error(`LLM 프론트매터 생성 실패: ${error}`));
+		}
+	}
 
 	/** processFrontMatter로 파일별 프론트매터 생성/갱신 */
 	private async autoGenerate(file: TFile, isUpdate: boolean): Promise<void> {
@@ -146,6 +219,19 @@ export class FrontmatterManager {
 
 				fm.luminaModified = now;
 				fm.luminaVersion = this.plugin.manifest.version;
+
+				// LLM 캐시가 있다면 적용
+				const cachedData = this.llmGeneratedCache.get(file.path);
+				if (cachedData) {
+					fm.description = cachedData.description;
+					
+					// 기존 태그와 병합
+					const existingTags = Array.isArray(fm.tags) ? fm.tags : [];
+					const mergedTags = new Set([...existingTags, ...cachedData.tags]);
+					fm.tags = Array.from(mergedTags);
+					
+					this.llmGeneratedCache.delete(file.path);
+				}
 			});
 
 			this.lastUpdateMap.set(file.path, Date.now());

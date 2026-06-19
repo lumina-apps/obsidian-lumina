@@ -114,6 +114,7 @@ export function migrateMinSimilarity(plugin: LuminaPlugin): boolean {
  */
 export function migrateMemoryMethod(plugin: LuminaPlugin): boolean {
 	if (plugin.settings.chat.memoryMethod === undefined) {
+		// eslint-disable-next-line @typescript-eslint/no-deprecated -- 마이그레이션에서 폐기 예정 필드를 읽는 것은 의도적
 		if (plugin.settings.chat.useTokenLimit) {
 			plugin.settings.chat.memoryMethod = 'tokens';
 		} else {

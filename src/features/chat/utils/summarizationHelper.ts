@@ -4,7 +4,7 @@ import { messages, sessionSummary, summaryUpToMessageId, currentSessionId, curre
 import { createProvider } from '../../../core/llm-providers';
 import type { LLMProviderConfig } from '../../../shared/types/settings.types';
 import type { ChatMessage, ChatOptions } from '../../../shared/types/llm.types';
-import { t } from '../../../shared/locales/helpers';
+
 import { debugLogger } from '../../../shared/debugLogger';
 import { saveSession } from '../history';
 import type { ChatSession } from '../../../shared/types/chat.types';
