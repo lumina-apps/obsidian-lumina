@@ -14,12 +14,16 @@ import { isExcluded, isIncluded } from './exclusions';
 export function getTargetFiles(
 	app: App,
 	settings: RagSettings,
+	chatHistoryPath: string,
 ): TFile[] {
 	const { excludedPaths, includedPaths } = settings;
 	const configDir = app.vault.configDir;
 	const finalExcludedPaths = [...excludedPaths];
 	if (configDir && !finalExcludedPaths.includes(configDir)) {
 		finalExcludedPaths.push(configDir);
+	}
+	if (chatHistoryPath && !finalExcludedPaths.includes(chatHistoryPath)) {
+		finalExcludedPaths.push(chatHistoryPath);
 	}
 
 	const files = app.vault.getFiles().filter(f => {

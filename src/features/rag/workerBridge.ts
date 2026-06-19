@@ -128,49 +128,45 @@ export class EmbeddingWorkerBridge {
 		const blob = new Blob([workerCode], { type: 'application/javascript' });
 		const WorkerCtor = window.Worker as unknown as new (url: string) => IWorker;
 
-		const initPromises: Promise<void>[] = [];
-
-		for (let i = 0; i < this.workerCount; i++) {
-			const url = URL.createObjectURL(blob);
-			const worker = new WorkerCtor(url);
-			const instance: WorkerInstance = {
-				worker,
-				url,
-				isReady: false,
-				embedRequests: new PendingRequestManager<number[][]>(),
-				parseRequests: new PendingRequestManager<string>(),
-			};
-
-			worker.addEventListener('message', (event: MessageEvent<WorkerResponse>) => {
-				this.handleMessage(event, instance);
-			});
-			worker.addEventListener('error', (e: Event) => {
-				console.error(`[EmbeddingWorker] worker #${i} uncaught error:`, e);
-				const msg = e instanceof ErrorEvent ? e.message : t('uiMessages.ragWorkerInitErr');
-				this.initPromiseReject?.(new Error(`Worker 오류: ${msg}`));
-			});
-
-			this.workers.push(instance);
-
-			const workerReady = new Promise<void>((resolve, reject) => {
-				instance.readyResolve = resolve;
-				instance.readyReject = reject;
-			});
-
-			worker.postMessage({
-				type: 'init',
-				cacheDir,
-				modelName,
-				pluginDir,
-			} as WorkerRequest);
-
-			initPromises.push(
-				withTimeout(workerReady, INIT_TIMEOUT_MS, `Worker #${i} 초기화 타임아웃`),
-			);
-		}
-
 		try {
-			await Promise.all(initPromises);
+			for (let i = 0; i < this.workerCount; i++) {
+				const url = URL.createObjectURL(blob);
+				const worker = new WorkerCtor(url);
+				const instance: WorkerInstance = {
+					worker,
+					url,
+					isReady: false,
+					embedRequests: new PendingRequestManager<number[][]>(),
+					parseRequests: new PendingRequestManager<string>(),
+				};
+
+				worker.addEventListener('message', (event: MessageEvent<WorkerResponse>) => {
+					this.handleMessage(event, instance);
+				});
+				worker.addEventListener('error', (e: Event) => {
+					console.error(`[EmbeddingWorker] worker #${i} uncaught error:`, e);
+					const msg = e instanceof ErrorEvent ? e.message : t('uiMessages.ragWorkerInitErr');
+					this.initPromiseReject?.(new Error(`Worker 오류: ${msg}`));
+				});
+
+				this.workers.push(instance);
+
+				const workerReady = new Promise<void>((resolve, reject) => {
+					instance.readyResolve = resolve;
+					instance.readyReject = reject;
+				});
+
+				worker.postMessage({
+					type: 'init',
+					cacheDir,
+					modelName,
+					pluginDir,
+				} as WorkerRequest);
+
+				// 다중 워커 초기화 시 Cache API 동시 접근으로 인한 Race Condition 방지
+				// 첫 번째 워커(모델 다운로드 및 캐싱) 완료 후 다음 워커 진행
+				await withTimeout(workerReady, INIT_TIMEOUT_MS, `Worker #${i} 초기화 타임아웃`);
+			}
 		} catch (e) {
 			this.terminate();
 			throw e;
@@ -360,8 +356,10 @@ export class EmbeddingWorkerBridge {
 				if (v > max) max = v;
 			}
 			this.accessCounter = max + 1;
-		} catch (e: unknown) {
-			console.warn('[EmbeddingWorker] loadEmbedCache failed:', e);
+		} catch (e: any) {
+			if (e.code !== 'ENOENT') {
+				console.warn('[EmbeddingWorker] loadEmbedCache failed:', e);
+			}
 		}
 	}
 

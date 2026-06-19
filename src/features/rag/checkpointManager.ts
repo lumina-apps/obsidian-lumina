@@ -10,7 +10,7 @@ import {
 	loadCheckpoint,
 	deleteCheckpoint,
 } from './indexPersistence';
-import type { DocumentChunk } from '../../shared/types/rag.types';
+import type { ParentChunk, ChildChunk } from '../../shared/types/rag.types';
 import { setIndexingStatus, setTotalFiles, resumedFromCheckpoint } from '../../core/store/ragStore';
 
 /** 체크포인트 저장 간격 (파일 수) */
@@ -87,7 +87,8 @@ export interface CheckpointSaveContext {
 
 export interface IndexPersistContext {
 	modelName: string;
-	chunks: DocumentChunk[];
+	chunks: ParentChunk[];
+	childChunks: ChildChunk[];
 	fileMtimes: Record<string, number>;
 	fileHashes: Record<string, number>;
 }
@@ -111,7 +112,7 @@ export async function saveCheckpointIfNeeded(
 		const saves = (ctx.checkpointSaves ?? 0) + 1;
 		ctx.checkpointSaves = saves;
 		if (saves % persistIndexInterval === 0) {
-			await saveIndex(app, persistIndexCtx.modelName, persistIndexCtx.chunks, persistIndexCtx.fileMtimes, persistIndexCtx.fileHashes);
+			await saveIndex(app, persistIndexCtx.modelName, persistIndexCtx.chunks, persistIndexCtx.childChunks, persistIndexCtx.fileMtimes, persistIndexCtx.fileHashes);
 		}
 	}
 

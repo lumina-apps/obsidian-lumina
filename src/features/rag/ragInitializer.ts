@@ -96,6 +96,7 @@ export async function initEmbeddingWorker(
 			embedFn,
 			(buffer, ext) => plugin.embeddingWorker!.parse(buffer, ext),
 			plugin.settings.rag,
+			plugin.settings.chat.historyPath,
 			modelName,
 			embeddingStore,
 			plugin.embeddingWorker ? () => plugin.embeddingWorker!.persistCache() : undefined,

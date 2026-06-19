@@ -3,14 +3,15 @@
  */
 
 import { App, TFile } from 'obsidian';
-import type { DocumentChunk, ParseBinaryFn } from '../../shared/types/rag.types';
+import type { ParentChunk, ChildChunk, ParseBinaryFn } from '../../shared/types/rag.types';
 import { hashString } from '../../shared/utils/hash';
 import { preprocessMarkdown } from '../../shared/utils/markdownPreprocessor';
 import { DocumentParserRouter } from './parsers/DocumentParserRouter';
 import { chunkDocument } from './chunker';
 
 export interface ReadAndPrepareResult {
-	chunks: DocumentChunk[];
+	parentChunks: ParentChunk[];
+	childChunks: ChildChunk[];
 	contentHash: number;
 	/** 본문 해시 동일 시 mtime만 갱신 */
 	skip: boolean;
@@ -31,8 +32,10 @@ export async function readAndPrepareFile(
 	file: TFile,
 	app: App,
 	parseBinaryFn: ParseBinaryFn,
-	chunkSize: number,
-	chunkOverlap: number,
+	parentChunkSize: number,
+	parentChunkOverlap: number,
+	childChunkSize: number,
+	childChunkOverlap: number,
 	fileHashes: Record<string, number>,
 	indexedPaths: Set<string>,
 ): Promise<ReadAndPrepareResult> {
@@ -48,7 +51,7 @@ export async function readAndPrepareFile(
 	}
 
 	if (!content || !content.trim()) {
-		return { chunks: [], contentHash: 0, skip: false };
+		return { parentChunks: [], childChunks: [], contentHash: 0, skip: false };
 	}
 
 	const preprocessedText = preprocessMarkdown(content);
@@ -56,14 +59,16 @@ export async function readAndPrepareFile(
 
 	// 해시 동일 + 기존 청크 존재 → 재임베딩 불필요
 	if (fileHashes[file.path] === contentHash && indexedPaths.has(file.path)) {
-		return { chunks: [], contentHash, skip: true };
+		return { parentChunks: [], childChunks: [], contentHash, skip: true };
 	}
 
-	const chunks = chunkDocument(
+	const { parentChunks, childChunks } = chunkDocument(
 		{ path: file.path, content, mtime: file.stat.mtime },
-		chunkSize,
-		chunkOverlap,
+		parentChunkSize,
+		parentChunkOverlap,
+		childChunkSize,
+		childChunkOverlap,
 	);
 
-	return { chunks, contentHash, skip: false };
+	return { parentChunks, childChunks, contentHash, skip: false };
 }

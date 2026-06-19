@@ -4,9 +4,9 @@
  */
 import { describe, it, expect } from 'vitest';
 import { tokenize, calculateBM25 } from './bm25';
-import type { DocumentChunk } from '../../shared/types/rag.types';
+import type { ParentChunk } from '../../shared/types/rag.types';
 
-function chunk(id: string, path: string, text: string, index = 0): DocumentChunk {
+function chunk(id: string, path: string, text: string, index = 0): ParentChunk {
 	return { id, path, text, chunkIndex: index };
 }
 

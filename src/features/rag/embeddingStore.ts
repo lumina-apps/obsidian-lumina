@@ -77,26 +77,36 @@ export class EmbeddingStore {
 
 	/** 여러 청크의 임베딩을 벌크 저장합니다. */
 	async storeEmbeddings(chunks: Array<{ id: string; embedding?: number[] | Float32Array }>): Promise<void> {
+		if (!this.db && this.modelName) {
+			await this.init(this.modelName);
+		}
 		if (!this.db) throw new Error('EmbeddingStore not initialized');
 
 		const chunksWithEmbedding = chunks.filter(c => c.embedding && c.embedding.length > 0);
 		if (chunksWithEmbedding.length === 0) return;
 
-		return new Promise((resolve, reject) => {
-			const tx = this.db!.transaction(STORE_NAME, 'readwrite');
-			const store = tx.objectStore(STORE_NAME);
+		const BATCH_SIZE = 1000;
+		for (let i = 0; i < chunksWithEmbedding.length; i += BATCH_SIZE) {
+			const batch = chunksWithEmbedding.slice(i, i + BATCH_SIZE);
+			await new Promise<void>((resolve, reject) => {
+				const tx = this.db!.transaction(STORE_NAME, 'readwrite');
+				const store = tx.objectStore(STORE_NAME);
 
-			for (const chunk of chunksWithEmbedding) {
-				this.putEmbedding(store, chunk.id, chunk.embedding!);
-			}
+				for (const chunk of batch) {
+					this.putEmbedding(store, chunk.id, chunk.embedding!);
+				}
 
-			tx.oncomplete = () => resolve();
-			tx.onerror = () => reject(new Error(`storeEmbeddings failed: ${tx.error?.message ?? 'unknown'}`));
-		});
+				tx.oncomplete = () => resolve();
+				tx.onerror = () => reject(new Error(`storeEmbeddings batch failed: ${tx.error?.message ?? 'unknown'}`));
+			});
+		}
 	}
 
 	/** 여러 청크의 embedding 필드를 IndexedDB에서 로드하여 채웁니다. */
 	async loadEmbeddings(chunks: Array<{ id: string; embedding?: number[] | Float32Array }>): Promise<void> {
+		if (!this.db && this.modelName) {
+			await this.init(this.modelName);
+		}
 		if (!this.db) throw new Error('EmbeddingStore not initialized');
 		if (chunks.length === 0) return;
 
@@ -105,31 +115,35 @@ export class EmbeddingStore {
 			chunkMap.set(c.id, c);
 		}
 
-		return new Promise((resolve, reject) => {
-			const tx = this.db!.transaction(STORE_NAME, 'readonly');
-			const store = tx.objectStore(STORE_NAME);
+		const BATCH_SIZE = 1000;
+		for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+			const batch = chunks.slice(i, i + BATCH_SIZE);
+			await new Promise<void>((resolve, reject) => {
+				const tx = this.db!.transaction(STORE_NAME, 'readonly');
+				const store = tx.objectStore(STORE_NAME);
 
-			let remaining = chunks.length;
-			let hasError = false;
+				let remaining = batch.length;
+				let hasError = false;
 
-			for (const chunk of chunks) {
-				const req = store.get(chunk.id);
-				req.onsuccess = () => {
-					if (hasError) return;
-					const record = req.result as EmbeddingRecord | undefined;
-					if (record && record.modelName === this.modelName) {
-						chunk.embedding = this.bufferToFloat32(record.embedding);
-					}
-					remaining--;
-					if (remaining === 0) resolve();
-				};
-				req.onerror = () => {
-					if (hasError) return;
-					hasError = true;
-					reject(new Error(`loadEmbedding failed for ${chunk.id}: ${req.error?.message ?? 'unknown'}`));
-				};
-			}
-		});
+				for (const chunk of batch) {
+					const req = store.get(chunk.id);
+					req.onsuccess = () => {
+						if (hasError) return;
+						const record = req.result as EmbeddingRecord | undefined;
+						if (record && record.modelName === this.modelName) {
+							chunk.embedding = this.bufferToFloat32(record.embedding);
+						}
+						remaining--;
+						if (remaining === 0) resolve();
+					};
+					req.onerror = () => {
+						if (hasError) return;
+						hasError = true;
+						reject(new Error(`loadEmbedding failed for ${chunk.id}: ${req.error?.message ?? 'unknown'}`));
+					};
+				}
+			});
+		}
 	}
 
 	/** 여러 ID의 임베딩을 삭제합니다. */
@@ -157,7 +171,7 @@ export class EmbeddingStore {
 			this.db = null;
 		}
 
-		return new Promise((resolve, reject) => {
+		await new Promise<void>((resolve, reject) => {
 			const request = indexedDB.deleteDatabase(DB_NAME);
 
 			request.onsuccess = () => {
@@ -173,6 +187,10 @@ export class EmbeddingStore {
 				reject(new Error('IndexedDB delete blocked: close other tabs using this DB'));
 			};
 		});
+
+		if (this.modelName) {
+			await this.init(this.modelName as string);
+		}
 	}
 
 	/** DB 연결을 닫습니다. */

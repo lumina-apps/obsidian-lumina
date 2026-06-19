@@ -5,9 +5,9 @@
 import { searchVault, formatRagContext } from '../../rag/search';
 import { setMessageSources } from '../../../core/store/chatStore';
 import { debugLogger } from '../../../shared/debugLogger';
+import { Notice } from 'obsidian';
 import type { RagChunkMeta } from '../../../shared/types/debug.types';
 import type { RagSettings } from '../../../core/settings/settings.types';
-import type { DocumentChunk } from '../../../shared/types/rag.types';
 
 /** RAG 검색 수행 여부 결정 */
 export function resolveRagSearchFlag(opts: {
@@ -28,10 +28,7 @@ export interface PerformRagSearchParams {
 	rag: RagSettings;
 	existingContext: string | undefined;
 	assistantId: string;
-	indexer: {
-		indexedChunks: DocumentChunk[];
-		embed(texts: string[]): Promise<number[][]>;
-	};
+	indexer: import('../../rag/indexer').VaultIndexer;
 	activeFilePath: string | null;
 }
 
@@ -48,21 +45,27 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 	const { userText, rag, existingContext, assistantId, indexer, activeFilePath } = params;
 
 	try {
-		let chunksToSearch = indexer.indexedChunks;
+		let parentChunks = indexer.indexedParentChunks;
 
 		if (rag.dataScope === 'active-note') {
-			chunksToSearch = activeFilePath
-				? chunksToSearch.filter(c => c.path === activeFilePath)
+			parentChunks = activeFilePath
+				? parentChunks.filter(c => c.path === activeFilePath)
 				: [];
 		}
 
 		const ragStart = Date.now();
 		const results = await searchVault(
 			userText,
-			chunksToSearch,
+			parentChunks,
+			indexer.oramaDb,
 			(texts: string[]) => indexer.embed(texts),
 			rag.topK,
+			rag.minSimilarity,
+			0.5,
+			rag.dataScope === 'active-note' ? activeFilePath : null
 		);
+
+		console.log(`[Lumina RAG Debug] Scope: ${rag.dataScope}, parentChunks: ${parentChunks.length}, Orama Hits: ?, Final Results: ${results.length}`);
 
 		if (results.length === 0) {
 			return { ragContext: existingContext, ragChunksForLog: undefined };

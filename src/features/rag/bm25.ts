@@ -3,7 +3,7 @@
  * RAG 문서 청크 대상 키워드 기반 검색을 수행합니다.
  */
 
-import type { DocumentChunk } from '../../shared/types/rag.types';
+import type { ParentChunk } from '../../shared/types/rag.types';
 
 /**
  * 텍스트 토큰화 (Uni-gram + CJK Bi-gram).
@@ -37,10 +37,10 @@ export function tokenize(text: string): string[] {
  */
 export function calculateBM25(
 	query: string,
-	chunks: DocumentChunk[],
+	chunks: ParentChunk[],
 	k1 = 1.2,
 	b = 0.75
-): { chunk: DocumentChunk; score: number }[] {
+): { chunk: ParentChunk; score: number }[] {
 	if (!query || chunks.length === 0) {
 		return chunks.map(c => ({ chunk: c, score: 0 }));
 	}

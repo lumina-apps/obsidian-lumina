@@ -98,6 +98,18 @@ export function migrateExcludedPaths(plugin: LuminaPlugin): boolean {
 }
 
 /**
+ * RAG minSimilarity 기본값을 0.65에서 0.0으로 마이그레이션.
+ * IBM Granite 모델의 코사인 유사도 분포가 0.5~0.6대에 집중되어 있어 0.65는 지나치게 높음.
+ */
+export function migrateMinSimilarity(plugin: LuminaPlugin): boolean {
+	if (plugin.settings.rag.minSimilarity === 0.65) {
+		plugin.settings.rag.minSimilarity = 0.0;
+		return true;
+	}
+	return false;
+}
+
+/**
  * 모든 마이그레이션을 순차 실행하고 변경이 있으면 저장합니다.
  * @returns 저장이 필요하면 true
  */
@@ -105,5 +117,6 @@ export function runMigrations(plugin: LuminaPlugin): boolean {
 	let needsSave = false;
 	if (migrateQuickActions(plugin)) needsSave = true;
 	if (migrateExcludedPaths(plugin)) needsSave = true;
+	if (migrateMinSimilarity(plugin)) needsSave = true;
 	return needsSave;
 }

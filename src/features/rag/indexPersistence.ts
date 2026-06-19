@@ -5,7 +5,7 @@
  */
 
 import { App, normalizePath } from 'obsidian';
-import type { DocumentChunk, PersistedIndex, IndexingCheckpoint } from '../../shared/types/rag.types';
+import type { ParentChunk, ChildChunk, PersistedIndex, IndexingCheckpoint } from '../../shared/types/rag.types';
 import { SCHEMA_VERSION } from '../../shared/types/rag.types';
 import { debugLogger } from '../../shared/debugLogger';
 
@@ -13,7 +13,8 @@ import { debugLogger } from '../../shared/debugLogger';
 const STORAGE_SUBPATH = 'plugins/lumina/storage';
 
 export interface LoadResult {
-	chunks: DocumentChunk[];
+	chunks: ParentChunk[];
+	childChunks: ChildChunk[];
 	indexedPaths: Set<string>;
 	fileMtimes: Record<string, number>;
 	fileHashes: Record<string, number>;
@@ -35,6 +36,7 @@ export async function loadIndex(
 
 	const emptyResult: LoadResult = {
 		chunks: [],
+		childChunks: [],
 		indexedPaths: new Set(),
 		fileMtimes: {},
 		fileHashes: {},
@@ -57,8 +59,10 @@ export async function loadIndex(
 		}
 
 		const chunks = data.chunks ?? [];
+		const childChunks = data.childChunks ?? [];
 		return {
 			chunks,
+			childChunks,
 			indexedPaths: new Set(chunks.map(c => c.path)),
 			fileMtimes: data.fileMtimes ?? {},
 			fileHashes: data.fileHashes ?? {},
@@ -73,7 +77,8 @@ export async function loadIndex(
 export async function saveIndex(
 	app: App,
 	modelName: string,
-	chunks: DocumentChunk[],
+	chunks: ParentChunk[],
+	childChunks: ChildChunk[],
 	fileMtimes: Record<string, number>,
 	fileHashes: Record<string, number>,
 ): Promise<void> {
@@ -89,13 +94,14 @@ export async function saveIndex(
 			await app.vault.adapter.mkdir(storageDirPath);
 		}
 
-		// embedding은 IndexedDB에서 별도 관리되므로 JSON에서 제외
-		const chunksWithoutEmbedding = chunks.map(({ embedding, ...rest }) => rest);
+		// ParentChunk는 이미 embedding이 없고, ChildChunk의 embedding은 제외
+		const childChunksWithoutEmbedding = childChunks.map(({ embedding, ...rest }) => rest);
 
 		const data: PersistedIndex = {
 			version: SCHEMA_VERSION,
 			modelName,
-			chunks: chunksWithoutEmbedding,
+			chunks,
+			childChunks: childChunksWithoutEmbedding,
 			fileMtimes,
 			fileHashes,
 		};

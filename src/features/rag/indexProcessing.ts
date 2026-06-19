@@ -2,8 +2,8 @@
  * 파일 목록을 읽고 청킹 → 임베딩하는 실제 처리 파이프라인입니다.
  */
 
-import { App, TFile } from 'obsidian';
-import type { DocumentChunk, EmbedFn, ParseBinaryFn } from '../../shared/types/rag.types';
+import { App, Notice, TFile } from 'obsidian';
+import type { ParentChunk, ChildChunk, EmbedFn, ParseBinaryFn } from '../../shared/types/rag.types';
 import { readAndPrepareFile } from './fileProcessor';
 import { incrementProcessed, incrementProcessedBy } from '../../core/store/ragStore';
 import { debugLogger } from '../../shared/debugLogger';
@@ -14,6 +14,7 @@ import {
 	type CheckpointSaveContext,
 	type IndexPersistContext,
 } from './checkpointManager';
+import type { OramaStore } from './oramaStore';
 
 const CHUNK_EMBED_BATCH = 512;
 const SMALL_VAULT_THRESHOLD = 50;
@@ -22,10 +23,14 @@ export interface ProcessContext {
 	app: App;
 	embedFn: EmbedFn;
 	parseBinaryFn: ParseBinaryFn;
-	chunkSize: number;
-	chunkOverlap: number;
+	parentChunkSize: number;
+	parentChunkOverlap: number;
+	childChunkSize: number;
+	childChunkOverlap: number;
 	modelName: string;
-	chunks: DocumentChunk[];
+	parentChunks: ParentChunk[];
+	childChunks: ChildChunk[];
+	oramaStore: OramaStore;
 	indexedPaths: Set<string>;
 	fileMtimes: Record<string, number>;
 	fileHashes: Record<string, number>;
@@ -40,99 +45,87 @@ export interface ProcessContext {
 export async function processFiles(files: TFile[], ctx: ProcessContext, startedAt: number, initialProcessedPaths: string[] = []): Promise<void> {
 	const fileCount = files.length;
 	const readConcurrency = fileCount <= SMALL_VAULT_THRESHOLD ? 1 : 32;
-	const chunkPathMap = buildChunkPathMap(ctx.chunks);
-	// 이전 체크포인트에서 복원된 경로를 포함 (중첩 종료/재시작 시 손실 방지)
+	
 	const processedPaths: string[] = [...initialProcessedPaths];
-
-	// 체크포인트 totalFiles는 vault 전체 파일 수 기준 (재시작 시 불일치 방지)
 	const ckptTotal = ctx.totalFileCount > 0 ? ctx.totalFileCount : fileCount;
 	const initialCount = initialProcessedPaths.length;
+	
 	const checkpointCtx: CheckpointSaveContext = {
 		processedPaths, totalFiles: ckptTotal, startedAt,
 		lastCheckpointAt: initialCount, checkpointInterval: getCheckpointInterval(ckptTotal), checkpointSaves: 0,
 	};
 
 	const persistIndexCtx: IndexPersistContext = {
-		modelName: ctx.modelName, chunks: ctx.chunks,
+		modelName: ctx.modelName, chunks: ctx.parentChunks, childChunks: ctx.childChunks,
 		fileMtimes: ctx.fileMtimes, fileHashes: ctx.fileHashes,
 	};
 
 	if (readConcurrency === 1) {
-		await processSequential(files, ctx, processedPaths, checkpointCtx, persistIndexCtx, chunkPathMap);
+		await processSequential(files, ctx, processedPaths, checkpointCtx, persistIndexCtx);
 	} else {
-		await processBatched(files, readConcurrency, ctx, processedPaths, checkpointCtx, persistIndexCtx, chunkPathMap);
+		await processBatched(files, readConcurrency, ctx, processedPaths, checkpointCtx, persistIndexCtx);
 	}
 }
 
-function buildChunkPathMap(chunks: DocumentChunk[]): Map<string, Set<number>> {
-	const map = new Map<string, Set<number>>();
-	for (let i = 0; i < chunks.length; i++) {
-		const path = chunks[i].path;
-		const set = map.get(path);
-		if (set) { set.add(i); } else { map.set(path, new Set([i])); }
-	}
-	return map;
-}
-
-function removeChunksByPath(chunks: DocumentChunk[], chunkPathMap: Map<string, Set<number>>, path: string): void {
-	const indices = chunkPathMap.get(path);
-	if (!indices || indices.size === 0) return;
-	const sorted = Array.from(indices).sort((a, b) => b - a);
-	for (const idx of sorted) { chunks.splice(idx, 1); }
-	chunkPathMap.delete(path);
-	for (const [p, idxSet] of chunkPathMap) {
-		if (p === path) continue;
-		const newSet = new Set<number>();
-		for (const i of idxSet) {
-			let shifted = i;
-			for (const removedIdx of sorted) { if (i > removedIdx) shifted--; }
-			if (shifted >= 0) newSet.add(shifted);
+async function removePathChunks(path: string, ctx: ProcessContext): Promise<void> {
+	for (let i = ctx.parentChunks.length - 1; i >= 0; i--) {
+		if (ctx.parentChunks[i].path === path) {
+			ctx.parentChunks.splice(i, 1);
 		}
-		chunkPathMap.set(p, newSet);
 	}
-}
-
-function registerChunksInMap(chunkPathMap: Map<string, Set<number>>, chunks: DocumentChunk[], newChunks: DocumentChunk[]): void {
-	const startIdx = chunks.length - newChunks.length;
-	for (let i = 0; i < newChunks.length; i++) {
-		const path = newChunks[i].path;
-		const set = chunkPathMap.get(path);
-		if (set) { set.add(startIdx + i); } else { chunkPathMap.set(path, new Set([startIdx + i])); }
+	for (let i = ctx.childChunks.length - 1; i >= 0; i--) {
+		if (ctx.childChunks[i].path === path) {
+			ctx.childChunks.splice(i, 1);
+		}
 	}
+	await ctx.oramaStore.deleteByPathPrefix(path);
 }
 
 async function processSequential(
 	files: TFile[], ctx: ProcessContext, processedPaths: string[],
 	checkpointCtx: CheckpointSaveContext, persistIndexCtx: IndexPersistContext,
-	chunkPathMap: Map<string, Set<number>>,
 ): Promise<void> {
 	for (const file of files) {
 		if (ctx.isDestroyed) return;
 		try {
 			const result = await readAndPrepareFile(file, ctx.app, ctx.parseBinaryFn,
-				ctx.chunkSize, ctx.chunkOverlap, ctx.fileHashes, ctx.indexedPaths);
-			if (result.skip || result.chunks.length === 0) {
+				ctx.parentChunkSize, ctx.parentChunkOverlap, ctx.childChunkSize, ctx.childChunkOverlap,
+				ctx.fileHashes, ctx.indexedPaths);
+			
+			if (result.skip || (result.parentChunks.length === 0 && result.childChunks.length === 0)) {
 				ctx.fileMtimes[file.path] = file.stat.mtime;
 			} else {
-				removeChunksByPath(ctx.chunks, chunkPathMap, file.path);
+				await removePathChunks(file.path, ctx);
 				ctx.indexedPaths.delete(file.path);
+				
 				try {
-					const embeddings = await ctx.embedFn(result.chunks.map(c => c.text));
-					for (let j = 0; j < result.chunks.length; j++) {
-						result.chunks[j].embedding = new Float32Array(embeddings[j]);
+					if (result.childChunks.length > 0) {
+						const embeddings = await ctx.embedFn(result.childChunks.map(c => c.text));
+						for (let j = 0; j < result.childChunks.length; j++) {
+							result.childChunks[j].embedding = new Float32Array(embeddings[j]);
+						}
+						await ctx.oramaStore.insertChunks(result.childChunks);
 					}
-					ctx.chunks.push(...result.chunks);
-					registerChunksInMap(chunkPathMap, ctx.chunks, result.chunks);
+					
+					ctx.parentChunks.push(...result.parentChunks);
+					ctx.childChunks.push(...result.childChunks);
+					
+					persistIndexCtx.chunks = ctx.parentChunks;
+					persistIndexCtx.childChunks = ctx.childChunks;
+					
 					ctx.indexedPaths.add(file.path);
 					ctx.fileHashes[file.path] = result.contentHash;
 					ctx.fileMtimes[file.path] = file.stat.mtime;
-				} catch (embedErr) {
+				} catch (embedErr: any) {
+					const errMsg = embedErr?.message || String(embedErr);
 					debugLogger.logError('rag', normalizeError(embedErr, `임베딩 실패: ${file.path}`));
+					new Notice(`[Lumina] 인덱싱 중 임베딩 에러 발생: ${errMsg}`);
 					ctx.fileMtimes[file.path] = file.stat.mtime;
 				}
 			}
 			incrementProcessed();
 			processedPaths.push(file.path);
+			
 			const prevLast = checkpointCtx.lastCheckpointAt;
 			checkpointCtx.lastCheckpointAt = await saveCheckpointIfNeeded(
 				ctx.app, checkpointCtx, persistIndexCtx, ctx.cachePersistCheckpointInterval ?? 1);
@@ -146,6 +139,7 @@ async function processSequential(
 			incrementProcessed();
 		}
 	}
+	
 	if (processedPaths.length > checkpointCtx.lastCheckpointAt) {
 		const prevLast = checkpointCtx.lastCheckpointAt;
 		checkpointCtx.lastCheckpointAt = await saveCheckpointIfNeeded(
@@ -159,17 +153,19 @@ async function processSequential(
 async function processBatched(
 	files: TFile[], readConcurrency: number, ctx: ProcessContext, processedPaths: string[],
 	checkpointCtx: CheckpointSaveContext, persistIndexCtx: IndexPersistContext,
-	chunkPathMap: Map<string, Set<number>>,
 ): Promise<void> {
 	for (let batchStart = 0; batchStart < files.length; batchStart += readConcurrency) {
 		if (ctx.isDestroyed) return;
 		const fileBatch = files.slice(batchStart, batchStart + readConcurrency);
 
 		const readResults = await Promise.allSettled(fileBatch.map(file =>
-			readAndPrepareFile(file, ctx.app, ctx.parseBinaryFn, ctx.chunkSize, ctx.chunkOverlap, ctx.fileHashes, ctx.indexedPaths)));
+			readAndPrepareFile(file, ctx.app, ctx.parseBinaryFn, 
+				ctx.parentChunkSize, ctx.parentChunkOverlap, ctx.childChunkSize, ctx.childChunkOverlap,
+				ctx.fileHashes, ctx.indexedPaths)));
 
 		const toEmbedFiles: TFile[] = [];
-		const toEmbedChunks: DocumentChunk[] = [];
+		const toEmbedParentChunks: ParentChunk[] = [];
+		const toEmbedChildChunks: ChildChunk[] = [];
 		const toEmbedHashes: number[] = [];
 		let skipCount = 0;
 
@@ -181,33 +177,42 @@ async function processBatched(
 				processedPaths.push(file.path);
 				skipCount++;
 			} else {
-				const { chunks, contentHash, skip } = result.value;
-				if (skip || chunks.length === 0) {
+				const { parentChunks, childChunks, contentHash, skip } = result.value;
+				if (skip || (parentChunks.length === 0 && childChunks.length === 0)) {
 					ctx.fileMtimes[file.path] = file.stat.mtime;
 					processedPaths.push(file.path);
 					skipCount++;
 				} else {
-					removeChunksByPath(ctx.chunks, chunkPathMap, file.path);
+					await removePathChunks(file.path, ctx);
 					ctx.indexedPaths.delete(file.path);
+					
 					toEmbedFiles.push(file);
-					toEmbedChunks.push(...chunks);
+					toEmbedParentChunks.push(...parentChunks);
+					toEmbedChildChunks.push(...childChunks);
 					toEmbedHashes.push(contentHash);
 				}
 			}
 		}
 
-		if (toEmbedChunks.length > 0 && !ctx.isDestroyed) {
+		if (toEmbedChildChunks.length > 0 && !ctx.isDestroyed) {
 			try {
-				for (let i = 0; i < toEmbedChunks.length; i += CHUNK_EMBED_BATCH) {
+				for (let i = 0; i < toEmbedChildChunks.length; i += CHUNK_EMBED_BATCH) {
 					if (ctx.isDestroyed) break;
-					const batch = toEmbedChunks.slice(i, i + CHUNK_EMBED_BATCH);
+					const batch = toEmbedChildChunks.slice(i, i + CHUNK_EMBED_BATCH);
 					const embeddings = await ctx.embedFn(batch.map(c => c.text));
 					for (let j = 0; j < batch.length; j++) {
 						batch[j].embedding = new Float32Array(embeddings[j]);
 					}
 				}
-				ctx.chunks.push(...toEmbedChunks);
-				registerChunksInMap(chunkPathMap, ctx.chunks, toEmbedChunks);
+				
+				await ctx.oramaStore.insertChunks(toEmbedChildChunks);
+				
+				ctx.parentChunks.push(...toEmbedParentChunks);
+				ctx.childChunks.push(...toEmbedChildChunks);
+
+				persistIndexCtx.chunks = ctx.parentChunks;
+				persistIndexCtx.childChunks = ctx.childChunks;
+				
 				for (let i = 0; i < toEmbedFiles.length; i++) {
 					const file = toEmbedFiles[i];
 					ctx.indexedPaths.add(file.path);
@@ -215,12 +220,25 @@ async function processBatched(
 					ctx.fileMtimes[file.path] = file.stat.mtime;
 					processedPaths.push(file.path);
 				}
-			} catch (embedErr) {
+			} catch (embedErr: any) {
+				const errMsg = embedErr?.message || String(embedErr);
 				debugLogger.logError('rag', normalizeError(embedErr, `배치 임베딩 실패`));
+				new Notice(`[Lumina] 인덱싱 중 임베딩 에러 발생: ${errMsg}`);
 				for (const file of toEmbedFiles) {
 					ctx.fileMtimes[file.path] = file.stat.mtime;
 					processedPaths.push(file.path);
 				}
+			}
+		} else if (toEmbedParentChunks.length > 0 && !ctx.isDestroyed) {
+			ctx.parentChunks.push(...toEmbedParentChunks);
+			persistIndexCtx.chunks = ctx.parentChunks;
+			
+			for (let i = 0; i < toEmbedFiles.length; i++) {
+				const file = toEmbedFiles[i];
+				ctx.indexedPaths.add(file.path);
+				ctx.fileHashes[file.path] = toEmbedHashes[i];
+				ctx.fileMtimes[file.path] = file.stat.mtime;
+				processedPaths.push(file.path);
 			}
 		}
 

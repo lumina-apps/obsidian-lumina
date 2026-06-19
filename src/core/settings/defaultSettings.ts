@@ -64,12 +64,14 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		],
 
 		// Advanced
-		chunkSize: 400,
-		chunkOverlap: 60,
+		parentChunkSize: 2000,
+		parentChunkOverlap: 200,
+		childChunkSize: 200,
+		childChunkOverlap: 40,
 		// 캐시 디스크 저장 주기: 몇 번째 체크포인트마다 저장할지 (1 = 매 체크포인트)
 		cachePersistCheckpointInterval: 1,
 		topK: 5,
-		minSimilarity: 0.65,
+		minSimilarity: 0.0,
 		syncMode: 'watch',
 		maxFileSizeMB: 50,
 	},

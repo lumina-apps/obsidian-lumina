@@ -11,7 +11,7 @@ export const ragSearchHandler = async (
 	_pathGuard: PathGuard,
 ): Promise<ToolResult> => {
 	const indexer = ctx.plugin.indexer;
-	if (!indexer || indexer.indexedChunks.length === 0) {
+	if (!indexer || indexer.indexedParentChunks.length === 0) {
 		return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.rag_search.notReady') }] };
 	}
 
@@ -35,7 +35,8 @@ export const ragSearchHandler = async (
 	try {
 		const results = await searchVault(
 			rawQuery,
-			indexer.indexedChunks,
+			indexer.indexedParentChunks,
+			indexer.oramaDb,
 			(texts: string[]) => indexer.embed(texts),
 			topK,
 			minSim,

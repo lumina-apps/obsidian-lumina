@@ -1,6 +1,6 @@
 import type { TFile } from 'obsidian';
 import type LuminaPlugin from '../../../main';
-import type { SearchResult, DocumentChunk } from '../../../shared/types/rag.types';
+import type { SearchResult, ParentChunk } from '../../../shared/types/rag.types';
 import { updateDiscoveryState } from '../../../core/store/discoveryStore';
 import { searchVault } from '../search';
 import { collectRecommendedTags } from '../tagExtractor';
@@ -29,24 +29,24 @@ export async function buildContextFromActiveFile(
 
 	if (!plugin.indexer) return emptyResult;
 
-	const allChunks = plugin.indexer.indexedChunks;
-	const otherChunks = filterChunks(allChunks.filter(c => c.path !== file.path), filterQuery, plugin);
+	const allParentChunks = plugin.indexer.indexedParentChunks;
+	const otherParentChunks = filterChunks(allParentChunks.filter(c => c.path !== file.path), filterQuery, plugin);
 
 	let results: SearchResult[] = [];
 
-	if (otherChunks.length > 0) {
-		const myFirstChunk = allChunks.find(c => c.path === file.path && c.chunkIndex === 0);
+	if (otherParentChunks.length > 0) {
+		const myFirstChildChunk = plugin.indexer.indexedChildChunks.find(c => c.path === file.path && c.chunkIndex === 0);
 
-		if (myFirstChunk?.embedding) {
-			const cachedEmbedding = myFirstChunk.embedding;
-			results = await searchVault('', otherChunks, async () => [Array.from(cachedEmbedding)], 20, 0.55);
+		if (myFirstChildChunk?.embedding) {
+			const cachedEmbedding = myFirstChildChunk.embedding;
+			results = await searchVault('', otherParentChunks, plugin.indexer.oramaDb, async () => [Array.from(cachedEmbedding)], 20, 0.55);
 		} else {
 			const content = await plugin.app.vault.read(file);
 			const cleanContent = preprocessMarkdown(content);
-			const queryContext = cleanContent.substring(0, plugin.settings.rag.chunkSize || 512);
+			const queryContext = cleanContent.substring(0, plugin.settings.rag.parentChunkSize || 2000);
 
 			if (queryContext.trim()) {
-				results = await searchVault(queryContext, otherChunks, texts => plugin.indexer!.embed(texts), 20, 0.55);
+				results = await searchVault(queryContext, otherParentChunks, plugin.indexer.oramaDb, texts => plugin.indexer!.embed(texts), 20, 0.55);
 			}
 		}
 
@@ -92,10 +92,10 @@ function deduplicateByPath(results: SearchResult[]): SearchResult[] {
 }
 
 function filterChunks(
-	chunks: DocumentChunk[],
+	chunks: ParentChunk[],
 	filterQuery: string,
 	plugin: LuminaPlugin,
-): DocumentChunk[] {
+): ParentChunk[] {
 	const q = filterQuery.trim();
 	if (!q) return chunks;
 

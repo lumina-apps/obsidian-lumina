@@ -83,10 +83,14 @@ export interface RagSettings {
 	excludedPaths: string[];
 
 	// ── Advanced ──
-	/** 청크 크기 (tokens) */
-	chunkSize: number;
-	/** 청크 겹침 크기 (tokens) */
-	chunkOverlap: number;
+	/** 상위 청크 크기 (문자 수) */
+	parentChunkSize: number;
+	/** 상위 청크 겹침 크기 (문자 수) */
+	parentChunkOverlap: number;
+	/** 하위 청크 크기 (문자 수) */
+	childChunkSize: number;
+	/** 하위 청크 겹침 크기 (문자 수) */
+	childChunkOverlap: number;
 	/** 체크포인트 저장 중 임베딩 캐시를 디스크에 저장할 주기 (N번째 체크포인트마다). 1 = 매 체크포인트마다 */
 	cachePersistCheckpointInterval?: number;
 	/** Top-K 검색 수 */

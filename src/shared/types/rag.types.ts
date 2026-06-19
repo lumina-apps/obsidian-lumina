@@ -6,8 +6,16 @@ export interface RawDocument {
 	mtime: number;
 }
 
-export interface DocumentChunk {
+export interface ParentChunk {
 	id: string;
+	path: string;
+	text: string;
+	chunkIndex: number;
+}
+
+export interface ChildChunk {
+	id: string;
+	parentId: string;
 	path: string;
 	text: string;
 	chunkIndex: number;
@@ -17,12 +25,13 @@ export interface DocumentChunk {
 // ─── Persistence ─────────────────────────────────
 
 /** 스키마 버전. 청크 구조 변경 시 증가 → 기존 인덱스 자동 무효화 */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export interface PersistedIndex {
 	version: number;
 	modelName: string;
-	chunks: DocumentChunk[];
+	chunks: ParentChunk[];
+	childChunks?: ChildChunk[];
 	fileMtimes: Record<string, number>;
 	fileHashes?: Record<string, number>;
 }
@@ -30,7 +39,7 @@ export interface PersistedIndex {
 // ─── Search ──────────────────────────────────────
 
 export interface SearchResult {
-	chunk: DocumentChunk;
+	chunk: ParentChunk;
 	score: number;
 	vectorScore?: number;
 	bm25Score?: number;
@@ -126,7 +135,7 @@ export type ParseBinaryFn = (buffer: ArrayBuffer, ext: string) => Promise<string
 // ─── Indexer In-Memory State ─────────────────────
 
 export interface IndexState {
-	chunks: DocumentChunk[];
+	chunks: ParentChunk[];
 	indexedPaths: Set<string>;
 	fileMtimes: Record<string, number>;
 	fileHashes: Record<string, number>;
