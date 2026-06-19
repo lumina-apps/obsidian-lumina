@@ -96,6 +96,12 @@ export interface TranslationSettingsConnectionsTaskModel {
   noneSelected: string;
 }
 
+export interface TranslationSettingsConnectionsRerankerModel {
+  name: string;
+  desc: string;
+  noneSelected: string;
+}
+
 export interface TranslationSettingsConnections {
   title: string;
   provider: string;
@@ -107,6 +113,7 @@ export interface TranslationSettingsConnections {
   quickActionProvider: TranslationSettingsConnectionsQuickActionProvider;
   quickActionModel: TranslationSettingsConnectionsQuickActionModel;
   taskModel: TranslationSettingsConnectionsTaskModel;
+  rerankerModel: TranslationSettingsConnectionsRerankerModel;
 }
 
 // MCP

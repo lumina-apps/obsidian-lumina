@@ -9,6 +9,8 @@ export interface ChatRagSource {
 	filePath: string;
 }
 
+export type RagPipelineStep = 'searching' | 'reranking' | 'compressing' | 'generating' | null;
+
 export interface UIChatMessage {
 	id: string;
 	role: 'user' | 'assistant' | 'system';
@@ -16,6 +18,8 @@ export interface UIChatMessage {
 	attachments?: ContextAttachment[];
 	/** RAG 참조 문서 출처 */
 	ragSources?: ChatRagSource[];
+	/** RAG 파이프라인 진행 상태 (스트리밍 중 인디케이터 표시용) */
+	ragPipelineStep?: RagPipelineStep;
 	isStreaming: boolean;
 	timestamp: number;
 	model?: string;

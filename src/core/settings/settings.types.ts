@@ -34,6 +34,10 @@ export interface ConnectionsSettings {
 	taskProviderId: string;
 	/** Task 전용 모델 ID (선택) */
 	taskModelId: string;
+	/** 리랭커 전용 프로바이더 ID (선택) */
+	rerankerProviderId: string;
+	/** 리랭커 전용 모델 ID (선택) */
+	rerankerModelId: string;
 }
 
 // ─── Section 2: Chat & Prompt ────────────────────────────────────────────────

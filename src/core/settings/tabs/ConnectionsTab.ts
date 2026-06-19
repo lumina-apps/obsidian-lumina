@@ -11,6 +11,7 @@ import { renderRagEngineSection } from './connections/RagEngineSection';
 import { renderDefaultChatModelSection } from './connections/DefaultChatModelSection';
 import { renderQuickActionModelSection } from './connections/QuickActionModelSection';
 import { renderTaskModelSection } from './connections/TaskModelSection';
+import { renderRerankerModelSection } from './connections/RerankerModelSection';
 
 export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): void {
 	const s = tab.plugin.settings.connections;
@@ -65,5 +66,6 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 	if (tab.showAdvanced) {
 		tab.advancedLabel(el);
 		renderTaskModelSection(tab, el);
+		renderRerankerModelSection(tab, el);
 	}
 }

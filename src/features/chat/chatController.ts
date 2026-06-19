@@ -27,6 +27,7 @@ import {
 	sessionSummary,
 	summaryUpToMessageId,
 	resetChat,
+	setMessageRagStep,
 } from '../../core/store/chatStore';
 import { get } from 'svelte/store';
 import { indexingState } from '../../core/store/ragStore';
@@ -374,6 +375,7 @@ export class ChatController {
 			const result = await performRagSearch({
 				userText,
 				rag,
+				connections: this.plugin.settings.connections,
 				existingContext: ragContext,
 				assistantId,
 				indexer: this.plugin.indexer,
@@ -534,5 +536,6 @@ export class ChatController {
 		
 		syncMessageContent(assistantId, finalContent);
 		setMessageStreaming(assistantId, false);
+		setMessageRagStep(assistantId, null);
 	}
 }

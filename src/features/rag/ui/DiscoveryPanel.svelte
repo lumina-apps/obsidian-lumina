@@ -329,7 +329,7 @@
 					{#if $discoveryState.isSearching && $discoveryState.similarNotes.length === 0 && !$discoveryState.duplicateNote && $discoveryState.recommendedTags.length === 0}
 						<div class="lumina-discovery__loading"><div class="spinner"></div></div>
 					{:else}
-						<div class="lumina-discovery__context-view">
+						<div class="lumina-discovery__context-view" class:is-updating={$discoveryState.isSearching}>
 
 							<!-- 중복 노트 경고 -->
 							{#if $discoveryState.duplicateNote}

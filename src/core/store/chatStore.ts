@@ -1,7 +1,7 @@
 /** 채팅 런타임 전역 상태. chatController가 액션 호출, ChatPanel.svelte가 구독 */
 
 import { writable, get } from 'svelte/store';
-import type { UIChatMessage, ContextAttachment, ChatRagSource } from '../../shared/types/chat.types';
+import type { UIChatMessage, ContextAttachment, ChatRagSource, RagPipelineStep } from '../../shared/types/chat.types';
 import { t } from '../../shared/locales/helpers';
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -84,6 +84,13 @@ export function setMessageTokenUsage(
 export function setMessageSources(messageId: string, sources: ChatRagSource[]): void {
 	messages.update(ms =>
 		ms.map(m => (m.id === messageId ? { ...m, ragSources: sources } : m)),
+	);
+}
+
+/** RAG 파이프라인 단계 업데이트 */
+export function setMessageRagStep(messageId: string, step: RagPipelineStep): void {
+	messages.update(ms =>
+		ms.map(m => (m.id === messageId ? { ...m, ragPipelineStep: step } : m)),
 	);
 }
 

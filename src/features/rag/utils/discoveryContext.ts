@@ -5,6 +5,7 @@ import { updateDiscoveryState } from '../../../core/store/discoveryStore';
 import { searchVault } from '../search';
 import { collectRecommendedTags } from '../tagExtractor';
 import { preprocessMarkdown } from '../../../shared/utils/markdownPreprocessor';
+import { rerankChunks } from '../reranker';
 
 export interface ContextUpdateResult {
 	similarNotes: SearchResult[];
@@ -33,6 +34,7 @@ export async function buildContextFromActiveFile(
 	const otherParentChunks = filterChunks(allParentChunks.filter(c => c.path !== file.path), filterQuery, plugin);
 
 	let results: SearchResult[] = [];
+	let queryText = '';
 
 	if (otherParentChunks.length > 0) {
 		const myFirstChildChunk = plugin.indexer.indexedChildChunks.find(c => c.path === file.path && c.chunkIndex === 0);
@@ -40,6 +42,7 @@ export async function buildContextFromActiveFile(
 		if (myFirstChildChunk?.embedding) {
 			const cachedEmbedding = myFirstChildChunk.embedding;
 			results = await searchVault('', otherParentChunks, plugin.indexer.oramaDb, async () => [Array.from(cachedEmbedding)], 20, 0.55);
+			queryText = myFirstChildChunk.text;
 		} else {
 			const content = await plugin.app.vault.read(file);
 			const cleanContent = preprocessMarkdown(content);
@@ -47,10 +50,36 @@ export async function buildContextFromActiveFile(
 
 			if (queryContext.trim()) {
 				results = await searchVault(queryContext, otherParentChunks, plugin.indexer.oramaDb, texts => plugin.indexer!.embed(texts), 20, 0.55);
+				queryText = queryContext;
 			}
 		}
 
-		results = deduplicateByPath(results).slice(0, 8);
+		results = deduplicateByPath(results);
+
+		const rerankerProviderId = plugin.settings.connections.rerankerProviderId;
+		const rerankerModelId = plugin.settings.connections.rerankerModelId;
+
+		if (rerankerProviderId && rerankerModelId && results.length > 0 && queryText) {
+			const providerConfig = plugin.settings.connections.providers.find((p: any) => p.id === rerankerProviderId);
+			if (providerConfig) {
+				try {
+					results = await rerankChunks(
+						`다음 문서의 주요 내용과 연관성이 높은 문서를 찾아주세요:\n\n${queryText.slice(0, 500)}`,
+						results.slice(0, 20),
+						providerConfig,
+						rerankerModelId,
+						8
+					);
+				} catch (e) {
+					console.error('[Lumina] Related notes reranking failed:', e);
+					results = results.slice(0, 8);
+				}
+			} else {
+				results = results.slice(0, 8);
+			}
+		} else {
+			results = results.slice(0, 8);
+		}
 	}
 
 	const duplicate = results.find(r => r.score >= 0.90) ?? null;

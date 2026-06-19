@@ -17,6 +17,8 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		quickActionModelId: '',
 		taskProviderId: '',
 		taskModelId: '',
+		rerankerProviderId: '',
+		rerankerModelId: '',
 	},
 
 	// ── Section 2: Chat & Prompt ─────────────────────────────────────────────

@@ -86,6 +86,11 @@
         "name": "タスクモデル（任意）",
         "desc": "さまざまなバックグラウンドAIタスク（要約、コンテキスト処理など）に使用する、軽量で高速なモデルを選択してください。空白の場合、コスト削減のためにシステムの基本的な方法が使用されます。",
         "noneSelected": "未選択（システムの基本機能を使用）"
+      },
+      "rerankerModel": {
+        "name": "Reranker Model (Optional)",
+        "desc": "Select a model to rerank the initial RAG search results. This improves the relevance of the final context.",
+        "noneSelected": "None Selected (Disabled)"
       }
     },
     "mcp": {

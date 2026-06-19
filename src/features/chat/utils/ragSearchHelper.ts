@@ -3,10 +3,12 @@
  */
 
 import { searchVault, formatRagContext } from '../../rag/search';
-import { setMessageSources } from '../../../core/store/chatStore';
+import { setMessageSources, setMessageRagStep } from '../../../core/store/chatStore';
 import { debugLogger } from '../../../shared/debugLogger';
 import type { RagChunkMeta } from '../../../shared/types/debug.types';
-import type { RagSettings } from '../../../core/settings/settings.types';
+import type { RagSettings, ConnectionsSettings } from '../../../core/settings/settings.types';
+import { rerankChunks } from '../../rag/reranker';
+import { compressChunks } from '../../rag/compressor';
 
 /** RAG 검색 수행 여부 결정 */
 export function resolveRagSearchFlag(opts: {
@@ -25,6 +27,7 @@ export function resolveRagSearchFlag(opts: {
 export interface PerformRagSearchParams {
 	userText: string;
 	rag: RagSettings;
+	connections: ConnectionsSettings;
 	existingContext: string | undefined;
 	assistantId: string;
 	indexer: import('../../rag/indexer').VaultIndexer;
@@ -41,7 +44,7 @@ export interface RagSearchResult {
  * 검색 결과가 있으면 assistantId 메시지에 RAG 소스도 설정한다.
  */
 export async function performRagSearch(params: PerformRagSearchParams): Promise<RagSearchResult> {
-	const { userText, rag, existingContext, assistantId, indexer, activeFilePath } = params;
+	const { userText, rag, connections, existingContext, assistantId, indexer, activeFilePath } = params;
 
 	try {
 		let parentChunks = indexer.indexedParentChunks;
@@ -53,22 +56,57 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 		}
 
 		const ragStart = Date.now();
-		const results = await searchVault(
+		
+		// [1] Searching
+		setMessageRagStep(assistantId, 'searching');
+		
+		const useReranker = !!(connections.rerankerProviderId && connections.rerankerModelId);
+		const useCompressor = !!(connections.taskProviderId && connections.taskModelId);
+		
+		// 리랭커 사용 시에는 K * 2 개 추출
+		const initialTopK = useReranker ? rag.topK * 2 : rag.topK;
+
+		let results = await searchVault(
 			userText,
 			parentChunks,
 			indexer.oramaDb,
 			(texts: string[]) => indexer.embed(texts),
-			rag.topK,
+			initialTopK,
 			rag.minSimilarity,
 			0.5,
 			rag.dataScope === 'active-note' ? activeFilePath : null
 		);
 
-		console.log(`[Lumina RAG Debug] Scope: ${rag.dataScope}, parentChunks: ${parentChunks.length}, Orama Hits: ?, Final Results: ${results.length}`);
+		console.log(`[Lumina RAG Debug] Scope: ${rag.dataScope}, parentChunks: ${parentChunks.length}, Initial Results: ${results.length}`);
 
 		if (results.length === 0) {
+			setMessageRagStep(assistantId, null);
 			return { ragContext: existingContext, ragChunksForLog: undefined };
 		}
+
+		// [2] Reranking
+		if (useReranker) {
+			setMessageRagStep(assistantId, 'reranking');
+			const providerConfig = connections.providers.find(p => p.id === connections.rerankerProviderId);
+			if (providerConfig) {
+				results = await rerankChunks(userText, results, providerConfig, connections.rerankerModelId, rag.topK);
+			} else {
+				// config not found, fallback to topK
+				results = results.slice(0, rag.topK);
+			}
+		}
+
+		// [3] Compressing
+		if (useCompressor) {
+			setMessageRagStep(assistantId, 'compressing');
+			const providerConfig = connections.providers.find(p => p.id === connections.taskProviderId);
+			if (providerConfig) {
+				results = await compressChunks(userText, results, providerConfig, connections.taskModelId);
+			}
+		}
+
+		// [4] Generating (End of Pipeline)
+		setMessageRagStep(assistantId, 'generating');
 
 		const ragText = formatRagContext(results);
 		const ragContext = existingContext
@@ -96,6 +134,7 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 
 		return { ragContext, ragChunksForLog };
 	} catch (err) {
+		setMessageRagStep(assistantId, null);
 		debugLogger.logError('rag', err instanceof Error ? err : new Error(`RAG 검색 실패: ${err}`));
 		return { ragContext: existingContext, ragChunksForLog: undefined };
 	}

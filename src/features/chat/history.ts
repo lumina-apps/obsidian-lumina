@@ -241,7 +241,7 @@ export async function generateTitleWithLLM(
 	messages: UIChatMessage[],
 	providerConfig: LLMProviderConfig,
 	modelId: string,
-	options: ChatOptions
+	settings: import('../../core/settings/settings.types').LuminaSettings
 ): Promise<string> {
 	const first = messages.find(m => m.role === 'user');
 	if (!first || !first.content.trim()) return '새 대화';

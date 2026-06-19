@@ -9,6 +9,7 @@
 	import AttachmentChips from "./AttachmentChips.svelte";
 	import ThinkBlock from "./ThinkBlock.svelte";
 	import RagSources from "./RagSources.svelte";
+	import RagProgressIndicator from "./RagProgressIndicator.svelte";
 	import MessageActions from "./MessageActions.svelte";
 	import MessageEditArea from "./MessageEditArea.svelte";
 
@@ -86,6 +87,9 @@
 		{:else}
 			{#if message.attachments && message.attachments.length > 0}
 				<AttachmentChips attachments={message.attachments} {app} />
+			{/if}
+			{#if message.ragPipelineStep && message.role === 'assistant'}
+				<RagProgressIndicator step={message.ragPipelineStep} {app} />
 			{/if}
 			{#if thinkContent}
 				<ThinkBlock
