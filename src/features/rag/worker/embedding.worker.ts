@@ -142,9 +142,15 @@ async function initModel(modelName: string, cacheDir: string, pluginDir?: string
 	const fileProgressMap = new Map<string, number>();
 	let maxOverallPct = 0;
 
+	interface ProgressInfo {
+		status: string;
+		file?: string;
+		progress?: number;
+	}
+
 	const pipelineOptions = {
 		dtype: 'fp32' as const,
-		progress_callback: (info: any) => {
+		progress_callback: (info: ProgressInfo) => {
 			if (info.status === 'ready') return;
 
 			if (info.file) {

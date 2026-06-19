@@ -233,6 +233,7 @@
         "name": "Limite de Memória de Conversa (Avançado)",
         "desc": "Quanto histórico de conversa manter (por turnos ou tokens).",
         "limitType": "Modo de Memória de Conversa",
+        "autoSummary": "Resumo Automático de Contexto (Padrão)",
         "turns": "Limite de Turnos",
         "tokens": "Limite de Tokens",
         "turnsLabel": "Turnos a Lembrar",

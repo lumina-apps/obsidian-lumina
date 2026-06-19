@@ -233,6 +233,7 @@
         "name": "Limite de mémoire de conversation (Avancé)",
         "desc": "Combien d'historique de conversation conserver (par tours ou tokens).",
         "limitType": "Mode de mémoire de conversation",
+        "autoSummary": "Résumé automatique du contexte (Par défaut)",
         "turns": "Limite de tours",
         "tokens": "Limite de tokens",
         "turnsLabel": "Nombre de tours à mémoriser",

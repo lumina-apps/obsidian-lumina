@@ -13,25 +13,28 @@ export function renderAdvancedSection(tab: LuminaSettingTab, el: HTMLElement): v
 		.setDesc(t('settings.chat.memoryLimit.desc'))
 		.addDropdown(drop => {
 			drop
+				.addOption('auto_summary', t('settings.chat.memoryLimit.autoSummary') ?? 'Auto Context Summary')
 				.addOption('turns', t('settings.chat.memoryLimit.turns'))
 				.addOption('tokens', t('settings.chat.memoryLimit.tokens'))
-				.setValue(s.useTokenLimit ? 'tokens' : 'turns')
+				.setValue(s.memoryMethod ?? 'auto_summary')
 				.onChange(async (val) => {
-					s.useTokenLimit = val === 'tokens';
+					s.memoryMethod = val as 'auto_summary' | 'turns' | 'tokens';
 					await tab.saveAndSync();
 					tab.refreshDisplay();
 				});
 		});
 
-	if (!s.useTokenLimit) {
+	if (s.memoryMethod === 'auto_summary' || s.memoryMethod === 'turns') {
 		addSliderWithInput(
 			new Setting(el)
 				.setName(t('settings.chat.memoryLimit.turnsLabel'))
 				.setDesc(t('settings.chat.memoryLimit.turnsDesc')),
-			{ min: 1, max: 15, step: 1, value: s.contextWindowTurns },
+			{ min: 5, max: 20, step: 1, value: s.contextWindowTurns },
 			wrapAsync(async (val) => { s.contextWindowTurns = val; await tab.saveAndSync(); })
 		);
-	} else {
+	}
+	
+	if (s.memoryMethod === 'tokens') {
 		new Setting(el)
 			.setName(t('settings.chat.memoryLimit.maxTokens'))
 			.addText(text => {

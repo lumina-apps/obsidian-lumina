@@ -186,20 +186,33 @@ export async function deleteSession(app: App, sessionId: string, basePath: strin
 
 // ─── Serialize ────────────────────────────────────────────────────────────────
 
+function stripThoughtProcess(content: string): string {
+	return content.replace(/<think>[\s\S]*?<\/think>\n*/gi, '').trim();
+}
+
 function serializeSession(session: ChatSession): string {
+	// 생각 과정(<think>...</think>) 제거를 위해 복제본 생성
+	const cleanSession = {
+		...session,
+		messages: session.messages.map(m => ({
+			...m,
+			content: m.role === 'assistant' ? stripThoughtProcess(m.content) : m.content
+		}))
+	};
+
 	const frontmatter = [
 		'---',
-		`id: ${session.id}`,
-		`title: ${JSON.stringify(session.title)}`,
-		`provider: ${session.providerId}`,
-		`model: ${session.modelId}`,
-		`created: ${new Date(session.createdAt).toISOString()}`,
-		`updated: ${new Date(session.updatedAt).toISOString()}`,
+		`id: ${cleanSession.id}`,
+		`title: ${JSON.stringify(cleanSession.title)}`,
+		`provider: ${cleanSession.providerId}`,
+		`model: ${cleanSession.modelId}`,
+		`created: ${new Date(cleanSession.createdAt).toISOString()}`,
+		`updated: ${new Date(cleanSession.updatedAt).toISOString()}`,
 		'---',
 		'',
 	].join('\n');
 
-	const body = session.messages
+	const body = cleanSession.messages
 		.filter(m => m.role !== 'system')
 		.map(m => {
 			const label = m.role === 'user' ? '**👤 You**' : `**✦ Lumina** _(${m.model ?? ''})_`;
@@ -208,8 +221,8 @@ function serializeSession(session: ChatSession): string {
 		})
 		.join('\n---\n\n');
 
-	// 완벽한 복원을 위해 숨겨진 JSON 데이터를 맨 끝에 추가
-	const rawDataBlock = `\n\n<!-- LUMINA_HISTORY_DATA: ${JSON.stringify(session)} -->\n`;
+	// 완벽한 복원을 위해 숨겨진 JSON 데이터를 맨 끝에 추가 (cleanSession 사용)
+	const rawDataBlock = `\n\n<!-- LUMINA_HISTORY_DATA: ${JSON.stringify(cleanSession)} -->\n`;
 
 	return frontmatter + body + rawDataBlock;
 }

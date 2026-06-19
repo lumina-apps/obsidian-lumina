@@ -233,6 +233,7 @@
         "name": "对话记忆限制（高级）",
         "desc": "保留多少对话历史（按轮数或 Token 数）。",
         "limitType": "对话记忆方式",
+        "autoSummary": "自动上下文摘要（默认）",
         "turns": "轮数限制",
         "tokens": "Token 数限制",
         "turnsLabel": "要记住的轮数",

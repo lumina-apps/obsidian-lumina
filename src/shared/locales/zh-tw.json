@@ -233,6 +233,7 @@
         "name": "對話記憶限制（進階）",
         "desc": "保留多少對話歷史（按輪數或 Token 數）。",
         "limitType": "對話記憶方式",
+        "autoSummary": "自動上下文摘要（預設）",
         "turns": "輪數限制",
         "tokens": "Token 數限制",
         "turnsLabel": "要記住的輪數",

@@ -7,8 +7,6 @@ export const DEFAULT_EXCLUDED_PATHS: readonly string[] = [
 	'templates',
 	'Templates',
 	'_templates',
-	'attachments',
-	'Attachments',
 	'chatHistory',
 ];
 

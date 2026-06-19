@@ -38,6 +38,7 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		],
 
 		// Advanced
+		memoryMethod: 'auto_summary',
 		contextWindowTurns: 10,
 		useTokenLimit: false,
 		maxContextTokens: 8000,
@@ -58,8 +59,6 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 			'templates',
 			'Templates',
 			'_templates',
-			'attachments',
-			'Attachments',
 			'chatHistory',
 		],
 

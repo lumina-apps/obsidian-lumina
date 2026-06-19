@@ -10,26 +10,31 @@ export const messages = writable<UIChatMessage[]>([]);
 export const isLoading = writable<boolean>(false);
 export const currentSessionId = writable<string | null>(null);
 export const currentSessionTitle = writable<string | null>(null);
+export const sessionSummary = writable<string | undefined>(undefined);
+export const summaryUpToMessageId = writable<string | undefined>(undefined);
 
 export const pendingAttachments = writable<ContextAttachment[]>([]);
 export const activeSidebarTab = writable<'chat' | 'discovery'>('chat');
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
 
-/** 대화 초기화 */
 export function resetChat(): void {
 	messages.set([]);
 	isLoading.set(false);
 	currentSessionId.set(null);
 	currentSessionTitle.set(null);
+	sessionSummary.set(undefined);
+	summaryUpToMessageId.set(undefined);
 }
 
 /** 특정 세션으로 대화 상태 덮어쓰기 (히스토리에서 불러오기) */
-export function setSession(sessionId: string, loadedMessages: UIChatMessage[], title?: string): void {
-	messages.set(loadedMessages);
+export function setSession(session: import('../../shared/types/chat.types').ChatSession): void {
+	messages.set(session.messages);
 	isLoading.set(false);
-	currentSessionId.set(sessionId);
-	if (title) currentSessionTitle.set(title);
+	currentSessionId.set(session.id);
+	currentSessionTitle.set(session.title);
+	sessionSummary.set(session.sessionSummary);
+	summaryUpToMessageId.set(session.summaryUpToMessageId);
 }
 
 /** 현재 세션 제목 업데이트 */

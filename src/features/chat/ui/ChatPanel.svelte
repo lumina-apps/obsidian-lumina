@@ -191,6 +191,7 @@
 		inputText = "";
 		attachments = [];
 		resetTextareaHeight();
+		tick().then(() => textareaEl?.focus());
 
 		await executeStreamOperation((signal) =>
 			ctrl!.sendMessage(

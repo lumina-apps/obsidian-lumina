@@ -23,6 +23,10 @@ export interface PromptBuilderOptions {
 	chat: ChatSettings;
 	/** RAG 검색 결과 텍스트 (선택적) */
 	ragContext?: string;
+	/** 현재 세션의 요약본 (auto_summary 모드일 경우) */
+	sessionSummary?: string;
+	/** 요약이 완료된 메시지 ID (auto_summary 모드일 경우) */
+	summaryUpToMessageId?: string;
 }
 
 /**
@@ -36,7 +40,7 @@ export function buildMessages(
 	userText: string,
 	opts: PromptBuilderOptions,
 ): ChatMessage[] {
-	const { chat, ragContext } = opts;
+	const { chat, ragContext, sessionSummary, summaryUpToMessageId } = opts;
 
 	// ── 1. 시스템 프롬프트 구성 ───────────────────────────────────────────────
 	const activePreset = chat.systemPrompts.find(p => p.id === chat.activeSystemPromptId);
@@ -62,7 +66,31 @@ export function buildMessages(
 
 	let trimmedTurns: UIChatMessage[];
 
-	if (chat.useTokenLimit) {
+	if (chat.memoryMethod === 'auto_summary') {
+		// auto_summary 모드: summaryUpToMessageId 이후의 메시지만 포함
+		if (summaryUpToMessageId) {
+			const idx = turns.findIndex(m => m.id === summaryUpToMessageId);
+			if (idx !== -1) {
+				trimmedTurns = turns.slice(idx + 1);
+			} else {
+				trimmedTurns = turns;
+			}
+		} else {
+			trimmedTurns = turns;
+		}
+
+		// 요약본이 있으면 시스템 프롬프트 맨 끝에 주입
+		if (sessionSummary) {
+			const summaryInstruction = `\n\n[이전 대화 요약]\n${sessionSummary}\n\n* 지시사항: 위의 대화 요약을 배경 지식으로 삼아 자연스럽게 대화의 문맥을 유지하세요.`;
+			systemContent += summaryInstruction;
+			// 시스템 프롬프트가 이미 생성되었으므로 재할당 (아래에서 messages[0] 확인)
+			if (messages.length > 0 && messages[0].role === 'system') {
+				messages[0].content = systemContent;
+			} else if (systemContent) {
+				messages.push({ role: 'system', content: systemContent });
+			}
+		}
+	} else if (chat.memoryMethod === 'tokens' || chat.useTokenLimit) {
 		// 토큰 기반: 뒤에서부터 토큰 합산 (간이 추정: 4 chars ≈ 1 token)
 		let tokenCount = 0;
 		const maxTokens = chat.maxContextTokens;

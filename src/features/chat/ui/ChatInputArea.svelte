@@ -273,7 +273,7 @@
 					bind:value={inputText}
 					class="lumina-chat__textarea"
 					placeholder={hasProvider ? $tStore("errors.chatPlaceholder") : $tStore("errors.llmConnectRequired")}
-					disabled={isLoading || !hasProvider}
+					disabled={!hasProvider}
 					rows="1"
 					onkeydown={handleKeydown}
 					oninput={handleInput}

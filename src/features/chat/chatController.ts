@@ -24,6 +24,8 @@ import {
 	setSession,
 	currentSessionId,
 	currentSessionTitle,
+	sessionSummary,
+	summaryUpToMessageId,
 	resetChat,
 } from '../../core/store/chatStore';
 import { get } from 'svelte/store';
@@ -40,6 +42,7 @@ import { runAgentLoop, isTokenLimitReached } from './agentLoop';
 import { resolveRagSearchFlag, performRagSearch } from './utils/ragSearchHelper';
 import { collectMcpTools, injectToolPrompts } from './utils/mcpToolHelper';
 import { injectMultimodalImages } from './utils/multimodalHelper';
+import { triggerAutoSummarization } from './utils/summarizationHelper';
 
 // ─── Internal types ───────────────────────────────────────────────────────────
 
@@ -146,6 +149,14 @@ export class ChatController {
 			// ── 7. 응답 후처리 ──────────────────────────────────────────────────
 			this.finalizeResponse(assistantId, fullResponse, tokenUsage, hasTokenLimitBeenHit, resolvedModelId);
 
+			// ── 7.5. 자동 요약 (백그라운드) ───────────────────────────────────────────
+			if (chat.memoryMethod === 'auto_summary') {
+				// Fire and forget (don't await)
+				triggerAutoSummarization(this.plugin, providerConfig, resolvedModelId, chat.contextWindowTurns).catch((e: unknown) => {
+					debugLogger.logError('auto_summary', e as Error);
+				});
+			}
+
 			// ── 8. 디버그: LLM 요청/응답 로그 ─────────────────────────────────
 			const activePreset = chat.systemPrompts.find(p => p.id === chat.activeSystemPromptId);
 			const requestId = debugLogger.logRequest({
@@ -231,6 +242,8 @@ export class ChatController {
 			updatedAt: Date.now(),
 			providerId,
 			modelId,
+			sessionSummary: get(sessionSummary),
+			summaryUpToMessageId: get(summaryUpToMessageId),
 		};
 
 		try {
@@ -252,7 +265,7 @@ export class ChatController {
 	async restoreSession(sessionId: string): Promise<boolean> {
 		const session = await loadSession(this.app, sessionId, this.plugin.settings.chat.historyPath);
 		if (session) {
-			setSession(session.id, session.messages, session.title);
+			setSession(session);
 			return true;
 		}
 		new Notice(t('settings.chat.history.loadFail'));
@@ -373,7 +386,12 @@ export class ChatController {
 		const isReasoningModel = modelName.includes('reasoner') || modelName.includes('r1');
 		const useTextTools = useLocal || isReasoningModel;
 
-		let llmMessages: ChatMessage[] = buildMessages(history, userText, { chat, ragContext });
+		let llmMessages: ChatMessage[] = buildMessages(history, userText, { 
+			chat, 
+			ragContext,
+			sessionSummary: get(sessionSummary),
+			summaryUpToMessageId: get(summaryUpToMessageId)
+		});
 
 		// 툴 사용 지침 주입
 		llmMessages = injectToolPrompts(llmMessages, mcpTools, useTextTools);
@@ -491,19 +509,19 @@ export class ChatController {
 			});
 		}
 
+		// 생각 과정(<think>...</think>) 제거
+		let finalContent = fullResponse.replace(/<think>[\s\S]*?<\/think>\n*/gi, '').trim();
+
 		// 빈 응답 / 토큰 한도 처리
-		let finalContent = fullResponse;
-		if (!finalContent.trim()) {
+		if (!finalContent) {
 			finalContent = hasTokenLimitBeenHit
 				? t('uiMessages.emptyResponseTokenLimit')
 				: t('settings.chat.emptyResponseFallback');
-			appendChunk(assistantId, finalContent);
 		} else if (hasTokenLimitBeenHit) {
-			finalContent += t('uiMessages.tokenLimitHitWarning');
-			syncMessageContent(assistantId, finalContent);
+			finalContent += '\n\n' + t('uiMessages.tokenLimitHitWarning');
 		}
-
-		// 스트리밍 완료 표시
+		
+		syncMessageContent(assistantId, finalContent);
 		setMessageStreaming(assistantId, false);
 	}
 }

@@ -253,6 +253,7 @@
         "name": "Conversation Memory Limit (Advanced)",
         "desc": "How much conversation history to retain (by turns or tokens).",
         "limitType": "Conversation Memory Mode",
+        "autoSummary": "Auto Context Summary (Default)",
         "turns": "Turn Limit",
         "tokens": "Token Limit",
         "turnsLabel": "Turns to Remember",

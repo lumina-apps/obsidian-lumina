@@ -233,6 +233,7 @@
         "name": "Limite Memoria Conversazione (Avanzate)",
         "desc": "Quanta cronologia conversazione conservare (per turni o token).",
         "limitType": "Modalità Memoria Conversazione",
+        "autoSummary": "Riepilogo automatico del contesto (Predefinito)",
         "turns": "Limite Turni",
         "tokens": "Limite Token",
         "turnsLabel": "Turni da Ricordare",

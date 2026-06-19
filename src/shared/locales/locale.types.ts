@@ -303,6 +303,7 @@ export interface TranslationSettingsChatMemoryLimit {
   name: string;
   desc: string;
   limitType: string;
+  autoSummary: string;
   turns: string;
   tokens: string;
   turnsLabel: string;

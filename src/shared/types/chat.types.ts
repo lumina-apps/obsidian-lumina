@@ -37,4 +37,8 @@ export interface ChatSession {
 	updatedAt: number;
 	providerId: string;
 	modelId: string;
+	/** 대화 요약본 (auto_summary 모드에서 사용) */
+	sessionSummary?: string;
+	/** 요약이 완료된 마지막 메시지 ID (이후 메시지부터 컨텍스트에 포함) */
+	summaryUpToMessageId?: string;
 }

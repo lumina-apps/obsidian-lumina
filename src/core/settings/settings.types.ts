@@ -50,11 +50,13 @@ export interface ChatSettings {
 	inlineTrigger: string;
 
 	// ── Advanced ──
-	/** 대화 기억 제한 (턴 수, 0=토큰 기반 모드) */
+	/** 대화 기억 방식: 자동 요약 / 턴 수 / 토큰 수 */
+	memoryMethod: 'auto_summary' | 'turns' | 'tokens';
+	/** 대화 기억 제한 (턴 수, memoryMethod가 'auto_summary' 거나 'turns' 일 때 사용) */
 	contextWindowTurns: number;
-	/** 토큰 기반 제한 사용 여부 */
+	/** @deprecated memoryMethod로 대체됨 */
 	useTokenLimit: boolean;
-	/** 최대 컨텍스트 토큰 수 (useTokenLimit=true 일 때) */
+	/** 최대 컨텍스트 토큰 수 (memoryMethod가 'tokens' 일 때 사용) */
 	maxContextTokens: number;
 	/** Temperature (0.0 ~ 2.0) */
 	temperature: number;

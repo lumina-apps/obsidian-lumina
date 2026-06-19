@@ -233,6 +233,7 @@
         "name": "Konversations-Speicherlimit (Erweitert)",
         "desc": "Wie viel Konversationsverlauf gespeichert wird (nach Turns oder Tokens).",
         "limitType": "Konversationsspeicher-Modus",
+        "autoSummary": "Automatische Kontextzusammenfassung (Standard)",
         "turns": "Turn-Limit",
         "tokens": "Token-Limit",
         "turnsLabel": "Zu speichernde Turns",

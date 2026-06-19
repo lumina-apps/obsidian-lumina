@@ -110,6 +110,32 @@ export function migrateMinSimilarity(plugin: LuminaPlugin): boolean {
 }
 
 /**
+ * useTokenLimit 옵션을 memoryMethod로 마이그레이션.
+ */
+export function migrateMemoryMethod(plugin: LuminaPlugin): boolean {
+	if (plugin.settings.chat.memoryMethod === undefined) {
+		if (plugin.settings.chat.useTokenLimit) {
+			plugin.settings.chat.memoryMethod = 'tokens';
+		} else {
+			plugin.settings.chat.memoryMethod = 'auto_summary';
+		}
+		return true;
+	}
+	return false;
+}
+
+/**
+ * contextWindowTurns가 새로운 최소값(5)보다 작을 경우 기본값(10)으로 마이그레이션.
+ */
+export function migrateContextWindowTurns(plugin: LuminaPlugin): boolean {
+	if (plugin.settings.chat.contextWindowTurns < 5) {
+		plugin.settings.chat.contextWindowTurns = 10;
+		return true;
+	}
+	return false;
+}
+
+/**
  * 모든 마이그레이션을 순차 실행하고 변경이 있으면 저장합니다.
  * @returns 저장이 필요하면 true
  */
@@ -118,5 +144,7 @@ export function runMigrations(plugin: LuminaPlugin): boolean {
 	if (migrateQuickActions(plugin)) needsSave = true;
 	if (migrateExcludedPaths(plugin)) needsSave = true;
 	if (migrateMinSimilarity(plugin)) needsSave = true;
+	if (migrateMemoryMethod(plugin)) needsSave = true;
+	if (migrateContextWindowTurns(plugin)) needsSave = true;
 	return needsSave;
 }
