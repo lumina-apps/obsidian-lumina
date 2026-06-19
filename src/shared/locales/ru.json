@@ -350,7 +350,7 @@
         "loadingModel": "Lumina: Загрузка модели эмбеддингов...",
         "loadingModelDesc": "Первая загрузка и запуск локальной модели могут занять несколько минут.",
         "cloudSuccess": "Lumina: Облачные эмбеддинги подключены",
-        "loadingProgress": "Lumina: Загрузка модели {{pct}}% — {{status}}",
+        "loadingProgress": "Lumina: Загрузка модели {{pct}}%",
         "indexingVault": "Lumina: Индексирование хранилища...",
         "indexingProgressText": " ({{processed}}/{{total}}) - {{pct}}%",
         "remainingTimePrefix": " - Осталось времени: ",

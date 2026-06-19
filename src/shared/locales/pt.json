@@ -350,7 +350,7 @@
         "loadingModel": "Lumina: Carregando modelo de incorporação...",
         "loadingModelDesc": "O download e carregamento do modelo local pela primeira vez pode levar alguns minutos.",
         "cloudSuccess": "Lumina: Incorporação em nuvem conectada",
-        "loadingProgress": "Lumina: Carregando modelo {{pct}}% — {{status}}",
+        "loadingProgress": "Lumina: Carregando modelo {{pct}}%",
         "indexingVault": "Lumina: Indexando o vault...",
         "indexingProgressText": " ({{processed}}/{{total}}) - {{pct}}%",
         "remainingTimePrefix": " - Tempo estimado: ",

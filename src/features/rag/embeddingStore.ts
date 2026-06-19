@@ -183,8 +183,8 @@ export class EmbeddingStore {
 			};
 
 			request.onblocked = () => {
-				// 다른 연결이 DB를 사용 중이면 차단됨
-				reject(new Error('IndexedDB delete blocked: close other tabs using this DB'));
+				// 다른 연결이 DB를 사용 중이면 차단됨 (트랜잭션이 끝날 때까지 대기)
+				console.warn('IndexedDB delete blocked: waiting for other transactions to finish');
 			};
 		});
 

@@ -139,14 +139,46 @@ async function initModel(modelName: string, cacheDir: string, pluginDir?: string
 	// 파이프라인 생성
 	// transformers.js v3에서는 dtype으로 모델 파일을 선택합니다.
 	// 이 모델은 quantized 버전(model_quantized.onnx)이 존재하지 않으므로 fp32로 지정합니다.
+	const fileProgressMap = new Map<string, number>();
+	let maxOverallPct = 0;
+
 	const pipelineOptions = {
 		dtype: 'fp32' as const,
-		progress_callback: (progress: { status: string; progress?: number }) => {
-			send({
-				type: 'progress',
-				progress: progress.progress != null ? progress.progress / 100 : 0,
-				status: progress.status,
-			});
+		progress_callback: (info: any) => {
+			if (info.status === 'ready') return;
+
+			if (info.file) {
+				if (info.status === 'initiate') {
+					fileProgressMap.set(info.file, 0);
+				} else if (info.status === 'progress') {
+					fileProgressMap.set(info.file, info.progress ?? 0);
+				} else if (info.status === 'done' || info.status === 'download') {
+					fileProgressMap.set(info.file, 100);
+				}
+			}
+
+			if (fileProgressMap.size > 0) {
+				let total = 0;
+				for (const pct of fileProgressMap.values()) {
+					total += pct;
+				}
+				let overallPct = total / fileProgressMap.size;
+				if (overallPct > maxOverallPct) {
+					maxOverallPct = overallPct;
+				}
+
+				send({
+					type: 'progress',
+					progress: maxOverallPct / 100,
+					status: info.status === 'progress' ? 'downloading' : info.status,
+				});
+			} else {
+				send({
+					type: 'progress',
+					progress: info.progress != null ? info.progress / 100 : 0,
+					status: info.status === 'progress' ? 'downloading' : info.status,
+				});
+			}
 		},
 	};
 

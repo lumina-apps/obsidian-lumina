@@ -28,7 +28,7 @@ type CacheEntry = [string, number[] | undefined, number];
 export type EmbeddingProgressCallback = (progress: number, status: string) => void;
 
 /** 초기화 최대 대기 시간 (ms) */
-const INIT_TIMEOUT_MS = 120_000;
+const INIT_TIMEOUT_MS = 600_000;
 
 /** Promise에 타임아웃을 적용합니다. */
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
@@ -146,6 +146,7 @@ export class EmbeddingWorkerBridge {
 				worker.addEventListener('error', (e: Event) => {
 					console.error(`[EmbeddingWorker] worker #${i} uncaught error:`, e);
 					const msg = e instanceof ErrorEvent ? e.message : t('uiMessages.ragWorkerInitErr');
+					instance.readyReject?.(new Error(`Worker 오류: ${msg}`));
 					this.initPromiseReject?.(new Error(`Worker 오류: ${msg}`));
 				});
 

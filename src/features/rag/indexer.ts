@@ -45,7 +45,12 @@ export class VaultIndexer {
 		this.persistCacheFn = persistCacheFn;
 	}
 
-	public destroy(): void { this.isDestroyed = true; }
+	public destroy(): void {
+		this.isDestroyed = true;
+		if (this.embeddingStore) {
+			this.embeddingStore.close();
+		}
+	}
 
 	get indexedParentChunks(): ParentChunk[] { return this.parentChunks; }
 	get indexedChildChunks(): ChildChunk[] { return this.childChunks; }
@@ -269,7 +274,7 @@ export class VaultIndexer {
 				modelName: this.modelName, parentChunks: this.parentChunks, childChunks: this.childChunks,
 				oramaStore: this.oramaStore!, indexedPaths: this.indexedPaths,
 				fileMtimes: this.fileMtimes, fileHashes: this.fileHashes,
-				isDestroyed: this.isDestroyed, currentProcessId: this.currentProcessId,
+				getIsDestroyed: () => this.isDestroyed, getCurrentProcessId: () => this.currentProcessId,
 				persistCache: this.persistCacheFn,
 				cachePersistCheckpointInterval: this.settings.cachePersistCheckpointInterval,
 				totalFileCount: totalFiles.length,

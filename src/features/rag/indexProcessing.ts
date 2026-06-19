@@ -34,8 +34,8 @@ export interface ProcessContext {
 	indexedPaths: Set<string>;
 	fileMtimes: Record<string, number>;
 	fileHashes: Record<string, number>;
-	isDestroyed: boolean;
-	currentProcessId: number;
+	getIsDestroyed: () => boolean;
+	getCurrentProcessId: () => number;
 	persistCache?: () => Promise<void>;
 	cachePersistCheckpointInterval?: number;
 	/** vault 전체 파일 수 (체크포인트 totalFiles 용) */
@@ -86,7 +86,7 @@ async function processSequential(
 	checkpointCtx: CheckpointSaveContext, persistIndexCtx: IndexPersistContext,
 ): Promise<void> {
 	for (const file of files) {
-		if (ctx.isDestroyed) return;
+		if (ctx.getIsDestroyed()) return;
 		try {
 			const result = await readAndPrepareFile(file, ctx.app, ctx.parseBinaryFn,
 				ctx.parentChunkSize, ctx.parentChunkOverlap, ctx.childChunkSize, ctx.childChunkOverlap,
@@ -117,6 +117,7 @@ async function processSequential(
 					ctx.fileHashes[file.path] = result.contentHash;
 					ctx.fileMtimes[file.path] = file.stat.mtime;
 				} catch (embedErr: any) {
+					if (ctx.getIsDestroyed()) return;
 					const errMsg = embedErr?.message || String(embedErr);
 					debugLogger.logError('rag', normalizeError(embedErr, `임베딩 실패: ${file.path}`));
 					new Notice(`[Lumina] 인덱싱 중 임베딩 에러 발생: ${errMsg}`);
@@ -155,7 +156,7 @@ async function processBatched(
 	checkpointCtx: CheckpointSaveContext, persistIndexCtx: IndexPersistContext,
 ): Promise<void> {
 	for (let batchStart = 0; batchStart < files.length; batchStart += readConcurrency) {
-		if (ctx.isDestroyed) return;
+		if (ctx.getIsDestroyed()) return;
 		const fileBatch = files.slice(batchStart, batchStart + readConcurrency);
 
 		const readResults = await Promise.allSettled(fileBatch.map(file =>
@@ -194,10 +195,10 @@ async function processBatched(
 			}
 		}
 
-		if (toEmbedChildChunks.length > 0 && !ctx.isDestroyed) {
+		if (toEmbedChildChunks.length > 0 && !ctx.getIsDestroyed()) {
 			try {
 				for (let i = 0; i < toEmbedChildChunks.length; i += CHUNK_EMBED_BATCH) {
-					if (ctx.isDestroyed) break;
+					if (ctx.getIsDestroyed()) break;
 					const batch = toEmbedChildChunks.slice(i, i + CHUNK_EMBED_BATCH);
 					const embeddings = await ctx.embedFn(batch.map(c => c.text));
 					for (let j = 0; j < batch.length; j++) {
@@ -221,6 +222,7 @@ async function processBatched(
 					processedPaths.push(file.path);
 				}
 			} catch (embedErr: any) {
+				if (ctx.getIsDestroyed()) return;
 				const errMsg = embedErr?.message || String(embedErr);
 				debugLogger.logError('rag', normalizeError(embedErr, `배치 임베딩 실패`));
 				new Notice(`[Lumina] 인덱싱 중 임베딩 에러 발생: ${errMsg}`);
@@ -229,7 +231,7 @@ async function processBatched(
 					processedPaths.push(file.path);
 				}
 			}
-		} else if (toEmbedParentChunks.length > 0 && !ctx.isDestroyed) {
+		} else if (toEmbedParentChunks.length > 0 && !ctx.getIsDestroyed()) {
 			ctx.parentChunks.push(...toEmbedParentChunks);
 			persistIndexCtx.chunks = ctx.parentChunks;
 			

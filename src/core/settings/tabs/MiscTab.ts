@@ -108,11 +108,14 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 						t('settings.misc.factoryReset.confirmMsg'),
 						wrapAsync(async () => {
 							// 워커 및 인덱서 정리
+							if (tab.plugin.indexer) {
+								tab.plugin.indexer.destroy();
+								tab.plugin.indexer = null;
+							}
 							if (tab.plugin.embeddingWorker) {
 								tab.plugin.embeddingWorker.terminate();
 								tab.plugin.embeddingWorker = null;
 							}
-							tab.plugin.indexer = null;
 
 							// 인덱스 및 다운로드된 모델(storage 폴더) 삭제
 							try {

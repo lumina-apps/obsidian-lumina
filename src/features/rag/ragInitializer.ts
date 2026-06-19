@@ -26,14 +26,14 @@ export async function initEmbeddingWorker(
 	isFirstRun: boolean = false,
 ): Promise<void> {
 	// 기존에 실행 중인 워커가 있으면 먼저 정리
+	if (plugin.indexer) {
+		plugin.indexer.destroy();
+		plugin.indexer = null;
+	}
 	if (plugin.embeddingWorker) {
 		plugin.embeddingWorker.terminate();
 		plugin.embeddingWorker = null;
 	}
-	if (plugin.indexer) {
-		plugin.indexer.destroy();
-	}
-	plugin.indexer = null;
 	plugin.clearWatchEvents();
 
 	const { embedding, providers } = plugin.settings.connections;
@@ -74,7 +74,7 @@ export async function initEmbeddingWorker(
 				pluginDir,
 				(progress, status) => {
 					const pct = Math.round(progress * 100);
-					if (!isStartup) progressNotice?.setMessage(t('settings.rag.init.loadingProgress', { pct: pct, status: status }));
+					if (!isStartup) progressNotice?.setMessage(t('settings.rag.init.loadingProgress', { pct: pct }));
 				},
 			);
 			const worker = plugin.embeddingWorker;

@@ -61,11 +61,14 @@ export function renderRagEngineSection(tab: LuminaSettingTab, el: HTMLElement): 
 					);
 				} else if (!val) {
 					// 비활성화: 워커 및 인덱서 정리
+					if (tab.plugin.indexer) {
+						tab.plugin.indexer.destroy();
+						tab.plugin.indexer = null;
+					}
 					if (tab.plugin.embeddingWorker) {
 						tab.plugin.embeddingWorker.terminate();
+						tab.plugin.embeddingWorker = null;
 					}
-					tab.plugin.embeddingWorker = null;
-					tab.plugin.indexer = null;
 					setIndexingStatus('idle');
 				}
 				tab.refreshDisplay();

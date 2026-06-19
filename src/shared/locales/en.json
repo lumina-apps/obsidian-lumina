@@ -350,7 +350,7 @@
         "loadingModel": "Lumina: Loading embedding model...",
         "loadingModelDesc": "Downloading and loading the local model for the first time may take a few minutes.",
         "cloudSuccess": "Lumina: Cloud embedding connected",
-        "loadingProgress": "Lumina: Loading model {{pct}}% — {{status}}",
+        "loadingProgress": "Lumina: Loading model {{pct}}%",
         "indexingVault": "Lumina: Indexing vault...",
         "indexingProgressText": " ({{processed}}/{{total}}) - {{pct}}%",
         "remainingTimePrefix": " - Estimated time: ",
