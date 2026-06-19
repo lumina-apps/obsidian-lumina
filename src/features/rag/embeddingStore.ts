@@ -189,7 +189,7 @@ export class EmbeddingStore {
 		});
 
 		if (this.modelName) {
-			await this.init(this.modelName as string);
+			await this.init(this.modelName);
 		}
 	}
 

@@ -5,7 +5,6 @@
 import { searchVault, formatRagContext } from '../../rag/search';
 import { setMessageSources } from '../../../core/store/chatStore';
 import { debugLogger } from '../../../shared/debugLogger';
-import { Notice } from 'obsidian';
 import type { RagChunkMeta } from '../../../shared/types/debug.types';
 import type { RagSettings } from '../../../core/settings/settings.types';
 

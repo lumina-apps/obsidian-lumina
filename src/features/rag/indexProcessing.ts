@@ -116,9 +116,9 @@ async function processSequential(
 					ctx.indexedPaths.add(file.path);
 					ctx.fileHashes[file.path] = result.contentHash;
 					ctx.fileMtimes[file.path] = file.stat.mtime;
-				} catch (embedErr: any) {
+				} catch (embedErr: unknown) {
 					if (ctx.getIsDestroyed()) return;
-					const errMsg = embedErr?.message || String(embedErr);
+					const errMsg = embedErr instanceof Error ? embedErr.message : String(embedErr);
 					debugLogger.logError('rag', normalizeError(embedErr, `임베딩 실패: ${file.path}`));
 					new Notice(`[Lumina] 인덱싱 중 임베딩 에러 발생: ${errMsg}`);
 					ctx.fileMtimes[file.path] = file.stat.mtime;
@@ -221,9 +221,9 @@ async function processBatched(
 					ctx.fileMtimes[file.path] = file.stat.mtime;
 					processedPaths.push(file.path);
 				}
-			} catch (embedErr: any) {
+			} catch (embedErr: unknown) {
 				if (ctx.getIsDestroyed()) return;
-				const errMsg = embedErr?.message || String(embedErr);
+				const errMsg = embedErr instanceof Error ? embedErr.message : String(embedErr);
 				debugLogger.logError('rag', normalizeError(embedErr, `배치 임베딩 실패`));
 				new Notice(`[Lumina] 인덱싱 중 임베딩 에러 발생: ${errMsg}`);
 				for (const file of toEmbedFiles) {

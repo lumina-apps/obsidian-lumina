@@ -1,8 +1,8 @@
-import { create, insertMultiple, search, removeMultiple } from '@orama/orama';
+import { create, insertMultiple, search, removeMultiple, type AnyOrama } from '@orama/orama';
 import type { ChildChunk } from '../../shared/types/rag.types';
 
 export class OramaStore {
-	private db: any;
+	private db: AnyOrama | null = null;
 	private dimension: number;
 
 	constructor(dimension: number) {
@@ -11,7 +11,7 @@ export class OramaStore {
 
 	/** Orama DB를 초기화합니다. */
 	async init(): Promise<void> {
-		this.db = await create({
+		this.db = create({
 			schema: {
 				id: 'string',
 				parentId: 'string',
@@ -52,8 +52,8 @@ export class OramaStore {
 		
 		const idsToRemove: string[] = [];
 		// Orama 내부 데이터 구조에 접근하여 ID 수집 (안전한 방식)
-		// @ts-ignore
-		const docs = this.db.data?.docs?.docs ?? {};
+		const internalDb = this.db as unknown as { data?: { docs?: { docs?: Record<string, { path?: string }> } } };
+		const docs = internalDb.data?.docs?.docs ?? {};
 		for (const id in docs) {
 			const doc = docs[id];
 			if (doc.path && doc.path.startsWith(prefix)) {
@@ -73,10 +73,10 @@ export class OramaStore {
 	}
 
 	/** 쿼리 벡터와 유사한 하위 청크들을 검색합니다. */
-	async search(queryEmbedding: number[] | Float32Array, limit: number, activeFilePath?: string | null): Promise<{ id: string; score: number; document: any }[]> {
+	async search(queryEmbedding: number[] | Float32Array, limit: number, activeFilePath?: string | null): Promise<{ id: string; score: number; activeDocument: Record<string, unknown> }[]> {
 		if (!this.db) throw new Error('OramaStore not initialized');
 
-		const searchParams: any = {
+		const searchParams: Parameters<typeof search>[1] = {
 			mode: 'vector',
 			vector: {
 				value: Array.from(queryEmbedding),
@@ -92,7 +92,11 @@ export class OramaStore {
 
 		const results = await search(this.db, searchParams);
 
-		return results.hits;
+		return results.hits.map(hit => ({
+			id: hit.id,
+			score: hit.score,
+			activeDocument: hit.document as Record<string, unknown>,
+		}));
 	}
 
 	/** DB 초기화 */

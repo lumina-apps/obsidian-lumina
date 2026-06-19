@@ -357,8 +357,8 @@ export class EmbeddingWorkerBridge {
 				if (v > max) max = v;
 			}
 			this.accessCounter = max + 1;
-		} catch (e: any) {
-			if (e.code !== 'ENOENT') {
+		} catch (e: unknown) {
+			if ((e as { code?: string })?.code !== 'ENOENT') {
 				console.warn('[EmbeddingWorker] loadEmbedCache failed:', e);
 			}
 		}

@@ -63,7 +63,7 @@ export async function searchVault(
 	const parentVectorScores = new Map<string, { maxScore: number; sumScore: number; count: number }>();
 
 	for (const hit of hits) {
-		const child = hit.document as ChildChunk;
+		const child = hit.activeDocument as unknown as ChildChunk;
 		if (!child || !child.parentId) continue;
 		
 		const parentId = child.parentId;
