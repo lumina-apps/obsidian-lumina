@@ -63,15 +63,19 @@ export class ActionApprovalModal extends Modal {
 						this.close();
 					})
 			)
-			.addButton((btn: ButtonComponent) =>
-				btn
-					.setButtonText(t('uiMessages.actionApproval.reject') || 'Reject')
-					.setDestructive()
-					.onClick(() => {
-						approvalManager.rejectAll(this.request.id);
-						this.close();
-					})
-			);
+			.addButton((btn: ButtonComponent) => {
+				btn.setButtonText(t('uiMessages.actionApproval.reject') || 'Reject');
+				const btnCompat = btn as unknown as { setDestructive?: () => void; setWarning?: () => void };
+				if (typeof btnCompat.setDestructive === 'function') {
+					btnCompat.setDestructive();
+				} else if (typeof btnCompat.setWarning === 'function') {
+					btnCompat.setWarning();
+				}
+				btn.onClick(() => {
+					approvalManager.rejectAll(this.request.id);
+					this.close();
+				});
+			});
 	}
 
 	onClose() {
