@@ -194,6 +194,11 @@ ${contentWithoutFm.substring(0, 3000)}`;
 						description: parsed.description
 					});
 					debugLogger.logMcp('Frontmatter', 'Generated LLM data cached for ' + file.path);
+					
+					// 생성 완료 시점에 현재 파일이 비활성화 상태라면 대기열 처리를 놓쳤을 수 있으므로 즉시 반영
+					if (this.activeFilePath !== file.path) {
+						await this.autoGenerate(file, true);
+					}
 				}
 			}
 		} catch (error) {
@@ -234,7 +239,13 @@ ${contentWithoutFm.substring(0, 3000)}`;
 					fm.description = cachedData.description;
 					
 					// 기존 태그와 병합
-					const existingTags = Array.isArray(fm.tags) ? fm.tags : [];
+					let existingTags: string[] = [];
+					if (Array.isArray(fm.tags)) {
+						existingTags = fm.tags;
+					} else if (typeof fm.tags === 'string') {
+						existingTags = fm.tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+					}
+					
 					const mergedTags = new Set([...existingTags, ...cachedData.tags]);
 					fm.tags = Array.from(mergedTags);
 					
