@@ -73,12 +73,16 @@ async function removePathChunks(path: string, ctx: ProcessContext): Promise<void
 			ctx.parentChunks.splice(i, 1);
 		}
 	}
+	const idsToRemove: string[] = [];
 	for (let i = ctx.childChunks.length - 1; i >= 0; i--) {
 		if (ctx.childChunks[i].path === path) {
+			idsToRemove.push(ctx.childChunks[i].id);
 			ctx.childChunks.splice(i, 1);
 		}
 	}
-	await ctx.oramaStore.deleteByPathPrefix(path);
+	if (idsToRemove.length > 0) {
+		await ctx.oramaStore.deleteByIds(idsToRemove);
+	}
 }
 
 async function processSequential(

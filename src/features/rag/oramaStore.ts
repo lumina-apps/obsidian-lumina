@@ -41,31 +41,6 @@ export class OramaStore {
 		await insertMultiple(this.db, records);
 	}
 
-	/** 지정된 path prefix를 가진 모든 하위 청크를 삭제합니다. */
-	async deleteByPathPrefix(prefix: string): Promise<void> {
-		if (!this.db) throw new Error('OramaStore not initialized');
-
-		// Orama에서 path 속성에 대해 exact 매치나 검색을 수행하여 삭제할 수 있습니다.
-		// 이 구현에서는 검색을 통해 ID를 수집한 후 삭제합니다.
-		// 참고: prefix 검색이 필요하므로 전체 문서를 순회하거나, 
-		// 간단하게 db.data.docs를 직접 필터링할 수도 있습니다.
-		
-		const idsToRemove: string[] = [];
-		// Orama 내부 데이터 구조에 접근하여 ID 수집 (안전한 방식)
-		const internalDb = this.db as unknown as { data?: { docs?: { docs?: Record<string, { path?: string }> } } };
-		const docs = internalDb.data?.docs?.docs ?? {};
-		for (const id in docs) {
-			const doc = docs[id];
-			if (doc.path && doc.path.startsWith(prefix)) {
-				idsToRemove.push(id);
-			}
-		}
-
-		if (idsToRemove.length > 0) {
-			await removeMultiple(this.db, idsToRemove);
-		}
-	}
-
 	/** 특정 ID 목록에 해당하는 하위 청크들을 삭제합니다. */
 	async deleteByIds(ids: string[]): Promise<void> {
 		if (!this.db || ids.length === 0) return;

@@ -5,6 +5,7 @@ import { MCP_MAX_FILE_LENGTH } from '../../../../shared/utils/mcpUtils';
 import { getStringArg, blockIfPathNotAllowed } from '../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
 import type { PathGuard } from '../pathGuard';
+import { createBackup } from '../../../../features/backup/backupManager';
 
 export const createNoteHandler = async (
 	args: ToolArguments,
@@ -67,6 +68,7 @@ export const appendToNoteHandler = async (
 			return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.append_to_note.maxLengthExceeded') }] };
 		}
 
+		await createBackup(ctx.plugin.app, path);
 		await ctx.plugin.app.vault.modify(file, currentContent + '\n' + newContent);
 		return { content: [{ type: 'text', text: t('mcpServerTools.append_to_note.success', { path }) }] };
 	});
@@ -93,6 +95,8 @@ export const appendToDailyNoteHandler = async (
 			if (currentContent.length + newContent.length > MCP_MAX_FILE_LENGTH) {
 				return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.append_to_daily_note.maxLengthExceeded') }] };
 			}
+			
+			await createBackup(ctx.plugin.app, path);
 			await ctx.plugin.app.vault.modify(file, currentContent + '\n' + newContent);
 			return { content: [{ type: 'text', text: t('mcpServerTools.append_to_daily_note.successAppend', { path }) }] };
 		} else {

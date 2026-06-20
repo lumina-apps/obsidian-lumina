@@ -245,10 +245,12 @@ export class VaultIndexer {
 			this.indexedPaths.delete(p);
 			delete this.fileMtimes[p];
 			delete this.fileHashes[p];
-			if (this.oramaStore) {
-				void this.oramaStore.deleteByPathPrefix(p);
-			}
 		});
+		
+		if (this.oramaStore && removedChildChunks.length > 0) {
+			void this.oramaStore.deleteByIds(removedChildChunks.map(c => c.id));
+		}
+		
 		// IndexedDB에서 해당 청크 임베딩 삭제
 		if (removedChildChunks.length > 0) {
 			void this.embeddingStore.deleteEmbeddings(removedChildChunks.map(c => c.id)).catch(() => {});
