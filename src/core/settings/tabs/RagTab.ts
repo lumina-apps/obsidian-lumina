@@ -1,6 +1,7 @@
 import { Notice, Setting, ButtonComponent } from 'obsidian';
 import type { LuminaSettingTab } from '../settingTab';
 import { wrapAsync, addSliderWithInput } from '../../../shared/utils/settingHelpers';
+import type { TranslationKeys } from '../../../shared/locales/locale.types';
 import { t } from '../../../shared/locales/helpers';
 import { indexingState } from '../../store/ragStore';
 import { ConfirmModal } from '../../../shared/utils/modal';
@@ -98,32 +99,32 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 
 		addSliderWithInput(
 			new Setting(el)
-				.setName(t('settings.rag.chunking.parentSizeName' as any))
-				.setDesc(t('settings.rag.chunking.parentSizeDesc' as any)),
+				.setName(t('settings.rag.chunking.parentSizeName' as TranslationKeys))
+				.setDesc(t('settings.rag.chunking.parentSizeDesc' as TranslationKeys)),
 			{ min: 1000, max: 3000, step: 100, value: s.parentChunkSize },
 			wrapAsync(async (val) => { s.parentChunkSize = val; await tab.saveAndSync(); }),
 		);
 
 		addSliderWithInput(
 			new Setting(el)
-				.setName(t('settings.rag.chunking.parentOverlapName' as any))
-				.setDesc(t('settings.rag.chunking.parentOverlapDesc' as any)),
+				.setName(t('settings.rag.chunking.parentOverlapName' as TranslationKeys))
+				.setDesc(t('settings.rag.chunking.parentOverlapDesc' as TranslationKeys)),
 			{ min: 0, max: 500, step: 50, value: s.parentChunkOverlap },
 			wrapAsync(async (val) => { s.parentChunkOverlap = val; await tab.saveAndSync(); }),
 		);
 
 		addSliderWithInput(
 			new Setting(el)
-				.setName(t('settings.rag.chunking.childSizeName' as any))
-				.setDesc(t('settings.rag.chunking.childSizeDesc' as any)),
+				.setName(t('settings.rag.chunking.childSizeName' as TranslationKeys))
+				.setDesc(t('settings.rag.chunking.childSizeDesc' as TranslationKeys)),
 			{ min: 100, max: 500, step: 10, value: s.childChunkSize },
 			wrapAsync(async (val) => { s.childChunkSize = val; await tab.saveAndSync(); }),
 		);
 
 		addSliderWithInput(
 			new Setting(el)
-				.setName(t('settings.rag.chunking.childOverlapName' as any))
-				.setDesc(t('settings.rag.chunking.childOverlapDesc' as any)),
+				.setName(t('settings.rag.chunking.childOverlapName' as TranslationKeys))
+				.setDesc(t('settings.rag.chunking.childOverlapDesc' as TranslationKeys)),
 			{ min: 0, max: 100, step: 10, value: s.childChunkOverlap },
 			wrapAsync(async (val) => { s.childChunkOverlap = val; await tab.saveAndSync(); }),
 		);

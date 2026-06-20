@@ -11,6 +11,13 @@
 import { t } from '../../shared/locales/helpers';
 import type LuminaPlugin from '../../main';
 
+/** 마이그레이션 대상인 구버전 chat 설정 타입 */
+interface LegacyChatSettings {
+	useTokenLimit?: boolean;
+	contextWindowTurns?: number;
+	memoryMethod?: string;
+}
+
 const KNOWN_SUMMARIZE_NAMES = [
 	'요약하기', 'Summarize', 'Resumir', 'Résumer', 'Riassumi',
 	'要約する', 'Zusammenfassen', 'Резюмировать', '總結', '总结',
@@ -114,7 +121,8 @@ export function migrateMinSimilarity(plugin: LuminaPlugin): boolean {
  */
 export function migrateMemoryMethod(plugin: LuminaPlugin): boolean {
 	if (plugin.settings.chat.memoryMethod === undefined) {
-		if ((plugin.settings.chat as any).useTokenLimit) {
+		const legacyChat = plugin.settings.chat as LegacyChatSettings;
+		if (legacyChat.useTokenLimit) {
 			plugin.settings.chat.memoryMethod = 'tokens';
 		} else {
 			plugin.settings.chat.memoryMethod = 'auto_summary';
