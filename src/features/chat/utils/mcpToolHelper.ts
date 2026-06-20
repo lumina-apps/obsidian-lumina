@@ -6,17 +6,19 @@ import { debugLogger } from '../../../shared/debugLogger';
 import { buildTextToolPrompt } from './textToolParser';
 import type { ChatMessage, ToolDefinition } from '../../../shared/types/llm.types';
 import type { McpTool } from '../../../core/mcp/mcpClient';
+import { isDangerousTool } from '../../../shared/utils/mcpUtils';
 
 /** MCP 툴 목록 수집 및 toolServerMap 구성 */
 export function collectMcpTools(params: {
 	agentEnabled: boolean;
 	clientToolsEnabled: boolean;
 	mcpManager: { getAllTools(): McpTool[] } | null;
+	agentExecutionMode: 'read' | 'edit';
 }): {
 	mcpTools: ToolDefinition[];
 	toolServerMap: Record<string, string>;
 } {
-	const { agentEnabled, clientToolsEnabled, mcpManager } = params;
+	const { agentEnabled, clientToolsEnabled, mcpManager, agentExecutionMode } = params;
 	const mcpTools: ToolDefinition[] = [];
 	const toolServerMap: Record<string, string> = {};
 
@@ -29,6 +31,8 @@ export function collectMcpTools(params: {
 	debugLogger.logMcp('Tools Init', `MCP 툴 ${rawTools.length}개 수집`, rawTools.map((t: McpTool) => t.name));
 
 	for (const tool of rawTools) {
+
+
 		const schema = tool.inputSchema ?? { type: 'object', properties: {} };
 		const properties: Record<string, unknown> & { _serverId?: unknown } = { ...(schema.properties ?? {}) };
 		// _serverId를 inputSchema에 숨겨서 LLM이 tool call 시 arguments에 포함하도록 함

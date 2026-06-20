@@ -283,7 +283,9 @@
         "categoryBack": "返回",
         "categoryTitle": "选择上下文类型",
         "urlInputPlaceholder": "输入网址（例：https://...）",
-        "urlInputPrompt": "按 Enter 添加网址"
+        "urlInputPrompt": "按 Enter 添加网址",
+        "includeNote": "包含笔记",
+        "excludeNote": "排除笔记"
       }
     },
     "rag": {
@@ -614,6 +616,7 @@
     "mcpClientConnected": "✅ MCP 服务器“{{name}}”已成功连接。",
     "mcpClientToolExecutionFailedStatusError": "⚠️ MCP 服务器“{{name}}”工具执行失败，状态已设置为错误。",
     "mcpClientToolExecuteFailedTryReconnect": "在 MCP 服务器“{{name}}”上执行工具失败。请尝试重新连接。",
+    "toolExecutionBlockedReadMode": "错误：当前处于读取模式。要执行需要写入或修改权限的工具（{{toolName}}），请切换到“编辑模式”。",
     "agentModeLlmRequired": "⚠️ 要使用代理，您必须先配置并验证 LLM 提供商。",
     "agentModeLocalServerStarting": "🚀 代理已启用：正在连接本地 MCP 服务器...",
     "agentModeLocalServerConnecting": "🚀 代理已启用：正在连接本地 MCP 服务器...",

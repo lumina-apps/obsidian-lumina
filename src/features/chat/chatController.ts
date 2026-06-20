@@ -391,6 +391,7 @@ export class ChatController {
 			agentEnabled: chat.agentEnabled,
 			clientToolsEnabled: mcp.clientToolsEnabled,
 			mcpManager: this.plugin.mcpManager ?? null,
+			agentExecutionMode: chat.agentExecutionMode,
 		});
 
 		// 프롬프트 빌드

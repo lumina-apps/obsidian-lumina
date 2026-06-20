@@ -51,6 +51,7 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		streaming: true,
 		responseLanguage: 'auto',
 		agentEnabled: false,
+		agentExecutionMode: 'read',
 		agentMaxSteps: 15,
 	},
 

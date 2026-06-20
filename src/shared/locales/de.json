@@ -283,7 +283,9 @@
         "categoryBack": "Zurück",
         "categoryTitle": "Kontexttyp auswählen",
         "urlInputPlaceholder": "URL eingeben (z. B. https://...)",
-        "urlInputPrompt": "Enter drücken, um URL hinzuzufügen"
+        "urlInputPrompt": "Enter drücken, um URL hinzuzufügen",
+        "includeNote": "Notiz einschließen",
+        "excludeNote": "Notiz ausschließen"
       }
     },
     "rag": {
@@ -614,6 +616,7 @@
     "mcpClientConnected": "✅ MCP-Server \"{{name}}\" erfolgreich verbunden.",
     "mcpClientToolExecutionFailedStatusError": "⚠️ Fehler beim Ausführen des Tools auf dem MCP-Server \"{{name}}\". Status auf Fehler gesetzt.",
     "mcpClientToolExecuteFailedTryReconnect": "Fehler bei der Tool-Ausführung auf MCP-Server \"{{name}}\". Bitte versuchen Sie eine erneute Verbindung.",
+    "toolExecutionBlockedReadMode": "Fehler: Sie befinden sich derzeit im Lesemodus. Um Tools auszuführen, die Schreib- oder Änderungsberechtigungen erfordern ({{toolName}}), wechseln Sie bitte in den 'Bearbeitungsmodus'.",
     "agentModeLlmRequired": "⚠️ Um den Agenten zu verwenden, müssen Sie zuerst einen LLM-Anbieter konfigurieren und überprüfen.",
     "agentModeLocalServerStarting": "🚀 Agent aktiviert: Verbindung zum lokalen MCP-Server wird hergestellt...",
     "agentModeLocalServerConnecting": "🚀 Agent aktiviert: Verbindung zum lokalen MCP-Server wird hergestellt...",

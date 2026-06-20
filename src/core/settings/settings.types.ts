@@ -76,6 +76,8 @@ export interface ChatSettings {
 	responseLanguage: ResponseLanguage;
 	/** 에이전트 활성화 여부 */
 	agentEnabled: boolean;
+	/** 에이전트 실행 모드 (읽기/수정) */
+	agentExecutionMode: 'read' | 'edit';
 	/** 에이전트 최대 실행 스텝 수 (무한 루프 방지) */
 	agentMaxSteps: number;
 }

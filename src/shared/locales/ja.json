@@ -283,7 +283,9 @@
         "categoryBack": "戻る",
         "categoryTitle": "コンテキストタイプを選択",
         "urlInputPlaceholder": "URLを入力（例: https://...）",
-        "urlInputPrompt": "EnterでURLを追加"
+        "urlInputPrompt": "EnterでURLを追加",
+        "includeNote": "ノートを含める",
+        "excludeNote": "ノートを除外"
       }
     },
     "rag": {
@@ -614,6 +616,7 @@
     "mcpClientConnected": "✅ MCPサーバー「{{name}}」が正常に接続されました。",
     "mcpClientToolExecutionFailedStatusError": "⚠️ MCPサーバー「{{name}}」でのツールの実行に失敗しました。ステータスがエラーに設定されました。",
     "mcpClientToolExecuteFailedTryReconnect": "MCPサーバー「{{name}}」でのツールの実行に失敗しました。再接続を試してください。",
+    "toolExecutionBlockedReadMode": "エラー：現在読み取りモードです。書き込みまたは変更権限が必要なツール（{{toolName}}）を実行するには、「編集モード」に切り替えてください。",
     "agentModeLlmRequired": "⚠️ エージェントを使用するには、まずLLMプロバイダーを設定し、検証する必要があります。",
     "agentModeLocalServerStarting": "🚀 エージェント有効化: ローカルMCPサーバーに接続しています...",
     "agentModeLocalServerConnecting": "🚀 エージェント有効化: ローカルMCPサーバーに接続しています...",

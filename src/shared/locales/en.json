@@ -97,12 +97,14 @@
       "title": "Agent & MCP",
       "desc": "Connect external Model Context Protocol (MCP) servers to use local tools, or enable the built-in server to allow other apps to control Lumina.",
       "agentMode": {
-        "name": "Agent Mode",
-        "desc": "LLM autonomously performs tasks using MCP tools. ⚠️ Performance may degrade with smaller models.",
-        "maxSteps": "Max Auto-Execution Steps",
-        "maxStepsDesc": "The maximum number of consecutive tool executions the agent can run in a single turn. (Default: 15)",
-        "respectRagExclusions": "Apply RAG path exclusions/inclusions to Agent",
-        "respectRagExclusionsDesc": "Apply RAG tab exclusion rules to Agent file operations."
+        "name": "Agent execution",
+        "desc": "Allow the LLM to autonomously use tools (e.g., search, file reading, file creation).",
+        "maxSteps": "Agent Max Steps",
+        "maxStepsDesc": "Maximum number of autonomous tool execution loops allowed per prompt to prevent infinite loops.",
+        "respectRagExclusions": "Respect RAG Ignored Paths",
+        "respectRagExclusionsDesc": "If enabled, the agent will not be able to read or modify files in the ignored paths.",
+        "readMode": "Read Mode",
+        "editMode": "Edit Mode"
       },
       "addServer": "+ Add new MCP server",
       "serverName": "Server Name",
@@ -220,7 +222,9 @@
         "categoryBack": "Back",
         "categoryTitle": "Select Context Type",
         "urlInputPlaceholder": "Enter URL (e.g., https://...)",
-        "urlInputPrompt": "Press Enter to add URL"
+        "urlInputPrompt": "Press Enter to add URL",
+        "includeNote": "Include Note",
+        "excludeNote": "Exclude Note"
       },
       "sendMode": {
         "name": "Send Message Mode",
@@ -611,10 +615,11 @@
     "mcpLocalServerStopped": "🛑 Built-in MCP server stopped (Port: {{port}})",
     "mcpLocalServerDisconnectAgentDisabled": "⚠️ Agent mode disabled due to built-in server connection error.",
     "mcpClientDisconnected": "🔌 MCP Server \"{{name}}\" disconnected.",
-    "mcpClientConnected": "✅ MCP Server \"{{name}}\" connected successfully.",
-    "mcpClientToolExecutionFailedStatusError": "⚠️ MCP Server \"{{name}}\" tool execution failed. Status set to error.",
-    "mcpClientToolExecuteFailedTryReconnect": "Failed to execute tool on MCP server \"{{name}}\". Please try reconnecting.",
-    "agentModeLlmRequired": "⚠️ To use the agent, you must first configure and verify an LLM provider.",
+    "mcpClientConnected": "Connected to server: {{name}}.",
+    "mcpClientToolExecutionFailedStatusError": "Tool execution failed on {{name}}. Server status changed to error.",
+    "mcpClientToolExecuteFailedTryReconnect": "Failed to execute tool on {{name}}. You may need to reconnect the server.",
+    "toolExecutionBlockedReadMode": "Error: You are currently in Read Mode. To execute tools requiring write or modify permissions ({{toolName}}), please switch to 'Edit Mode'.",
+    "agentModeLlmRequired": "Agent mode requires a compatible LLM provider.",
     "agentModeLocalServerStarting": "🚀 Agent enabled: Connecting to local MCP server...",
     "agentModeLocalServerConnecting": "🚀 Agent enabled: Connecting to local MCP server...",
     "agentModeEnabled": "🤖 Agent mode enabled.",

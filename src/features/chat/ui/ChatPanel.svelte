@@ -92,6 +92,7 @@
 	);
 
 	const agentEnabled = $derived($settingsStore?.chat.agentEnabled ?? false);
+	const agentExecutionMode = $derived($settingsStore?.chat.agentExecutionMode ?? "read");
 
 	const sessionTokenStats = $derived.by(() => {
 		let totalTokens = 0;
@@ -264,6 +265,12 @@
 		useRagContext = !useRagContext;
 	}
 
+	async function toggleAgentExecutionMode(): Promise<void> {
+		plugin.settings.chat.agentExecutionMode = agentExecutionMode === "read" ? "edit" : "read";
+		await plugin.saveSettings();
+		settingsStore.set(plugin.settings);
+	}
+
 	function resetTextareaHeight(): void {
 		resizeTextarea(textareaEl);
 	}
@@ -324,11 +331,13 @@
 			{sessionTokenStats}
 			{includeActiveNote}
 			{agentEnabled}
+			{agentExecutionMode}
 			{tStore}
 			bind:inputText
 			bind:attachments
 			bind:textareaEl
 			onToggleActiveNote={toggleActiveNote}
+			onToggleAgentExecutionMode={toggleAgentExecutionMode}
 			onSendMessage={sendMessage}
 			onCancelStream={cancelStream}
 			onClearChat={clearChat}

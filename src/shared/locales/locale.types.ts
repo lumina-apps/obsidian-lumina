@@ -124,6 +124,8 @@ export interface TranslationSettingsMcpAgentMode {
   maxStepsDesc?: string;
   respectRagExclusions?: string;
   respectRagExclusionsDesc?: string;
+  readMode?: string;
+  editMode?: string;
 }
 
 export interface TranslationSettingsMcpLocalServerEnable {
@@ -273,6 +275,8 @@ export interface TranslationSettingsChatContext {
   categoryTitle: string;
   urlInputPlaceholder: string;
   urlInputPrompt: string;
+  includeNote: string;
+  excludeNote: string;
 }
 
 export interface TranslationSettingsChatSendMode {
@@ -745,6 +749,7 @@ export interface TranslationUiMessages {
   mcpClientConnected: string;
   mcpClientToolExecutionFailedStatusError: string;
   mcpClientToolExecuteFailedTryReconnect: string;
+  toolExecutionBlockedReadMode: string;
   agentModeLlmRequired: string;
   agentModeLocalServerStarting: string;
   agentModeLocalServerConnecting: string;

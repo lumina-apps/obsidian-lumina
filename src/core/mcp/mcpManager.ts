@@ -86,6 +86,15 @@ export class McpManager {
 		if (!client) throw new Error(`MCP server ${serverId} is not connected.`);
 
 		if (isDangerousTool(toolName)) {
+			const executionMode = this.plugin.settings.chat.agentExecutionMode ?? 'read';
+			if (executionMode === 'read') {
+				debugLogger.logMcp('Tool Blocked', `읽기 모드에서 위험 툴 실행 차단됨: ${toolName}`);
+				return {
+					isError: true,
+					content: [{ type: 'text', text: t('uiMessages.toolExecutionBlockedReadMode', { toolName }) || `에러: 현재 읽기 모드입니다. 쓰기 또는 수정 권한이 필요한 툴(${toolName})을 실행하려면 '수정 모드'로 전환해주세요.` }],
+				};
+			}
+
 			const modal = new McpPermissionModal(this.plugin.app, client.config.name, toolName, args);
 			const approved = await modal.waitForResponse();
 			if (!approved) {

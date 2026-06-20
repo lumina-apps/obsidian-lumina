@@ -40,11 +40,13 @@
 		sessionTokenStats,
 		includeActiveNote,
 		agentEnabled = false,
+		agentExecutionMode = "read",
 		tStore,
 		inputText = $bindable(""),
 		attachments = $bindable<ContextAttachment[]>([]),
 		textareaEl = $bindable<HTMLTextAreaElement | null>(null),
 		onToggleActiveNote,
+		onToggleAgentExecutionMode,
 		onSendMessage,
 		onCancelStream,
 		onClearChat,
@@ -58,11 +60,13 @@
 		sessionTokenStats: { totalTokens: number; estimatedCost: number };
 		includeActiveNote: boolean;
 		agentEnabled: boolean;
+		agentExecutionMode: "read" | "edit";
 		tStore: TStore;
 		inputText: string;
 		attachments: ContextAttachment[];
 		textareaEl: HTMLTextAreaElement | null;
 		onToggleActiveNote: () => void;
+		onToggleAgentExecutionMode: () => void;
 		onSendMessage: () => void;
 		onCancelStream: () => void;
 		onClearChat: () => void;
@@ -89,36 +93,66 @@
 
 	// ── 입력 핸들러들 (composable) ─────────────────────────────────────────
 	const handleKeydown = createKeydownHandler({
-		get plugin() { return plugin; },
-		get showSlashSelector() { return showSlashSelector; },
-		get showContextSelector() { return showContextSelector; },
-		get onSendMessage() { return onSendMessage; },
+		get plugin() {
+			return plugin;
+		},
+		get showSlashSelector() {
+			return showSlashSelector;
+		},
+		get showContextSelector() {
+			return showContextSelector;
+		},
+		get onSendMessage() {
+			return onSendMessage;
+		},
 	});
 
 	const handleInput = createInputHandler({
 		getTextareaEl: () => textareaEl,
-		setShowContextSelector: (v) => { showContextSelector = v; },
-		setContextSearchQuery: (v) => { contextSearchQuery = v; },
-		setMentionStartIndex: (v) => { mentionStartIndex = v; },
-		setShowSlashSelector: (v) => { showSlashSelector = v; },
-		setSlashSearchQuery: (v) => { slashSearchQuery = v; },
-		setSlashStartIndex: (v) => { slashStartIndex = v; },
+		setShowContextSelector: (v) => {
+			showContextSelector = v;
+		},
+		setContextSearchQuery: (v) => {
+			contextSearchQuery = v;
+		},
+		setMentionStartIndex: (v) => {
+			mentionStartIndex = v;
+		},
+		setShowSlashSelector: (v) => {
+			showSlashSelector = v;
+		},
+		setSlashSearchQuery: (v) => {
+			slashSearchQuery = v;
+		},
+		setSlashStartIndex: (v) => {
+			slashStartIndex = v;
+		},
 	});
 
 	const insertContextMention = createContextMentionInserter({
 		getTextareaEl: () => textareaEl,
 		getInputText: () => inputText,
-		setInputText: (v) => { inputText = v; },
+		setInputText: (v) => {
+			inputText = v;
+		},
 		afterInsert: handleInput,
 	});
 
 	const handleContextSelect = createContextSelectHandler({
-		get attachments() { return attachments; },
-		setAttachments: (a) => { attachments = a; },
-		get mentionStartIndex() { return mentionStartIndex; },
+		get attachments() {
+			return attachments;
+		},
+		setAttachments: (a) => {
+			attachments = a;
+		},
+		get mentionStartIndex() {
+			return mentionStartIndex;
+		},
 		getTextareaEl: () => textareaEl,
 		getInputText: () => inputText,
-		setInputText: (v) => { inputText = v; },
+		setInputText: (v) => {
+			inputText = v;
+		},
 		afterSelect: () => {
 			showContextSelector = false;
 			mentionStartIndex = -1;
@@ -126,10 +160,14 @@
 	});
 
 	const handleSlashCommandSelect = createSlashSelectHandler({
-		get slashStartIndex() { return slashStartIndex; },
+		get slashStartIndex() {
+			return slashStartIndex;
+		},
 		getTextareaEl: () => textareaEl,
 		getInputText: () => inputText,
-		setInputText: (v) => { inputText = v; },
+		setInputText: (v) => {
+			inputText = v;
+		},
 		afterSelect: () => {
 			showSlashSelector = false;
 			slashStartIndex = -1;
@@ -148,9 +186,15 @@
 	};
 
 	const fileCtx = {
-		get plugin() { return plugin; },
-		get attachments() { return attachments; },
-		setAttachments: (a: ContextAttachment[]) => { attachments = a; },
+		get plugin() {
+			return plugin;
+		},
+		get attachments() {
+			return attachments;
+		},
+		setAttachments: (a: ContextAttachment[]) => {
+			attachments = a;
+		},
 		t: tProxy,
 		onResizeTextarea: onResize,
 	};
@@ -163,10 +207,9 @@
 	/** createRemoveAttachment는 attachments를 클로저로 참조하므로,
 	 *  $derived로 attachments 변경 시 재생성한다. */
 	const removeAttachmentFn = $derived(
-		createRemoveAttachment(
-			attachments,
-			(a: ContextAttachment[]) => { attachments = a; },
-		)
+		createRemoveAttachment(attachments, (a: ContextAttachment[]) => {
+			attachments = a;
+		}),
 	);
 	function removeAttachment(index: number) {
 		removeAttachmentFn(index);
@@ -180,20 +223,20 @@
 			onClearChat,
 			onToggleRagMode,
 			onOpenSettings,
-			(v) => { showMcpPopup = v; },
-		)
+			(v) => {
+				showMcpPopup = v;
+			},
+		),
 	);
 
 	// ── MCP 팝업 토글 ──────────────────────────────────────────────────────
-	const toggleMcpPopup = handleMcpPopupToggle(
-		(v) => {
-			if (typeof v === "function") {
-				showMcpPopup = v(showMcpPopup);
-			} else {
-				showMcpPopup = v;
-			}
+	const toggleMcpPopup = handleMcpPopupToggle((v) => {
+		if (typeof v === "function") {
+			showMcpPopup = v(showMcpPopup);
+		} else {
+			showMcpPopup = v;
 		}
-	);
+	});
 
 	// ── Obsidian 아이콘 액션 ──────────────────────────────────────────────
 	function icon(node: HTMLElement, iconId: string) {
@@ -215,26 +258,82 @@
 >
 	<div class="lumina-chat__input-toolbar">
 		<div class="lumina-chat__toolbar-group">
-			<button class="lumina-chat__toolbar-btn" aria-label={$tStore("chat.addContext")} use:icon={"lumina-at-sign"} onclick={insertContextMention} type="button">Add Context</button>
-			<button class="lumina-chat__toolbar-btn" aria-label={$tStore("chat.uploadFile")} use:icon={"paperclip"} onclick={triggerFileInput} type="button"></button>
-			<button class="lumina-chat__toolbar-btn" class:is-agent-active={agentEnabled} aria-label="Agent & MCP Tools" use:icon={"bot"} onclick={toggleMcpPopup} type="button"></button>
+			<button
+				class="lumina-chat__toolbar-btn"
+				aria-label={$tStore("chat.addContext")}
+				use:icon={"lumina-at-sign"}
+				onclick={insertContextMention}
+				type="button">Add Context</button
+			>
+			<button
+				class="lumina-chat__toolbar-btn"
+				aria-label={$tStore("chat.uploadFile")}
+				use:icon={"paperclip"}
+				onclick={triggerFileInput}
+				type="button"
+			></button>
+			<button
+				class="lumina-chat__toolbar-btn"
+				class:is-agent-active={agentEnabled}
+				aria-label="Agent & MCP Tools"
+				use:icon={"bot"}
+				onclick={toggleMcpPopup}
+				type="button"
+			></button>
 		</div>
 
-		<input type="file" multiple class="lumina-chat__hidden-file-input" bind:this={fileInputEl} onchange={handleFileSelect} />
+		<input
+			type="file"
+			multiple
+			class="lumina-chat__hidden-file-input"
+			bind:this={fileInputEl}
+			onchange={handleFileSelect}
+		/>
 
 		<div class="lumina-chat__toolbar-right">
 			{#if sessionTokenStats.totalTokens > 0}
-				<span class="lumina-chat__token-stats" title={$tStore("chat.sessionUsage")}>
-					{$tStore("chat.sessionTokens", { tokens: sessionTokenStats.totalTokens.toLocaleString() })}
+				<span
+					class="lumina-chat__token-stats"
+					title={$tStore("chat.sessionUsage")}
+				>
+					{$tStore("chat.sessionTokens", {
+						tokens: sessionTokenStats.totalTokens.toLocaleString(),
+					})}
 					{#if sessionTokenStats.estimatedCost > 0}
-						{$tStore("chat.sessionCost", { cost: sessionTokenStats.estimatedCost.toFixed(4) })}
+						{$tStore("chat.sessionCost", {
+							cost: sessionTokenStats.estimatedCost.toFixed(4),
+						})}
 					{/if}
 				</span>
 			{/if}
 			<span class="lumina-chat__hint-inline">{sendHint}</span>
-			<button class="lumina-chat__context-badge" class:is-active={includeActiveNote} aria-label={$tStore("settings.rag.autoIncludeActive.name")} onclick={onToggleActiveNote}>
-				<span use:icon={"file-text"}></span>
-				<span>{$tStore("settings.chat.currentNote")}</span>
+			{#if agentEnabled}
+				<button
+					class="lumina-chat__context-badge"
+					class:is-active={agentExecutionMode === "edit"}
+					onclick={onToggleAgentExecutionMode}
+					aria-label={$tStore("settings.mcp.agentMode.editMode") ||
+						"Toggle Agent Mode (Read/Edit)"}
+				>
+					<span use:icon={agentExecutionMode === "edit" ? "edit-2" : "eye"}
+					></span>
+					<span
+						>{agentExecutionMode === "edit"
+							? $tStore("settings.mcp.agentMode.editMode") || "Edit Mode"
+							: $tStore("settings.mcp.agentMode.readMode") || "Read Mode"}</span
+					>
+				</button>
+			{/if}
+			<button
+				class="lumina-chat__context-badge"
+				class:is-active={includeActiveNote}
+				aria-label={$tStore("settings.rag.autoIncludeActive.name")}
+				onclick={onToggleActiveNote}
+			>
+				<span use:icon={includeActiveNote ? "file-text" : "file-minus"}></span>
+				<span>{includeActiveNote
+						? $tStore("settings.chat.context.includeNote") || "Include Note"
+						: $tStore("settings.chat.context.excludeNote") || "Exclude Note"}</span>
 			</button>
 		</div>
 	</div>
@@ -245,9 +344,17 @@
 				<div class="lumina-chat__attachments">
 					{#each attachments as att, i}
 						<div class="lumina-chat__attachment-chip">
-							<span class="lumina-chat__attachment-icon" use:icon={getAttachmentIcon(att.type)}></span>
+							<span
+								class="lumina-chat__attachment-icon"
+								use:icon={getAttachmentIcon(att.type)}
+							></span>
 							<span class="lumina-chat__attachment-name">{att.name}</span>
-							<button class="lumina-chat__attachment-remove" onclick={() => removeAttachment(i)} aria-label="Remove" type="button">
+							<button
+								class="lumina-chat__attachment-remove"
+								onclick={() => removeAttachment(i)}
+								aria-label="Remove"
+								type="button"
+							>
 								<span use:icon={"x"}></span>
 							</button>
 						</div>
@@ -256,15 +363,32 @@
 			{/if}
 
 			{#if showContextSelector}
-				<ContextSelector {plugin} searchQuery={contextSearchQuery} onSelect={handleContextSelect} onClose={() => (showContextSelector = false)} />
+				<ContextSelector
+					{plugin}
+					searchQuery={contextSearchQuery}
+					onSelect={handleContextSelect}
+					onClose={() => (showContextSelector = false)}
+				/>
 			{/if}
 
 			{#if showSlashSelector}
-				<SlashCommandSelector commands={slashCommands} searchQuery={slashSearchQuery} onSelect={handleSlashCommandSelect} onClose={() => (showSlashSelector = false)} />
+				<SlashCommandSelector
+					commands={slashCommands}
+					searchQuery={slashSearchQuery}
+					onSelect={handleSlashCommandSelect}
+					onClose={() => (showSlashSelector = false)}
+				/>
 			{/if}
 
 			{#if showMcpPopup}
-				<McpQuickPopup {plugin} onClose={() => (showMcpPopup = false)} onOpenSettings={() => { showMcpPopup = false; onOpenSettings(); }} />
+				<McpQuickPopup
+					{plugin}
+					onClose={() => (showMcpPopup = false)}
+					onOpenSettings={() => {
+						showMcpPopup = false;
+						onOpenSettings();
+					}}
+				/>
 			{/if}
 
 			<div class="lumina-chat__input-row">
@@ -272,7 +396,9 @@
 					bind:this={textareaEl}
 					bind:value={inputText}
 					class="lumina-chat__textarea"
-					placeholder={hasProvider ? $tStore("errors.chatPlaceholder") : $tStore("errors.llmConnectRequired")}
+					placeholder={hasProvider
+						? $tStore("errors.chatPlaceholder")
+						: $tStore("errors.llmConnectRequired")}
 					disabled={!hasProvider}
 					rows="1"
 					onkeydown={handleKeydown}
@@ -281,13 +407,39 @@
 				></textarea>
 
 				{#if inputText.length > 0 && !isLoading}
-					<button class="lumina-chat__clear-btn" aria-label={$tStore("chat.clearInput")} onclick={() => { inputText = ""; tick().then(() => { onResize(); textareaEl?.focus(); }); }} type="button" use:icon={"x"}></button>
+					<button
+						class="lumina-chat__clear-btn"
+						aria-label={$tStore("chat.clearInput")}
+						onclick={() => {
+							inputText = "";
+							tick().then(() => {
+								onResize();
+								textareaEl?.focus();
+							});
+						}}
+						type="button"
+						use:icon={"x"}
+					></button>
 				{/if}
 
 				{#if isLoading}
-					<button class="lumina-chat__send-btn lumina-chat__send-btn--cancel" onclick={onCancelStream} aria-label={$tStore("errors.cancelStreaming")} use:icon={"lumina-square"}></button>
+					<button
+						class="lumina-chat__send-btn lumina-chat__send-btn--cancel"
+						onclick={onCancelStream}
+						aria-label={$tStore("errors.cancelStreaming")}
+						use:icon={"lumina-square"}
+					></button>
 				{:else}
-					<button class="lumina-chat__send-btn" class:is-active={inputText.trim().length > 0 || attachments.length > 0} onclick={onSendMessage} disabled={(!inputText.trim() && attachments.length === 0) || !hasProvider} aria-label={$tStore("errors.send")} use:icon={"lumina-send"}></button>
+					<button
+						class="lumina-chat__send-btn"
+						class:is-active={inputText.trim().length > 0 ||
+							attachments.length > 0}
+						onclick={onSendMessage}
+						disabled={(!inputText.trim() && attachments.length === 0) ||
+							!hasProvider}
+						aria-label={$tStore("errors.send")}
+						use:icon={"lumina-send"}
+					></button>
 				{/if}
 			</div>
 		</div>

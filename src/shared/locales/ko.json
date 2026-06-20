@@ -97,12 +97,14 @@
       "title": "에이전트 & MCP",
       "desc": "Model Context Protocol (MCP)을 통해 외부 도구를 연결하거나, 내장 서버를 통해 다른 앱에서 Lumina를 제어하도록 설정합니다.",
       "agentMode": {
-        "name": "에이전트 모드 (Agent Mode)",
-        "desc": "LLM이 MCP 도구를 활용해 자율적으로 작업을 수행합니다. ⚠️ 소형 모델에서는 성능이 떨어질 수 있습니다.",
-        "maxSteps": "최대 자동 실행 횟수 (Max Steps)",
-        "maxStepsDesc": "에이전트가 단일 응답에서 도구를 연속으로 실행할 수 있는 최대 횟수입니다. (기본값: 15)",
-        "respectRagExclusions": "RAG 제외/포함 경로를 에이전트에 적용",
-        "respectRagExclusionsDesc": "RAG 탭의 제외 경로 규칙을 에이전트 파일 작업에도 적용합니다."
+        "name": "에이전트 (Agent) 활성화",
+        "desc": "LLM이 스스로 판단하여 필요한 툴(검색, 파일 읽기, 노트 생성 등)을 자율적으로 사용하도록 허용합니다.",
+        "maxSteps": "에이전트 최대 실행 스텝 수",
+        "maxStepsDesc": "무한 루프 방지를 위해 한 번의 프롬프트에서 자율적으로 툴을 반복 실행할 수 있는 최대 횟수를 제한합니다.",
+        "respectRagExclusions": "RAG 제외 경로 규칙 적용",
+        "respectRagExclusionsDesc": "이 옵션이 활성화되면 에이전트가 RAG 제외 경로에 포함된 파일을 읽거나 수정할 수 없습니다.",
+        "readMode": "읽기 모드",
+        "editMode": "수정 모드"
       },
       "addServer": "+ 새 MCP 서버 추가",
       "serverName": "서버 이름",
@@ -220,7 +222,9 @@
         "categoryBack": "뒤로",
         "categoryTitle": "컨텍스트 유형 선택",
         "urlInputPlaceholder": "URL 입력 (예: https://...)",
-        "urlInputPrompt": "Enter를 눌러 URL 추가"
+        "urlInputPrompt": "Enter를 눌러 URL 추가",
+        "includeNote": "노트 포함",
+        "excludeNote": "노트 제외"
       },
       "sendMode": {
         "name": "메시지 전송 방식",
@@ -613,7 +617,8 @@
     "mcpClientDisconnected": "🔌 MCP Server \"{{name}}\" 연결이 해제되었습니다.",
     "mcpClientConnected": "✅ MCP Server \"{{name}}\" 연결에 성공했습니다.",
     "mcpClientToolExecutionFailedStatusError": "⚠️ MCP Server \"{{name}}\" tool execution failed. Status set to error.",
-    "mcpClientToolExecuteFailedTryReconnect": "Failed to execute tool on MCP server \"{{name}}\". Please try reconnecting.",
+    "mcpClientToolExecuteFailedTryReconnect": "MCP 서버 \"{{name}}\"에서 툴을 실행하지 못했습니다. 연결을 다시 확인해주세요.",
+    "toolExecutionBlockedReadMode": "에러: 현재 읽기 모드입니다. 쓰기 또는 수정 권한이 필요한 툴({{toolName}})을 실행하려면 '수정 모드'로 전환해주세요.",
     "agentModeLlmRequired": "⚠️ 에이전트를 사용하려면 먼저 LLM 제공자를 설정하고 검증(Verify)해야 합니다.",
     "agentModeLocalServerStarting": "🚀 에이전트 활성화: 로컬 MCP 서버 연결 중...",
     "agentModeLocalServerConnecting": "🚀 에이전트 활성화: 로컬 MCP 서버 연결 중...",

@@ -9,7 +9,7 @@ export function formatMcpError(e: unknown, context?: string): Error {
 	return new Error(message);
 }
 
-/** 툴 이름이 위험한 작업(쓰기/실행)인지 판별 */
+/** 툴 이름이 위험한 작업(쓰기/수정/실행)인지 판별 */
 export function isDangerousTool(toolName: string): boolean {
 	const lower = toolName.toLowerCase();
 	const dangerousPatterns = [
@@ -19,6 +19,8 @@ export function isDangerousTool(toolName: string): boolean {
 		/^delete/i, /delete$/i,
 		/^remove/i, /remove$/i,
 		/^update/i, /update$/i,
+		/^append/i, /append$/i,
+		/^replace/i, /replace$/i,
 		/^mkdir/i,
 		/\bshell\b/i,
 		/\bcmd\b/i,

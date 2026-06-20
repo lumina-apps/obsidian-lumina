@@ -283,7 +283,9 @@
         "categoryBack": "返回",
         "categoryTitle": "選擇上下文類型",
         "urlInputPlaceholder": "輸入網址（例：https://...）",
-        "urlInputPrompt": "按 Enter 新增網址"
+        "urlInputPrompt": "按 Enter 新增網址",
+        "includeNote": "包含筆記",
+        "excludeNote": "排除筆記"
       }
     },
     "rag": {
@@ -614,6 +616,7 @@
     "mcpClientConnected": "✅ MCP 伺服器「{{name}}」已成功連線。",
     "mcpClientToolExecutionFailedStatusError": "⚠️ MCP 伺服器「{{name}}」工具執行失敗，狀態已設定為錯誤。",
     "mcpClientToolExecuteFailedTryReconnect": "在 MCP 伺服器「{{name}}」上執行工具失敗。請嘗試重新連線。",
+    "toolExecutionBlockedReadMode": "錯誤：目前處於讀取模式。要執行需要寫入或修改權限的工具（{{toolName}}），請切換到「編輯模式」。",
     "agentModeLlmRequired": "⚠️ 要使用代理，您必須先設定並驗證 LLM 供應商。",
     "agentModeLocalServerStarting": "🚀 代理已啟用：正在連接本機 MCP 伺服器...",
     "agentModeLocalServerConnecting": "🚀 代理已啟用：正在連接本機 MCP 伺服器...",

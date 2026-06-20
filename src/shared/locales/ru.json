@@ -283,7 +283,9 @@
         "categoryBack": "Назад",
         "categoryTitle": "Выберите тип контекста",
         "urlInputPlaceholder": "Введите URL (напр. https://...)",
-        "urlInputPrompt": "Нажмите Enter, чтобы добавить URL"
+        "urlInputPrompt": "Нажмите Enter, чтобы добавить URL",
+        "includeNote": "Включить заметку",
+        "excludeNote": "Исключить заметку"
       }
     },
     "rag": {
@@ -614,6 +616,7 @@
     "mcpClientConnected": "✅ Сервер MCP \"{{name}}\" успешно подключен.",
     "mcpClientToolExecutionFailedStatusError": "⚠️ Не удалось выполнить инструмент на сервере MCP \"{{name}}\". Статус установлен на ошибку.",
     "mcpClientToolExecuteFailedTryReconnect": "Не удалось выполнить инструмент на сервере MCP \"{{name}}\". Пожалуйста, попробуйте переподключиться.",
+    "toolExecutionBlockedReadMode": "Ошибка: В настоящее время вы находитесь в режиме чтения. Чтобы запустить инструменты, требующие разрешений на запись или изменение ({{toolName}}), переключитесь в «Режим редактирования».",
     "agentModeLlmRequired": "⚠️ Для использования агента сначала необходимо настроить и проверить поставщика LLM.",
     "agentModeLocalServerStarting": "🚀 Агент включен: подключение к локальному серверу MCP...",
     "agentModeLocalServerConnecting": "🚀 Агент включен: подключение к локальному серверу MCP...",
