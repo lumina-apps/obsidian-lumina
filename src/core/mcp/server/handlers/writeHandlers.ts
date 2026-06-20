@@ -33,7 +33,7 @@ export const createNoteHandler = async (
 
 	// 부모 폴더 자동 생성을 위해 에러 처리를 제거하고 아래에서 ensureFolderExists를 호출합니다.
 
-	const approved = await approvalManager.requestActionApproval('create_note' as any, rawPath, { content: rawContent });
+	const approved = await approvalManager.requestActionApproval('create_note', rawPath, { content: rawContent });
 	if (!approved) {
 		return { isError: true, content: [{ type: 'text', text: 'User explicitly rejected the file creation. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.' }] };
 	}
@@ -125,7 +125,7 @@ export const appendToDailyNoteHandler = async (
 			return { content: [{ type: 'text', text: t('mcpServerTools.append_to_daily_note.successAppend', { path }) }] };
 		});
 	} else {
-		const approved = await approvalManager.requestActionApproval('create_note' as any, path, { content: newContent });
+		const approved = await approvalManager.requestActionApproval('create_note', path, { content: newContent });
 		if (!approved) {
 			return { isError: true, content: [{ type: 'text', text: 'User explicitly rejected the change. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.' }] };
 		}
@@ -237,7 +237,7 @@ export const deleteNoteHandler = async (
 
 	return await pathGuard.lock(path, async () => {
 		await createBackup(ctx.plugin.app, path);
-		await ctx.plugin.app.vault.trash(file, true);
+		await ctx.plugin.app.fileManager.trashFile(file);
 		return { content: [{ type: 'text', text: `Successfully deleted ${path}` }] };
 	});
 };
@@ -299,7 +299,8 @@ export const updateFrontmatterHandler = async (
 	return await pathGuard.lock(path, async () => {
 		await createBackup(ctx.plugin.app, path);
 		await ctx.plugin.app.fileManager.processFrontMatter(file, (fm) => {
-			fm[key] = value;
+			const record = fm as Record<string, unknown>;
+			record[key] = value;
 		});
 		return { content: [{ type: 'text', text: `Successfully updated frontmatter key ${key} in ${path}` }] };
 	});

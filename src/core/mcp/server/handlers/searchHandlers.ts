@@ -98,7 +98,7 @@ export const listTagsHandler = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
-	const tagsRecord = (ctx.plugin.app.metadataCache as any).getTags();
+	const tagsRecord = (ctx.plugin.app.metadataCache as unknown as { getTags(): Record<string, number> }).getTags();
 	// tagsRecord is Record<string, number> where key is tag like '#foo' and value is count
 	const tagsList = Object.entries(tagsRecord).map(([tag, count]) => `${tag} (${count})`);
 	

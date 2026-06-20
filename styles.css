@@ -1617,14 +1617,20 @@ button.lumina-chat__send-btn.lumina-chat__send-btn--cancel:hover {
 }
 
 /* Lumina Inline Diff Extension */
+.markdown-source-view.mod-cm6 .cm-line.lumina-diff-removed-line,
+.markdown-source-view.mod-cm6 .cm-activeLine.lumina-diff-removed-line,
+.cm-content .cm-line.lumina-diff-removed-line,
 .lumina-diff-removed-line {
-	background-color: rgba(220, 38, 38, 0.15) !important;
+	background-color: rgba(220, 38, 38, 0.15);
 	text-decoration: line-through;
 	color: var(--text-muted);
 }
 
-.lumina-diff-added-widget {
-	background-color: rgba(16, 185, 129, 0.1) !important;
+.markdown-source-view.mod-cm6 .cm-content .lumina-diff-added-widget,
+.markdown-source-view.mod-cm6 .lumina-diff-added-widget,
+.cm-content .lumina-diff-added-widget,
+div.lumina-diff-added-widget {
+	background-color: rgba(16, 185, 129, 0.1);
 	border-left: 3px solid var(--text-success, #10b981);
 	margin: 2px 0;
 	padding: 4px 8px;

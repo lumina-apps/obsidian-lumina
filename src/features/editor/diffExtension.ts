@@ -1,8 +1,8 @@
 import { StateField, StateEffect, RangeSetBuilder } from '@codemirror/state';
-import { EditorView, Decoration, WidgetType, ViewPlugin } from '@codemirror/view';
+import { EditorView, Decoration, WidgetType, ViewPlugin, ViewUpdate } from '@codemirror/view';
 import type { DecorationSet } from '@codemirror/view';
 import { editorInfoField } from 'obsidian';
-import { approvalStore, approvalManager, type ApprovalRequest } from '../chat/utils/approvalManager';
+import { approvalStore, approvalManager, type ApprovalRequest, type ApprovalState } from '../chat/utils/approvalManager';
 import { get } from 'svelte/store';
 
 export const setDiffs = StateEffect.define<ApprovalRequest | null>();
@@ -10,7 +10,7 @@ export const setDiffs = StateEffect.define<ApprovalRequest | null>();
 class DiffAddedWidget extends WidgetType {
 	constructor(public text: string) { super(); }
 	toDOM() {
-		const div = document.createElement('div');
+		const div = activeDocument.createElement('div');
 		div.className = 'lumina-diff-added-widget';
 		
 		// Remove trailing newline for visual neatness
@@ -18,7 +18,7 @@ class DiffAddedWidget extends WidgetType {
 		
 		const lines = display.split('\n');
 		lines.forEach(line => {
-			const lineDiv = document.createElement('div');
+			const lineDiv = activeDocument.createElement('div');
 			lineDiv.className = 'lumina-diff-added-line';
 			lineDiv.innerText = '+ ' + line;
 			div.appendChild(lineDiv);
@@ -30,15 +30,15 @@ class DiffAddedWidget extends WidgetType {
 class DiffActionWidget extends WidgetType {
 	constructor(public requestId: string, public chunkId: string) { super(); }
 	toDOM() {
-		const div = document.createElement('div');
+		const div = activeDocument.createElement('div');
 		div.className = 'lumina-diff-action-widget';
 		
-		const acceptBtn = document.createElement('button');
+		const acceptBtn = activeDocument.createElement('button');
 		acceptBtn.innerText = '✓ Accept';
 		acceptBtn.className = 'lumina-diff-btn accept';
 		acceptBtn.onclick = () => approvalManager.acceptChunk(this.requestId, this.chunkId);
 		
-		const rejectBtn = document.createElement('button');
+		const rejectBtn = activeDocument.createElement('button');
 		rejectBtn.innerText = '✗ Reject';
 		rejectBtn.className = 'lumina-diff-btn reject';
 		rejectBtn.onclick = () => approvalManager.rejectChunk(this.requestId, this.chunkId);
@@ -129,31 +129,31 @@ export const diffStorePlugin = ViewPlugin.fromClass(class {
 		this.view = view;
 		
 		this.unsubscribe = approvalStore.subscribe(state => {
-			setTimeout(() => {
+			window.setTimeout(() => {
 				this.updateFromState(state);
 			}, 0);
 		});
 	}
 
-	update(update: any) {
+	update(update: ViewUpdate) {
 		// editorInfoField가 변경되어 파일 정보가 뒤늦게 들어올 때를 대비함
-		const oldInfo = update.startState.field(editorInfoField, false);
-		const newInfo = update.state.field(editorInfoField, false);
+		const oldInfo = update.startState.field(editorInfoField, false) as { file?: { path: string } } | null | undefined;
+		const newInfo = update.state.field(editorInfoField, false) as { file?: { path: string } } | null | undefined;
 		if (oldInfo?.file?.path !== newInfo?.file?.path) {
-			setTimeout(() => {
+			window.setTimeout(() => {
 				this.updateFromState(get(approvalStore));
 			}, 0);
 		}
 	}
 
-	updateFromState(state: any) {
-		const editorInfo = this.view.state.field(editorInfoField, false);
+	updateFromState(state: ApprovalState) {
+		const editorInfo = this.view.state.field(editorInfoField, false) as { file?: { path: string } } | null | undefined;
 		const file = editorInfo?.file;
 		
 		if (file) {
-			const request = state.queue.find((r: any) => r.filePath === file.path && r.actionType === 'edit');
+			const request = state.queue.find((r) => r.filePath === file.path && r.actionType === 'edit');
 			this.view.dispatch({
-				effects: setDiffs.of(request || null)
+				effects: setDiffs.of(request ?? null)
 			});
 		} else {
 			this.view.dispatch({

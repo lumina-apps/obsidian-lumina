@@ -2,7 +2,7 @@ export interface SandboxOptions {
     timeoutMs?: number;
 }
 
-export interface SandboxResult<T = any> {
+export interface SandboxResult<T = unknown> {
     success: boolean;
     data?: T;
     error?: string;
@@ -18,9 +18,9 @@ export class McpSandbox {
      * @param context Data to pass into the executing code as `context` variable.
      * @param options Sandbox configuration options (like timeout).
      */
-    static async executeCode<T = any>(
+    static async executeCode<T = unknown>(
         code: string,
-        context: Record<string, any> = {},
+        context: Record<string, unknown> = {},
         options: SandboxOptions = {}
     ): Promise<SandboxResult<T>> {
         const timeoutMs = options.timeoutMs ?? this.DEFAULT_TIMEOUT_MS;
@@ -100,11 +100,11 @@ export class McpSandbox {
 
             // 3. Listen for the result from the worker
             worker.onmessage = (e: MessageEvent) => {
-                const { success, data, error } = e.data;
-                if (success) {
-                    finish({ success: true, data });
+                const payload = e.data as SandboxResult<T> | null | undefined;
+                if (payload && payload.success) {
+                    finish({ success: true, data: payload.data });
                 } else {
-                    finish({ success: false, error });
+                    finish({ success: false, error: payload?.error || 'Unknown Web Worker execution error' });
                 }
             };
 

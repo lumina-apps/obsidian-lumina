@@ -1,13 +1,14 @@
-import { writable, get } from 'svelte/store';
+import { writable } from 'svelte/store';
 import { diffLines } from 'diff';
 import type { Change } from 'diff';
-import { Notice } from 'obsidian';
 
 export interface DiffChunk {
 	id: string;
 	changes: Change[];
 	status: 'pending' | 'accepted' | 'rejected';
 }
+
+export type ActionType = 'edit' | 'create_note' | 'delete' | 'rename' | 'frontmatter' | 'attachment' | 'execute';
 
 export interface ApprovalRequest {
 	id: string;
@@ -16,8 +17,8 @@ export interface ApprovalRequest {
 	proposedContent: string;
 	chunks: DiffChunk[];
 	allChanges: EnrichedChange[];
-	actionType?: 'edit' | 'delete' | 'rename' | 'frontmatter' | 'attachment' | 'execute';
-	metadata?: Record<string, any>;
+	actionType?: ActionType;
+	metadata?: Record<string, unknown>;
 	resolve: (result: { approved: boolean; content: string }) => void;
 }
 
@@ -29,10 +30,10 @@ export interface ActionRecord {
 	requestId: string;
 	chunkId?: string; // if undefined, it means whole file action
 	action: 'accept' | 'reject';
-	previousState?: any;
+	previousState?: unknown;
 }
 
-interface ApprovalState {
+export interface ApprovalState {
 	queue: ApprovalRequest[];
 	undoStack: ActionRecord[];
 }
@@ -123,9 +124,9 @@ export const approvalManager = {
 	 * Submits a new action proposal (delete, rename, execute, etc). Returns a promise that resolves when approved/rejected.
 	 */
 	requestActionApproval(
-		actionType: 'delete' | 'rename' | 'frontmatter' | 'attachment' | 'execute',
+		actionType: 'create_note' | 'delete' | 'rename' | 'frontmatter' | 'attachment' | 'execute',
 		filePath: string,
-		metadata: Record<string, any> = {}
+		metadata: Record<string, unknown> = {}
 	): Promise<boolean> {
 		return new Promise((resolve) => {
 			const request: ApprovalRequest = {
@@ -194,7 +195,7 @@ export const approvalManager = {
 	},
 
 	rejectAll(requestId: string) {
-		let resolveFn: any;
+		let resolveFn: ((result: { approved: boolean; content: string }) => void) | undefined;
 		approvalStore.update((state) => {
 			const req = state.queue.find((r) => r.id === requestId);
 			if (req) {
@@ -236,9 +237,9 @@ export const approvalManager = {
 	checkCompletion(requestId: string) {
 		let isComplete = false;
 		let finalContent = '';
-		let resolveFn: any;
+		let resolveFn: ((result: { approved: boolean; content: string }) => void) | undefined;
 		let baseContent = '';
-		let actionType: string | undefined = 'edit';
+		let actionType: ActionType | undefined = 'edit';
 
 		approvalStore.update((state) => {
 			const reqIndex = state.queue.findIndex((r) => r.id === requestId);

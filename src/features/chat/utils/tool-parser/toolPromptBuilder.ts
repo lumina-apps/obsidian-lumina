@@ -23,7 +23,7 @@ function formatArgsDescription(
 
 /** 단일 툴 설명 생성 */
 function formatToolDescription(tool: ToolDefinition): string {
-	const props = tool.inputSchema?.properties ?? {};
+	const props = (tool.inputSchema?.properties ?? {}) as Record<string, { description?: string; type?: string }>;
 	const required = tool.inputSchema?.required ?? [];
 	const argsDesc = formatArgsDescription(props, required);
 	return `- ${tool.name}: ${tool.description}\n  Arguments:\n${argsDesc}`;

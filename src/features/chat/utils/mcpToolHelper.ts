@@ -46,7 +46,7 @@ export function collectMcpTools(params: {
 			description: tool.description ?? '',
 			inputSchema: {
 				type: 'object',
-				properties: properties as Record<string, any>,
+				properties: properties as Record<string, unknown>,
 				required: schema.required ?? [],
 			},
 		});

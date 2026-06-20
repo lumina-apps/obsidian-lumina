@@ -91,7 +91,7 @@ async function enforceRetentionPolicy(app: App, flatOriginalPath: string): Promi
 
 	for (const file of filesToDelete) {
 		try {
-			await vault.trash(file, true); // Use system trash
+			await app.fileManager.trashFile(file); // Use system trash
 		} catch (e) {
 			console.error(`[Backup] Failed to delete old backup ${file.path}:`, e);
 		}

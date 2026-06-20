@@ -1,5 +1,4 @@
 import { TFile } from 'obsidian';
-import { t } from '../../../../shared/locales/helpers';
 import { sanitizeFilePath } from '../../../../shared/utils/fileUtils';
 import { getStringArg, blockIfPathNotAllowed } from '../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';

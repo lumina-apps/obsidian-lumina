@@ -91,9 +91,9 @@ export const getNoteMetadataHandler = async (
 	}
 
 	const cache = ctx.plugin.app.metadataCache.getFileCache(file);
-	const frontmatter = cache?.frontmatter;
+	const frontmatter = cache?.frontmatter as Record<string, unknown> | undefined;
 	const tags = cache?.tags?.map(t => t.tag) || [];
-	const aliases = frontmatter?.aliases || frontmatter?.alias || [];
+	const aliases = (frontmatter?.aliases ?? frontmatter?.alias ?? []) as unknown;
 
 	const metadata = {
 		path: file.path,

@@ -22,27 +22,35 @@ export class ActionApprovalModal extends Modal {
 		
 		const { actionType, metadata } = this.request;
 
-		if (actionType === 'create_note' as any) {
+		if (actionType === 'create_note') {
 			descEl.createEl('p', { text: t('uiMessages.actionApproval.createNote') });
 			descEl.createEl('strong', { text: this.request.filePath });
-			if (metadata?.content) {
+			const content = metadata?.content as string | undefined;
+			if (content) {
 				const pre = descEl.createEl('pre', { cls: 'code-preview', attr: { style: 'max-height: 200px; overflow-y: auto; background: var(--background-secondary-alt); padding: 8px; margin-top: 8px;' } });
-				pre.setText(metadata.content);
+				pre.setText(content);
 			}
 		} else if (actionType === 'delete') {
 			descEl.createEl('p', { text: t('uiMessages.actionApproval.deleteNote') });
 		} else if (actionType === 'rename') {
 			descEl.createEl('p', { text: t('uiMessages.actionApproval.renameNote') });
-			descEl.createEl('strong', { text: metadata?.targetPath });
+			const targetPath = metadata?.targetPath as string | undefined;
+			if (targetPath) {
+				descEl.createEl('strong', { text: targetPath });
+			}
 		} else if (actionType === 'frontmatter') {
 			descEl.createEl('p', { text: t('uiMessages.actionApproval.updateFrontmatter') });
-			descEl.createEl('strong', { text: `${metadata?.key} -> ${metadata?.value}` });
+			const key = metadata?.key as string | undefined;
+			const value = metadata?.value;
+			descEl.createEl('strong', { text: `${key || ''} -> ${value !== undefined ? String(value) : ''}` });
 		} else if (actionType === 'attachment') {
-			descEl.createEl('p', { text: t('uiMessages.actionApproval.saveAttachment', { size: metadata?.sizeBytes?.toString() || '0' }) });
+			const sizeBytes = metadata?.sizeBytes as number | undefined;
+			descEl.createEl('p', { text: t('uiMessages.actionApproval.saveAttachment', { size: sizeBytes !== undefined ? sizeBytes.toString() : '0' }) });
 		} else if (actionType === 'execute') {
 			descEl.createEl('p', { text: t('uiMessages.actionApproval.executeCode') });
+			const code = metadata?.code as string | undefined;
 			const pre = descEl.createEl('pre', { cls: 'code-preview', attr: { style: 'max-height: 200px; overflow-y: auto; background: var(--background-secondary-alt); padding: 8px;' } });
-			pre.setText(metadata?.code || '');
+			pre.setText(code || '');
 		}
 
 		new Setting(contentEl)
@@ -58,7 +66,7 @@ export class ActionApprovalModal extends Modal {
 			.addButton((btn: ButtonComponent) =>
 				btn
 					.setButtonText(t('uiMessages.actionApproval.reject') || 'Reject')
-					.setWarning()
+					.setDestructive()
 					.onClick(() => {
 						approvalManager.rejectAll(this.request.id);
 						this.close();
