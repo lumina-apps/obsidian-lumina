@@ -18,9 +18,10 @@
 | :--- | :--- |
 | **💬 Multi-LLM Chat View** | A dedicated side panel that understands the context of your notes. Supports everything from powerful cloud models to local LLMs for maximum privacy. |
 | **🧠 Zero-Config RAG** | Features 100% offline local embeddings to prevent data leaks. Automatically indexes your vault in real-time without complex configurations. |
+| **🔗 Smart Discovery** | Instantly finds documents highly relevant to the note currently being written using semantic search, detects and warns about potential duplicates, and inserts recommended tags and related links with a single click. |
 | **⚡ Inline AI Quick Actions** | Highlight text in the editor to instantly summarize, translate, or proofread without interrupting your writing flow. |
-| **🤖 Autonomous AI Agent** | LLMs autonomously plan and execute complex tasks such as searching, creating, and modifying notes using MCP tools. (Experimental) |
-| **🔌 MCP Integration (Client & Server)** | A bidirectional, full-stack integration that allows you to use external tools within Obsidian (Client), or let external AIs interact with your notes (Server). (Experimental) |
+| **🚀 Smart Agent Mode** | LLMs autonomously plan and execute complex tasks such as note searching, creation, modification, deletion/move, and code execution in a sandbox using 21 built-in MCP tools. |
+| **🔌 MCP Integration (Client & Server)** | A bidirectional, full-stack integration that allows you to use external tools within Obsidian (Client), or let external AIs interact with your notes (Server). |
 
 ---
 
@@ -60,8 +61,20 @@ Lumina offers two tracks tailored to your skill level. Choose the one that suits
 <summary><b>🧠 RAG-Powered Chat & Local Embeddings (Absolute Privacy)</b></summary>
 
 - **Description:** AI gains deep insight into your knowledge base. It autonomously searches relevant notes during conversations and displays similar documents and recommended tags in the side panel, creating smart contextual links.
-- **Offline Security:** Natively supports local embeddings (`ibm-granite`). Unless a cloud model is selected, your valuable note data will never leave your device.
+- **Offline Security:** Lumina's RAG system uses 100% offline local embeddings (built-in `ibm-granite` multilingual embedding model) to analyze your notes. Unless a cloud model is selected, your valuable note data will never leave your device.
 - **Fully Automated:** Zero configuration required! Background indexing quietly starts the moment the plugin is enabled, and automatically syncs in real-time (`watch` mode) whenever notes are modified.
+</details>
+
+<details>
+<summary><b>🔗 Smart Discovery</b></summary>
+
+- **Description:** Based on the RAG engine, it visualizes information highly relevant to the note currently being written right in the 'Smart Discovery' tab of the sidebar panel.
+- **Key Features:**
+  - **Semantic Search:** Beyond simple keyword matching, it analyzes the context and meaning of the entered sentence to search for similar notes.
+  - **Duplicate Document Detection:** Displays a warning if a document with highly similar content already exists in your vault to prevent information fragmentation and duplicate writing.
+  - **Recommended Tags & Related Notes:** Analyzes the context of the note being written to suggest appropriate tags and recommend related notes in real-time.
+  - **One-click Integration & Chat:** Insert recommended tags or related notes into your document as tags or markdown links (`[[Note Name]]`) with a single click, or stage selected notes to immediately start an AI conversation.
+- **How to use:** Click the 💬 icon on the left ribbon to open the side panel, and switch to the 🔗 (Smart Discovery) tab at the top.
 </details>
 
 <details>
@@ -72,18 +85,17 @@ Lumina offers two tracks tailored to your skill level. Choose the one that suits
 </details>
 
 <details>
-<summary><b>🤖 Autonomous AI Agent (Agent Mode) ⚠️</b></summary>
+<summary><b>🚀 Smart Agent Mode</b></summary>
 
-- **Description:** When activated, the LLM autonomously determines and orchestrates MCP tools to perform tasks. It can complete complex, multi-step operations by combining note searching, reading, writing, and RAG retrieval.
+- **Description:** When activated, the LLM autonomously determines and orchestrates 21 built-in MCP tools to perform tasks. It can complete complex, multi-step operations by combining note searching, reading, writing, RAG retrieval, sandbox code execution, and daily notes integration.
 - **Local LLM Support:** Implements a dedicated parser that supports text-based tool prompting, allowing the agent to function smoothly even in Local LLM environments, not just with high-performance cloud models.
-- **Safe Tool Composition:** The initial version includes only read-focused and safe creation-oriented tools, fundamentally eliminating the risk of existing files being overwritten or deleted.
-- **Human-in-the-Loop (User Approval):** Before performing risky operations such as file modifications, a user confirmation (approval) popup is always displayed.
+- **Robust Security & User Control (Human-in-the-Loop):** Destructive operations such as content modification, file deletion, or code execution cannot be processed by the agent alone. They are executed safely with overwrite-protection backups only after prompting the user with a UI (Diff Viewer and Task Warning Modal) and receiving final approval (Accept).
 - **Cost Prevention & Limits:** Default limits on tool usage count and append character length are applied to prevent AI malfunctions or infinite loops. (These limits can be freely adjusted by the user in advanced settings.)
 - **How to use:** Type the `/mcp` command in the chat or use the top icon to open the quick popup and enable 'Agent Mode'. (The internal Lumina server will automatically start as needed to execute tools.)
 </details>
 
 <details>
-<summary><b>🤖 MCP Integration (Bidirectional Client & Server Support) ⚠️</b></summary>
+<summary><b>🔌 MCP Integration (Bidirectional Client & Server Support)</b></summary>
 
 - **Description:** Seamlessly bridges Obsidian with the broader AI ecosystem via the Model Context Protocol (MCP). Use Obsidian as an all-in-one AI hub, or leverage it as your AI's second brain!
 - **💻 Client Mode (Obsidian-led):**
@@ -97,7 +109,7 @@ Lumina offers two tracks tailored to your skill level. Choose the one that suits
   - **Daily Notes:** `read_daily_note`, `append_to_daily_note` (read/write integration for today's daily note).
   - **Robust Security & User Control:** Destructive operations such as content modification, file deletion, or code execution cannot be processed by the agent alone. They are executed safely with overwrite-protection backups only after prompting the user with a UI (Diff Viewer and Task Warning Modal) and receiving final approval (Accept).
 - **How to use:** Enable MCP features in the plugin settings and configure the client/server transport method (SSE).
-- **Note:** *Agent and MCP features are currently in Experimental (Beta) phase. While various safety nets like overwrite protection and character limits are in place, we recommend initially monitoring operations closely as external AI will directly edit your notes.*
+- **Note:** *Lumina comes with multi-layered safety mechanisms including sandbox code execution, real-time Diff viewer user approvals (Human-in-the-Loop), automatic backups during file modifications (overwrite protection), and limits to prevent infinite loops. However, since the agent and external AI directly access your vault, we recommend initially monitoring operations closely.*
 </details>
 
 ---
@@ -119,7 +131,6 @@ You can view all internal data processed by the plugin by enabling Advanced Sett
 ## ☕ Support & Sponsor
 
 This plugin is distributed 100% free of charge and will be continuously updated.
-Sponsorships keep me motivated to push out updates even faster!
 
 👉 **[Ko-fi](https://ko-fi.com/luminaapps)**  
 👉 **[Ctee](https://ctee.kr/place/luminaapps)**

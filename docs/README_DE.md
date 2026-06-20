@@ -18,9 +18,10 @@
 | :--- | :--- |
 | **💬 Multi-LLM-Chat-Ansicht** | Ein dediziertes Seitenpanel, das den Kontext deiner Notizen versteht. Unterstützt alles von leistungsstarken Cloud-Modellen bis hin zu lokalen LLMs für maximale Privatsphäre. |
 | **🧠 Zero-Config-RAG** | Bietet 100% Offline-Lokale-Embeddings, um Datenlecks zu verhindern. Indiziert deinen Vault automatisch in Echtzeit ohne komplexe Konfigurationen. |
+| **🔗 Smart Discovery** | Findet semantisch relevante Dokumente zur aktuellen Notiz, warnt vor Duplikaten und fügt empfohlene Tags sowie Links mit einem Klick ein. |
 | **⚡ Inline-KI-Schnellaktionen** | Markiere Text im Editor, um ihn sofort zusammenzufassen, zu übersetzen oder Korrektur zu lesen, ohne deinen Schreibfluss zu unterbrechen. |
-| **🤖 Autonomer KI-Agent** | LLMs planen und führen komplexe Aufgaben wie das Suchen, Erstellen und Ändern von Notizen mithilfe von MCP-Tools autonom aus. (Experimentell) |
-| **🔌 MCP-Integration (Client & Server)** | Eine bidirektionale Full-Stack-Integration, mit der du externe Tools in Obsidian verwenden kannst (Client) oder externe KIs mit deinen Notizen interagieren lassen kannst (Server). (Experimentell) |
+| **🚀 Smart-Agent-Modus** | AI plant und führt komplexe Aufgaben wie Suchen, Erstellen, Ändern, Löschen/Verschieben von Notizen und Codeausführung im Sandbox-Modus mit 21 integrierten MCP-Tools autonom aus. |
+| **🔌 MCP-Integration (Client & Server)** | Eine bidirektionale Full-Stack-Integration, mit der Sie externe Tools in Obsidian verwenden (Client) oder externe AIs mit Ihren Notizen interagieren lassen (Server) können. |
 
 ---
 
@@ -47,7 +48,6 @@ Lumina bietet zwei auf dein Können zugeschnittene Modi. Wähle die Methode, die
 ---
 
 ## ✨ Detaillierte Funktionen & Nutzung (Zum Erweitern klicken)
-
 <details>
 <summary><b>💬 Multi-LLM-Chat-Ansicht (Cloud- & Lokaler Support)</b></summary>
 
@@ -60,8 +60,20 @@ Lumina bietet zwei auf dein Können zugeschnittene Modi. Wähle die Methode, die
 <summary><b>🧠 RAG-basierter Chat & Lokale Embeddings (Absolute Privatsphäre)</b></summary>
 
 - **Beschreibung:** Die KI erhält tiefe Einblicke in deine Wissensbasis. Sie sucht während Unterhaltungen autonom nach relevanten Notizen und zeigt ähnliche Dokumente und empfohlene Tags im Seitenpanel an, wodurch smarte kontextuelle Verknüpfungen entstehen.
-- **Offline-Sicherheit:** Unterstützt nativ lokale Embeddings (`ibm-granite`). Sofern kein Cloud-Modell ausgewählt ist, verlassen deine wertvollen Notizdaten dein Gerät niemals.
+- **Offline-Sicherheit:** Das RAG-System von Lumina verwendet 100% Offline-Lokaleinbettungen (integriertes mehrsprachiges Einbettungsmodell `ibm-granite`), um Ihre Notizen zu analysieren. Solange kein Cloud-Modell ausgewählt ist, verlassen Ihre wertvollen Notizdaten niemals Ihr Gerät.
 - **Vollständig automatisiert:** Keine Konfiguration erforderlich! Die Hintergrundindizierung startet leise im Moment der Aktivierung des Plugins und synchronisiert sich automatisch in Echtzeit (`watch`-Modus), wenn Notizen geändert werden.
+</details>
+
+<details>
+<summary><b>🔗 Smart Discovery</b></summary>
+
+- **Beschreibung:** Basierend auf der RAG-Engine visualisiert die Funktion Informationen, die für die aktuell geschriebene Notiz hochgradig relevant sind, direkt auf der Registerkarte „Smart Discovery“ in der Seitenleiste.
+- **Hauptfunktionen:**
+  - **Semantische Suche:** Geht über den einfachen Keyword-Abgleich hinaus und analysiert den Kontext und die Bedeutung des eingegebenen Satzes, um nach ähnlichen Notizen zu suchen.
+  - **Duplikaterkennung:** Zeigt eine Warnung an, wenn ein Dokument mit sehr ähnlichem Inhalt bereits in Ihrem Vault vorhanden ist, um Informationsfragmentierung und doppeltes Schreiben zu verhindern.
+  - **Empfohlene Tags & Ähnliche Notizen:** Analysiert den Kontext der aktuellen Notiz, um passende Tags zu empfehlen und ähnliche Notizen in Echtzeit vorzuschlagen.
+  - **Ein-Klick-Verbindung & Chat:** Fügen Sie empfohlene Tags oder ähnliche Notizen mit einem einzigen Klick als Tags oder Markdown-Links (`[[Notizname]]`) in Ihr Dokument ein oder stellen Sie ausgewählte Notizen im Staging-Bereich bereit, um sofort einen KI-Chat zu starten.
+  - **Verwendung:** Klicken Sie auf das 💬-Symbol in der linken Leiste, um die Seitenleiste zu öffnen, und wechseln Sie oben auf die Registerkarte 🔗 (Smart Discovery).
 </details>
 
 <details>
@@ -72,18 +84,17 @@ Lumina bietet zwei auf dein Können zugeschnittene Modi. Wähle die Methode, die
 </details>
 
 <details>
-<summary><b>🤖 Autonomer KI-Agent (Agentenmodus) ⚠️</b></summary>
+<summary><b>🚀 Smart-Agent-Modus</b></summary>
 
-- **Beschreibung:** Wenn aktiviert, bestimmt und orchestriert das LLM autonom MCP-Tools, um Aufgaben auszuführen. Es kann komplexe, mehrstufige Operationen abschließen, indem es Notizensuche, Lesen, Schreiben und RAG-Abrufe kombiniert.
-- **Lokaler LLM-Support:** Implementiert einen dedizierten Parser, der textbasiertes Tool-Prompting unterstützt, sodass der Agent auch in lokalen LLM-Umgebungen reibungslos funktioniert, nicht nur bei leistungsstarken Cloud-Modellen.
-- **Sichere Tool-Zusammenstellung:** Die erste Version enthält nur lese- und sicherheitsorientierte Erstellungswerkzeuge, wodurch das Risiko des Überschreibens oder Löschens vorhandener Dateien grundlegend ausgeschlossen wird.
-- **Human-in-the-Loop (Benutzerfreigabe):** Bevor risikoreiche Operationen wie Dateiänderungen durchgeführt werden, wird immer ein Bestätigungs-Popup (Freigabe) angezeigt.
-- **Kostenverhinderung und -begrenzung:** Standardmäßig sind Begrenzungen für die Anzahl der Tool-Nutzungen und die Zeichenlänge von Anhängen (Append) aktiviert, um Fehlfunktionen der KI oder Endlosschleifen zu verhindern. (Diese Grenzen können in den erweiterten Einstellungen jederzeit angepasst werden.)
-- **Verwendung:** Gib den Befehl `/mcp` im Chat ein oder nutze das obere Symbol, um das Schnell-Popup zu öffnen und den 'Agentenmodus' zu aktivieren. (Der interne Lumina-Server startet nach Bedarf automatisch, um Tools auszuführen).
+- **Beschreibung:** Nach der Aktivierung bestimmt und orchestriert das LLM autonom 21 integrierte MCP-Tools, um Aufgaben auszuführen. Es kann komplexe, mehrstufige Vorgänge ausführen, indem es das Suchen, Lesen und Schreiben von Notizen, das Abrufen von RAG-Daten, die Ausführung von Code in einer Sandbox und die Integration täglicher Notizen kombiniert.
+- **Lokale LLM-Unterstützung:** Implementiert einen dedizierten Parser, der textbasiertes Tool-Prompting unterstützt, sodass der Agent auch in lokalen LLM-Umgebungen reibungslos funktioniert und nicht nur mit leistungsstarken Cloud-Modellen.
+- **Robuste Sicherheit & Benutzerkontrolle (Human-in-the-Loop):** Destruktive Vorgänge wie Inhaltsänderungen, Dateilöschungen oder Codeausführungen können vom Agenten nicht allein verarbeitet werden. Sie werden erst nach einer Abfrage des Benutzers über eine Benutzeroberfläche (Diff-Viewer und Aufgabenwarnungs-Modal) und Erhalt der endgültigen Genehmigung (Akzeptieren) sicher mit Backups zum Schutz vor Überschreiben ausgeführt.
+- **Kostenvermeidung & Limits:** Standardbegrenzungen für die Häufigkeit der Toolnutzung und die Länge der angehängten Zeichen werden angewendet, um KI-Fehlfunktionen oder Endlosschleifen zu verhindern. (Diese Limits können in den erweiterten Einstellungen frei angepasst werden.)
+- **Verwendung:** Geben Sie den Befehl `/mcp` im Chat ein oder klicken Sie auf das obere Symbol, um das Schnell-Popup zu öffnen und den „Agenten-Modus“ zu aktivieren. (Der interne Lumina-Server startet bei Bedarf automatisch, um Tools auszuführen.)
 </details>
 
 <details>
-<summary><b>🤖 MCP-Integration (Bidirektionaler Client- & Server-Support) ⚠️</b></summary>
+<summary><b>🔌 MCP-Integration (Client & Server Support)</b></summary>
 
 - **Beschreibung:** Überbrückt Obsidian nahtlos mit dem breiteren KI-Ökosystem über das Model Context Protocol (MCP). Nutze Obsidian als All-in-One-KI-Hub oder nutze es als das zweite Gehirn deiner KI!
 - **💻 Client-Modus (Obsidian-gesteuert):**
@@ -97,7 +108,7 @@ Lumina bietet zwei auf dein Können zugeschnittene Modi. Wähle die Methode, die
   - **Tagesnotizen:** `read_daily_note`, `append_to_daily_note` (Lese-/Schreibintegration für die heutige Tagesnotiz).
   - **Robuste Sicherheit & Benutzerkontrolle:** Destruktive Vorgänge wie Inhaltsänderungen, Dateilöschungen oder Codeausführung können vom Agenten nicht allein verarbeitet werden. Sie werden sicher mit Überschreibschutz-Backups ausgeführt, jedoch erst, nachdem dem Benutzer eine Benutzeroberfläche (Diff-Viewer und Warnungs-Modal) angezeigt und die endgültige Genehmigung (Accept) erteilt wurde.
 - **Verwendung:** Aktiviere MCP-Funktionen in den Plugin-Einstellungen und konfiguriere die Client/Server-Transportmethode (SSE).
-- **Hinweis:** *Agenten- und MCP-Funktionen befinden sich derzeit in der experimentellen Phase (Beta). Obwohl verschiedene Sicherheitsnetze wie Überschreibschutz und Zeichenbegrenzungen bestehen, empfehlen wir anfangs, Operationen genau zu überwachen, da externe KI deine Notizen direkt bearbeitet.*
+- **Hinweis:** *Lumina verfügt über mehrschichtige Sicherheitsmechanismen, darunter Sandbox-Codeausführung, Benutzergenehmigungen über einen Echtzeit-Diff-Viewer (Human-in-the-Loop), automatische Backups bei Dateiänderungen (Überschreibschutz) und Begrenzungen zur Vermeidung von Endlosschleifen. Da der Agent und externe AIs jedoch direkt auf Ihren Vault zugreifen, empfehlen wir, die Vorgänge anfangs genau zu überwachen.*
 </details>
 
 ---
@@ -119,7 +130,6 @@ Du kannst alle internen Daten einsehen, die das Plugin verarbeitet, indem du die
 ## ☕ Support & Sponsoring
 
 Dieses Plugin wird zu 100% kostenlos vertrieben und wird kontinuierlich aktualisiert.
-Sponsoring hält mich motiviert, Updates noch schneller zu veröffentlichen!
  
 👉 **[Ko-fi](https://ko-fi.com/luminaapps)**  
 👉 **[Ctee](https://ctee.kr/place/luminaapps)**
