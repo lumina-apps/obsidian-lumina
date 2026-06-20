@@ -1,10 +1,11 @@
 import { t } from '../../../shared/locales/helpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult, ToolName } from './toolTypes';
 import type { PathGuard } from './pathGuard';
-import { readActiveNoteHandler, readNoteHandler, readDailyNoteHandler } from './handlers/readHandlers';
-import { createNoteHandler, appendToNoteHandler, appendToDailyNoteHandler } from './handlers/writeHandlers';
-import { searchNotesHandler, listNotesHandler } from './handlers/searchHandlers';
+import { readActiveNoteHandler, readNoteHandler, readDailyNoteHandler, getBacklinksHandler, getNoteMetadataHandler, listAttachmentsHandler } from './handlers/readHandlers';
+import { createNoteHandler, appendToNoteHandler, appendToDailyNoteHandler, replaceNoteHandler, patchNoteHandler, deleteNoteHandler, moveNoteHandler, updateFrontmatterHandler, saveAttachmentHandler } from './handlers/writeHandlers';
+import { searchNotesHandler, listNotesHandler, listTagsHandler } from './handlers/searchHandlers';
 import { ragSearchHandler } from './handlers/ragHandlers';
+import { executeCodeHandler, runNoteCodeBlockHandler } from './handlers/executeHandlers';
 
 export type ToolHandlerImpl = (
 	args: ToolArguments,
@@ -22,6 +23,18 @@ const handlerMap: Record<ToolName, ToolHandlerImpl> = {
 	append_to_daily_note: appendToDailyNoteHandler,
 	list_notes: listNotesHandler,
 	rag_search: ragSearchHandler,
+	replace_note: replaceNoteHandler,
+	patch_note: patchNoteHandler,
+	delete_note: deleteNoteHandler,
+	move_note: moveNoteHandler,
+	get_backlinks: getBacklinksHandler,
+	update_frontmatter: updateFrontmatterHandler,
+	get_note_metadata: getNoteMetadataHandler,
+	list_attachments: listAttachmentsHandler,
+	save_attachment: saveAttachmentHandler,
+	execute_code: executeCodeHandler,
+	run_note_code_block: runNoteCodeBlockHandler,
+	list_tags: listTagsHandler,
 };
 
 /**

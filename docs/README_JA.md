@@ -90,11 +90,12 @@ Luminaは、あなたのスキルレベルに合わせた2つのトラックを�
   - Obsidian内でAIと直接対話して作業します。
   - 多数の外部MCPサーバー（GitHub、ローカルDB、Web検索など）に接続し、膨大なデータをノートに即座にスクレイピングして整理します。
 - **🖥️ サーバーモード（外部AI主導）:**
-  - 外部のAIアシスタント（Claude、Cursorなど）があなたのボルトに直接アクセスできる7つのツールを公開します。
-  - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: ボルトのコンテキストと知識をAIに提供します。
-  - `create_note`, `append_to_note`: AIが整理されたアイデアをボルトに安全に直接書き込むことができます（上書き保護適用済み）。
-  - `read_daily_note`, `append_to_daily_note`: 今日のデイリーノートへの読み書きの統合。
-  - ファイル削除・移動・上書きなどの危険な操作は、追加の安全装置とともに今後のアップデートで実装される予定です。
+  - 外部のAIアシスタント（Claude、Cursorなど）またはエージェントモードのAIがあなたのボルトに直接アクセスできる21のツールを提供します。
+  - **閲覧と検索:** `read_active_note`, `read_note`, `search_notes`（タグフィルター対応）, `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` により、AIに広範なコンテキストを提供します。
+  - **作成と修正:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment` （ノートの作成・修正とバイナリファイルの保存）。
+  - **管理と実行:** `delete_note`, `move_note`（移動・名前変更）, `execute_code`, `run_note_code_block` （サンドボックス内でのコード実行）。
+  - **デイリーノート:** `read_daily_note`, `append_to_daily_note` （今日のノートへの読み書き統合）。
+  - **堅牢なセキュリティとユーザーコントロール:** コンテンツの変更、ファイルの削除、コードの実行などの破壊的な操作は、エージェント単独では処理できません。ユーザーにUI（差分ビューアや警告モーダル）を提示し、最終承認（Accept）を受けた場合にのみ、上書き保護のバックアップとともに安全に実行されます。
 - **使い方:** プラグイン設定でMCP機能を有効にし、クライアント/サーバーの転送方法（SSE）を設定します。
 - **注意:** *エージェント機能とMCP機能は現在、試験的（ベータ）段階です。上書き保護や文字数制限などのさまざまなセーフティネットが配置されていますが、外部AIがノートを直接編集するため、最初は操作を注意深く監視することをお勧めします。*
 </details>

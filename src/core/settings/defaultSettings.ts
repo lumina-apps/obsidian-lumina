@@ -47,7 +47,7 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		useTokenLimit: false,
 		maxContextTokens: 8000,
 		temperature: 0.7,
-		maxOutputTokens: 2048,
+		maxOutputTokens: 4000,
 		streaming: true,
 		responseLanguage: 'auto',
 		agentEnabled: false,

@@ -90,11 +90,12 @@ Lumina offre due modalità in base al tuo livello di competenza. Scegli quella c
   - Interagisci e lavora direttamente con l'IA all'interno di Obsidian.
   - Connetti numerosi server MCP esterni (GitHub, DB locali, ricerca web, ecc.) per raschiare (scrape) e organizzare all'istante grandi quantità di dati nelle tue note.
 - **🖥️ Modalità Server (Guidata da IA Esterna):**
-  - Espone 7 strumenti consentendo ad assistenti IA esterni (Claude, Cursor, ecc.) di accedere direttamente al tuo vault.
-  - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: Fornisce all'IA il contesto e le conoscenze del tuo vault.
-  - `create_note`, `append_to_note`: Consente all'IA di scrivere in sicurezza idee organizzate direttamente nel tuo vault (protezione da sovrascrittura applicata).
-  - `read_daily_note`, `append_to_daily_note`: Integrazione lettura/scrittura per la nota quotidiana di oggi.
-  - Operazioni pericolose come l'eliminazione, lo spostamento o la sovrascrittura di file saranno implementate con ulteriori misure di sicurezza nei futuri aggiornamenti.
+  - Fornisce 21 strumenti che consentono agli assistenti IA esterni (Claude, Cursor, ecc.) o all'IA in Modalità Agente di accedere direttamente al tuo vault.
+  - **Lettura e Ricerca:** `read_active_note`, `read_note`, `search_notes` (supporta il filtraggio per tag), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` per fornire un ampio contesto all'IA.
+  - **Scrittura e Modifica:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment` (creazione/modifica di note e salvataggio di file binari).
+  - **Gestione ed Esecuzione:** `delete_note`, `move_note` (sposta/rinomina), `execute_code`, `run_note_code_block` (esecuzione di codice all'interno di una sandbox).
+  - **Note Quotidiane:** `read_daily_note`, `append_to_daily_note` (integrazione lettura/scrittura per la nota quotidiana di oggi).
+  - **Sicurezza Robusta e Controllo Utente:** Operazioni distruttive come la modifica del contenuto, l'eliminazione di file o l'esecuzione di codice non possono essere elaborate dall'agente da solo. Vengono eseguite in sicurezza con backup di protezione da sovrascrittura solo dopo aver mostrato all'utente un'interfaccia (Visualizzatore di Differenze e Modale di Avviso Attività) e aver ricevuto l'approvazione finale (Accept).
 - **Come usare:** Abilita le funzioni MCP nelle impostazioni del plugin e configura il metodo di trasporto client/server (SSE).
 - **Nota:** *Le funzioni Agente e MCP sono attualmente in fase Sperimentale (Beta). Sebbene esistano varie reti di sicurezza come la protezione da sovrascrittura e limiti di caratteri, si consiglia di monitorare da vicino le operazioni inizialmente, poiché IA esterne modificheranno direttamente le tue note.*
 </details>

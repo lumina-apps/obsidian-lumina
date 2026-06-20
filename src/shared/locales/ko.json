@@ -279,7 +279,7 @@
         "desc": "응답의 창의성과 출력 길이를 조절합니다.",
         "tempLabel": "Temperature",
         "tempDesc": "0에 가까울수록 정확, 2에 가까울수록 창의적 (기본값: 0.7)",
-        "maxOutput": "최대 출력 토큰 (기본값: 2048)",
+        "maxOutput": "최대 출력 토큰 (기본값: 4000)",
         "responseLang": "응답 언어 지정",
         "responseLangDesc": "AI 응답 언어를 고정합니다. \"자동\"은 시스템 프롬프트를 따릅니다.",
         "responseLangAuto": "자동"
@@ -545,6 +545,18 @@
     "noActiveEditor": "활성화된 마크다운 에디터를 찾을 수 없습니다."
   },
   "uiMessages": {
+    "actionApproval": {
+      "title": "승인 필요: {{action}}",
+      "targetFile": "대상 파일: {{path}}",
+      "createNote": "📄 새 노트를 생성하시겠습니까?",
+      "deleteNote": "⚠️ 이 노트를 삭제하시겠습니까?",
+      "renameNote": "✏️ 이 노트를 다음 경로로 이동/이름 변경하시겠습니까:",
+      "updateFrontmatter": "🏷️ 프론트매터를 업데이트하시겠습니까:",
+      "saveAttachment": "📎 첨부파일을 저장하시겠습니까? 크기: {{size}} bytes",
+      "executeCode": "⚡ 이 코드를 실행하시겠습니까?",
+      "accept": "승인",
+      "reject": "거절"
+    },
     "emptyResponseTokenLimit": "⚠️ 모델이 빈 응답을 반환했습니다. 최대 출력 토큰(Max Output Tokens) 제한에 도달하여 생성이 중단되었습니다. 설정의 [최대 출력 토큰] 제한을 늘려주세요.",
     "tokenLimitHitWarning": "\n\n⚠️ (최대 출력 토큰 제한에 도달하여 답변이 도중에 끊겼습니다. 설정의 [최대 출력 토큰] 값을 늘려주세요.)",
     "toolExecutionRejected": "사용자가 도구 실행을 승인하지 않았습니다.",

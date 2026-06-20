@@ -95,13 +95,15 @@ export class McpManager {
 				};
 			}
 
-			const modal = new McpPermissionModal(this.plugin.app, client.config.name, toolName, args);
-			const approved = await modal.waitForResponse();
-			if (!approved) {
-				return {
-					isError: true,
-					content: [{ type: 'text', text: t('uiMessages.toolExecutionRejected') }],
-				};
+			if (serverId !== LOCAL_MCP_CLIENT_ID) {
+				const modal = new McpPermissionModal(this.plugin.app, client.config.name, toolName, args);
+				const approved = await modal.waitForResponse();
+				if (!approved) {
+					return {
+						isError: true,
+						content: [{ type: 'text', text: t('uiMessages.toolExecutionRejected') }],
+					};
+				}
 			}
 		}
 

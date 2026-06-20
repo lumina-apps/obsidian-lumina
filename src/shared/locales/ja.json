@@ -255,7 +255,7 @@
         "desc": "Temperature（創造性/正確性の調整）、最大出力長などを設定します。",
         "tempLabel": "Temperature",
         "tempDesc": "低いほど正確、高いほど創造的になります（0.0〜2.0） (Default: 0.7)",
-        "maxOutput": "最大出力トークン (Max Output Tokens) (Default: 2048)",
+        "maxOutput": "最大出力トークン (Max Output Tokens) (Default: 4000)",
         "responseLang": "応答言語を指定",
         "responseLangDesc": "AIが常に指定された言語で回答するようにします。自動はシステムプロンプトに従います。",
         "responseLangAuto": "自動"
@@ -543,6 +543,18 @@
     "noActiveEditor": "アクティブなMarkdownエディターが見つかりません。"
   },
   "uiMessages": {
+    "actionApproval": {
+      "title": "承認が必要です: {{action}}",
+      "targetFile": "対象ファイル: {{path}}",
+      "createNote": "📄 新しいノートを作成しますか？",
+      "deleteNote": "⚠️ このノートを削除しますか？",
+      "renameNote": "✏️ このノートを以下のパスに移動/名前変更しますか:",
+      "updateFrontmatter": "🏷️ フロントマターを更新しますか:",
+      "saveAttachment": "📎 添付ファイルを保存しますか？ サイズ: {{size}} バイト",
+      "executeCode": "⚡ このコードを実行しますか？",
+      "accept": "承認",
+      "reject": "拒否"
+    },
     "emptyResponseTokenLimit": "⚠️ モデルが空の応答を返しました。最大出力トークン（Max Output Tokens）制限に達したため、生成が中断されました。設定の「最大出力トークン」制限を増やしてください。",
     "tokenLimitHitWarning": "\n\n⚠️ （最大出力トークン制限に達したため、回答が途中で途切れました。設定の「最大出力トークン」の値を増やしてください。）",
     "toolExecutionRejected": "ツールの実行をユーザーが承認しませんでした。",

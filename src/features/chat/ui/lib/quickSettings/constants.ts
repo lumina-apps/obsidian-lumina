@@ -21,7 +21,7 @@ export const TEMPERATURE_PRESETS: readonly PresetOption[] = [
 ] as const;
 
 export const TOKEN_PRESETS: readonly PresetOption[] = [
-	{ value: 500, threshold: 1000, i18nKey: "short" },
-	{ value: 2000, threshold: 2500, i18nKey: "medium" },
-	{ value: 4000, threshold: Infinity, i18nKey: "long" },
+	{ value: 1000, threshold: 2500, i18nKey: "short" },
+	{ value: 4000, threshold: 6000, i18nKey: "medium" },
+	{ value: 8000, threshold: Infinity, i18nKey: "long" },
 ] as const;

@@ -90,11 +90,12 @@ Lumina 根據您的熟練程度提供兩種模式。選擇適合您的方式！
   - 在 Obsidian 內部直接與 AI 互動並進行工作。
   - 連接眾多外部 MCP 伺服器（GitHub、本地資料庫、網路搜尋等），將海量資料即時抓取並整理到您的筆記中。
 - **🖥️ 伺服器端模式 (外部 AI 主導):**
-  - 提供 7 個工具，允許外部 AI 助手（Claude、Cursor 等）直接存取您的儲存庫。
-  - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: 為 AI 提供您儲存庫的上下文和知識。
-  - `create_note`, `append_to_note`: 允許 AI 整理思路並直接將內容安全地寫入您的儲存庫（應用了覆蓋保護）。
-  - `read_daily_note`, `append_to_daily_note`: 針對今天的每日筆記的讀/寫整合。
-  - 檔案刪除、移動或覆蓋等危險操作將在未來的更新中配備額外的安全措施。
+  - 提供 21 個工具，允許外部 AI 助手（Claude、Cursor 等）或代理模式的 AI 直接存取您的儲存庫。
+  - **讀取與搜尋:** `read_active_note`, `read_note`, `search_notes` (支援標籤過濾), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` 為 AI 提供廣泛的上下文。
+  - **編寫與修改:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment` (建立/修改筆記以及儲存二進位檔案)。
+  - **管理與執行:** `delete_note`, `move_note` (移動/重新命名), `execute_code`, `run_note_code_block` (在沙盒內執行程式碼)。
+  - **每日筆記:** `read_daily_note`, `append_to_daily_note` (針對今天每日筆記的讀寫整合)。
+  - **強大的安全與使用者控制:** 內容修改、檔案刪除或程式碼執行等破壞性操作不能由代理單獨處理。它們只有在透過 UI（差異檢視器和任務警告對話方塊）提示使用者並獲得最終批准 (Accept) 後，才會在提供覆蓋保護備份的情況下安全執行。
 - **如何使用:** 在外掛設定中啟用 MCP 功能，並配置用戶端/伺服器端傳輸方法 (SSE)。
 - **注意:** *代理和 MCP 功能目前處於實驗性（測試版）階段。雖然實施了覆蓋保護和字元限制等多種安全網，但由於外部 AI 將直接編輯您的筆記，我們建議最初密切監控操作。*
 </details>

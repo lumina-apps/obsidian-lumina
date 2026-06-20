@@ -90,11 +90,12 @@ Lumina propose deux modes adaptés à votre niveau. Choisissez celui qui vous co
   - Interagissez et travaillez directement avec l'IA au sein d'Obsidian.
   - Connectez de nombreux serveurs MCP externes (GitHub, bases de données locales, recherche web, etc.) pour extraire et organiser instantanément de vastes quantités de données dans vos notes.
 - **🖥️ Mode Serveur (Dirigé par une IA Externe) :**
-  - Expose 7 outils permettant à des assistants IA externes (Claude, Cursor, etc.) d'accéder directement à votre coffre-fort.
-  - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search` : Fournit le contexte et les connaissances de votre coffre-fort à l'IA.
-  - `create_note`, `append_to_note` : Permet à l'IA d'écrire en toute sécurité des idées organisées directement dans votre coffre-fort (protection d'écrasement appliquée).
-  - `read_daily_note`, `append_to_daily_note` : Intégration de lecture/écriture pour la note quotidienne d'aujourd'hui.
-  - Les opérations dangereuses telles que la suppression, le déplacement ou l'écrasement de fichiers seront implémentées avec des mesures de sécurité supplémentaires dans les futures mises à jour.
+  - Fournit 21 outils permettant à des assistants IA externes (Claude, Cursor, etc.) ou à l'IA en Mode Agent d'accéder directement à votre coffre-fort.
+  - **Lecture & Recherche :** `read_active_note`, `read_note`, `search_notes` (prend en charge le filtrage par balises), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` pour fournir un vaste contexte à l'IA.
+  - **Écriture & Modification :** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment` (créer/modifier des notes et sauvegarder des fichiers binaires).
+  - **Gestion & Exécution :** `delete_note`, `move_note` (déplacer/renommer), `execute_code`, `run_note_code_block` (exécuter du code dans un bac à sable).
+  - **Notes Quotidiennes :** `read_daily_note`, `append_to_daily_note` (intégration de lecture/écriture pour la note quotidienne d'aujourd'hui).
+  - **Sécurité Robuste & Contrôle Utilisateur :** Les opérations destructives telles que la modification de contenu, la suppression de fichiers ou l'exécution de code ne peuvent pas être traitées par l'agent seul. Elles sont exécutées en toute sécurité avec des sauvegardes de protection contre l'écrasement uniquement après avoir invité l'utilisateur via une interface (Visualiseur de Différences et Fenêtre Modale d'Avertissement de Tâche) et avoir reçu l'approbation finale (Accept).
 - **Comment utiliser :** Activez les fonctionnalités MCP dans les paramètres du plugin et configurez la méthode de transport client/serveur (SSE).
 - **Remarque :** *Les fonctionnalités d'Agent et de MCP sont actuellement en phase Expérimentale (Bêta). Bien que divers filets de sécurité comme la protection contre l'écrasement et des limites de caractères soient en place, nous recommandons de surveiller étroitement les opérations au début, car des IA externes éditeront directement vos notes.*
 </details>

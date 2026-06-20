@@ -676,6 +676,18 @@ export interface TranslationDiscovery {
 
 // uiMessages
 export interface TranslationUiMessages {
+  actionApproval: {
+    title: string;
+    targetFile: string;
+    createNote: string;
+    deleteNote: string;
+    renameNote: string;
+    updateFrontmatter: string;
+    saveAttachment: string;
+    executeCode: string;
+    accept: string;
+    reject: string;
+  };
   emptyResponseTokenLimit: string;
   tokenLimitHitWarning: string;
   toolExecutionRejected: string;

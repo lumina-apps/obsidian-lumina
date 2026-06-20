@@ -255,7 +255,7 @@
         "desc": "調整回答的創造性與輸出長度。",
         "tempLabel": "Temperature",
         "tempDesc": "越接近 0 = 精確，越接近 2 = 創造性 (Default: 0.7)",
-        "maxOutput": "最大輸出 Token (Default: 2048)",
+        "maxOutput": "最大輸出 Token (Default: 4000)",
         "responseLang": "指定回應語言",
         "responseLangDesc": "強制 AI 使用指定語言回答。「自動」遵循系統提示詞。",
         "responseLangAuto": "自動"
@@ -543,6 +543,18 @@
     "noActiveEditor": "未找到活動的 Markdown 編輯器。"
   },
   "uiMessages": {
+    "actionApproval": {
+      "title": "需要批准: {{action}}",
+      "targetFile": "目標檔案: {{path}}",
+      "createNote": "📄 是否要建立新筆記？",
+      "deleteNote": "⚠️ 是否要刪除此筆記？",
+      "renameNote": "✏️ 是否要將此筆記移動/重新命名為:",
+      "updateFrontmatter": "🏷️ 是否要更新 Frontmatter 的鍵:",
+      "saveAttachment": "📎 是否要儲存附件？ 大小: {{size}} 位元組",
+      "executeCode": "⚡ 是否要執行此程式碼？",
+      "accept": "批准",
+      "reject": "拒絕"
+    },
     "emptyResponseTokenLimit": "⚠️ 模組傳回了空回應。由於達到最大輸出 Token 限制，生成已停止。請在設定中增加「最大輸出 Token」限制。",
     "tokenLimitHitWarning": "\n\n⚠️ (由於達到最大輸出 Token 限制，生成已中斷。請在設定中增加「最大輸出 Token」值。)",
     "toolExecutionRejected": "使用者已拒絕執行工具。",

@@ -1,4 +1,19 @@
-import { TFile, normalizePath } from 'obsidian';
+import { TFile, normalizePath, App } from 'obsidian';
+
+/** 경로의 부모 폴더가 존재하지 않으면 재귀적으로 생성 */
+export async function ensureFolderExists(app: App, filePath: string): Promise<void> {
+	const normPath = normalizePath(filePath);
+	const lastSlash = normPath.lastIndexOf('/');
+	if (lastSlash === -1) return; // 최상위 경로
+
+	const folderPath = normPath.substring(0, lastSlash);
+	const folder = app.vault.getAbstractFileByPath(folderPath);
+
+	if (!folder) {
+		await ensureFolderExists(app, folderPath);
+		await app.vault.createFolder(folderPath);
+	}
+}
 
 /** 마크다운 파일(.md)인지 확인 */
 export function isMarkdownFile(file: unknown): file is TFile {

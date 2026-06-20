@@ -279,7 +279,7 @@
         "desc": "Adjust response creativity and output length.",
         "tempLabel": "Temperature",
         "tempDesc": "Closer to 0 = precise, closer to 2 = creative (Default: 0.7)",
-        "maxOutput": "Max Output Tokens (Default: 2048)",
+        "maxOutput": "Max Output Tokens (Default: 4000)",
         "responseLang": "Specify Response Language",
         "responseLangDesc": "Force AI responses to a specific language. \"Auto\" follows the system prompt.",
         "responseLangAuto": "Auto"
@@ -545,6 +545,18 @@
     "noActiveEditor": "No active Markdown editor found."
   },
   "uiMessages": {
+    "actionApproval": {
+      "title": "Approval Required: {{action}}",
+      "targetFile": "Target File: {{path}}",
+      "createNote": "📄 Do you want to CREATE a new note?",
+      "deleteNote": "⚠️ Do you want to DELETE this note?",
+      "renameNote": "✏️ Do you want to MOVE/RENAME this note to:",
+      "updateFrontmatter": "🏷️ Do you want to UPDATE FRONTMATTER for key:",
+      "saveAttachment": "📎 Do you want to SAVE ATTACHMENT? Size: {{size}} bytes",
+      "executeCode": "⚡ Do you want to EXECUTE this code?",
+      "accept": "Accept",
+      "reject": "Reject"
+    },
     "emptyResponseTokenLimit": "⚠️ The model returned an empty response. Generation was stopped because the Max Output Tokens limit was reached. Please increase the \"Max Output Tokens\" limit in settings.",
     "tokenLimitHitWarning": "\n\n⚠️ (Generation was interrupted because the Max Output Tokens limit was reached. Please increase the \"Max Output Tokens\" value in settings.)",
     "toolExecutionRejected": "Tool execution was rejected by the user.",

@@ -255,7 +255,7 @@
         "desc": "Ajuster la créativité et la longueur de la réponse.",
         "tempLabel": "Température",
         "tempDesc": "Proche de 0 = précis, proche de 2 = créatif (Default: 0.7)",
-        "maxOutput": "Tokens de sortie max (Default: 2048)",
+        "maxOutput": "Tokens de sortie max (Default: 4000)",
         "responseLang": "Spécifier la langue de réponse",
         "responseLangDesc": "Forcer les réponses de l'IA dans une langue spécifique. « Auto » suit le prompt système.",
         "responseLangAuto": "Auto"
@@ -543,6 +543,18 @@
     "noActiveEditor": "Aucun éditeur Markdown actif trouvé."
   },
   "uiMessages": {
+    "actionApproval": {
+      "title": "Approbation Requise : {{action}}",
+      "targetFile": "Fichier Cible : {{path}}",
+      "createNote": "📄 Voulez-vous CRÉER une nouvelle note ?",
+      "deleteNote": "⚠️ Voulez-vous SUPPRIMER cette note ?",
+      "renameNote": "✏️ Voulez-vous DÉPLACER/RENOMMER cette note vers :",
+      "updateFrontmatter": "🏷️ Voulez-vous METTRE À JOUR le FRONTMATTER pour la clé :",
+      "saveAttachment": "📎 Voulez-vous ENREGISTRER la PIÈCE JOINTE ? Taille : {{size}} octets",
+      "executeCode": "⚡ Voulez-vous EXÉCUTER ce code ?",
+      "accept": "Accepter",
+      "reject": "Rejeter"
+    },
     "emptyResponseTokenLimit": "⚠️ Le modèle a renvoyé une réponse vide. La génération a été arrêtée car la limite de jetons de sortie maximaux a été atteinte. Veuillez augmenter la limite de \"jetons de sortie maximaux\" dans les paramètres.",
     "tokenLimitHitWarning": "\n\n⚠️ (La génération a été interrompue car la limite de jetons de sortie maximaux a été atteinte. Veuillez augmenter la valeur de \"jetons de sortie maximaux\" dans les paramètres.)",
     "toolExecutionRejected": "L'exécution de l'outil a été rejetée par l'utilisateur.",

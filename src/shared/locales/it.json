@@ -255,7 +255,7 @@
         "desc": "Regola creatività e lunghezza della risposta.",
         "tempLabel": "Temperatura",
         "tempDesc": "Più vicino a 0 = preciso, più vicino a 2 = creativo (Default: 0.7)",
-        "maxOutput": "Token Output Max (Default: 2048)",
+        "maxOutput": "Token Output Max (Default: 4000)",
         "responseLang": "Specifica Lingua di Risposta",
         "responseLangDesc": "Forza le risposte dell'IA in una lingua specifica. \"Auto\" segue il prompt di sistema.",
         "responseLangAuto": "Auto"
@@ -543,7 +543,19 @@
     "noActiveEditor": "Nessun editor Markdown attivo trovato."
   },
   "uiMessages": {
-    "emptyResponseTokenLimit": "⚠️ Il modello ha restituito una resposta vuota. La generazione è stata interrotta perché è stato raggiunto il limite massimo di token di output. Aumenta il limite \"Token di output massimi\" nelle impostazioni.",
+    "actionApproval": {
+      "title": "Approvazione Richiesta: {{action}}",
+      "targetFile": "File di Destinazione: {{path}}",
+      "createNote": "📄 Vuoi CREARE una nuova nota?",
+      "deleteNote": "⚠️ Vuoi ELIMINARE questa nota?",
+      "renameNote": "✏️ Vuoi SPOSTARE/RINOMINARE questa nota in:",
+      "updateFrontmatter": "🏷️ Vuoi AGGIORNARE il FRONTMATTER per la chiave:",
+      "saveAttachment": "📎 Vuoi SALVARE l'ALLEGATO? Dimensioni: {{size}} byte",
+      "executeCode": "⚡ Vuoi ESEGUIRE questo codice?",
+      "accept": "Accetta",
+      "reject": "Rifiuta"
+    },
+    "emptyResponseTokenLimit": "⚠️ Il modello ha restituito una risposta vuota. La generazione è stata interrotta perché è stato raggiunto il limite massimo di token di output. Aumenta il limite \"Token di output massimi\" nelle impostazioni.",
     "tokenLimitHitWarning": "\n\n⚠️ (La generazione è stata interrotta perché è stato raggiunto il limite massimo di token di output. Aumenta il valore di \"Token di output massimi\" nelle impostazioni.)",
     "toolExecutionRejected": "L'esecuzione dello strumento è stata rifiutata dall'utente.",
     "inlineReplace": "Sostituisci",

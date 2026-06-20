@@ -7,7 +7,7 @@ export interface ToolDefinition {
 	description: string;
 	inputSchema: {
 		type: 'object';
-		properties: Record<string, { type: string; description: string }>;
+		properties: Record<string, any>;
 		required?: string[];
 	};
 }
@@ -53,6 +53,7 @@ export function getToolDefinitions(): ToolDefinition[] {
 				type: 'object',
 				properties: {
 					query: { type: 'string', description: t('mcpServerTools.search_notes.argQuery') },
+					tags: { type: 'array', items: { type: 'string' }, description: 'List of tags to filter by (e.g. ["#idea", "#task"]).' }
 				},
 				required: ['query'],
 			},
@@ -108,6 +109,144 @@ export function getToolDefinitions(): ToolDefinition[] {
 				},
 				required: ['query'],
 			},
+		},
+		{
+			name: 'replace_note',
+			description: 'Replace the entire content of an existing note.',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					path: { type: 'string', description: 'Path to the note' },
+					content: { type: 'string', description: 'New content to replace the old content completely' }
+				},
+				required: ['path', 'content']
+			}
+		},
+		{
+			name: 'patch_note',
+			description: 'Replace a specific target text with replacement text in a note.',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					path: { type: 'string', description: 'Path to the note' },
+					target: { type: 'string', description: 'Exact string to find and replace. Must match exactly including whitespace.' },
+					replacement: { type: 'string', description: 'String to replace the target with.' }
+				},
+				required: ['path', 'target', 'replacement']
+			}
+		},
+		{
+			name: 'delete_note',
+			description: 'Delete a note.',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					path: { type: 'string', description: 'Path to the note to delete' }
+				},
+				required: ['path']
+			}
+		},
+		{
+			name: 'move_note',
+			description: 'Move or rename a note.',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					sourcePath: { type: 'string', description: 'Current path to the note' },
+					targetPath: { type: 'string', description: 'New path for the note' }
+				},
+				required: ['sourcePath', 'targetPath']
+			}
+		},
+		{
+			name: 'get_backlinks',
+			description: 'Get a list of notes that link to the specified note.',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					path: { type: 'string', description: 'Path to the note' }
+				},
+				required: ['path']
+			}
+		},
+		{
+			name: 'update_frontmatter',
+			description: 'Update a frontmatter property in a note.',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					path: { type: 'string', description: 'Path to the note' },
+					key: { type: 'string', description: 'Frontmatter key to update' },
+					value: { type: 'string', description: 'New value for the frontmatter key' }
+				},
+				required: ['path', 'key', 'value']
+			}
+		},
+		{
+			name: 'get_note_metadata',
+			description: 'Get metadata (frontmatter, tags, creation date, etc) for a note.',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					path: { type: 'string', description: 'Path to the note' }
+				},
+				required: ['path']
+			}
+		},
+		{
+			name: 'list_attachments',
+			description: 'List all attachment files (images, pdfs) inside the vault, or linked in a note.',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					path: { type: 'string', description: 'Optional path to a note to find attachments linked within it. If empty, lists all vault attachments.' }
+				},
+				required: []
+			}
+		},
+		{
+			name: 'save_attachment',
+			description: 'Save a binary attachment file from base64 string.',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					path: { type: 'string', description: 'Path where to save the attachment' },
+					base64Data: { type: 'string', description: 'Base64 encoded file data' }
+				},
+				required: ['path', 'base64Data']
+			}
+		},
+		{
+			name: 'execute_code',
+			description: 'Execute javascript/typescript code in a secure sandbox.',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					code: { type: 'string', description: 'JavaScript/TypeScript code to execute' }
+				},
+				required: ['code']
+			}
+		},
+		{
+			name: 'run_note_code_block',
+			description: 'Run a specific code block from a note in the sandbox.',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					path: { type: 'string', description: 'Path to the note containing the code block' },
+					blockIndex: { type: 'number', description: '0-based index of the code block in the note to execute' }
+				},
+				required: ['path', 'blockIndex']
+			}
+		},
+		{
+			name: 'list_tags',
+			description: 'List all tags used in the vault.',
+			inputSchema: {
+				type: 'object',
+				properties: {},
+				required: []
+			}
 		},
 	];
 }

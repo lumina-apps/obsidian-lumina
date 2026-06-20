@@ -14,7 +14,7 @@
 	let systemPrompts = $derived($settingsStore?.chat.systemPrompts ?? []);
 	let activePromptId = $derived($settingsStore?.chat.activeSystemPromptId ?? "default");
 	let temperature = $derived($settingsStore?.chat.temperature ?? 0.7);
-	let maxTokens = $derived($settingsStore?.chat.maxOutputTokens ?? 2000);
+	let maxTokens = $derived($settingsStore?.chat.maxOutputTokens ?? 4000);
 
 	// ── Preset → 번역된 레이블 주입 ──────────────────────────────────
 	function buildPresets(presets: typeof TEMPERATURE_PRESETS): PresetItem[] {

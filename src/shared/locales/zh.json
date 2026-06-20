@@ -255,7 +255,7 @@
         "desc": "调整回答的创造性和输出长度。",
         "tempLabel": "Temperature",
         "tempDesc": "越接近 0 = 精确，越接近 2 = 创造性 (Default: 0.7)",
-        "maxOutput": "最大输出 Token (Default: 2048)",
+        "maxOutput": "最大输出 Token (Default: 4000)",
         "responseLang": "指定响应语言",
         "responseLangDesc": "强制 AI 使用指定语言回答。\"自动\"遵循系统提示词。",
         "responseLangAuto": "自动"
@@ -543,6 +543,18 @@
     "noActiveEditor": "未找到激活的 Markdown 编辑器。"
   },
   "uiMessages": {
+    "actionApproval": {
+      "title": "需要批准: {{action}}",
+      "targetFile": "目标文件: {{path}}",
+      "createNote": "📄 是否要创建新笔记？",
+      "deleteNote": "⚠️ 是否要删除此笔记？",
+      "renameNote": "✏️ 是否要将此笔记移动/重命名为:",
+      "updateFrontmatter": "🏷️ 是否要更新 Frontmatter 的键:",
+      "saveAttachment": "📎 是否要保存附件？ 大小: {{size}} 字节",
+      "executeCode": "⚡ 是否要执行此代码？",
+      "accept": "批准",
+      "reject": "拒绝"
+    },
     "emptyResponseTokenLimit": "⚠️ 模型返回了空响应。由于达到最大输出 Token 限制，生成已停止。请在设置中增加“最大输出 Token”限制。",
     "tokenLimitHitWarning": "\n\n⚠️ (由于达到最大输出 Token 限制，生成已中断。请在设置中增加“最大输出 Token”值。)",
     "toolExecutionRejected": "用户已拒绝执行工具。",

@@ -63,7 +63,11 @@ export class LuminaMcpClient {
 	}
 
 	async callTool(name: string, args: Record<string, unknown>): Promise<unknown> {
-		return await this.client.callTool({ name, arguments: args ?? {} });
+		return await this.client.callTool(
+			{ name, arguments: args ?? {} },
+			undefined,
+			{ timeout: 3600000 } // 1 hour timeout for user approval
+		);
 	}
 
 	async disconnect(): Promise<void> {

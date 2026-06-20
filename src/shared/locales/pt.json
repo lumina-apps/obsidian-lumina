@@ -255,7 +255,7 @@
         "desc": "Ajuste a criatividade e o comprimento da resposta.",
         "tempLabel": "Temperatura",
         "tempDesc": "Mais perto de 0 = preciso, mais perto de 2 = criativo (Default: 0.7)",
-        "maxOutput": "Máx. de Tokens de Saída (Default: 2048)",
+        "maxOutput": "Máx. de Tokens de Saída (Default: 4000)",
         "responseLang": "Especificar Idioma de Resposta",
         "responseLangDesc": "Força as respostas da IA a um idioma específico. \"Auto\" segue o prompt do sistema.",
         "responseLangAuto": "Automático"
@@ -543,6 +543,18 @@
     "noActiveEditor": "Nenhum editor Markdown ativo encontrado."
   },
   "uiMessages": {
+    "actionApproval": {
+      "title": "Aprovação Necessária: {{action}}",
+      "targetFile": "Arquivo de Destino: {{path}}",
+      "createNote": "📄 Deseja CRIAR uma nova nota?",
+      "deleteNote": "⚠️ Deseja EXCLUIR esta nota?",
+      "renameNote": "✏️ Deseja MOVER/RENOMEAR esta nota para:",
+      "updateFrontmatter": "🏷️ Deseja ATUALIZAR O FRONTMATTER da chave:",
+      "saveAttachment": "📎 Deseja SALVAR O ANEXO? Tamanho: {{size}} bytes",
+      "executeCode": "⚡ Deseja EXECUTAR este código?",
+      "accept": "Aceitar",
+      "reject": "Rejeitar"
+    },
     "emptyResponseTokenLimit": "⚠️ O modelo retornou uma resposta vazia. A geração foi interrompida porque o limite de Tokens Máximos de Saída foi atingido. Aumente o limite de \"Tokens Máximos de Saída\" nas configurações.",
     "tokenLimitHitWarning": "\n\n⚠️ (A geração foi interrompida porque o limite de Tokens Máximos de Saída foi atingido. Aumente o valor de \"Tokens Máximos de Saída\" nas configurações.)",
     "toolExecutionRejected": "A execução da ferramenta foi rejeitada pelo usuário.",

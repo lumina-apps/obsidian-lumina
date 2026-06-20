@@ -16,7 +16,19 @@ export type ToolName =
 	| 'read_daily_note'
 	| 'append_to_daily_note'
 	| 'list_notes'
-	| 'rag_search';
+	| 'rag_search'
+	| 'replace_note'
+	| 'patch_note'
+	| 'delete_note'
+	| 'move_note'
+	| 'get_backlinks'
+	| 'update_frontmatter'
+	| 'get_note_metadata'
+	| 'list_attachments'
+	| 'save_attachment'
+	| 'execute_code'
+	| 'run_note_code_block'
+	| 'list_tags';
 
 /** CallTool 요청에서 전달되는 원시 인자 */
 export type ToolArguments = Record<string, unknown>;

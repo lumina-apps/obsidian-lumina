@@ -16,12 +16,14 @@ import { updateDiscoveryState } from './core/store/discoveryStore';
 import { McpManager } from './core/mcp/mcpManager';
 import { QuickActionHandler } from './features/editor/quickActionHandler';
 import { InlineAISuggest } from './features/editor/inlineSuggest';
+import { inlineDiffExtension } from './features/editor/diffExtension';
 import { debugLogger } from './shared/debugLogger';
 import { registerLuminaIcons } from './shared/icons';
 import { FrontmatterManager } from './features/frontmatter/frontmatterManager';
 import { runMigrations } from './core/settings/migrations';
 import { initEmbeddingWorker } from './features/rag/ragInitializer';
 import { activateView, closeView } from './core/views/viewHelper';
+import { setupApprovalListener, cleanupApprovalListener } from './features/chat/utils/approvalListener';
 
 export default class LuminaPlugin extends Plugin {
 	settings!: LuminaSettings;
@@ -73,10 +75,16 @@ export default class LuminaPlugin extends Plugin {
 		// ── MCP 매니저 초기화 ─────────────────────────────────────────
 		this.mcpManager = new McpManager(this);
 
+		// ── Approval Listener 초기화 ──────────────────────────────────
+		setupApprovalListener(this.app);
+
 		// ── 퀵 액션 핸들러 및 인라인 서제스트 초기화 ───────────────
 		this.quickActionHandler = new QuickActionHandler(this);
 		this.registerQuickActions();
 		this.registerEditorSuggest(new InlineAISuggest(this));
+
+		// ── 에디터 인라인 Diff Extension 등록 ───────────────────────
+		this.registerEditorExtension(inlineDiffExtension);
 
 		// ── 프론트매터 매니저 초기화 ──────────────────────────────────
 		this.frontmatterManager = new FrontmatterManager(this);
@@ -216,6 +224,7 @@ export default class LuminaPlugin extends Plugin {
 		this.embeddingWorker?.terminate();
 		this.clearWatchEvents();
 		this.frontmatterManager.destroy();
+		cleanupApprovalListener();
 		void this.mcpManager?.destroy();
 	}
 

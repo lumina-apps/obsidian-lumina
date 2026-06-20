@@ -90,11 +90,12 @@ Lumina offers two tracks tailored to your skill level. Choose the one that suits
   - Interact and work directly with AI within Obsidian.
   - Connect numerous external MCP servers (GitHub, local DBs, web search, etc.) to instantly scrape and organize vast amounts of data into your notes.
 - **🖥️ Server Mode (External AI-led):**
-  - Exposes 7 tools allowing external AI assistants (Claude, Cursor, etc.) to directly access your vault.
-  - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: Provides your vault's context and knowledge to the AI.
-  - `create_note`, `append_to_note`: Allows the AI to safely write organized ideas directly into your vault (overwriting protection applied).
-  - `read_daily_note`, `append_to_daily_note`: Read/write integration for today's daily note.
-  - Dangerous operations such as file deletion, moving, or overwriting will be implemented with additional safety measures in future updates.
+  - Provides 21 tools allowing external AI assistants (Claude, Cursor, etc.) or the Agent Mode AI to directly access your vault.
+  - **Read & Search:** `read_active_note`, `read_note`, `search_notes` (supports tag filtering), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` to provide extensive context to the AI.
+  - **Write & Modify:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment` (create/modify notes and save binary files).
+  - **Manage & Execute:** `delete_note`, `move_note` (move/rename), `execute_code`, `run_note_code_block` (execute code within a sandbox).
+  - **Daily Notes:** `read_daily_note`, `append_to_daily_note` (read/write integration for today's daily note).
+  - **Robust Security & User Control:** Destructive operations such as content modification, file deletion, or code execution cannot be processed by the agent alone. They are executed safely with overwrite-protection backups only after prompting the user with a UI (Diff Viewer and Task Warning Modal) and receiving final approval (Accept).
 - **How to use:** Enable MCP features in the plugin settings and configure the client/server transport method (SSE).
 - **Note:** *Agent and MCP features are currently in Experimental (Beta) phase. While various safety nets like overwrite protection and character limits are in place, we recommend initially monitoring operations closely as external AI will directly edit your notes.*
 </details>

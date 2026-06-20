@@ -90,11 +90,12 @@ Lumina는 여러분의 숙련도에 맞춰 두 가지 모드를 제공합니다.
   - 옵시디언 내부에서 AI와 직접 대화하며 작업
   - 수많은 외부 MCP 서버(GitHub, 로컬 DB, 웹 검색 등)를 연결해 방대한 데이터를 내 노트로 즉시 스크랩 및 정리
 - **🖥️ 서버 모드 (외부 AI가 주도):**
-  - 외부 AI(Claude, Cursor 등) 또는 에이전트모드의 AI가 내 볼트에 직접 접근할 수 있도록 9가지 도구 제공
-  - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: 내 노트의 문맥과 지식을 AI에게 제공
-  - `create_note`, `append_to_note`: AI가 정리한 아이디어를 내 볼트에 안전하게 직접 작성 (덮어쓰기 방지 적용)
-  - `read_daily_note`, `append_to_daily_note`: 오늘 날짜의 데일리 노트 읽기/쓰기 연동
-  - 파일 삭제/이동/덮어쓰기 등 위험성이 있는 도구는 추가 안전장치와 함께 구현할 예정
+  - 외부 AI(Claude, Cursor 등) 또는 에이전트모드의 AI가 내 볼트에 직접 접근할 수 있도록 21가지 도구 제공
+  - **조회 및 검색:** `read_active_note`, `read_note`, `search_notes`(태그 필터 지원), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` 등 방대한 문맥을 AI에게 제공
+  - **작성 및 수정:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment` (노트 생성/수정 및 바이너리 파일 저장)
+  - **관리 및 실행:** `delete_note`, `move_note`(이동/이름 변경), `execute_code`, `run_note_code_block`(샌드박스 내 코드 실행)
+  - **데일리 노트:** `read_daily_note`, `append_to_daily_note` (오늘 날짜 노트 연동)
+  - **강력한 보안 및 사용자 제어권:** 내용 수정이나 파일 삭제, 코드 실행과 같은 파괴적 동작은 에이전트가 단독으로 처리할 수 없으며, 사용자에게 UI(Diff 뷰어 및 작업 경고 모달)를 띄워 최종 승인(Accept)을 받은 경우에만 덮어쓰기 방지 백업과 함께 안전하게 실행됩니다.
 - **사용 방법:** 플러그인 설정 메뉴에서 MCP 기능을 켜고, 클라이언트/서버 전송 방식(SSE)을 구성하세요.
 - **주의 사항:** *에이전트 및 MCP 기능은 아직 실험적(Beta) 단계입니다. 덮어쓰기 방지 및 글자 수 제한 등 다양한 안전장치가 구현되어 있으나, 외부 AI가 노트를 직접 편집하므로 처음에는 동작을 가볍게 확인하며 사용하시는 것을 권장합니다.*
 </details>

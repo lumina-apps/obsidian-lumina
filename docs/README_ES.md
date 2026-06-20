@@ -90,11 +90,12 @@ Lumina ofrece dos modos según tu nivel de experiencia. ¡Elige el que más te g
   - Interactúa y trabaja directamente con IA dentro de Obsidian.
   - Conecta numerosos servidores MCP externos (GitHub, bases de datos locales, búsqueda web, etc.) para extraer (scrape) y organizar instantáneamente grandes cantidades de datos en tus notas.
 - **🖥️ Modo Servidor (Dirigido por IA Externa):**
-  - Expone 7 herramientas que permiten a asistentes de IA externos (Claude, Cursor, etc.) acceder directamente a tu bóveda.
-  - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: Proporciona el contexto y conocimiento de tu bóveda a la IA.
-  - `create_note`, `append_to_note`: Permite a la IA escribir con seguridad ideas organizadas directamente en tu bóveda (protección de sobrescritura aplicada).
-  - `read_daily_note`, `append_to_daily_note`: Integración de lectura/escritura para la nota diaria de hoy.
-  - Operaciones peligrosas como la eliminación, el movimiento o la sobrescritura de archivos se implementarán con medidas de seguridad adicionales en futuras actualizaciones.
+  - Proporciona 21 herramientas que permiten a asistentes de IA externos (Claude, Cursor, etc.) o a la IA en Modo Agente acceder directamente a tu bóveda.
+  - **Lectura y Búsqueda:** `read_active_note`, `read_note`, `search_notes` (soporta filtrado por etiquetas), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` para proporcionar un amplio contexto a la IA.
+  - **Escritura y Modificación:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment` (crear/modificar notas y guardar archivos binarios).
+  - **Gestión y Ejecución:** `delete_note`, `move_note` (mover/renombrar), `execute_code`, `run_note_code_block` (ejecutar código en un entorno seguro o sandbox).
+  - **Notas Diarias:** `read_daily_note`, `append_to_daily_note` (integración de lectura/escritura para la nota diaria de hoy).
+  - **Seguridad Robusta y Control del Usuario:** Operaciones destructivas como la modificación de contenido, eliminación de archivos o ejecución de código no pueden ser procesadas por el agente de forma independiente. Se ejecutan de forma segura con copias de seguridad de protección contra sobrescritura, solo después de mostrar al usuario una interfaz (Visor de Diferencias y Modal de Advertencia de Tarea) y recibir la aprobación final (Accept).
 - **Cómo usar:** Habilita las características MCP en la configuración del plugin y configura el método de transporte cliente/servidor (SSE).
 - **Nota:** *Las funciones de Agente y MCP se encuentran actualmente en fase Experimental (Beta). Aunque existen diversas redes de seguridad como la protección contra sobrescritura y límites de caracteres, recomendamos supervisar de cerca las operaciones inicialmente, ya que las IA externas editarán tus notas directamente.*
 </details>

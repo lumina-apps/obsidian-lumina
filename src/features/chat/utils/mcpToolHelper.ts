@@ -33,6 +33,10 @@ export function collectMcpTools(params: {
 	for (const tool of rawTools) {
 
 
+		if (agentExecutionMode === 'read' && isDangerousTool(tool.name)) {
+			continue;
+		}
+
 		const schema = tool.inputSchema ?? { type: 'object', properties: {} };
 		const properties: Record<string, unknown> & { _serverId?: unknown } = { ...(schema.properties ?? {}) };
 		// _serverId를 inputSchema에 숨겨서 LLM이 tool call 시 arguments에 포함하도록 함
@@ -42,7 +46,7 @@ export function collectMcpTools(params: {
 			description: tool.description ?? '',
 			inputSchema: {
 				type: 'object',
-				properties: properties as Record<string, { type: string; description: string }>,
+				properties: properties as Record<string, any>,
 				required: schema.required ?? [],
 			},
 		});

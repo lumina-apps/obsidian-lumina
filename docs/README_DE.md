@@ -90,11 +90,12 @@ Lumina bietet zwei auf dein Können zugeschnittene Modi. Wähle die Methode, die
   - Interagiere und arbeite direkt mit KI innerhalb von Obsidian.
   - Verbinde zahlreiche externe MCP-Server (GitHub, lokale Datenbanken, Web-Suche usw.), um sofort riesige Datenmengen zu scrapen und in deinen Notizen zu organisieren.
 - **🖥️ Server-Modus (Externe KI-gesteuert):**
-  - Stellt 7 Tools zur Verfügung, die externen KI-Assistenten (Claude, Cursor usw.) direkten Zugriff auf deinen Vault gewähren.
-  - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: Bietet der KI den Kontext und das Wissen deines Vaults.
-  - `create_note`, `append_to_note`: Erlaubt der KI, organisierte Ideen sicher direkt in deinen Vault zu schreiben (Überschreibschutz aktiv).
-  - `read_daily_note`, `append_to_daily_note`: Lese-/Schreibintegration für die heutige Tagesnotiz.
-  - Gefährliche Vorgänge wie Löschen, Verschieben oder Überschreiben von Dateien werden in zukünftigen Updates mit zusätzlichen Sicherheitsmaßnahmen implementiert.
+  - Stellt 21 Tools zur Verfügung, die externen KI-Assistenten (Claude, Cursor usw.) oder der Agentenmodus-KI direkten Zugriff auf deinen Vault gewähren.
+  - **Lesen & Suchen:** `read_active_note`, `read_note`, `search_notes` (unterstützt Tag-Filterung), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags`, um der KI umfassenden Kontext bereitzustellen.
+  - **Schreiben & Ändern:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment` (Notizen erstellen/ändern und Binärdateien speichern).
+  - **Verwalten & Ausführen:** `delete_note`, `move_note` (verschieben/umbenennen), `execute_code`, `run_note_code_block` (Code in einer Sandbox ausführen).
+  - **Tagesnotizen:** `read_daily_note`, `append_to_daily_note` (Lese-/Schreibintegration für die heutige Tagesnotiz).
+  - **Robuste Sicherheit & Benutzerkontrolle:** Destruktive Vorgänge wie Inhaltsänderungen, Dateilöschungen oder Codeausführung können vom Agenten nicht allein verarbeitet werden. Sie werden sicher mit Überschreibschutz-Backups ausgeführt, jedoch erst, nachdem dem Benutzer eine Benutzeroberfläche (Diff-Viewer und Warnungs-Modal) angezeigt und die endgültige Genehmigung (Accept) erteilt wurde.
 - **Verwendung:** Aktiviere MCP-Funktionen in den Plugin-Einstellungen und konfiguriere die Client/Server-Transportmethode (SSE).
 - **Hinweis:** *Agenten- und MCP-Funktionen befinden sich derzeit in der experimentellen Phase (Beta). Obwohl verschiedene Sicherheitsnetze wie Überschreibschutz und Zeichenbegrenzungen bestehen, empfehlen wir anfangs, Operationen genau zu überwachen, da externe KI deine Notizen direkt bearbeitet.*
 </details>

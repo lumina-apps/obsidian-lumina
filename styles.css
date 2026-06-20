@@ -1615,3 +1615,62 @@ button.lumina-chat__send-btn.lumina-chat__send-btn--cancel:hover {
 	background: var(--background-modifier-border);
 	border-radius: 2px;
 }
+
+/* Lumina Inline Diff Extension */
+.lumina-diff-removed-line {
+	background-color: rgba(220, 38, 38, 0.15) !important;
+	text-decoration: line-through;
+	color: var(--text-muted);
+}
+
+.lumina-diff-added-widget {
+	background-color: rgba(16, 185, 129, 0.1) !important;
+	border-left: 3px solid var(--text-success, #10b981);
+	margin: 2px 0;
+	padding: 4px 8px;
+	color: var(--text-success, #10b981);
+	font-family: var(--font-monospace);
+	display: block;
+}
+
+.lumina-diff-added-line {
+	white-space: pre-wrap;
+	line-height: var(--line-height-normal);
+}
+
+.lumina-diff-action-widget {
+	display: flex;
+	gap: 6px;
+	padding: 4px;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	margin-bottom: 4px;
+	font-size: 0.85em;
+	width: max-content;
+}
+
+.lumina-diff-btn {
+	cursor: pointer;
+	padding: 2px 8px;
+	border-radius: 4px;
+	border: 1px solid transparent;
+	background: transparent;
+	font-weight: bold;
+}
+
+.lumina-diff-btn.accept {
+	color: var(--text-success, #10b981);
+	background: rgba(16, 185, 129, 0.1);
+}
+.lumina-diff-btn.accept:hover {
+	background: rgba(16, 185, 129, 0.2);
+}
+
+.lumina-diff-btn.reject {
+	color: var(--text-error, #ef4444);
+	background: rgba(220, 38, 38, 0.1);
+}
+.lumina-diff-btn.reject:hover {
+	background: rgba(220, 38, 38, 0.2);
+}

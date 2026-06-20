@@ -255,7 +255,7 @@
         "desc": "Kreativität und Ausgabelänge der Antwort anpassen.",
         "tempLabel": "Temperatur",
         "tempDesc": "Näher an 0 = präzise, näher an 2 = kreativ (Default: 0.7)",
-        "maxOutput": "Max. Ausgabe-Tokens (Default: 2048)",
+        "maxOutput": "Max. Ausgabe-Tokens (Default: 4000)",
         "responseLang": "Antwortsprache festlegen",
         "responseLangDesc": "Erzwingt KI-Antworten in einer bestimmten Sprache. \"Auto\" folgt dem System-Prompt.",
         "responseLangAuto": "Automatisch"
@@ -543,7 +543,19 @@
     "noActiveEditor": "Kein aktiver Markdown-Editor gefunden."
   },
   "uiMessages": {
-    "emptyResponseTokenLimit": "⚠️ Das Modell hat eine leere Antwort zurückgegeben. Die Generierung wurde gestoppt, da das Limit für maximale Ausgabetoken erreicht wurde. Bitte erhöhen Sie das Limit \"Max Output Tokens\" in den Einstellungen.",
+    "actionApproval": {
+      "title": "Genehmigung Erforderlich: {{action}}",
+      "targetFile": "Zieldatei: {{path}}",
+      "createNote": "📄 Möchten Sie eine neue Notiz ERSTELLEN?",
+      "deleteNote": "⚠️ Möchten Sie diese Notiz LÖSCHEN?",
+      "renameNote": "✏️ Möchten Sie diese Notiz VERSCHIEBEN/UMBENENNEN nach:",
+      "updateFrontmatter": "🏷️ Möchten Sie das FRONTMATTER für folgenden Schlüssel AKTUALISIEREN:",
+      "saveAttachment": "📎 Möchten Sie den ANHANG SPEICHERN? Größe: {{size}} Bytes",
+      "executeCode": "⚡ Möchten Sie diesen Code AUSFÜHREN?",
+      "accept": "Akzeptieren",
+      "reject": "Ablehnen"
+    },
+    "emptyResponseTokenLimit": "⚠️ Das Modell hat eine leere Antwort zurückgegeben. Die Generierung wurde gestoppt, da das Limit für maximale Ausgabe-Token erreicht wurde. Bitte erhöhen Sie das Limit für \"Maximale Ausgabe-Token\" in den Einstellungen.",
     "tokenLimitHitWarning": "\n\n⚠️ (Die Generierung wurde unterbrochen, da das Limit für maximale Ausgabetoken erreicht wurde. Bitte erhöhen Sie den Wert \"Max Output Tokens\" in den Einstellungen.)",
     "toolExecutionRejected": "Die Tool-Ausführung wurde vom Benutzer abgelehnt.",
     "inlineReplace": "Ersetzen",

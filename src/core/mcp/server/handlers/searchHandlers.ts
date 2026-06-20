@@ -1,4 +1,5 @@
 import { TFile, normalizePath } from 'obsidian';
+import * as obsidian from 'obsidian';
 import { t } from '../../../../shared/locales/helpers';
 import { applyReadLimit, getStringArg, getStringOptArg } from '../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
@@ -10,6 +11,7 @@ export const searchNotesHandler = async (
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
 	const query = getStringArg(args, 'query').toLowerCase();
+	const tags = (args.tags as string[]) || [];
 	const files = ctx.plugin.app.vault.getMarkdownFiles();
 	const results: string[] = [];
 
@@ -17,6 +19,17 @@ export const searchNotesHandler = async (
 		// 제외된 경로는 검색 대상에서 제외
 		if (!pathGuard.isAgentPathAllowed(file.path, ctx.plugin)) {
 			continue;
+		}
+
+		if (tags.length > 0) {
+			const cache = ctx.plugin.app.metadataCache.getFileCache(file);
+			const fileTags = obsidian.getAllTags(cache || {}) || [];
+			// check if all requested tags exist in fileTags
+			const hasAllTags = tags.every(tag => {
+				const searchTag = tag.startsWith('#') ? tag : '#' + tag;
+				return fileTags.includes(searchTag);
+			});
+			if (!hasAllTags) continue;
 		}
 		const content = await ctx.plugin.app.vault.read(file);
 		const lowerContent = content.toLowerCase();
@@ -78,4 +91,20 @@ export const listNotesHandler = async (
 		.join('\n');
 	const result = t('mcpServerTools.list_notes.listPrefix', { path: displayPath, count: filteredFiles.length }) + fileList;
 	return { content: [{ type: 'text', text: applyReadLimit(result, ctx.limitRead) }] };
+};
+
+export const listTagsHandler = async (
+	args: ToolArguments,
+	ctx: ToolHandlerContext,
+	pathGuard: PathGuard,
+): Promise<ToolResult> => {
+	const tagsRecord = (ctx.plugin.app.metadataCache as any).getTags();
+	// tagsRecord is Record<string, number> where key is tag like '#foo' and value is count
+	const tagsList = Object.entries(tagsRecord).map(([tag, count]) => `${tag} (${count})`);
+	
+	if (tagsList.length === 0) {
+		return { content: [{ type: 'text', text: 'No tags found in the vault.' }] };
+	}
+
+	return { content: [{ type: 'text', text: `Tags in vault:\n${tagsList.join('\n')}` }] };
 };

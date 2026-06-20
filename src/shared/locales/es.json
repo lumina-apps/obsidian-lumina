@@ -255,7 +255,7 @@
         "desc": "Ajusta la creatividad y longitud de la respuesta.",
         "tempLabel": "Temperatura",
         "tempDesc": "Más cerca de 0 = preciso, más cerca de 2 = creativo (Default: 0.7)",
-        "maxOutput": "Máx. de tokens de salida (Default: 2048)",
+        "maxOutput": "Máx. de tokens de salida (Default: 4000)",
         "responseLang": "Idioma de respuesta",
         "responseLangDesc": "Forzar respuestas de IA a un idioma específico. \"Auto\" sigue el prompt del sistema.",
         "responseLangAuto": "Automático"
@@ -543,7 +543,19 @@
     "noActiveEditor": "No se encontró ningún editor Markdown activo."
   },
   "uiMessages": {
-    "emptyResponseTokenLimit": "⚠️ El modelo devolvió una respuesta vacía. La generación se detuvo porque se alcanzó el límite de Tokens Máximos de Salida. Por favor, aumente el límite de \"Tokens Máximos de Salida\" en la configuración.",
+    "actionApproval": {
+      "title": "Aprobación Requerida: {{action}}",
+      "targetFile": "Archivo de Destino: {{path}}",
+      "createNote": "📄 ¿Quieres CREAR una nueva nota?",
+      "deleteNote": "⚠️ ¿Quieres ELIMINAR esta nota?",
+      "renameNote": "✏️ ¿Quieres MOVER/RENOMBRAR esta nota a:",
+      "updateFrontmatter": "🏷️ ¿Quieres ACTUALIZAR el FRONTMATTER de la clave:",
+      "saveAttachment": "📎 ¿Quieres GUARDAR el ADJUNTO? Tamaño: {{size}} bytes",
+      "executeCode": "⚡ ¿Quieres EJECUTAR este código?",
+      "accept": "Aceptar",
+      "reject": "Rechazar"
+    },
+    "emptyResponseTokenLimit": "⚠️ El modelo devolvió una respuesta vacía. La generación se detuvo debido a que se alcanzó el límite máximo de tokens de salida. Aumente el límite de \"Tokens de salida máximos\" en la configuración.",
     "tokenLimitHitWarning": "\n\n⚠️ (La generación se interrumpió porque se alcanzó el límite de Tokens Máximos de Salida. Por favor, aumente el valor de \"Tokens Máximos de Salida\" en la configuración.)",
     "toolExecutionRejected": "El usuario rechazó la ejecución de la herramienta.",
     "inlineReplace": "Reemplazar",

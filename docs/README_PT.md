@@ -90,11 +90,12 @@ A Lumina oferece dois modos adequados ao seu nível de experiência. Escolha o q
   - Interaja e trabalhe diretamente com a IA dentro do Obsidian.
   - Conecte vários servidores MCP externos (GitHub, bases de dados locais, pesquisa na web, etc.) para extrair e organizar instantaneamente grandes quantidades de dados nas suas notas.
 - **🖥️ Modo Servidor (Liderado por IA Externa):**
-  - Expõe 7 ferramentas que permitem que assistentes de IA externos (Claude, Cursor, etc.) acedam diretamente ao seu cofre.
-  - `read_active_note`, `read_note`, `search_notes`, `list_notes`, `rag_search`: Fornece o contexto e o conhecimento do seu cofre à IA.
-  - `create_note`, `append_to_note`: Permite que a IA escreva de forma segura ideias organizadas diretamente no seu cofre (proteção contra substituição aplicada).
-  - `read_daily_note`, `append_to_daily_note`: Integração de leitura/escrita para a nota diária de hoje.
-  - Operações perigosas como eliminação, movimentação ou sobrescrita de ficheiros serão implementadas com medidas de segurança adicionais em futuras atualizações.
+  - Fornece 21 ferramentas que permitem que assistentes de IA externos (Claude, Cursor, etc.) ou a IA no Modo Agente acedam diretamente ao seu cofre.
+  - **Leitura e Pesquisa:** `read_active_note`, `read_note`, `search_notes` (suporta filtragem por tags), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` para fornecer um contexto extenso à IA.
+  - **Escrita e Modificação:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment` (criar/modificar notas e guardar ficheiros binários).
+  - **Gestão e Execução:** `delete_note`, `move_note` (mover/renomear), `execute_code`, `run_note_code_block` (executar código num sandbox).
+  - **Notas Diárias:** `read_daily_note`, `append_to_daily_note` (integração de leitura/escrita para a nota diária de hoje).
+  - **Segurança Robusta e Controlo do Utilizador:** Operações destrutivas como modificação de conteúdo, eliminação de ficheiros ou execução de código não podem ser processadas apenas pelo agente. Elas são executadas de forma segura com backups de proteção contra substituição apenas após notificar o utilizador com uma interface (Visualizador de Diferenças e Modal de Aviso de Tarefa) e receber a aprovação final (Accept).
 - **Como utilizar:** Ative as funcionalidades MCP nas configurações do plugin e configure o método de transporte cliente/servidor (SSE).
 - **Nota:** *As funcionalidades de Agente e MCP estão atualmente na fase Experimental (Beta). Embora várias redes de segurança, como proteção contra substituição e limites de caracteres, estejam em vigor, recomendamos monitorizar de perto as operações inicialmente, pois IAs externas editarão diretamente as suas notas.*
 </details>

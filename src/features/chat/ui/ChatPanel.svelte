@@ -7,6 +7,8 @@
 	import ChatHeader from "./ChatHeader.svelte";
 	import ChatMessageList from "./ChatMessageList.svelte";
 	import ChatInputArea from "./ChatInputArea.svelte";
+
+	import { approvalStore } from "../utils/approvalManager";
 	import type { ContextAttachment } from "../../../shared/types/chat.types";
 	import { splitProviderModel } from "../utils/inputUtils";
 	import { resizeTextarea } from "../utils/textareaUtils";
@@ -322,6 +324,10 @@
 			{handleRegenerate}
 			openSettingsToTab={() => openSettingsTab(plugin.app, "lumina")}
 		/>
+
+		{#if $approvalStore.queue.length > 0}
+			<!-- 승인 대기 큐는 ActionApprovalModal 및 Editor Inline Diff에서 처리합니다 -->
+		{/if}
 
 		<ChatInputArea
 			{plugin}
