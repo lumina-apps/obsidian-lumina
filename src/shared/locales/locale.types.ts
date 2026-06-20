@@ -382,11 +382,14 @@ export interface TranslationSettingsRagIgnorePaths {
 }
 
 export interface TranslationSettingsRagChunking {
-  name: string;
-  desc: string;
-  sizeDesc: string;
-  overlapLabel: string;
-  overlapDesc: string;
+  parentSizeName: string;
+  parentSizeDesc: string;
+  parentOverlapName: string;
+  parentOverlapDesc: string;
+  childSizeName: string;
+  childSizeDesc: string;
+  childOverlapName: string;
+  childOverlapDesc: string;
 }
 
 export interface TranslationSettingsRagTopK {

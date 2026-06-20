@@ -98,33 +98,32 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 
 		addSliderWithInput(
 			new Setting(el)
-				.setName(t('settings.rag.chunking.name') || '상위 청크 크기')
-				.setDesc(t('settings.rag.chunking.sizeDesc') || '문서 분할의 기본 단위 (1000~3000자 권장)'),
+				.setName(t('settings.rag.chunking.parentSizeName' as any))
+				.setDesc(t('settings.rag.chunking.parentSizeDesc' as any)),
 			{ min: 1000, max: 3000, step: 100, value: s.parentChunkSize },
 			wrapAsync(async (val) => { s.parentChunkSize = val; await tab.saveAndSync(); }),
 		);
 
 		addSliderWithInput(
 			new Setting(el)
-				.setName(t('settings.rag.chunking.overlapLabel') || '상위 청크 겹침 크기')
-				.setName('상위 청크 겹침 크기')
-				.setDesc('상위 청크 간 겹치는 문자 수'),
+				.setName(t('settings.rag.chunking.parentOverlapName' as any))
+				.setDesc(t('settings.rag.chunking.parentOverlapDesc' as any)),
 			{ min: 0, max: 500, step: 50, value: s.parentChunkOverlap },
 			wrapAsync(async (val) => { s.parentChunkOverlap = val; await tab.saveAndSync(); }),
 		);
 
 		addSliderWithInput(
 			new Setting(el)
-				.setName('하위 청크 크기 (Child Chunk Size)')
-				.setDesc('벡터 검색에 사용되는 하위 청크 크기 (100~300자 권장)'),
+				.setName(t('settings.rag.chunking.childSizeName' as any))
+				.setDesc(t('settings.rag.chunking.childSizeDesc' as any)),
 			{ min: 100, max: 500, step: 10, value: s.childChunkSize },
 			wrapAsync(async (val) => { s.childChunkSize = val; await tab.saveAndSync(); }),
 		);
 
 		addSliderWithInput(
 			new Setting(el)
-				.setName('하위 청크 겹침 크기')
-				.setDesc('하위 청크 간 겹치는 문자 수'),
+				.setName(t('settings.rag.chunking.childOverlapName' as any))
+				.setDesc(t('settings.rag.chunking.childOverlapDesc' as any)),
 			{ min: 0, max: 100, step: 10, value: s.childChunkOverlap },
 			wrapAsync(async (val) => { s.childChunkOverlap = val; await tab.saveAndSync(); }),
 		);

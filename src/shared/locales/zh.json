@@ -83,14 +83,14 @@
         "reasoningWarning": "⚠️ 警告：检测到推理型模型！快捷操作需要速度；使用此模型可能会导致严重延迟或无限循环。强烈建议使用标准 Instruct 模型。"
       },
       "taskModel": {
-        "name": "Task Model (Optional)",
-        "desc": "Select a lightweight and fast model for various background AI tasks (e.g., summarization, context processing). If left blank, basic system methods will be used to save costs.",
-        "noneSelected": "None Selected (Use basic system methods)"
+        "name": "任务模型 (可选)",
+        "desc": "用于后台AI任务（如聊天摘要）的轻量级模型。未选择时使用系统默认。",
+        "noneSelected": "未选择 (使用系统默认)"
       },
       "rerankerModel": {
-        "name": "Reranker Model (Optional)",
-        "desc": "Select a model to rerank the initial RAG search results. This improves the relevance of the final context.",
-        "noneSelected": "None Selected (Disabled)"
+        "name": "重排序模型 (可选)",
+        "desc": "选择用于对RAG搜索结果进行重排序的模型，以提高上下文相关性。",
+        "noneSelected": "未选择 (禁用)"
       }
     },
     "mcp": {
@@ -190,7 +190,7 @@
       },
       "history": {
         "name": "自动保存聊天记录",
-        "desc": "将聊天记录自动保存到指定路径。",
+        "desc": "将聊天记录自动保存到指定路径。 (Default: chatHistory)",
         "pathPlaceholder": "例：/chatHistory",
         "savePath": "保存路径",
         "saveFail": "⚠️ 保存聊天记录失败：{{error}}",
@@ -204,7 +204,7 @@
       },
       "sendMode": {
         "name": "消息发送方式",
-        "desc": "选择聊天消息的发送方式。",
+        "desc": "选择聊天消息的发送方式。 (Default: Send on Enter)",
         "enter": "按 Enter 发送",
         "ctrlEnter": "按 Ctrl + Enter 发送"
       },
@@ -237,7 +237,7 @@
       },
       "inlineTrigger": {
         "name": "行内命令触发词",
-        "desc": "在编辑器中调用快捷操作自动完成弹出窗口的关键词。"
+        "desc": "在编辑器中调用快捷操作自动完成弹出窗口的关键词。 (Default: /ai)"
       },
       "memoryLimit": {
         "name": "对话记忆限制（高级）",
@@ -247,15 +247,15 @@
         "turns": "轮数限制",
         "tokens": "Token 数限制",
         "turnsLabel": "要记住的轮数",
-        "turnsDesc": "要记住的轮数（1轮 = 用户消息 + AI 回答）",
-        "maxTokens": "最大上下文 Token"
+        "turnsDesc": "要记住的轮数（1轮 = 用户消息 + AI 回答） (Default: 10)",
+        "maxTokens": "最大上下文 Token (Default: 8000)"
       },
       "modelParams": {
         "name": "模型参数（高级）",
         "desc": "调整回答的创造性和输出长度。",
         "tempLabel": "Temperature",
-        "tempDesc": "越接近 0 = 精确，越接近 2 = 创造性",
-        "maxOutput": "最大输出 Token",
+        "tempDesc": "越接近 0 = 精确，越接近 2 = 创造性 (Default: 0.7)",
+        "maxOutput": "最大输出 Token (Default: 2048)",
         "responseLang": "指定响应语言",
         "responseLangDesc": "强制 AI 使用指定语言回答。\"自动\"遵循系统提示词。",
         "responseLangAuto": "自动"
@@ -293,7 +293,7 @@
       "disabledWarning": "⚪ RAG 目前已禁用。请先在 [连接与模型设置] 选项卡中启用 RAG 引擎。",
       "dataScope": {
         "name": "默认数据范围设置",
-        "desc": "选择 RAG 搜索要包含的笔记。",
+        "desc": "选择 RAG 搜索要包含的笔记。 (Default: Entire Vault)",
         "vaultWide": "整个库",
         "activeNote": "仅当前活动笔记",
         "manual": "仅手动选择的文件"
@@ -308,29 +308,34 @@
       },
       "ignorePaths": {
         "name": "忽略的路径",
-        "desc": "逗号分隔。优先于包含的路径。"
+        "desc": "逗号分隔。优先于包含的路径。 (Default: templates, chatHistory, etc.)"
       },
       "chunking": {
         "name": "分块设置（高级）",
         "desc": "配置文档分割的块大小和重叠。",
-        "sizeDesc": "块大小 (Token 数)",
-        "overlapLabel": "块重叠",
-        "overlapDesc": "相邻块之间重叠的 Token 数"
+        "parentSizeName": "父块大小 (Parent Chunk Size)",
+        "parentSizeDesc": "文档分割的基本单位（建议 1000~3000 字符） (默认值: 2000)",
+        "parentOverlapName": "父块重叠 (Parent Chunk Overlap)",
+        "parentOverlapDesc": "父块之间重叠的字符数 (默认值: 200)",
+        "childSizeName": "子块大小 (Child Chunk Size)",
+        "childSizeDesc": "用于向量搜索的子块大小（建议 100~300 字符） (默认值: 200)",
+        "childOverlapName": "子块重叠 (Child Chunk Overlap)",
+        "childOverlapDesc": "子块之间重叠的字符数 (默认值: 40)"
       },
       "topK": {
         "name": "Top-K 检索（高级）",
-        "desc": "向 LLM 传递的排名最高文档数量。"
+        "desc": "向 LLM 传递的排名最高文档数量。 (Default: 5)"
       },
       "syncMode": {
         "name": "索引同步（高级）",
-        "desc": "笔记变更时索引的更新方式。",
+        "desc": "笔记变更时索引的更新方式。 (Default: Watch)",
         "watch": "监听文件变更（Watch）（推荐）",
         "manual": "手动同步",
         "startup": "应用启动时执行一次"
       },
       "minSimilarity": {
         "name": "最小相似度（高级）",
-        "desc": "排除低于此相关性分数的结果（0~1）"
+        "desc": "排除低于此相关性分数的结果（0~1） (Default: 0.0)"
       },
       "maxFileSize": {
         "name": "最大文件大小 (MB)",

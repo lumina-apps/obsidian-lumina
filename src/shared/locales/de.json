@@ -83,14 +83,14 @@
         "reasoningWarning": "⚠️ Warnung: Reasoning-Modell erkannt! Quick Actions erfordern Geschwindigkeit; die Verwendung dieses Modells kann zu schweren Verzögerungen oder Endlosschleifen führen. Ein standard Instruct-Modell wird dringend empfohlen."
       },
       "taskModel": {
-        "name": "Task Model (Optional)",
-        "desc": "Select a lightweight and fast model for various background AI tasks (e.g., summarization, context processing). If left blank, basic system methods will be used to save costs.",
-        "noneSelected": "None Selected (Use basic system methods)"
+        "name": "Task-Modell (Optional)",
+        "desc": "Leichtes Modell für Hintergrundaufgaben (z. B. Zusammenfassung). Leer lässt Standard.",
+        "noneSelected": "Keines ausgewählt (Standard)"
       },
       "rerankerModel": {
-        "name": "Reranker Model (Optional)",
-        "desc": "Select a model to rerank the initial RAG search results. This improves the relevance of the final context.",
-        "noneSelected": "None Selected (Disabled)"
+        "name": "Reranker-Modell (Optional)",
+        "desc": "Modell zur Neuordnung von RAG-Ergebnissen für bessere Relevanz.",
+        "noneSelected": "Keines ausgewählt (Deaktiviert)"
       }
     },
     "mcp": {
@@ -190,7 +190,7 @@
       },
       "history": {
         "name": "Chat-Verlauf automatisch speichern",
-        "desc": "Speichert den Chat-Verlauf automatisch im angegebenen Pfad.",
+        "desc": "Speichert den Chat-Verlauf automatisch im angegebenen Pfad. (Default: chatHistory)",
         "pathPlaceholder": "z. B. /chatHistory",
         "savePath": "Speicherpfad",
         "saveFail": "⚠️ Fehler beim Speichern des Chat-Verlaufs: {{error}}",
@@ -204,7 +204,7 @@
       },
       "sendMode": {
         "name": "Nachrichtensende-Modus",
-        "desc": "Wählen Sie, wie Nachrichten im Chat gesendet werden sollen.",
+        "desc": "Wählen Sie, wie Nachrichten im Chat gesendet werden sollen. (Default: Send on Enter)",
         "enter": "Enter zum Senden",
         "ctrlEnter": "Strg + Enter zum Senden"
       },
@@ -237,7 +237,7 @@
       },
       "inlineTrigger": {
         "name": "Inline-Befehlstrigger",
-        "desc": "Stichwort, um das Quick-Aktion-Autovervollständigungspopup im Editor aufzurufen."
+        "desc": "Stichwort, um das Quick-Aktion-Autovervollständigungspopup im Editor aufzurufen. (Default: /ai)"
       },
       "memoryLimit": {
         "name": "Konversations-Speicherlimit (Erweitert)",
@@ -247,15 +247,15 @@
         "turns": "Turn-Limit",
         "tokens": "Token-Limit",
         "turnsLabel": "Zu speichernde Turns",
-        "turnsDesc": "Zu speichernde Turns (1 Turn = Benutzer-Nachricht + KI-Antwort)",
-        "maxTokens": "Maximale Kontext-Tokens"
+        "turnsDesc": "Zu speichernde Turns (1 Turn = Benutzer-Nachricht + KI-Antwort) (Default: 10)",
+        "maxTokens": "Maximale Kontext-Tokens (Default: 8000)"
       },
       "modelParams": {
         "name": "Modellparameter (Erweitert)",
         "desc": "Kreativität und Ausgabelänge der Antwort anpassen.",
         "tempLabel": "Temperatur",
-        "tempDesc": "Näher an 0 = präzise, näher an 2 = kreativ",
-        "maxOutput": "Max. Ausgabe-Tokens",
+        "tempDesc": "Näher an 0 = präzise, näher an 2 = kreativ (Default: 0.7)",
+        "maxOutput": "Max. Ausgabe-Tokens (Default: 2048)",
         "responseLang": "Antwortsprache festlegen",
         "responseLangDesc": "Erzwingt KI-Antworten in einer bestimmten Sprache. \"Auto\" folgt dem System-Prompt.",
         "responseLangAuto": "Automatisch"
@@ -293,7 +293,7 @@
       "disabledWarning": "⚪ RAG ist deaktiviert. Bitte aktivieren Sie die RAG-Engine unter \"Verbindungen & Modelle\".",
       "dataScope": {
         "name": "Standard-Datenbereich",
-        "desc": "Wählen Sie, welche Notizen in die RAG-Suche einbezogen werden.",
+        "desc": "Wählen Sie, welche Notizen in die RAG-Suche einbezogen werden. (Default: Entire Vault)",
         "vaultWide": "Gesamter Vault",
         "activeNote": "Nur aktive Notiz",
         "manual": "Manuell ausgewählte Dateien"
@@ -308,29 +308,34 @@
       },
       "ignorePaths": {
         "name": "Auszuschließende Pfade",
-        "desc": "Kommagetrennt. Hat Vorrang vor eingeschlossenen Pfaden."
+        "desc": "Kommagetrennt. Hat Vorrang vor eingeschlossenen Pfaden. (Default: templates, chatHistory, etc.)"
       },
       "chunking": {
         "name": "Chunking (Erweitert)",
         "desc": "Chunk-Größe und Überlappung für die Dokumentenaufteilung konfigurieren.",
-        "sizeDesc": "Chunk-Größe (Tokens)",
-        "overlapLabel": "Chunk-Überlappung",
-        "overlapDesc": "Überlappende Tokens zwischen benachbarten Chunks"
+        "parentSizeName": "Übergeordnete Chunk-Größe",
+        "parentSizeDesc": "Basiseinheit für die Dokumentenaufteilung (1000~3000 Zeichen empfohlen) (Standard: 2000)",
+        "parentOverlapName": "Übergeordnete Chunk-Überlappung",
+        "parentOverlapDesc": "Anzahl der überlappenden Zeichen zwischen übergeordneten Chunks (Standard: 200)",
+        "childSizeName": "Untergeordnete Chunk-Größe",
+        "childSizeDesc": "Chunk-Größe für die Vektorsuche (100~300 Zeichen empfohlen) (Standard: 200)",
+        "childOverlapName": "Untergeordnete Chunk-Überlappung",
+        "childOverlapDesc": "Anzahl der überlappenden Zeichen zwischen untergeordneten Chunks (Standard: 40)"
       },
       "topK": {
         "name": "Top-K Retrieval (Erweitert)",
-        "desc": "Anzahl der relevantesten Dokumente, die an das LLM übergeben werden."
+        "desc": "Anzahl der relevantesten Dokumente, die an das LLM übergeben werden. (Default: 5)"
       },
       "syncMode": {
         "name": "Index-Sync (Erweitert)",
-        "desc": "Wie der Index bei Notizänderungen aktualisiert wird.",
+        "desc": "Wie der Index bei Notizänderungen aktualisiert wird. (Default: Watch)",
         "watch": "Änderungen überwachen (Empfohlen)",
         "manual": "Manuell",
         "startup": "Beim App-Start"
       },
       "minSimilarity": {
         "name": "Min. Ähnlichkeit (Erweitert)",
-        "desc": "Ergebnisse unterhalb dieses Relevanzwerts ausschließen (0~1)"
+        "desc": "Ergebnisse unterhalb dieses Relevanzwerts ausschließen (0~1) (Default: 0.0)"
       },
       "maxFileSize": {
         "name": "Max. Dateigröße (MB)",

@@ -83,14 +83,14 @@
         "reasoningWarning": "⚠️ Attenzione: Modello di Reasoning rilevato! Le Quick Action richiedono velocità; l'utilizzo di questo modello può causare ritardi significativi o loop infiniti. Si consiglia vivamente un modello Instruct standard."
       },
       "taskModel": {
-        "name": "Task Model (Optional)",
-        "desc": "Select a lightweight and fast model for various background AI tasks (e.g., summarization, context processing). If left blank, basic system methods will be used to save costs.",
-        "noneSelected": "None Selected (Use basic system methods)"
+        "name": "Modello di task (Opzionale)",
+        "desc": "Modello leggero per task in background (es. riassunto). Se vuoto, usa il predefinito.",
+        "noneSelected": "Nessuno selezionato (Predefinito)"
       },
       "rerankerModel": {
-        "name": "Reranker Model (Optional)",
-        "desc": "Select a model to rerank the initial RAG search results. This improves the relevance of the final context.",
-        "noneSelected": "None Selected (Disabled)"
+        "name": "Modello Reranker (Opzionale)",
+        "desc": "Modello per riordinare i risultati RAG e migliorare la rilevanza del contesto.",
+        "noneSelected": "Nessuno selezionato (Disabilitato)"
       }
     },
     "mcp": {
@@ -190,7 +190,7 @@
       },
       "history": {
         "name": "Salvataggio Automatico Cronologia Chat",
-        "desc": "Salva automaticamente la cronologia della chat in un percorso specificato.",
+        "desc": "Salva automaticamente la cronologia della chat in un percorso specificato. (Default: chatHistory)",
         "pathPlaceholder": "es. /chatHistory",
         "savePath": "Percorso di Salvataggio",
         "saveFail": "⚠️ Impossibile salvare la cronologia della chat: {{error}}",
@@ -204,7 +204,7 @@
       },
       "sendMode": {
         "name": "Modalità di Invio Messaggi",
-        "desc": "Scegli come inviare i messaggi nella chat.",
+        "desc": "Scegli come inviare i messaggi nella chat. (Default: Send on Enter)",
         "enter": "Invio per inviare",
         "ctrlEnter": "Ctrl + Invio per inviare"
       },
@@ -237,7 +237,7 @@
       },
       "inlineTrigger": {
         "name": "Trigger Comando Inline",
-        "desc": "Parola chiave per invocare il popup di autocompletamento quick action nell'editor."
+        "desc": "Parola chiave per invocare il popup di autocompletamento quick action nell'editor. (Default: /ai)"
       },
       "memoryLimit": {
         "name": "Limite Memoria Conversazione (Avanzate)",
@@ -247,15 +247,15 @@
         "turns": "Limite Turni",
         "tokens": "Limite Token",
         "turnsLabel": "Turni da Ricordare",
-        "turnsDesc": "Turni da ricordare (1 turno = messaggio utente + risposta IA)",
-        "maxTokens": "Token Max Contesto"
+        "turnsDesc": "Turni da ricordare (1 turno = messaggio utente + risposta IA) (Default: 10)",
+        "maxTokens": "Token Max Contesto (Default: 8000)"
       },
       "modelParams": {
         "name": "Parametri Modello (Avanzate)",
         "desc": "Regola creatività e lunghezza della risposta.",
         "tempLabel": "Temperatura",
-        "tempDesc": "Più vicino a 0 = preciso, più vicino a 2 = creativo",
-        "maxOutput": "Token Output Max",
+        "tempDesc": "Più vicino a 0 = preciso, più vicino a 2 = creativo (Default: 0.7)",
+        "maxOutput": "Token Output Max (Default: 2048)",
         "responseLang": "Specifica Lingua di Risposta",
         "responseLangDesc": "Forza le risposte dell'IA in una lingua specifica. \"Auto\" segue il prompt di sistema.",
         "responseLangAuto": "Auto"
@@ -293,7 +293,7 @@
       "disabledWarning": "⚪ Il motore RAG è disattivato. Abilita il motore RAG nella scheda Connessioni e Modelli.",
       "dataScope": {
         "name": "Ambito Dati Predefinito",
-        "desc": "Scegli quali note includere nella ricerca RAG.",
+        "desc": "Scegli quali note includere nella ricerca RAG. (Default: Entire Vault)",
         "vaultWide": "Vault Intero",
         "activeNote": "Solo Nota Attiva",
         "manual": "File Selezionati Manualmente"
@@ -308,29 +308,34 @@
       },
       "ignorePaths": {
         "name": "Percorsi da Ignorare",
-        "desc": "Separati da virgole. Ha priorità sui percorsi inclusi."
+        "desc": "Separati da virgole. Ha priorità sui percorsi inclusi. (Default: templates, chatHistory, etc.)"
       },
       "chunking": {
         "name": "Chunking (Avanzate)",
         "desc": "Configura dimensione e sovrapposizione dei chunk per la divisione dei documenti.",
-        "sizeDesc": "Dimensione chunk (token)",
-        "overlapLabel": "Sovrapposizione chunk",
-        "overlapDesc": "Token sovrapposti tra chunk adiacenti"
+        "parentSizeName": "Dimensione del chunk genitore",
+        "parentSizeDesc": "Unità di base per la divisione dei documenti (consigliati 1000~3000 caratteri) (Predefinito: 2000)",
+        "parentOverlapName": "Sovrapposizione del chunk genitore",
+        "parentOverlapDesc": "Numero di caratteri sovrapposti tra chunk genitori (Predefinito: 200)",
+        "childSizeName": "Dimensione del chunk figlio",
+        "childSizeDesc": "Dimensione del chunk utilizzato per la ricerca vettoriale (consigliati 100~300 caratteri) (Predefinito: 200)",
+        "childOverlapName": "Sovrapposizione del chunk figlio",
+        "childOverlapDesc": "Numero di caratteri sovrapposti tra chunk figli (Predefinito: 40)"
       },
       "topK": {
         "name": "Top-K Retrieval (Avanzate)",
-        "desc": "Numero di documenti principali da passare all'LLM."
+        "desc": "Numero di documenti principali da passare all'LLM. (Default: 5)"
       },
       "syncMode": {
         "name": "Sync Indicizzazione (Avanzate)",
-        "desc": "Come si aggiorna l'indice quando le note cambiano.",
+        "desc": "Come si aggiorna l'indice quando le note cambiano. (Default: Watch)",
         "watch": "Watch per cambiamenti (consigliato)",
         "manual": "Manuale",
         "startup": "All'Avvio App"
       },
       "minSimilarity": {
         "name": "Similarità Min (Avanzate)",
-        "desc": "Escludi risultati al di sotto di questo punteggio (0~1)"
+        "desc": "Escludi risultati al di sotto di questo punteggio (0~1) (Default: 0.0)"
       },
       "maxFileSize": {
         "name": "Dimensione max file (MB)",

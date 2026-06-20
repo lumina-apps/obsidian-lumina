@@ -114,7 +114,7 @@ export function migrateMinSimilarity(plugin: LuminaPlugin): boolean {
  */
 export function migrateMemoryMethod(plugin: LuminaPlugin): boolean {
 	if (plugin.settings.chat.memoryMethod === undefined) {
-		if (plugin.settings.chat.useTokenLimit) {
+		if ((plugin.settings.chat as any).useTokenLimit) {
 			plugin.settings.chat.memoryMethod = 'tokens';
 		} else {
 			plugin.settings.chat.memoryMethod = 'auto_summary';

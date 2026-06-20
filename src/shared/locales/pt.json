@@ -83,14 +83,14 @@
         "reasoningWarning": "⚠️ Aviso: Modelo de raciocínio detectado! Ações Rápidas exigem velocidade; o uso deste modelo pode causar atrasos graves ou loops infinitos. Um modelo Instruct padrão é altamente recomendado."
       },
       "taskModel": {
-        "name": "Task Model (Optional)",
-        "desc": "Select a lightweight and fast model for various background AI tasks (e.g., summarization, context processing). If left blank, basic system methods will be used to save costs.",
-        "noneSelected": "None Selected (Use basic system methods)"
+        "name": "Modelo de tarefa (Opcional)",
+        "desc": "Modelo leve para tarefas em segundo plano (ex: resumo). Se vazio, usa o padrão.",
+        "noneSelected": "Nenhum selecionado (Padrão)"
       },
       "rerankerModel": {
-        "name": "Reranker Model (Optional)",
-        "desc": "Select a model to rerank the initial RAG search results. This improves the relevance of the final context.",
-        "noneSelected": "None Selected (Disabled)"
+        "name": "Modelo Reranker (Opcional)",
+        "desc": "Modelo para reordenar resultados RAG e melhorar a relevância do contexto.",
+        "noneSelected": "Nenhum selecionado (Desativado)"
       }
     },
     "mcp": {
@@ -190,7 +190,7 @@
       },
       "history": {
         "name": "Salvar Histórico de Chat Automaticamente",
-        "desc": "Salve automaticamente o histórico do chat em um caminho especificado.",
+        "desc": "Salve automaticamente o histórico do chat em um caminho especificado. (Default: chatHistory)",
         "pathPlaceholder": "ex: /chatHistory",
         "savePath": "Caminho de Salvamento",
         "saveFail": "⚠️ Falha ao salvar o histórico de chat: {{error}}",
@@ -204,7 +204,7 @@
       },
       "sendMode": {
         "name": "Modo de Envio de Mensagem",
-        "desc": "Escolha como enviar mensagens no chat.",
+        "desc": "Escolha como enviar mensagens no chat. (Default: Send on Enter)",
         "enter": "Enter para enviar",
         "ctrlEnter": "Ctrl + Enter para enviar"
       },
@@ -237,7 +237,7 @@
       },
       "inlineTrigger": {
         "name": "Acionador de Comando Inline",
-        "desc": "Palavra-chave para invocar o popup de autocompletar ação rápida no editor."
+        "desc": "Palavra-chave para invocar o popup de autocompletar ação rápida no editor. (Default: /ai)"
       },
       "memoryLimit": {
         "name": "Limite de Memória de Conversa (Avançado)",
@@ -247,15 +247,15 @@
         "turns": "Limite de Turnos",
         "tokens": "Limite de Tokens",
         "turnsLabel": "Turnos a Lembrar",
-        "turnsDesc": "Turnos a lembrar (1 turno = mensagem do usuário + resposta da IA)",
-        "maxTokens": "Máximo de Tokens de Contexto"
+        "turnsDesc": "Turnos a lembrar (1 turno = mensagem do usuário + resposta da IA) (Default: 10)",
+        "maxTokens": "Máximo de Tokens de Contexto (Default: 8000)"
       },
       "modelParams": {
         "name": "Parâmetros do Modelo (Avançado)",
         "desc": "Ajuste a criatividade e o comprimento da resposta.",
         "tempLabel": "Temperatura",
-        "tempDesc": "Mais perto de 0 = preciso, mais perto de 2 = criativo",
-        "maxOutput": "Máx. de Tokens de Saída",
+        "tempDesc": "Mais perto de 0 = preciso, mais perto de 2 = criativo (Default: 0.7)",
+        "maxOutput": "Máx. de Tokens de Saída (Default: 2048)",
         "responseLang": "Especificar Idioma de Resposta",
         "responseLangDesc": "Força as respostas da IA a um idioma específico. \"Auto\" segue o prompt do sistema.",
         "responseLangAuto": "Automático"
@@ -293,7 +293,7 @@
       "disabledWarning": "⚪ RAG está desativado. Ative o motor RAG na guia Conexões e Modelos.",
       "dataScope": {
         "name": "Escopo de Dados Padrão",
-        "desc": "Escolha quais notas incluir na pesquisa RAG.",
+        "desc": "Escolha quais notas incluir na pesquisa RAG. (Default: Entire Vault)",
         "vaultWide": "Vault Inteiro",
         "activeNote": "Apenas a Nota Ativa",
         "manual": "Arquivos Selecionados Manualmente"
@@ -308,29 +308,34 @@
       },
       "ignorePaths": {
         "name": "Caminhos a Ignorar",
-        "desc": "Separados por vírgula. Tem prioridade sobre os caminhos incluídos."
+        "desc": "Separados por vírgula. Tem prioridade sobre os caminhos incluídos. (Default: templates, chatHistory, etc.)"
       },
       "chunking": {
         "name": "Chunking (Avançado)",
         "desc": "Configurar tamanho e sobreposição dos chunks para divisão de documentos.",
-        "sizeDesc": "Tamanho do chunk (tokens)",
-        "overlapLabel": "Sobreposição de Chunk",
-        "overlapDesc": "Tokens sobrepostos entre chunks adjacentes"
+        "parentSizeName": "Tamanho do Chunk Pai",
+        "parentSizeDesc": "Unidade base para divisão de documentos (1000~3000 caracteres recomendados) (Padrão: 2000)",
+        "parentOverlapName": "Sobreposição do Chunk Pai",
+        "parentOverlapDesc": "Número de caracteres sobrepostos entre chunks pais (Padrão: 200)",
+        "childSizeName": "Tamanho do Chunk Filho",
+        "childSizeDesc": "Tamanho usado para pesquisa vetorial (100~300 caracteres recomendados) (Padrão: 200)",
+        "childOverlapName": "Sobreposição do Chunk Filho",
+        "childOverlapDesc": "Número de caracteres sobrepostos entre chunks filhos (Padrão: 40)"
       },
       "topK": {
         "name": "Recuperação Top-K (Avançado)",
-        "desc": "Número de documentos principais a passar para o LLM."
+        "desc": "Número de documentos principais a passar para o LLM. (Default: 5)"
       },
       "syncMode": {
         "name": "Sincronização de Índice (Avançado)",
-        "desc": "Como o índice se atualiza quando as notas mudam.",
+        "desc": "Como o índice se atualiza quando as notas mudam. (Default: Watch)",
         "watch": "Observar alterações (recomendado)",
         "manual": "Manual",
         "startup": "Na Inicialização do App"
       },
       "minSimilarity": {
         "name": "Similaridade Mín (Avançado)",
-        "desc": "Excluir resultados abaixo desta pontuação (0~1)"
+        "desc": "Excluir resultados abaixo desta pontuação (0~1) (Default: 0.0)"
       },
       "maxFileSize": {
         "name": "Tamanho máx. do arquivo (MB)",

@@ -83,14 +83,14 @@
         "reasoningWarning": "⚠️ 警告: 推論モデルが検出されました！クイックアクションは高速性が求められます。このモデルを使用すると、深刻な遅延や無限ループが発生する可能性があります。標準のInstructモデルの使用を強く推奨します。"
       },
       "taskModel": {
-        "name": "タスクモデル（任意）",
-        "desc": "さまざまなバックグラウンドAIタスク（要約、コンテキスト処理など）に使用する、軽量で高速なモデルを選択してください。空白の場合、コスト削減のためにシステムの基本的な方法が使用されます。",
-        "noneSelected": "未選択（システムの基本機能を使用）"
+        "name": "タスクモデル (任意)",
+        "desc": "バックグラウンドAIタスク(要約など)用の軽量モデル。未選択時はデフォルトが使用されます。",
+        "noneSelected": "未選択 (デフォルトを使用)"
       },
       "rerankerModel": {
-        "name": "Reranker Model (Optional)",
-        "desc": "Select a model to rerank the initial RAG search results. This improves the relevance of the final context.",
-        "noneSelected": "None Selected (Disabled)"
+        "name": "リランカーモデル (任意)",
+        "desc": "RAG検索結果を再ランク付けし、回答の関連性を高めるモデルを選択します。",
+        "noneSelected": "未選択 (無効)"
       }
     },
     "mcp": {
@@ -190,7 +190,7 @@
       },
       "history": {
         "name": "チャット履歴の自動保存",
-        "desc": "チャット履歴を指定したパスに自動的に保存します。",
+        "desc": "チャット履歴を指定したパスに自動的に保存します。 (Default: chatHistory)",
         "pathPlaceholder": "例: /chatHistory",
         "savePath": "保存パス",
         "saveFail": "⚠️ チャット履歴の保存に失敗しました: {{error}}",
@@ -204,7 +204,7 @@
       },
       "sendMode": {
         "name": "メッセージ送信モード",
-        "desc": "チャットでのメッセージ送信方法を選択します。",
+        "desc": "チャットでのメッセージ送信方法を選択します。 (Default: Send on Enter)",
         "enter": "Enterで送信",
         "ctrlEnter": "Ctrl + Enterで送信"
       },
@@ -237,7 +237,7 @@
       },
       "inlineTrigger": {
         "name": "インラインコマンドトリガー",
-        "desc": "エディターでクイックアクションの自動補完ポップアップを表示するためのキーワードです。"
+        "desc": "エディターでクイックアクションの自動補完ポップアップを表示するためのキーワードです。 (Default: /ai)"
       },
       "memoryLimit": {
         "name": "会話メモリ制限（上級者向け）",
@@ -247,15 +247,15 @@
         "turns": "ターン数制限",
         "tokens": "トークン数制限",
         "turnsLabel": "記憶するターン数",
-        "turnsDesc": "1〜15ターン。1ターン = ユーザーメッセージ + AI回答 1セット",
-        "maxTokens": "最大コンテキストトークン"
+        "turnsDesc": "1〜15ターン。1ターン = ユーザーメッセージ + AI回答 1セット (Default: 10)",
+        "maxTokens": "最大コンテキストトークン (Default: 8000)"
       },
       "modelParams": {
         "name": "モデルパラメータ（上級者向け）",
         "desc": "Temperature（創造性/正確性の調整）、最大出力長などを設定します。",
         "tempLabel": "Temperature",
-        "tempDesc": "低いほど正確、高いほど創造的になります（0.0〜2.0）",
-        "maxOutput": "最大出力トークン (Max Output Tokens)",
+        "tempDesc": "低いほど正確、高いほど創造的になります（0.0〜2.0） (Default: 0.7)",
+        "maxOutput": "最大出力トークン (Max Output Tokens) (Default: 2048)",
         "responseLang": "応答言語を指定",
         "responseLangDesc": "AIが常に指定された言語で回答するようにします。自動はシステムプロンプトに従います。",
         "responseLangAuto": "自動"
@@ -293,7 +293,7 @@
       "disabledWarning": "⚪ RAGが無効化されています。「接続とモデル」タブでRAGエンジンを有効にしてください。",
       "dataScope": {
         "name": "デフォルトのデータ範囲",
-        "desc": "RAG検索に含めるノートを選択します。",
+        "desc": "RAG検索に含めるノートを選択します。 (Default: Entire Vault)",
         "vaultWide": "Vault全体",
         "activeNote": "アクティブなノートのみの場合",
         "manual": "手動で選択したファイルのみ"
@@ -308,29 +308,34 @@
       },
       "ignorePaths": {
         "name": "除外パス",
-        "desc": "カンマ区切り。含めるパスより優先"
+        "desc": "カンマ区切り。含めるパスより優先 (Default: templates, chatHistory, etc.)"
       },
       "chunking": {
         "name": "テキストチャンキング設定（上級者向け）",
         "desc": "ドキュメントを分割する単位サイズ（Chunk Size）と重複区間（Overlap）を設定します。",
-        "sizeDesc": "ドキュメントを分割する単位サイズ（トークン数）",
-        "overlapLabel": "チャンク重複 (Overlap)",
-        "overlapDesc": "隣接するチャンク間の重複トークン数"
+        "parentSizeName": "親チャンクサイズ",
+        "parentSizeDesc": "ドキュメント分割の基本単位（1000〜3000文字推奨） (デフォルト: 2000)",
+        "parentOverlapName": "親チャンクのオーバーラップ",
+        "parentOverlapDesc": "親チャンク間で重複させる文字数 (デフォルト: 200)",
+        "childSizeName": "子チャンクサイズ",
+        "childSizeDesc": "ベクトル検索に使用される子チャンクサイズ（100〜300文字推奨） (デフォルト: 200)",
+        "childOverlapName": "子チャンクのオーバーラップ",
+        "childOverlapDesc": "子チャンク間で重複させる文字数 (デフォルト: 40)"
       },
       "topK": {
         "name": "Top-K検索数（上級者向け）",
-        "desc": "LLMに渡す最も関連性の高いドキュメントの数を設定します。"
+        "desc": "LLMに渡す最も関連性の高いドキュメントの数を設定します。 (Default: 5)"
       },
       "syncMode": {
         "name": "インデックス同期モード（上級者向け）",
-        "desc": "RAGインデックスの同期タイミングを選択します。",
+        "desc": "RAGインデックスの同期タイミングを選択します。 (Default: Watch)",
         "watch": "変更検知（推奨）",
         "manual": "手動同期",
         "startup": "アプリ起動時に一度"
       },
       "minSimilarity": {
         "name": "最小類似度閾値（上級者向け）",
-        "desc": "この値以下の関連性スコアを検索結果から除外します (0~1)"
+        "desc": "この値以下の関連性スコアを検索結果から除外します (0~1) (Default: 0.0)"
       },
       "maxFileSize": {
         "name": "最大ファイルサイズ (MB)",

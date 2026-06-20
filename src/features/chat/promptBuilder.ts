@@ -90,7 +90,7 @@ export function buildMessages(
 				messages.push({ role: 'system', content: systemContent });
 			}
 		}
-	} else if (chat.memoryMethod === 'tokens' || chat.useTokenLimit) {
+	} else if (chat.memoryMethod === 'tokens') {
 		// 토큰 기반: 뒤에서부터 토큰 합산 (간이 추정: 4 chars ≈ 1 token)
 		let tokenCount = 0;
 		const maxTokens = chat.maxContextTokens;

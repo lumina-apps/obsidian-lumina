@@ -84,12 +84,12 @@
       },
       "taskModel": {
         "name": "Task Model (Optional)",
-        "desc": "Select a lightweight and fast model for various background AI tasks (e.g., summarization, context processing). If left blank, basic system methods will be used to save costs.",
-        "noneSelected": "None Selected (Use basic system methods)"
+        "desc": "Dedicated lightweight model for background AI tasks (e.g., chat summarization). If empty, system default is used.",
+        "noneSelected": "None Selected (System Default)"
       },
       "rerankerModel": {
         "name": "Reranker Model (Optional)",
-        "desc": "Select a model to rerank the initial RAG search results. This improves the relevance of the final context.",
+        "desc": "Select a model to rerank RAG search results and improve context relevance.",
         "noneSelected": "None Selected (Disabled)"
       }
     },
@@ -190,7 +190,7 @@
       },
       "history": {
         "name": "Auto-save Chat History",
-        "desc": "Automatically save chat history to a specified path.",
+        "desc": "Automatically save chat history to a specified path. (Default: chatHistory)",
         "pathPlaceholder": "e.g., /chatHistory",
         "savePath": "Save Path",
         "saveFail": "⚠️ Failed to save chat history: {{error}}",
@@ -224,7 +224,7 @@
       },
       "sendMode": {
         "name": "Send Message Mode",
-        "desc": "Choose how to send messages in chat.",
+        "desc": "Choose how to send messages in chat. (Default: Send on Enter)",
         "enter": "Enter to send",
         "ctrlEnter": "Ctrl + Enter to send"
       },
@@ -257,7 +257,7 @@
       },
       "inlineTrigger": {
         "name": "Inline Command Trigger",
-        "desc": "Keyword to invoke the quick action autocomplete popup in the editor."
+        "desc": "Keyword to invoke the quick action autocomplete popup in the editor. (Default: /ai)"
       },
       "memoryLimit": {
         "name": "Conversation Memory Limit (Advanced)",
@@ -267,15 +267,15 @@
         "turns": "Turn Limit",
         "tokens": "Token Limit",
         "turnsLabel": "Turns to Remember",
-        "turnsDesc": "Turns to remember (1 turn = user message + AI response)",
-        "maxTokens": "Max Context Tokens"
+        "turnsDesc": "Turns to remember (1 turn = user message + AI response) (Default: 10)",
+        "maxTokens": "Max Context Tokens (Default: 8000)"
       },
       "modelParams": {
         "name": "Model Parameters (Advanced)",
         "desc": "Adjust response creativity and output length.",
         "tempLabel": "Temperature",
-        "tempDesc": "Closer to 0 = precise, closer to 2 = creative",
-        "maxOutput": "Max Output Tokens",
+        "tempDesc": "Closer to 0 = precise, closer to 2 = creative (Default: 0.7)",
+        "maxOutput": "Max Output Tokens (Default: 2048)",
         "responseLang": "Specify Response Language",
         "responseLangDesc": "Force AI responses to a specific language. \"Auto\" follows the system prompt.",
         "responseLangAuto": "Auto"
@@ -293,7 +293,7 @@
       "disabledWarning": "⚪ RAG is disabled. Please enable RAG engine in the Connections & Models tab.",
       "dataScope": {
         "name": "Default Data Scope",
-        "desc": "Choose which notes to include in RAG search.",
+        "desc": "Choose which notes to include in RAG search. (Default: Entire Vault)",
         "vaultWide": "Entire Vault",
         "activeNote": "Active Note Only",
         "manual": "Manually Selected Files"
@@ -308,29 +308,34 @@
       },
       "ignorePaths": {
         "name": "Ignore Paths",
-        "desc": "Comma-separated. Takes precedence over included paths."
+        "desc": "Comma-separated. Takes precedence over included paths. (Default: templates, chatHistory, etc.)"
       },
       "chunking": {
         "name": "Chunking (Advanced)",
         "desc": "Configure chunk size and overlap for document splitting.",
-        "sizeDesc": "Chunk size (tokens)",
-        "overlapLabel": "Chunk Overlap",
-        "overlapDesc": "Overlapping tokens between adjacent chunks"
+        "parentSizeName": "Parent Chunk Size",
+        "parentSizeDesc": "Base unit for document splitting (1000~3000 chars recommended) (Default: 2000)",
+        "parentOverlapName": "Parent Chunk Overlap",
+        "parentOverlapDesc": "Number of overlapping characters between parent chunks (Default: 200)",
+        "childSizeName": "Child Chunk Size",
+        "childSizeDesc": "Child chunk size used for vector search (100~300 chars recommended) (Default: 200)",
+        "childOverlapName": "Child Chunk Overlap",
+        "childOverlapDesc": "Number of overlapping characters between child chunks (Default: 40)"
       },
       "topK": {
         "name": "Top-K Retrieval (Advanced)",
-        "desc": "Number of top-ranked documents to pass to the LLM."
+        "desc": "Number of top-ranked documents to pass to the LLM. (Default: 5)"
       },
       "syncMode": {
         "name": "Indexing Sync (Advanced)",
-        "desc": "How the index updates when notes change.",
+        "desc": "How the index updates when notes change. (Default: Watch)",
         "watch": "Watch for changes (recommended)",
         "manual": "Manual",
         "startup": "On App Startup"
       },
       "minSimilarity": {
         "name": "Min Similarity (Advanced)",
-        "desc": "Exclude results below this relevance score (0~1)"
+        "desc": "Exclude results below this relevance score (0~1) (Default: 0.0)"
       },
       "maxFileSize": {
         "name": "Max File Size (MB)",

@@ -83,13 +83,13 @@
         "reasoningWarning": "⚠️ 경고: 추론형 모델(Reasoning Model)이 감지되었습니다! 퀵 액션은 속도가 생명이므로 이 모델을 사용하면 응답이 매우 지연되거나 무한 루프에 빠질 수 있습니다. 일반 Instruct 모델 사용을 강력히 권장합니다."
       },
       "taskModel": {
-        "name": "Task 모델 (선택 사항)",
-        "desc": "다양한 백그라운드 AI 작업(대화 요약, 컨텍스트 처리 등) 전용으로 사용할 가볍고 빠른 모델을 선택하세요. 비워둘 경우 비용 절감을 위해 시스템 기본 방식이 사용됩니다.",
-        "noneSelected": "선택 안 함 (시스템 기본 방식 사용)"
+        "name": "Task 모델 (선택)",
+        "desc": "백그라운드 AI 작업(대화 요약 등) 전용 모델입니다. 미선택 시 기본 방식이 사용됩니다.",
+        "noneSelected": "선택 안 함 (기본 방식 사용)"
       },
       "rerankerModel": {
-        "name": "리랭커 모델 (선택 사항)",
-        "desc": "RAG 1차 검색 결과를 재정렬(Rerank)할 모델을 선택합니다. 선택 시 검색 결과의 연관성이 향상됩니다.",
+        "name": "리랭커 모델 (선택)",
+        "desc": "RAG 검색 결과를 재정렬하여 답변 연관성을 높일 모델을 선택합니다.",
         "noneSelected": "선택 안 함 (비활성화)"
       }
     },
@@ -190,7 +190,7 @@
       },
       "history": {
         "name": "채팅 기록 자동 저장",
-        "desc": "채팅 기록을 지정된 경로에 자동으로 저장합니다.",
+        "desc": "채팅 기록을 지정된 경로에 자동으로 저장합니다. (기본값: chatHistory)",
         "pathPlaceholder": "예: /chatHistory",
         "savePath": "저장 경로",
         "saveFail": "⚠️ 채팅 기록 저장 실패: {{error}}",
@@ -224,7 +224,7 @@
       },
       "sendMode": {
         "name": "메시지 전송 방식",
-        "desc": "채팅 메시지를 전송하는 방식을 선택합니다.",
+        "desc": "채팅 메시지를 전송하는 방식을 선택합니다. (기본값: Enter로 전송)",
         "enter": "Enter로 전송",
         "ctrlEnter": "Ctrl + Enter로 전송"
       },
@@ -257,7 +257,7 @@
       },
       "inlineTrigger": {
         "name": "인라인 커맨드 트리거",
-        "desc": "에디터에서 퀵 액션 자동완성 팝업을 호출할 때 사용할 키워드입니다."
+        "desc": "에디터에서 퀵 액션 자동완성 팝업을 호출할 때 사용할 키워드입니다. (기본값: /ai)"
       },
       "memoryLimit": {
         "name": "대화 기억 제한 (고급)",
@@ -267,15 +267,15 @@
         "turns": "턴(Turn) 수 제한",
         "tokens": "토큰 수 제한",
         "turnsLabel": "기억할 턴 수",
-        "turnsDesc": "기억할 대화 턴 수 (사용자+AI 응답 1세트 = 1턴)",
-        "maxTokens": "최대 컨텍스트 토큰"
+        "turnsDesc": "기억할 대화 턴 수 (사용자+AI 응답 1세트 = 1턴) (기본값: 10)",
+        "maxTokens": "최대 컨텍스트 토큰 (기본값: 8000)"
       },
       "modelParams": {
         "name": "모델 파라미터 (고급)",
         "desc": "응답의 창의성과 출력 길이를 조절합니다.",
         "tempLabel": "Temperature",
-        "tempDesc": "0에 가까울수록 정확, 2에 가까울수록 창의적",
-        "maxOutput": "최대 출력 토큰",
+        "tempDesc": "0에 가까울수록 정확, 2에 가까울수록 창의적 (기본값: 0.7)",
+        "maxOutput": "최대 출력 토큰 (기본값: 2048)",
         "responseLang": "응답 언어 지정",
         "responseLangDesc": "AI 응답 언어를 고정합니다. \"자동\"은 시스템 프롬프트를 따릅니다.",
         "responseLangAuto": "자동"
@@ -293,7 +293,7 @@
       "disabledWarning": "⚪ RAG가 비활성화 상태입니다. [연결 및 모델 설정] 탭에서 RAG 엔진을 활성화해 주세요.",
       "dataScope": {
         "name": "기본 데이터 범위 설정",
-        "desc": "RAG 검색에 포함할 데이터 범위를 선택합니다.",
+        "desc": "RAG 검색에 포함할 데이터 범위를 선택합니다. (기본값: 전체 저장소)",
         "vaultWide": "전체 저장소",
         "activeNote": "현재 활성화된 노트만",
         "manual": "수동으로 선택한 파일만"
@@ -308,29 +308,34 @@
       },
       "ignorePaths": {
         "name": "제외할 경로",
-        "desc": "쉼표로 구분, 포함 경로보다 우선 적용됨"
+        "desc": "쉼표로 구분, 포함 경로보다 우선 적용됨 (기본값: templates, chatHistory 등)"
       },
       "chunking": {
         "name": "청킹(Chunking) 설정 (고급)",
         "desc": "문서를 나눌 단위 크기와 겹침 정도를 설정합니다.",
-        "sizeDesc": "청크 크기 (토큰 수)",
-        "overlapLabel": "청크 겹침",
-        "overlapDesc": "인접 청크 간 겹칠 토큰 수"
+        "parentSizeName": "상위 청크 크기",
+        "parentSizeDesc": "문서 분할의 기본 단위 (1000~3000자 권장) (기본값: 2000)",
+        "parentOverlapName": "상위 청크 겹침 크기",
+        "parentOverlapDesc": "상위 청크 간 겹치는 문자 수 (기본값: 200)",
+        "childSizeName": "하위 청크 크기",
+        "childSizeDesc": "벡터 검색에 사용되는 하위 청크 크기 (100~300자 권장) (기본값: 200)",
+        "childOverlapName": "하위 청크 겹침 크기",
+        "childOverlapDesc": "하위 청크 간 겹치는 문자 수 (기본값: 40)"
       },
       "topK": {
         "name": "Top-K 검색 수 (고급)",
-        "desc": "연관도 높은 상위 문서를 몇 개까지 LLM에 전달할지 설정합니다."
+        "desc": "연관도 높은 상위 문서를 몇 개까지 LLM에 전달할지 설정합니다. (기본값: 5)"
       },
       "syncMode": {
         "name": "인덱싱 동기화 (고급)",
-        "desc": "노트 변경 시 인덱스 갱신 방식을 선택합니다.",
+        "desc": "노트 변경 시 인덱스 갱신 방식을 선택합니다. (기본값: 변경 감지)",
         "watch": "변경 감지 (권장)",
         "manual": "수동 동기화",
         "startup": "앱 시작 시 한 번"
       },
       "minSimilarity": {
         "name": "최소 유사도 (고급)",
-        "desc": "이 값 미만의 연관도는 검색 결과에서 제외 (0~1)"
+        "desc": "이 값 미만의 연관도는 검색 결과에서 제외 (0~1) (기본값: 0.0)"
       },
       "maxFileSize": {
         "name": "최대 파일 크기 (MB)",
