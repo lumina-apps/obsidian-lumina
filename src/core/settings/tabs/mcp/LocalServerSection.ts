@@ -80,12 +80,12 @@ export function renderLocalServerSection(tab: LuminaSettingTab, el: HTMLElement,
 	tab.infoBox(serverCard, t('settings.mcp.localServer.guide', { port: s.serverPort }), 'info');
 
 	if (tab.showAdvanced) {
-		renderLocalServerAdvancedSettings(tab, serverCard, s);
+		renderLocalServerAdvancedSettings(tab, el, s);
 	}
 }
 
-function renderLocalServerAdvancedSettings(tab: LuminaSettingTab, card: HTMLElement, s: McpSettings): void {
-	tab.advancedLabel(card);
+function renderLocalServerAdvancedSettings(tab: LuminaSettingTab, parentEl: HTMLElement, s: McpSettings): void {
+	tab.advancedLabel(parentEl);
 
 	const advancedFields: Array<{
 		nameKey: string;
@@ -120,7 +120,7 @@ function renderLocalServerAdvancedSettings(tab: LuminaSettingTab, card: HTMLElem
 	];
 
 	for (const field of advancedFields) {
-		new Setting(card)
+		new Setting(parentEl)
 			.setName(t(field.nameKey as TranslationKeys))
 			.setDesc(t(field.descKey as TranslationKeys))
 			.addText(text => {

@@ -59,7 +59,7 @@
         "ragDisabledForEmbedding": "⚠️ RAG 엔진이 비활성화되어 있습니다. RAG 엔진을 활성화한 후 임베딩 모델을 선택할 수 있습니다."
       },
       "customEmbedding": {
-        "name": "커스텀 임베딩 (고급)",
+        "name": "커스텀 임베딩",
         "desc": "등록된 제공자의 모델 목록에서 임베딩 모델을 선택합니다.",
         "auto": "🤖 자동 (내장 로컬 모델: ibm-granite/granite-embedding-97m-multilingual-r2)",
         "guide": "※ 모델을 추가하려면 위쪽에서 LLM 연결을 등록하고 연결 테스트를 완료해 주세요.",
@@ -192,9 +192,10 @@
       },
       "history": {
         "name": "채팅 기록 자동 저장",
-        "desc": "채팅 기록을 지정된 경로에 자동으로 저장합니다. (기본값: chatHistory)",
+        "desc": "채팅 기록을 자동으로 저장합니다.",
         "pathPlaceholder": "예: /chatHistory",
         "savePath": "저장 경로",
+        "savePathDesc": "채팅 기록을 지정된 경로에 자동으로 저장합니다. (기본값: chatHistory)",
         "saveFail": "⚠️ 채팅 기록 저장 실패: {{error}}",
         "loadFail": "⚠️ 세션을 불러올 수 없습니다.",
         "deleteSuccess": "✅ 채팅 기록이 삭제되었습니다.",
@@ -264,7 +265,7 @@
         "desc": "에디터에서 퀵 액션 자동완성 팝업을 호출할 때 사용할 키워드입니다. (기본값: /ai)"
       },
       "memoryLimit": {
-        "name": "대화 기억 제한 (고급)",
+        "name": "대화 기억 제한",
         "desc": "이전 대화를 얼마나 기억할지 설정합니다. (턴 수 또는 토큰 수 기준)",
         "limitType": "대화 기억 방식",
         "autoSummary": "컨텍스트 자동 요약 (기본값)",
@@ -275,13 +276,14 @@
         "maxTokens": "최대 컨텍스트 토큰 (기본값: 8000)"
       },
       "modelParams": {
-        "name": "모델 파라미터 (고급)",
+        "name": "모델 파라미터",
         "desc": "응답의 창의성과 출력 길이를 조절합니다.",
-        "tempLabel": "Temperature",
+        "tempLabel": "온도 (Temperature)",
         "tempDesc": "0에 가까울수록 정확, 2에 가까울수록 창의적 (기본값: 0.7)",
-        "maxOutput": "최대 출력 토큰 (기본값: 4000)",
+        "maxOutput": "최대 출력 토큰",
+        "maxOutputDesc": "한 번의 답변 생성 시 출력할 최대 토큰 수를 제한합니다. (기본값: 4000)",
         "responseLang": "응답 언어 지정",
-        "responseLangDesc": "AI 응답 언어를 고정합니다. \"자동\"은 시스템 프롬프트를 따릅니다.",
+        "responseLangDesc": "AI 응답 언어를 고정합니다. \"자동\"은 사용자가 질문한 언어에 맞춰 답변합니다.",
         "responseLangAuto": "자동"
       },
       "streaming": {
@@ -315,7 +317,7 @@
         "desc": "쉼표로 구분, 포함 경로보다 우선 적용됨 (기본값: templates, chatHistory 등)"
       },
       "chunking": {
-        "name": "청킹(Chunking) 설정 (고급)",
+        "name": "청킹(Chunking) 설정",
         "desc": "문서를 나눌 단위 크기와 겹침 정도를 설정합니다.",
         "parentSizeName": "상위 청크 크기",
         "parentSizeDesc": "문서 분할의 기본 단위 (1000~3000자 권장) (기본값: 2000)",
@@ -327,18 +329,18 @@
         "childOverlapDesc": "하위 청크 간 겹치는 문자 수 (기본값: 40)"
       },
       "topK": {
-        "name": "Top-K 검색 수 (고급)",
+        "name": "Top-K 검색 수",
         "desc": "연관도 높은 상위 문서를 몇 개까지 LLM에 전달할지 설정합니다. (기본값: 5)"
       },
       "syncMode": {
-        "name": "인덱싱 동기화 (고급)",
+        "name": "인덱싱 동기화",
         "desc": "노트 변경 시 인덱스 갱신 방식을 선택합니다. (기본값: 변경 감지)",
         "watch": "변경 감지 (권장)",
         "manual": "수동 동기화",
         "startup": "앱 시작 시 한 번"
       },
       "minSimilarity": {
-        "name": "최소 유사도 (고급)",
+        "name": "최소 유사도",
         "desc": "이 값 미만의 연관도는 검색 결과에서 제외 (0~1) (기본값: 0.0)"
       },
       "maxFileSize": {
@@ -355,7 +357,7 @@
         "fail": "❌ 재인덱싱 실패: "
       },
       "status": {
-        "name": "인덱싱 상태 (고급)",
+        "name": "인덱싱 상태",
         "desc": "현재 인덱스 용량 및 파일 수를 표시합니다.",
         "statusLabel": "상태",
         "indexing": "인덱싱 중… ({{processed}}/{{total}})",
@@ -384,7 +386,7 @@
         "indexingNotes": "내 노트 인덱싱 중..."
       },
       "reset": {
-        "name": "인덱스 초기화 (고급)",
+        "name": "인덱스 초기화",
         "desc": "인덱싱된 모든 데이터를 초기화합니다.",
         "button": "🗑 인덱스 초기화",
         "devNotice": "⚠️ 인덱스가 초기화되었습니다. (개발 중)",
@@ -403,19 +405,19 @@
         "desc": "좌측 사이드바에 플러그인 아이콘을 표시합니다."
       },
       "frontmatter": {
-        "name": "프론트매터 자동 생성 (고급)",
+        "name": "프론트매터 자동 생성",
         "desc": "새 노트 생성 시 프론트매터를 자동으로 추가합니다."
       },
       "debugMode": {
-        "name": "디버그 모드 (고급)",
+        "name": "디버그 모드",
         "desc": "LLM 요청/응답 등 내부 동작 로그를 확인합니다."
       },
       "versionInfo": {
-        "name": "버전 정보 및 릴리즈 노트 (고급)",
+        "name": "버전 정보 및 릴리즈 노트",
         "desc": "릴리즈 노트 및 업데이트 내역"
       },
       "factoryReset": {
-        "name": "데이터 초기화 및 플러그인 리셋 (고급)",
+        "name": "데이터 초기화 및 플러그인 리셋",
         "desc": "모든 설정과 데이터를 초기 상태로 되돌립니다. (채팅 기록은 유지)",
         "button": "🔄 초기화",
         "devNotice": "⚠️ 플러그인 초기화 기능은 개발 중입니다.",

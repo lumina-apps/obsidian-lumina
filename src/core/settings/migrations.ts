@@ -25,8 +25,8 @@ const KNOWN_SUMMARIZE_NAMES = [
 
 const KNOWN_TRANSLATE_NAMES = [
 	'영어로 번역', '한국어로 번역',
-	'Translate to English', 'Traducir al Inglés', 'Traducir al Español',
-	'Traduire en Anglais', 'Traduire en Français', 'Traduci in Inglese', 'Traduci in Italiano',
+	'Translate to English', 'Traducir al Inglés', 'Traducir al Español', 'Traducir al español',
+	'Traduire en Anglais', 'Traduire en Français', 'Traduire en français', 'Traduci in Inglese', 'Traduci in Italiano',
 	'英語に翻訳', '日本語に翻訳',
 	'Ins Englische übersetzen', 'Ins Deutsche übersetzen',
 	'Перевести на Английский', 'Перевести на Русский',
@@ -39,6 +39,10 @@ const KNOWN_EXPLAIN_NAMES = [
 	'説明する', 'Erklären', 'Объяснить', '解釋', '解释',
 ];
 
+const matchNameCaseInsensitive = (name: string, list: string[]): boolean => {
+	return list.some(item => item.toLowerCase() === name.toLowerCase());
+};
+
 /**
  * 퀵 액션의 이름/프롬프트를 다국어 키로 마이그레이션합니다.
  * 변경 사항이 있으면 자동으로 퀵액션을 재등록합니다.
@@ -50,15 +54,15 @@ export function migrateQuickActions(plugin: LuminaPlugin): boolean {
 	let changed = false;
 
 	for (const action of actions) {
-		if (action.id === 'qa-summarize' && KNOWN_SUMMARIZE_NAMES.includes(action.name)) {
+		if (action.id === 'qa-summarize' && matchNameCaseInsensitive(action.name, KNOWN_SUMMARIZE_NAMES)) {
 			action.name = t('settings.chat.quickActions.defaults.summarize.name');
 			action.prompt = t('settings.chat.quickActions.defaults.summarize.prompt');
 			changed = true;
-		} else if (action.id === 'qa-translate' && KNOWN_TRANSLATE_NAMES.includes(action.name)) {
+		} else if (action.id === 'qa-translate' && matchNameCaseInsensitive(action.name, KNOWN_TRANSLATE_NAMES)) {
 			action.name = t('settings.chat.quickActions.defaults.translate.name');
 			action.prompt = t('settings.chat.quickActions.defaults.translate.prompt');
 			changed = true;
-		} else if (action.id === 'qa-explain' && KNOWN_EXPLAIN_NAMES.includes(action.name)) {
+		} else if (action.id === 'qa-explain' && matchNameCaseInsensitive(action.name, KNOWN_EXPLAIN_NAMES)) {
 			action.name = t('settings.chat.quickActions.defaults.explain.name');
 			action.prompt = t('settings.chat.quickActions.defaults.explain.prompt');
 			changed = true;
@@ -98,6 +102,11 @@ export function migrateExcludedPaths(plugin: LuminaPlugin): boolean {
 	const oldConfigDir = '.' + 'obsidian';
 	if (configDir !== oldConfigDir && plugin.settings.rag.excludedPaths.includes(oldConfigDir)) {
 		plugin.settings.rag.excludedPaths = plugin.settings.rag.excludedPaths.filter(p => p !== oldConfigDir);
+		changed = true;
+	}
+
+	if (!plugin.settings.rag.excludedPaths.includes('backups')) {
+		plugin.settings.rag.excludedPaths.push('backups');
 		changed = true;
 	}
 

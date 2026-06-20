@@ -65,6 +65,7 @@ export function renderAdvancedSection(tab: LuminaSettingTab, el: HTMLElement): v
 
 	new Setting(el)
 		.setName(t('settings.chat.modelParams.maxOutput'))
+		.setDesc(t('settings.chat.modelParams.maxOutputDesc'))
 		.addText(text => {
 			let composing = false;
 			const inputEl = text.inputEl;

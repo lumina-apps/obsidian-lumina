@@ -59,7 +59,7 @@
         "ragDisabledForEmbedding": "⚠️ RAGエンジンが無効化されています。RAGエンジンを有効にした後で埋め込みモデルを選択できます。"
       },
       "customEmbedding": {
-        "name": "カスタム埋め込み（上級者向け）",
+        "name": "カスタム埋め込み",
         "desc": "登録済みプロバイダーのモデル一覧から埋め込みモデルを選択します。",
         "auto": "🤖 自動 (内蔵ローカルモデル: ibm-granite/granite-embedding-97m-multilingual-r2)",
         "guide": "※ 上記でLLM接続を登録し、接続テストを実行してください。",
@@ -161,7 +161,9 @@
         "maxSteps": "最大自動実行回数",
         "maxStepsDesc": "エージェントが1回の応答でツールを連続して実行できる最大回数。(デフォルト: 15)",
         "respectRagExclusions": "RAGの除外/包含パスをエージェントに適用",
-        "respectRagExclusionsDesc": "RAGタブの除外ルールをエージェントのファイル操作に適用します。"
+        "respectRagExclusionsDesc": "RAGタブの除外ルールをエージェントのファイル操作に適用します。",
+        "readMode": "読み取りモード",
+        "editMode": "編集モード"
       },
       "experimental": "実験的機能"
     },
@@ -190,9 +192,10 @@
       },
       "history": {
         "name": "チャット履歴の自動保存",
-        "desc": "チャット履歴を指定したパスに自動的に保存します。 (Default: chatHistory)",
+        "desc": "チャット履歴を自動的に保存します。",
         "pathPlaceholder": "例: /chatHistory",
         "savePath": "保存パス",
+        "savePathDesc": "チャット履歴を指定したパスに自動的に保存します。 (Default: chatHistory)",
         "saveFail": "⚠️ チャット履歴の保存に失敗しました: {{error}}",
         "loadFail": "⚠️ セッションの読み込みに失敗しました。",
         "deleteSuccess": "✅ チャット履歴が削除されました。",
@@ -240,7 +243,7 @@
         "desc": "エディターでクイックアクションの自動補完ポップアップを表示するためのキーワードです。 (Default: /ai)"
       },
       "memoryLimit": {
-        "name": "会話メモリ制限（上級者向け）",
+        "name": "会話メモリ制限",
         "desc": "APIに送信する過去のターン数を記憶します。",
         "limitType": "会話メモリモード",
         "autoSummary": "自動コンテキスト要約（デフォルト）",
@@ -251,13 +254,14 @@
         "maxTokens": "最大コンテキストトークン (Default: 8000)"
       },
       "modelParams": {
-        "name": "モデルパラメータ（上級者向け）",
+        "name": "モデルパラメータ",
         "desc": "Temperature（創造性/正確性の調整）、最大出力長などを設定します。",
-        "tempLabel": "Temperature",
+        "tempLabel": "温度 (Temperature)",
         "tempDesc": "低いほど正確、高いほど創造的になります（0.0〜2.0） (Default: 0.7)",
-        "maxOutput": "最大出力トークン (Max Output Tokens) (Default: 4000)",
+        "maxOutput": "最大出力トークン (Max Output Tokens)",
+        "maxOutputDesc": "1回の生成での最大出力トークン数を制限します。 (Default: 4000)",
         "responseLang": "応答言語を指定",
-        "responseLangDesc": "AIが常に指定された言語で回答するようにします。自動はシステムプロンプトに従います。",
+        "responseLangDesc": "AIが回答する言語を固定します。「自動」はユーザーの質問言語に合わせます。",
         "responseLangAuto": "自動"
       },
       "streaming": {
@@ -313,7 +317,7 @@
         "desc": "カンマ区切り。含めるパスより優先 (Default: templates, chatHistory, etc.)"
       },
       "chunking": {
-        "name": "テキストチャンキング設定（上級者向け）",
+        "name": "テキストチャンキング設定",
         "desc": "ドキュメントを分割する単位サイズ（Chunk Size）と重複区間（Overlap）を設定します。",
         "parentSizeName": "親チャンクサイズ",
         "parentSizeDesc": "ドキュメント分割の基本単位（1000〜3000文字推奨） (デフォルト: 2000)",
@@ -325,18 +329,18 @@
         "childOverlapDesc": "子チャンク間で重複させる文字数 (デフォルト: 40)"
       },
       "topK": {
-        "name": "Top-K検索数（上級者向け）",
+        "name": "Top-K検索数",
         "desc": "LLMに渡す最も関連性の高いドキュメントの数を設定します。 (Default: 5)"
       },
       "syncMode": {
-        "name": "インデックス同期モード（上級者向け）",
+        "name": "インデックス同期モード",
         "desc": "RAGインデックスの同期タイミングを選択します。 (Default: Watch)",
         "watch": "変更検知（推奨）",
         "manual": "手動同期",
         "startup": "アプリ起動時に一度"
       },
       "minSimilarity": {
-        "name": "最小類似度閾値（上級者向け）",
+        "name": "最小類似度閾値",
         "desc": "この値以下の関連性スコアを検索結果から除外します (0~1) (Default: 0.0)"
       },
       "maxFileSize": {
@@ -353,7 +357,7 @@
         "fail": "❌ 再インデックスに失敗しました: "
       },
       "status": {
-        "name": "インデックス状態（上級者向け）",
+        "name": "インデックス状態",
         "desc": "現在のインデックス容量とファイル数を表示します。",
         "statusLabel": "状態",
         "indexing": "インデックス作成中... ({{processed}}/{{total}})",
@@ -382,7 +386,7 @@
         "indexingNotes": "ノートのインデックスを作成しています..."
       },
       "reset": {
-        "name": "インデックスをリセット（上級者向け）",
+        "name": "インデックスをリセット",
         "desc": "インデックスされたすべてのデータをクリアします。",
         "button": "🗑 インデックスをリセット",
         "devNotice": "⚠️ インデックスがクリアされました（開発中）",
@@ -401,19 +405,19 @@
         "desc": "左側サイドバーにプラグインアイコンを表示します。"
       },
       "frontmatter": {
-        "name": "フロントマター自動生成（上級者向け）",
+        "name": "フロントマター自動生成",
         "desc": "ノートのフロントマター（メタデータ）を自動的に生成します。"
       },
       "debugMode": {
-        "name": "デバッグモード（上級者向け）",
+        "name": "デバッグモード",
         "desc": "バックグラウンドのデータをテキストとして確認します。"
       },
       "versionInfo": {
-        "name": "バージョン情報 & リリースノート（上級者向け）",
+        "name": "バージョン情報 & リリースノート",
         "desc": "リリースノートと更新履歴"
       },
       "factoryReset": {
-        "name": "データ初期化とプラグインリセット (詳細)",
+        "name": "データ初期化とプラグインリセット",
         "desc": "プラグインを全体初期化します。",
         "button": "🔄 リセット",
         "devNotice": "⚠️ プラグイン初期化機能は開発中です。",

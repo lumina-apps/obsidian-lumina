@@ -59,7 +59,7 @@
         "ragDisabledForEmbedding": "⚠️ RAG 引擎已禁用。请先启用 RAG 引擎以选择嵌入模型。"
       },
       "customEmbedding": {
-        "name": "自定义嵌入（高级）",
+        "name": "自定义嵌入",
         "desc": "从已注册提供商的模型列表中选择嵌入模型。",
         "auto": "🤖 自动 (内置本地模型: ibm-granite/granite-embedding-97m-multilingual-r2)",
         "guide": "※ 在上方注册 LLM 连接并完成连接测试。",
@@ -161,7 +161,9 @@
         "maxSteps": "最大自动执行次数",
         "maxStepsDesc": "代理在单次响应中可以连续执行工具的最大次数。（默认值：15）",
         "respectRagExclusions": "将 RAG 路径排除/包含设置应用于代理",
-        "respectRagExclusionsDesc": "将 RAG 选项卡的排除规则应用于代理的文件操作。"
+        "respectRagExclusionsDesc": "将 RAG 选项卡的排除规则应用于代理的文件操作。",
+        "readMode": "读取模式",
+        "editMode": "编辑模式"
       },
       "experimental": "实验性功能"
     },
@@ -190,9 +192,10 @@
       },
       "history": {
         "name": "自动保存聊天记录",
-        "desc": "将聊天记录自动保存到指定路径。 (Default: chatHistory)",
+        "desc": "自动保存聊天记录。",
         "pathPlaceholder": "例：/chatHistory",
         "savePath": "保存路径",
+        "savePathDesc": "将聊天记录自动保存到指定路径。 (Default: chatHistory)",
         "saveFail": "⚠️ 保存聊天记录失败：{{error}}",
         "loadFail": "⚠️ 无法加载会话。",
         "deleteSuccess": "✅ 聊天记录已删除。",
@@ -240,7 +243,7 @@
         "desc": "在编辑器中调用快捷操作自动完成弹出窗口的关键词。 (Default: /ai)"
       },
       "memoryLimit": {
-        "name": "对话记忆限制（高级）",
+        "name": "对话记忆限制",
         "desc": "保留多少对话历史（按轮数或 Token 数）。",
         "limitType": "对话记忆方式",
         "autoSummary": "自动上下文摘要（默认）",
@@ -251,13 +254,14 @@
         "maxTokens": "最大上下文 Token (Default: 8000)"
       },
       "modelParams": {
-        "name": "模型参数（高级）",
+        "name": "模型参数",
         "desc": "调整回答的创造性和输出长度。",
-        "tempLabel": "Temperature",
+        "tempLabel": "温度 (Temperature)",
         "tempDesc": "越接近 0 = 精确，越接近 2 = 创造性 (Default: 0.7)",
-        "maxOutput": "最大输出 Token (Default: 4000)",
+        "maxOutput": "最大输出 Token",
+        "maxOutputDesc": "限制单次生成最大输出 Token 数量。 (Default: 4000)",
         "responseLang": "指定响应语言",
-        "responseLangDesc": "强制 AI 使用指定语言回答。\"自动\"遵循系统提示词。",
+        "responseLangDesc": "强制 AI 使用指定语言回答。\"自动\"将根据用户提问的语言进行回答。",
         "responseLangAuto": "自动"
       },
       "streaming": {
@@ -313,7 +317,7 @@
         "desc": "逗号分隔。优先于包含的路径。 (Default: templates, chatHistory, etc.)"
       },
       "chunking": {
-        "name": "分块设置（高级）",
+        "name": "分块设置",
         "desc": "配置文档分割的块大小和重叠。",
         "parentSizeName": "父块大小 (Parent Chunk Size)",
         "parentSizeDesc": "文档分割的基本单位（建议 1000~3000 字符） (默认值: 2000)",
@@ -325,18 +329,18 @@
         "childOverlapDesc": "子块之间重叠的字符数 (默认值: 40)"
       },
       "topK": {
-        "name": "Top-K 检索（高级）",
+        "name": "Top-K 检索",
         "desc": "向 LLM 传递的排名最高文档数量。 (Default: 5)"
       },
       "syncMode": {
-        "name": "索引同步（高级）",
+        "name": "索引同步",
         "desc": "笔记变更时索引的更新方式。 (Default: Watch)",
         "watch": "监听文件变更（Watch）（推荐）",
         "manual": "手动同步",
         "startup": "应用启动时执行一次"
       },
       "minSimilarity": {
-        "name": "最小相似度（高级）",
+        "name": "最小相似度",
         "desc": "排除低于此相关性分数的结果（0~1） (Default: 0.0)"
       },
       "maxFileSize": {
@@ -353,7 +357,7 @@
         "fail": "❌ 重新索引失败："
       },
       "status": {
-        "name": "索引状态（高级）",
+        "name": "索引状态",
         "desc": "显示当前的索引大小及文件数量。",
         "statusLabel": "状态",
         "indexing": "索引中... ({{processed}}/{{total}})",
@@ -382,7 +386,7 @@
         "indexingNotes": "正在索引我的笔记..."
       },
       "reset": {
-        "name": "重置索引（高级）",
+        "name": "重置索引",
         "desc": "清除所有已索引的数据。",
         "button": "🗑 重置索引",
         "devNotice": "⚠️ 索引已重置。（开发中）",
@@ -401,19 +405,19 @@
         "desc": "在左侧边栏显示插件图标。"
       },
       "frontmatter": {
-        "name": "自动生成 Frontmatter（高级）",
+        "name": "自动生成 Frontmatter",
         "desc": "创建新笔记时自动添加 Frontmatter。"
       },
       "debugMode": {
-        "name": "调试模式（高级）",
+        "name": "调试模式",
         "desc": "查看 LLM 请求/响应等内部日志。"
       },
       "versionInfo": {
-        "name": "版本信息与发布说明（高级）",
+        "name": "版本信息与发布说明",
         "desc": "发布说明与更新记录"
       },
       "factoryReset": {
-        "name": "数据初始化与插件重置 (高级)",
+        "name": "数据初始化与插件重置",
         "desc": "将所有设置和数据重置为默认值。 (聊天记录将保留)",
         "button": "🔄 重置",
         "devNotice": "⚠️ 插件重置功能正在开发中。",

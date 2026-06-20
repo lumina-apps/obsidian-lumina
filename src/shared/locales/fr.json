@@ -59,7 +59,7 @@
         "ragDisabledForEmbedding": "⚠️ Le moteur RAG est désactivé. Veuillez d'abord activer le moteur RAG pour sélectionner un modèle d'embedding."
       },
       "customEmbedding": {
-        "name": "Embedding personnalisé (Avancé)",
+        "name": "Embedding personnalisé",
         "desc": "Sélectionnez un modèle d'embedding parmi les fournisseurs enregistrés.",
         "auto": "🤖 Auto (Modèle local intégré : ibm-granite/granite-embedding-97m-multilingual-r2)",
         "guide": "※ Enregistrez une connexion LLM ci-dessus et exécutez un test de connexion.",
@@ -161,7 +161,9 @@
         "maxSteps": "Nombre maximal d'exécutions automatiques",
         "maxStepsDesc": "Le nombre maximum de fois que l'agent peut exécuter des outils consécutivement dans une seule réponse. (Par défaut : 15)",
         "respectRagExclusions": "Appliquer les exclusions/inclusions de chemin RAG à l'Agent",
-        "respectRagExclusionsDesc": "Appliquer les règles d'exclusion RAG aux opérations de fichiers de l'Agent."
+        "respectRagExclusionsDesc": "Appliquer les règles d'exclusion RAG aux opérations de fichiers de l'Agent.",
+        "readMode": "Mode lecture",
+        "editMode": "Mode édition"
       },
       "experimental": "Fonctionnalités expérimentales"
     },
@@ -190,9 +192,10 @@
       },
       "history": {
         "name": "Sauvegarde automatique de l'historique de chat",
-        "desc": "Sauvegardez automatiquement l'historique du chat dans un chemin spécifié. (Default: chatHistory)",
+        "desc": "Sauvegardez automatiquement l'historique du chat.",
         "pathPlaceholder": "ex : /chatHistory",
         "savePath": "Chemin de sauvegarde",
+        "savePathDesc": "Sauvegardez automatiquement l'historique du chat dans un chemin spécifié. (Default: chatHistory)",
         "saveFail": "⚠️ Échec de la sauvegarde de l'historique du chat : {{error}}",
         "loadFail": "⚠️ Échec du chargement de la session.",
         "deleteSuccess": "✅ Historique du chat supprimé.",
@@ -240,7 +243,7 @@
         "desc": "Mot-clé pour afficher le pop-up d'auto-complétion des actions rapides dans l'éditeur. (Default: /ai)"
       },
       "memoryLimit": {
-        "name": "Limite de mémoire de conversation (Avancé)",
+        "name": "Limite de mémoire de conversation",
         "desc": "Combien d'historique de conversation conserver (par tours ou tokens).",
         "limitType": "Mode de mémoire de conversation",
         "autoSummary": "Résumé automatique du contexte (Par défaut)",
@@ -251,13 +254,14 @@
         "maxTokens": "Tokens contextuels maximum (Default: 8000)"
       },
       "modelParams": {
-        "name": "Paramètres du modèle (Avancé)",
+        "name": "Paramètres du modèle",
         "desc": "Ajuster la créativité et la longueur de la réponse.",
         "tempLabel": "Température",
         "tempDesc": "Proche de 0 = précis, proche de 2 = créatif (Default: 0.7)",
-        "maxOutput": "Tokens de sortie max (Default: 4000)",
+        "maxOutput": "Tokens de sortie max",
+        "maxOutputDesc": "Limite le nombre maximum de tokens générés par réponse. (Default: 4000)",
         "responseLang": "Spécifier la langue de réponse",
-        "responseLangDesc": "Forcer les réponses de l'IA dans une langue spécifique. « Auto » suit le prompt système.",
+        "responseLangDesc": "Force les réponses de l'IA dans une langue spécifique. « Auto » répond dans la langue de la requête de l'utilisateur.",
         "responseLangAuto": "Auto"
       },
       "streaming": {
@@ -313,7 +317,7 @@
         "desc": "Séparés par des virgules. Priorité sur les chemins inclus. (Default: templates, chatHistory, etc.)"
       },
       "chunking": {
-        "name": "Chunking (Avancé)",
+        "name": "Chunking",
         "desc": "Configurer la taille et le chevauchement des chunks pour le découpage des documents.",
         "parentSizeName": "Taille du fragment parent",
         "parentSizeDesc": "Unité de base pour le fractionnement de documents (1000~3000 caractères recommandés) (Défaut: 2000)",
@@ -325,18 +329,18 @@
         "childOverlapDesc": "Nombre de caractères superposés entre les fragments enfants (Défaut: 40)"
       },
       "topK": {
-        "name": "Récupération Top-K (Avancé)",
+        "name": "Récupération Top-K",
         "desc": "Nombre de documents les mieux classés à transmettre au LLM. (Default: 5)"
       },
       "syncMode": {
-        "name": "Synchronisation d'index (Avancé)",
+        "name": "Synchronisation d'index",
         "desc": "Comment l'index se met à jour lorsque les notes changent. (Default: Watch)",
         "watch": "Surveiller les modifications (recommandé)",
         "manual": "Manuel",
         "startup": "Au démarrage de l'application"
       },
       "minSimilarity": {
-        "name": "Similarité min (Avancé)",
+        "name": "Similarité min",
         "desc": "Exclure les résultats en dessous de ce score (0~1) (Default: 0.0)"
       },
       "maxFileSize": {
@@ -353,7 +357,7 @@
         "fail": "❌ Échec de la réindexation : "
       },
       "status": {
-        "name": "Statut d'indexation (Avancé)",
+        "name": "Statut d'indexation",
         "desc": "Affiche la taille actuelle de l'index et le nombre de fichiers.",
         "statusLabel": "Statut",
         "indexing": "Indexation... ({{processed}}/{{total}})",
@@ -382,7 +386,7 @@
         "indexingNotes": "Indexation de mes notes..."
       },
       "reset": {
-        "name": "Réinitialiser l'index (Avancé)",
+        "name": "Réinitialiser l'index",
         "desc": "Effacez toutes les données indexées.",
         "button": "🗑 Réinitialiser l'index",
         "devNotice": "⚠️ Index effacé (En cours de développement)",
@@ -401,19 +405,19 @@
         "desc": "Afficher l'icône de l'extension dans la barre latérale gauche."
       },
       "frontmatter": {
-        "name": "Générer automatiquement le frontmatter (Avancé)",
+        "name": "Générer automatiquement le frontmatter",
         "desc": "Ajouter automatiquement le frontmatter lors de la création de nouvelles notes."
       },
       "debugMode": {
-        "name": "Mode débogage (Avancé)",
+        "name": "Mode débogage",
         "desc": "Voir les logs internes tels que les requêtes et réponses LLM."
       },
       "versionInfo": {
-        "name": "Informations de version et Notes de mise à jour (Avancé)",
+        "name": "Informations de version et Notes de mise à jour",
         "desc": "Notes de mise à jour et historique des mises à jour"
       },
       "factoryReset": {
-        "name": "Initialisation des données et réinitialisation du plugin (Avancé)",
+        "name": "Initialisation des données et réinitialisation du plugin",
         "desc": "Réinitialiser tous les paramètres et données aux valeurs par défaut. (L'historique de chat est conservé)",
         "button": "🔄 Réinitialiser",
         "devNotice": "⚠️ Réinitialisation d'usine (En cours de développement)",

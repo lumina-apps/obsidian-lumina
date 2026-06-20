@@ -59,7 +59,7 @@
         "ragDisabledForEmbedding": "⚠️ RAG 引擎已停用。請先啟用 RAG 引擎以選擇嵌入模型。"
       },
       "customEmbedding": {
-        "name": "自訂嵌入（進階）",
+        "name": "自訂嵌入",
         "desc": "從已註冊提供商的模型列表中選擇嵌入模型。",
         "auto": "🤖 自動 (內建本地模型: ibm-granite/granite-embedding-97m-multilingual-r2)",
         "guide": "※ 在上方註冊 LLM 連線並完成連線測試。",
@@ -157,11 +157,13 @@
       },
       "agentMode": {
         "name": "代理模式 (Agent Mode)",
-        "desc": "LLM 利用 MCP 工具自主執行任務。⚠️ 小型模型可能導致效能下降。",
+        "desc": "LLM 利用 MCP 工具自主執行任務.⚠️ 小型模型可能導致效能下降。",
         "maxSteps": "最大自動執行次數",
         "maxStepsDesc": "代理在單次回應中可以連續執行工具的最大次數。（預設值：15）",
         "respectRagExclusions": "將 RAG 路徑排除/包含設定套用至代理",
-        "respectRagExclusionsDesc": "將 RAG 頁籤的排除規則套用至代理的檔案操作。"
+        "respectRagExclusionsDesc": "將 RAG 頁籤的排除規則套用至代理的檔案操作。",
+        "readMode": "讀取模式",
+        "editMode": "編輯模式"
       },
       "experimental": "實驗性功能"
     },
@@ -190,9 +192,10 @@
       },
       "history": {
         "name": "自動儲存聊天記錄",
-        "desc": "將聊天記錄自動儲存到指定路徑。 (Default: chatHistory)",
+        "desc": "自動儲存聊天記錄。",
         "pathPlaceholder": "例：/chatHistory",
         "savePath": "儲存路徑",
+        "savePathDesc": "將聊天記錄自動儲存到指定路徑。 (Default: chatHistory)",
         "saveFail": "⚠️ 儲存聊天記錄失敗：{{error}}",
         "loadFail": "⚠️ 預載入會話失敗。",
         "deleteSuccess": "✅ 聊天記錄已刪除。",
@@ -240,7 +243,7 @@
         "desc": "在編輯器中呼叫快速操作自動完成 pop-up 時使用的關鍵字。 (Default: /ai)"
       },
       "memoryLimit": {
-        "name": "對話記憶限制（進階）",
+        "name": "對話記憶限制",
         "desc": "保留多少對話歷史（按輪數或 Token 數）。",
         "limitType": "對話記憶方式",
         "autoSummary": "自動上下文摘要（預設）",
@@ -251,13 +254,14 @@
         "maxTokens": "最大上下文 Token (Default: 8000)"
       },
       "modelParams": {
-        "name": "模型參數（進階）",
+        "name": "模型參數",
         "desc": "調整回答的創造性與輸出長度。",
-        "tempLabel": "Temperature",
+        "tempLabel": "溫度 (Temperature)",
         "tempDesc": "越接近 0 = 精確，越接近 2 = 創造性 (Default: 0.7)",
-        "maxOutput": "最大輸出 Token (Default: 4000)",
+        "maxOutput": "最大輸出 Token",
+        "maxOutputDesc": "限制單次生成最大輸出 Token 數量。 (Default: 4000)",
         "responseLang": "指定回應語言",
-        "responseLangDesc": "強制 AI 使用指定語言回答。「自動」遵循系統提示詞。",
+        "responseLangDesc": "強制 AI 使用指定語言回答。「自動」將根據用戶提問的語言進行回答。",
         "responseLangAuto": "自動"
       },
       "streaming": {
@@ -313,7 +317,7 @@
         "desc": "逗號分隔。優先於包含的路徑。 (Default: templates, chatHistory, etc.)"
       },
       "chunking": {
-        "name": "分塊設定（進階）",
+        "name": "分塊設定",
         "desc": "設定文件分割的區塊大小與重疊。",
         "parentSizeName": "父塊大小 (Parent Chunk Size)",
         "parentSizeDesc": "文件分割的基本單位（建議 1000~3000 字元） (預設值: 2000)",
@@ -325,18 +329,18 @@
         "childOverlapDesc": "子塊之間重疊的字元數 (預設值: 40)"
       },
       "topK": {
-        "name": "Top-K 檢索（進階）",
+        "name": "Top-K 檢索",
         "desc": "向 LLM 傳遞的排名最高文件數量。 (Default: 5)"
       },
       "syncMode": {
-        "name": "索引同步（進階）",
+        "name": "索引同步",
         "desc": "筆記變更時索引的更新方式。 (Default: Watch)",
         "watch": "監控檔案變更 (Watch)（推薦）",
         "manual": "手動同步",
         "startup": "應用啟動時執行一次"
       },
       "minSimilarity": {
-        "name": "最小相似度（進階）",
+        "name": "最小相似度",
         "desc": "排除低於此相關性分數的結果（0~1） (Default: 0.0)"
       },
       "maxFileSize": {
@@ -353,7 +357,7 @@
         "fail": "❌ 重新索引失敗："
       },
       "status": {
-        "name": "索引狀態（進階）",
+        "name": "索引狀態",
         "desc": "顯示目前的索引大小及檔案數量。",
         "statusLabel": "狀態",
         "indexing": "索引中... ({{processed}}/{{total}})",
@@ -382,7 +386,7 @@
         "indexingNotes": "正在索引我的筆記..."
       },
       "reset": {
-        "name": "重置索引（進階）",
+        "name": "重置索引",
         "desc": "清除所有已索引的資料。",
         "button": "🗑 重置索引",
         "devNotice": "⚠️ 索引已重置。（開發中）",
@@ -401,19 +405,19 @@
         "desc": "在左側邊欄顯示外掛圖示。"
       },
       "frontmatter": {
-        "name": "自動生成 Frontmatter（進階）",
+        "name": "自動生成 Frontmatter",
         "desc": "建立新筆記時自動加入 Frontmatter。"
       },
       "debugMode": {
-        "name": "除錯模式（進階）",
+        "name": "除錯模式",
         "desc": "查看 LLM 請求/回應等內部日誌。"
       },
       "versionInfo": {
-        "name": "版本資訊與發布說明（進階）",
+        "name": "版本資訊與發布說明",
         "desc": "發布說明與更新記錄"
       },
       "factoryReset": {
-        "name": "資料初始化與外掛重置 (進階)",
+        "name": "資料初始化與外掛重置",
         "desc": "將所有設定和資料重置為預設值。（聊天記錄將保留）",
         "button": "🔄 重置",
         "devNotice": "⚠️ 外掛重置功能正在開發中。",

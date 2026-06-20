@@ -59,7 +59,7 @@
         "ragDisabledForEmbedding": "⚠️ RAG engine is disabled. Please enable the RAG engine first to select an embedding model."
       },
       "customEmbedding": {
-        "name": "Custom Embedding (Advanced)",
+        "name": "Custom Embedding",
         "desc": "Select an embedding model from registered providers.",
         "auto": "🤖 Auto (Built-in Local Model: ibm-granite/granite-embedding-97m-multilingual-r2)",
         "guide": "※ Register an LLM connection above and run a connection test to add models.",
@@ -192,9 +192,10 @@
       },
       "history": {
         "name": "Auto-save Chat History",
-        "desc": "Automatically save chat history to a specified path. (Default: chatHistory)",
+        "desc": "Automatically save chat history.",
         "pathPlaceholder": "e.g., /chatHistory",
         "savePath": "Save Path",
+        "savePathDesc": "Automatically save chat history to a specified path. (Default: chatHistory)",
         "saveFail": "⚠️ Failed to save chat history: {{error}}",
         "loadFail": "⚠️ Failed to load session.",
         "deleteSuccess": "✅ Chat history deleted.",
@@ -264,7 +265,7 @@
         "desc": "Keyword to invoke the quick action autocomplete popup in the editor. (Default: /ai)"
       },
       "memoryLimit": {
-        "name": "Conversation Memory Limit (Advanced)",
+        "name": "Conversation Memory Limit",
         "desc": "How much conversation history to retain (by turns or tokens).",
         "limitType": "Conversation Memory Mode",
         "autoSummary": "Auto Context Summary (Default)",
@@ -275,13 +276,14 @@
         "maxTokens": "Max Context Tokens (Default: 8000)"
       },
       "modelParams": {
-        "name": "Model Parameters (Advanced)",
+        "name": "Model Parameters",
         "desc": "Adjust response creativity and output length.",
         "tempLabel": "Temperature",
         "tempDesc": "Closer to 0 = precise, closer to 2 = creative (Default: 0.7)",
-        "maxOutput": "Max Output Tokens (Default: 4000)",
+        "maxOutput": "Max Output Tokens",
+        "maxOutputDesc": "Limits the maximum number of tokens generated per response. (Default: 4000)",
         "responseLang": "Specify Response Language",
-        "responseLangDesc": "Force AI responses to a specific language. \"Auto\" follows the system prompt.",
+        "responseLangDesc": "Force AI responses to a specific language. \"Auto\" responds in the language of the user's query.",
         "responseLangAuto": "Auto"
       },
       "streaming": {
@@ -315,7 +317,7 @@
         "desc": "Comma-separated. Takes precedence over included paths. (Default: templates, chatHistory, etc.)"
       },
       "chunking": {
-        "name": "Chunking (Advanced)",
+        "name": "Chunking",
         "desc": "Configure chunk size and overlap for document splitting.",
         "parentSizeName": "Parent Chunk Size",
         "parentSizeDesc": "Base unit for document splitting (1000~3000 chars recommended) (Default: 2000)",
@@ -327,18 +329,18 @@
         "childOverlapDesc": "Number of overlapping characters between child chunks (Default: 40)"
       },
       "topK": {
-        "name": "Top-K Retrieval (Advanced)",
+        "name": "Top-K Retrieval",
         "desc": "Number of top-ranked documents to pass to the LLM. (Default: 5)"
       },
       "syncMode": {
-        "name": "Indexing Sync (Advanced)",
+        "name": "Indexing Sync",
         "desc": "How the index updates when notes change. (Default: Watch)",
         "watch": "Watch for changes (recommended)",
         "manual": "Manual",
         "startup": "On App Startup"
       },
       "minSimilarity": {
-        "name": "Min Similarity (Advanced)",
+        "name": "Min Similarity",
         "desc": "Exclude results below this relevance score (0~1) (Default: 0.0)"
       },
       "maxFileSize": {
@@ -355,7 +357,7 @@
         "fail": "❌ Re-indexing failed: "
       },
       "status": {
-        "name": "Indexing Status (Advanced)",
+        "name": "Indexing Status",
         "desc": "Shows current index size and file count.",
         "statusLabel": "Status",
         "indexing": "Indexing... ({{processed}}/{{total}})",
@@ -384,7 +386,7 @@
         "indexingNotes": "Indexing my notes..."
       },
       "reset": {
-        "name": "Reset Index (Advanced)",
+        "name": "Reset Index",
         "desc": "Clear all indexed data.",
         "button": "🗑 Reset Index",
         "devNotice": "⚠️ Index cleared (Under development)",
@@ -403,19 +405,19 @@
         "desc": "Display plugin icon in the left sidebar."
       },
       "frontmatter": {
-        "name": "Auto-generate Frontmatter (Advanced)",
+        "name": "Auto-generate Frontmatter",
         "desc": "Automatically add frontmatter when creating new notes."
       },
       "debugMode": {
-        "name": "Debug Mode (Advanced)",
+        "name": "Debug Mode",
         "desc": "View internal logs such as LLM requests and responses."
       },
       "versionInfo": {
-        "name": "Version Info & Release Notes (Advanced)",
+        "name": "Version Info & Release Notes",
         "desc": "Release notes and update history"
       },
       "factoryReset": {
-        "name": "Data Initialization & Plugin Reset (Advanced)",
+        "name": "Data Initialization & Plugin Reset",
         "desc": "Reset all settings and data to defaults. (Chat history is preserved)",
         "button": "🔄 Reset",
         "devNotice": "⚠️ Factory reset (Under development)",

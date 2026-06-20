@@ -246,6 +246,7 @@ export interface TranslationSettingsChatHistory {
   desc: string;
   pathPlaceholder: string;
   savePath: string;
+  savePathDesc: string;
   saveFail: string;
   loadFail: string;
   deleteSuccess: string;
@@ -335,6 +336,7 @@ export interface TranslationSettingsChatModelParams {
   tempLabel: string;
   tempDesc: string;
   maxOutput: string;
+  maxOutputDesc: string;
   responseLang: string;
   responseLangDesc: string;
   responseLangAuto: string;

@@ -59,7 +59,7 @@
         "ragDisabledForEmbedding": "⚠️ Die RAG-Engine ist deaktiviert. Bitte aktivieren Sie zuerst die RAG-Engine, um ein Embedding-Modell auszuwählen."
       },
       "customEmbedding": {
-        "name": "Benutzerdefiniertes Embedding (Erweitert)",
+        "name": "Benutzerdefiniertes Embedding",
         "desc": "Wählen Sie ein Embedding-Modell aus der Liste der registrierten Anbieter.",
         "auto": "🤖 Automatisch (Eingebaut lokales Modell: ibm-granite/granite-embedding-97m-multilingual-r2)",
         "guide": "※ Registrieren Sie eine LLM-Verbindung oben und führen Sie einen Verbindungstest durch.",
@@ -161,7 +161,9 @@
         "maxSteps": "Maximale Anzahl automatischer Ausführungen",
         "maxStepsDesc": "Die maximale Anzahl der aufeinanderfolgenden Tool-Ausführungen durch den Agenten in einer einzigen Antwort. (Standard: 15)",
         "respectRagExclusions": "RAG-Pfadausschlüsse/-einschlüsse auf Agent anwenden",
-        "respectRagExclusionsDesc": "RAG-Tab-Ausschlussregeln auf Agent-Dateioperationen anwenden."
+        "respectRagExclusionsDesc": "RAG-Tab-Ausschlussregeln auf Agent-Dateioperationen anwenden.",
+        "readMode": "Lesemodus",
+        "editMode": "Bearbeitungsmodus"
       },
       "experimental": "Experimentelle Funktionen"
     },
@@ -190,9 +192,10 @@
       },
       "history": {
         "name": "Chat-Verlauf automatisch speichern",
-        "desc": "Speichert den Chat-Verlauf automatisch im angegebenen Pfad. (Default: chatHistory)",
+        "desc": "Speichert den Chat-Verlauf automatisch.",
         "pathPlaceholder": "z. B. /chatHistory",
         "savePath": "Speicherpfad",
+        "savePathDesc": "Speichert den Chat-Verlauf automatisch im angegebenen Pfad. (Default: chatHistory)",
         "saveFail": "⚠️ Fehler beim Speichern des Chat-Verlaufs: {{error}}",
         "loadFail": "⚠️ Sitzung konnte nicht geladen werden.",
         "deleteSuccess": "✅ Chat-Verlauf gelöscht.",
@@ -240,7 +243,7 @@
         "desc": "Stichwort, um das Quick-Aktion-Autovervollständigungspopup im Editor aufzurufen. (Default: /ai)"
       },
       "memoryLimit": {
-        "name": "Konversations-Speicherlimit (Erweitert)",
+        "name": "Konversations-Speicherlimit",
         "desc": "Wie viel Konversationsverlauf gespeichert wird (nach Turns oder Tokens).",
         "limitType": "Konversationsspeicher-Modus",
         "autoSummary": "Automatische Kontextzusammenfassung (Standard)",
@@ -251,13 +254,14 @@
         "maxTokens": "Maximale Kontext-Tokens (Default: 8000)"
       },
       "modelParams": {
-        "name": "Modellparameter (Erweitert)",
+        "name": "Modellparameter",
         "desc": "Kreativität und Ausgabelänge der Antwort anpassen.",
         "tempLabel": "Temperatur",
         "tempDesc": "Näher an 0 = präzise, näher an 2 = kreativ (Default: 0.7)",
-        "maxOutput": "Max. Ausgabe-Tokens (Default: 4000)",
+        "maxOutput": "Max. Ausgabe-Tokens",
+        "maxOutputDesc": "Begrenzt die maximale Anzahl der pro Antwort generierten Tokens. (Default: 4000)",
         "responseLang": "Antwortsprache festlegen",
-        "responseLangDesc": "Erzwingt KI-Antworten in einer bestimmten Sprache. \"Auto\" folgt dem System-Prompt.",
+        "responseLangDesc": "Erzwingt KI-Antworten in einer bestimmten Sprache. \"Auto\" antwortet in der Sprache der Benutzeranfrage.",
         "responseLangAuto": "Automatisch"
       },
       "streaming": {
@@ -313,7 +317,7 @@
         "desc": "Kommagetrennt. Hat Vorrang vor eingeschlossenen Pfaden. (Default: templates, chatHistory, etc.)"
       },
       "chunking": {
-        "name": "Chunking (Erweitert)",
+        "name": "Chunking",
         "desc": "Chunk-Größe und Überlappung für die Dokumentenaufteilung konfigurieren.",
         "parentSizeName": "Übergeordnete Chunk-Größe",
         "parentSizeDesc": "Basiseinheit für die Dokumentenaufteilung (1000~3000 Zeichen empfohlen) (Standard: 2000)",
@@ -325,18 +329,18 @@
         "childOverlapDesc": "Anzahl der überlappenden Zeichen zwischen untergeordneten Chunks (Standard: 40)"
       },
       "topK": {
-        "name": "Top-K Retrieval (Erweitert)",
+        "name": "Top-K Retrieval",
         "desc": "Anzahl der relevantesten Dokumente, die an das LLM übergeben werden. (Default: 5)"
       },
       "syncMode": {
-        "name": "Index-Sync (Erweitert)",
+        "name": "Index-Sync",
         "desc": "Wie der Index bei Notizänderungen aktualisiert wird. (Default: Watch)",
         "watch": "Änderungen überwachen (Empfohlen)",
         "manual": "Manuell",
         "startup": "Beim App-Start"
       },
       "minSimilarity": {
-        "name": "Min. Ähnlichkeit (Erweitert)",
+        "name": "Min. Ähnlichkeit",
         "desc": "Ergebnisse unterhalb dieses Relevanzwerts ausschließen (0~1) (Default: 0.0)"
       },
       "maxFileSize": {
@@ -353,7 +357,7 @@
         "fail": "❌ Neuindexierung fehlgeschlagen: "
       },
       "status": {
-        "name": "Indexierungsstatus (Erweitert)",
+        "name": "Indexierungsstatus",
         "desc": "Zeigt die aktuelle Indexgröße und Dateianzahl an.",
         "statusLabel": "Status",
         "indexing": "Wird indexiert... ({{processed}}/{{total}})",
@@ -382,7 +386,7 @@
         "indexingNotes": "Indiziere meine Notizen..."
       },
       "reset": {
-        "name": "Index zurücksetzen (Erweitert)",
+        "name": "Index zurücksetzen",
         "desc": "Löscht alle indexierten Daten.",
         "button": "🗑 Index zurücksetzen",
         "devNotice": "⚠️ Index gelöscht (In Entwicklung)",
@@ -401,19 +405,19 @@
         "desc": "Zeigt das Plugin-Symbol in der linken Seitenleiste an."
       },
       "frontmatter": {
-        "name": "Frontmatter automatisch generieren (Erweitert)",
+        "name": "Frontmatter automatisch generieren",
         "desc": "Fügt beim Erstellen neuer Notizen automatisch Frontmatter hinzu."
       },
       "debugMode": {
-        "name": "Debug-Modus (Erweitert)",
+        "name": "Debug-Modus",
         "desc": "Interne Logs wie LLM-Anfragen und -Antworten anzeigen."
       },
       "versionInfo": {
-        "name": "Versionsinfo & Release Notes (Erweitert)",
+        "name": "Versionsinfo & Release Notes",
         "desc": "Release Notes und Update-Verlauf"
       },
       "factoryReset": {
-        "name": "Dateninitialisierung & Plugin-Reset (Erweitert)",
+        "name": "Dateninitialisierung & Plugin-Reset",
         "desc": "Setzt alle Einstellungen und Daten auf Standardwerte zurück. (Chat-Verlauf bleibt erhalten)",
         "button": "🔄 Zurücksetzen",
         "devNotice": "⚠️ Werkseinstellungen wiederherstellen (In Entwicklung)",

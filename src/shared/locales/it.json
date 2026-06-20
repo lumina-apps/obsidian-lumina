@@ -59,7 +59,7 @@
         "ragDisabledForEmbedding": "⚠️ Il motore RAG è disabilitato. Abilita prima il motore RAG per selezionare un modello di embedding."
       },
       "customEmbedding": {
-        "name": "Embedding Personalizzato (Avanzate)",
+        "name": "Embedding Personalizzato",
         "desc": "Seleziona un modello di embedding dai provider registrati.",
         "auto": "🤖 Auto (Modello Locale Integrato: ibm-granite/granite-embedding-97m-multilingual-r2)",
         "guide": "※ Registra una connessione LLM sopra ed esegui un test di connessione.",
@@ -161,7 +161,9 @@
         "maxSteps": "Numero massimo di esecuzioni automatiche",
         "maxStepsDesc": "Il numero massimo di volte che l'agente può eseguire strumenti consecutivamente in una singola risposta. (Predefinito: 15)",
         "respectRagExclusions": "Applica esclusioni/inclusioni percorso RAG all'Agente",
-        "respectRagExclusionsDesc": "Applica le regole di esclusione RAG alle operazioni sui file dell'Agente."
+        "respectRagExclusionsDesc": "Applica le regole di esclusione RAG alle operazioni sui file dell'Agente.",
+        "readMode": "Modalità lettura",
+        "editMode": "Modalità modifica"
       },
       "experimental": "Funzionalità sperimentali"
     },
@@ -190,9 +192,10 @@
       },
       "history": {
         "name": "Salvataggio Automatico Cronologia Chat",
-        "desc": "Salva automaticamente la cronologia della chat in un percorso specificato. (Default: chatHistory)",
+        "desc": "Salva automaticamente la cronologia della chat.",
         "pathPlaceholder": "es. /chatHistory",
         "savePath": "Percorso di Salvataggio",
+        "savePathDesc": "Salva automaticamente la cronologia della chat in un percorso specificato. (Default: chatHistory)",
         "saveFail": "⚠️ Impossibile salvare la cronologia della chat: {{error}}",
         "loadFail": "⚠️ Impossibile caricare la sessione.",
         "deleteSuccess": "✅ Cronologia della chat eliminata.",
@@ -240,7 +243,7 @@
         "desc": "Parola chiave per invocare il popup di autocompletamento quick action nell'editor. (Default: /ai)"
       },
       "memoryLimit": {
-        "name": "Limite Memoria Conversazione (Avanzate)",
+        "name": "Limite Memoria Conversazione",
         "desc": "Quanta cronologia conversazione conservare (per turni o token).",
         "limitType": "Modalità Memoria Conversazione",
         "autoSummary": "Riepilogo automatico del contesto (Predefinito)",
@@ -251,13 +254,14 @@
         "maxTokens": "Token Max Contesto (Default: 8000)"
       },
       "modelParams": {
-        "name": "Parametri Modello (Avanzate)",
+        "name": "Parametri Modello",
         "desc": "Regola creatività e lunghezza della risposta.",
         "tempLabel": "Temperatura",
         "tempDesc": "Più vicino a 0 = preciso, più vicino a 2 = creativo (Default: 0.7)",
-        "maxOutput": "Token Output Max (Default: 4000)",
+        "maxOutput": "Token Output Max",
+        "maxOutputDesc": "Limita il numero massimo di token generati per risposta. (Default: 4000)",
         "responseLang": "Specifica Lingua di Risposta",
-        "responseLangDesc": "Forza le risposte dell'IA in una lingua specifica. \"Auto\" segue il prompt di sistema.",
+        "responseLangDesc": "Forza le risposte dell'IA in una lingua specifica. \"Auto\" risponde nella lingua della query dell'utente.",
         "responseLangAuto": "Auto"
       },
       "streaming": {
@@ -313,7 +317,7 @@
         "desc": "Separati da virgole. Ha priorità sui percorsi inclusi. (Default: templates, chatHistory, etc.)"
       },
       "chunking": {
-        "name": "Chunking (Avanzate)",
+        "name": "Chunking",
         "desc": "Configura dimensione e sovrapposizione dei chunk per la divisione dei documenti.",
         "parentSizeName": "Dimensione del chunk genitore",
         "parentSizeDesc": "Unità di base per la divisione dei documenti (consigliati 1000~3000 caratteri) (Predefinito: 2000)",
@@ -325,18 +329,18 @@
         "childOverlapDesc": "Numero di caratteri sovrapposti tra chunk figli (Predefinito: 40)"
       },
       "topK": {
-        "name": "Top-K Retrieval (Avanzate)",
+        "name": "Top-K Retrieval",
         "desc": "Numero di documenti principali da passare all'LLM. (Default: 5)"
       },
       "syncMode": {
-        "name": "Sync Indicizzazione (Avanzate)",
+        "name": "Sync Indicizzazione",
         "desc": "Come si aggiorna l'indice quando le note cambiano. (Default: Watch)",
         "watch": "Watch per cambiamenti (consigliato)",
         "manual": "Manuale",
         "startup": "All'Avvio App"
       },
       "minSimilarity": {
-        "name": "Similarità Min (Avanzate)",
+        "name": "Similarità Min",
         "desc": "Escludi risultati al di sotto di questo punteggio (0~1) (Default: 0.0)"
       },
       "maxFileSize": {
@@ -353,7 +357,7 @@
         "fail": "❌ Reindicizzazione fallita: "
       },
       "status": {
-        "name": "Stato Indicizzazione (Avanzate)",
+        "name": "Stato Indicizzazione",
         "desc": "Mostra dimensione indice corrente e numero file.",
         "statusLabel": "Stato",
         "indexing": "Indicizzazione in corso... ({{processed}}/{{total}})",
@@ -382,7 +386,7 @@
         "indexingNotes": "Indicizzazione delle mie note..."
       },
       "reset": {
-        "name": "Resetta Indice (Avanzate)",
+        "name": "Resetta Indice",
         "desc": "Cancella tutti i dati indicizzati.",
         "button": "🗑 Resetta Indice",
         "devNotice": "⚠️ Indice cancellato (In sviluppo)",
@@ -401,19 +405,19 @@
         "desc": "Visualizza icona plugin nella barra laterale sinistra."
       },
       "frontmatter": {
-        "name": "Generazione Automatica Frontmatter (Avanzate)",
+        "name": "Generazione Automatica Frontmatter",
         "desc": "Aggiungi automaticamente il frontmatter alla creazione di nuove note."
       },
       "debugMode": {
-        "name": "Modalità Debug (Avanzate)",
+        "name": "Modalità Debug",
         "desc": "Visualizza i log interni come richieste e risposte LLM."
       },
       "versionInfo": {
-        "name": "Info Versione e Note di Rilascio (Avanzate)",
+        "name": "Info Versione e Note di Rilascio",
         "desc": "Note di rilascio e cronologia aggiornamenti"
       },
       "factoryReset": {
-        "name": "Inizializzazione dati e ripristino plugin (Avanzate)",
+        "name": "Inizializzazione dati e ripristino plugin",
         "desc": "Ripristina tutte le impostazioni e i dati ai valori predefiniti. (La cronologia chat è conservata)",
         "button": "🔄 Reset",
         "devNotice": "⚠️ Factory reset (In sviluppo)",

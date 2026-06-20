@@ -22,7 +22,7 @@ export function renderChatHistorySection(tab: LuminaSettingTab, el: HTMLElement)
 	if (s.autoSaveHistory) {
 		new Setting(el)
 			.setName(t('settings.chat.history.savePath'))
-			.setDesc(t('settings.chat.history.desc'))
+			.setDesc(t('settings.chat.history.savePathDesc'))
 			.addText(text => {
 				let composing = false;
 				const inputEl = text.inputEl;

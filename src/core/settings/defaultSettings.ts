@@ -65,6 +65,7 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 			'Templates',
 			'_templates',
 			'chatHistory',
+			'backups',
 		],
 
 		// Advanced

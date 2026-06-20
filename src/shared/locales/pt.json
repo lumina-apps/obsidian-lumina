@@ -59,7 +59,7 @@
         "ragDisabledForEmbedding": "⚠️ O mecanismo RAG está desativado. Ative o mecanismo RAG primeiro para selecionar um modelo de incorporação."
       },
       "customEmbedding": {
-        "name": "Incorporação Personalizada (Avançado)",
+        "name": "Incorporação Personalizada",
         "desc": "Selecione um modelo de incorporação (embedding) dos provedores registrados.",
         "auto": "🤖 Automático (Modelo Local Integrado: ibm-granite/granite-embedding-97m-multilingual-r2)",
         "guide": "※ Registre uma conexão LLM acima e execute um teste de conexão.",
@@ -161,7 +161,9 @@
         "maxSteps": "Número máximo de execuções automáticas",
         "maxStepsDesc": "O número máximo de vezes que o agente pode executar ferramentas consecutivamente em uma única resposta. (Padrão: 15)",
         "respectRagExclusions": "Aplicar exclusões/inclusões de caminho RAG ao Agente",
-        "respectRagExclusionsDesc": "Aplica as regras de exclusão RAG às operações de arquivo do Agente."
+        "respectRagExclusionsDesc": "Aplica as regras de exclusão RAG às operações de arquivo do Agente.",
+        "readMode": "Modo de leitura",
+        "editMode": "Modo de edição"
       },
       "experimental": "Recursos experimentais"
     },
@@ -190,9 +192,10 @@
       },
       "history": {
         "name": "Salvar Histórico de Chat Automaticamente",
-        "desc": "Salve automaticamente o histórico do chat em um caminho especificado. (Default: chatHistory)",
+        "desc": "Salve automaticamente o histórico do chat.",
         "pathPlaceholder": "ex: /chatHistory",
         "savePath": "Caminho de Salvamento",
+        "savePathDesc": "Salve automaticamente o histórico do chat em um caminho especificado. (Default: chatHistory)",
         "saveFail": "⚠️ Falha ao salvar o histórico de chat: {{error}}",
         "loadFail": "⚠️ Falha ao carregar a sessão.",
         "deleteSuccess": "✅ Histórico de chat excluído.",
@@ -240,7 +243,7 @@
         "desc": "Palavra-chave para invocar o popup de autocompletar ação rápida no editor. (Default: /ai)"
       },
       "memoryLimit": {
-        "name": "Limite de Memória de Conversa (Avançado)",
+        "name": "Limite de Memória de Conversa",
         "desc": "Quanto histórico de conversa manter (por turnos ou tokens).",
         "limitType": "Modo de Memória de Conversa",
         "autoSummary": "Resumo Automático de Contexto (Padrão)",
@@ -251,13 +254,14 @@
         "maxTokens": "Máximo de Tokens de Contexto (Default: 8000)"
       },
       "modelParams": {
-        "name": "Parâmetros do Modelo (Avançado)",
+        "name": "Parâmetros do Modelo",
         "desc": "Ajuste a criatividade e o comprimento da resposta.",
         "tempLabel": "Temperatura",
         "tempDesc": "Mais perto de 0 = preciso, mais perto de 2 = criativo (Default: 0.7)",
-        "maxOutput": "Máx. de Tokens de Saída (Default: 4000)",
+        "maxOutput": "Máx. de Tokens de Saída",
+        "maxOutputDesc": "Limita o número máximo de tokens gerados por resposta. (Default: 4000)",
         "responseLang": "Especificar Idioma de Resposta",
-        "responseLangDesc": "Força as respostas da IA a um idioma específico. \"Auto\" segue o prompt do sistema.",
+        "responseLangDesc": "Força as respostas da IA a um idioma específico. \"Auto\" responde no idioma da consulta do usuário.",
         "responseLangAuto": "Automático"
       },
       "streaming": {
@@ -313,7 +317,7 @@
         "desc": "Separados por vírgula. Tem prioridade sobre os caminhos incluídos. (Default: templates, chatHistory, etc.)"
       },
       "chunking": {
-        "name": "Chunking (Avançado)",
+        "name": "Chunking",
         "desc": "Configurar tamanho e sobreposição dos chunks para divisão de documentos.",
         "parentSizeName": "Tamanho do Chunk Pai",
         "parentSizeDesc": "Unidade base para divisão de documentos (1000~3000 caracteres recomendados) (Padrão: 2000)",
@@ -325,18 +329,18 @@
         "childOverlapDesc": "Número de caracteres sobrepostos entre chunks filhos (Padrão: 40)"
       },
       "topK": {
-        "name": "Recuperação Top-K (Avançado)",
+        "name": "Recuperação Top-K",
         "desc": "Número de documentos principais a passar para o LLM. (Default: 5)"
       },
       "syncMode": {
-        "name": "Sincronização de Índice (Avançado)",
+        "name": "Sincronização de Índice",
         "desc": "Como o índice se atualiza quando as notas mudam. (Default: Watch)",
         "watch": "Observar alterações (recomendado)",
         "manual": "Manual",
         "startup": "Na Inicialização do App"
       },
       "minSimilarity": {
-        "name": "Similaridade Mín (Avançado)",
+        "name": "Similaridade Mín",
         "desc": "Excluir resultados abaixo desta pontuação (0~1) (Default: 0.0)"
       },
       "maxFileSize": {
@@ -353,7 +357,7 @@
         "fail": "❌ Falha na reindexação: "
       },
       "status": {
-        "name": "Status de Indexação (Avançado)",
+        "name": "Status de Indexação",
         "desc": "Mostra o tamanho atual do índice e a contagem de arquivos.",
         "statusLabel": "Status",
         "indexing": "Indexando... ({{processed}}/{{total}})",
@@ -382,7 +386,7 @@
         "indexingNotes": "Indexando minhas notas..."
       },
       "reset": {
-        "name": "Redefinir Índice (Avançado)",
+        "name": "Redefinir Índice",
         "desc": "Limpe todos os dados indexados.",
         "button": "🗑 Redefinir Índice",
         "devNotice": "⚠️ Índice limpo (Em desenvolvimento)",
@@ -401,19 +405,19 @@
         "desc": "Exiba o ícone do plugin na barra lateral esquerda."
       },
       "frontmatter": {
-        "name": "Gerar Frontmatter Automaticamente (Avançado)",
+        "name": "Gerar Frontmatter Automaticamente",
         "desc": "Adiciona automaticamente frontmatter ao criar novas notas."
       },
       "debugMode": {
-        "name": "Modo de Depuração (Avançado)",
+        "name": "Modo de Depuração",
         "desc": "Veja logs internos como requisições e respostas do LLM."
       },
       "versionInfo": {
-        "name": "Informações da Versão e Notas de Lançamento (Avançado)",
+        "name": "Informações da Versão e Notas de Lançamento",
         "desc": "Notas de lançamento e histórico de atualizações"
       },
       "factoryReset": {
-        "name": "Inicialização de dados e redefinição do plugin (Avançado)",
+        "name": "Inicialização de dados e redefinição do plugin",
         "desc": "Redefine todas as configurações e dados para os padrões. (O histórico de chat é preservado)",
         "button": "🔄 Redefinir",
         "devNotice": "⚠️ Redefinição de fábrica (Em desenvolvimento)",
