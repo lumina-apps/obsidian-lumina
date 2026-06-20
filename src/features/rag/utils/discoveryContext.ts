@@ -1,6 +1,7 @@
 import type { TFile } from 'obsidian';
 import type LuminaPlugin from '../../../main';
 import type { SearchResult, ParentChunk } from '../../../shared/types/rag.types';
+import type { LLMProviderConfig } from '../../../shared/types/settings.types';
 import { updateDiscoveryState } from '../../../core/store/discoveryStore';
 import { searchVault } from '../search';
 import { collectRecommendedTags } from '../tagExtractor';
@@ -60,7 +61,7 @@ export async function buildContextFromActiveFile(
 		const rerankerModelId = plugin.settings.connections.rerankerModelId;
 
 		if (rerankerProviderId && rerankerModelId && results.length > 0 && queryText) {
-			const providerConfig = plugin.settings.connections.providers.find((p: any) => p.id === rerankerProviderId);
+			const providerConfig = plugin.settings.connections.providers.find((p: LLMProviderConfig) => p.id === rerankerProviderId);
 			if (providerConfig) {
 				try {
 					results = await rerankChunks(

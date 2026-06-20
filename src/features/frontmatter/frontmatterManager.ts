@@ -82,16 +82,16 @@ export class FrontmatterManager {
 				
 				// LLM 자동생성 디바운스 설정 (8초)
 				if (this.llmDebounceTimers.has(file.path)) {
-					window.clearTimeout(this.llmDebounceTimers.get(file.path)!);
+					window.clearTimeout(this.llmDebounceTimers.get(file.path));
 				}
 				const timer = window.setTimeout(() => {
 					this.llmDebounceTimers.delete(file.path);
-					this.generateFrontmatterData(file as TFile).catch(console.error);
+					this.generateFrontmatterData(file).catch(console.error);
 				}, 8000);
 				this.llmDebounceTimers.set(file.path, timer);
 			} else {
 				// 현재 보고 있지 않은 파일이면 즉시 업데이트
-				this.autoGenerate(file as TFile, true).catch(console.error);
+				this.autoGenerate(file, true).catch(console.error);
 			}
 		});
 		this.plugin.registerEvent(refModify);
@@ -116,7 +116,7 @@ export class FrontmatterManager {
 			this.pendingUpdates.delete(file.path);
 			this.llmGeneratedCache.delete(file.path);
 			if (this.llmDebounceTimers.has(file.path)) {
-				window.clearTimeout(this.llmDebounceTimers.get(file.path)!);
+				window.clearTimeout(this.llmDebounceTimers.get(file.path));
 				this.llmDebounceTimers.delete(file.path);
 			}
 		});
@@ -179,11 +179,19 @@ ${contentWithoutFm.substring(0, 3000)}`;
 
 			const match = response.content.match(/\{[\s\S]*\}/);
 			if (match) {
-				const data = JSON.parse(match[0]);
-				if (Array.isArray(data.tags) && typeof data.description === 'string') {
+				const data: unknown = JSON.parse(match[0]);
+				if (
+					typeof data === 'object' &&
+					data !== null &&
+					'tags' in data &&
+					'description' in data &&
+					Array.isArray((data as Record<string, unknown>).tags) &&
+					typeof (data as Record<string, unknown>).description === 'string'
+				) {
+					const parsed = data as { tags: string[]; description: string };
 					this.llmGeneratedCache.set(file.path, {
-						tags: data.tags,
-						description: data.description
+						tags: parsed.tags,
+						description: parsed.description
 					});
 					debugLogger.logMcp('Frontmatter', 'Generated LLM data cached for ' + file.path);
 				}

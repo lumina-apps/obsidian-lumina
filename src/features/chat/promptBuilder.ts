@@ -90,7 +90,6 @@ export function buildMessages(
 				messages.push({ role: 'system', content: systemContent });
 			}
 		}
-	// eslint-disable-next-line @typescript-eslint/no-deprecated -- 마이그레이션 이전 설정과의 하위 호환
 	} else if (chat.memoryMethod === 'tokens' || chat.useTokenLimit) {
 		// 토큰 기반: 뒤에서부터 토큰 합산 (간이 추정: 4 chars ≈ 1 token)
 		let tokenCount = 0;
