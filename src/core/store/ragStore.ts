@@ -60,6 +60,9 @@ export const indexingStatusText = derived(
 			case 'idle':
 				return '대기 중';
 			case 'loading-model':
+				if ($s.progressPct !== undefined && $s.progressPct > 0) {
+					return `임베딩 모델 로딩 중… (${$s.progressPct}%)`;
+				}
 				return '임베딩 모델 로딩 중…';
 			case 'indexing':
 				if ($isResuming) {

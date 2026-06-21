@@ -35,7 +35,7 @@ export class LuminaMcpClient {
 
 	async connect(): Promise<void> {
 		let url = this.config.url;
-		if (!url) throw new Error('URL is required for SSE transport');
+		if (!url) throw new Error(`URL is required for SSE transport (Server: ${this.config.name})`);
 		const urlObj = new URL(url);
 		let opts: import('@modelcontextprotocol/sdk/client/streamableHttp.js').StreamableHTTPClientTransportOptions = {};
 		

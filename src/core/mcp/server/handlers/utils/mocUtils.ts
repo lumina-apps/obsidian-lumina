@@ -25,17 +25,6 @@ function buildWikilink(entry: MocFileEntry, basenameCount: Map<string, number>):
 }
 
 /**
- * basename → 등장 횟수 맵을 미리 계산합니다.
- */
-function buildBasenameCountMap(files: MocFileEntry[]): Map<string, number> {
-	const map = new Map<string, number>();
-	for (const f of files) {
-		map.set(f.basename, (map.get(f.basename) ?? 0) + 1);
-	}
-	return map;
-}
-
-/**
  * 파일 경로에서 최상위 폴더명을 추출합니다.
  * 루트 파일이면 '/' 를 반환합니다.
  */

@@ -1,4 +1,3 @@
-import { t } from '../../../../shared/locales/helpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
 import type { PathGuard } from '../pathGuard';
 import { getValidatedPathAndFile, safeCreateFile, safeModifyFile } from './utils/writeHandlerUtils';

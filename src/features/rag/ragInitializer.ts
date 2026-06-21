@@ -63,6 +63,16 @@ export async function initEmbeddingWorker(
 			modelName = DEFAULT_EMBEDDING_MODEL;
 			const cacheDir = getModelCacheDir(plugin.app);
 
+			if (!localStorage.getItem('lumina-cache-cleared-v1.2.3')) {
+				try {
+					await caches.delete('transformers-cache');
+					localStorage.setItem('lumina-cache-cleared-v1.2.3', 'true');
+					debugLogger.logSystem('rag', 'Cleared transformers-cache for migration');
+				} catch (e) {
+					console.error('Failed to clear transformers-cache', e);
+				}
+			}
+
 			plugin.embeddingWorker = new EmbeddingWorkerBridge();
 
 			// 로컬에 WASM 파일 우선, 없으면 Worker에서 CDN 폴백
@@ -75,6 +85,7 @@ export async function initEmbeddingWorker(
 				(progress, status) => {
 					const pct = Math.round(progress * 100);
 					if (!isStartup) progressNotice?.setMessage(t('settings.rag.init.loadingProgress', { pct: pct }));
+					setIndexingStatus('loading-model', { progressPct: pct });
 				},
 			);
 			const worker = plugin.embeddingWorker;

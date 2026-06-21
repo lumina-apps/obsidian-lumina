@@ -60,6 +60,7 @@ export interface IndexingState {
 	processedFiles: number;
 	startTime?: number;
 	errorMessage?: string;
+	progressPct?: number;
 }
 
 // ─── Worker Message Protocol ─────────────────────
