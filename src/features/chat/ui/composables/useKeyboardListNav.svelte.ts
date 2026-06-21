@@ -7,7 +7,7 @@
  * 호출하는 .svelte 컴포넌트에서 getter로 상태를 읽고 setter로 변경합니다.
  */
 
-import { tick } from 'svelte';
+import { tick, onDestroy } from 'svelte';
 
 export interface KeyboardListNavOptions {
 	/** 드롭다운/팝업이 열려있는지 여부를 반환하는 getter */
@@ -30,6 +30,13 @@ export interface KeyboardListNavOptions {
 
 export function useKeyboardListNav(options: KeyboardListNavOptions) {
 	let keyboardNavTimer: number | null = null;
+
+	onDestroy(() => {
+		if (keyboardNavTimer) {
+			window.clearTimeout(keyboardNavTimer);
+			keyboardNavTimer = null;
+		}
+	});
 
 	function resetIndex(): void {
 		options.setActiveIndex(0);

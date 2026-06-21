@@ -212,15 +212,15 @@
 	}
 
 	$effect(() => {
-		document.addEventListener("click", handleClickOutside);
+		activeDocument.addEventListener("click", handleClickOutside);
 		const onGlobalKeydown = (e: KeyboardEvent) => {
 			if (view === "url_input") return;
 			nav.handleKeydown(e);
 		};
-		document.addEventListener("keydown", onGlobalKeydown, true);
+		activeDocument.addEventListener("keydown", onGlobalKeydown, true);
 		return () => {
-			document.removeEventListener("click", handleClickOutside);
-			document.removeEventListener("keydown", onGlobalKeydown, true);
+			activeDocument.removeEventListener("click", handleClickOutside);
+			activeDocument.removeEventListener("keydown", onGlobalKeydown, true);
 		};
 	});
 

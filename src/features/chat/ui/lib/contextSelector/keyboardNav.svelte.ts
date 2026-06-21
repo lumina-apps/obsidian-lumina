@@ -7,7 +7,7 @@
  * 호출하는 .svelte 컴포넌트에서 getter/setter로 상태를 읽고 씁니다.
  */
 
-import { tick } from "svelte";
+import { tick, onDestroy } from "svelte";
 
 export interface KeyboardNavConfig {
 	/** 현재 선택 가능한 항목 수를 반환하는 함수 */
@@ -51,6 +51,8 @@ export function useKeyboardNav(config: KeyboardNavConfig) {
 		}
 		config.setIsKeyboardNavigating(false);
 	};
+
+	onDestroy(cleanup);
 
 	function handleKeydown(e: KeyboardEvent): void {
 		const count = config.selectableCount();

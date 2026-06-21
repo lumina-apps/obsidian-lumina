@@ -62,9 +62,9 @@
 	}
 
 	$effect(() => {
-		document.addEventListener("keydown", handleGlobalKeydown, true);
+		activeDocument.addEventListener("keydown", handleGlobalKeydown, true);
 		return () => {
-			document.removeEventListener("keydown", handleGlobalKeydown, true);
+			activeDocument.removeEventListener("keydown", handleGlobalKeydown, true);
 		};
 	});
 
