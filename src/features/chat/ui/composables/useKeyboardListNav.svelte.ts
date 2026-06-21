@@ -20,45 +20,50 @@ export interface KeyboardListNavOptions {
 	onClose: () => void;
 	/** 마우스 이동과 키보드 네비게이션 충돌 방지 플래그 사용 여부 (기본 false) */
 	enableMouseConflict?: boolean;
+
+	// Svelte 5 state getters/setters passed from .svelte files to enable reactivity
+	getActiveIndex: () => number;
+	setActiveIndex: (index: number) => void;
+	getIsKeyboardNavigating: () => boolean;
+	setIsKeyboardNavigating: (val: boolean) => void;
 }
 
 export function useKeyboardListNav(options: KeyboardListNavOptions) {
-	let activeIndex = 0;
-	let isKeyboardNavigating = false;
 	let keyboardNavTimer: number | null = null;
 
 	function resetIndex(): void {
-		activeIndex = 0;
+		options.setActiveIndex(0);
 	}
 
 	function setActiveIndex(index: number): void {
-		activeIndex = index;
+		options.setActiveIndex(index);
 	}
 
 	function setKeyboardNavFlag(): void {
 		if (!options.enableMouseConflict) return;
-		isKeyboardNavigating = true;
+		options.setIsKeyboardNavigating(true);
 		if (keyboardNavTimer) window.clearTimeout(keyboardNavTimer);
 		keyboardNavTimer = window.setTimeout(() => {
-			isKeyboardNavigating = false;
+			options.setIsKeyboardNavigating(false);
 		}, 150);
 	}
 
 	function handleKeydown(e: KeyboardEvent): void {
 		if (!options.isOpen()) return;
 		const count = options.itemCount();
+		const activeIndex = options.getActiveIndex();
 
 		if (e.key === 'ArrowDown') {
 			e.preventDefault();
 			if (count > 0) {
 				setKeyboardNavFlag();
-				activeIndex = (activeIndex + 1) % count;
+				options.setActiveIndex((activeIndex + 1) % count);
 			}
 		} else if (e.key === 'ArrowUp') {
 			e.preventDefault();
 			if (count > 0) {
 				setKeyboardNavFlag();
-				activeIndex = (activeIndex - 1 + count) % count;
+				options.setActiveIndex((activeIndex - 1 + count) % count);
 			}
 		} else if (e.key === 'Enter') {
 			e.preventDefault();
@@ -79,8 +84,8 @@ export function useKeyboardListNav(options: KeyboardListNavOptions) {
 	}
 
 	return {
-		get activeIndex() { return activeIndex; },
-		get isKeyboardNavigating() { return isKeyboardNavigating; },
+		get activeIndex() { return options.getActiveIndex(); },
+		get isKeyboardNavigating() { return options.getIsKeyboardNavigating(); },
 		resetIndex,
 		setActiveIndex,
 		handleKeydown,

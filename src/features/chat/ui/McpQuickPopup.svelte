@@ -17,7 +17,7 @@
 		onOpenSettings,
 	} = $props<{
 		plugin: LuminaPlugin;
-		onClose: () => void;
+		onClose: (focusTextarea?: boolean) => void;
 		onOpenSettings: () => void;
 	}>();
 
@@ -37,6 +37,21 @@
 			serverPort = $settingsStore.mcp.serverPort;
 			agentEnabled = $settingsStore.chat.agentEnabled;
 		}
+	});
+
+	function handleGlobalKeydown(e: KeyboardEvent) {
+		if (e.key === "Escape") {
+			e.preventDefault();
+			e.stopPropagation();
+			onClose(true);
+		}
+	}
+
+	$effect(() => {
+		document.addEventListener("keydown", handleGlobalKeydown, true);
+		return () => {
+			document.removeEventListener("keydown", handleGlobalKeydown, true);
+		};
 	});
 
 	async function handleToggleServer(event: Event, server: McpServerConfig) {
@@ -70,7 +85,7 @@
 	}
 </script>
 
-<div class="lumina-mcp-popup" bind:this={containerEl} use:clickOutside={onClose}>
+<div class="lumina-mcp-popup" bind:this={containerEl} use:clickOutside={() => onClose(false)}>
 	<div class="lumina-mcp-popup__header">
 		<span class="lumina-mcp-popup__title">{t('settings.mcp.title')}</span>
 		<button class="lumina-mcp-popup__btn-settings" onclick={onOpenSettings} title={t('common.settings')}>

@@ -59,10 +59,9 @@
 		}),
 	);
 
-	// ═══════════════════════════════════════════════════════════════════════════
-	// Keyboard list navigation (composable)
-	// $state를 composable 내부에서 직접 소유하므로 외부 상태 주입 불필요
-	// ═══════════════════════════════════════════════════════════════════════════
+	let activeIndex = $state(0);
+	let isKeyboardNavigating = $state(false);
+
 	const nav = useKeyboardListNav({
 		isOpen: () => isOpen,
 		itemCount: () => filteredModels.length,
@@ -73,6 +72,10 @@
 		onClose: () => {
 			isOpen = false;
 		},
+		getActiveIndex: () => activeIndex,
+		setActiveIndex: (val) => { activeIndex = val; },
+		getIsKeyboardNavigating: () => isKeyboardNavigating,
+		setIsKeyboardNavigating: (val) => { isKeyboardNavigating = val; },
 	});
 
 	// ═══════════════════════════════════════════════════════════════════════════

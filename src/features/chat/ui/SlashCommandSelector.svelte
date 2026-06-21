@@ -12,7 +12,7 @@
 		commands: SlashCommand[];
 		searchQuery: string;
 		onSelect: (cmd: SlashCommand) => void;
-		onClose: () => void;
+		onClose: (focusTextarea?: boolean) => void;
 	} = $props();
 
 	let containerEl: HTMLDivElement | null = $state(null);
@@ -34,10 +34,9 @@
 		onClose();
 	}
 
-	// ═══════════════════════════════════════════════════════════════════════════
-	// Keyboard list navigation (composable)
-	// $state를 composable 내부에서 직접 소유하므로 외부 상태 주입 불필요
-	// ═══════════════════════════════════════════════════════════════════════════
+	let activeIndex = $state(0);
+	let isKeyboardNavigating = $state(false);
+
 	const nav = useKeyboardListNav({
 		isOpen: () => true,
 		itemCount: () => filteredCommands.length,
@@ -45,8 +44,12 @@
 			const cmd = filteredCommands[index];
 			if (cmd) selectItem(cmd);
 		},
-		onClose: () => onClose(),
+		onClose: () => onClose(true),
 		enableMouseConflict: true,
+		getActiveIndex: () => activeIndex,
+		setActiveIndex: (val) => { activeIndex = val; },
+		getIsKeyboardNavigating: () => isKeyboardNavigating,
+		setIsKeyboardNavigating: (val) => { isKeyboardNavigating = val; },
 	});
 
 	// Global keydown capture (SlashCommandSelector는 capture phase로 등록)
@@ -72,7 +75,7 @@
 	});
 </script>
 
-<div class="lumina-slash-selector" bind:this={containerEl} use:clickOutside={onClose}>
+<div class="lumina-slash-selector" bind:this={containerEl} use:clickOutside={() => onClose(false)}>
 	<div class="lumina-slash-selector__list lumina-scrollbar-thin" bind:this={listEl} role="listbox">
 		{#if filteredCommands.length === 0}
 			<div class="lumina-slash-selector__empty">명령어를 찾을 수 없습니다.</div>

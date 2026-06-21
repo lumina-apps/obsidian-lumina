@@ -367,7 +367,10 @@
 					{plugin}
 					searchQuery={contextSearchQuery}
 					onSelect={handleContextSelect}
-					onClose={() => (showContextSelector = false)}
+					onClose={(focusTextarea) => {
+						showContextSelector = false;
+						if (focusTextarea) textareaEl?.focus();
+					}}
 				/>
 			{/if}
 
@@ -376,14 +379,20 @@
 					commands={slashCommands}
 					searchQuery={slashSearchQuery}
 					onSelect={handleSlashCommandSelect}
-					onClose={() => (showSlashSelector = false)}
+					onClose={(focusTextarea) => {
+						showSlashSelector = false;
+						if (focusTextarea) textareaEl?.focus();
+					}}
 				/>
 			{/if}
 
 			{#if showMcpPopup}
 				<McpQuickPopup
 					{plugin}
-					onClose={() => (showMcpPopup = false)}
+					onClose={(focusTextarea) => {
+						showMcpPopup = false;
+						if (focusTextarea) textareaEl?.focus();
+					}}
 					onOpenSettings={() => {
 						showMcpPopup = false;
 						onOpenSettings();

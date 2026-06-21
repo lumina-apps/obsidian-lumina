@@ -28,7 +28,7 @@
 		plugin: LuminaPlugin;
 		searchQuery: string;
 		onSelect: (attachment: ContextAttachment) => void;
-		onClose: () => void;
+		onClose: (focusTextarea?: boolean) => void;
 	}>();
 
 	let containerEl: HTMLDivElement | null = $state(null);
@@ -179,7 +179,7 @@
 		if (view === "items") {
 			goBack();
 		} else {
-			onClose();
+			onClose(true);
 		}
 	}
 
@@ -189,6 +189,9 @@
 		}
 	}
 
+	let activeIndex = $state(0);
+	let isKeyboardNavigating = $state(false);
+
 	const nav = useKeyboardNav({
 		selectableCount: () => selectableCount,
 		onSelectCurrent: handleSelectCurrent,
@@ -196,20 +199,28 @@
 		onBack: handleBack,
 		scrollIntoView: () => nav.scrollActiveIntoView(listEl),
 		enableMouseConflict: true,
+		getActiveIndex: () => activeIndex,
+		setActiveIndex: (val) => { activeIndex = val; },
+		getIsKeyboardNavigating: () => isKeyboardNavigating,
+		setIsKeyboardNavigating: (val) => { isKeyboardNavigating = val; },
 	});
 
 	function handleClickOutside(e: MouseEvent) {
 		if (containerEl && !containerEl.contains(e.target as Node)) {
-			onClose();
+			onClose(false);
 		}
 	}
 
 	$effect(() => {
 		document.addEventListener("click", handleClickOutside);
-		document.addEventListener("keydown", nav.handleKeydown, true);
+		const onGlobalKeydown = (e: KeyboardEvent) => {
+			if (view === "url_input") return;
+			nav.handleKeydown(e);
+		};
+		document.addEventListener("keydown", onGlobalKeydown, true);
 		return () => {
 			document.removeEventListener("click", handleClickOutside);
-			document.removeEventListener("keydown", nav.handleKeydown, true);
+			document.removeEventListener("keydown", onGlobalKeydown, true);
 		};
 	});
 
