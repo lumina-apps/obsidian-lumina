@@ -100,7 +100,7 @@
         "name": "Agent execution",
         "desc": "Allow the LLM to autonomously use tools (e.g., search, file reading, file creation).",
         "maxSteps": "Agent Max Steps",
-        "maxStepsDesc": "Maximum number of autonomous tool execution loops allowed per prompt to prevent infinite loops.",
+        "maxStepsDesc": "Maximum number of autonomous tool execution loops allowed per prompt to prevent infinite loops. (Default: 15)",
         "respectRagExclusions": "Respect RAG Ignored Paths",
         "respectRagExclusionsDesc": "If enabled, the agent will not be able to read or modify files in the ignored paths.",
         "readMode": "Read Mode",
