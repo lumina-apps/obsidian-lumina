@@ -63,10 +63,10 @@ export async function initEmbeddingWorker(
 			modelName = DEFAULT_EMBEDDING_MODEL;
 			const cacheDir = getModelCacheDir(plugin.app);
 
-			if (!localStorage.getItem('lumina-cache-cleared-v1.2.3')) {
+			if (!plugin.app.loadLocalStorage('lumina-cache-cleared-v1.2.3')) {
 				try {
 					await caches.delete('transformers-cache');
-					localStorage.setItem('lumina-cache-cleared-v1.2.3', 'true');
+					plugin.app.saveLocalStorage('lumina-cache-cleared-v1.2.3', 'true');
 					debugLogger.logSystem('rag', 'Cleared transformers-cache for migration');
 				} catch (e) {
 					console.error('Failed to clear transformers-cache', e);
