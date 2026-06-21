@@ -244,7 +244,9 @@
 	});
 </script>
 
-<div class="lumina-context-selector" bind:this={containerEl}>
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<div class="lumina-context-selector" bind:this={containerEl} onclick={(e) => e.stopPropagation()}>
 	{#if view === 'categories'}
 		<div class="lumina-context-selector__header">
 			<span class="lumina-context-selector__header-title">{$tStore('settings.chat.context.categoryTitle')}</span>

@@ -39,7 +39,7 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 				query: '',
 			};
 		}
-		
+
 		// 트리거 뒤에 텍스트가 있으면 필터 쿼리로 인식
 		const escapedTrigger = trigger.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 		const match = sub.match(new RegExp(`${escapedTrigger}(.*)$`));
@@ -95,10 +95,13 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 	selectSuggestion(action: QuickAction, evt: MouseEvent | KeyboardEvent): void {
 		if (!this.context) return;
 		const { editor, start, end } = this.context;
-		
+
+		// 마우스 클릭 시 에디터 포커스가 해제되어 선택 영역을 가져오지 못하는 현상 방지
+		editor.focus();
+
 		// 트리거 문자열 제거
 		editor.replaceRange('', start, end);
-		
+
 		if (action.id === '__unconfigured__') {
 			const appWithSetting = this.plugin.app as unknown as {
 				setting: {
@@ -110,7 +113,7 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 			appWithSetting.setting.openTabById(this.plugin.manifest.id);
 			return;
 		}
-		
+
 		const lineContent = editor.getLine(start.line);
 		let selection = editor.getSelection();
 
