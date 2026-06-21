@@ -34,7 +34,7 @@ export async function initEmbeddingWorker(
 		plugin.embeddingWorker.terminate();
 		plugin.embeddingWorker = null;
 	}
-	plugin.clearWatchEvents();
+	plugin.watchManager.clearWatchEvents();
 
 	const { embedding, providers } = plugin.settings.connections;
 	let progressNotice: Notice | null = null;
@@ -123,7 +123,7 @@ export async function initEmbeddingWorker(
 				.finally(() => {
 					// watch 모드: 초기 인덱싱 완료 후 파일 변경 이벤트 등록
 					if (syncMode === 'watch') {
-						plugin.registerWatchEvents();
+						plugin.watchManager.registerWatchEvents();
 					}
 				});
 		} else {

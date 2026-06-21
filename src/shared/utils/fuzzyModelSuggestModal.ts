@@ -42,6 +42,7 @@ export class FuzzyModelSuggestModal extends FuzzySuggestModal<ModelSuggestItem> 
 
 	onOpen(): void {
 		void super.onOpen();
+		this.modalEl.classList.add('lumina-model-suggest-modal');
 
 		if (this.defaultItemValue) {
 			window.setTimeout(() => {

@@ -1,7 +1,9 @@
 /** LLM 모델 옵션 빌드, 파싱, 임베딩 판별 유틸리티 */
 
+import { Notice } from 'obsidian';
 import { PROVIDER_LABELS, PROVIDER_CATEGORIES } from '../types/settings.types';
 import type { LLMProviderConfig, ProviderType } from '../types/settings.types';
+import { t } from '../locales/helpers';
 
 export interface ModelOption {
 	value: string;
@@ -117,4 +119,14 @@ export function flattenProviderModels(providers: LLMProviderConfig[]): Flattened
 			value: `${p.id}::${m}`,
 		})),
 	);
+}
+
+export const REASONING_MODEL_NOTICE_DURATION = 10000;
+
+/** 추론형 모델 경고 */
+export function warnIfReasoningModel(modelId: string): void {
+	const lower = modelId.toLowerCase();
+	if (lower.includes('r1') || lower.includes('qwq') || lower.includes('reasoning') || lower.includes('thinking')) {
+		new Notice(t('settings.connections.quickActionModel.reasoningWarning'), REASONING_MODEL_NOTICE_DURATION);
+	}
 }

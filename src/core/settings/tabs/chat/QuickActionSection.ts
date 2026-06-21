@@ -66,8 +66,8 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 					action.name = nameInputEl.value;
 					header.setText(`✨ ${nameInputEl.value || t('settings.chat.quickActions.newAction')}`);
 					void tab.saveAndSync();
-					if (tab.plugin.registerQuickActions) {
-						tab.plugin.registerQuickActions();
+					if (tab.plugin.commandManager.registerQuickActions) {
+						tab.plugin.commandManager.registerQuickActions();
 					}
 				});
 				text.setValue(action.name)
@@ -76,8 +76,8 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 						action.name = val;
 						header.setText(`✨ ${val || t('settings.chat.quickActions.newAction')}`);
 						await tab.saveAndSync();
-						if (tab.plugin.registerQuickActions) {
-							tab.plugin.registerQuickActions();
+						if (tab.plugin.commandManager.registerQuickActions) {
+							tab.plugin.commandManager.registerQuickActions();
 						}
 					});
 			});
@@ -129,8 +129,8 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 				btn.onClick(async () => {
 					s.quickActions = s.quickActions.filter(a => a.id !== action.id);
 					await tab.saveAndSync();
-					if (tab.plugin.registerQuickActions) {
-						tab.plugin.registerQuickActions();
+					if (tab.plugin.commandManager.registerQuickActions) {
+						tab.plugin.commandManager.registerQuickActions();
 					}
 					tab.refreshDisplay();
 				});
@@ -152,8 +152,8 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 			actionType: 'replace',
 		});
 		await tab.saveAndSync();
-		if (tab.plugin.registerQuickActions) {
-			tab.plugin.registerQuickActions();
+		if (tab.plugin.commandManager.registerQuickActions) {
+			tab.plugin.commandManager.registerQuickActions();
 		}
 		tab.refreshDisplay();
 	}));

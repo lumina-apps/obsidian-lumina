@@ -7,6 +7,8 @@ import { debugLogger } from '../../../shared/debugLogger';
 import { resetIndexing } from '../../store/ragStore';
 import { loadSystemLocaleCache } from '../../../shared/locales/translator';
 import { initEmbeddingWorker } from '../../../features/rag/ragInitializer';
+import { activateView, closeView } from '../../views/viewHelper';
+import { DEBUG_VIEW_TYPE } from '../../../features/debug/debugView';
 
 export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 	const s = tab.plugin.settings.misc;
@@ -70,9 +72,9 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 					await tab.saveAndSync();
 					// 토글에 따라 DevLog 패널 자동 열기/닫기
 					if (val) {
-						void tab.plugin.activateDebugView();
+						void activateView(tab.plugin.app.workspace, DEBUG_VIEW_TYPE);
 					} else {
-						tab.plugin.closeDebugView();
+						closeView(tab.plugin.app.workspace, DEBUG_VIEW_TYPE);
 					}
 				});
 			});
@@ -153,7 +155,7 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 
 							// UI 업데이트 반영
 							tab.plugin.updateRibbonIcon();
-							tab.plugin.closeDebugView();
+							closeView(tab.plugin.app.workspace, DEBUG_VIEW_TYPE);
 
 							// 언어 설정 다시 반영 (loadSettings에서 감지된 언어로 즉시 전환)
 							if (tab.plugin.settings.connections.language === 'system') {

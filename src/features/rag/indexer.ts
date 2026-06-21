@@ -7,11 +7,13 @@ import type { ParentChunk, ChildChunk, EmbedFn, ParseBinaryFn } from '../../shar
 import type { RagSettings } from '../../core/settings/settings.types';
 import { setIndexingStatus, resetIndexing, resumedFromCheckpoint, setTotalFiles } from '../../core/store/ragStore';
 import { loadIndex, saveIndex, deleteCheckpoint } from './indexPersistence';
-import { getTargetFiles, detectDeletedPaths } from './fileFilter';
+import { getTargetFiles } from './fileFilter';
 import { restoreFromCheckpoint } from './checkpointManager';
 import { processFiles } from './indexProcessing';
 import type { EmbeddingStore } from './embeddingStore';
 import { OramaStore } from './oramaStore';
+import { IndexState } from './utils/indexState';
+import { calculateIndexDiff } from './utils/indexDiff';
 
 export class VaultIndexer {
 	private readonly app: App;
@@ -24,11 +26,7 @@ export class VaultIndexer {
 	private oramaStore: OramaStore | null = null;
 	private persistCacheFn?: () => Promise<void>;
 
-	private parentChunks: ParentChunk[] = [];
-	private childChunks: ChildChunk[] = [];
-	public indexedPaths: Set<string> = new Set();
-	public fileMtimes: Record<string, number> = {};
-	public fileHashes: Record<string, number> = {};
+	private state: IndexState = new IndexState();
 	public isDestroyed = false;
 	public currentProcessId = 0;
 	private indexingStartedAt = 0;
@@ -52,16 +50,19 @@ export class VaultIndexer {
 		}
 	}
 
-	get indexedParentChunks(): ParentChunk[] { return this.parentChunks; }
-	get indexedChildChunks(): ChildChunk[] { return this.childChunks; }
-	get indexedFileCount(): number { return Object.keys(this.fileMtimes).length; }
+	get indexedParentChunks(): ParentChunk[] { return this.state.parentChunks; }
+	get indexedChildChunks(): ChildChunk[] { return this.state.childChunks; }
+	get indexedFileCount(): number { return this.state.indexedFileCount; }
+	get indexedPaths(): Set<string> { return this.state.indexedPaths; }
+	get fileMtimes(): Record<string, number> { return this.state.fileMtimes; }
+	get fileHashes(): Record<string, number> { return this.state.fileHashes; }
 	get oramaDb(): OramaStore | null { return this.oramaStore; }
 	
 	async embed(texts: string[]): Promise<number[][]> { return this.embedFn(texts); }
 
 	private async getDimension(): Promise<number> {
-		if (this.childChunks.length > 0 && this.childChunks[0].embedding) {
-			return this.childChunks[0].embedding.length;
+		if (this.state.childChunks.length > 0 && this.state.childChunks[0].embedding) {
+			return this.state.childChunks[0].embedding.length;
 		}
 		const testEmbed = await this.embedFn(["test"]);
 		return testEmbed[0].length;
@@ -72,37 +73,91 @@ export class VaultIndexer {
 			const dim = await this.getDimension();
 			this.oramaStore = new OramaStore(dim);
 			await this.oramaStore.init();
-			if (this.childChunks.length > 0) {
-				await this.oramaStore.insertChunks(this.childChunks);
+			if (this.state.childChunks.length > 0) {
+				await this.oramaStore.insertChunks(this.state.childChunks);
 			}
 		}
 	}
 
 	async indexVault(): Promise<void> {
+		if (this.isIndexing) return;
 		this.isIndexing = true;
+		try {
+			await this.processSync(false);
+		} finally {
+			this.isIndexing = false;
+		}
+	}
+
+	async updateIndex(): Promise<void> {
+		if (this.isIndexing) return;
+		this.isIndexing = true;
+		try {
+			await this.processSync(true);
+		} finally {
+			this.isIndexing = false;
+		}
+	}
+
+	private async processSync(isUpdate: boolean): Promise<void> {
 		const files = getTargetFiles(this.app, this.settings, this.chatHistoryPath);
+
+		if (isUpdate) {
+			const loadResult = await loadIndex(this.app, this.modelName);
+			if (loadResult.needsFullReindex) {
+				this.state.clear();
+				await this.embeddingStore.clear();
+				// Full reindex -> proceed with normal indexing flow below
+			} else {
+				this.state.loadFrom(loadResult);
+				await this.embeddingStore.loadEmbeddings(this.state.childChunks).catch(() => {});
+				await this.initOramaStore();
+				
+				if (files.length === 0 && this.state.indexedFileCount > 0) {
+					setIndexingStatus('ready', { totalFiles: this.state.indexedFileCount, processedFiles: this.state.indexedFileCount });
+					return;
+				}
+
+				const { pathsToDelete, changedFiles } = await calculateIndexDiff(this.app, files, this.state.fileMtimes);
+				
+				if (pathsToDelete.size > 0) {
+					await this.removePaths(pathsToDelete);
+				}
+
+				if (changedFiles.length === 0) {
+					setIndexingStatus('ready', { totalFiles: files.length, processedFiles: files.length });
+					return;
+				}
+
+				const restoreResult = await restoreFromCheckpoint(this.app, this.modelName, files, false);
+				const changedSet = new Set(changedFiles.map(f => f.path));
+				const filesToProcess = restoreResult.filesToProcess.filter(f => changedSet.has(f.path));
+
+				if (filesToProcess.length === 0) {
+					await deleteCheckpoint(this.app);
+					await this.persist();
+					return;
+				}
+
+				this.indexingStartedAt = restoreResult.alreadyProcessed > 0 ? restoreResult.startedAt : Date.now();
+				await this.runProcessing(files, filesToProcess, restoreResult.alreadyProcessed, restoreResult.processedPaths);
+				return;
+			}
+		}
+
+		// Initial Indexing Flow (or Fallback from needsFullReindex)
 		const restoreResult = await restoreFromCheckpoint(this.app, this.modelName, files, true);
 
 		if (restoreResult.filesToProcess.length === 0) { 
-			this.isIndexing = false;
 			return; 
 		}
 
 		if (restoreResult.indexRestored) {
 			const loadResult = await loadIndex(this.app, this.modelName);
-			this.parentChunks.length = 0;
-			this.parentChunks.push(...loadResult.chunks);
-			this.childChunks.length = 0;
-			this.childChunks.push(...loadResult.childChunks);
-			this.indexedPaths = loadResult.indexedPaths;
-			this.fileMtimes = loadResult.fileMtimes;
-			this.fileHashes = loadResult.fileHashes;
-			// IndexedDB에서 embedding 복원
-			await this.embeddingStore.loadEmbeddings(this.childChunks).catch(() => {
-				// 로드 실패는 무시 → embedding 없이 인덱싱 계속
-			});
+			this.state.loadFrom(loadResult);
+			await this.embeddingStore.loadEmbeddings(this.state.childChunks).catch(() => {});
 		} else {
-			this.clearState();
+			this.state.clear();
 			await this.embeddingStore.clear();
 		}
 		
@@ -117,96 +172,11 @@ export class VaultIndexer {
 		);
 	}
 
-	async updateIndex(): Promise<void> {
-		if (this.isIndexing) return;
-		this.isIndexing = true;
-		try {
-			const loadResult = await loadIndex(this.app, this.modelName);
-
-			if (loadResult.needsFullReindex) {
-				this.clearState();
-				await this.indexVault();
-				return;
-			}
-
-			this.parentChunks.length = 0;
-			this.parentChunks.push(...loadResult.chunks);
-			this.childChunks.length = 0;
-			this.childChunks.push(...loadResult.childChunks);
-			this.indexedPaths = loadResult.indexedPaths;
-			this.fileMtimes = loadResult.fileMtimes;
-			this.fileHashes = loadResult.fileHashes;
-
-			// IndexedDB에서 embedding 복원
-			await this.embeddingStore.loadEmbeddings(this.childChunks).catch(() => {
-				// 로드 실패는 무시 → embedding 없이 인덱싱 계속
-			});
-
-			await this.initOramaStore();
-		} finally {
-			this.isIndexing = false;
-		}
-
-		const files = getTargetFiles(this.app, this.settings, this.chatHistoryPath);
-
-		if (files.length === 0 && Object.keys(this.fileMtimes).length > 0) {
-			setIndexingStatus('ready', { totalFiles: Object.keys(this.fileMtimes).length, processedFiles: Object.keys(this.fileMtimes).length });
-			this.isIndexing = false;
-			return;
-		}
-
-		const currentPaths = new Set(files.map(f => f.path));
-
-		// 디스크에서 삭제된 파일 감지
-		const pathsToDelete = await detectDeletedPaths(this.app, currentPaths, Object.keys(this.fileMtimes));
-
-		// 제외 경로가 변경되어 더 이상 인덱싱 대상이 아닌 파일도 제거
-		for (const indexedPath of Object.keys(this.fileMtimes)) {
-			if (!currentPaths.has(indexedPath)) {
-				pathsToDelete.add(indexedPath);
-			}
-		}
-
-		if (pathsToDelete.size > 0) { await this.removePaths(pathsToDelete); }
-
-		const changed = files.filter(f => {
-			const prev = this.fileMtimes[f.path];
-			return prev === undefined || f.stat.mtime !== prev;
-		});
-
-
-		if (changed.length === 0) {
-			setIndexingStatus('ready', { totalFiles: files.length, processedFiles: files.length });
-			this.isIndexing = false;
-			return;
-		}
-
-		const restoreResult = await restoreFromCheckpoint(this.app, this.modelName, files, false);
-		const changedSet = new Set(changed.map(f => f.path));
-		const filesToProcess = restoreResult.filesToProcess.filter(f => changedSet.has(f.path));
-
-
-		if (filesToProcess.length === 0) {
-			await deleteCheckpoint(this.app);
-			await this.persist();
-			this.isIndexing = false;
-			return;
-		}
-
-		this.indexingStartedAt = restoreResult.alreadyProcessed > 0 ? restoreResult.startedAt : Date.now();
-		await this.runProcessing(
-			files,
-			filesToProcess,
-			restoreResult.alreadyProcessed,
-			restoreResult.processedPaths,
-		);
-	}
-
 	async resetIndex(): Promise<void> {
 		this.isDestroyed = true;
 		this.currentProcessId++;
 		await new Promise<void>(resolve => window.setTimeout(resolve, 0));
-		this.clearState();
+		this.state.clear();
 		if (this.oramaStore) {
 			await this.oramaStore.clear();
 		}
@@ -217,41 +187,15 @@ export class VaultIndexer {
 		this.isIndexing = false;
 	}
 
-	private clearState(): void {
-		this.isDestroyed = false;
-		this.parentChunks.length = 0;
-		this.childChunks.length = 0;
-		this.indexedPaths.clear();
-		this.fileMtimes = {};
-		this.fileHashes = {};
-	}
-
 	private async removePaths(paths: Set<string>): Promise<void> {
-		const removedChildChunks = this.childChunks.filter(c => paths.has(c.path));
+		const removedChildChunks = this.state.getRemovedChildChunks(paths);
 		
-		for (let i = this.parentChunks.length - 1; i >= 0; i--) {
-			if (paths.has(this.parentChunks[i].path)) {
-				this.parentChunks.splice(i, 1);
-			}
-		}
-		
-		for (let i = this.childChunks.length - 1; i >= 0; i--) {
-			if (paths.has(this.childChunks[i].path)) {
-				this.childChunks.splice(i, 1);
-			}
-		}
-		
-		paths.forEach(p => {
-			this.indexedPaths.delete(p);
-			delete this.fileMtimes[p];
-			delete this.fileHashes[p];
-		});
+		this.state.removePaths(paths);
 		
 		if (this.oramaStore && removedChildChunks.length > 0) {
 			void this.oramaStore.deleteByIds(removedChildChunks.map(c => c.id));
 		}
 		
-		// IndexedDB에서 해당 청크 임베딩 삭제
 		if (removedChildChunks.length > 0) {
 			void this.embeddingStore.deleteEmbeddings(removedChildChunks.map(c => c.id)).catch(() => {});
 		}
@@ -273,9 +217,9 @@ export class VaultIndexer {
 				app: this.app, embedFn: this.embedFn, parseBinaryFn: this.parseBinaryFn,
 				parentChunkSize: this.settings.parentChunkSize, parentChunkOverlap: this.settings.parentChunkOverlap,
 				childChunkSize: this.settings.childChunkSize, childChunkOverlap: this.settings.childChunkOverlap,
-				modelName: this.modelName, parentChunks: this.parentChunks, childChunks: this.childChunks,
-				oramaStore: this.oramaStore!, indexedPaths: this.indexedPaths,
-				fileMtimes: this.fileMtimes, fileHashes: this.fileHashes,
+				modelName: this.modelName, parentChunks: this.state.parentChunks, childChunks: this.state.childChunks,
+				oramaStore: this.oramaStore!, indexedPaths: this.state.indexedPaths,
+				fileMtimes: this.state.fileMtimes, fileHashes: this.state.fileHashes,
 				getIsDestroyed: () => this.isDestroyed, getCurrentProcessId: () => this.currentProcessId,
 				persistCache: this.persistCacheFn,
 				cachePersistCheckpointInterval: this.settings.cachePersistCheckpointInterval,
@@ -283,7 +227,6 @@ export class VaultIndexer {
 			}, this.indexingStartedAt, previousProcessedPaths);
 		} finally {
 			await this.persist();
-			this.isIndexing = false;
 		}
 
 		setIndexingStatus('ready', { totalFiles: totalFiles.length, processedFiles: totalFiles.length });
@@ -292,10 +235,8 @@ export class VaultIndexer {
 	}
 
 	private async persist(): Promise<void> {
-		// 1. 메타데이터를 JSON으로 저장 (embedding 제외)
-		await saveIndex(this.app, this.modelName, this.parentChunks, this.childChunks, this.fileMtimes, this.fileHashes);
-		// 2. 임베딩을 IndexedDB에 저장 (childChunks만 임베딩 존재)
-		await this.embeddingStore.storeEmbeddings(this.childChunks).catch((err) => {
+		await saveIndex(this.app, this.modelName, this.state.parentChunks, this.state.childChunks, this.state.fileMtimes, this.state.fileHashes);
+		await this.embeddingStore.storeEmbeddings(this.state.childChunks).catch((err) => {
 			console.warn('[VaultIndexer] embeddingStore.storeEmbeddings failed:', err);
 		});
 	}

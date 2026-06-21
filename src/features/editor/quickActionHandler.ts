@@ -8,6 +8,8 @@ import type { QuickAction } from '../../shared/types/settings.types';
 import { t } from '../../shared/locales/helpers';
 import { debugLogger } from '../../shared/debugLogger';
 import type { ChatMessage, TokenUsage } from '../../shared/types/llm.types';
+import { activateView } from '../../core/views/viewHelper';
+import { CHAT_VIEW_TYPE } from '../chat/chatView';
 
 export class QuickActionHandler {
 	private plugin: LuminaPlugin;
@@ -47,7 +49,7 @@ export class QuickActionHandler {
 		}
 
 		if (action.actionType === 'chat') {
-			await this.plugin.activateChatView();
+			await activateView(this.plugin.app.workspace, CHAT_VIEW_TYPE);
 			const controller = new ChatController(this.plugin);
 			// 채팅 전송 (채팅창 이력에 남김)
 			await controller.sendMessage(

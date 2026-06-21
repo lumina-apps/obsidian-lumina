@@ -169,3 +169,20 @@ function interpolate(template: string, params?: Record<string, string | number>)
   }
   return result;
 }
+
+/** 브라우저 시스템 로케일 반환 */
+export function getSystemLocale(): string {
+	return navigator.language ?? 'Unknown';
+}
+
+/** README URL 언어 suffix 반환 */
+export function getLangSuffix(language: string): string {
+	if (language === 'system') {
+		const navLang = (window.navigator.language || 'en').toLowerCase();
+		if (navLang.startsWith('zh')) {
+			return navLang === 'zh-tw' || navLang === 'zh-hk' ? 'ZH_TW' : 'ZH';
+		}
+		return navLang.split('-')[0].toUpperCase();
+	}
+	return language.toUpperCase().replace('-', '_');
+}

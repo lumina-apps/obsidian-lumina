@@ -70,7 +70,7 @@ export function migrateQuickActions(plugin: LuminaPlugin): boolean {
 	}
 
 	if (changed) {
-		plugin.registerQuickActions();
+		plugin.commandManager.registerQuickActions();
 	}
 	return changed;
 }

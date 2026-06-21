@@ -41,7 +41,23 @@ export function enforceMarkdownExt(path: string): string {
 
 /** 경로 전체 정제 (경로 순회 방지 + 파일명 특수문자 치환 + .md 확장자 보장) */
 export function sanitizeFilePath(rawPath: string): string {
-	const parts = rawPath.split('/');
+	let cleanedPath = rawPath.trim();
+	
+	// 1. 전체가 대괄호로 감싸진 경우 ([[path]] 또는 [path]) 제거
+	const wrapMatch = cleanedPath.match(/^\[+(.*?)\]+$/);
+	if (wrapMatch) {
+		cleanedPath = wrapMatch[1];
+	} else {
+		// 2. 짝이 맞지 않는 선행/후행 대괄호(LLM 오류)만 제거
+		if (/^\[+/.test(cleanedPath) && !cleanedPath.includes(']')) {
+			cleanedPath = cleanedPath.replace(/^\[+/, '');
+		}
+		if (/\]+$/.test(cleanedPath) && !cleanedPath.includes('[')) {
+			cleanedPath = cleanedPath.replace(/\]+$/, '');
+		}
+	}
+
+	const parts = cleanedPath.split('/');
 	const safeParts = parts
 		.filter((p) => p !== '..' && p !== '.')
 		.map((p, i, arr) => (i === arr.length - 1 ? sanitizeFilename(p) : p));

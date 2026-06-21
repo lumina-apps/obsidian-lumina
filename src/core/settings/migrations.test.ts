@@ -54,7 +54,9 @@ describe('migrateQuickActions', () => {
 					],
 				},
 			},
-			registerQuickActions: registerQuickActionsMock,
+			commandManager: {
+				registerQuickActions: registerQuickActionsMock,
+			},
 		} as unknown as LuminaPlugin;
 
 		// 1. When in English mode, check if "Traducir al español" is correctly detected and migrated to "Translate to English"

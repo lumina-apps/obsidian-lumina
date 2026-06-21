@@ -943,10 +943,7 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 }
 
 /* 13. Model Selector Highlight for Default Selected Item */
-body .suggestion-container .suggestion-item.is-selected-default,
-div.modal-container .suggestion-container .suggestion-item.is-selected-default,
-div.mod-root .suggestion-container .suggestion-item.is-selected-default,
-body div.modal-overlay .suggestion-container .suggestion-item.is-selected-default {
+body .lumina-model-suggest-modal .suggestion-item.is-selected-default {
 	background-color: rgba(139, 92, 246, 0.15);
 	border-left: 3px solid var(--interactive-accent);
 	font-weight: 600;
@@ -954,10 +951,7 @@ body div.modal-overlay .suggestion-container .suggestion-item.is-selected-defaul
 	padding-right: 32px;
 }
 
-body .suggestion-container .suggestion-item.is-selected-default::after,
-div.modal-container .suggestion-container .suggestion-item.is-selected-default::after,
-div.mod-root .suggestion-container .suggestion-item.is-selected-default::after,
-body div.modal-overlay .suggestion-container .suggestion-item.is-selected-default::after {
+body .lumina-model-suggest-modal .suggestion-item.is-selected-default::after {
 	content: '✓';
 	position: absolute;
 	right: 12px;

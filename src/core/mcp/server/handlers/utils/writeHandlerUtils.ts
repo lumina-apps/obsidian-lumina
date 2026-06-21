@@ -1,0 +1,120 @@
+import { TFile } from 'obsidian';
+import { t } from '../../../../../shared/locales/helpers';
+import { sanitizeFilePath, ensureFolderExists } from '../../../../../shared/utils/fileUtils';
+import { getStringArg, blockIfPathNotAllowed } from '../../handlerHelpers';
+import type { ToolArguments, ToolHandlerContext, ToolResult } from '../../toolTypes';
+import type { PathGuard } from '../../pathGuard';
+import { createBackup } from '../../../../../features/backup/backupManager';
+import { approvalManager } from '../../../../../features/chat/utils/approvalManager';
+import type { ActionType } from '../../../../../features/chat/utils/approvalManager';
+
+export const DEFAULT_REJECTION_MESSAGE = 'User explicitly rejected the change. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.';
+
+export const getRejectionResult = (message: string): ToolResult => ({
+	isError: true,
+	content: [{ type: 'text', text: message }]
+});
+
+export interface ValidatedFileResult {
+	path: string;
+	file?: TFile;
+	errorResult?: ToolResult;
+}
+
+export const getValidatedPathAndFile = (
+	args: ToolArguments,
+	ctx: ToolHandlerContext,
+	pathGuard: PathGuard,
+	argKey: string = 'path',
+	requireTFile: boolean = true
+): ValidatedFileResult => {
+	const path = sanitizeFilePath(getStringArg(args, argKey));
+
+	const blocked = blockIfPathNotAllowed(path, ctx, pathGuard);
+	if (blocked) return { path, errorResult: blocked };
+
+	const abstractFile = ctx.plugin.app.vault.getAbstractFileByPath(path);
+	
+	if (requireTFile) {
+		if (!(abstractFile instanceof TFile)) {
+			// fallback message is added in case t() returns empty
+			const text = t('uiMessages.fileNotFound') ? `${t('uiMessages.fileNotFound')}: ${path}` : `File not found: ${path}`;
+			return { 
+				path, 
+				errorResult: { isError: true, content: [{ type: 'text', text }] } 
+			};
+		}
+		return { path, file: abstractFile };
+	}
+
+	if (abstractFile instanceof TFile) {
+		return { path, file: abstractFile };
+	}
+
+	return { path };
+};
+
+export const safeModifyFile = async (
+	path: string,
+	file: TFile,
+	currentContent: string,
+	proposedContent: string,
+	successMessage: string,
+	ctx: ToolHandlerContext,
+	pathGuard: PathGuard
+): Promise<ToolResult> => {
+	const result = await approvalManager.requestApproval(path, currentContent, proposedContent);
+	if (!result.approved) {
+		return getRejectionResult(DEFAULT_REJECTION_MESSAGE);
+	}
+
+	return await pathGuard.lock(path, async () => {
+		const contentNow = await ctx.plugin.app.vault.read(file);
+		if (contentNow !== currentContent) {
+			return { isError: true, content: [{ type: 'text', text: 'File was modified while waiting for approval. Please try again.' }] };
+		}
+		await createBackup(ctx.plugin.app, path);
+		await ctx.plugin.app.vault.modify(file, result.content);
+		return { content: [{ type: 'text', text: successMessage }] };
+	});
+};
+
+export const safeCreateFile = async (
+	path: string,
+	content: string,
+	successMessage: string,
+	ctx: ToolHandlerContext,
+	pathGuard: PathGuard
+): Promise<ToolResult> => {
+	const approved = await approvalManager.requestActionApproval('create_note', path, { content });
+	if (!approved) {
+		return getRejectionResult('User explicitly rejected the file creation. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.');
+	}
+
+	await pathGuard.lock(path, async () => {
+		await ensureFolderExists(ctx.plugin.app, path);
+		await ctx.plugin.app.vault.create(path, content);
+	});
+	return { content: [{ type: 'text', text: successMessage }] };
+};
+
+export const safeActionFile = async (
+	actionName: Exclude<ActionType, 'edit'>,
+	path: string,
+	actionParams: Record<string, unknown> | undefined,
+	actionFn: () => Promise<string>,
+	ctx: ToolHandlerContext,
+	pathGuard: PathGuard,
+	rejectionMessage: string = DEFAULT_REJECTION_MESSAGE
+): Promise<ToolResult> => {
+	const approved = await approvalManager.requestActionApproval(actionName, path, actionParams);
+	if (!approved) {
+		return getRejectionResult(rejectionMessage);
+	}
+
+	return await pathGuard.lock(path, async () => {
+		await createBackup(ctx.plugin.app, path);
+		const successMessage = await actionFn();
+		return { content: [{ type: 'text', text: successMessage }] };
+	});
+};

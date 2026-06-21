@@ -95,7 +95,9 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 		signal,
 	} = opts;
 
-	let maxRounds = parseInt(chatSettings.agentMaxSteps as any, 10);
+	let maxRounds = typeof chatSettings.agentMaxSteps === 'number'
+		? chatSettings.agentMaxSteps
+		: parseInt(String(chatSettings.agentMaxSteps), 10);
 	if (isNaN(maxRounds) || maxRounds <= 0) {
 		maxRounds = 15;
 	}
