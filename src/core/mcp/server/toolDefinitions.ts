@@ -124,15 +124,27 @@ export function getToolDefinitions(): ToolDefinition[] {
 		},
 		{
 			name: 'patch_note',
-			description: 'Replace a specific target text with replacement text in a note.',
+			description: 'Apply one or more text replacements to a note. Prefer using the patches array to batch multiple changes into a single tool call — this is more efficient and presents all changes to the user at once as a unified diff.',
 			inputSchema: {
 				type: 'object',
 				properties: {
-					path: { type: 'string', description: 'Path to the note' },
-					target: { type: 'string', description: 'Exact string to find and replace. Must match exactly including whitespace.' },
-					replacement: { type: 'string', description: 'String to replace the target with.' }
+					path: { type: 'string', description: 'Path to the note.' },
+					patches: {
+						type: 'array',
+						description: 'Preferred: list of replacements to apply atomically. All patches are applied in order and shown to the user as a single unified diff.',
+						items: {
+							type: 'object',
+							properties: {
+								target: { type: 'string', description: 'Exact string to find. Must match exactly including whitespace.' },
+								replacement: { type: 'string', description: 'String to replace the target with.' }
+							},
+							required: ['target', 'replacement']
+						}
+					},
+					target: { type: 'string', description: 'Single patch: exact string to find and replace. Must match exactly including whitespace.' },
+					replacement: { type: 'string', description: 'Single patch: string to replace the target with.' }
 				},
-				required: ['path', 'target', 'replacement']
+				required: ['path']
 			}
 		},
 		{
@@ -247,6 +259,77 @@ export function getToolDefinitions(): ToolDefinition[] {
 				properties: {},
 				required: []
 			}
+		},
+		{
+			name: 'create_canvas',
+			description: 'Create an Obsidian Canvas file (.canvas) with nodes and edges.',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					path: { type: 'string', description: 'Path to create/modify the canvas file. .canvas extension is appended if missing.' },
+					nodes: {
+						type: 'array',
+						description: 'List of canvas nodes. Each node must have type: "text", "file", or "group". id, x, y, width, height are optional.',
+						items: { type: 'object' }
+					},
+					edges: {
+						type: 'array',
+						description: 'List of canvas edges connecting nodes. (optional)',
+						items: { type: 'object' }
+					},
+					layout: {
+						type: 'string',
+						description: 'Layout strategy for unpositioned nodes. ("grid" | "horizontal" | "vertical")',
+						enum: ['grid', 'horizontal', 'vertical']
+					},
+					overwrite: {
+						type: 'boolean',
+						description: 'Whether to overwrite if the file already exists. (default: false)'
+					}
+				},
+				required: ['path', 'nodes']
+			}
+		},
+		{
+			name: 'generate_moc',
+			description: 'Generate a Map of Content (MOC) note that collects and links related notes. Use folder, tags, or files to define which notes to include.',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					title: {
+						type: 'string',
+						description: 'Title of the MOC note (used as the H1 heading).',
+					},
+					outputPath: {
+						type: 'string',
+						description: 'Vault-relative path for the MOC file (e.g. "Project MOC" or "Maps/Project MOC"). .md is appended automatically if missing.',
+					},
+					folder: {
+						type: 'string',
+						description: 'Collect notes from this folder path (optional). Can be combined with tags.',
+					},
+					tags: {
+						type: 'array',
+						items: { type: 'string' },
+						description: 'Collect notes that have ALL of these tags (optional, e.g. ["#project", "#active"]).',
+					},
+					files: {
+						type: 'array',
+						items: { type: 'string' },
+						description: 'Explicit list of note paths to include. When provided, folder and tags are ignored.',
+					},
+					groupBy: {
+						type: 'string',
+						enum: ['folder', 'tag', 'none'],
+						description: 'Grouping strategy for MOC sections. "folder" groups by top-level folder, "tag" groups by first tag, "none" is a flat list. (default: "none")',
+					},
+					overwrite: {
+						type: 'boolean',
+						description: 'Overwrite the file if it already exists. (default: false)',
+					},
+				},
+				required: ['title', 'outputPath'],
+			},
 		},
 	];
 }

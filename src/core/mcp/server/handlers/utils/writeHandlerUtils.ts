@@ -26,9 +26,10 @@ export const getValidatedPathAndFile = (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard,
 	argKey: string = 'path',
-	requireTFile: boolean = true
+	requireTFile: boolean = true,
+	enforceMd: boolean = true
 ): ValidatedFileResult => {
-	const path = sanitizeFilePath(getStringArg(args, argKey));
+	const path = sanitizeFilePath(getStringArg(args, argKey), enforceMd);
 
 	const blocked = blockIfPathNotAllowed(path, ctx, pathGuard);
 	if (blocked) return { path, errorResult: blocked };

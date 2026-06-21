@@ -742,6 +742,20 @@
       "unknownTool": "Ferramenta desconhecida.",
       "executionError": "Ocorreu um erro durante a execução da ferramenta: {{error}}",
       "pathExcluded": "O acesso a este caminho é restrito pelas configurações de exclusão/inclusão do RAG: {{path}}"
+    },
+    "generate_moc": {
+      "desc": "Gera uma nota MOC (Map of Content) que coleta e vincula notas relacionadas de uma pasta, por tag ou de uma lista explícita de arquivos.",
+      "argTitle": "Título da nota MOC (usado como cabeçalho H1)",
+      "argOutputPath": "Caminho relativo ao cofre para o arquivo MOC (ex. \"Project MOC\" ou \"Maps/Project MOC\"). A extensão .md é adicionada automaticamente.",
+      "argFolder": "Coletar notas do caminho desta pasta (opcional)",
+      "argTags": "Coletar notas que tenham TODAS essas tags (opcional)",
+      "argFiles": "Lista explícita de caminhos de notas a incluir (opcional)",
+      "argGroupBy": "Estratégia de agrupamento: \"folder\" (pasta), \"tag\" (tag) ou \"none\" (nenhum) (padrão: \"none\")",
+      "argOverwrite": "Substituir se o arquivo já existir (padrão: false)",
+      "successCreate": "MOC criado em {{path}} ({{count}} notas)",
+      "successUpdate": "MOC atualizado em {{path}} ({{count}} notas)",
+      "emptyWarning": "Nenhuma nota foi encontrada correspondendo ao escopo fornecido. Este MOC está atualmente vazio.",
+      "noScope": "Pelo menos um entre folder, tags ou files deve ser fornecido."
     }
   }
 }

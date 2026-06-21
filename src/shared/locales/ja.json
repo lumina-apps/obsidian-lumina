@@ -742,6 +742,20 @@
       "unknownTool": "不明なツールです。",
       "executionError": "ツールの実行中にエラーが発生しました: {{error}}",
       "pathExcluded": "RAGの除外/包含設定により、このパスへのアクセスが制限されています: {{path}}"
+    },
+    "generate_moc": {
+      "desc": "フォルダ、タグ、またはファイルリストを基準に関連するノートを収集し、MOC (Map of Content) ハブノートを作成します。",
+      "argTitle": "MOCノートのタイトル（H1見出しとして使用）",
+      "argOutputPath": "MOCファイルを保存するパス（例: Project MOC または Maps/Project MOC）。.md拡張子は自動的に追加されます。",
+      "argFolder": "ノートを収集するフォルダパス（オプション）",
+      "argTags": "これらのタグをすべて持つノートを収集します（オプション）",
+      "argFiles": "含めるノートパスのリスト（オプション、指定した場合はfolder/tagsは無視されます）",
+      "argGroupBy": "セクションのグループ化戦略: \"folder\"(フォルダ別)、\"tag\"(タグ別)、\"none\"(リスト) (デフォルト: \"none\")",
+      "argOverwrite": "ファイルが既に存在する場合に上書きするかどうか (デフォルト: false)",
+      "successCreate": "MOCが作成されました: {{path}} (ノート{{count}}個)",
+      "successUpdate": "MOCが更新されました: {{path}} (ノート{{count}}個)",
+      "emptyWarning": "指定された範囲に一致するノートが見つかりませんでした。このMOCは現在空です。",
+      "noScope": "folder, tags, files のいずれかを指定する必要があります。"
     }
   }
 }

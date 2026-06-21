@@ -742,6 +742,20 @@
       "unknownTool": "未知工具。",
       "executionError": "工具执行期间出错：{{error}}",
       "pathExcluded": "RAG 排除/包含设置已限制对此路径的访问：{{path}}"
+    },
+    "generate_moc": {
+      "desc": "基于文件夹、标签或文件列表收集相关笔记，并生成 MOC (Map of Content) 中心笔记。",
+      "argTitle": "MOC 笔记的标题（用作 H1 标题）",
+      "argOutputPath": "保存 MOC 文件的路径（例如：Project MOC 或 Maps/Project MOC）。.md 扩展名会自动添加。",
+      "argFolder": "收集此文件夹路径下的笔记（可选）",
+      "argTags": "收集包含所有这些标签的笔记（可选）",
+      "argFiles": "要包含的笔记路径列表（可选，指定时将忽略 folder/tags）",
+      "argGroupBy": "分组策略：\"folder\"(按文件夹)、\"tag\"(按标签)、\"none\"(列表)（默认：\"none\"）",
+      "argOverwrite": "如果文件已存在是否覆盖（默认：false）",
+      "successCreate": "已创建 MOC：{{path}} ({{count}} 个笔记)",
+      "successUpdate": "已更新 MOC：{{path}} ({{count}} 个笔记)",
+      "emptyWarning": "未找到匹配指定范围的笔记。此 MOC 目前为空。",
+      "noScope": "必须提供 folder、tags 或 files 中的至少一个。"
     }
   }
 }

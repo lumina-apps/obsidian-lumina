@@ -742,6 +742,20 @@
       "unknownTool": "Herramienta desconocida.",
       "executionError": "Se produjo un error durante la ejecución de la herramienta: {{error}}",
       "pathExcluded": "El acceso a esta ruta está restringido por la configuración de exclusión/inclusión de RAG: {{path}}"
+    },
+    "generate_moc": {
+      "desc": "Genera una nota MOC (Map of Content) que recopila y enlaza notas relacionadas de una carpeta, por etiqueta o de una lista explícita de archivos.",
+      "argTitle": "Título de la nota MOC (usado como encabezado H1)",
+      "argOutputPath": "Ruta relativa al vault para el archivo MOC (ej. \"Project MOC\" o \"Maps/Project MOC\"). Se añade .md automáticamente.",
+      "argFolder": "Recopilar notas de esta ruta de carpeta (opcional)",
+      "argTags": "Recopilar notas que tengan TODAS estas etiquetas (opcional)",
+      "argFiles": "Lista explícita de rutas de notas a incluir (opcional)",
+      "argGroupBy": "Estrategia de agrupación: \"folder\" (carpeta), \"tag\" (etiqueta), o \"none\" (ninguna) (predeterminado: \"none\")",
+      "argOverwrite": "Sobrescribir si el archivo ya existe (predeterminado: false)",
+      "successCreate": "MOC creado en {{path}} ({{count}} notas)",
+      "successUpdate": "MOC actualizado en {{path}} ({{count}} notas)",
+      "emptyWarning": "No se encontraron notas que coincidan con el alcance dado. Este MOC está actualmente vacío.",
+      "noScope": "Debe proporcionarse al menos uno de: folder, tags o files."
     }
   }
 }

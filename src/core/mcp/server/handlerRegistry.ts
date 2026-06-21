@@ -6,6 +6,8 @@ import { createNoteHandler, appendToNoteHandler, appendToDailyNoteHandler, repla
 import { searchNotesHandler, listNotesHandler, listTagsHandler } from './handlers/searchHandlers';
 import { ragSearchHandler } from './handlers/ragHandlers';
 import { executeCodeHandler, runNoteCodeBlockHandler } from './handlers/executeHandlers';
+import { createCanvasHandler } from './handlers/canvasHandlers';
+import { generateMocHandler } from './handlers/mocHandlers';
 
 export type ToolHandlerImpl = (
 	args: ToolArguments,
@@ -35,6 +37,8 @@ const handlerMap: Record<ToolName, ToolHandlerImpl> = {
 	execute_code: executeCodeHandler,
 	run_note_code_block: runNoteCodeBlockHandler,
 	list_tags: listTagsHandler,
+	create_canvas: createCanvasHandler,
+	generate_moc: generateMocHandler,
 };
 
 /**

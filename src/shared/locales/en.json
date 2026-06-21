@@ -742,6 +742,20 @@
       "unknownTool": "Unknown tool.",
       "executionError": "Error occurred during tool execution: {{error}}",
       "pathExcluded": "Access to this path is restricted by RAG exclusion/inclusion settings: {{path}}"
+    },
+    "generate_moc": {
+      "desc": "Generate a Map of Content (MOC) note that collects and links related notes from a folder, by tag, or from an explicit file list.",
+      "argTitle": "Title of the MOC note (used as the H1 heading)",
+      "argOutputPath": "Vault-relative path for the MOC file (e.g. \"Project MOC\" or \"Maps/Project MOC\"). .md is appended automatically.",
+      "argFolder": "Collect notes from this folder path (optional)",
+      "argTags": "Collect notes that have ALL of these tags (optional)",
+      "argFiles": "Explicit list of note paths to include (optional)",
+      "argGroupBy": "Grouping strategy: \"folder\", \"tag\", or \"none\" (default: \"none\")",
+      "argOverwrite": "Overwrite if the file already exists (default: false)",
+      "successCreate": "MOC created at {{path}} ({{count}} notes)",
+      "successUpdate": "MOC updated at {{path}} ({{count}} notes)",
+      "emptyWarning": "No notes were found matching the given scope. This MOC is currently empty.",
+      "noScope": "At least one of folder, tags, or files must be provided."
     }
   }
 }

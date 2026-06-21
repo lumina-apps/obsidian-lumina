@@ -138,18 +138,37 @@ export const patchNoteHandler = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
-	const target = getStringArg(args, 'target');
-	const replacement = getStringArg(args, 'replacement');
-
 	const { path, file, errorResult } = getValidatedPathAndFile(args, ctx, pathGuard);
 	if (errorResult) return errorResult;
 
 	const currentContent = await ctx.plugin.app.vault.read(file!);
-	if (!currentContent.includes(target)) {
-		return { isError: true, content: [{ type: 'text', text: `Target text not found in ${path}. Ensure whitespace matches exactly.` }] };
+
+	// Normalize to a patches array — supports both batch (patches: [...]) and single (target/replacement)
+	type PatchItem = { target: string; replacement: string };
+	let patches: PatchItem[];
+
+	if (Array.isArray(args.patches) && args.patches.length > 0) {
+		patches = args.patches as PatchItem[];
+	} else {
+		const target = getStringArg(args, 'target');
+		const replacement = getStringArg(args, 'replacement');
+		if (!target) {
+			return { isError: true, content: [{ type: 'text', text: 'Either patches array or target/replacement must be provided.' }] };
+		}
+		patches = [{ target, replacement }];
 	}
 
-	const proposedContent = currentContent.replace(target, replacement);
+	// Apply patches sequentially to build the final proposed content
+	let proposedContent = currentContent;
+	for (const patch of patches) {
+		if (!proposedContent.includes(patch.target)) {
+			return {
+				isError: true,
+				content: [{ type: 'text', text: `Target text not found in ${path}: "${patch.target.substring(0, 80)}${patch.target.length > 80 ? '...' : ''}". Ensure whitespace matches exactly.` }]
+			};
+		}
+		proposedContent = proposedContent.replace(patch.target, patch.replacement);
+	}
 
 	return safeModifyFile(
 		path,

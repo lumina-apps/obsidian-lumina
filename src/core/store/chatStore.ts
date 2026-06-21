@@ -66,7 +66,11 @@ export function appendChunk(messageId: string, delta: string): boolean {
 /** 스트리밍 완료/취소 표시 */
 export function setMessageStreaming(messageId: string, streaming: boolean): void {
 	messages.update(ms =>
-		ms.map(m => (m.id === messageId ? { ...m, isStreaming: streaming } : m)),
+		ms.map(m => (m.id === messageId ? {
+			...m,
+			isStreaming: streaming,
+			...(streaming ? {} : { ragPipelineStep: null })
+		} : m)),
 	);
 }
 
@@ -99,7 +103,7 @@ export function setMessageError(messageId: string, errMsg: string): void {
 	messages.update(ms =>
 		ms.map(m =>
 			m.id === messageId
-				? { ...m, content: `⚠️ ${t('common.error')}: ${errMsg}`, isStreaming: false }
+				? { ...m, content: `⚠️ ${t('common.error')}: ${errMsg}`, isStreaming: false, ragPipelineStep: null }
 				: m,
 		),
 	);

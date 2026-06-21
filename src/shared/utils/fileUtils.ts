@@ -40,7 +40,7 @@ export function enforceMarkdownExt(path: string): string {
 }
 
 /** 경로 전체 정제 (경로 순회 방지 + 파일명 특수문자 치환 + .md 확장자 보장) */
-export function sanitizeFilePath(rawPath: string): string {
+export function sanitizeFilePath(rawPath: string, enforceMd: boolean = true): string {
 	let cleanedPath = rawPath.trim();
 	
 	// 1. 전체가 대괄호로 감싸진 경우 ([[path]] 또는 [path]) 제거
@@ -61,7 +61,9 @@ export function sanitizeFilePath(rawPath: string): string {
 	const safeParts = parts
 		.filter((p) => p !== '..' && p !== '.')
 		.map((p, i, arr) => (i === arr.length - 1 ? sanitizeFilename(p) : p));
-	return enforceMarkdownExt(safeParts.join('/'));
+		
+	const joined = safeParts.join('/');
+	return enforceMd ? enforceMarkdownExt(joined) : normalizePath(joined);
 }
 
 /** 경로에서 .md를 제외한 파일명만 추출 */

@@ -28,7 +28,9 @@ export type ToolName =
 	| 'save_attachment'
 	| 'execute_code'
 	| 'run_note_code_block'
-	| 'list_tags';
+	| 'list_tags'
+	| 'create_canvas'
+	| 'generate_moc';
 
 /** CallTool 요청에서 전달되는 원시 인자 */
 export type ToolArguments = Record<string, unknown>;

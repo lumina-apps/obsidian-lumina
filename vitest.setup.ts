@@ -88,6 +88,8 @@ vi.mock('obsidian', () => {
 		MarkdownView: vi.fn(),
 		TFile: vi.fn(),
 		TFolder: vi.fn(),
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		getAllTags: vi.fn((cache: any) => cache?.tags?.map((t: any) => t.tag) || []),
 		// normalizePath: path를 그대로 반환
 		normalizePath: (p: string) => p,
 		// requestUrl: 네트워크 요청 (테스트에서 필요하면 개별적으로 spy/mock)

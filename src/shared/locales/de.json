@@ -742,6 +742,20 @@
       "unknownTool": "Unbekanntes Tool.",
       "executionError": "Beim Ausführen des Tools ist ein Fehler aufgetreten: {{error}}",
       "pathExcluded": "pathExcluded"
+    },
+    "generate_moc": {
+      "desc": "Erstellt eine MOC-Notiz (Map of Content), die verwandte Notizen aus einem Ordner, nach Tags oder aus einer expliziten Dateiliste sammelt und verlinkt.",
+      "argTitle": "Titel der MOC-Notiz (wird als H1-Überschrift verwendet)",
+      "argOutputPath": "Vault-relativer Pfad für die MOC-Datei (z. B. \"Project MOC\" oder \"Maps/Project MOC\"). Die Endung .md wird automatisch hinzugefügt.",
+      "argFolder": "Notizen aus diesem Ordnerpfad sammeln (optional)",
+      "argTags": "Notizen sammeln, die ALLE diese Tags haben (optional)",
+      "argFiles": "Explizite Liste der einzuschließenden Notizpfade (optional)",
+      "argGroupBy": "Gruppierungsstrategie: \"folder\" (Ordner), \"tag\" (Tag) oder \"none\" (keine) (Standard: \"none\")",
+      "argOverwrite": "Überschreiben, falls die Datei bereits existiert (Standard: false)",
+      "successCreate": "MOC erstellt in {{path}} ({{count}} Notizen)",
+      "successUpdate": "MOC aktualisiert in {{path}} ({{count}} Notizen)",
+      "emptyWarning": "Es wurden keine Notizen gefunden, die dem angegebenen Bereich entsprechen. Dieses MOC ist derzeit leer.",
+      "noScope": "Es muss mindestens folder, tags oder files angegeben werden."
     }
   }
 }

@@ -742,6 +742,20 @@
       "unknownTool": "Outil inconnu.",
       "executionError": "Une erreur s'est produite lors de l'exécution de l'outil : {{error}}",
       "pathExcluded": "L'accès à ce chemin est restreint par les paramètres d'exclusion/inclusion RAG : {{path}}"
+    },
+    "generate_moc": {
+      "desc": "Génère une note MOC (Map of Content) qui collecte et lie des notes associées d'un dossier, par étiquette, ou d'une liste explicite de fichiers.",
+      "argTitle": "Titre de la note MOC (utilisé comme titre H1)",
+      "argOutputPath": "Chemin relatif au coffre pour le fichier MOC (ex. \"Project MOC\" ou \"Maps/Project MOC\"). L'extension .md est ajoutée automatiquement.",
+      "argFolder": "Collecter des notes à partir de ce chemin de dossier (optionnel)",
+      "argTags": "Collecter des notes ayant TOUTES ces étiquettes (optionnel)",
+      "argFiles": "Liste explicite des chemins de notes à inclure (optionnel)",
+      "argGroupBy": "Stratégie de regroupement : \"folder\" (dossier), \"tag\" (étiquette), ou \"none\" (aucun) (défaut : \"none\")",
+      "argOverwrite": "Écraser si le fichier existe déjà (défaut : false)",
+      "successCreate": "MOC créé à {{path}} ({{count}} notes)",
+      "successUpdate": "MOC mis à jour à {{path}} ({{count}} notes)",
+      "emptyWarning": "Aucune note ne correspond à la portée donnée. Ce MOC est actuellement vide.",
+      "noScope": "Au moins l'un des paramètres folder, tags ou files doit être fourni."
     }
   }
 }

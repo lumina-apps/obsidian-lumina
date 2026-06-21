@@ -742,6 +742,20 @@
       "unknownTool": "未知工具。",
       "executionError": "工具執行期間出錯：{{error}}",
       "pathExcluded": "RAG 排除/包含設定已限制對此路徑的存取：{{path}}"
+    },
+    "generate_moc": {
+      "desc": "基於資料夾、標籤或檔案清單收集相關筆記，並生成 MOC (Map of Content) 中心筆記。",
+      "argTitle": "MOC 筆記的標題（用作 H1 標題）",
+      "argOutputPath": "儲存 MOC 檔案的路徑（例如：Project MOC 或 Maps/Project MOC）。.md 副檔名會自動加入。",
+      "argFolder": "收集此資料夾路徑下的筆記（選填）",
+      "argTags": "收集包含所有這些標籤的筆記（選填）",
+      "argFiles": "要包含的筆記路徑清單（選填，指定時將忽略 folder/tags）",
+      "argGroupBy": "分組策略：\"folder\"(按資料夾)、\"tag\"(按標籤)、\"none\"(清單)（預設：\"none\"）",
+      "argOverwrite": "如果檔案已存在是否覆寫（預設：false）",
+      "successCreate": "已建立 MOC：{{path}} ({{count}} 個筆記)",
+      "successUpdate": "已更新 MOC：{{path}} ({{count}} 個筆記)",
+      "emptyWarning": "找不到符合指定範圍的筆記。此 MOC 目前為空。",
+      "noScope": "必須提供 folder、tags 或 files 中的至少一個。"
     }
   }
 }
