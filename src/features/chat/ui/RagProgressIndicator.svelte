@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { App } from 'obsidian';
 	import type { RagPipelineStep } from '../../../../shared/types/chat.types';
+	import { t } from '../../../shared/locales/helpers';
 
 	let {
 		step,
@@ -13,13 +14,13 @@
 	let stepText = $derived.by(() => {
 		switch (step) {
 			case 'searching':
-				return '🔍 확장 검색 중...';
+				return t('uiMessages.ragProgress.searching');
 			case 'reranking':
-				return '⚖️ 리랭크 연산 중...';
+				return t('uiMessages.ragProgress.reranking');
 			case 'compressing':
-				return '🗜️ 콘텍스트 압축 중...';
+				return t('uiMessages.ragProgress.compressing');
 			case 'generating':
-				return '💡 답변 생성 중...';
+				return t('uiMessages.ragProgress.generating');
 			default:
 				return '';
 		}

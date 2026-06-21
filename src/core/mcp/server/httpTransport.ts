@@ -94,7 +94,7 @@ export class HttpTransport {
 	// ─── 내부 요청 처리 ─────────────────────────────────────────────────────
 
 	private setCorsHeaders(res: http.ServerResponse): void {
-		res.setHeader('Access-Control-Allow-Origin', '*');
+		res.setHeader('Access-Control-Allow-Origin', 'app://obsidian.md');
 		res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE');
 		res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, mcp-protocol-version, mcp-session-id');
 		res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id, mcp-protocol-version');
@@ -258,6 +258,12 @@ export class HttpTransport {
 		res: http.ServerResponse,
 		parsedBody: unknown,
 	): Promise<void> {
+		if (!authenticateRequest(req, this.authToken)) {
+			res.writeHead(401, { 'Content-Type': 'text/plain' });
+			res.end('Unauthorized');
+			return;
+		}
+
 		const sessionId = req.headers['mcp-session-id'] as string | undefined;
 		if (!sessionId) {
 			debugLogger.logSystem('mcp', 'POST /message: mcp-session-id 없음');

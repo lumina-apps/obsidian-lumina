@@ -119,7 +119,7 @@
           "desc": "Токен, необходимый для подключения внешних клиентов. Держите его в секрете.",
           "regenerate": "Перевыпустить"
         },
-        "guide": "SSE: http://localhost:{{port}}/sse\nAuth: Заголовок \"Authorization: Bearer <token>\" (или ?token=<token>)",
+        "guide": "SSE: http://localhost:{{port}}/sse\nAuth: Заголовок \"Authorization: Bearer <token>\"",
         "maxRead": {
           "name": "Read - Макс. символов",
           "desc": "Макс. символов при чтении файла (По умолчанию: 20000)"
@@ -139,6 +139,7 @@
       },
       "externalServer": {
         "sectionTitle": "Внешние MCP-серверы (Клиентские подключения)",
+        "desc": "Подключите внешние серверы Model Context Protocol (MCP), чтобы использовать дополнительные инструменты в чате.",
         "sseUrl": {
           "name": "SSE URL",
           "desc": "например, http://localhost:8080/sse"
@@ -665,7 +666,13 @@
     "insertToNote": "Вставить в заметку",
     "regenerate": "Перегенерировать",
     "edit": "Изменить",
-    "openReferenceNote": "Открыть справочную заметку"
+    "openReferenceNote": "Открыть справочную заметку",
+    "ragProgress": {
+      "searching": "🔍 Поиск...",
+      "reranking": "⚖️ Переранжирование...",
+      "compressing": "🗜️ Сжатие контекста...",
+      "generating": "💡 Генерация ответа..."
+    }
   },
   "mcpServerTools": {
     "read_active_note": {

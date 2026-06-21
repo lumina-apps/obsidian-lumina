@@ -39,13 +39,13 @@ export function enforceMarkdownExt(path: string): string {
 	return norm;
 }
 
-/** 경로 전체 정제 (파일명 특수문자 치환 + .md 확장자 보장) */
+/** 경로 전체 정제 (경로 순회 방지 + 파일명 특수문자 치환 + .md 확장자 보장) */
 export function sanitizeFilePath(rawPath: string): string {
 	const parts = rawPath.split('/');
-	const sanitizedParts = parts.map((p, i) =>
-		i === parts.length - 1 ? sanitizeFilename(p) : p
-	);
-	return enforceMarkdownExt(sanitizedParts.join('/'));
+	const safeParts = parts
+		.filter((p) => p !== '..' && p !== '.')
+		.map((p, i, arr) => (i === arr.length - 1 ? sanitizeFilename(p) : p));
+	return enforceMarkdownExt(safeParts.join('/'));
 }
 
 /** 경로에서 .md를 제외한 파일명만 추출 */

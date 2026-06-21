@@ -4,6 +4,47 @@
  */
 import type { ChatMessage } from '../../shared/types/llm.types';
 import { t } from '../../shared/locales/helpers';
+import { requestUrl, type RequestUrlParam, type RequestUrlResponse } from 'obsidian';
+
+/**
+ * Obsidian의 requestUrl에 AbortSignal 기능을 추가한 래퍼 함수입니다.
+ * AbortSignal이 발생하면 즉시 'AbortError'를 발생시켜 불필요한 대기를 방지합니다.
+ */
+export async function requestUrlWithAbort(params: RequestUrlParam, signal?: AbortSignal): Promise<RequestUrlResponse> {
+	if (signal?.aborted) {
+		const error = new Error('Aborted');
+		error.name = 'AbortError';
+		throw error;
+	}
+
+	return new Promise((resolve, reject) => {
+		const reqPromise = requestUrl(params);
+		
+		if (!signal) {
+			reqPromise.then(resolve).catch(reject);
+			return;
+		}
+
+		const abortHandler = () => {
+			const error = new Error('Aborted');
+			error.name = 'AbortError';
+			reject(error);
+		};
+
+		signal.addEventListener('abort', abortHandler);
+
+		reqPromise
+			.then((res) => {
+				resolve(res);
+			})
+			.catch((err) => {
+				reject(err);
+			})
+			.finally(() => {
+				signal.removeEventListener('abort', abortHandler);
+			});
+	});
+}
 
 /**
  * listModels() 등 API 호출 실패 시 프로바이더별 에러 메시지로 throw합니다.

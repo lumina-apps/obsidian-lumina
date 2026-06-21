@@ -57,6 +57,9 @@ ${c.chunk.text}`;
 					}
 				} as SearchResult;
 			} catch (innerErr) {
+				if (innerErr instanceof Error && innerErr.name === 'AbortError') {
+					throw innerErr;
+				}
 				debugLogger.logError('rag_compress_chunk', innerErr instanceof Error ? innerErr : new Error(String(innerErr)));
 				return c; // Fallback to original
 			}
@@ -64,6 +67,9 @@ ${c.chunk.text}`;
 
 		return await Promise.all(compressPromises);
 	} catch (e) {
+		if (e instanceof Error && e.name === 'AbortError') {
+			throw e;
+		}
 		debugLogger.logError('rag_compress', e instanceof Error ? e : new Error(`Compression failed: ${e}`));
 		return chunks; // Fallback to original
 	}

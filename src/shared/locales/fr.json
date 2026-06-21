@@ -119,7 +119,7 @@
           "desc": "Jeton requis pour la connexion des clients externes. Gardez-le confidentiel.",
           "regenerate": "Régénérer"
         },
-        "guide": "SSE : http://localhost:{{port}}/sse\nAuth : Header \"Authorization: Bearer <token>\" (ou ?token=<token>)",
+        "guide": "SSE : http://localhost:{{port}}/sse\nAuth : Header \"Authorization: Bearer <token>\"",
         "maxRead": {
           "name": "Read - Caractères max",
           "desc": "Caractères max retournés par lecture de fichier (Défaut : 20000)"
@@ -139,6 +139,7 @@
       },
       "externalServer": {
         "sectionTitle": "Serveurs MCP externes (Connexion client)",
+        "desc": "Connectez des serveurs Model Context Protocol (MCP) externes pour utiliser des outils supplémentaires dans le chat.",
         "sseUrl": {
           "name": "URL SSE",
           "desc": "ex : http://localhost:8080/sse"
@@ -665,7 +666,13 @@
     "insertToNote": "Insérer dans la note",
     "regenerate": "Régénérer",
     "edit": "Modifier",
-    "openReferenceNote": "Ouvrir la note de référence"
+    "openReferenceNote": "Ouvrir la note de référence",
+    "ragProgress": {
+      "searching": "🔍 Recherche en cours...",
+      "reranking": "⚖️ Reranking en cours...",
+      "compressing": "🗜️ Compression du contexte...",
+      "generating": "💡 Génération de la réponse..."
+    }
   },
   "mcpServerTools": {
     "read_active_note": {

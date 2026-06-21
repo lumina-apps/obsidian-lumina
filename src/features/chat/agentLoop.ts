@@ -95,7 +95,10 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 		signal,
 	} = opts;
 
-	const maxRounds = chatSettings.agentMaxSteps || 15;
+	let maxRounds = parseInt(chatSettings.agentMaxSteps as any, 10);
+	if (isNaN(maxRounds) || maxRounds <= 0) {
+		maxRounds = 15;
+	}
 	let toolRound = 0;
 	let messagesForLLM = [...opts.messagesForLLM];
 	let lastToolCallKeys: string[] = [];

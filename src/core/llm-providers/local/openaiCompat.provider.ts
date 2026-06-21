@@ -10,7 +10,7 @@ import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
 import { formatOpenAIMessages, formatOpenAITools } from '../openai-formatter';
 import type { OpenAIResponse } from '../openai-types';
-import { raiseApiError, readStreamLines } from '../provider-helpers';
+import { raiseApiError, readStreamLines, requestUrlWithAbort } from '../provider-helpers';
 import { mapOpenAIUsage, convertOpenAIToolCalls, wrapReasoningContent, StreamChunkAccumulator } from '../stream-accumulator';
 import type { OpenAIToolCallInfo } from '../openai-types';
 
@@ -56,7 +56,7 @@ export class OpenAICompatProvider implements ILLMProvider {
 		if (onChunk) {
 			return this.handleStreamingChat(url, headers, payload, options.signal, onChunk);
 		}
-		return this.handleNonStreamingChat(url, headers, payload);
+		return this.handleNonStreamingChat(url, headers, payload, options.signal);
 	}
 
 	async stream(
@@ -212,13 +212,14 @@ export class OpenAICompatProvider implements ILLMProvider {
 		url: string,
 		headers: Record<string, string>,
 		payload: Record<string, unknown>,
+		signal?: AbortSignal,
 	): Promise<ChatResponse> {
-		const res = await requestUrl({
+		const res = await requestUrlWithAbort({
 			url,
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),
-		});
+		}, signal);
 
 		const data = res.json as OpenAIResponse;
 		const choice = data.choices?.[0];

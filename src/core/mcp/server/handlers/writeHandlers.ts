@@ -322,6 +322,12 @@ export const saveAttachmentHandler = async (
 		return { isError: true, content: [{ type: 'text', text: `File already exists at ${path}` }] };
 	}
 
+	// Base64 문자열 길이로 대략적인 크기 추정 및 제한 (예: 50MB 제한 시 길이 약 70MB)
+	const MAX_BASE64_LENGTH = 70 * 1024 * 1024;
+	if (base64Data.length > MAX_BASE64_LENGTH) {
+		return { isError: true, content: [{ type: 'text', text: `Attachment is too large (max 50MB allowed)` }] };
+	}
+
 	const binaryString = window.atob(base64Data);
 	const sizeBytes = binaryString.length;
 

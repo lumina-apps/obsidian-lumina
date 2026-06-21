@@ -70,6 +70,9 @@ ${chunks.map((c, i) => `[${i}] ${c.chunk.text.slice(0, 300)}...`).join('\n\n')}
 
 		return rankedChunks.slice(0, topK);
 	} catch (e) {
+		if (e instanceof Error && e.name === 'AbortError') {
+			throw e;
+		}
 		debugLogger.logError('rag_rerank', e instanceof Error ? e : new Error(`Reranking failed: ${e}`));
 		// Fallback: 기존 1차 검색 순위대로 잘라서 반환
 		return chunks.slice(0, topK);

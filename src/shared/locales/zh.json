@@ -119,7 +119,7 @@
           "desc": "外部客户端连接时所需的令牌。请勿公开分享此令牌。",
           "regenerate": "重新生成"
         },
-        "guide": "SSE: http://localhost:{{port}}/sse\n认证: 请求头添加 \"Authorization: Bearer <token>\" (或 ?token=<token>)",
+        "guide": "SSE: http://localhost:{{port}}/sse\n认证: 请求头添加 \"Authorization: Bearer <token>\" ",
         "maxRead": {
           "name": "Read 最大字符数",
           "desc": "单次读取文件返回的最大字符数 (默认: 20000)"
@@ -139,6 +139,7 @@
       },
       "externalServer": {
         "sectionTitle": "外部 MCP 服务器（客户端连接）",
+        "desc": "连接外部 Model Context Protocol (MCP) 服务器以在对话中使用其他工具。",
         "sseUrl": {
           "name": "SSE URL",
           "desc": "例如 http://localhost:8080/sse"
@@ -665,7 +666,13 @@
     "insertToNote": "插入到笔记",
     "regenerate": "重新生成",
     "edit": "编辑",
-    "openReferenceNote": "打开参考笔记"
+    "openReferenceNote": "打开参考笔记",
+    "ragProgress": {
+      "searching": "🔍 扩展搜索中...",
+      "reranking": "⚖️ 重排计算中...",
+      "compressing": "🗜️ 上下文压缩中...",
+      "generating": "💡 生成回答中..."
+    }
   },
   "mcpServerTools": {
     "read_active_note": {

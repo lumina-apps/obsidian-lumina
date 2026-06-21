@@ -13,22 +13,23 @@ export function formatMcpError(e: unknown, context?: string): Error {
 export function isDangerousTool(toolName: string): boolean {
 	const lower = toolName.toLowerCase();
 	const dangerousPatterns = [
-		/^create/i, /create$/i,
-		/^write/i, /write$/i,
-		/^execute/i, /execute$/i,
-		/^run/i, /run$/i,
-		/^delete/i, /delete$/i,
-		/^remove/i, /remove$/i,
-		/^update/i, /update$/i,
-		/^append/i, /append$/i,
-		/^replace/i, /replace$/i,
-		/^move/i, /move$/i,
-		/^patch/i, /patch$/i,
-		/^save/i, /save$/i,
-		/^mkdir/i,
+		/create/i,
+		/write/i,
+		/execute/i,
+		/run/i,
+		/delete/i,
+		/remove/i,
+		/update/i,
+		/append/i,
+		/replace/i,
+		/move/i,
+		/patch/i,
+		/save/i,
+		/mkdir/i,
 		/\bshell\b/i,
 		/\bcmd\b/i,
 		/\bbash\b/i,
+		/\beval\b/i,
 	];
 	return dangerousPatterns.some((pattern) => pattern.test(lower));
 }

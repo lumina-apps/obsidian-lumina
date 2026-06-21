@@ -129,7 +129,7 @@
           "desc": "외부 클라이언트가 접속할 때 필요한 토큰입니다. 외부에 노출하지 마세요.",
           "regenerate": "재발급"
         },
-        "guide": "SSE: http://localhost:{{port}}/sse\n인증: Header에 Authorization: Bearer <토큰> 추가 (또는 ?token=<토큰>)",
+        "guide": "SSE: http://localhost:{{port}}/sse\n인증: Header에 Authorization: Bearer <토큰> 추가 ",
         "maxRead": {
           "name": "읽기(Read) 최대 글자 수",
           "desc": "파일 읽기 시 한 번에 반환할 최대 글자 수 (기본값: 20000)"
@@ -149,6 +149,7 @@
       },
       "externalServer": {
         "sectionTitle": "외부 MCP 서버 (클라이언트 연결)",
+        "desc": "Model Context Protocol (MCP)을 통해 외부 도구를 연결하여 대화 시 사용할 수 있도록 설정합니다.",
         "sseUrl": {
           "name": "SSE URL",
           "desc": "예: http://localhost:8080/sse"
@@ -665,7 +666,13 @@
     "insertToNote": "노트에 삽입",
     "regenerate": "재생성",
     "edit": "수정",
-    "openReferenceNote": "참고 노트 열기"
+    "openReferenceNote": "참고 노트 열기",
+    "ragProgress": {
+      "searching": "🔍 확장 검색 중...",
+      "reranking": "⚖️ 리랭크 연산 중...",
+      "compressing": "🗜️ 콘텍스트 압축 중...",
+      "generating": "💡 답변 생성 중..."
+    }
   },
   "mcpServerTools": {
     "read_active_note": {

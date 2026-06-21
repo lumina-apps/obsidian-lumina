@@ -32,6 +32,7 @@ export interface PerformRagSearchParams {
 	assistantId: string;
 	indexer: import('../../rag/indexer').VaultIndexer;
 	activeFilePath: string | null;
+	signal?: AbortSignal;
 }
 
 export interface RagSearchResult {
@@ -44,7 +45,7 @@ export interface RagSearchResult {
  * 검색 결과가 있으면 assistantId 메시지에 RAG 소스도 설정한다.
  */
 export async function performRagSearch(params: PerformRagSearchParams): Promise<RagSearchResult> {
-	const { userText, rag, connections, existingContext, assistantId, indexer, activeFilePath } = params;
+	const { userText, rag, connections, existingContext, assistantId, indexer, activeFilePath, signal } = params;
 
 	try {
 		let parentChunks = indexer.indexedParentChunks;
@@ -89,7 +90,7 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 			setMessageRagStep(assistantId, 'reranking');
 			const providerConfig = connections.providers.find(p => p.id === connections.rerankerProviderId);
 			if (providerConfig) {
-				results = await rerankChunks(userText, results, providerConfig, connections.rerankerModelId, rag.topK);
+				results = await rerankChunks(userText, results, providerConfig, connections.rerankerModelId, rag.topK, signal);
 			} else {
 				// config not found, fallback to topK
 				results = results.slice(0, rag.topK);
@@ -101,7 +102,7 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 			setMessageRagStep(assistantId, 'compressing');
 			const providerConfig = connections.providers.find(p => p.id === connections.taskProviderId);
 			if (providerConfig) {
-				results = await compressChunks(userText, results, providerConfig, connections.taskModelId);
+				results = await compressChunks(userText, results, providerConfig, connections.taskModelId, signal);
 			}
 		}
 
@@ -134,6 +135,10 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 
 		return { ragContext, ragChunksForLog };
 	} catch (err) {
+		if (err instanceof Error && err.name === 'AbortError') {
+			setMessageRagStep(assistantId, null);
+			throw err;
+		}
 		setMessageRagStep(assistantId, null);
 		debugLogger.logError('rag', err instanceof Error ? err : new Error(`RAG 검색 실패: ${err}`));
 		return { ragContext: existingContext, ragChunksForLog: undefined };

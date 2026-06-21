@@ -4,7 +4,7 @@ import { GOOGLE_MODELS, mapUsageMetadata } from './google.types';
 import type { GeminiResponse, GeminiStreamChunk, GeminiToolCallInfo } from './google.types';
 import { formatGeminiMessages, formatGeminiTools, getGeminiSystemInstruction } from './google-message-formatter';
 import { readGeminiStreamChunks } from './google-stream-parser';
-import { raiseApiError } from '../provider-helpers';
+import { raiseApiError, requestUrlWithAbort } from '../provider-helpers';
 
 type GeminiCandidate = NonNullable<GeminiResponse['candidates']>[number];
 
@@ -83,7 +83,7 @@ export class GoogleProvider implements ILLMProvider {
 
 		// 비스트리밍
 		const { url, headers, payload } = this.buildRequest('generateContent', options, messages, true);
-		const res = await requestUrl({ url, method: 'POST', headers, body: JSON.stringify(payload) });
+		const res = await requestUrlWithAbort({ url, method: 'POST', headers, body: JSON.stringify(payload) }, options.signal);
 
 		const data = res.json as GeminiResponse;
 		const candidate = data.candidates?.[0];

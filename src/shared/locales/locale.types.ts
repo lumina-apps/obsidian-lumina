@@ -188,6 +188,7 @@ export interface TranslationSettingsMcpExternalServerToken {
 
 export interface TranslationSettingsMcpExternalServer {
   sectionTitle: string;
+  desc: string;
   sseUrl: TranslationSettingsMcpExternalServerSseUrl;
   token: TranslationSettingsMcpExternalServerToken;
 }
@@ -797,6 +798,12 @@ export interface TranslationUiMessages {
   regenerate: string;
   edit: string;
   openReferenceNote: string;
+  ragProgress: {
+    searching: string;
+    reranking: string;
+    compressing: string;
+    generating: string;
+  };
 }
 
 // mcpServerTools

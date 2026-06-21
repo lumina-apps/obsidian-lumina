@@ -141,6 +141,7 @@ export class ChatController {
 				connections.ragEnabled,
 				options?.useRagContext,
 				assistantId,
+				signal,
 			);
 
 			// ── 6. LLM 호출 ────────────────────────────────────────────────────
@@ -356,6 +357,7 @@ export class ChatController {
 		ragEnabled: boolean,
 		useRagContext: boolean | undefined,
 		assistantId: string,
+		signal?: AbortSignal,
 	): Promise<ResolvedContext> {
 		// 첨부파일 컨텍스트 빌드
 		const { attachmentContext, multimodalImages } =
@@ -380,6 +382,7 @@ export class ChatController {
 				assistantId,
 				indexer: this.plugin.indexer,
 				activeFilePath: this.app.workspace.getActiveFile()?.path ?? null,
+				signal,
 			});
 			ragContext = result.ragContext;
 			ragChunksForLog = result.ragChunksForLog;

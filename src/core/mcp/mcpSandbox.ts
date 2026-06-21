@@ -30,12 +30,15 @@ export class McpSandbox {
             const workerScript = `
                 // --- Security Sandbox Setup ---
                 // Disable network access to prevent data exfiltration
-                self.fetch = null;
-                self.XMLHttpRequest = null;
-                self.WebSocket = null;
-                
-                // Hide worker global scope APIs if needed
-                self.importScripts = null;
+                const globalsToHide = ['fetch', 'XMLHttpRequest', 'WebSocket', 'importScripts'];
+                globalsToHide.forEach(g => {
+                    try {
+                        Object.defineProperty(self, g, {
+                            get: () => { throw new Error('Network access is disabled in sandbox'); },
+                            configurable: false
+                        });
+                    } catch(e) {}
+                });
 
                 // --- Execution Logic ---
                 self.onmessage = async function(e) {

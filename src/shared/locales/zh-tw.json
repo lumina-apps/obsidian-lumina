@@ -119,7 +119,7 @@
           "desc": "外部用戶端連線時所需的權杖。請勿公開分享此權杖。",
           "regenerate": "重新產生"
         },
-        "guide": "SSE: http://localhost:{{port}}/sse\n認證: 請求頭加入 \"Authorization: Bearer <token>\" (或 ?token=<token>)",
+        "guide": "SSE: http://localhost:{{port}}/sse\n認證: 請求頭加入 \"Authorization: Bearer <token>\" ",
         "maxRead": {
           "name": "Read 最大字元數",
           "desc": "單次讀取檔案回傳的最大字元數 (預設: 20000)"
@@ -139,6 +139,7 @@
       },
       "externalServer": {
         "sectionTitle": "外部 MCP 伺服器 (用戶端連線)",
+        "desc": "連接外部 Model Context Protocol (MCP) 伺服器以在對話中使用其他工具。",
         "sseUrl": {
           "name": "SSE URL",
           "desc": "例如 http://localhost:8080/sse"
@@ -665,7 +666,13 @@
     "insertToNote": "插入到筆記",
     "regenerate": "重新產生",
     "edit": "編輯",
-    "openReferenceNote": "開啟參考筆記"
+    "openReferenceNote": "開啟參考筆記",
+    "ragProgress": {
+      "searching": "🔍 擴展搜尋中...",
+      "reranking": "⚖️ 重排計算中...",
+      "compressing": "🗜️ 上下文壓縮中...",
+      "generating": "💡 生成回答中..."
+    }
   },
   "mcpServerTools": {
     "read_active_note": {

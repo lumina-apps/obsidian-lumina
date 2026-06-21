@@ -119,7 +119,7 @@
           "desc": "外部クライアントが接続する際に必要なトークンです。外部に公開しないでください。",
           "regenerate": "再発行"
         },
-        "guide": "SSE: http://localhost:{{port}}/sse\n認証: ヘッダーに Authorization: Bearer <トークン> (または ?token=<トークン>)",
+        "guide": "SSE: http://localhost:{{port}}/sse\n認証: ヘッダーに Authorization: Bearer <トークン>",
         "maxRead": {
           "name": "Read 最大文字数",
           "desc": "ファイル読み取り時の最大返却文字数 (デフォルト: 20000)"
@@ -139,6 +139,7 @@
       },
       "externalServer": {
         "sectionTitle": "外部MCPサーバー（クライアント接続）",
+        "desc": "Model Context Protocol (MCP) を通じて外部ツールを接続し、チャットで追加のツールを使用できるように設定します。",
         "sseUrl": {
           "name": "SSE URL",
           "desc": "例: http://localhost:8080/sse"
@@ -665,7 +666,13 @@
     "insertToNote": "ノートに挿入",
     "regenerate": "再生成",
     "edit": "編集",
-    "openReferenceNote": "参照ノートを開く"
+    "openReferenceNote": "参照ノートを開く",
+    "ragProgress": {
+      "searching": "🔍 拡張検索中...",
+      "reranking": "⚖️ リランク演算中...",
+      "compressing": "🗜️ コンテキスト圧縮中...",
+      "generating": "💡 回答生成中..."
+    }
   },
   "mcpServerTools": {
     "read_active_note": {

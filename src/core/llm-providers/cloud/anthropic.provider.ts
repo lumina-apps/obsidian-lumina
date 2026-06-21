@@ -5,7 +5,7 @@
 import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, TokenUsage, ToolCall } from '../../../shared/types/llm.types';
 import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
-import { extractSystemContent, raiseApiError, readStreamLines } from '../provider-helpers';
+import { extractSystemContent, raiseApiError, readStreamLines, requestUrlWithAbort } from '../provider-helpers';
 import { ANTHROPIC_MODELS } from './anthropic.types';
 import type { AnthropicResponse } from './anthropic.types';
 import { formatAnthropicMessages, formatAnthropicTools } from './anthropic-message-formatter';
@@ -58,12 +58,12 @@ export class AnthropicProvider implements ILLMProvider {
 		const headers = this.buildHeaders();
 		const payload = this.buildPayload(options, messages, false);
 
-		const res = await requestUrl({
+		const res = await requestUrlWithAbort({
 			url,
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),
-		});
+		}, options.signal);
 
 		const data = res.json as AnthropicResponse;
 		const { fullContent, toolCalls, usage, finishReason } = parseAnthropicNonStreamResponse(res.text, data);
