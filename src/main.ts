@@ -1,4 +1,4 @@
-import { Notice, Platform, Plugin, moment } from 'obsidian';
+import { Notice, Platform, Plugin } from 'obsidian';
 import { LuminaSettingTab } from './core/settings/settingTab';
 import type { LuminaSettings } from './core/settings/settings.types';
 import { EmbeddingWorkerBridge } from './features/rag/workerBridge';
