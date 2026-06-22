@@ -4,7 +4,7 @@ import { activateView } from '../views/viewHelper';
 import { CHAT_VIEW_TYPE } from '../../features/chat/chatView';
 import { addPendingAttachment } from '../store/chatStore';
 import { updateDiscoveryState } from '../store/discoveryStore';
-import { Notice } from 'obsidian';
+import { Notice, Menu, MenuItem } from 'obsidian';
 
 export class EventManager {
 	private plugin: LuminaPlugin;
@@ -15,6 +15,10 @@ export class EventManager {
 
 	registerEvents(): void {
 		// ── 컨텍스트 메뉴 ──────────────────────────────────────────────
+		interface MenuItemWithSubmenu extends MenuItem {
+			setSubmenu?: () => Menu;
+		}
+
 		this.plugin.registerEvent(
 			this.plugin.app.workspace.on('editor-menu', (menu, editor, view) => {
 				if (!this.plugin.settings.misc.contextMenuEnabled) return;
@@ -24,12 +28,12 @@ export class EventManager {
 				menu.addItem((item) => {
 					item.setTitle('✨ Lumina').setIcon('bot');
 					
-					// @ts-ignore (setSubmenu exists in recent Obsidian API)
-					const submenu = item.setSubmenu ? item.setSubmenu() : null;
+					const itemWithSubmenu = item as MenuItemWithSubmenu;
+					const submenu = itemWithSubmenu.setSubmenu ? itemWithSubmenu.setSubmenu() : null;
 					const target = submenu || menu;
 
 					if (selection.trim()) {
-						target.addItem((subItem: any) => {
+						target.addItem((subItem) => {
 							subItem
 								.setTitle(t('uiMessages.cmdCtxMenu'))
 								.setIcon('message-circle')
@@ -46,7 +50,7 @@ export class EventManager {
 					}
 
 					if (activeFile) {
-						target.addItem((subItem: any) => {
+						target.addItem((subItem) => {
 							subItem
 								.setTitle(t('uiMessages.cmdAutoLinkNote'))
 								.setIcon('link')
@@ -61,12 +65,12 @@ export class EventManager {
 					if (selection.trim() && this.plugin.settings.chat.quickActions.length > 0) {
 						target.addSeparator();
 						for (const qa of this.plugin.settings.chat.quickActions) {
-							target.addItem((subItem: any) => {
+							target.addItem((subItem) => {
 								subItem
 									.setTitle(qa.name)
 									.setIcon('zap')
 									.onClick(() => {
-										this.plugin.quickActionHandler.executeAction(qa, editor, view as any);
+										void this.plugin.quickActionHandler.executeAction(qa, editor, view);
 									});
 							});
 						}
