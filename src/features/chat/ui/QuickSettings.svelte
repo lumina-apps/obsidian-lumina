@@ -20,7 +20,6 @@
 	function buildPresets(presets: typeof TEMPERATURE_PRESETS): PresetItem[] {
 		return presets.map((p) => ({
 			value: p.value,
-			threshold: p.threshold,
 			label: $tStore(`settings.chat.quickSettings.${p.i18nKey}` as Parameters<typeof $tStore>[0]),
 		}));
 	}
@@ -137,13 +136,13 @@
 		}
 	}
 
-	.lumina-qs__section {
+	:global(.lumina-qs__section) {
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
 	}
 
-	.lumina-qs__label {
+	:global(.lumina-qs__label) {
 		font-size: 11px;
 		font-weight: 600;
 		color: var(--text-muted);

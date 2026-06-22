@@ -9,7 +9,6 @@
 
 	export interface PresetItem {
 		value: number;
-		threshold: number;
 		label: string;
 	}
 
@@ -28,14 +27,12 @@
 	} = $props();
 
 	function isActive(index: number): boolean {
-		const low = index > 0 ? presets[index - 1].threshold : 0;
-		const high = presets[index].threshold;
-		return currentValue > low && currentValue <= high;
+		return currentValue === presets[index].value;
 	}
 </script>
 
 <div class="lumina-qs__section">
-	<span class="lumina-qs__label" id={labelId}>{label}</span>
+	<span class="lumina-qs__label" id={labelId}>{label} ({currentValue})</span>
 	<div class="lumina-qs__btn-group" role="group" aria-labelledby={labelId}>
 		{#each presets as preset, i}
 			<button
