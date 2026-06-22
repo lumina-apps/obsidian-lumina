@@ -19,11 +19,10 @@ export const DEFAULT_EXCLUDED_PATHS: readonly string[] = [
 export function isExcluded(filePath: string, userPaths: string[]): boolean {
 	const allExclusions = [...DEFAULT_EXCLUDED_PATHS, ...userPaths];
 	return allExclusions.some(ex => {
-		const normalized = ex.trim();
+		const normalized = ex.trim().replace(/\\/g, '/');
 		if (!normalized) return false;
 		return filePath === normalized
-			|| filePath.startsWith(normalized + '/')
-			|| filePath.startsWith(normalized + '\\');
+			|| filePath.startsWith(normalized + '/');
 	});
 }
 
@@ -39,10 +38,9 @@ export function isIncluded(filePath: string, includePaths: string[]): boolean {
 	}
 
 	return includePaths.some(inc => {
-		const normalized = inc.trim();
+		const normalized = inc.trim().replace(/\\/g, '/');
 		if (!normalized) return false;
 		return filePath === normalized
-			|| filePath.startsWith(normalized + '/')
-			|| filePath.startsWith(normalized + '\\');
+			|| filePath.startsWith(normalized + '/');
 	});
 }

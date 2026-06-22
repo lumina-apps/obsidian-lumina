@@ -136,6 +136,7 @@ export class VaultIndexer {
 				if (filesToProcess.length === 0) {
 					await deleteCheckpoint(this.app);
 					await this.persist();
+					setIndexingStatus('ready', { totalFiles: files.length, processedFiles: files.length });
 					return;
 				}
 
@@ -174,7 +175,6 @@ export class VaultIndexer {
 	}
 
 	async resetIndex(): Promise<void> {
-		this.isDestroyed = true;
 		this.currentProcessId++;
 		await new Promise<void>(resolve => window.setTimeout(resolve, 0));
 		this.state.clear();

@@ -60,10 +60,13 @@ export async function processFiles(files: TFile[], ctx: ProcessContext, startedA
 		fileMtimes: ctx.fileMtimes, fileHashes: ctx.fileHashes,
 	};
 
+	const processId = ctx.getCurrentProcessId();
+	const checkCancel = () => ctx.getIsDestroyed() || ctx.getCurrentProcessId() !== processId;
+
 	if (readConcurrency === 1) {
-		await processSequential(files, ctx, processedPaths, checkpointCtx, persistIndexCtx);
+		await processSequential(files, ctx, processedPaths, checkpointCtx, persistIndexCtx, checkCancel);
 	} else {
-		await processBatched(files, readConcurrency, ctx, processedPaths, checkpointCtx, persistIndexCtx);
+		await processBatched(files, readConcurrency, ctx, processedPaths, checkpointCtx, persistIndexCtx, checkCancel);
 	}
 }
 
@@ -88,9 +91,10 @@ async function removePathChunks(path: string, ctx: ProcessContext): Promise<void
 async function processSequential(
 	files: TFile[], ctx: ProcessContext, processedPaths: string[],
 	checkpointCtx: CheckpointSaveContext, persistIndexCtx: IndexPersistContext,
+	checkCancel: () => boolean,
 ): Promise<void> {
 	for (const file of files) {
-		if (ctx.getIsDestroyed()) return;
+		if (checkCancel()) return;
 		try {
 			const result = await readAndPrepareFile(file, ctx.app, ctx.parseBinaryFn,
 				ctx.parentChunkSize, ctx.parentChunkOverlap, ctx.childChunkSize, ctx.childChunkOverlap,
@@ -121,7 +125,7 @@ async function processSequential(
 					ctx.fileHashes[file.path] = result.contentHash;
 					ctx.fileMtimes[file.path] = file.stat.mtime;
 				} catch (embedErr: unknown) {
-					if (ctx.getIsDestroyed()) return;
+					if (checkCancel()) return;
 					const errMsg = embedErr instanceof Error ? embedErr.message : String(embedErr);
 					debugLogger.logError('rag', normalizeError(embedErr, `임베딩 실패: ${file.path}`));
 					new Notice(`[Lumina] 인덱싱 중 임베딩 에러 발생: ${errMsg}`);
@@ -158,9 +162,10 @@ async function processSequential(
 async function processBatched(
 	files: TFile[], readConcurrency: number, ctx: ProcessContext, processedPaths: string[],
 	checkpointCtx: CheckpointSaveContext, persistIndexCtx: IndexPersistContext,
+	checkCancel: () => boolean,
 ): Promise<void> {
 	for (let batchStart = 0; batchStart < files.length; batchStart += readConcurrency) {
-		if (ctx.getIsDestroyed()) return;
+		if (checkCancel()) return;
 		const fileBatch = files.slice(batchStart, batchStart + readConcurrency);
 
 		const readResults = await Promise.allSettled(fileBatch.map(file =>
@@ -199,10 +204,10 @@ async function processBatched(
 			}
 		}
 
-		if (toEmbedChildChunks.length > 0 && !ctx.getIsDestroyed()) {
+		if (toEmbedChildChunks.length > 0 && !checkCancel()) {
 			try {
 				for (let i = 0; i < toEmbedChildChunks.length; i += CHUNK_EMBED_BATCH) {
-					if (ctx.getIsDestroyed()) break;
+					if (checkCancel()) break;
 					const batch = toEmbedChildChunks.slice(i, i + CHUNK_EMBED_BATCH);
 					const embeddings = await ctx.embedFn(batch.map(c => c.text));
 					for (let j = 0; j < batch.length; j++) {
@@ -226,7 +231,7 @@ async function processBatched(
 					processedPaths.push(file.path);
 				}
 			} catch (embedErr: unknown) {
-				if (ctx.getIsDestroyed()) return;
+				if (checkCancel()) return;
 				const errMsg = embedErr instanceof Error ? embedErr.message : String(embedErr);
 				debugLogger.logError('rag', normalizeError(embedErr, `배치 임베딩 실패`));
 				new Notice(`[Lumina] 인덱싱 중 임베딩 에러 발생: ${errMsg}`);
@@ -235,7 +240,7 @@ async function processBatched(
 					processedPaths.push(file.path);
 				}
 			}
-		} else if (toEmbedParentChunks.length > 0 && !ctx.getIsDestroyed()) {
+		} else if (toEmbedParentChunks.length > 0 && !checkCancel()) {
 			ctx.parentChunks.push(...toEmbedParentChunks);
 			persistIndexCtx.chunks = ctx.parentChunks;
 			
