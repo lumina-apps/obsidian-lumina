@@ -70,6 +70,21 @@ export class CommandManager {
 			},
 		});
 
+		this.plugin.addCommand({
+			id: 'auto-link-current-note',
+			name: t('uiMessages.cmdAutoLinkNote'),
+			editorCallback: async (editor: Editor, view: MarkdownView | MarkdownFileInfo) => {
+				const activeFile = (view as MarkdownView)?.file ?? this.plugin.app.workspace.getActiveFile();
+				if (!activeFile) {
+					new Notice('No active file to auto-link.');
+					return;
+				}
+				const { processAutoLink } = await import('../mcp/server/handlers/utils/autoLinker');
+				const res = await processAutoLink(this.plugin.app, activeFile, editor);
+				new Notice(res.message);
+			},
+		});
+
 		this.registerQuickActions();
 	}
 

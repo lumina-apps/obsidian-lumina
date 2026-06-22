@@ -26,11 +26,25 @@ export class QuickActionHandler {
 		}
 
 		const { connections, chat } = this.plugin.settings;
-		const providerId = connections.quickActionProviderId;
-		const modelId = connections.quickActionModelId;
+		
+		let providerId = connections.quickActionProviderId;
+		let modelId = connections.quickActionModelId;
+
+		if (action.actionType === 'chat') {
+			providerId = connections.defaultProviderId || providerId;
+			modelId = connections.defaultModelId || modelId;
+
+			if (!providerId || !modelId) {
+				const verified = connections.providers.filter(p => p.isVerified);
+				if (verified.length > 0 && verified[0].availableModels.length > 0) {
+					providerId = verified[0].id;
+					modelId = verified[0].availableModels[0];
+				}
+			}
+		}
 
 		if (!providerId || !modelId) {
-			new Notice(t('uiMessages.qaNotConfigured'));
+			new Notice(action.actionType === 'chat' ? t('settings.translation.noValidModel') : t('uiMessages.qaNotConfigured'));
 			const appWithSetting = this.plugin.app as unknown as {
 				setting: {
 					open(): void;
@@ -44,7 +58,7 @@ export class QuickActionHandler {
 
 		const providerConfig = connections.providers.find(p => p.id === providerId);
 		if (!providerConfig || !providerConfig.isVerified) {
-			new Notice(t('uiMessages.qaInvalidProvider'));
+			new Notice(action.actionType === 'chat' ? t('settings.translation.noValidModel') : t('uiMessages.qaInvalidProvider'));
 			return;
 		}
 

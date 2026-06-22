@@ -269,7 +269,7 @@
         "name": "Streaming",
         "desc": "Ative respostas em streaming."
       },
-      "emptyResponseFallback": "⚠️ The model returned an empty response. (This may be due to an unsupported language/format, prompt filtering, or exceeding the context limit.)",
+      "emptyResponseFallback": "⚠️ O modelo retornou uma resposta vazia. (Isso pode ser devido a um idioma/formato não suportado, filtragem de prompts ou exceder o limite de contexto.)",
       "context": {
         "activeNote": "Incluir nota atual: {{name}}",
         "selectedText": "Texto selecionado ({{length}} caracteres)",
@@ -604,6 +604,7 @@
     "ragWorkerLoadFail": "Falha ao carregar modelo: ",
     "localizedPrompt": "Always respond in Portuguese (Português).",
     "cmdCtxMenu": "💬 Enviar para o Chat Lumina",
+    "cmdAutoLinkNote": "🔗 Ligar automaticamente nota atual",
     "cmdChatTitle": "Abrir Chat",
     "cmdLogTitle": "Abrir DevLog",
     "cmdReindex": "Reindexar Vault",

@@ -206,11 +206,15 @@ export class ChatAttachmentHandler {
 		app: App,
 		attachments: ContextAttachment[],
 		plugin?: LuminaPlugin,
+		options?: { skipFolders?: boolean }
 	): Promise<{ attachmentContext: string; multimodalImages: string[] }> {
 		let attachmentContext = '';
 		const multimodalImages: string[] = [];
 
 		for (const att of attachments) {
+			if (options?.skipFolders && att.type === 'folder') {
+				continue;
+			}
 			try {
 				const parsed = await this.parseAttachment(app, att, plugin);
 				if (!parsed) continue;

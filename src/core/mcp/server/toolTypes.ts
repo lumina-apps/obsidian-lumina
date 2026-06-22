@@ -30,7 +30,8 @@ export type ToolName =
 	| 'run_note_code_block'
 	| 'list_tags'
 	| 'create_canvas'
-	| 'generate_moc';
+	| 'generate_moc'
+	| 'auto_link_note';
 
 /** CallTool 요청에서 전달되는 원시 인자 */
 export type ToolArguments = Record<string, unknown>;

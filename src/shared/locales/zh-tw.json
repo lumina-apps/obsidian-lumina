@@ -269,7 +269,7 @@
         "name": "串流輸出",
         "desc": "啟用串流回應。"
       },
-      "emptyResponseFallback": "⚠️ The model returned an empty response. (This may be due to an unsupported language/format, prompt filtering, or exceeding the context limit.)",
+      "emptyResponseFallback": "⚠️ 模組傳回了空回應。（這可能是因為不支援的語言/格式、提示詞過濾或超過了上下文限制。）",
       "context": {
         "activeNote": "包含目前筆記：{{name}}",
         "selectedText": "選取的文字 ({{length}} 個字元)",
@@ -604,6 +604,7 @@
     "ragWorkerLoadFail": "模型載入失敗：",
     "localizedPrompt": "Always respond in Traditional Chinese (繁體中文).",
     "cmdCtxMenu": "💬 傳送至 Lumina 聊天",
+    "cmdAutoLinkNote": "🔗 自動連結目前筆記",
     "cmdChatTitle": "開啟聊天",
     "cmdLogTitle": "開啟開發日誌",
     "cmdReindex": "重新索引整個庫",

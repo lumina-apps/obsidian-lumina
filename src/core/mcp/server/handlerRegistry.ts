@@ -8,6 +8,7 @@ import { ragSearchHandler } from './handlers/ragHandlers';
 import { executeCodeHandler, runNoteCodeBlockHandler } from './handlers/executeHandlers';
 import { createCanvasHandler } from './handlers/canvasHandlers';
 import { generateMocHandler } from './handlers/mocHandlers';
+import { autoLinkNoteHandler } from './handlers/autoLinkHandlers';
 
 export type ToolHandlerImpl = (
 	args: ToolArguments,
@@ -39,6 +40,7 @@ const handlerMap: Record<ToolName, ToolHandlerImpl> = {
 	list_tags: listTagsHandler,
 	create_canvas: createCanvasHandler,
 	generate_moc: generateMocHandler,
+	auto_link_note: autoLinkNoteHandler,
 };
 
 /**

@@ -608,6 +608,7 @@
     "ragWorkerLoadFail": "Model load failed: ",
     "localizedPrompt": "Always respond in English.",
     "cmdCtxMenu": "💬 Send to Lumina Chat",
+    "cmdAutoLinkNote": "🔗 Auto-Link Current Note",
     "cmdChatTitle": "Open Chat",
     "cmdLogTitle": "Open DevLog",
     "cmdReindex": "Reindex Vault",

@@ -608,6 +608,7 @@
     "ragWorkerLoadFail": "모델 로딩 실패: ",
     "localizedPrompt": "Always respond in Korean (한국어).",
     "cmdCtxMenu": "💬 Lumina 채팅으로 보내기",
+    "cmdAutoLinkNote": "🔗 자동 백링크 생성",
     "cmdChatTitle": "Chat 열기",
     "cmdLogTitle": "DevLog 열기",
     "cmdReindex": "전체 재인덱싱",

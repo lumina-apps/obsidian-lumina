@@ -131,7 +131,7 @@ export function getToolDefinitions(): ToolDefinition[] {
 					path: { type: 'string', description: 'Path to the note.' },
 					patches: {
 						type: 'array',
-						description: 'Preferred: list of replacements to apply atomically. All patches are applied in order and shown to the user as a single unified diff.',
+						description: 'Preferred: list of replacements to apply atomically. All patches are applied in order and shown to the user as a single unified diff. CRITICAL: DO NOT use this tool to add backlinks or auto-link. Use the auto_link_note tool instead.',
 						items: {
 							type: 'object',
 							properties: {
@@ -330,6 +330,17 @@ export function getToolDefinitions(): ToolDefinition[] {
 				},
 				required: ['title', 'outputPath'],
 			},
+		},
+		{
+			name: 'auto_link_note',
+			description: 'Automatically find unlinked mentions (note titles or aliases) in a note and replace them with internal markdown links ([[Title|Alias]]). CRITICAL: ALWAYS use this tool when the user asks to add backlinks or auto-link a note. NEVER try to manually read the note and use patch_note or replace_note to add links yourself, as it will crash the system.',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					path: { type: 'string', description: 'Path to the note to auto-link' }
+				},
+				required: ['path']
+			}
 		},
 	];
 }

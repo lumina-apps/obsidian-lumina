@@ -269,7 +269,7 @@
         "name": "流式输出",
         "desc": "启用流式响应。"
       },
-      "emptyResponseFallback": "⚠️ The model returned an empty response. (This may be due to an unsupported language/format, prompt filtering, or exceeding the context limit.)",
+      "emptyResponseFallback": "⚠️ 模型返回了空响应。（这可能是因为不支持的语言/格式、提示词过滤或超过了上下文限制。）",
       "context": {
         "activeNote": "包含当前笔记：{{name}}",
         "selectedText": "选中的文本 ({{length}} 个字符)",
@@ -604,6 +604,7 @@
     "ragWorkerLoadFail": "模型加载失败：",
     "localizedPrompt": "Always respond in Chinese (简体中文).",
     "cmdCtxMenu": "💬 发送到 Lumina 聊天",
+    "cmdAutoLinkNote": "🔗 自动链接当前笔记",
     "cmdChatTitle": "打开聊天",
     "cmdLogTitle": "打开 DevLog",
     "cmdReindex": "重新索引整个库",

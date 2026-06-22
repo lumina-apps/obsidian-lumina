@@ -269,7 +269,7 @@
         "name": "ストリーミング",
         "desc": "ストリーミング応答を有効にします。"
       },
-      "emptyResponseFallback": "⚠️ The model returned an empty response. (This may be due to an unsupported language/format, prompt filtering, or exceeding the context limit.)",
+      "emptyResponseFallback": "⚠️ モデルが空の応答を返しました。（サポートされていない言語/フォーマット、プロンプトのフィルタリング、またはコンテキスト制限の超過が原因である可能性があります。）",
       "context": {
         "activeNote": "現在のノートを含める: {{name}}",
         "selectedText": "選択されたテキスト ({{length}}文字)",
@@ -604,6 +604,7 @@
     "ragWorkerLoadFail": "モデルの読み込みに失敗しました: ",
     "localizedPrompt": "Always respond in Japanese (日本語).",
     "cmdCtxMenu": "💬 Luminaチャットに送信",
+    "cmdAutoLinkNote": "🔗 現在のノートを自動リンク",
     "cmdChatTitle": "チャットを開く",
     "cmdLogTitle": "DevLogを開く",
     "cmdReindex": "全体再インデックス",

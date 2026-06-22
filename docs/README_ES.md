@@ -20,7 +20,7 @@
 | **🧠 RAG Sin Configuración** | Cuenta con incrustaciones locales 100% offline para evitar filtraciones de datos. Indexa automáticamente tu bóveda en tiempo real sin configuraciones complejas. |
 | **🔗 Descubrimiento Inteligente (Smart Discovery)** | Encuentra instantáneamente documentos altamente relevantes para la nota actual usando búsqueda semántica, detecta y advierte sobre posibles duplicados, e inserta etiquetas recomendadas y enlaces relacionados con un solo clic. |
 | **⚡ Acciones Rápidas de IA en Línea** | Resalta texto en el editor para resumir, traducir o corregir instantáneamente sin interrumpir tu flujo de escritura. |
-| **🚀 Modo de Agente Inteligente** | El LLM planifica y ejecuta tareas complejas como búsqueda, creación, modificación, eliminación/movimiento de notas y ejecución de código en un sandbox usando 23 herramientas MCP integradas. |
+| **🚀 Modo de Agente Inteligente** | El LLM planifica y ejecuta tareas complejas como búsqueda, creación, modificación, eliminación/movimiento de notas y ejecución de código en un sandbox usando 24 herramientas MCP integradas. |
 | **🔌 Integración MCP (Cliente y Servidor)** | Integración bidireccional y completa que permite usar herramientas externas dentro de Obsidian (Cliente) o dejar que las IA externas interactúen con tus notas (Servidor). |
 
 ---
@@ -86,7 +86,7 @@ Lumina ofrece dos modos según tu nivel de experiencia. ¡Elige el que más te g
 <details>
 <summary><b>🚀 Modo de Agente Inteligente</b></summary>
 
-- **Descripción:** Cuando se activa, el LLM determina y organiza de forma autónoma 23 herramientas MCP integradas para realizar tareas. Puede completar operaciones complejas de varios pasos combinando la búsqueda, lectura y escritura de notas, recuperación RAG, ejecución de código en sandbox e integración de notas diarias.
+- **Descripción:** Cuando se activa, el LLM determina y organiza de forma autónoma 24 herramientas MCP integradas para realizar tareas. Puede completar operaciones complejas de varios pasos combinando la búsqueda, lectura y escritura de notas, recuperación RAG, ejecución de código en sandbox e integración de notas diarias.
 - **Soporte para LLM local:** Implementa un analizador dedicado que admite prompts de herramientas basadas en texto, lo que permite que el agente funcione sin problemas incluso en entornos de LLM locales, no solo con modelos en la nube de alto rendimiento.
 - **Seguridad robusta y control del usuario (Human-in-the-Loop):** Las operaciones destructivas como la modificación de contenido, la eliminación de archivos o la ejecución de código no pueden ser procesadas por el agente por sí solo. Se ejecutan de forma segura con copias de seguridad de protección contra sobreescritura solo después de preguntar al usuario con una interfaz de usuario (visor de diferencias y modal de advertencia de tarea) y recibir la aprobación final (Aceptar).
 - **Prevención de costos y límites:** Se aplican límites predeterminados en el recuento de uso de herramientas y en la longitud de caracteres agregados para evitar fallos de la IA o bucles infinitos. (Estos límites se pueden ajustar libremente en la configuración avanzada).
@@ -101,9 +101,9 @@ Lumina ofrece dos modos según tu nivel de experiencia. ¡Elige el que más te g
   - Interactúa y trabaja directamente con IA dentro de Obsidian.
   - Conecta numerosos servidores MCP externos (GitHub, bases de datos locales, búsqueda web, etc.) para extraer (scrape) y organizar instantáneamente grandes cantidades de datos en tus notas.
 - **🖥️ Modo Servidor (Dirigido por IA Externa):**
-  - Proporciona 23 herramientas que permiten a asistentes de IA externos (Claude, Cursor, etc.) o a la IA en Modo Agente acceder directamente a tu bóveda.
+  - Proporciona 24 herramientas que permiten a asistentes de IA externos (Claude, Cursor, etc.) o a la IA en Modo Agente acceder directamente a tu bóveda.
   - **Lectura y Búsqueda:** `read_active_note`, `read_note`, `search_notes` (admite filtrado de etiquetas), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` para proporcionar un contexto amplio a la IA.
-  - **Escritura y Modificación:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc` (crear/modificar notas/lienzos (canvas), generar notas MOC (Map of Content) y guardar archivos binarios).
+  - **Escritura y Modificación:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (crear/modificar notas/lienzos (canvas), generar notas MOC (Map of Content) y guardar archivos binarios).
   - **Gestión y Ejecución:** `delete_note`, `move_note` (mover/renombrar), `execute_code`, `run_note_code_block` (ejecutar código en un entorno seguro o sandbox).
 - **Nota:** *Lumina cuenta con mecanismos de seguridad de múltiples capas, que incluyen la ejecución de código en sandbox, aprobaciones de usuario basadas en un visor de diferencias en tiempo real (Human-in-the-Loop), copias de seguridad automáticas durante las modificaciones de archivos (protección contra sobreescritura) y límites para evitar bucles infinitos. Sin embargo, dado que el agente y la IA externa acceden directamente a su vault, recomendamos monitorear las operaciones de cerca inicialmente.*
   - **Seguridad Robusta y Control del Usuario:** Operaciones destructivas como la modificación de contenido, eliminación de archivos o ejecución de código no pueden ser procesadas por el agente de forma independiente. Se ejecutan de forma segura con copias de seguridad de protección contra sobrescritura, solo después de mostrar al usuario una interfaz (Visor de Diferencias y Modal de Advertencia de Tarea) y recibir la aprobación final (Accept).

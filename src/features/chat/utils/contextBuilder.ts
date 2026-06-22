@@ -71,13 +71,6 @@ export async function buildLlmContext(
 	assistantId: string,
 	signal?: AbortSignal,
 ): Promise<ResolvedContext> {
-	// 첨부파일 컨텍스트 빌드
-	const { attachmentContext, multimodalImages } =
-		await ChatAttachmentHandler.buildAttachmentContext(plugin.app, updatedAttachments, plugin);
-
-	let ragContext: string | undefined = attachmentContext || undefined;
-	let ragChunksForLog: RagChunkMeta[] | undefined;
-
 	// RAG 벡터 검색
 	const shouldSearchRag = resolveRagSearchFlag({
 		ragEnabled,
@@ -85,7 +78,16 @@ export async function buildLlmContext(
 		useRagContext,
 	});
 
+	// 첨부파일 컨텍스트 빌드
+	const { attachmentContext, multimodalImages } =
+		await ChatAttachmentHandler.buildAttachmentContext(plugin.app, updatedAttachments, plugin, { skipFolders: shouldSearchRag });
+
+	let ragContext: string | undefined = attachmentContext || undefined;
+	let ragChunksForLog: RagChunkMeta[] | undefined;
+
 	if (shouldSearchRag && plugin.indexer && get(indexingState).status === 'ready') {
+		const filterPaths = updatedAttachments.filter(a => a.type === 'folder').map(a => a.path);
+
 		const result = await performRagSearch({
 			userText,
 			rag: ragSettings,
@@ -94,6 +96,7 @@ export async function buildLlmContext(
 			assistantId,
 			indexer: plugin.indexer,
 			activeFilePath: plugin.app.workspace.getActiveFile()?.path ?? null,
+			filterPaths: filterPaths.length > 0 ? filterPaths : undefined,
 			signal,
 		});
 		ragContext = result.ragContext;

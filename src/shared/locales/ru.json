@@ -269,7 +269,7 @@
         "name": "Стриминг",
         "desc": "Включить потоковую генерацию ответов (streaming)."
       },
-      "emptyResponseFallback": "⚠️ The model returned an empty response. (This may be due to an unsupported language/format, prompt filtering, or exceeding the context limit.)",
+      "emptyResponseFallback": "⚠️ Модель вернула пустой ответ. (Это может быть связано с неподдерживаемым языком/форматом, фильтрацией промптов или превышением лимита контекста.)",
       "context": {
         "activeNote": "Включить текущую заметку: {{name}}",
         "selectedText": "Выделенный текст ({{length}} символов)",
@@ -604,6 +604,7 @@
     "ragWorkerLoadFail": "Ошибка загрузки модели: ",
     "localizedPrompt": "Always respond in Russian (Русский).",
     "cmdCtxMenu": "💬 Отправить в чат Lumina",
+    "cmdAutoLinkNote": "🔗 Автоматическое связывание текущей заметки",
     "cmdChatTitle": "Открыть чат",
     "cmdLogTitle": "Открыть DevLog",
     "cmdReindex": "Переиндексировать хранилище (Vault)",

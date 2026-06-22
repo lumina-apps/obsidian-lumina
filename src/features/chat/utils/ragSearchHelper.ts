@@ -32,6 +32,7 @@ export interface PerformRagSearchParams {
 	assistantId: string;
 	indexer: import('../../rag/indexer').VaultIndexer;
 	activeFilePath: string | null;
+	filterPaths?: string[];
 	signal?: AbortSignal;
 }
 
@@ -45,12 +46,16 @@ export interface RagSearchResult {
  * 검색 결과가 있으면 assistantId 메시지에 RAG 소스도 설정한다.
  */
 export async function performRagSearch(params: PerformRagSearchParams): Promise<RagSearchResult> {
-	const { userText, rag, connections, existingContext, assistantId, indexer, activeFilePath, signal } = params;
+	const { userText, rag, connections, existingContext, assistantId, indexer, activeFilePath, filterPaths, signal } = params;
 
 	try {
 		let parentChunks = indexer.indexedParentChunks;
 
-		if (rag.dataScope === 'active-note') {
+		if (filterPaths && filterPaths.length > 0) {
+			parentChunks = parentChunks.filter(c =>
+				filterPaths.some(fp => c.path === fp || c.path.startsWith(fp + '/'))
+			);
+		} else if (rag.dataScope === 'active-note') {
 			parentChunks = activeFilePath
 				? parentChunks.filter(c => c.path === activeFilePath)
 				: [];

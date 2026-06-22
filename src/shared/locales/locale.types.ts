@@ -739,6 +739,7 @@ export interface TranslationUiMessages {
   ragWorkerLoadFail: string;
   localizedPrompt: string;
   cmdCtxMenu: string;
+  cmdAutoLinkNote: string;
   cmdChatTitle: string;
   cmdLogTitle: string;
   cmdReindex: string;
