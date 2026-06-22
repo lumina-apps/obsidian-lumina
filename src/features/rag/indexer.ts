@@ -149,6 +149,7 @@ export class VaultIndexer {
 		const restoreResult = await restoreFromCheckpoint(this.app, this.modelName, files, true);
 
 		if (restoreResult.filesToProcess.length === 0) { 
+			setIndexingStatus('ready', { totalFiles: files.length, processedFiles: files.length });
 			return; 
 		}
 
