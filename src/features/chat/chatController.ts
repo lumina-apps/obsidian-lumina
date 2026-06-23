@@ -30,7 +30,7 @@ export class ChatController {
 	private app: App;
 	private plugin: LuminaPlugin;
 	public history: ChatHistoryController;
-	private autoSaveTimeout: ReturnType<typeof setTimeout> | null = null;
+	private autoSaveTimeout: number | null = null;
 	private lastProviderId: string = '';
 	private lastModelId: string = '';
 
@@ -43,9 +43,9 @@ export class ChatController {
 			const sid = get(currentSessionId);
 			if (sid && this.lastProviderId && this.lastModelId) {
 				if (this.autoSaveTimeout) {
-					clearTimeout(this.autoSaveTimeout);
+					window.clearTimeout(this.autoSaveTimeout);
 				}
-				this.autoSaveTimeout = setTimeout(() => {
+				this.autoSaveTimeout = window.setTimeout(() => {
 					this.history.saveHistory(this.lastProviderId, this.lastModelId).catch(console.error);
 				}, 3000);
 			}
@@ -66,7 +66,7 @@ export class ChatController {
 	): Promise<void> {
 		this.lastProviderId = providerId;
 		this.lastModelId = modelId;
-		const { chat, rag, connections } = this.plugin.settings;
+		const { rag, connections } = this.plugin.settings;
 		const providerConfig = connections.providers.find(p => p.id === providerId);
 
 		// ── 1. 사용자 메시지를 store에 추가 ──────────────────────────────────

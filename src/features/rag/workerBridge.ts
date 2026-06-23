@@ -18,7 +18,7 @@ export class EmbeddingWorkerBridge {
 	private initPromiseResolve: (() => void) | null = null;
 	private initPromiseReject: ((err: Error) => void) | null = null;
 
-	private idleTimer: ReturnType<typeof setTimeout> | null = null;
+	private idleTimer: number | null = null;
 	private initArgs: { modelName: string; cacheDir: string; pluginDir?: string; onProgress?: EmbeddingProgressCallback } | null = null;
 
 	constructor() {}
@@ -77,7 +77,7 @@ export class EmbeddingWorkerBridge {
 	/** 모든 Worker 종료 */
 	terminate(): void {
 		if (this.idleTimer) {
-			clearTimeout(this.idleTimer);
+			window.clearTimeout(this.idleTimer);
 			this.idleTimer = null;
 		}
 		this.workerPool.terminate();
@@ -99,10 +99,10 @@ export class EmbeddingWorkerBridge {
 
 	private resetIdleTimer(): void {
 		if (this.idleTimer) {
-			clearTimeout(this.idleTimer);
+			window.clearTimeout(this.idleTimer);
 		}
 		// 5분(300,000ms) 미사용 시 워커 종료
-		this.idleTimer = setTimeout(() => {
+		this.idleTimer = window.setTimeout(() => {
 			console.log('[EmbeddingWorkerBridge] Idle timeout reached. Terminating workers to free memory.');
 			this.terminate();
 		}, 300000);
