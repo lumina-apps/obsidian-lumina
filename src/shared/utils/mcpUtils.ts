@@ -1,4 +1,4 @@
-export const MCP_CONNECT_TIMEOUT = 15000;
+export const MCP_CONNECT_TIMEOUT = 10000;
 
 export const MCP_MAX_FILE_LENGTH = 100000;
 

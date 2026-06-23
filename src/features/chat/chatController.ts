@@ -15,7 +15,9 @@ import {
 	isLoading,
 	getMessages,
 	messages,
+	currentSessionId,
 } from '../../core/store/chatStore';
+import { get } from 'svelte/store';
 import type { UIChatMessage, ChatSession, ContextAttachment } from '../../shared/types/chat.types';
 import { debugLogger } from '../../shared/debugLogger';
 import { triggerAutoSummarization } from './utils/summarizationHelper';
@@ -28,11 +30,26 @@ export class ChatController {
 	private app: App;
 	private plugin: LuminaPlugin;
 	public history: ChatHistoryController;
+	private autoSaveTimeout: ReturnType<typeof setTimeout> | null = null;
+	private lastProviderId: string = '';
+	private lastModelId: string = '';
 
 	constructor(plugin: LuminaPlugin) {
 		this.app = plugin.app;
 		this.plugin = plugin;
 		this.history = new ChatHistoryController(plugin);
+
+		messages.subscribe(() => {
+			const sid = get(currentSessionId);
+			if (sid && this.lastProviderId && this.lastModelId) {
+				if (this.autoSaveTimeout) {
+					clearTimeout(this.autoSaveTimeout);
+				}
+				this.autoSaveTimeout = setTimeout(() => {
+					this.history.saveHistory(this.lastProviderId, this.lastModelId).catch(console.error);
+				}, 3000);
+			}
+		});
 	}
 
 	/**
@@ -47,6 +64,8 @@ export class ChatController {
 		options?: { useRagContext?: boolean; includeActiveNote?: boolean },
 		signal?: AbortSignal,
 	): Promise<void> {
+		this.lastProviderId = providerId;
+		this.lastModelId = modelId;
 		const { chat, rag, connections } = this.plugin.settings;
 		const providerConfig = connections.providers.find(p => p.id === providerId);
 
@@ -83,80 +102,15 @@ export class ChatController {
 		isLoading.set(true);
 
 		try {
-			// ── 4. 프로바이더 검증 ────────────────────────────────────────────────
-			if (!providerConfig || !providerConfig.isVerified) {
-				throw new Error(t('settings.translation.noValidModel'));
-			}
-			if (!resolvedModelId) {
-				throw new Error(t('settings.translation.noValidModel'));
-			}
-
-			// 현재 store의 메시지 중 방금 추가한 user/assistant를 id로 제외
-			const allMessages = getMessages();
-			const chatHistory = allMessages.filter(
-				m => m.id !== userMsg.id && m.id !== assistantId,
-			);
-
-			// ── 5. 컨텍스트 & LLM 메시지 구성 ─────────────────────────────────
-			const ctx = await buildLlmContext(
-				this.plugin,
+			await this.processLlmRequest(
 				userText,
 				updatedAttachments,
-				chatHistory,
-				providerConfig,
+				providerId,
 				resolvedModelId,
-				chat,
-				rag,
-				connections.ragEnabled,
-				options?.useRagContext,
 				assistantId,
+				options,
 				signal,
 			);
-
-			// ── 6. LLM 호출 ────────────────────────────────────────────────────
-			const { fullResponse, tokenUsage, hasTokenLimitBeenHit } =
-				await executeLlmCall(
-					this.plugin,
-					ctx,
-					providerConfig,
-					resolvedModelId,
-					chat,
-					signal,
-					assistantId
-				);
-
-			// ── 7. 응답 후처리 ──────────────────────────────────────────────────
-			handleLlmResponse(assistantId, fullResponse, tokenUsage, hasTokenLimitBeenHit, resolvedModelId);
-
-			// ── 7.5. 자동 요약 (백그라운드) ───────────────────────────────────────────
-			if (chat.memoryMethod === 'auto_summary') {
-				// Fire and forget
-				triggerAutoSummarization(this.plugin, providerConfig, resolvedModelId, chat.contextWindowTurns).catch((e: unknown) => {
-					debugLogger.logError('auto_summary', e instanceof Error ? e : new Error(String(e)));
-				});
-			}
-
-			// ── 8. 디버그: LLM 요청/응답 로그 ─────────────────────────────────
-			const activePreset = chat.systemPrompts.find(p => p.id === chat.activeSystemPromptId);
-			const requestId = debugLogger.logRequest({
-				provider: providerConfig.type,
-				model: resolvedModelId,
-				temperature: chat.temperature,
-				maxTokens: chat.maxOutputTokens,
-				stream: chat.streaming,
-				systemPrompt: activePreset?.content ?? '',
-				messages: ctx.llmMessages.map(m => ({
-					role: m.role,
-					content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
-				})),
-				...(ctx.ragChunksForLog ? { ragChunks: ctx.ragChunksForLog } : {}),
-			});
-			debugLogger.logResponse(requestId, {
-				model: resolvedModelId,
-				content: fullResponse,
-				durationMs: 0,
-				usage: tokenUsage,
-			});
 		} catch (err: unknown) {
 			if (err instanceof Error && err.name === 'AbortError') {
 				setMessageStreaming(assistantId, false);
@@ -168,7 +122,95 @@ export class ChatController {
 			throw err;
 		} finally {
 			isLoading.set(false);
+			// 안전망: 예기치 못한 종료 시 스트리밍 상태 확실히 해제
+			setMessageStreaming(assistantId, false);
 		}
+	}
+
+	private async processLlmRequest(
+		userText: string,
+		updatedAttachments: ContextAttachment[],
+		providerId: string,
+		resolvedModelId: string | undefined,
+		assistantId: string,
+		options?: { useRagContext?: boolean; includeActiveNote?: boolean },
+		signal?: AbortSignal,
+	): Promise<void> {
+		const { chat, rag, connections } = this.plugin.settings;
+		const providerConfig = connections.providers.find(p => p.id === providerId);
+
+		// ── 4. 프로바이더 검증 ────────────────────────────────────────────────
+		if (!providerConfig || !providerConfig.isVerified) {
+			throw new Error(t('settings.translation.noValidModel'));
+		}
+		if (!resolvedModelId) {
+			throw new Error(t('settings.translation.noValidModel'));
+		}
+
+		// 현재 store의 메시지 중 방금 추가한 user/assistant를 id로 제외
+		const allMessages = getMessages();
+		// 마지막 2개 메시지(user, assistant)를 제외한 히스토리 계산
+		const chatHistory = allMessages.slice(0, -2);
+
+		// ── 5. 컨텍스트 & LLM 메시지 구성 ─────────────────────────────────
+		const ctx = await buildLlmContext(
+			this.plugin,
+			userText,
+			updatedAttachments,
+			chatHistory,
+			providerConfig,
+			resolvedModelId,
+			chat,
+			rag,
+			connections.ragEnabled,
+			options?.useRagContext,
+			assistantId,
+			signal,
+		);
+
+		// ── 6. LLM 호출 ────────────────────────────────────────────────────
+		const { fullResponse, tokenUsage, hasTokenLimitBeenHit } =
+			await executeLlmCall(
+				this.plugin,
+				ctx,
+				providerConfig,
+				resolvedModelId,
+				chat,
+				signal,
+				assistantId
+			);
+
+		// ── 7. 응답 후처리 ──────────────────────────────────────────────────
+		handleLlmResponse(assistantId, fullResponse, tokenUsage, hasTokenLimitBeenHit, resolvedModelId);
+
+		// ── 7.5. 자동 요약 (백그라운드) ───────────────────────────────────────────
+		if (chat.memoryMethod === 'auto_summary') {
+			triggerAutoSummarization(this.plugin, providerConfig, resolvedModelId, chat.contextWindowTurns).catch((e: unknown) => {
+				debugLogger.logError('auto_summary', e instanceof Error ? e : new Error(String(e)));
+			});
+		}
+
+		// ── 8. 디버그: LLM 요청/응답 로그 ─────────────────────────────────
+		const activePreset = chat.systemPrompts.find(p => p.id === chat.activeSystemPromptId);
+		const requestId = debugLogger.logRequest({
+			provider: providerConfig.type,
+			model: resolvedModelId,
+			temperature: chat.temperature,
+			maxTokens: chat.maxOutputTokens,
+			stream: chat.streaming,
+			systemPrompt: activePreset?.content ?? '',
+			messages: ctx.llmMessages.map(m => ({
+				role: m.role,
+				content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+			})),
+			...(ctx.ragChunksForLog ? { ragChunks: ctx.ragChunksForLog } : {}),
+		});
+		debugLogger.logResponse(requestId, {
+			model: resolvedModelId,
+			content: fullResponse,
+			durationMs: 0,
+			usage: tokenUsage,
+		});
 	}
 
 	/**

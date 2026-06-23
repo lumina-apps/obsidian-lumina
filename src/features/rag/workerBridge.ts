@@ -18,6 +18,9 @@ export class EmbeddingWorkerBridge {
 	private initPromiseResolve: (() => void) | null = null;
 	private initPromiseReject: ((err: Error) => void) | null = null;
 
+	private idleTimer: ReturnType<typeof setTimeout> | null = null;
+	private initArgs: { modelName: string; cacheDir: string; pluginDir?: string; onProgress?: EmbeddingProgressCallback } | null = null;
+
 	constructor() {}
 
 	// ─── Lifecycle ────────────────────────────────────────────────────────────
@@ -29,6 +32,7 @@ export class EmbeddingWorkerBridge {
 		pluginDir?: string,
 		onProgress?: EmbeddingProgressCallback,
 	): Promise<void> {
+		this.initArgs = { modelName, cacheDir, pluginDir, onProgress };
 		this.terminate();
 
 		this.cacheManager.init(cacheDir, modelName);
@@ -66,11 +70,16 @@ export class EmbeddingWorkerBridge {
 		}
 
 		this.isReady = true;
+		this.resetIdleTimer();
 		this.initPromiseResolve?.();
 	}
 
 	/** 모든 Worker 종료 */
 	terminate(): void {
+		if (this.idleTimer) {
+			clearTimeout(this.idleTimer);
+			this.idleTimer = null;
+		}
 		this.workerPool.terminate();
 		this.isReady = false;
 
@@ -88,10 +97,34 @@ export class EmbeddingWorkerBridge {
 		return this.workerPool.activeWorkerCount;
 	}
 
+	private resetIdleTimer(): void {
+		if (this.idleTimer) {
+			clearTimeout(this.idleTimer);
+		}
+		// 5분(300,000ms) 미사용 시 워커 종료
+		this.idleTimer = setTimeout(() => {
+			console.log('[EmbeddingWorkerBridge] Idle timeout reached. Terminating workers to free memory.');
+			this.terminate();
+		}, 300000);
+	}
+
+	private async ensureReady(): Promise<void> {
+		if (!this.ready && this.initArgs) {
+			console.log('[EmbeddingWorkerBridge] Reviving workers from idle state...');
+			await this.init(
+				this.initArgs.modelName,
+				this.initArgs.cacheDir,
+				this.initArgs.pluginDir,
+				this.initArgs.onProgress
+			);
+		}
+	}
+
 	// ─── Public API ───────────────────────────────────────────────────────────
 
 	/** 텍스트 배열 → 임베딩 벡터 변환 (라운드로빈 병렬 처리) */
 	async embed(texts: string[]): Promise<number[][]> {
+		await this.ensureReady();
 		if (!this.workerPool.ready || !this.isReady) {
 			throw new Error(t('uiMessages.ragWorkerNotReady'));
 		}
@@ -158,6 +191,7 @@ export class EmbeddingWorkerBridge {
 
 		this.cacheManager.trimCacheIfNecessary();
 
+		this.resetIdleTimer();
 		return results as number[][];
 	}
 
@@ -177,14 +211,20 @@ export class EmbeddingWorkerBridge {
 
 	/** ArrayBuffer 문서를 Worker에서 비동기 파싱합니다. */
 	async parse(buffer: ArrayBuffer, ext: string): Promise<string> {
+		await this.ensureReady();
 		const inst = this.workerPool.getAnyReadyWorker();
 		if (!inst || !this.isReady) {
 			throw new Error(t('uiMessages.ragWorkerNotReady'));
 		}
 		const requestId = generateUUID();
-		return new Promise<string>((resolve, reject) => {
-			inst.parseRequests.add(requestId, resolve, reject);
-			inst.worker.postMessage({ type: 'parse', requestId, buffer, ext } as WorkerRequest, [buffer]);
-		});
+		try {
+			const result = await new Promise<string>((resolve, reject) => {
+				inst.parseRequests.add(requestId, resolve, reject);
+				inst.worker.postMessage({ type: 'parse', requestId, buffer, ext } as WorkerRequest, [buffer]);
+			});
+			return result;
+		} finally {
+			this.resetIdleTimer();
+		}
 	}
 }
