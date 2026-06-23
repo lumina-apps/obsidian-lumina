@@ -48,6 +48,7 @@ export class CommandManager {
 				}
 				new Notice(t('settings.rag.reindex.started'), 2000);
 				try {
+					await this.plugin.indexer.resetIndex();
 					await this.plugin.indexer.indexVault();
 					new Notice(t('settings.rag.reindex.success'), 3000);
 				} catch (err) {

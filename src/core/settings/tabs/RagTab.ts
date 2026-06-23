@@ -22,7 +22,7 @@ function triggerReindexAfterPathChange(tab: LuminaSettingTab): void {
 		pathChangeDebounceTimer = null;
 		if (!tab.plugin.indexer) return;
 		new Notice(t('settings.rag.reindex.started'), 2000);
-		tab.plugin.indexer.indexVault()
+		tab.plugin.indexer.updateIndex()
 			.then(() => {
 				new Notice(t('settings.rag.reindex.success'), 3000);
 			})
@@ -202,6 +202,7 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 					}
 					new Notice(t('settings.rag.reindex.started'), 2000);
 					try {
+						await tab.plugin.indexer.resetIndex();
 						await tab.plugin.indexer.indexVault();
 						new Notice(t('settings.rag.reindex.success'), 3000);
 						tab.refreshDisplay();

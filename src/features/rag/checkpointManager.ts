@@ -36,12 +36,19 @@ export async function restoreFromCheckpoint(
 	totalFiles: TFile[],
 	clearOnFullReindex: boolean,
 ): Promise<RestoreResult> {
-	const checkpoint = await loadCheckpoint(app);
+	let checkpoint = await loadCheckpoint(app);
 	const loadResult = await loadIndex(app, modelName);
 
 	if (loadResult.needsFullReindex) {
 		if (checkpoint) await deleteCheckpoint(app);
 		return { filesToProcess: totalFiles, alreadyProcessed: 0, indexRestored: false, startedAt: Date.now(), processedPaths: EMPTY_PATHS };
+	}
+
+	// 100% 완료된 체크포인트가 남아있는 경우(Windows 파일락 등) 무시하고 삭제
+	if (checkpoint && checkpoint.totalFiles > 0 && checkpoint.processedPaths.length >= checkpoint.totalFiles) {
+		await deleteCheckpoint(app);
+		// 체크포인트가 없는 것과 동일하게 처리하기 위해 변수 초기화
+		checkpoint = null;
 	}
 
 	if (checkpoint && (clearOnFullReindex ? checkpoint.totalFiles === totalFiles.length : true)) {
