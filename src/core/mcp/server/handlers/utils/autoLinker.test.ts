@@ -133,3 +133,111 @@ describe('applyAutoLink', () => {
 		});
 	});
 });
+
+import { processAutoLink } from './autoLinker';
+import { App, TFile, Editor } from 'obsidian';
+import { vi } from 'vitest';
+
+describe('processAutoLink', () => {
+	it('should process auto link using app vault', async () => {
+		const mockFile = { path: 'test.md', basename: 'test', extension: 'md' } as TFile;
+		const otherFile = { path: 'other.md', basename: 'Other Note', extension: 'md' } as TFile;
+		
+		const mockApp = {
+			vault: {
+				read: vi.fn().mockResolvedValue('I want to link to other note here.'),
+				modify: vi.fn().mockResolvedValue(undefined),
+				getMarkdownFiles: vi.fn().mockReturnValue([mockFile, otherFile])
+			},
+			metadataCache: {
+				getFileCache: vi.fn().mockReturnValue(null)
+			}
+		} as unknown as App;
+
+		const result = await processAutoLink(mockApp, mockFile);
+
+		expect(result.success).toBe(true);
+		expect(result.linksAdded).toBe(1);
+		expect(mockApp.vault.read).toHaveBeenCalledWith(mockFile);
+		expect(mockApp.vault.modify).toHaveBeenCalledWith(mockFile, 'I want to link to [[Other Note|other note]] here.');
+	});
+
+	it('should process auto link using editor if provided', async () => {
+		const mockFile = { path: 'test.md', basename: 'test', extension: 'md' } as TFile;
+		const otherFile = { path: 'alias.md', basename: 'Alias Note', extension: 'md' } as TFile;
+		
+		const mockApp = {
+			vault: {
+				getMarkdownFiles: vi.fn().mockReturnValue([mockFile, otherFile])
+			},
+			metadataCache: {
+				getFileCache: vi.fn().mockImplementation((f: TFile) => {
+					if (f.path === 'alias.md') {
+						return { frontmatter: { aliases: ['custom alias'] } };
+					}
+					return null;
+				})
+			}
+		} as unknown as App;
+
+		const mockEditor = {
+			getValue: vi.fn().mockReturnValue('Testing custom alias linking.'),
+			setValue: vi.fn(),
+			getCursor: vi.fn().mockReturnValue({ line: 0, ch: 0 }),
+			setCursor: vi.fn()
+		} as unknown as Editor;
+
+		const result = await processAutoLink(mockApp, mockFile, mockEditor);
+
+		expect(result.success).toBe(true);
+		expect(result.linksAdded).toBe(1);
+		expect(mockEditor.getValue).toHaveBeenCalled();
+		expect(mockEditor.setValue).toHaveBeenCalledWith('Testing [[Alias Note|custom alias]] linking.');
+		expect(mockEditor.getCursor).toHaveBeenCalled();
+		expect(mockEditor.setCursor).toHaveBeenCalled();
+	});
+
+	it('should return 0 links added if no matches found', async () => {
+		const mockFile = { path: 'test.md', basename: 'test', extension: 'md' } as TFile;
+		
+		const mockApp = {
+			vault: {
+				read: vi.fn().mockResolvedValue('Nothing to link.'),
+				modify: vi.fn(),
+				getMarkdownFiles: vi.fn().mockReturnValue([mockFile])
+			},
+			metadataCache: {
+				getFileCache: vi.fn().mockReturnValue(null)
+			}
+		} as unknown as App;
+
+		const result = await processAutoLink(mockApp, mockFile);
+
+		expect(result.success).toBe(true);
+		expect(result.linksAdded).toBe(0);
+		expect(result.message).toBe('추가할 링크가 없습니다.');
+		expect(mockApp.vault.modify).not.toHaveBeenCalled();
+	});
+
+	it('should catch and return error on failure', async () => {
+		// Suppress expected console.error in test output
+		const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+		const mockFile = { path: 'test.md', basename: 'test', extension: 'md' } as TFile;
+		
+		const mockApp = {
+			vault: {
+				read: vi.fn().mockRejectedValue(new Error('Vault read error')),
+			}
+		} as unknown as App;
+
+		const result = await processAutoLink(mockApp, mockFile);
+
+		expect(result.success).toBe(false);
+		expect(result.linksAdded).toBe(0);
+		expect(result.message).toContain('오류 발생');
+
+		consoleSpy.mockRestore();
+	});
+});
+

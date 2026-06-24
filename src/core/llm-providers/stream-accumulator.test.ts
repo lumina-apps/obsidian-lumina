@@ -126,12 +126,17 @@ describe('convertOpenAIToolCalls', () => {
 	});
 
 	it('잘못된 JSON은 건너뛴다', () => {
+		const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
 		const result = convertOpenAIToolCalls([
 			{ id: 'c1', name: 'bad', arguments: 'not json' },
 			{ id: 'c2', name: 'good', arguments: '{"key":"value"}' },
 		]);
+
 		expect(result).toHaveLength(1);
 		expect(result[0].name).toBe('good');
+
+		consoleSpy.mockRestore();
 	});
 });
 

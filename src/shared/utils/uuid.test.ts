@@ -21,4 +21,24 @@ describe('generateUUID', () => {
 	it('36자 문자열을 반환한다', () => {
 		expect(generateUUID()).toHaveLength(36);
 	});
+
+	it('crypto.randomUUID가 없는 환경에서도 폴리필을 통해 UUID를 반환한다', () => {
+		// crypto.randomUUID를 임시로 제거
+		const originalCrypto = global.crypto;
+		Object.defineProperty(global, 'crypto', {
+			value: { ...originalCrypto, randomUUID: undefined },
+			writable: true
+		});
+
+		const uuid = generateUUID();
+		const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+		expect(uuid).toMatch(uuidRegex);
+		expect(uuid).toHaveLength(36);
+
+		// 원상 복구
+		Object.defineProperty(global, 'crypto', {
+			value: originalCrypto,
+			writable: true
+		});
+	});
 });

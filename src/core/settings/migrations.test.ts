@@ -132,3 +132,87 @@ describe('migrateExcludedPaths', () => {
 		expect(result).toBe(false);
 	});
 });
+
+import { migrateMinSimilarity, migrateMemoryMethod, migrateContextWindowTurns, runMigrations } from './migrations';
+
+describe('migrateMinSimilarity', () => {
+	it('migrates 0.65 to 0.0 and returns true', () => {
+		const mockPlugin = { settings: { rag: { minSimilarity: 0.65 } } } as any;
+		expect(migrateMinSimilarity(mockPlugin)).toBe(true);
+		expect(mockPlugin.settings.rag.minSimilarity).toBe(0.0);
+	});
+
+	it('returns false if not 0.65', () => {
+		const mockPlugin = { settings: { rag: { minSimilarity: 0.5 } } } as any;
+		expect(migrateMinSimilarity(mockPlugin)).toBe(false);
+		expect(mockPlugin.settings.rag.minSimilarity).toBe(0.5);
+	});
+});
+
+describe('migrateMemoryMethod', () => {
+	it('migrates useTokenLimit = true to memoryMethod = "tokens"', () => {
+		const mockPlugin = { settings: { chat: { useTokenLimit: true } } } as any;
+		expect(migrateMemoryMethod(mockPlugin)).toBe(true);
+		expect(mockPlugin.settings.chat.memoryMethod).toBe('tokens');
+	});
+
+	it('migrates useTokenLimit = false to memoryMethod = "auto_summary"', () => {
+		const mockPlugin = { settings: { chat: { useTokenLimit: false } } } as any;
+		expect(migrateMemoryMethod(mockPlugin)).toBe(true);
+		expect(mockPlugin.settings.chat.memoryMethod).toBe('auto_summary');
+	});
+
+	it('does nothing if memoryMethod is already defined', () => {
+		const mockPlugin = { settings: { chat: { memoryMethod: 'tokens', useTokenLimit: false } } } as any;
+		expect(migrateMemoryMethod(mockPlugin)).toBe(false);
+		expect(mockPlugin.settings.chat.memoryMethod).toBe('tokens');
+	});
+});
+
+describe('migrateContextWindowTurns', () => {
+	it('migrates values less than 5 to 10', () => {
+		const mockPlugin = { settings: { chat: { contextWindowTurns: 3 } } } as any;
+		expect(migrateContextWindowTurns(mockPlugin)).toBe(true);
+		expect(mockPlugin.settings.chat.contextWindowTurns).toBe(10);
+	});
+
+	it('does nothing if value is 5 or greater', () => {
+		const mockPlugin = { settings: { chat: { contextWindowTurns: 5 } } } as any;
+		expect(migrateContextWindowTurns(mockPlugin)).toBe(false);
+		expect(mockPlugin.settings.chat.contextWindowTurns).toBe(5);
+	});
+});
+
+describe('runMigrations', () => {
+	it('returns true if any migration returns true', () => {
+		const mockPlugin = {
+			settings: {
+				misc: { hasMigratedChatHistory: false },
+				rag: { excludedPaths: [], minSimilarity: 0.65 },
+				chat: { quickActions: [], memoryMethod: undefined, useTokenLimit: true, contextWindowTurns: 3 },
+			},
+			app: { vault: { configDir: '.obsidian' } },
+			commandManager: { registerQuickActions: vi.fn() }
+		} as any;
+		
+		expect(runMigrations(mockPlugin)).toBe(true);
+		expect(mockPlugin.settings.rag.minSimilarity).toBe(0.0);
+		expect(mockPlugin.settings.chat.memoryMethod).toBe('tokens');
+		expect(mockPlugin.settings.chat.contextWindowTurns).toBe(10);
+	});
+
+	it('returns false if no migration returns true', () => {
+		const mockPlugin = {
+			settings: {
+				misc: { hasMigratedChatHistory: true },
+				rag: { excludedPaths: ['.obsidian', 'chatHistory', 'backups'], minSimilarity: 0.5 },
+				chat: { quickActions: [], memoryMethod: 'tokens', contextWindowTurns: 10 },
+			},
+			app: { vault: { configDir: '.obsidian' } },
+			commandManager: { registerQuickActions: vi.fn() }
+		} as any;
+		
+		expect(runMigrations(mockPlugin)).toBe(false);
+	});
+});
+
