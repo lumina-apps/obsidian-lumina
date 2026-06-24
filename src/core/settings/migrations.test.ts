@@ -190,6 +190,7 @@ describe('runMigrations', () => {
 				misc: { hasMigratedChatHistory: false },
 				rag: { excludedPaths: [], minSimilarity: 0.65 },
 				chat: { quickActions: [], memoryMethod: undefined, useTokenLimit: true, contextWindowTurns: 3 },
+				webSearch: undefined,
 			},
 			app: { vault: { configDir: '.obsidian' } },
 			commandManager: { registerQuickActions: vi.fn() }
@@ -207,6 +208,7 @@ describe('runMigrations', () => {
 				misc: { hasMigratedChatHistory: true },
 				rag: { excludedPaths: ['.obsidian', 'chatHistory', 'backups'], minSimilarity: 0.5 },
 				chat: { quickActions: [], memoryMethod: 'tokens', contextWindowTurns: 10 },
+				webSearch: { enabled: false, providers: [], activeProviderId: 'tavily', maxResults: 5, maxContentLength: 3000 },
 			},
 			app: { vault: { configDir: '.obsidian' } },
 			commandManager: { registerQuickActions: vi.fn() }

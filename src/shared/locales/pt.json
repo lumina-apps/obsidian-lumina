@@ -168,6 +168,39 @@
       },
       "experimental": "Recursos experimentais"
     },
+    "webSearch": {
+      "title": "Pesquisa na Web",
+      "desc": "Conecte uma ferramenta de pesquisa na web para LLMs locais acessarem informações em tempo real. Desativado para modelos em nuvem.",
+      "enable": {
+        "name": "Ativar pesquisa na web",
+        "desc": "Permite que LLMs locais usem a ferramenta de pesquisa na web."
+      },
+      "privacyWarning": "🔒 Aviso de privacidade: Quando a pesquisa na web está ativada, partes de suas consultas podem ser enviadas para serviços de pesquisa externos (ex., Tavily, Brave).",
+      "provider": {
+        "name": "Provedor de pesquisa",
+        "desc": "Selecione o provedor de pesquisa a ser usado."
+      },
+      "apiKey": {
+        "name": "Chave API",
+        "desc": "Insira a chave API para o serviço de pesquisa."
+      },
+      "baseUrl": {
+        "name": "URL Base",
+        "desc": "Insira a URL de sua instância de pesquisa local. (ex., http://localhost:8080)"
+      },
+      "googleSearchEngineId": {
+        "name": "ID do Mecanismo de Pesquisa (CX)",
+        "desc": "Insira o ID do seu Mecanismo de Pesquisa Personalizada do Google (CX)."
+      },
+      "maxResults": {
+        "name": "Resultados máximos",
+        "desc": "Número máximo de resultados de pesquisa a serem recuperados. (Padrão: 5)"
+      },
+      "maxContentLength": {
+        "name": "Comprimento máximo do contexto",
+        "desc": "Máximo de caracteres totais dos resultados de pesquisa a serem injetados no contexto do LLM. (Padrão: 3000)"
+      }
+    },
     "chat": {
       "quickSettings": {
         "systemPrompt": "Prompt do Sistema",

@@ -547,6 +547,18 @@ export interface TranslationSettingsMisc {
   factoryReset: TranslationSettingsMiscFactoryReset;
   donate: TranslationSettingsMiscDonate;
 }
+export interface TranslationSettingsWebSearch {
+  title: string;
+  desc: string;
+  enable: { name: string; desc: string; };
+  privacyWarning: string;
+  provider: { name: string; desc: string; };
+  apiKey: { name: string; desc: string; };
+  baseUrl: { name: string; desc: string; };
+  googleSearchEngineId: { name: string; desc: string; };
+  maxResults: { name: string; desc: string; };
+  maxContentLength: { name: string; desc: string; };
+}
 
 export interface TranslationSettingsProviderErrors {
   missingUrl: string;
@@ -578,6 +590,7 @@ export interface TranslationSettings {
   showAdvanced: string;
   connections: TranslationSettingsConnections;
   mcp: TranslationSettingsMcp;
+  webSearch: TranslationSettingsWebSearch;
   chat: TranslationSettingsChat;
   rag: TranslationSettingsRag;
   misc: TranslationSettingsMisc;

@@ -74,6 +74,7 @@ export async function executeLlmCall(
 			toolServerMap,
 			useTextTools,
 			signal,
+			webSearchSettings: plugin.settings.webSearch,
 		});
 		fullResponse = result.fullResponse;
 		tokenUsage = result.tokenUsage;

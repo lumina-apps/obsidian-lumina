@@ -25,6 +25,7 @@ export class SettingsManager {
 			rag: Object.assign({}, DEFAULT_SETTINGS.rag, safeSaved.rag ?? {}),
 			misc: Object.assign({}, DEFAULT_SETTINGS.misc, safeSaved.misc ?? {}),
 			mcp: Object.assign({}, DEFAULT_SETTINGS.mcp, safeSaved.mcp ?? {}),
+			webSearch: Object.assign({}, DEFAULT_SETTINGS.webSearch, safeSaved.webSearch ?? {}),
 		};
 
 		// SecretStorage에서 자격 증명 로드 (LLM Provider)
@@ -46,6 +47,19 @@ export class SettingsManager {
 			const storedSecret = this.app.secretStorage.getSecret(`lumina-mcp-client-${server.id}`);
 			if (storedSecret !== null) {
 				server.authToken = storedSecret;
+			}
+		}
+
+		for (const provider of this.plugin.settings.webSearch.providers) {
+			const apiKey = this.app.secretStorage.getSecret(`lumina-websearch-apikey-${provider.type}`);
+			if (apiKey !== null) {
+				provider.apiKey = apiKey;
+			}
+			if (provider.type === 'google') {
+				const cx = this.app.secretStorage.getSecret(`lumina-websearch-cx-${provider.type}`);
+				if (cx !== null) {
+					provider.googleSearchEngineId = cx;
+				}
 			}
 		}
 
@@ -71,6 +85,26 @@ export class SettingsManager {
 				);
 			}
 			provider.credential = '';
+		}
+
+		for (const provider of settingsToSave.webSearch.providers) {
+			const originalProvider = this.plugin.settings.webSearch.providers.find((p) => p.type === provider.type);
+			if (originalProvider) {
+				this.app.secretStorage.setSecret(
+					`lumina-websearch-apikey-${provider.type}`,
+					originalProvider.apiKey || '',
+				);
+				if (provider.type === 'google') {
+					this.app.secretStorage.setSecret(
+						`lumina-websearch-cx-${provider.type}`,
+						originalProvider.googleSearchEngineId || '',
+					);
+				}
+			}
+			provider.apiKey = '';
+			if (provider.type === 'google') {
+				provider.googleSearchEngineId = '';
+			}
 		}
 
 		// MCP 내장 서버 토큰

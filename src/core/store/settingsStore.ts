@@ -59,9 +59,10 @@ export function initSettingsStore(settings: LuminaSettings): void {
 export function syncSettingsStore(settings: LuminaSettings): void {
 	settingsStore.set({
 		connections: { ...settings.connections, providers: [...settings.connections.providers], embedding: { ...settings.connections.embedding } },
-		chat: { ...settings.chat, systemPrompts: settings.chat.systemPrompts.map(p => ({ ...p })) },
+		chat: { ...settings.chat, quickActions: [...settings.chat.quickActions] },
 		rag: { ...settings.rag, excludedPaths: [...settings.rag.excludedPaths] },
 		misc: { ...settings.misc },
 		mcp: { ...settings.mcp, servers: [...settings.mcp.servers] },
+		webSearch: { ...settings.webSearch, providers: [...settings.webSearch.providers] },
 	});
 }

@@ -168,6 +168,39 @@
       },
       "experimental": "実験的機能"
     },
+    "webSearch": {
+      "title": "ウェブ検索",
+      "desc": "ローカルLLMを使用する際、リアルタイム情報を取得するためにウェブ検索ツールを接続します。クラウドモデル使用時は無効になります。",
+      "enable": {
+        "name": "ウェブ検索を有効にする",
+        "desc": "ローカルLLMが検索ツールを使用できるようにします。"
+      },
+      "privacyWarning": "🔒 プライバシーに関する注意: ウェブ検索が有効になっている場合、プロンプトの一部（検索クエリ）が外部の検索サービス（Tavily、Braveなど）に送信される可能性があります。",
+      "provider": {
+        "name": "検索プロバイダー",
+        "desc": "使用する検索プロバイダーを選択します。"
+      },
+      "apiKey": {
+        "name": "APIキー",
+        "desc": "検索サービスのAPIキーを入力します。"
+      },
+      "baseUrl": {
+        "name": "Base URL",
+        "desc": "ローカル検索インスタンスのURLを入力します。(例: http://localhost:8080)"
+      },
+      "googleSearchEngineId": {
+        "name": "検索エンジン ID (CX)",
+        "desc": "Google Custom Searchの検索エンジンID (CX) を入力します。"
+      },
+      "maxResults": {
+        "name": "最大結果数",
+        "desc": "検索時に取得する最大結果数です。(デフォルト: 5)"
+      },
+      "maxContentLength": {
+        "name": "コンテキスト最大長",
+        "desc": "LLMのコンテキストに挿入される検索結果の最大文字数です。(デフォルト: 3000)"
+      }
+    },
     "chat": {
       "quickSettings": {
         "systemPrompt": "システムプロンプト",

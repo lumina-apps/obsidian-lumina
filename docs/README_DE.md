@@ -20,7 +20,7 @@
 | **🧠 Zero-Config-RAG** | Bietet 100% Offline-Lokale-Embeddings, um Datenlecks zu verhindern. Indiziert deinen Vault automatisch in Echtzeit ohne komplexe Konfigurationen. |
 | **🔗 Smart Discovery** | Findet semantisch relevante Dokumente zur aktuellen Notiz, warnt vor Duplikaten und fügt empfohlene Tags sowie Links mit einem Klick ein. |
 | **⚡ Inline-KI-Schnellaktionen** | Markiere Text im Editor, um ihn sofort zusammenzufassen, zu übersetzen oder Korrektur zu lesen, ohne deinen Schreibfluss zu unterbrechen. |
-| **🚀 Smart-Agent-Modus** | AI plant und führt komplexe Aufgaben wie Suchen, Erstellen, Ändern, Löschen/Verschieben von Notizen und Codeausführung im Sandbox-Modus mit 24 integrierten MCP-Tools autonom aus. |
+| **🚀 Smart-Agent-Modus** | AI plant und führt komplexe Aufgaben wie Suchen, Erstellen, Ändern, Löschen/Verschieben von Notizen und Codeausführung im Sandbox-Modus mit 25 integrierten MCP-Tools autonom aus. |
 | **🔌 MCP-Integration (Client & Server)** | Eine bidirektionale Full-Stack-Integration, mit der Sie externe Tools in Obsidian verwenden (Client) oder externe AIs mit Ihren Notizen interagieren lassen (Server) können. |
 
 ---
@@ -86,7 +86,7 @@ Lumina bietet zwei auf dein Können zugeschnittene Modi. Wähle die Methode, die
 <details>
 <summary><b>🚀 Smart-Agent-Modus</b></summary>
 
-- **Beschreibung:** Nach der Aktivierung bestimmt und orchestriert das LLM autonom 24 integrierte MCP-Tools, um Aufgaben auszuführen. Es kann komplexe, mehrstufige Vorgänge ausführen, indem es das Suchen, Lesen und Schreiben von Notizen, das Abrufen von RAG-Daten, die Ausführung von Code in einer Sandbox und die Integration täglicher Notizen kombiniert.
+- **Beschreibung:** Nach der Aktivierung bestimmt und orchestriert das LLM autonom 25 integrierte MCP-Tools, um Aufgaben auszuführen. Es kann komplexe, mehrstufige Vorgänge ausführen, indem es das Suchen, Lesen und Schreiben von Notizen, das Abrufen von RAG-Daten, die Ausführung von Code in einer Sandbox und die Integration täglicher Notizen kombiniert.
 - **Lokale LLM-Unterstützung:** Implementiert einen dedizierten Parser, der textbasiertes Tool-Prompting unterstützt, sodass der Agent auch in lokalen LLM-Umgebungen reibungslos funktioniert und nicht nur mit leistungsstarken Cloud-Modellen.
 - **Robuste Sicherheit & Benutzerkontrolle (Human-in-the-Loop):** Destruktive Vorgänge wie Inhaltsänderungen, Dateilöschungen oder Codeausführungen können vom Agenten nicht allein verarbeitet werden. Sie werden erst nach einer Abfrage des Benutzers über eine Benutzeroberfläche (Diff-Viewer und Aufgabenwarnungs-Modal) und Erhalt der endgültigen Genehmigung (Akzeptieren) sicher mit Backups zum Schutz vor Überschreiben ausgeführt.
 - **Kostenvermeidung & Limits:** Standardbegrenzungen für die Häufigkeit der Toolnutzung und die Länge der angehängten Zeichen werden angewendet, um KI-Fehlfunktionen oder Endlosschleifen zu verhindern. (Diese Limits können in den erweiterten Einstellungen frei angepasst werden.)
@@ -101,7 +101,8 @@ Lumina bietet zwei auf dein Können zugeschnittene Modi. Wähle die Methode, die
   - Interagiere und arbeite direkt mit KI innerhalb von Obsidian.
   - Verbinde zahlreiche externe MCP-Server (GitHub, lokale Datenbanken, Web-Suche usw.), um sofort riesige Datenmengen zu scrapen und in deinen Notizen zu organisieren.
 - **🖥️ Server-Modus (Externe KI-gesteuert):**
-  - Stellt 24 Tools zur Verfügung, die externen KI-Assistenten (Claude, Cursor usw.) oder der Agentenmodus-KI direkten Zugriff auf deinen Vault gewähren.
+  - Stellt 25 Tools zur Verfügung, die externen KI-Assistenten (Claude, Cursor usw.) oder der Agentenmodus-KI direkten Zugriff auf deinen Vault gewähren.
+  - **Websuche:** `lumina_web_search` (Echtzeit-Internetinformationssuche über verschiedene Suchmaschinen wie Tavily, Exa, Google mit intelligenter Kürzungsunterstützung für lokale LLMs)
   - **Lesen & Suchen:** `read_active_note`, `read_note`, `search_notes` (unterstützt Tag-Filter), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` um der KI umfangreichen Kontext bereitzustellen.
   - **Schreiben & Ändern:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (Notizen/Canvas-Dateien erstellen/ändern, Map of Content (MOC)-Notizen generieren und Binärdateien speichern).
   - **Verwalten & Ausführen:** `delete_note`, `move_note` (verschieben/umbenennen), `execute_code`, `run_note_code_block` (Code in einer Sandbox ausführen).

@@ -102,7 +102,8 @@ Lumina는 여러분의 숙련도에 맞춰 두 가지 모드를 제공합니다.
   - 옵시디언 내부에서 AI와 직접 대화하며 작업
   - 수많은 외부 MCP 서버(GitHub, 로컬 DB, 웹 검색 등)를 연결해 방대한 데이터를 내 노트로 즉시 스크랩 및 정리
 - **🖥️ 서버 모드 (외부 AI가 주도):**
-  - 외부 AI(Claude, Cursor 등) 또는 에이전트모드의 AI가 내 볼트에 직접 접근할 수 있도록 24가지 도구 제공
+  - 외부 AI(Claude, Cursor 등) 또는 에이전트모드의 AI가 내 볼트와 인터넷에 직접 접근할 수 있도록 25가지 도구 제공
+  - **웹 검색:** \`lumina_web_search\` (Tavily, Exa, Google 등 다양한 검색 엔진을 활용해 실시간 인터넷 정보 검색, 로컬 LLM을 위한 스마트 자르기 지원)
   - **조회 및 검색:** `read_active_note`, `read_note`, `search_notes`(태그 필터 지원), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` 등 방대한 문맥을 AI에게 제공
   - **작성 및 수정:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (노트/캔버스 생성 및 수정, MOC 허브 노트 생성, 자동 백링크 연결, 바이너리 파일 저장)
   - **관리 및 실행:** `delete_note`, `move_note`(이동/이름 변경), `execute_code`, `run_note_code_block`(샌드박스 내 코드 실행)

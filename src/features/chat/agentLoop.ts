@@ -32,6 +32,7 @@ export interface AgentLoopOptions {
 	/** true = 로컬/추론 모델 텍스트 파싱 모드, false = bindTools 모드 */
 	useTextTools: boolean;
 	signal?: AbortSignal;
+	webSearchSettings?: import('../../core/settings/settings.types').WebSearchSettings;
 }
 
 export interface AgentLoopResult {
@@ -217,7 +218,7 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 
 		// ── 각 tool call 실행 후 결과 메시지 추가 ───────────────────────────
 		for (const tc of resolvedToolCalls) {
-			messagesForLLM.push(await executeToolCall(tc, mcpManager, toolServerMap, useTextTools));
+			messagesForLLM.push(await executeToolCall(tc, mcpManager, toolServerMap, useTextTools, opts.webSearchSettings));
 		}
 	}
 

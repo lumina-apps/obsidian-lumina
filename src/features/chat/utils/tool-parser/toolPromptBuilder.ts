@@ -62,7 +62,9 @@ Available tools:
 - Multi-step tasks require multiple tool calls across multiple rounds. Plan ahead in <think> tags.
 
 IMPORTANT: ALWAYS explain your reasoning inside <think>...</think> tags BEFORE outputting a <lumina_tool_call> block.
-CRITICAL: If you decide to use a tool, you MUST output the <lumina_tool_call> JSON block immediately after the </think> tag. Do NOT output any conversational text or explanation outside of the <think> tags when calling a tool. Never output <lumina_tool_call> without thinking first.`;
+CRITICAL: If you decide to use a tool, you MUST output the <lumina_tool_call> JSON block immediately after the </think> tag. Do NOT output any conversational text or explanation outside of the <think> tags when calling a tool. Never output <lumina_tool_call> without thinking first.
+CRITICAL: Once you receive the tool result in the next message, if you have enough information to answer the user's request, DO NOT output another <lumina_tool_call>. Just write your final response normally.
+CRITICAL: NEVER output an empty arguments object \`{}\` unless the tool explicitly has no required arguments. ALWAYS provide required arguments like \`query\`.`;
 
 // ─── 공개 API ─────────────────────────────────────────────────────────────────
 

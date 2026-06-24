@@ -168,6 +168,39 @@
       },
       "experimental": "Experimentelle Funktionen"
     },
+    "webSearch": {
+      "title": "Websuche",
+      "desc": "Verbinden Sie ein Websuch-Tool für lokale LLMs, um auf Echtzeitinformationen zuzugreifen. Deaktiviert für Cloud-Modelle.",
+      "enable": {
+        "name": "Websuche aktivieren",
+        "desc": "Erlaubt lokalen LLMs die Nutzung des Websuch-Tools."
+      },
+      "privacyWarning": "🔒 Datenschutzhinweis: Wenn die Websuche aktiviert ist, können Teile Ihrer Suchanfragen an externe Suchdienste (z. B. Tavily, Brave) gesendet werden.",
+      "provider": {
+        "name": "Suchanbieter",
+        "desc": "Wählen Sie den zu verwendenden Suchanbieter aus."
+      },
+      "apiKey": {
+        "name": "API-Schlüssel",
+        "desc": "Geben Sie den API-Schlüssel für den Suchdienst ein."
+      },
+      "baseUrl": {
+        "name": "Basis-URL",
+        "desc": "Geben Sie die URL Ihrer lokalen Suchinstanz ein. (z. B. http://localhost:8080)"
+      },
+      "googleSearchEngineId": {
+        "name": "Suchmaschinen-ID (CX)",
+        "desc": "Geben Sie Ihre Google Custom Search Suchmaschinen-ID (CX) ein."
+      },
+      "maxResults": {
+        "name": "Maximale Ergebnisse",
+        "desc": "Maximale Anzahl der abzurufenden Suchergebnisse. (Standard: 5)"
+      },
+      "maxContentLength": {
+        "name": "Maximale Kontextlänge",
+        "desc": "Maximale Gesamtzeichenanzahl der Suchergebnisse, die in den LLM-Kontext eingefügt werden. (Standard: 3000)"
+      }
+    },
     "chat": {
       "quickSettings": {
         "systemPrompt": "System-Prompt",

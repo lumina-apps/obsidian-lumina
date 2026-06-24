@@ -20,7 +20,7 @@
 | **🧠 RAG Sans Configuration** | Propose des intégrations locales (embeddings) 100% hors ligne pour éviter les fuites de données. Indexe automatiquement votre coffre-fort en temps réel sans configurations complexes. |
 | **🔗 Smart Discovery** | Trouve instantanément des documents hautement pertinents pour la note en cours de rédaction grâce à la recherche sémantique, détecte et signale les doublons potentiels, et insère des tags recommandés et des liens associés en un clic. |
 | **⚡ Actions Rapides IA en Ligne** | Surlignez du texte dans l'éditeur pour résumer, traduire ou corriger instantanément, sans interrompre votre flux de rédaction. |
-| **🚀 Mode Agent Intelligent** | Les LLM planifient et exécutent de manière autonome des tâches complexes telles que la recherche, la création, la modification, la suppression/déplacement de notes et l'exécution de code dans un bac à sable en utilisant 24 outils MCP intégrés. |
+| **🚀 Mode Agent Intelligent** | Les LLM planifient et exécutent de manière autonome des tâches complexes telles que la recherche, la création, la modification, la suppression/déplacement de notes et l'exécution de code dans un bac à sable en utilisant 25 outils MCP intégrés. |
 | **🔌 Intégration MCP (Client & Serveur)** | Une intégration bidirectionnelle et complète (full-stack) qui vous permet d'utiliser des outils externes dans Obsidian (Client) ou de laisser des IA externes interagir avec vos notes (Serveur). |
 
 ---
@@ -86,7 +86,7 @@ Lumina propose deux modes adaptés à votre niveau. Choisissez celui qui vous co
 <details>
 <summary><b>🚀 Mode Agent Intelligent</b></summary>
 
-- **Description:** Une fois activé, le LLM détermine et orchestre de manière autonome 24 outils MCP intégrés pour effectuer des tâches. Il peut réaliser des opérations complexes en plusieurs étapes en combinant la recherche, la lecture et l'écriture de notes, la récupération RAG, l'exécution de code dans un bac à sable et l'intégration de notes quotidiennes.
+- **Description:** Une fois activé, le LLM détermine et orchestre de manière autonome 25 outils MCP intégrés pour effectuer des tâches. Il peut réaliser des opérations complexes en plusieurs étapes en combinant la recherche, la lecture et l'écriture de notes, la récupération RAG, l'exécution de code dans un bac à sable et l'intégration de notes quotidiennes.
 - **Support LLM local:** Implémente un analyseur dédié qui prend en charge le prompt d'outils textuels, permettant à l'agent de fonctionner de manière fluide même dans des environnements LLM locaux, et pas seulement avec des modèles cloud haute performance.
 - **Sécurité robuste et contrôle de l'utilisateur (Human-in-the-Loop):** Les opérations destructrices telles que la modification de contenu, la suppression de fichiers ou l'exécution de code ne peuvent pas être traitées par l'agent seul. Elles sont exécutées en toute sécurité avec des sauvegardes de protection contre l'écriture uniquement après avoir invité l'utilisateur avec une interface graphique (visualiseur de différences et fenêtre d'avertissement de tâche) et reçu l'approbation finale (Accepter).
 - **Prévention des coûts et limites:** Des limites par défaut sur le nombre d'utilisations des outils et la longueur des caractères ajoutés sont appliquées pour éviter les dysfonctionnements de l'IA ou les boucles infinies. (Ces limites peuvent être ajustées librement dans les paramètres avancés).
@@ -101,7 +101,8 @@ Lumina propose deux modes adaptés à votre niveau. Choisissez celui qui vous co
   - Interagissez et travaillez directement avec l'IA au sein d'Obsidian.
   - Connectez de nombreux serveurs MCP externes (GitHub, bases de données locales, recherche web, etc.) pour extraire et organiser instantanément de vastes quantités de données dans vos notes.
 - **🖥️ Mode Serveur (Dirigé par une IA Externe) :**
-  - Fournit 24 outils permettant à des assistants IA externes (Claude, Cursor, etc.) ou à l'IA en Mode Agent d'accéder directement à votre coffre-fort.
+  - Fournit 25 outils permettant à des assistants IA externes (Claude, Cursor, etc.) ou à l'IA en Mode Agent d'accéder directement à votre coffre-fort.
+  - **Recherche Web:** `lumina_web_search` (Recherche d\'informations sur Internet en temps réel à l\'aide de divers moteurs de recherche tels que Tavily, Exa, Google, avec prise en charge de la troncature intelligente pour les LLM locaux)
   - **Lecture & Recherche :** `read_active_note`, `read_note`, `search_notes` (prend en charge le filtrage par tags), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` pour fournir un contexte étendu à l'IA.
   - **Écriture & Modification :** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (créer/modifier des notes/canevas (canvas), générer des notes MOC (Map of Content) et sauvegarder des fichiers binaires).
   - **Gestion & Exécution :** `delete_note`, `move_note` (déplacer/renommer), `execute_code`, `run_note_code_block` (exécuter du code dans un bac à sable).

@@ -168,6 +168,39 @@
       },
       "experimental": "실험적 기능"
     },
+    "webSearch": {
+      "title": "웹 검색",
+      "desc": "로컬 LLM을 사용할 때 실시간 정보를 얻기 위해 웹 검색 도구를 연결합니다. 클라우드 모델 사용 시 비활성화됩니다.",
+      "enable": {
+        "name": "웹 검색 활성화",
+        "desc": "로컬 LLM이 검색 툴을 사용하도록 허용합니다."
+      },
+      "privacyWarning": "🔒 프라이버시 주의: 웹 검색이 활성화되면 사용자의 프롬프트 중 일부(검색 쿼리)가 외부 검색 서비스(Tavily, Brave 등)로 전송될 수 있습니다.",
+      "provider": {
+        "name": "검색 서비스",
+        "desc": "사용할 검색 제공자를 선택합니다."
+      },
+      "apiKey": {
+        "name": "API Key",
+        "desc": "검색 서비스의 API 키를 입력하세요."
+      },
+      "baseUrl": {
+        "name": "Base URL",
+        "desc": "로컬 검색 인스턴스의 URL을 입력합니다. (예: http://localhost:8080)"
+      },
+      "googleSearchEngineId": {
+        "name": "검색 엔진 ID (CX)",
+        "desc": "Google Custom Search 설정의 검색 엔진 ID(CX)를 입력합니다."
+      },
+      "maxResults": {
+        "name": "최대 결과 수",
+        "desc": "검색 시 가져올 최대 결과 개수입니다. (기본값: 5)"
+      },
+      "maxContentLength": {
+        "name": "컨텍스트 최대 길이",
+        "desc": "LLM 컨텍스트에 주입될 검색결과의 전체 최대 글자 수입니다. (기본값: 3000)"
+      }
+    },
     "chat": {
       "quickSettings": {
         "systemPrompt": "시스템 프롬프트",

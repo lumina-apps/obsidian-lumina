@@ -168,6 +168,39 @@
       },
       "experimental": "实验性功能"
     },
+    "webSearch": {
+      "title": "网络搜索",
+      "desc": "使用本地LLM时连接网络搜索工具以获取实时信息。使用云端模型时将被禁用。",
+      "enable": {
+        "name": "启用网络搜索",
+        "desc": "允许本地LLM使用搜索工具。"
+      },
+      "privacyWarning": "🔒 隐私注意：启用网络搜索后，您的部分提示词（搜索查询）可能会发送到外部搜索服务（如Tavily, Brave等）。",
+      "provider": {
+        "name": "搜索服务提供商",
+        "desc": "选择要使用的搜索提供商。"
+      },
+      "apiKey": {
+        "name": "API密钥",
+        "desc": "请输入搜索服务的API密钥。"
+      },
+      "baseUrl": {
+        "name": "Base URL",
+        "desc": "请输入本地搜索实例的URL。(例如: http://localhost:8080)"
+      },
+      "googleSearchEngineId": {
+        "name": "搜索引擎 ID (CX)",
+        "desc": "请输入您的 Google 自定义搜索引擎 ID (CX)。"
+      },
+      "maxResults": {
+        "name": "最大结果数",
+        "desc": "搜索时获取的最大结果数量。(默认值: 5)"
+      },
+      "maxContentLength": {
+        "name": "上下文最大长度",
+        "desc": "注入到LLM上下文中的搜索结果的最大字符数。(默认值: 3000)"
+      }
+    },
     "chat": {
       "quickSettings": {
         "systemPrompt": "系统提示词",

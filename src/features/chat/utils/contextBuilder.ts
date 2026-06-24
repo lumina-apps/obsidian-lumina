@@ -15,6 +15,7 @@ import { ChatAttachmentHandler } from './ChatAttachmentHandler';
 import { resolveRagSearchFlag, performRagSearch } from './ragSearchHelper';
 import { collectMcpTools, injectToolPrompts } from './mcpToolHelper';
 import { injectMultimodalImages } from './multimodalHelper';
+import { collectWebSearchTool } from './webSearchToolHelper';
 
 export interface ResolvedContext {
 	llmMessages: ChatMessage[];
@@ -117,6 +118,17 @@ export async function buildLlmContext(
 	const modelName = resolvedModelId.toLowerCase();
 	const isReasoningModel = modelName.includes('reasoner') || modelName.includes('r1');
 	const useTextTools = useLocal || isReasoningModel;
+
+	const webSearchTool = collectWebSearchTool({
+		webSearch: plugin.settings.webSearch,
+		isLocalProvider: useLocal,
+		useTextTools: useTextTools,
+	});
+
+	if (webSearchTool) {
+		mcpTools.push(webSearchTool);
+		toolServerMap[webSearchTool.name] = '__web_search__';
+	}
 
 	let llmMessages: ChatMessage[] = buildMessages(history, userText, {
 		chat: chatSettings,

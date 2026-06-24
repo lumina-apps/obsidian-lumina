@@ -168,6 +168,39 @@
       },
       "experimental": "實驗性功能"
     },
+    "webSearch": {
+      "title": "網路搜尋",
+      "desc": "使用本地LLM時連接網路搜尋工具以獲取即時資訊。使用雲端模型時將被停用。",
+      "enable": {
+        "name": "啟用網路搜尋",
+        "desc": "允許本地LLM使用搜尋工具。"
+      },
+      "privacyWarning": "🔒 隱私注意：啟用網路搜尋後，您的部分提示詞（搜尋查詢）可能會發送到外部搜尋服務（如Tavily, Brave等）。",
+      "provider": {
+        "name": "搜尋服務提供商",
+        "desc": "選擇要使用的搜尋提供商。"
+      },
+      "apiKey": {
+        "name": "API金鑰",
+        "desc": "請輸入搜尋服務的API金鑰。"
+      },
+      "baseUrl": {
+        "name": "Base URL",
+        "desc": "請輸入本地搜尋實例的URL。(例如: http://localhost:8080)"
+      },
+      "googleSearchEngineId": {
+        "name": "搜尋引擎 ID (CX)",
+        "desc": "請輸入您的 Google 自訂搜尋引擎 ID (CX)。"
+      },
+      "maxResults": {
+        "name": "最大結果數",
+        "desc": "搜尋時獲取的最大結果數量。(預設值: 5)"
+      },
+      "maxContentLength": {
+        "name": "上下文最大長度",
+        "desc": "注入到LLM上下文中的搜尋結果的最大字元數。(預設值: 3000)"
+      }
+    },
     "chat": {
       "quickSettings": {
         "systemPrompt": "系統提示詞",

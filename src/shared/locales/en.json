@@ -168,6 +168,39 @@
       },
       "experimental": "Experimental"
     },
+    "webSearch": {
+      "title": "Web Search",
+      "desc": "Connect a web search tool for local LLMs to access real-time information. Disabled for cloud models.",
+      "enable": {
+        "name": "Enable Web Search",
+        "desc": "Allow local LLMs to use the web search tool."
+      },
+      "privacyWarning": "🔒 Privacy Notice: When web search is enabled, parts of your prompt (search queries) may be sent to external search services (e.g., Tavily, Brave).",
+      "provider": {
+        "name": "Search Provider",
+        "desc": "Select the search provider to use."
+      },
+      "apiKey": {
+        "name": "API Key",
+        "desc": "Enter the API key for the search service."
+      },
+      "baseUrl": {
+        "name": "Base URL",
+        "desc": "Enter the URL of your local search instance. (e.g., http://localhost:8080)"
+      },
+      "googleSearchEngineId": {
+        "name": "Search Engine ID (CX)",
+        "desc": "Enter your Google Custom Search Engine ID (CX)."
+      },
+      "maxResults": {
+        "name": "Max Results",
+        "desc": "Maximum number of search results to retrieve. (Default: 5)"
+      },
+      "maxContentLength": {
+        "name": "Max Context Length",
+        "desc": "Maximum total characters of search results to inject into the LLM context. (Default: 3000)"
+      }
+    },
     "chat": {
       "quickSettings": {
         "systemPrompt": "System Prompt",

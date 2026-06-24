@@ -140,3 +140,24 @@ export interface McpServerConfig {
 	enabled: boolean;
 	status: 'disconnected' | 'connecting' | 'connected' | 'error';
 }
+
+// ─── Web Search ───────────────────────────────────
+
+export type WebSearchProviderType = 'tavily' | 'brave' | 'searxng' | 'exa' | 'google' | 'serpapi';
+
+export const WEB_SEARCH_PROVIDER_LABELS: Record<WebSearchProviderType, string> = {
+	tavily: 'Tavily Search',
+	brave: 'Brave Search',
+	searxng: 'SearXNG (Local/Self-hosted)',
+	exa: 'Exa (Semantic Search)',
+	google: 'Google Custom Search',
+	serpapi: 'SerpApi',
+};
+
+export interface WebSearchProviderConfig {
+	type: WebSearchProviderType;
+	apiKey?: string;
+	baseUrl?: string;
+	googleSearchEngineId?: string; // Only for Google Custom Search (CX)
+}
+

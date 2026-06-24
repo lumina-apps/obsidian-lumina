@@ -106,4 +106,17 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		clientToolsEnabled: true,
 		agentRespectRagExclusions: true,
 	},
+
+	// ── Section 6: Web Search ────────────────────────────────────────────────
+	webSearch: {
+		enabled: false,
+		providers: [
+			{ type: 'tavily', apiKey: '' },
+			{ type: 'brave', apiKey: '' },
+			{ type: 'searxng', baseUrl: 'http://localhost:8080' },
+		],
+		activeProviderId: 'tavily',
+		maxResults: 5,
+		maxContentLength: 3000,
+	},
 };

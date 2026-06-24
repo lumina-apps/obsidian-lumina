@@ -153,6 +153,28 @@ export function migrateContextWindowTurns(plugin: LuminaPlugin): boolean {
 }
 
 /**
+ * Web Search 마이그레이션.
+ * 기존 사용자 설정에 webSearch 속성이 없으면 기본값을 주입합니다.
+ */
+export function migrateWebSearch(plugin: LuminaPlugin): boolean {
+	if (!plugin.settings.webSearch) {
+		plugin.settings.webSearch = {
+			enabled: false,
+			providers: [
+				{ type: 'tavily', apiKey: '' },
+				{ type: 'brave', apiKey: '' },
+				{ type: 'searxng', baseUrl: 'http://localhost:8080' },
+			],
+			activeProviderId: 'tavily',
+			maxResults: 5,
+			maxContentLength: 3000,
+		};
+		return true;
+	}
+	return false;
+}
+
+/**
  * 모든 마이그레이션을 순차 실행하고 변경이 있으면 저장합니다.
  * @returns 저장이 필요하면 true
  */
@@ -163,5 +185,6 @@ export function runMigrations(plugin: LuminaPlugin): boolean {
 	if (migrateMinSimilarity(plugin)) needsSave = true;
 	if (migrateMemoryMethod(plugin)) needsSave = true;
 	if (migrateContextWindowTurns(plugin)) needsSave = true;
+	if (migrateWebSearch(plugin)) needsSave = true;
 	return needsSave;
 }

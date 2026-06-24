@@ -28,6 +28,7 @@ import { renderChatTab } from './tabs/ChatTab';
 import { renderRagTab } from './tabs/RagTab';
 import { renderMcpTab } from './tabs/McpTab';
 import { renderMiscTab } from './tabs/MiscTab';
+import { renderWebSearchTab } from './tabs/web-search/WebSearchTab';
 import { renderDonationFooter } from './tabs/Footer';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -41,10 +42,10 @@ export {
 	addModelSelector,
 	FUZZY_MODAL_THRESHOLD,
 	MCP_REFRESH_DELAY,
-	REASONING_MODEL_NOTICE_DURATION,
 } from '../../shared/utils/settingHelpers';
+export const REASONING_MODEL_NOTICE_DURATION = 15000;
 
-export type TabId = 'connections' | 'chat' | 'rag' | 'mcp' | 'misc';
+export type TabId = 'connections' | 'chat' | 'rag' | 'mcp' | 'webSearch' | 'misc';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Class
@@ -69,6 +70,7 @@ export class LuminaSettingTab extends PluginSettingTab {
 			{ id: 'chat', label: t('settings.chat.title') },
 			{ id: 'rag', label: t('settings.rag.title') },
 			{ id: 'mcp', label: t('settings.mcp.title'), badge: t('settings.mcp.experimental') },
+			{ id: 'webSearch', label: t('settings.webSearch.title') },
 			{ id: 'misc', label: t('settings.misc.title') },
 		];
 	}
@@ -182,6 +184,7 @@ export class LuminaSettingTab extends PluginSettingTab {
 			case 'chat': return renderChatTab(this, el);
 			case 'rag': return renderRagTab(this, el);
 			case 'mcp': return renderMcpTab(this, el);
+			case 'webSearch': return renderWebSearchTab(this, el);
 			case 'misc': return renderMiscTab(this, el);
 		}
 	}

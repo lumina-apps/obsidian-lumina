@@ -7,6 +7,8 @@ import { debugLogger } from '../../../shared/debugLogger';
 import { extractToolResultText, truncateToolResult } from '../../../shared/utils/toolResultFormatter';
 import type { ChatMessage, ToolCall } from '../../../shared/types/llm.types';
 import type { McpManager } from '../../../core/mcp/mcpManager';
+import { executeWebSearch } from '../../web-search/webSearchTool';
+import type { WebSearchSettings } from '../../../core/settings/settings.types';
 
 /** 단일 tool call 실행 → tool result ChatMessage 반환 */
 export async function executeToolCall(
@@ -14,6 +16,7 @@ export async function executeToolCall(
 	mcpManager: McpManager | null,
 	toolServerMap: Record<string, string>,
 	useTextTools: boolean,
+	webSearchSettings?: WebSearchSettings,
 ): Promise<ChatMessage> {
 	const toolMsgRole = useTextTools ? 'user' : 'tool';
 
@@ -30,7 +33,11 @@ export async function executeToolCall(
 		});
 
 		let toolResult: unknown;
-		if (resolvedServerId && mcpManager) {
+		if (resolvedServerId === '__web_search__') {
+			if (!webSearchSettings) throw new Error('Web search settings not provided.');
+			const resStr = await executeWebSearch(cleanArgs, webSearchSettings);
+			toolResult = { content: [{ type: 'text', text: resStr }] };
+		} else if (resolvedServerId && mcpManager) {
 			toolResult = await mcpManager.callTool(resolvedServerId, tc.name, cleanArgs);
 		} else {
 			toolResult = {

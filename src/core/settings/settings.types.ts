@@ -165,6 +165,21 @@ export interface McpSettings {
 	agentRespectRagExclusions: boolean;
 }
 
+// ─── Section 6: Web Search ──────────────────────────────────────────────────
+
+export interface WebSearchSettings {
+	/** 웹 검색 활성화 여부 */
+	enabled: boolean;
+	/** 설정된 프로바이더 설정들 */
+	providers: import('../../shared/types/settings.types').WebSearchProviderConfig[];
+	/** 현재 선택된 프로바이더 타입 */
+	activeProviderId: import('../../shared/types/settings.types').WebSearchProviderType;
+	/** 반환할 최대 결과 수 */
+	maxResults: number;
+	/** 컨텍스트에 주입할 검색결과 최대 텍스트 길이 */
+	maxContentLength: number;
+}
+
 // ─── Root Settings ────────────────────────────────────────────────────────────
 
 export interface LuminaSettings {
@@ -173,4 +188,5 @@ export interface LuminaSettings {
 	rag: RagSettings;
 	misc: MiscSettings;
 	mcp: McpSettings;
+	webSearch: WebSearchSettings;
 }
