@@ -2,6 +2,17 @@ import { requestUrl } from 'obsidian';
 import type { WebSearchProviderConfig } from '../../../shared/types/settings.types';
 import type { IWebSearchProvider, SearchResult } from '../webSearchService';
 
+interface SearxngResult {
+	title?: string;
+	url?: string;
+	content?: string;
+	snippet?: string;
+}
+
+interface SearxngSearchResponse {
+	results?: SearxngResult[];
+}
+
 export function createSearxngProvider(config: WebSearchProviderConfig): IWebSearchProvider {
 	if (!config.baseUrl?.trim()) {
 		throw new Error('SearXNG base URL is missing.');
@@ -21,12 +32,12 @@ export function createSearxngProvider(config: WebSearchProviderConfig): IWebSear
 					method: 'GET',
 				});
 
-				const data = response.json;
+				const data = response.json as unknown as SearxngSearchResponse;
 				if (!data || !data.results || !Array.isArray(data.results)) {
 					throw new Error('Invalid response from SearXNG API');
 				}
 
-				return data.results.map((r: any) => ({
+				return data.results.map((r: SearxngResult) => ({
 					title: r.title || '',
 					url: r.url || '',
 					content: r.content || r.snippet || '',

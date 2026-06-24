@@ -2,6 +2,17 @@ import { requestUrl } from 'obsidian';
 import type { WebSearchProviderConfig } from '../../../shared/types/settings.types';
 import type { IWebSearchProvider, SearchResult } from '../webSearchService';
 
+interface ExaResult {
+	title?: string;
+	url?: string;
+	text?: string;
+	summary?: string;
+}
+
+interface ExaSearchResponse {
+	results?: ExaResult[];
+}
+
 export function createExaProvider(config: WebSearchProviderConfig): IWebSearchProvider {
 	return {
 		search: async (query: string, maxResults: number): Promise<SearchResult[]> => {
@@ -26,12 +37,12 @@ export function createExaProvider(config: WebSearchProviderConfig): IWebSearchPr
 					}),
 				});
 
-				const json = response.json;
-				if (!json.results || !Array.isArray(json.results)) {
+				const json = response.json as unknown as ExaSearchResponse;
+				if (!json || !json.results || !Array.isArray(json.results)) {
 					return [];
 				}
 
-				return json.results.map((item: any) => ({
+				return json.results.map((item: ExaResult) => ({
 					title: item.title || '',
 					url: item.url || '',
 					content: item.text || item.summary || '',

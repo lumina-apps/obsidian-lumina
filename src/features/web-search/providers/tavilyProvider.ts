@@ -2,6 +2,16 @@ import { requestUrl } from 'obsidian';
 import type { WebSearchProviderConfig } from '../../../shared/types/settings.types';
 import type { IWebSearchProvider, SearchResult } from '../webSearchService';
 
+interface TavilyResult {
+	title?: string;
+	url?: string;
+	content?: string;
+}
+
+interface TavilySearchResponse {
+	results?: TavilyResult[];
+}
+
 export function createTavilyProvider(config: WebSearchProviderConfig): IWebSearchProvider {
 	if (!config.apiKey?.trim()) {
 		throw new Error('Tavily API key is missing.');
@@ -27,12 +37,12 @@ export function createTavilyProvider(config: WebSearchProviderConfig): IWebSearc
 					}),
 				});
 
-				const data = response.json;
+				const data = response.json as unknown as TavilySearchResponse;
 				if (!data || !data.results || !Array.isArray(data.results)) {
 					throw new Error('Invalid response from Tavily API');
 				}
 
-				return data.results.map((r: any) => ({
+				return data.results.map((r: TavilyResult) => ({
 					title: r.title || '',
 					url: r.url || '',
 					content: r.content || '',

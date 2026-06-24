@@ -2,6 +2,16 @@ import { requestUrl } from 'obsidian';
 import type { WebSearchProviderConfig } from '../../../shared/types/settings.types';
 import type { IWebSearchProvider, SearchResult } from '../webSearchService';
 
+interface SerpapiOrganicResult {
+	title?: string;
+	link?: string;
+	snippet?: string;
+}
+
+interface SerpapiSearchResponse {
+	organic_results?: SerpapiOrganicResult[];
+}
+
 export function createSerpapiProvider(config: WebSearchProviderConfig): IWebSearchProvider {
 	return {
 		search: async (query: string, maxResults: number): Promise<SearchResult[]> => {
@@ -21,12 +31,12 @@ export function createSerpapiProvider(config: WebSearchProviderConfig): IWebSear
 					method: 'GET',
 				});
 
-				const json = response.json;
-				if (!json.organic_results || !Array.isArray(json.organic_results)) {
+				const json = response.json as unknown as SerpapiSearchResponse;
+				if (!json || !json.organic_results || !Array.isArray(json.organic_results)) {
 					return [];
 				}
 
-				return json.organic_results.map((item: any) => ({
+				return json.organic_results.map((item: SerpapiOrganicResult) => ({
 					title: item.title || '',
 					url: item.link || '',
 					content: item.snippet || '',

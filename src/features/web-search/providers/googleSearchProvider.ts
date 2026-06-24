@@ -2,6 +2,16 @@ import { requestUrl } from 'obsidian';
 import type { WebSearchProviderConfig } from '../../../shared/types/settings.types';
 import type { IWebSearchProvider, SearchResult } from '../webSearchService';
 
+interface GoogleSearchResultItem {
+	title?: string;
+	link?: string;
+	snippet?: string;
+}
+
+interface GoogleSearchResponse {
+	items?: GoogleSearchResultItem[];
+}
+
 export function createGoogleSearchProvider(config: WebSearchProviderConfig): IWebSearchProvider {
 	return {
 		search: async (query: string, maxResults: number): Promise<SearchResult[]> => {
@@ -21,12 +31,12 @@ export function createGoogleSearchProvider(config: WebSearchProviderConfig): IWe
 					method: 'GET',
 				});
 
-				const json = response.json;
-				if (!json.items || !Array.isArray(json.items)) {
+				const json = response.json as unknown as GoogleSearchResponse;
+				if (!json || !json.items || !Array.isArray(json.items)) {
 					return [];
 				}
 
-				return json.items.map((item: any) => ({
+				return json.items.map((item: GoogleSearchResultItem) => ({
 					title: item.title || '',
 					url: item.link || '',
 					content: item.snippet || '',

@@ -122,7 +122,6 @@ export async function buildLlmContext(
 	const webSearchTool = collectWebSearchTool({
 		webSearch: plugin.settings.webSearch,
 		isLocalProvider: useLocal,
-		useTextTools: useTextTools,
 	});
 
 	if (webSearchTool) {

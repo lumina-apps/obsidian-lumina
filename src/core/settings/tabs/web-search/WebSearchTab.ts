@@ -9,14 +9,14 @@ export function renderWebSearchTab(tab: LuminaSettingTab, el: HTMLElement): void
 	const { plugin } = tab;
 	const { webSearch } = plugin.settings;
 
-	tab.sectionHeading(el, t('settings.webSearch.title' as any));
+	tab.sectionHeading(el, t('settings.webSearch.title'));
 
 	const descEl = el.createEl('p', { cls: 'setting-item-description' });
-	descEl.setText(t('settings.webSearch.desc' as any));
+	descEl.setText(t('settings.webSearch.desc'));
 
 	new Setting(el)
-		.setName(t('settings.webSearch.enable.name' as any))
-		.setDesc(t('settings.webSearch.enable.desc' as any))
+		.setName(t('settings.webSearch.enable.name'))
+		.setDesc(t('settings.webSearch.enable.desc'))
 		.addToggle((toggle) =>
 			toggle.setValue(webSearch.enabled).onChange(async (value) => {
 				webSearch.enabled = value;
@@ -26,11 +26,11 @@ export function renderWebSearchTab(tab: LuminaSettingTab, el: HTMLElement): void
 
 	if (!webSearch.enabled) return;
 
-	tab.infoBox(el, t('settings.webSearch.privacyWarning' as any), 'warning');
+	tab.infoBox(el, t('settings.webSearch.privacyWarning'), 'warning');
 
 	new Setting(el)
-		.setName(t('settings.webSearch.provider.name' as any))
-		.setDesc(t('settings.webSearch.provider.desc' as any))
+		.setName(t('settings.webSearch.provider.name'))
+		.setDesc(t('settings.webSearch.provider.desc'))
 		.addDropdown((dropdown) => {
 			for (const [type, label] of Object.entries(WEB_SEARCH_PROVIDER_LABELS)) {
 				dropdown.addOption(type, label);
@@ -47,8 +47,8 @@ export function renderWebSearchTab(tab: LuminaSettingTab, el: HTMLElement): void
 	if (activeConfig) {
 		if (webSearch.activeProviderId === 'searxng') {
 			new Setting(el)
-				.setName(t('settings.webSearch.baseUrl.name' as any))
-				.setDesc(t('settings.webSearch.baseUrl.desc' as any))
+				.setName(t('settings.webSearch.baseUrl.name'))
+				.setDesc(t('settings.webSearch.baseUrl.desc'))
 				.addText((text) =>
 					text
 						.setPlaceholder('http://localhost:8080')
@@ -60,8 +60,8 @@ export function renderWebSearchTab(tab: LuminaSettingTab, el: HTMLElement): void
 				);
 		} else {
 			new Setting(el)
-				.setName(t('settings.webSearch.apiKey.name' as any))
-				.setDesc(t('settings.webSearch.apiKey.desc' as any))
+				.setName(t('settings.webSearch.apiKey.name'))
+				.setDesc(t('settings.webSearch.apiKey.desc'))
 				.addText((text) => {
 					text.inputEl.type = 'password';
 					text
@@ -75,8 +75,8 @@ export function renderWebSearchTab(tab: LuminaSettingTab, el: HTMLElement): void
 
 			if (webSearch.activeProviderId === 'google') {
 				new Setting(el)
-					.setName(t('settings.webSearch.googleSearchEngineId.name' as any))
-					.setDesc(t('settings.webSearch.googleSearchEngineId.desc' as any))
+					.setName(t('settings.webSearch.googleSearchEngineId.name'))
+					.setDesc(t('settings.webSearch.googleSearchEngineId.desc'))
 					.addText((text) => {
 						text.inputEl.type = 'password';
 						text
@@ -93,12 +93,12 @@ export function renderWebSearchTab(tab: LuminaSettingTab, el: HTMLElement): void
 
 	addSliderWithInput(
 		new Setting(el)
-			.setName(t('settings.webSearch.maxResults.name' as any))
-			.setDesc(t('settings.webSearch.maxResults.desc' as any)),
+			.setName(t('settings.webSearch.maxResults.name'))
+			.setDesc(t('settings.webSearch.maxResults.desc')),
 		{ min: 1, max: 10, step: 1, value: webSearch.maxResults },
-		async (val: number) => {
+		(val: number) => {
 			webSearch.maxResults = val;
-			await tab.saveAndSync();
+			void tab.saveAndSync();
 		},
 	);
 
@@ -106,12 +106,12 @@ export function renderWebSearchTab(tab: LuminaSettingTab, el: HTMLElement): void
 		tab.advancedLabel(el);
 		addSliderWithInput(
 			new Setting(el)
-				.setName(t('settings.webSearch.maxContentLength.name' as any))
-				.setDesc(t('settings.webSearch.maxContentLength.desc' as any)),
+				.setName(t('settings.webSearch.maxContentLength.name'))
+				.setDesc(t('settings.webSearch.maxContentLength.desc')),
 			{ min: 500, max: 10000, step: 500, value: webSearch.maxContentLength },
-			async (val: number) => {
+			(val: number) => {
 				webSearch.maxContentLength = val;
-				await tab.saveAndSync();
+				void tab.saveAndSync();
 			},
 		);
 	}

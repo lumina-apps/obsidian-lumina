@@ -2,6 +2,18 @@ import { requestUrl } from 'obsidian';
 import type { WebSearchProviderConfig } from '../../../shared/types/settings.types';
 import type { IWebSearchProvider, SearchResult } from '../webSearchService';
 
+interface BraveWebResult {
+	title?: string;
+	url?: string;
+	description?: string;
+}
+
+interface BraveSearchResponse {
+	web?: {
+		results?: BraveWebResult[];
+	};
+}
+
 export function createBraveProvider(config: WebSearchProviderConfig): IWebSearchProvider {
 	if (!config.apiKey?.trim()) {
 		throw new Error('Brave API key is missing.');
@@ -24,14 +36,14 @@ export function createBraveProvider(config: WebSearchProviderConfig): IWebSearch
 					},
 				});
 
-				const data = response.json;
+				const data = response.json as unknown as BraveSearchResponse;
 				if (!data || !data.web || !data.web.results || !Array.isArray(data.web.results)) {
 					// Results may be empty
 					if (data && !data.web) return [];
 					throw new Error('Invalid response from Brave API');
 				}
 
-				return data.web.results.map((r: any) => ({
+				return data.web.results.map((r: BraveWebResult) => ({
 					title: r.title || '',
 					url: r.url || '',
 					content: r.description || '',
