@@ -170,7 +170,6 @@
     },
     "webSearch": {
       "title": "Websuche",
-      "desc": "Verbinden Sie ein Websuch-Tool für lokale LLMs, um auf Echtzeitinformationen zuzugreifen. Deaktiviert für Cloud-Modelle.",
       "enable": {
         "name": "Websuche aktivieren",
         "desc": "Erlaubt lokalen LLMs die Nutzung des Websuch-Tools."

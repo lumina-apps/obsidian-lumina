@@ -102,7 +102,7 @@ Lumina propose deux modes adaptés à votre niveau. Choisissez celui qui vous co
   - Connectez de nombreux serveurs MCP externes (GitHub, bases de données locales, recherche web, etc.) pour extraire et organiser instantanément de vastes quantités de données dans vos notes.
 - **🖥️ Mode Serveur (Dirigé par une IA Externe) :**
   - Fournit 25 outils permettant à des assistants IA externes (Claude, Cursor, etc.) ou à l'IA en Mode Agent d'accéder directement à votre coffre-fort.
-  - **Recherche Web:** `lumina_web_search` (Recherche d\'informations sur Internet en temps réel à l\'aide de divers moteurs de recherche tels que Tavily, Exa, Google, avec prise en charge de la troncature intelligente pour les LLM locaux)
+  - **Recherche Web:** `lumina_web_search` (Recherche d\'informations sur Internet en temps réel à l\'aide de divers moteurs de recherche tels que Tavily, Exa, Google, avec prise en charge de la troncature intelligente)
   - **Lecture & Recherche :** `read_active_note`, `read_note`, `search_notes` (prend en charge le filtrage par tags), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` pour fournir un contexte étendu à l'IA.
   - **Écriture & Modification :** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (créer/modifier des notes/canevas (canvas), générer des notes MOC (Map of Content) et sauvegarder des fichiers binaires).
   - **Gestion & Exécution :** `delete_note`, `move_note` (déplacer/renommer), `execute_code`, `run_note_code_block` (exécuter du code dans un bac à sable).

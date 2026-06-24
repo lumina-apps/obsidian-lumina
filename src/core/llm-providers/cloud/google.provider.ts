@@ -213,8 +213,10 @@ export class GoogleProvider implements ILLMProvider {
 					for (const part of parts) {
 						if (part.text) {
 							fullContent += part.text;
-							onChunk(part.text, chunk);
 						}
+						// 어떤 part든 원본 chunkData가 유실되지 않도록 콜백 호출
+						// (상위 chat 함수에서 functionCall 파싱을 위해 chunkData가 필요함)
+						onChunk(part.text || '', chunk);
 					}
 				}
 			}

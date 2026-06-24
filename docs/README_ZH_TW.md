@@ -102,7 +102,7 @@ Lumina 根據您的熟練程度提供兩種模式。選擇適合您的方式！
   - 連接眾多外部 MCP 伺服器（GitHub、本地資料庫、網路搜尋等），將海量資料即時抓取並整理到您的筆記中。
 - **🖥️ 伺服器端模式 (外部 AI 主導):**
   - 提供 25 個工具，允許外部 AI 助手（Claude、Cursor 等）或代理模式的 AI 直接存取您的儲存庫。
-  - **網頁搜尋:** `lumina_web_search` (使用Tavily、Exa、Google等各種搜尋引擎進行即時網際網路資訊搜尋，支援本地LLM的智慧截斷)
+  - **網頁搜尋:** `lumina_web_search` (使用Tavily、Exa、Google等各種搜尋引擎進行即時網際網路資訊搜尋，支援智慧截斷)
   - **讀取與搜尋:** `read_active_note`, `read_note`, `search_notes` (支援標籤篩選), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` 為 AI 提供廣泛的上下文。
   - **編寫與修改:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (建立/修改筆記和畫布檔案、產生 MOC 核心筆記以及儲存二進位檔案)。
   - **管理與執行:** `delete_note`, `move_note` (移動/重新命名), `execute_code`, `run_note_code_block` (在沙盒內執行程式碼)。

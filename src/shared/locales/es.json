@@ -170,7 +170,6 @@
     },
     "webSearch": {
       "title": "Búsqueda web",
-      "desc": "Conecta una herramienta de búsqueda para LLM locales para acceder a información en tiempo real. Deshabilitado para modelos en la nube.",
       "enable": {
         "name": "Habilitar búsqueda web",
         "desc": "Permite que los LLM locales utilicen la herramienta de búsqueda web."

@@ -170,7 +170,6 @@
     },
     "webSearch": {
       "title": "Recherche Web",
-      "desc": "Connectez un outil de recherche web pour que les LLM locaux accèdent aux informations en temps réel. Désactivé pour les modèles cloud.",
       "enable": {
         "name": "Activer la recherche web",
         "desc": "Permet aux LLM locaux d'utiliser l'outil de recherche web."

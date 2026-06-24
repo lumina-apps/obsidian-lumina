@@ -11,16 +11,14 @@ export function renderWebSearchTab(tab: LuminaSettingTab, el: HTMLElement): void
 
 	tab.sectionHeading(el, t('settings.webSearch.title'));
 
-	const descEl = el.createEl('p', { cls: 'setting-item-description' });
-	descEl.setText(t('settings.webSearch.desc'));
-
 	new Setting(el)
 		.setName(t('settings.webSearch.enable.name'))
 		.setDesc(t('settings.webSearch.enable.desc'))
 		.addToggle((toggle) =>
-			toggle.setValue(webSearch.enabled).onChange(async (value) => {
+			toggle.setValue(webSearch.enabled).onChange((value) => {
 				webSearch.enabled = value;
-				await tab.saveAndSync(true);
+				tab.display(); // 즉시 UI 새로고침
+				void tab.saveAndSync(false); // 백그라운드 저장
 			}),
 		);
 
@@ -36,9 +34,10 @@ export function renderWebSearchTab(tab: LuminaSettingTab, el: HTMLElement): void
 				dropdown.addOption(type, label);
 			}
 			dropdown.setValue(webSearch.activeProviderId);
-			dropdown.onChange(async (value: string) => {
+			dropdown.onChange((value: string) => {
 				webSearch.activeProviderId = value as WebSearchProviderType;
-				await tab.saveAndSync(true);
+				tab.display(); // 즉시 UI 새로고침
+				void tab.saveAndSync(false); // 백그라운드 저장
 			});
 		});
 

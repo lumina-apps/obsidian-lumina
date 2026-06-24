@@ -14,9 +14,5 @@ export function collectWebSearchTool(params: CollectWebSearchToolParams): ToolDe
 		return null;
 	}
 
-	if (!isLocalProvider) {
-		return null;
-	}
-
 	return getWebSearchToolDefinition();
 }

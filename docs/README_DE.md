@@ -102,7 +102,7 @@ Lumina bietet zwei auf dein Können zugeschnittene Modi. Wähle die Methode, die
   - Verbinde zahlreiche externe MCP-Server (GitHub, lokale Datenbanken, Web-Suche usw.), um sofort riesige Datenmengen zu scrapen und in deinen Notizen zu organisieren.
 - **🖥️ Server-Modus (Externe KI-gesteuert):**
   - Stellt 25 Tools zur Verfügung, die externen KI-Assistenten (Claude, Cursor usw.) oder der Agentenmodus-KI direkten Zugriff auf deinen Vault gewähren.
-  - **Websuche:** `lumina_web_search` (Echtzeit-Internetinformationssuche über verschiedene Suchmaschinen wie Tavily, Exa, Google mit intelligenter Kürzungsunterstützung für lokale LLMs)
+  - **Websuche:** `lumina_web_search` (Echtzeit-Internetinformationssuche über verschiedene Suchmaschinen wie Tavily, Exa, Google mit intelligenter Kürzungsunterstützung)
   - **Lesen & Suchen:** `read_active_note`, `read_note`, `search_notes` (unterstützt Tag-Filter), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` um der KI umfangreichen Kontext bereitzustellen.
   - **Schreiben & Ändern:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (Notizen/Canvas-Dateien erstellen/ändern, Map of Content (MOC)-Notizen generieren und Binärdateien speichern).
   - **Verwalten & Ausführen:** `delete_note`, `move_note` (verschieben/umbenennen), `execute_code`, `run_note_code_block` (Code in einer Sandbox ausführen).

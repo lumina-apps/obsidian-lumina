@@ -170,10 +170,9 @@
     },
     "webSearch": {
       "title": "Web Search",
-      "desc": "Connect a web search tool for local LLMs to access real-time information. Disabled for cloud models.",
       "enable": {
         "name": "Enable Web Search",
-        "desc": "Allow local LLMs to use the web search tool."
+        "desc": "Allow AI models to use the web search tool."
       },
       "privacyWarning": "🔒 Privacy Notice: When web search is enabled, parts of your prompt (search queries) may be sent to external search services (e.g., Tavily, Brave).",
       "provider": {

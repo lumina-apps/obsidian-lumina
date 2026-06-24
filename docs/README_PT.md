@@ -102,7 +102,7 @@ A Lumina oferece dois modos adequados ao seu nível de experiência. Escolha o q
   - Conecte vários servidores MCP externos (GitHub, bases de dados locais, pesquisa na web, etc.) para extrair e organizar instantaneamente grandes quantidades de dados nas suas notas.
 - **🖥️ Modo Servidor (Liderado por IA Externa):**
   - Fornece 25 ferramentas que permitem que assistentes de IA externos (Claude, Cursor, etc.) ou a IA no Modo Agente acedam diretamente ao seu cofre.
-  - **Pesquisa na Web:** `lumina_web_search` (Pesquisa de informações na Internet em tempo real usando vários mecanismos de pesquisa, como Tavily, Exa, Google, com suporte a truncamento inteligente para LLMs locais)
+  - **Pesquisa na Web:** `lumina_web_search` (Pesquisa de informações na Internet em tempo real usando vários mecanismos de pesquisa, como Tavily, Exa, Google, com suporte a truncamento inteligente)
   - **Leitura e Pesquisa:** `read_active_note`, `read_note`, `search_notes` (suporta filtragem por tags), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` para fornecer um contexto amplo à IA.
   - **Escrita e Modificação:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (criar/modificar notas/telas (canvas), gerar notas MOC (Map of Content) e guardar ficheiros binários).
   - **Gestão e Execução:** `delete_note`, `move_note` (mover/renomear), `execute_code`, `run_note_code_block` (executar código num sandbox).

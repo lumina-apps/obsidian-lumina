@@ -170,7 +170,6 @@
     },
     "webSearch": {
       "title": "Pesquisa na Web",
-      "desc": "Conecte uma ferramenta de pesquisa na web para LLMs locais acessarem informações em tempo real. Desativado para modelos em nuvem.",
       "enable": {
         "name": "Ativar pesquisa na web",
         "desc": "Permite que LLMs locais usem a ferramenta de pesquisa na web."
