@@ -106,32 +106,30 @@ export class ChatAttachmentHandler {
 
 	private static async parseUrlAttachment(att: ContextAttachment): Promise<ParsedAttachment | null> {
 		const response = await requestUrl({ url: att.path });
-		let html = response.text;
+		const html = response.text;
 
-		// 1. 본문과 무관한 블록 전체 제거 (태그 + 내용 포함)
-		html = html.replace(/<script[\s\S]*?<\/script>/gi, '');
-		html = html.replace(/<style[\s\S]*?<\/style>/gi, '');
-		html = html.replace(/<nav[\s\S]*?<\/nav>/gi, '');
-		html = html.replace(/<footer[\s\S]*?<\/footer>/gi, '');
-		html = html.replace(/<header[\s\S]*?<\/header>/gi, '');
-		html = html.replace(/<aside[\s\S]*?<\/aside>/gi, '');
+		const parser = new DOMParser();
+		const doc = parser.parseFromString(html, 'text/html');
 
-		// 2. 나머지 HTML 태그 제거
-		html = html.replace(/<[^>]*>/gm, '');
+		// 1. 본문과 무관한 노드 전체 제거
+		const selectorsToRemove = 'script, style, nav, footer, header, aside, noscript, iframe, svg';
+		doc.querySelectorAll(selectorsToRemove).forEach(el => el.remove());
 
-		// 3. 주요 HTML 엔티티 디코딩
-		html = html
-			.replace(/&nbsp;/g, ' ')
-			.replace(/&amp;/g, '&')
-			.replace(/&lt;/g, '<')
-			.replace(/&gt;/g, '>')
-			.replace(/&quot;/g, '"')
-			.replace(/&#39;/g, "'");
+		// 2. 텍스트 추출 전, 단어 병합 방지를 위해 블록 요소 뒤에 줄바꿈 추가
+		doc.querySelectorAll('br').forEach(el => el.replaceWith('\n'));
+		doc.querySelectorAll('p, div, h1, h2, h3, h4, h5, h6, li, tr, td, article, section').forEach(el => {
+			el.insertAdjacentText('afterend', '\n');
+		});
 
-		// 4. 공백 정리
-		html = html.replace(/\s+/g, ' ').trim();
+		// 3. 텍스트 추출 (HTML 엔티티는 브라우저 엔진이 자동 디코딩함)
+		let text = doc.body.textContent || '';
 
-		return this.createTextPayload(`[외부 웹페이지: ${att.path}]\n${html}`);
+		// 4. 연속된 공백 및 빈 줄 정리
+		text = text.replace(/[ \t]+/g, ' ');      // 가로 공백(스페이스, 탭)은 1개로 압축
+		text = text.replace(/\n\s*\n/g, '\n\n');  // 빈 줄은 최대 1번만 연속되도록 정리
+		text = text.trim();
+
+		return this.createTextPayload(`[외부 웹페이지: ${att.path}]\n${text}`);
 	}
 
 	private static parseExternalFileAttachment(att: ContextAttachment): ParsedAttachment | null {
