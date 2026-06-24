@@ -106,9 +106,32 @@ export class ChatAttachmentHandler {
 
 	private static async parseUrlAttachment(att: ContextAttachment): Promise<ParsedAttachment | null> {
 		const response = await requestUrl({ url: att.path });
-		// 간단한 HTML 태그 제거 및 텍스트 추출
-		const textContent = response.text.replace(/<[^>]*>?/gm, '').replace(/\s+/g, ' ').trim();
-		return this.createTextPayload(`[외부 웹페이지: ${att.path}]\n${textContent}`);
+		let html = response.text;
+
+		// 1. 본문과 무관한 블록 전체 제거 (태그 + 내용 포함)
+		html = html.replace(/<script[\s\S]*?<\/script>/gi, '');
+		html = html.replace(/<style[\s\S]*?<\/style>/gi, '');
+		html = html.replace(/<nav[\s\S]*?<\/nav>/gi, '');
+		html = html.replace(/<footer[\s\S]*?<\/footer>/gi, '');
+		html = html.replace(/<header[\s\S]*?<\/header>/gi, '');
+		html = html.replace(/<aside[\s\S]*?<\/aside>/gi, '');
+
+		// 2. 나머지 HTML 태그 제거
+		html = html.replace(/<[^>]*>/gm, '');
+
+		// 3. 주요 HTML 엔티티 디코딩
+		html = html
+			.replace(/&nbsp;/g, ' ')
+			.replace(/&amp;/g, '&')
+			.replace(/&lt;/g, '<')
+			.replace(/&gt;/g, '>')
+			.replace(/&quot;/g, '"')
+			.replace(/&#39;/g, "'");
+
+		// 4. 공백 정리
+		html = html.replace(/\s+/g, ' ').trim();
+
+		return this.createTextPayload(`[외부 웹페이지: ${att.path}]\n${html}`);
 	}
 
 	private static parseExternalFileAttachment(att: ContextAttachment): ParsedAttachment | null {
