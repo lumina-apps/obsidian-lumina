@@ -199,8 +199,9 @@ function sanitizeAttachmentsForStorage(
 ): import('../../shared/types/chat.types').ContextAttachment[] | undefined {
 	if (!attachments) return undefined;
 	return attachments.map(att => {
-		const { content: _content, ...rest } = att as typeof att & { content?: string };
-		return rest as import('../../shared/types/chat.types').ContextAttachment;
+		const rest = { ...att };
+		delete rest.content;
+		return rest;
 	});
 }
 
