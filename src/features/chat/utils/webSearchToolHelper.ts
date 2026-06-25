@@ -4,11 +4,10 @@ import { getWebSearchToolDefinition } from '../../web-search/webSearchTool';
 
 export interface CollectWebSearchToolParams {
 	webSearch: WebSearchSettings;
-	isLocalProvider: boolean;
 }
 
 export function collectWebSearchTool(params: CollectWebSearchToolParams): ToolDefinition | null {
-	const { webSearch, isLocalProvider } = params;
+	const { webSearch } = params;
 
 	if (!webSearch.enabled) {
 		return null;

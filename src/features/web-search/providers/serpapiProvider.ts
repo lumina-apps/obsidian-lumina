@@ -20,6 +20,8 @@ export function createSerpapiProvider(config: WebSearchProviderConfig): IWebSear
 			}
 
 			try {
+				// SerpAPI는 헤더 인증을 지원하지 않아 api_key가 URL 쿼리 파라미터에 포함됩니다.
+				// URL 전체를 외부 로그/프록시에 노출하지 않도록 주의하세요.
 				const url = new URL('https://serpapi.com/search');
 				url.searchParams.append('engine', 'google');
 				url.searchParams.append('api_key', config.apiKey);

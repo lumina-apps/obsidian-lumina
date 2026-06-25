@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { tick, onMount } from "svelte";
+	import { tick, onMount, onDestroy } from "svelte";
 	import { Notice } from "obsidian";
 	import type LuminaPlugin from "../../../main";
 	import { ChatController } from "../chatController";
@@ -127,6 +127,10 @@
 
 	onMount(() => {
 		initChatPanel();
+	});
+
+	onDestroy(() => {
+		ctrl?.destroy();
 	});
 
 	// ── RAG global off → local off sync ───────────────────────────────────

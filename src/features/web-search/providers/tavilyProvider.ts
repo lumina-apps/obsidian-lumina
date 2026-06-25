@@ -25,9 +25,10 @@ export function createTavilyProvider(config: WebSearchProviderConfig): IWebSearc
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
+						// API 키를 Authorization 헤더로 전송 (body 노출 방지)
+						'Authorization': `Bearer ${config.apiKey}`,
 					},
 					body: JSON.stringify({
-						api_key: config.apiKey,
 						query: query,
 						search_depth: 'basic',
 						include_answer: false,

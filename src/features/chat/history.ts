@@ -190,13 +190,29 @@ function stripThoughtProcess(content: string): string {
 	return content.replace(/<think>[\s\S]*?<\/think>\n*/gi, '').trim();
 }
 
+/**
+ * 첨부파일에서 민감한 content 필드(base64 이미지, 파일 본문 등)를 제거한다.
+ * path, name, type 등 메타데이터만 유지하여 .md 파일 노출을 최소화한다.
+ */
+function sanitizeAttachmentsForStorage(
+	attachments: import('../../shared/types/chat.types').ContextAttachment[] | undefined,
+): import('../../shared/types/chat.types').ContextAttachment[] | undefined {
+	if (!attachments) return undefined;
+	return attachments.map(att => {
+		const { content: _content, ...rest } = att as typeof att & { content?: string };
+		return rest as import('../../shared/types/chat.types').ContextAttachment;
+	});
+}
+
 function serializeSession(session: ChatSession): string {
-	// 생각 과정(<think>...</think>) 제거를 위해 복제본 생성
+	// 생각 과정(<think>...</think>) 제거 및 첨부파일 민감 정보 제거를 위해 복제본 생성
 	const cleanSession = {
 		...session,
 		messages: session.messages.map(m => ({
 			...m,
-			content: m.role === 'assistant' ? stripThoughtProcess(m.content) : m.content
+			content: m.role === 'assistant' ? stripThoughtProcess(m.content) : m.content,
+			// base64 이미지 등 무거운 content 필드를 파일에 저장하지 않음
+			attachments: sanitizeAttachmentsForStorage(m.attachments),
 		}))
 	};
 
@@ -244,7 +260,11 @@ export async function generateTitleWithLLM(
 	const first = messages.find(m => m.role === 'user');
 	if (!first || !first.content.trim()) return '새 대화';
 
-	const prompt = `다음 사용자의 메시지를 바탕으로 대화의 주제를 3~5단어 이내의 매우 짧은 제목으로 요약해줘. 따옴표나 부연 설명 없이 오직 제목 텍스트만 출력해야 해.\n\n사용자 메시지: "${first.content}"`;
+	// Prompt Injection 방지: 입력을 200자로 제한하고 큰따옴표 이스케이프
+	const safeContent = first.content
+		.slice(0, 200)
+		.replace(/"/g, '\\"');
+	const prompt = `다음 사용자의 메시지를 바탕으로 대화의 주제를 3~5단어 이내의 매우 짧은 제목으로 요약해줘. 따옴표나 부연 설명 없이 오직 제목 텍스트만 출력해야 해.\n\n사용자 메시지: "${safeContent}"`;
 
 	try {
 		const { createProvider } = await import('../../core/llm-providers/index');

@@ -33,13 +33,14 @@ export class ChatController {
 	private autoSaveTimeout: number | null = null;
 	private lastProviderId: string = '';
 	private lastModelId: string = '';
+	private _unsubMessages: (() => void) | null = null;
 
 	constructor(plugin: LuminaPlugin) {
 		this.app = plugin.app;
 		this.plugin = plugin;
 		this.history = new ChatHistoryController(plugin);
 
-		messages.subscribe(() => {
+		this._unsubMessages = messages.subscribe(() => {
 			const sid = get(currentSessionId);
 			if (sid && this.lastProviderId && this.lastModelId) {
 				if (this.autoSaveTimeout) {
@@ -252,5 +253,15 @@ export class ChatController {
 
 	async removeSession(sessionId: string): Promise<boolean> {
 		return this.history.removeSession(sessionId);
+	}
+
+	/** 구독 해제 및 타이머 정리. ChatView가 unload될 때 호출할 것. */
+	destroy(): void {
+		this._unsubMessages?.();
+		this._unsubMessages = null;
+		if (this.autoSaveTimeout) {
+			window.clearTimeout(this.autoSaveTimeout);
+			this.autoSaveTimeout = null;
+		}
 	}
 }

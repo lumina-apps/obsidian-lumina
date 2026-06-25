@@ -105,6 +105,18 @@ export class ChatAttachmentHandler {
 	}
 
 	private static async parseUrlAttachment(att: ContextAttachment): Promise<ParsedAttachment | null> {
+		// SSRF 방지: http/https 이외의 스킴 차단
+		try {
+			const parsed = new URL(att.path);
+			if (!['http:', 'https:'].includes(parsed.protocol)) {
+				console.warn(`[Lumina] URL 첨부 차단: 허용되지 않는 프로토콜 (${parsed.protocol})`);
+				return null;
+			}
+		} catch {
+			console.warn(`[Lumina] URL 첨부 차단: 유효하지 않은 URL (${att.path})`);
+			return null;
+		}
+
 		const response = await requestUrl({ url: att.path });
 		const html = response.text;
 

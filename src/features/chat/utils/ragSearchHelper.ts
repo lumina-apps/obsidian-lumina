@@ -83,7 +83,7 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 			rag.dataScope === 'active-note' ? activeFilePath : null
 		);
 
-		console.log(`[Lumina RAG Debug] Scope: ${rag.dataScope}, parentChunks: ${parentChunks.length}, Initial Results: ${results.length}`);
+		debugLogger.logSystem('rag', `Scope: ${rag.dataScope}, parentChunks: ${parentChunks.length}, Initial Results: ${results.length}`);
 
 		if (results.length === 0) {
 			setMessageRagStep(assistantId, null);
