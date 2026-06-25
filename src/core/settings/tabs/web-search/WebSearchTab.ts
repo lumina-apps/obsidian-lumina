@@ -17,7 +17,7 @@ export function renderWebSearchTab(tab: LuminaSettingTab, el: HTMLElement): void
 		.addToggle((toggle) =>
 			toggle.setValue(webSearch.enabled).onChange((value) => {
 				webSearch.enabled = value;
-				tab.display(); // 즉시 UI 새로고침
+				tab.refreshDisplay(); // 즉시 UI 새로고침
 				void tab.saveAndSync(false); // 백그라운드 저장
 			}),
 		);
@@ -36,7 +36,7 @@ export function renderWebSearchTab(tab: LuminaSettingTab, el: HTMLElement): void
 			dropdown.setValue(webSearch.activeProviderId);
 			dropdown.onChange((value: string) => {
 				webSearch.activeProviderId = value as WebSearchProviderType;
-				tab.display(); // 즉시 UI 새로고침
+				tab.refreshDisplay(); // 즉시 UI 새로고침
 				void tab.saveAndSync(false); // 백그라운드 저장
 			});
 		});
