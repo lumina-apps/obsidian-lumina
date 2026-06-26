@@ -197,8 +197,10 @@
 		const currentAttachments = [...attachments];
 		inputText = "";
 		attachments = [];
-		resetTextareaHeight();
-		tick().then(() => textareaEl?.focus());
+		tick().then(() => {
+			resetTextareaHeight();
+			textareaEl?.focus();
+		});
 
 		await executeStreamOperation((signal) =>
 			ctrl!.sendMessage(
