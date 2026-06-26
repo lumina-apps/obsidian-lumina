@@ -69,7 +69,7 @@ export class LuminaSettingTab extends PluginSettingTab {
 			{ id: 'connections', label: t('settings.connections.title') },
 			{ id: 'chat', label: t('settings.chat.title') },
 			{ id: 'rag', label: t('settings.rag.title') },
-			{ id: 'mcp', label: t('settings.mcp.title'), badge: t('settings.mcp.experimental') },
+			{ id: 'mcp', label: t('settings.mcp.title') },
 			{ id: 'webSearch', label: t('settings.webSearch.title') },
 			{ id: 'misc', label: t('settings.misc.title') },
 		];

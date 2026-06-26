@@ -33,24 +33,31 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 	flex: 0 0 auto;
 	width: auto;
 	min-width: 0;
-	padding: 6px 12px;
+	padding: 6px 8px;
 	display: flex;
+	flex-direction: column;
 	justify-content: center;
 	align-items: center;
-	white-space: nowrap;
+	white-space: normal;
+	text-align: center;
+	max-width: 90px;
+}
+
+html body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn--advanced .lumina-settings__nav-label {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
 }
 
 html body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn--advanced .lumina-settings__nav-text {
-	display: inline;
-	margin-left: 6px;
+	display: block;
+	margin-left: 0;
 }
 
-@container (max-width: 850px) {
+@container (max-width: 650px) {
 	.lumina-settings__nav-separator {
 		display: none;
-	}
-	html body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn.lumina-settings__nav-btn--advanced {
-		padding: 6px 10px;
 	}
 	html body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn--advanced .lumina-settings__nav-text {
 		display: none;
@@ -89,18 +96,18 @@ body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumi
 	align-items: center;
 	justify-content: center;
 	text-align: center;
-	padding: 6px 8px;
+	padding: 6px 6px;
 	height: auto;
 	min-height: 0;
 	max-height: none;
-	font-size: 0.95em;
+	font-size: 0.85em;
 	font-weight: 600;
 	color: var(--text-muted);
 	border-radius: 7px;
 	cursor: pointer;
 	transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-	gap: 4px;
-	line-height: 1.2;
+	gap: 2px;
+	line-height: 1.15;
 }
 
 .lumina-settings__nav-btn:hover {
