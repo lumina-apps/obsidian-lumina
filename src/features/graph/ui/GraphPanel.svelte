@@ -15,12 +15,20 @@
 	let graphData = $state<GraphData | null>(null);
 	let activeFileListener: any;
 	let lastParamsStr = '';
+	let lastFocusPath: string | null = null;
 
 	onMount(() => {
+		const activeFile = plugin.app.workspace.getActiveFile();
+		if (activeFile) lastFocusPath = activeFile.path;
+
 		// Listen to active leaf changes to update 'local' mode focus
 		activeFileListener = plugin.app.workspace.on('active-leaf-change', () => {
 			if ($graphState.mode === 'local') {
-				triggerRebuild();
+				const newActiveFile = plugin.app.workspace.getActiveFile();
+				if (newActiveFile && newActiveFile.path !== lastFocusPath) {
+					lastFocusPath = newActiveFile.path;
+					triggerRebuild();
+				}
 			}
 		});
 
@@ -47,6 +55,10 @@
 			if (paramsStr !== lastParamsStr) {
 				lastParamsStr = paramsStr;
 				untrack(() => {
+					if (m === 'local') {
+						const activeFile = plugin.app.workspace.getActiveFile();
+						if (activeFile) lastFocusPath = activeFile.path;
+					}
 					triggerRebuild();
 				});
 			}
@@ -66,10 +78,7 @@
 
 		let focusPath: string | null = null;
 		if ($graphState.mode === 'local') {
-			const activeFile = plugin.app.workspace.getActiveFile();
-			if (activeFile) {
-				focusPath = activeFile.path;
-			}
+			focusPath = lastFocusPath;
 		}
 
 		graphData = await buildGraphData(

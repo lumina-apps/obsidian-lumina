@@ -178,7 +178,7 @@ export default class LuminaPlugin extends Plugin {
 				const view = leaf.view;
 				if (typeof view.getDisplayText === 'function') {
 					const newTitle = view.getDisplayText();
-					const tabHeaderInnerTitleEl = (leaf as any).tabHeaderInnerTitleEl;
+					const tabHeaderInnerTitleEl = (leaf as unknown as { tabHeaderInnerTitleEl?: HTMLElement }).tabHeaderInnerTitleEl;
 					if (tabHeaderInnerTitleEl) tabHeaderInnerTitleEl.innerText = newTitle;
 				}
 			});

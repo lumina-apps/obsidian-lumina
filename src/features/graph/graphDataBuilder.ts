@@ -131,7 +131,7 @@ export async function buildGraphData(
 	const finalEdges: GraphEdge[] = [];
 	const addedEdges = new Set<string>();
 
-	for (const [nodePath, edges] of edgeMap.entries()) {
+	for (const edges of edgeMap.values()) {
 		// Sort by weight desc, keep top maxK
 		edges.sort((a, b) => b.weight - a.weight);
 		const topK = edges.slice(0, maxK);
@@ -204,16 +204,17 @@ function calculateEdgesInWorker(childChunks: ChildChunk[], baseMinSimilarity: nu
 		const url = URL.createObjectURL(blob);
 		const worker = new Worker(url);
 
-		worker.onmessage = (e) => {
+		worker.onmessage = (e: MessageEvent) => {
 			URL.revokeObjectURL(url);
 			worker.terminate();
-			resolve(e.data.edges);
+			const data = e.data as { edges: GraphEdge[] };
+			resolve(data.edges);
 		};
 
-		worker.onerror = (err) => {
+		worker.onerror = (err: ErrorEvent) => {
 			URL.revokeObjectURL(url);
 			worker.terminate();
-			reject(err);
+			reject(new Error(err.message || 'Worker calculation failed'));
 		};
 
 		worker.postMessage({ chunks: chunksData, minSimilarity: baseMinSimilarity });
