@@ -51,6 +51,7 @@ export function renderLanguageSection(tab: LuminaSettingTab, el: HTMLElement): v
 					s.language = val as PluginLanguage;
 					migrateQuickActions(tab.plugin);
 					await tab.saveAndSync();
+					tab.plugin.refreshLocales();
 					tab.refreshDisplay(); // 언어 변경에 따른 UI 리렌더링
 				});
 		})

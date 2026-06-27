@@ -1,794 +1,812 @@
 {
-    "settings": {
-        "showAdvanced": "詳細設定",
-        "connections": {
-            "title": "接続と\nモデル",
-            "provider": "プロバイダー",
-            "language": {
-                "name": "プラグインの言語",
-                "desc": "プラグインのインターフェース言語を選択します。",
-                "systemTranslate": "システム言語に翻訳",
-                "llmRequired": "翻訳機能を使用するにはLLMの接続が必要です。",
-                "warningCost": "翻訳機能を使用すると、LLM APIの利用料金が発生する場合があります。",
-                "option": {
-                    "en": "English",
-                    "ko": "한국어",
-                    "ja": "日本語",
-                    "zh": "简体中文",
-                    "zh-tw": "繁體中文",
-                    "es": "Español",
-                    "pt": "Português",
-                    "de": "Deutsch",
-                    "fr": "Français",
-                    "ru": "Русский",
-                    "it": "Italiano",
-                    "system": "システム言語"
-                },
-                "current": "現在: {{lang}}",
-                "deleteCache": "キャッシュを削除",
-                "deleteCacheTooltip": "システム言語の翻訳キャッシュデータを削除してリセットします。",
-                "deleteCacheTitle": "翻訳キャッシュの削除",
-                "deleteCacheConfirm": "キャッシュされたシステム言語の翻訳データを削除してもよろしいですか？\n削除後に再度システム言語を選択すると、新しい翻訳が実行されます。"
-            },
-            "apiKey": {
-                "name": "APIキーとモデル登録",
-                "desc": "クラウドプロバイダーのAPIキー、またはローカルLLMのURLを登録します。",
-                "mobileLocalWarning": "モバイルデバイスではローカルLLMを使用できません。",
-                "addConnection": "+ 新しいLLM接続を追加",
-                "apiKey": "APIキー",
-                "endpointUrl": "エンドポイントURL",
-                "hiddenDesc": "入力時に値は非表示になります。",
-                "testConnection": "接続テスト",
-                "testing": "テスト中...",
-                "deleteConnection": "この接続を削除",
-                "connected": "接続済み",
-                "notConnected": "未接続",
-                "selectModel": "モデルを選択",
-                "endpointPlaceholder": "例: http://localhost:11434",
-                "newConnection": "新規接続",
-                "success": "接続成功！",
-                "fail": "接続失敗: ",
-                "noModels": "利用可能なモデルがありません。"
-            },
-            "ragEngine": {
-                "name": "ワンクリックRAGエンジン",
-                "desc": "Vault内の全ノートをリアルタイムで参照して回答を生成し、スマートディスカバリー機能を提供します。",
-                "privacyNotice": "🔒 ドキュメント分析はローカルで実行されます。（クラウドAIチャットではノートの抜粋が送信される場合があります）",
-                "customGuide": "💡 埋め込みエンジンを手動で選択するには、右上の「詳細設定」を有効にしてください。",
-                "mobileWarning": "⚠️ モバイルデバイスではワンクリックローカル埋め込み（RAG）をサポートしていません。詳細設定でクラウド用埋め込みモデルを直接選択してください。",
-                "ragDisabledForEmbedding": "⚠️ RAGエンジンが無効化されています。RAGエンジンを有効にした後で埋め込みモデルを選択できます。"
-            },
-            "customEmbedding": {
-                "name": "カスタム埋め込み",
-                "desc": "登録済みプロバイダーのモデル一覧から埋め込みモデルを選択します。",
-                "auto": "🤖 自動 (内蔵ローカルモデル: ibm-granite/granite-embedding-97m-multilingual-r2)",
-                "guide": "※ 上記でLLM接続を登録し、接続テストを実行してください。",
-                "localWarn": "⚠️ ローカルモデルは埋め込みモデルかどうかを自動的に確認できません。\nインデックス作成後にエラーが発生した場合は、埋め込み専用モデルを選択してください。",
-                "mobileWarn": "⚠️ モバイルデバイスではローカル埋め込みモデルを使用できません。クラウド埋め込みを選択してください。"
-            },
-            "defaultChatModel": {
-                "name": "デフォルトチャットモデル",
-                "desc": "サイドバーチャットでデフォルト使用するLLMモデルを選択します。",
-                "sidebarDefault": "サイドバーチャット デフォルトモデル",
-                "noConnections": "設定でLLM接続を追加し、テストを通過するとデフォルトモデルを選択できます。"
-            },
-            "quickActionProvider": {
-                "name": "クイックアクション プロバイダー",
-                "desc": "🚨 大規模・推論モデルは深刻な遅延を引き起こす可能性があります。高速で軽量なモデル（Instruct、Flash、Miniクラス）をご使用ください。"
-            },
-            "quickActionModel": {
-                "name": "クイックアクション モデル",
-                "desc": "クイックアクション機能に使用する専用モデルを選択してください。（高速・軽量モデルを推奨）",
-                "noneSelected": "未選択（必須）",
-                "reasoningWarning": "⚠️ 警告: 推論モデルが検出されました！クイックアクションは高速性が求められます。このモデルを使用すると、深刻な遅延や無限ループが発生する可能性があります。標準のInstructモデルの使用を強く推奨します。"
-            },
-            "taskModel": {
-                "name": "タスクモデル (任意)",
-                "desc": "バックグラウンドAIタスク(要約など)用の軽量モデル。未選択時はデフォルトが使用されます。",
-                "noneSelected": "未選択 (デフォルトを使用)"
-            },
-            "rerankerModel": {
-                "name": "リランカーモデル (任意)",
-                "desc": "RAG検索結果を再ランク付けし、回答の関連性を高めるモデルを選択します。",
-                "noneSelected": "未選択 (無効)"
-            }
+  "settings": {
+    "showAdvanced": "詳細設定",
+    "connections": {
+      "title": "接続と\nモデル",
+      "provider": "プロバイダー",
+      "language": {
+        "name": "プラグインの言語",
+        "desc": "プラグインのインターフェース言語を選択します。",
+        "systemTranslate": "システム言語に翻訳",
+        "llmRequired": "翻訳機能を使用するにはLLMの接続が必要です。",
+        "warningCost": "翻訳機能を使用すると、LLM APIの利用料金が発生する場合があります。",
+        "option": {
+          "en": "English",
+          "ko": "한국어",
+          "ja": "日本語",
+          "zh": "简体中文",
+          "zh-tw": "繁體中文",
+          "es": "Español",
+          "pt": "Português",
+          "de": "Deutsch",
+          "fr": "Français",
+          "ru": "Русский",
+          "it": "Italiano",
+          "system": "システム言語"
         },
-        "mcp": {
-            "title": "エージェント\n& MCP",
-            "desc": "Model Context Protocol (MCP) を通じて外部ツールを接続するか、内蔵サーバーを通じて他のアプリがLuminaを制御できるように設定します。",
-            "addServer": "+ 新しい MCP サーバーを追加",
-            "serverName": "サーバー名",
-            "transport": "転送方式",
-            "enableDesc": "有効化 (チャットにツールを挿入)",
-            "deleteServer": "このサーバーを削除",
-            "emptyServers": "登録されたサーバーがありません。",
-            "localServerName": "Lumina内蔵サーバー",
-            "restart": "再起動",
-            "localServer": {
-                "sectionTitle": "Lumina内蔵MCPサーバー（ホスティング）",
-                "desc": "外部クライアント（AIエージェントなど）からObsidianの機能にアクセスできるように、ローカルサーバーを起動します。",
-                "enable": {
-                    "name": "サーバーの有効化"
-                },
-                "port": {
-                    "name": "サーバーポート",
-                    "desc": "デフォルト: 3000（設定後に再起動すると適用されます）"
-                },
-                "token": {
-                    "name": "認証トークン",
-                    "desc": "外部クライアントが接続する際に必要なトークンです。外部に公開しないでください。",
-                    "regenerate": "再発行"
-                },
-                "guide": "SSE: http://localhost:{{port}}/sse\n認証: ヘッダーに Authorization: Bearer <トークン>",
-                "maxRead": {
-                    "name": "Read 最大文字数",
-                    "desc": "ファイル読み取り時の最大返却文字数 (デフォルト: 20000)"
-                },
-                "searchSnippet": {
-                    "name": "Search スニペット長",
-                    "desc": "一致語の前後に表示する文字数 (デフォルト: 300)"
-                },
-                "searchMaxResults": {
-                    "name": "Search 最大結果数",
-                    "desc": "1回の検索での最大返却結果数 (デフォルト: 10)"
-                },
-                "maxAppend": {
-                    "name": "Append 最大文字数",
-                    "desc": "1回の追加操作での最大文字数 (デフォルト: 10000)"
-                }
-            },
-            "externalServer": {
-                "sectionTitle": "外部MCPサーバー（クライアント接続）",
-                "desc": "Model Context Protocol (MCP) を通じて外部ツールを接続し、チャットで追加のツールを使用できるように設定します。",
-                "sseUrl": {
-                    "name": "SSE URL",
-                    "desc": "例: http://localhost:8080/sse"
-                },
-                "token": {
-                    "name": "認証トークン (任意)",
-                    "desc": "サーバーが認証を必要とする場合、トークンを入力してください。"
-                }
-            },
-            "permission": {
-                "title": "ツールの実行許可",
-                "desc": "AIが、システム制御権限が必要な可能性がある危険なツールの実行をリクエストしています。\n\nサーバー: {{server}}\nツール: {{tool}}",
-                "args": "引数 (Arguments):",
-                "approve": "承認",
-                "reject": "拒否"
-            },
-            "agentMode": {
-                "name": "エージェントモード",
-                "desc": "LLMがMCPツールを使って自律的にタスクを実行します。⚠️ 小型モデルではパフォーマンスが低下する可能性があります。",
-                "maxSteps": "最大自動実行回数",
-                "maxStepsDesc": "エージェントが1回の応答でツールを連続して実行できる最大回数。(デフォルト: 15)",
-                "respectRagExclusions": "RAGの除外/包含パスをエージェントに適用",
-                "respectRagExclusionsDesc": "RAGタブの除外ルールをエージェントのファイル操作に適用します。",
-                "readMode": "読み取りモード",
-                "editMode": "編集モード"
-            },
-            "experimental": "実験的機能"
-        },
-        "webSearch": {
-            "title": "ウェブ検索",
-            "enable": {
-                "name": "ウェブ検索を有効にする",
-                "desc": "ローカルLLMが検索ツールを使用できるようにします。"
-            },
-            "privacyWarning": "🔒 プライバシーに関する注意: ウェブ検索が有効になっている場合、プロンプトの一部（検索クエリ）が外部の検索サービス（Tavily、Braveなど）に送信される可能性があります。",
-            "provider": {
-                "name": "検索プロバイダー",
-                "desc": "使用する検索プロバイダーを選択します。"
-            },
-            "apiKey": {
-                "name": "APIキー",
-                "desc": "検索サービスのAPIキーを入力します。"
-            },
-            "baseUrl": {
-                "name": "Base URL",
-                "desc": "ローカル検索インスタンスのURLを入力します。(例: http://localhost:8080)"
-            },
-            "googleSearchEngineId": {
-                "name": "検索エンジン ID (CX)",
-                "desc": "Google Custom Searchの検索エンジンID (CX) を入力します。"
-            },
-            "maxResults": {
-                "name": "最大結果数",
-                "desc": "検索時に取得する最大結果数です。(デフォルト: 5)"
-            },
-            "maxContentLength": {
-                "name": "コンテキスト最大長",
-                "desc": "LLMのコンテキストに挿入される検索結果の最大文字数です。(デフォルト: 3000)"
-            }
-        },
-        "chat": {
-            "quickSettings": {
-                "systemPrompt": "システムプロンプト",
-                "temperature": "温度（創造性）",
-                "precise": "正確に",
-                "balanced": "バランスよく",
-                "creative": "クリエイティブに",
-                "maxLength": "最大出力長",
-                "short": "短く",
-                "medium": "標準",
-                "long": "長く",
-                "allSettings": "すべての設定"
-            },
-            "title": "チャット\n& プロンプト",
-            "currentNote": "現在のノートを含める",
-            "systemPrompt": {
-                "name": "システムプロンプト",
-                "desc": "複数のシステムプロンプトを管理します。",
-                "active": "✅ 現在有効",
-                "activate": "有効化",
-                "addPrompt": "+ プロンプトを追加",
-                "defaultName": "システムプロンプト"
-            },
-            "history": {
-                "name": "チャット履歴の自動保存",
-                "desc": "チャット履歴を自動的に保存します。",
-                "pathPlaceholder": "例: /chatHistory",
-                "savePath": "保存パス",
-                "savePathDesc": "チャット履歴を指定したパスに自動的に保存します。 (Default: chatHistory)",
-                "saveFail": "⚠️ チャット履歴の保存に失敗しました: {{error}}",
-                "loadFail": "⚠️ セッションの読み込みに失敗しました。",
-                "deleteSuccess": "✅ チャット履歴が削除されました。",
-                "deleteFail": "⚠️ セッションの削除に失敗しました。",
-                "deleteConfirm": "このチャット履歴を削除してもよろしいですか？",
-                "title": "チャット履歴",
-                "empty": "保存されたチャット履歴はありません。",
-                "unknownModel": "不明なモデル"
-            },
-            "sendMode": {
-                "name": "メッセージ送信モード",
-                "desc": "チャットでのメッセージ送信方法を選択します。 (Default: Send on Enter)",
-                "enter": "Enterで送信",
-                "ctrlEnter": "Ctrl + Enterで送信"
-            },
-            "quickActions": {
-                "name": "ユーザーカスタムクイックアクション (コマンド)",
-                "desc": "よく使用するプロンプトをObsidianコマンドとして登録し、エディターで選択したテキストに直接実行できます。",
-                "add": "+ クイックアクションを追加",
-                "actionName": "アクション名",
-                "actionPrompt": "プロンプト",
-                "actionType": "動作方式",
-                "typeReplace": "テキストを上書き",
-                "typeAppend": "テキストに追記",
-                "typeChat": "チャットウィンドウに送信",
-                "newAction": "新しいアクション",
-                "deleteAction": "このアクションを削除",
-                "defaults": {
-                    "summarize": {
-                        "name": "要約する",
-                        "prompt": "次のテキストを簡潔に要約してください:\n\n"
-                    },
-                    "translate": {
-                        "name": "日本語に翻訳",
-                        "prompt": "次のテキストを自然な日本語に翻訳してください:\n\n"
-                    },
-                    "explain": {
-                        "name": "説明する",
-                        "prompt": "次のテキストについて詳しく説明してください:\n\n"
-                    }
-                }
-            },
-            "inlineTrigger": {
-                "name": "インラインコマンドトリガー",
-                "desc": "エディターでクイックアクションの自動補完ポップアップを表示するためのキーワードです。 (Default: /ai)"
-            },
-            "memoryLimit": {
-                "name": "会話メモリ制限",
-                "desc": "APIに送信する過去のターン数を記憶します。",
-                "limitType": "会話メモリモード",
-                "autoSummary": "自動コンテキスト要約（デフォルト）",
-                "turns": "ターン数制限",
-                "tokens": "トークン数制限",
-                "turnsLabel": "記憶するターン数",
-                "turnsDesc": "1〜15ターン。1ターン = ユーザーメッセージ + AI回答 1セット (Default: 10)",
-                "maxTokens": "最大コンテキストトークン (Default: 8000)"
-            },
-            "modelParams": {
-                "name": "モデルパラメータ",
-                "desc": "Temperature（創造性/正確性の調整）、最大出力長などを設定します。",
-                "tempLabel": "温度 (Temperature)",
-                "tempDesc": "低いほど正確、高いほど創造的になります（0.0〜2.0） (Default: 0.7)",
-                "maxOutput": "最大出力トークン (Max Output Tokens)",
-                "maxOutputDesc": "1回の生成での最大出力トークン数を制限します。 (Default: 4000)",
-                "responseLang": "応答言語を指定",
-                "responseLangDesc": "AIが回答する言語を固定します。「自動」はユーザーの質問言語に合わせます。",
-                "responseLangAuto": "自動"
-            },
-            "streaming": {
-                "name": "ストリーミング",
-                "desc": "ストリーミング応答を有効にします。"
-            },
-            "emptyResponseFallback": "⚠️ モデルが空の応答を返しました。（サポートされていない言語/フォーマット、プロンプトのフィルタリング、またはコンテキスト制限の超過が原因である可能性があります。）",
-            "context": {
-                "activeNote": "現在のノートを含める: {{name}}",
-                "selectedText": "選択されたテキスト ({{length}}文字)",
-                "folderFiles": "[フォルダ: {{name}} 内のファイル群]",
-                "activeNotePrefix": "[現在のノート: {{name}}]",
-                "canvasFile": "[キャンバスファイル: {{name}}]",
-                "tagFiles": "[タグ: {{name}} が含まれるファイル群 (最大5件)]",
-                "activeNotePrompt": "現在の有効なノート",
-                "categoryActiveNote": "📄 現在のノートを含める",
-                "categorySelection": "✂️ 選択テキスト",
-                "categoryFolder": "📁 フォルダを追加",
-                "categoryFile": "📝 ファイルを追加",
-                "categoryTag": "🏷️ タグを追加",
-                "categoryUrl": "🔗 URLを入力",
-                "categoryCanvas": "🎨 キャンバスを追加",
-                "categoryBack": "戻る",
-                "categoryTitle": "コンテキストタイプを選択",
-                "urlInputPlaceholder": "URLを入力（例: https://...）",
-                "urlInputPrompt": "EnterでURLを追加",
-                "includeNote": "ノートを含める",
-                "excludeNote": "ノートを除外"
-            }
-        },
-        "rag": {
-            "toggleTooltip": "オンにすると、AIがVault内のノートを読み取り、参照して回答します。",
-            "title": "RAG\n& コンテキスト",
-            "embeddingWarning": "RAG用の埋め込みモデル設定は「接続とモデル」タブにあります。",
-            "disabledWarning": "⚪ RAGが無効化されています。「接続とモデル」タブでRAGエンジンを有効にしてください。",
-            "dataScope": {
-                "name": "デフォルトのデータ範囲",
-                "desc": "RAG検索に含めるノートを選択します。 (Default: Entire Vault)",
-                "vaultWide": "Vault全体",
-                "activeNote": "アクティブなノートのみの場合",
-                "manual": "手動で選択したファイルのみ"
-            },
-            "autoIncludeActive": {
-                "name": "現在のノートを自動含める",
-                "desc": "チャット時に現在アクティブ（開かれている）ノートをコンテキストにデフォルトで含めます。"
-            },
-            "includePaths": {
-                "name": "含めるパス",
-                "desc": "カンマ区切り。空白でVault全体を含む"
-            },
-            "ignorePaths": {
-                "name": "除外パス",
-                "desc": "カンマ区切り。含めるパスより優先 (Default: templates, chatHistory, etc.)"
-            },
-            "chunking": {
-                "name": "テキストチャンキング設定",
-                "desc": "ドキュメントを分割する単位サイズ（Chunk Size）と重複区間（Overlap）を設定します。",
-                "parentSizeName": "親チャンクサイズ",
-                "parentSizeDesc": "ドキュメント分割の基本単位（1000〜3000文字推奨） (デフォルト: 2000)",
-                "parentOverlapName": "親チャンクのオーバーラップ",
-                "parentOverlapDesc": "親チャンク間で重複させる文字数 (デフォルト: 200)",
-                "childSizeName": "子チャンクサイズ",
-                "childSizeDesc": "ベクトル検索に使用される子チャンクサイズ（100〜300文字推奨） (デフォルト: 200)",
-                "childOverlapName": "子チャンクのオーバーラップ",
-                "childOverlapDesc": "子チャンク間で重複させる文字数 (デフォルト: 40)"
-            },
-            "topK": {
-                "name": "Top-K検索数",
-                "desc": "LLMに渡す最も関連性の高いドキュメントの数を設定します。 (Default: 5)"
-            },
-            "syncMode": {
-                "name": "インデックス同期モード",
-                "desc": "RAGインデックスの同期タイミングを選択します。 (Default: Watch)",
-                "watch": "変更検知（推奨）",
-                "manual": "手動同期",
-                "startup": "アプリ起動時に一度"
-            },
-            "minSimilarity": {
-                "name": "最小類似度閾値",
-                "desc": "この値以下の関連性スコアを検索結果から除外します (0~1) (Default: 0.0)"
-            },
-            "maxFileSize": {
-                "name": "最大ファイルサイズ (MB)",
-                "desc": "このサイズより大きいファイルはインデックスから除外されます。0 = 制限なし。デフォルト: 50 MB"
-            },
-            "reindex": {
-                "name": "全体再インデックス",
-                "desc": "Vault内のすべてのノートを最初から再度インデックスします。",
-                "button": "🔄 今すぐ再インデックス",
-                "notActivated": "❌ RAGエンジンが有効になっていません。",
-                "started": "🔄 全体再インデックスを開始しています...",
-                "success": "✅ 再インデックスが完了しました",
-                "fail": "❌ 再インデックスに失敗しました: "
-            },
-            "status": {
-                "name": "インデックス状態",
-                "desc": "現在のインデックス容量とファイル数を表示します。",
-                "statusLabel": "状態",
-                "indexing": "インデックス作成中... ({{processed}}/{{total}})",
-                "files": "📄 インデックス済みファイル: {{count}}件",
-                "size": "💾 ストレージ使用量: {{size}} KB",
-                "ready": "RAG 準備完了",
-                "indexingShort": "インデックス作成中",
-                "error": "RAG エラー",
-                "waiting": "RAG 待機中"
-            },
-            "init": {
-                "loadingModel": "Lumina: 埋め込みモデルを読み込んでいます...",
-                "loadingModelDesc": "初回実行時、ローカルモデルのダウンロードと読み込みに数分かかる場合があります。",
-                "cloudSuccess": "Lumina: クラウド埋め込みに接続しました",
-                "loadingProgress": "Lumina: モデル読み込み中 {{pct}}%",
-                "indexingVault": "Lumina: Vaultのインデックスを作成しています...",
-                "indexingProgressText": " ({{processed}}/{{total}}) - {{pct}}%",
-                "remainingTimePrefix": " - 残り時間: ",
-                "remainingTimeSec": "{{sec}}秒",
-                "remainingTimeMinSec": "{{min}}分{{sec}}秒",
-                "ready": "✅ Lumina: RAGエンジン準備完了",
-                "indexFail": "❌ Lumina: インデックス作成に失敗しました\n{{error}}",
-                "readyManual": "✅ Lumina: RAGエンジン準備完了（手動インデックスモード）",
-                "initFail": "❌ Lumina: RAGワーカーの初期化に失敗しました\n{{error}}",
-                "downloading": "RAGモデルをダウンロードしています...",
-                "indexingNotes": "ノートのインデックスを作成しています..."
-            },
-            "reset": {
-                "name": "インデックスをリセット",
-                "desc": "インデックスされたすべてのデータをクリアします。",
-                "button": "🗑 インデックスをリセット",
-                "devNotice": "⚠️ インデックスがクリアされました（開発中）",
-                "resetConfirm": "インデックスをリセットしてもよろしいですか？この操作は元に戻せません。",
-                "resetSuccess": "🗑 インデックスがリセットされました。"
-            }
-        },
-        "misc": {
-            "title": "その他\n& 拡張機能",
-            "contextMenu": {
-                "name": "コンテキストメニュー統合",
-                "desc": "エディターでテキストドラッグ後に右クリックした際にLuminaメニューを表示します。"
-            },
-            "ribbonIcon": {
-                "name": "リボンアイコンを表示",
-                "desc": "左側サイドバーにプラグインアイコンを表示します。"
-            },
-            "frontmatter": {
-                "name": "フロントマター自動生成",
-                "desc": "ノートのフロントマター（メタデータ）を自動的に生成します。"
-            },
-            "debugMode": {
-                "name": "デバッグモード",
-                "desc": "バックグラウンドのデータをテキストとして確認します。"
-            },
-            "versionInfo": {
-                "name": "バージョン情報 & リリースノート",
-                "desc": "リリースノートと更新履歴"
-            },
-            "factoryReset": {
-                "name": "データ初期化とプラグインリセット",
-                "desc": "プラグインを全体初期化します。",
-                "button": "🔄 リセット",
-                "devNotice": "⚠️ プラグイン初期化機能は開発中です。",
-                "confirmTitle": "プラグイン初期化",
-                "confirmMsg": "すべての設定をリセットしてもよろしいですか？登録済みのAPIキー、設定オプション、RAGインデックス、ダウンロードしたローカルモデル、およびシステム言語の翻訳キャッシュがすべて削除されます。（チャット履歴は保持されます）",
-                "success": "✅ プラグイン設定が初期化されました。"
-            },
-            "donate": {
-                "name": "寄付とサポート",
-                "desc": "Luminaプラグインが役に立った場合、開発を支援する寄付をご検討ください！",
-                "supportTitle": "Luminaを支援する:",
-                "kofi": "☕ Ko-fi",
-                "ctee": "☕ Ctee",
-                "githubSponsors": "💖 GitHub Sponsors"
-            }
-        },
-        "providerErrors": {
-            "missingUrl": "エンドポイントURLを入力してください。",
-            "missingKey": "APIキーを入力してください。",
-            "unknownType": "不明なプロバイダータイプ: {{type}}",
-            "apiError": "{{provider}} APIエラー: {{status}} {{text}}",
-            "ollamaNoModel": "Ollamaに実行中のモデルがありません。`ollama run <model>`でモデルを先に起動してください。",
-            "connectFail": "接続に失敗しました: {{status}} {{text}}",
-            "anthropicNoEmbed": "Anthropicは埋め込みAPIをサポートしていません。",
-            "visionNotSupported": "⚠️ 選択したプロバイダー({{provider}})は画像分析をサポートしていません。画像を使用するには、OpenAI、Anthropic、またはGoogle（ビジョン対応モデル）を選択してください。"
-        },
-        "translation": {
-            "confirmTitle": "システム言語への翻訳",
-            "confirmMsg": "[{{provider}}] {{model}}モデルで翻訳を進めます。\n\nAPIトークン費用が発生する場合があります。進めますか？",
-            "progressTitle": "翻訳中",
-            "progressMsg": "🔄 言語データをシステム言語に翻訳しています。ウィンドウを閉じてもバックグラウンドで続行されます。",
-            "delayLocal": "この処理はローカルモデルを使用するため、システムスペックによっては1〜5分以上かかる場合があります。",
-            "delayCloud": "この処理は使用しているモデルとネットワーク状況により1〜2分程度かかる場合があります。",
-            "success": "✅ 言語の翻訳と適用が完了しました。",
-            "fail": "❌ 翻訳に失敗しました: ",
-            "noValidModel": "⚠️ LLMが接続されていないか、有効なモデルが選択されていません。",
-            "cacheDeleted": "✅ システム言語の翻訳キャッシュが削除されました。",
-            "cacheDeleteFail": "❌ キャッシュ削除に失敗しました: ",
-            "noCache": "⚠️ 削除する翻訳キャッシュがありません。"
-        }
+        "current": "現在: {{lang}}",
+        "deleteCache": "キャッシュを削除",
+        "deleteCacheTooltip": "システム言語の翻訳キャッシュデータを削除してリセットします。",
+        "deleteCacheTitle": "翻訳キャッシュの削除",
+        "deleteCacheConfirm": "キャッシュされたシステム言語の翻訳データを削除してもよろしいですか？\n削除後に再度システム言語を選択すると、新しい翻訳が実行されます。"
+      },
+      "apiKey": {
+        "name": "APIキーとモデル登録",
+        "desc": "クラウドプロバイダーのAPIキー、またはローカルLLMのURLを登録します。",
+        "mobileLocalWarning": "モバイルデバイスではローカルLLMを使用できません。",
+        "addConnection": "+ 新しいLLM接続を追加",
+        "apiKey": "APIキー",
+        "endpointUrl": "エンドポイントURL",
+        "hiddenDesc": "入力時に値は非表示になります。",
+        "testConnection": "接続テスト",
+        "testing": "テスト中...",
+        "deleteConnection": "この接続を削除",
+        "connected": "接続済み",
+        "notConnected": "未接続",
+        "selectModel": "モデルを選択",
+        "endpointPlaceholder": "例: http://localhost:11434",
+        "newConnection": "新規接続",
+        "success": "接続成功！",
+        "fail": "接続失敗: ",
+        "noModels": "利用可能なモデルがありません。"
+      },
+      "ragEngine": {
+        "name": "ワンクリックRAGエンジン",
+        "desc": "Vault内の全ノートをリアルタイムで参照して回答を生成し、スマートディスカバリー機能を提供します。",
+        "privacyNotice": "🔒 ドキュメント分析はローカルで実行されます。（クラウドAIチャットではノートの抜粋が送信される場合があります）",
+        "customGuide": "💡 埋め込みエンジンを手動で選択するには、右上の「詳細設定」を有効にしてください。",
+        "mobileWarning": "⚠️ モバイルデバイスではワンクリックローカル埋め込み（RAG）をサポートしていません。詳細設定でクラウド用埋め込みモデルを直接選択してください。",
+        "ragDisabledForEmbedding": "⚠️ RAGエンジンが無効化されています。RAGエンジンを有効にした後で埋め込みモデルを選択できます。"
+      },
+      "customEmbedding": {
+        "name": "カスタム埋め込み",
+        "desc": "登録済みプロバイダーのモデル一覧から埋め込みモデルを選択します。",
+        "auto": "🤖 自動 (内蔵ローカルモデル: ibm-granite/granite-embedding-97m-multilingual-r2)",
+        "guide": "※ 上記でLLM接続を登録し、接続テストを実行してください。",
+        "localWarn": "⚠️ ローカルモデルは埋め込みモデルかどうかを自動的に確認できません。\nインデックス作成後にエラーが発生した場合は、埋め込み専用モデルを選択してください。",
+        "mobileWarn": "⚠️ モバイルデバイスではローカル埋め込みモデルを使用できません。クラウド埋め込みを選択してください。"
+      },
+      "defaultChatModel": {
+        "name": "デフォルトチャットモデル",
+        "desc": "サイドバーチャットでデフォルト使用するLLMモデルを選択します。",
+        "sidebarDefault": "サイドバーチャット デフォルトモデル",
+        "noConnections": "設定でLLM接続を追加し、テストを通過するとデフォルトモデルを選択できます。"
+      },
+      "quickActionProvider": {
+        "name": "クイックアクション プロバイダー",
+        "desc": "🚨 大規模・推論モデルは深刻な遅延を引き起こす可能性があります。高速で軽量なモデル（Instruct、Flash、Miniクラス）をご使用ください。"
+      },
+      "quickActionModel": {
+        "name": "クイックアクション モデル",
+        "desc": "クイックアクション機能に使用する専用モデルを選択してください。（高速・軽量モデルを推奨）",
+        "noneSelected": "未選択（必須）",
+        "reasoningWarning": "⚠️ 警告: 推論モデルが検出されました！クイックアクションは高速性が求められます。このモデルを使用すると、深刻な遅延や無限ループが発生する可能性があります。標準のInstructモデルの使用を強く推奨します。"
+      },
+      "taskModel": {
+        "name": "タスクモデル (任意)",
+        "desc": "バックグラウンドAIタスク(要約など)用の軽量モデル。未選択時はデフォルトが使用されます。",
+        "noneSelected": "未選択 (デフォルトを使用)"
+      },
+      "rerankerModel": {
+        "name": "リランカーモデル (任意)",
+        "desc": "RAG検索結果を再ランク付けし、回答の関連性を高めるモデルを選択します。",
+        "noneSelected": "未選択 (無効)"
+      }
     },
-    "errors": {
-        "llmNotConnected": "LLMが接続されていません。",
-        "ragIndexingFailed": "RAGのインデックス作成に失敗しました。",
-        "llmConnectRequired": "設定でLLMを追加し、接続テストを完了してください。",
-        "resetChat": "チャットをリセット",
-        "chatPlaceholder": "メッセージを入力… (@: コンテキスト, /: コマンド)",
-        "chatEmptyWelcome": "Luminaに何でも聞いてください。",
-        "cancelStreaming": "キャンセル",
-        "send": "送信",
-        "underDevelopment": "この機能は開発中です。",
-        "ragDisabledGlobally": "グローバルRAGエンジンが無効になっています。設定で有効にしてください。",
-        "llm": {
-            "rateLimit": "⚠️ API呼び出し制限（Quota）またはリクエスト速度制限（Rate Limit）を超過しました。しばらく経ってから再度お試しください。無料ティアの場合は分/日制限、またはアカウントの支払いカード/クレジット情報をご確認ください。",
-            "unauthorized": "⚠️ APIキーが正しくないか、有効期限が切れています。プラグイン設定の「接続とモデル」でAPIキーを確認してください。",
-            "forbidden": "⚠️ API権限がないか、拒否されたリクエストです。APIキーの権限、または当該サービスのアカウントプラン（あるいは地域制限）を確認してください。",
-            "notFound": "⚠️ リクエストされたモデルが見つからないか、エンドポイントのURLが正しくありません。設定で選択されたモデルと接続情報を確認してください。",
-            "serviceUnavailable": "⚠️ 現在モデルの需要が高く、一時的に利用できません。通常は一時的な現象ですので、しばらく経ってから再度お試しください。",
-            "networkError": "⚠️ ネットワーク接続に失敗しました。インターネットの接続状態を確認するか、ローカルLLMの場合はサーバーが正常に起動しているか確認してください。",
-            "notReadable": "レスポンスボディを読み取れません。"
+    "mcp": {
+      "title": "エージェント\n& MCP",
+      "desc": "Model Context Protocol (MCP) を通じて外部ツールを接続するか、内蔵サーバーを通じて他のアプリがLuminaを制御できるように設定します。",
+      "addServer": "+ 新しい MCP サーバーを追加",
+      "serverName": "サーバー名",
+      "transport": "転送方式",
+      "enableDesc": "有効化 (チャットにツールを挿入)",
+      "deleteServer": "このサーバーを削除",
+      "emptyServers": "登録されたサーバーがありません。",
+      "localServerName": "Lumina内蔵サーバー",
+      "restart": "再起動",
+      "localServer": {
+        "sectionTitle": "Lumina内蔵MCPサーバー（ホスティング）",
+        "desc": "外部クライアント（AIエージェントなど）からObsidianの機能にアクセスできるように、ローカルサーバーを起動します。",
+        "enable": {
+          "name": "サーバーの有効化"
+        },
+        "port": {
+          "name": "サーバーポート",
+          "desc": "デフォルト: 3000（設定後に再起動すると適用されます）"
+        },
+        "token": {
+          "name": "認証トークン",
+          "desc": "外部クライアントが接続する際に必要なトークンです。外部に公開しないでください。",
+          "regenerate": "再発行"
+        },
+        "guide": "SSE: http://localhost:{{port}}/sse\n認証: ヘッダーに Authorization: Bearer <トークン>",
+        "maxRead": {
+          "name": "Read 最大文字数",
+          "desc": "ファイル読み取り時の最大返却文字数 (デフォルト: 20000)"
+        },
+        "searchSnippet": {
+          "name": "Search スニペット長",
+          "desc": "一致語の前後に表示する文字数 (デフォルト: 300)"
+        },
+        "searchMaxResults": {
+          "name": "Search 最大結果数",
+          "desc": "1回の検索での最大返却結果数 (デフォルト: 10)"
+        },
+        "maxAppend": {
+          "name": "Append 最大文字数",
+          "desc": "1回の追加操作での最大文字数 (デフォルト: 10000)"
         }
+      },
+      "externalServer": {
+        "sectionTitle": "外部MCPサーバー（クライアント接続）",
+        "desc": "Model Context Protocol (MCP) を通じて外部ツールを接続し、チャットで追加のツールを使用できるように設定します。",
+        "sseUrl": {
+          "name": "SSE URL",
+          "desc": "例: http://localhost:8080/sse"
+        },
+        "token": {
+          "name": "認証トークン (任意)",
+          "desc": "サーバーが認証を必要とする場合、トークンを入力してください。"
+        }
+      },
+      "permission": {
+        "title": "ツールの実行許可",
+        "desc": "AIが、システム制御権限が必要な可能性がある危険なツールの実行をリクエストしています。\n\nサーバー: {{server}}\nツール: {{tool}}",
+        "args": "引数 (Arguments):",
+        "approve": "承認",
+        "reject": "拒否"
+      },
+      "agentMode": {
+        "name": "エージェントモード",
+        "desc": "LLMがMCPツールを使って自律的にタスクを実行します。⚠️ 小型モデルではパフォーマンスが低下する可能性があります。",
+        "maxSteps": "最大自動実行回数",
+        "maxStepsDesc": "エージェントが1回の応答でツールを連続して実行できる最大回数。(デフォルト: 15)",
+        "respectRagExclusions": "RAGの除外/包含パスをエージェントに適用",
+        "respectRagExclusionsDesc": "RAGタブの除外ルールをエージェントのファイル操作に適用します。",
+        "readMode": "読み取りモード",
+        "editMode": "編集モード"
+      },
+      "experimental": "実験的機能"
+    },
+    "webSearch": {
+      "title": "ウェブ検索",
+      "enable": {
+        "name": "ウェブ検索を有効にする",
+        "desc": "ローカルLLMが検索ツールを使用できるようにします。"
+      },
+      "privacyWarning": "🔒 プライバシーに関する注意: ウェブ検索が有効になっている場合、プロンプトの一部（検索クエリ）が外部の検索サービス（Tavily、Braveなど）に送信される可能性があります。",
+      "provider": {
+        "name": "検索プロバイダー",
+        "desc": "使用する検索プロバイダーを選択します。"
+      },
+      "apiKey": {
+        "name": "APIキー",
+        "desc": "検索サービスのAPIキーを入力します。"
+      },
+      "baseUrl": {
+        "name": "Base URL",
+        "desc": "ローカル検索インスタンスのURLを入力します。(例: http://localhost:8080)"
+      },
+      "googleSearchEngineId": {
+        "name": "検索エンジン ID (CX)",
+        "desc": "Google Custom Searchの検索エンジンID (CX) を入力します。"
+      },
+      "maxResults": {
+        "name": "最大結果数",
+        "desc": "検索時に取得する最大結果数です。(デフォルト: 5)"
+      },
+      "maxContentLength": {
+        "name": "コンテキスト最大長",
+        "desc": "LLMのコンテキストに挿入される検索結果の最大文字数です。(デフォルト: 3000)"
+      }
     },
     "chat": {
-        "newChat": "新しいチャット",
-        "history": "チャット履歴",
-        "settings": "チャット設定",
-        "addContext": "コンテキストを追加 (@)",
-        "uploadFile": "ファイルをアップロード",
-        "clearInput": "入力をクリア",
-        "slashCommands": {
-            "clear": {
-                "name": "チャットをクリア",
-                "desc": "現在の会話をクリアし、新しいチャットを開始します。"
-            },
-            "rag": {
-                "name": "RAG の切り替え",
-                "desc": "RAGコンテキストの使用を有効または無効にします。"
-            },
-            "mcp": {
-                "name": "MCP サーバー",
-                "desc": "MCPサーバーの一覧ポップアップを開きます。"
-            },
-            "settings": {
-                "name": "設定",
-                "desc": "Luminaの設定画面を開きます。"
-            }
-        },
-        "sessionUsage": "現在のセッションの累積使用量",
-        "sessionTokens": "累積: {{tokens}} トークン",
-        "sessionCost": "(約 ${{cost}})"
+      "quickSettings": {
+        "systemPrompt": "システムプロンプト",
+        "temperature": "温度（創造性）",
+        "precise": "正確に",
+        "balanced": "バランスよく",
+        "creative": "クリエイティブに",
+        "maxLength": "最大出力長",
+        "short": "短く",
+        "medium": "標準",
+        "long": "長く",
+        "allSettings": "すべての設定"
+      },
+      "title": "チャット\n& プロンプト",
+      "currentNote": "現在のノートを含める",
+      "systemPrompt": {
+        "name": "システムプロンプト",
+        "desc": "複数のシステムプロンプトを管理します。",
+        "active": "✅ 現在有効",
+        "activate": "有効化",
+        "addPrompt": "+ プロンプトを追加",
+        "defaultName": "システムプロンプト"
+      },
+      "history": {
+        "name": "チャット履歴の自動保存",
+        "desc": "チャット履歴を自動的に保存します。",
+        "pathPlaceholder": "例: /chatHistory",
+        "savePath": "保存パス",
+        "savePathDesc": "チャット履歴を指定したパスに自動的に保存します。 (Default: chatHistory)",
+        "saveFail": "⚠️ チャット履歴の保存に失敗しました: {{error}}",
+        "loadFail": "⚠️ セッションの読み込みに失敗しました。",
+        "deleteSuccess": "✅ チャット履歴が削除されました。",
+        "deleteFail": "⚠️ セッションの削除に失敗しました。",
+        "deleteConfirm": "このチャット履歴を削除してもよろしいですか？",
+        "title": "チャット履歴",
+        "empty": "保存されたチャット履歴はありません。",
+        "unknownModel": "不明なモデル"
+      },
+      "sendMode": {
+        "name": "メッセージ送信モード",
+        "desc": "チャットでのメッセージ送信方法を選択します。 (Default: Send on Enter)",
+        "enter": "Enterで送信",
+        "ctrlEnter": "Ctrl + Enterで送信"
+      },
+      "quickActions": {
+        "name": "ユーザーカスタムクイックアクション (コマンド)",
+        "desc": "よく使用するプロンプトをObsidianコマンドとして登録し、エディターで選択したテキストに直接実行できます。",
+        "add": "+ クイックアクションを追加",
+        "actionName": "アクション名",
+        "actionPrompt": "プロンプト",
+        "actionType": "動作方式",
+        "typeReplace": "テキストを上書き",
+        "typeAppend": "テキストに追記",
+        "typeChat": "チャットウィンドウに送信",
+        "newAction": "新しいアクション",
+        "deleteAction": "このアクションを削除",
+        "defaults": {
+          "summarize": {
+            "name": "要約する",
+            "prompt": "次のテキストを簡潔に要約してください:\n\n"
+          },
+          "translate": {
+            "name": "日本語に翻訳",
+            "prompt": "次のテキストを自然な日本語に翻訳してください:\n\n"
+          },
+          "explain": {
+            "name": "説明する",
+            "prompt": "次のテキストについて詳しく説明してください:\n\n"
+          }
+        }
+      },
+      "inlineTrigger": {
+        "name": "インラインコマンドトリガー",
+        "desc": "エディターでクイックアクションの自動補完ポップアップを表示するためのキーワードです。 (Default: /ai)"
+      },
+      "memoryLimit": {
+        "name": "会話メモリ制限",
+        "desc": "APIに送信する過去のターン数を記憶します。",
+        "limitType": "会話メモリモード",
+        "autoSummary": "自動コンテキスト要約（デフォルト）",
+        "turns": "ターン数制限",
+        "tokens": "トークン数制限",
+        "turnsLabel": "記憶するターン数",
+        "turnsDesc": "1〜15ターン。1ターン = ユーザーメッセージ + AI回答 1セット (Default: 10)",
+        "maxTokens": "最大コンテキストトークン (Default: 8000)"
+      },
+      "modelParams": {
+        "name": "モデルパラメータ",
+        "desc": "Temperature（創造性/正確性の調整）、最大出力長などを設定します。",
+        "tempLabel": "温度 (Temperature)",
+        "tempDesc": "低いほど正確、高いほど創造的になります（0.0〜2.0） (Default: 0.7)",
+        "maxOutput": "最大出力トークン (Max Output Tokens)",
+        "maxOutputDesc": "1回の生成での最大出力トークン数を制限します。 (Default: 4000)",
+        "responseLang": "応答言語を指定",
+        "responseLangDesc": "AIが回答する言語を固定します。「自動」はユーザーの質問言語に合わせます。",
+        "responseLangAuto": "自動"
+      },
+      "streaming": {
+        "name": "ストリーミング",
+        "desc": "ストリーミング応答を有効にします。"
+      },
+      "emptyResponseFallback": "⚠️ モデルが空の応答を返しました。（サポートされていない言語/フォーマット、プロンプトのフィルタリング、またはコンテキスト制限の超過が原因である可能性があります。）",
+      "context": {
+        "activeNote": "現在のノートを含める: {{name}}",
+        "selectedText": "選択されたテキスト ({{length}}文字)",
+        "folderFiles": "[フォルダ: {{name}} 内のファイル群]",
+        "activeNotePrefix": "[現在のノート: {{name}}]",
+        "canvasFile": "[キャンバスファイル: {{name}}]",
+        "tagFiles": "[タグ: {{name}} が含まれるファイル群 (最大5件)]",
+        "activeNotePrompt": "現在の有効なノート",
+        "categoryActiveNote": "📄 現在のノートを含める",
+        "categorySelection": "✂️ 選択テキスト",
+        "categoryFolder": "📁 フォルダを追加",
+        "categoryFile": "📝 ファイルを追加",
+        "categoryTag": "🏷️ タグを追加",
+        "categoryUrl": "🔗 URLを入力",
+        "categoryCanvas": "🎨 キャンバスを追加",
+        "categoryBack": "戻る",
+        "categoryTitle": "コンテキストタイプを選択",
+        "urlInputPlaceholder": "URLを入力（例: https://...）",
+        "urlInputPrompt": "EnterでURLを追加",
+        "includeNote": "ノートを含める",
+        "excludeNote": "ノートを除外"
+      }
+    },
+    "rag": {
+      "toggleTooltip": "オンにすると、AIがVault内のノートを読み取り、参照して回答します。",
+      "title": "RAG\n& コンテキスト",
+      "embeddingWarning": "RAG用の埋め込みモデル設定は「接続とモデル」タブにあります。",
+      "disabledWarning": "⚪ RAGが無効化されています。「接続とモデル」タブでRAGエンジンを有効にしてください。",
+      "dataScope": {
+        "name": "デフォルトのデータ範囲",
+        "desc": "RAG検索に含めるノートを選択します。 (Default: Entire Vault)",
+        "vaultWide": "Vault全体",
+        "activeNote": "アクティブなノートのみの場合",
+        "manual": "手動で選択したファイルのみ"
+      },
+      "autoIncludeActive": {
+        "name": "現在のノートを自動含める",
+        "desc": "チャット時に現在アクティブ（開かれている）ノートをコンテキストにデフォルトで含めます。"
+      },
+      "includePaths": {
+        "name": "含めるパス",
+        "desc": "カンマ区切り。空白でVault全体を含む"
+      },
+      "ignorePaths": {
+        "name": "除外パス",
+        "desc": "カンマ区切り。含めるパスより優先 (Default: templates, chatHistory, etc.)"
+      },
+      "chunking": {
+        "name": "テキストチャンキング設定",
+        "desc": "ドキュメントを分割する単位サイズ（Chunk Size）と重複区間（Overlap）を設定します。",
+        "parentSizeName": "親チャンクサイズ",
+        "parentSizeDesc": "ドキュメント分割の基本単位（1000〜3000文字推奨） (デフォルト: 2000)",
+        "parentOverlapName": "親チャンクのオーバーラップ",
+        "parentOverlapDesc": "親チャンク間で重複させる文字数 (デフォルト: 200)",
+        "childSizeName": "子チャンクサイズ",
+        "childSizeDesc": "ベクトル検索に使用される子チャンクサイズ（100〜300文字推奨） (デフォルト: 200)",
+        "childOverlapName": "子チャンクのオーバーラップ",
+        "childOverlapDesc": "子チャンク間で重複させる文字数 (デフォルト: 40)"
+      },
+      "topK": {
+        "name": "Top-K検索数",
+        "desc": "LLMに渡す最も関連性の高いドキュメントの数を設定します。 (Default: 5)"
+      },
+      "syncMode": {
+        "name": "インデックス同期モード",
+        "desc": "RAGインデックスの同期タイミングを選択します。 (Default: Watch)",
+        "watch": "変更検知（推奨）",
+        "manual": "手動同期",
+        "startup": "アプリ起動時に一度"
+      },
+      "minSimilarity": {
+        "name": "最小類似度閾値",
+        "desc": "この値以下の関連性スコアを検索結果から除外します (0~1) (Default: 0.0)"
+      },
+      "maxFileSize": {
+        "name": "最大ファイルサイズ (MB)",
+        "desc": "このサイズより大きいファイルはインデックスから除外されます。0 = 制限なし。デフォルト: 50 MB"
+      },
+      "reindex": {
+        "name": "全体再インデックス",
+        "desc": "Vault内のすべてのノートを最初から再度インデックスします。",
+        "button": "🔄 今すぐ再インデックス",
+        "notActivated": "❌ RAGエンジンが有効になっていません。",
+        "started": "🔄 全体再インデックスを開始しています...",
+        "success": "✅ 再インデックスが完了しました",
+        "fail": "❌ 再インデックスに失敗しました: "
+      },
+      "status": {
+        "name": "インデックス状態",
+        "desc": "現在のインデックス容量とファイル数を表示します。",
+        "statusLabel": "状態",
+        "indexing": "インデックス作成中... ({{processed}}/{{total}})",
+        "files": "📄 インデックス済みファイル: {{count}}件",
+        "size": "💾 ストレージ使用量: {{size}} KB",
+        "ready": "RAG 準備完了",
+        "indexingShort": "インデックス作成中",
+        "error": "RAG エラー",
+        "waiting": "RAG 待機中"
+      },
+      "init": {
+        "loadingModel": "Lumina: 埋め込みモデルを読み込んでいます...",
+        "loadingModelDesc": "初回実行時、ローカルモデルのダウンロードと読み込みに数分かかる場合があります。",
+        "cloudSuccess": "Lumina: クラウド埋め込みに接続しました",
+        "loadingProgress": "Lumina: モデル読み込み中 {{pct}}%",
+        "indexingVault": "Lumina: Vaultのインデックスを作成しています...",
+        "indexingProgressText": " ({{processed}}/{{total}}) - {{pct}}%",
+        "remainingTimePrefix": " - 残り時間: ",
+        "remainingTimeSec": "{{sec}}秒",
+        "remainingTimeMinSec": "{{min}}分{{sec}}秒",
+        "ready": "✅ Lumina: RAGエンジン準備完了",
+        "indexFail": "❌ Lumina: インデックス作成に失敗しました\n{{error}}",
+        "readyManual": "✅ Lumina: RAGエンジン準備完了（手動インデックスモード）",
+        "initFail": "❌ Lumina: RAGワーカーの初期化に失敗しました\n{{error}}",
+        "downloading": "RAGモデルをダウンロードしています...",
+        "indexingNotes": "ノートのインデックスを作成しています..."
+      },
+      "reset": {
+        "name": "インデックスをリセット",
+        "desc": "インデックスされたすべてのデータをクリアします。",
+        "button": "🗑 インデックスをリセット",
+        "devNotice": "⚠️ インデックスがクリアされました（開発中）",
+        "resetConfirm": "インデックスをリセットしてもよろしいですか？この操作は元に戻せません。",
+        "resetSuccess": "🗑 インデックスがリセットされました。"
+      }
+    },
+    "misc": {
+      "title": "その他\n& 拡張機能",
+      "contextMenu": {
+        "name": "コンテキストメニュー統合",
+        "desc": "エディターでテキストドラッグ後に右クリックした際にLuminaメニューを表示します。"
+      },
+      "ribbonIcon": {
+        "name": "リボンアイコンを表示",
+        "desc": "左側サイドバーにプラグインアイコンを表示します。"
+      },
+      "frontmatter": {
+        "name": "フロントマター自動生成",
+        "desc": "ノートのフロントマター（メタデータ）を自動的に生成します。"
+      },
+      "debugMode": {
+        "name": "デバッグモード",
+        "desc": "バックグラウンドのデータをテキストとして確認します。"
+      },
+      "versionInfo": {
+        "name": "バージョン情報 & リリースノート",
+        "desc": "リリースノートと更新履歴"
+      },
+      "factoryReset": {
+        "name": "データ初期化とプラグインリセット",
+        "desc": "プラグインを全体初期化します。",
+        "button": "🔄 リセット",
+        "devNotice": "⚠️ プラグイン初期化機能は開発中です。",
+        "confirmTitle": "プラグイン初期化",
+        "confirmMsg": "すべての設定をリセットしてもよろしいですか？登録済みのAPIキー、設定オプション、RAGインデックス、ダウンロードしたローカルモデル、およびシステム言語の翻訳キャッシュがすべて削除されます。（チャット履歴は保持されます）",
+        "success": "✅ プラグイン設定が初期化されました。"
+      },
+      "donate": {
+        "name": "寄付とサポート",
+        "desc": "Luminaプラグインが役に立った場合、開発を支援する寄付をご検討ください！",
+        "supportTitle": "Luminaを支援する:",
+        "kofi": "☕ Ko-fi",
+        "ctee": "☕ Ctee",
+        "githubSponsors": "💖 GitHub Sponsors"
+      }
+    },
+    "providerErrors": {
+      "missingUrl": "エンドポイントURLを入力してください。",
+      "missingKey": "APIキーを入力してください。",
+      "unknownType": "不明なプロバイダータイプ: {{type}}",
+      "apiError": "{{provider}} APIエラー: {{status}} {{text}}",
+      "ollamaNoModel": "Ollamaに実行中のモデルがありません。`ollama run <model>`でモデルを先に起動してください。",
+      "connectFail": "接続に失敗しました: {{status}} {{text}}",
+      "anthropicNoEmbed": "Anthropicは埋め込みAPIをサポートしていません。",
+      "visionNotSupported": "⚠️ 選択したプロバイダー({{provider}})は画像分析をサポートしていません。画像を使用するには、OpenAI、Anthropic、またはGoogle（ビジョン対応モデル）を選択してください。"
+    },
+    "translation": {
+      "confirmTitle": "システム言語への翻訳",
+      "confirmMsg": "[{{provider}}] {{model}}モデルで翻訳を進めます。\n\nAPIトークン費用が発生する場合があります。進めますか？",
+      "progressTitle": "翻訳中",
+      "progressMsg": "🔄 言語データをシステム言語に翻訳しています。ウィンドウを閉じてもバックグラウンドで続行されます。",
+      "delayLocal": "この処理はローカルモデルを使用するため、システムスペックによっては1〜5分以上かかる場合があります。",
+      "delayCloud": "この処理は使用しているモデルとネットワーク状況により1〜2分程度かかる場合があります。",
+      "success": "✅ 言語の翻訳と適用が完了しました。",
+      "fail": "❌ 翻訳に失敗しました: ",
+      "noValidModel": "⚠️ LLMが接続されていないか、有効なモデルが選択されていません。",
+      "cacheDeleted": "✅ システム言語の翻訳キャッシュが削除されました。",
+      "cacheDeleteFail": "❌ キャッシュ削除に失敗しました: ",
+      "noCache": "⚠️ 削除する翻訳キャッシュがありません。"
+    }
+  },
+  "errors": {
+    "llmNotConnected": "LLMが接続されていません。",
+    "ragIndexingFailed": "RAGのインデックス作成に失敗しました。",
+    "llmConnectRequired": "設定でLLMを追加し、接続テストを完了してください。",
+    "resetChat": "チャットをリセット",
+    "chatPlaceholder": "メッセージを入力… (@: コンテキスト, /: コマンド)",
+    "chatEmptyWelcome": "Luminaに何でも聞いてください。",
+    "cancelStreaming": "キャンセル",
+    "send": "送信",
+    "underDevelopment": "この機能は開発中です。",
+    "ragDisabledGlobally": "グローバルRAGエンジンが無効になっています。設定で有効にしてください。",
+    "llm": {
+      "rateLimit": "⚠️ API呼び出し制限（Quota）またはリクエスト速度制限（Rate Limit）を超過しました。しばらく経ってから再度お試しください。無料ティアの場合は分/日制限、またはアカウントの支払いカード/クレジット情報をご確認ください。",
+      "unauthorized": "⚠️ APIキーが正しくないか、有効期限が切れています。プラグイン設定の「接続とモデル」でAPIキーを確認してください。",
+      "forbidden": "⚠️ API権限がないか、拒否されたリクエストです。APIキーの権限、または当該サービスのアカウントプラン（あるいは地域制限）を確認してください。",
+      "notFound": "⚠️ リクエストされたモデルが見つからないか、エンドポイントのURLが正しくありません。設定で選択されたモデルと接続情報を確認してください。",
+      "serviceUnavailable": "⚠️ 現在モデルの需要が高く、一時的に利用できません。通常は一時的な現象ですので、しばらく経ってから再度お試しください。",
+      "networkError": "⚠️ ネットワーク接続に失敗しました。インターネットの接続状態を確認するか、ローカルLLMの場合はサーバーが正常に起動しているか確認してください。",
+      "notReadable": "レスポンスボディを読み取れません。"
+    }
+  },
+  "chat": {
+    "newChat": "新しいチャット",
+    "history": "チャット履歴",
+    "settings": "チャット設定",
+    "addContext": "コンテキストを追加 (@)",
+    "uploadFile": "ファイルをアップロード",
+    "clearInput": "入力をクリア",
+    "slashCommands": {
+      "clear": {
+        "name": "チャットをクリア",
+        "desc": "現在の会話をクリアし、新しいチャットを開始します。"
+      },
+      "rag": {
+        "name": "RAG の切り替え",
+        "desc": "RAGコンテキストの使用を有効または無効にします。"
+      },
+      "mcp": {
+        "name": "MCP サーバー",
+        "desc": "MCPサーバーの一覧ポップアップを開きます。"
+      },
+      "settings": {
+        "name": "設定",
+        "desc": "Luminaの設定画面を開きます。"
+      }
+    },
+    "sessionUsage": "現在のセッションの累積使用量",
+    "sessionTokens": "累積: {{tokens}} トークン",
+    "sessionCost": "(約 ${{cost}})"
+  },
+  "common": {
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "remove": "除外",
+    "add": "追加",
+    "copy": "コピー",
+    "success": "成功",
+    "error": "エラー",
+    "history": "チャット履歴",
+    "back": "戻る",
+    "settings": "設定",
+    "loading": "読み込み中...",
+    "refresh": "更新"
+  },
+  "discovery": {
+    "tabName": "スマートディスカバリー",
+    "chatTabName": "AIチャット",
+    "searchPlaceholder": "意味ベースで質問/検索...",
+    "duplicateWarning": "⚠️ 非常に類似したノートがあります:",
+    "duplicateCompare": "比較する",
+    "recommendedTags": "推奨タグ",
+    "relatedNotes": "関連ノート",
+    "insertLink": "リンクを挿入",
+    "openInSplit": "スプリットビュー",
+    "chatWithNote": "チャット",
+    "filterPlaceholder": "フィルター (フォルダパス または #タグ)",
+    "emptyStateText": "RAG検索機能がオフになっています。",
+    "emptyStateSub": "設定で埋め込み(RAG)エンジンをオンにしてください。",
+    "noResults": "関連するノートは見つかりませんでした。",
+    "stagedContext": "選択されたコンテキスト",
+    "approxTokens": "推定トークン数: {{current}} / {{max}}",
+    "startChat": "{{count}}個でチャット開始",
+    "indexing": "RAGインデックス作成中... ({{processed}} / {{total}})",
+    "loadingModel": "埋め込みモデルを読み込んでいます...",
+    "noActiveEditor": "アクティブなMarkdownエディターが見つかりません。"
+  },
+  "uiMessages": {
+    "actionApproval": {
+      "title": "承認が必要です: {{action}}",
+      "targetFile": "対象ファイル: {{path}}",
+      "createNote": "📄 新しいノートを作成しますか？",
+      "deleteNote": "⚠️ このノートを削除しますか？",
+      "renameNote": "✏️ このノートを以下のパスに移動/名前変更しますか:",
+      "updateFrontmatter": "🏷️ フロントマターを更新しますか:",
+      "saveAttachment": "📎 添付ファイルを保存しますか？ サイズ: {{size}} バイト",
+      "executeCode": "⚡ このコードを実行しますか？",
+      "accept": "承認",
+      "reject": "拒否"
+    },
+    "emptyResponseTokenLimit": "⚠️ モデルが空の応答を返しました。最大出力トークン（Max Output Tokens）制限に達したため、生成が中断されました。設定の「最大出力トークン」制限を増やしてください。",
+    "tokenLimitHitWarning": "\n\n⚠️ （最大出力トークン制限に達したため、回答が途中で途切れました。設定の「最大出力トークン」の値を増やしてください。）",
+    "toolExecutionRejected": "ツールの実行をユーザーが承認しませんでした。",
+    "inlineReplace": "上書き",
+    "inlineAppend": "追記",
+    "inlineSend": "チャットに送信",
+    "inlineEmpty": "現在の行には対象テキストが見つかりません。テキストを入力またはドラッグしてください。",
+    "qaEmptySel": "テキストが選択されていません。",
+    "qaNotConfigured": "クイックアクションモデルが設定されていません。設定で専用モデルを選択してください。",
+    "qaNoProvider": "LLMプロバイダーが設定されていません。",
+    "qaInvalidProvider": "有効なLLMプロバイダーが見つからないか、認証されていません。",
+    "qaNoModel": "利用可能なモデルがありません。",
+    "qaSelectedText": "選択されたテキスト",
+    "qaExecuting": "{{name}} 実行中...",
+    "qaCompleted": "{{name}} 完了",
+    "qaError": "エラー発生: {{msg}}",
+    "qaWaitingAI": "⏳ AIの応答を待機中...",
+    "qaEmptyResponse": "⚠️ モデルが空のテキストを返しました。（無限ループまたはプロンプトの互換性問題）",
+    "qaUnknownError": "不明なエラー",
+    "qaReasoningDetected": "🚫 推論モデルの思考プロセス(<think>)が検出されたため、クイックアクションを強制終了しました。設定で標準Instructモデルに変更してください。",
+    "modalCancel": "キャンセル",
+    "modalProceed": "実行",
+    "modelPlaceholder": "モデル名を入力...（例: claude, gpt-4）",
+    "fsAdapterErr": "FileSystemAdapterが見つかりません。デスクトップ環境でのみサポートされています。",
+    "searchSource": "出典",
+    "debugDelAllMsg": "すべてのデバッグログを削除してもよろしいですか？",
+    "debugAutoScroll": "自動スクロール",
+    "debugExport": "JSONでエクスポート",
+    "debugDelAll": "ログ全体を削除",
+    "debugNoLogs": "ログなし",
+    "debugWaitLlm": "LLMリクエスト時に表示されます",
+    "debugTurnOn": "設定 › 詳細 からデバッグモードをオンにしてください",
+    "debugChunks": "チャンク",
+    "debugExpandAll": "すべて展開",
+    "debugCollapseAll": "すべて折りたたむ",
+    "ragTooLong": "[Lumina] RAGコンテキストが長すぎるため{{max}}文字に切り捨てられました。",
+    "ragWorkerInitErr": "不明なワーカー初期化エラー（コンソールを確認）",
+    "ragWorkerTimeout": "埋め込みモデルの読み込みタイムアウト(60秒超)。ネットワーク接続を確認するか、キャッシュを削除して再試行してください。",
+    "ragWorkerTerm": "ワーカーが終了しました。",
+    "ragWorkerNotReady": "EmbeddingWorkerが準備されていません。まずinit()を呼び出してください。",
+    "ragWorkerNotInit": "モデルが初期化されていません。initメッセージを先に送信してください。",
+    "ragWorkerLoadFail": "モデルの読み込みに失敗しました: ",
+    "localizedPrompt": "Always respond in Japanese (日本語).",
+    "cmdCtxMenu": "💬 Luminaチャットに送信",
+    "cmdAutoLinkNote": "🔗 現在のノートを自動リンク",
+    "cmdChatTitle": "チャットを開く",
+    "cmdLogTitle": "DevLogを開く",
+    "cmdReindex": "全体再インデックス",
+    "cmdClearIdx": "インデックスをクリア",
+    "ribbonTitle": "Luminaチャットを開く",
+    "noticeMobileRag": "モバイルではローカル埋め込みがブロックされています。RAGを使用するには設定でクラウド埋め込みを設定してください。",
+    "noticeLargeVault": "現在のVaultにはノートが{{count}}件と非常に多いです。バックグラウンドの初回インデックスにリソースと時間を要する場合があります。",
+    "noticeIndexing": "Lumina: 初期設定とノートのインデックス作成をバックグラウンドで進行中...",
+    "errNoProvider": "選択した埋め込みプロバイダーの設定が見つかりません。",
+    "errMobileAuto": "モバイルデバイスではローカル埋め込み(Autoモード)はサポートされていません。設定でクラウド埋め込みを選択してください。",
+    "mcpTokenCopied": "認証トークンがクリップボードにコピーされました。",
+    "mcpConnectFailed": "MCPサーバー「{{name}}」への接続に失敗したため無効化されました。",
+    "mcpLocalServerStartFailed": "内蔵MCPサーバーの起動に失敗しました: {{error}}",
+    "mcpDisconnectedDuringExecution": "ツール実行中にMCPサーバー「{{name}}」との接続が切断されたため、無効化されました。",
+    "mcpToolExecutionFailed": "MCPサーバー「{{name}}」でツールの実行に失敗しました。サーバーが無効化されました。設定を確認してください。",
+    "searchModelShort": "モデルを検索...",
+    "noSearchResults": "検索結果がありません。",
+    "unsupportedFileType": "サポートされていないファイル形式です: {{ext}}",
+    "attachFileFailed": "ファイルの添付に失敗しました: {{file}}",
+    "mcpManagerNotInitialized": "⚠️ MCP Managerが初期化されていません。",
+    "mcpSyncError": "⚠️ MCPサーバーの同期中にエラーが発生しました。",
+    "mcpLocalServerRestarted": "✅ 内蔵MCPサーバーが再起動しました (ポート: {{port}})",
+    "mcpLocalServerStarted": "✅ 内蔵MCPサーバーが起動しました (ポート: {{port}})",
+    "mcpLocalServerStopped": "🛑 内蔵MCPサーバーが停止しました (ポート: {{port}})",
+    "mcpLocalServerDisconnectAgentDisabled": "⚠️ 内蔵サーバーの接続エラーにより、エージェントモードが無効になりました。",
+    "mcpClientDisconnected": "🔌 MCPサーバー「{{name}}」が切断されました。",
+    "mcpClientConnected": "✅ MCPサーバー「{{name}}」が正常に接続されました。",
+    "mcpClientToolExecutionFailedStatusError": "⚠️ MCPサーバー「{{name}}」でのツールの実行に失敗しました。ステータスがエラーに設定されました。",
+    "mcpClientToolExecuteFailedTryReconnect": "MCPサーバー「{{name}}」でのツールの実行に失敗しました。再接続を試してください。",
+    "toolExecutionBlockedReadMode": "エラー：現在読み取りモードです。書き込みまたは変更権限が必要なツール（{{toolName}}）を実行するには、「編集モード」に切り替えてください。",
+    "agentModeLlmRequired": "⚠️ エージェントを使用するには、まずLLMプロバイダーを設定し、検証する必要があります。",
+    "agentModeLocalServerStarting": "🚀 エージェント有効化: ローカルMCPサーバーに接続しています...",
+    "agentModeLocalServerConnecting": "🚀 エージェント有効化: ローカルMCPサーバーに接続しています...",
+    "agentModeEnabled": "🤖 エージェントモードが有効になりました。",
+    "agentModeDisabled": "🤖 エージェントモードが無効になりました。",
+    "agentModeLocalServerStoppedDisabled": "⚠️ 内蔵MCPサーバーが停止したため、エージェントモードも無効になりました。",
+    "agentModeLocalServerStoppedDisabledShort": "⚠️ ローカルサーバーが停止したため、エージェント機能が無効になりました。",
+    "mcpLocalServerTokenInputFromLocal": "ローカルサーバーのトークンが入力されました。",
+    "mcpLocalServerTokenInputFromLocalTooltip": "内蔵MCPサーバーの認証トークンを自動入力",
+    "thoughtProcess": "思考プロセス",
+    "agentMaxStepsReached": "⚠️ ツールの最大実行回数に達しました。",
+    "agentRepeatedToolCalls": "⚠️ 同じツールの呼び出しが繰り返されたため、中断されました。別の方法で質問してください。",
+    "agentToolNotFound": "接続されたMCPサーバーにツール「{{name}}」が見つかりません。",
+    "agentToolTruncatedNote": "\n\n⚠️ 注意: ツールの出力結果が{{total}}文字から{{max}}文字に切り捨てられました。完全な内容はVaultのファイルで確認できます。このツールを再度呼び出さず、切り捨てられた内容を参照してユーザーに応答してください。",
+    "agentToolResultFor": "ツール「{{name}}」の実行結果:",
+    "agentToolError": "ツール「{{name}}」のエラー: {{error}}",
+    "agentToolExecuteError": "ツールの実行中にエラーが発生しました: {{error}}",
+    "agentBetaActivateTitle": "🤖 エージェント（ベータ版）を有効にしますか？",
+    "agentBetaActivateDesc": "LLM接続完了！エージェントモードを有効にしますか？\n\nエージェントはノートの読み取り、新しいノートの作成、ノートへの内容の追加を自動的に実行できます。\n\nチャット画面のMCPボタンからいつでもオン/オフを切り替えられます。",
+    "agentBetaActivateConfirm": "有効にする",
+    "agentBetaActivateSkip": "後で",
+    "agentBetaEnabled": "🤖 エージェントモードが有効になりました！エージェントがノート作業のお手伝いをします。",
+    "copiedToClipboard": "クリップボードにコピーしました。",
+    "contentInserted": "ノートに内容が挿入されました。",
+    "noActiveMarkdown": "アクティブなMarkdownウィンドウがありません。先にノートをクリックしてください。",
+    "editConfirm": "これ以降のメッセージはすべて削除されます。続行しますか？",
+    "regenerateConfirm": "これ以降のすべての会話が削除され、回答が再生成されます。続行しますか？",
+    "fileNotFound": "ファイルが見つかりません。",
+    "saveAndSend": "保存して送信",
+    "insertToNote": "ノートに挿入",
+    "regenerate": "再生成",
+    "edit": "編集",
+    "openReferenceNote": "参照ノートを開く",
+    "ragProgress": {
+      "searching": "🔍 拡張検索中...",
+      "reranking": "⚖️ リランク演算中...",
+      "compressing": "🗜️ コンテキスト圧縮中...",
+      "generating": "💡 回答生成中..."
+    }
+  },
+  "mcpServerTools": {
+    "read_active_note": {
+      "desc": "現在Obsidianでアクティブな（開かれている）ノートの内容を読み取ります。",
+      "noActive": "現在アクティブなノートはありません。"
+    },
+    "read_note": {
+      "desc": "Vault内の特定のノートを読み取ります。",
+      "argPath": "読み取るファイルのパス (例: folder/note.md)",
+      "notFound": "ファイルが見つかりません: {{path}}"
+    },
+    "create_note": {
+      "desc": "新しいノートを作成します。すでにファイルが存在する場合、上書きせずにエラーを返します。",
+      "argPath": "作成するファイルのパス (例: folder/new_note.md)",
+      "argContent": "ノートの初期内容",
+      "tooLong": "作成する内容が制限（{{limit}}文字）を超えています。",
+      "alreadyExists": "ファイルがすでに存在します。上書きは許可されていません: {{path}}",
+      "parentFolderNotFound": "親フォルダが存在しません: {{parentPath}}",
+      "success": "ノートが作成されました: {{path}}"
+    },
+    "search_notes": {
+      "desc": "Vault内のすべてのMarkdownファイルから特定のテキストを検索します。",
+      "argQuery": "検索するテキスト",
+      "foundPrefix": "次のファイルで発見されました（最大{{max}}件）:\n\n",
+      "noResults": "検索結果がありません。"
+    },
+    "append_to_note": {
+      "desc": "既存のノートの末尾に内容を追加します。無限ループを防ぐため、ファイルの最大長制限（100,000文字）があります。",
+      "argPath": "内容を追加するファイルのパス",
+      "argContent": "追加する内容",
+      "tooLong": "1回に追加できる最大長は{{limit}}文字です。",
+      "notFound": "ファイルが見つかりません: {{path}}",
+      "maxLengthExceeded": "ファイルの最大長（100,000文字）を超えているため、これ以上追加できません。（無限ループ防止）",
+      "success": "内容が正常に追加されました: {{path}}"
+    },
+    "read_daily_note": {
+      "desc": "今日の日付のデイリーノートを読み取ります。（形式: YYYY-MM-DD.md）",
+      "notFound": "今日のデイリーノートが存在しません: {{path}}"
+    },
+    "append_to_daily_note": {
+      "desc": "今日の日付のデイリーノートに内容を追加します。ノートがない場合は新しく作成します。",
+      "argContent": "追加する内容",
+      "tooLong": "1回に追加できる最大長は{{limit}}文字です。",
+      "maxLengthExceeded": "ファイルの最大長（100,000文字）を超えているため、これ以上追加できません。",
+      "successAppend": "デイリーノートに内容が追加されました: {{path}}",
+      "successCreate": "デイリーノートを作成し、内容を追加しました: {{path}}"
+    },
+    "list_notes": {
+      "desc": "Vault内のすべてのMarkdownノートの一覧を取得します。特定のフォルダパスを指定すると、そのフォルダ内のノートのみを表示できます。",
+      "argPath": "ノートを一覧表示するフォルダのパス（例: folder/subfolder）。指定しない場合、Vault全体のすべてのノートを表示します。",
+      "noNotes": "ノートが見つかりません{{path}}。",
+      "listPrefix": "ノート一覧{{path}}（全{{count}}件）:\n\n"
+    },
+    "rag_search": {
+      "desc": "RAG (Retrieval-Augmented Generation) を使用して、Vault内のノートを意味的に検索します。単純なキーワードマッチングではなく、クエリの意味に最も類似したドキュメントチャンクをハイブリッド検索（ベクトル+BM25）で探し出します。RAGのインデックス作成が完了している状態でのみ動作します。",
+      "argQuery": "意味的検索を実行するクエリ文字列",
+      "argTopK": "返す結果の最大数 (デフォルト: 5)",
+      "argMinSimilarity": "最小類似度の閾値 (0~1, デフォルト: 0.65)",
+      "notReady": "RAGインデックスの準備ができていません。設定でRAGを有効にし、インデックス作成を完了してください。",
+      "emptyQuery": "検索クエリが空です。",
+      "noResults": "RAGの検索結果がありません。クエリを変更するか、min_similarityの値を下げてみてください。",
+      "error": "RAGの検索中にエラーが発生しました: {{error}}",
+      "summary": "RAG検索結果 ({{count}}件のチャンク発見, 類似度 {{minSim}} 以上):\n\n{{context}}"
     },
     "common": {
-        "save": "保存",
-        "cancel": "キャンセル",
-        "delete": "削除",
-        "remove": "除外",
-        "add": "追加",
-        "copy": "コピー",
-        "success": "成功",
-        "error": "エラー",
-        "history": "チャット履歴",
-        "back": "戻る",
-        "settings": "設定",
-        "loading": "読み込み中...",
-        "refresh": "更新"
+      "truncated": "\n\n... (長さ制限{{limit}}文字のため内容が切り捨てられました)",
+      "unknownTool": "不明なツールです。",
+      "executionError": "ツールの実行中にエラーが発生しました: {{error}}",
+      "pathExcluded": "RAGの除外/包含設定により、このパスへのアクセスが制限されています: {{path}}"
     },
-    "discovery": {
-        "tabName": "スマートディスカバリー",
-        "chatTabName": "AIチャット",
-        "searchPlaceholder": "意味ベースで質問/検索...",
-        "duplicateWarning": "⚠️ 非常に類似したノートがあります:",
-        "duplicateCompare": "比較する",
-        "recommendedTags": "推奨タグ",
-        "relatedNotes": "関連ノート",
-        "insertLink": "リンクを挿入",
-        "openInSplit": "スプリットビュー",
-        "chatWithNote": "チャット",
-        "filterPlaceholder": "フィルター (フォルダパス または #タグ)",
-        "emptyStateText": "RAG検索機能がオフになっています。",
-        "emptyStateSub": "設定で埋め込み(RAG)エンジンをオンにしてください。",
-        "noResults": "関連するノートは見つかりませんでした。",
-        "stagedContext": "選択されたコンテキスト",
-        "approxTokens": "推定トークン数: {{current}} / {{max}}",
-        "startChat": "{{count}}個でチャット開始",
-        "indexing": "RAGインデックス作成中... ({{processed}} / {{total}})",
-        "loadingModel": "埋め込みモデルを読み込んでいます...",
-        "noActiveEditor": "アクティブなMarkdownエディターが見つかりません。"
-    },
-    "uiMessages": {
-        "actionApproval": {
-            "title": "承認が必要です: {{action}}",
-            "targetFile": "対象ファイル: {{path}}",
-            "createNote": "📄 新しいノートを作成しますか？",
-            "deleteNote": "⚠️ このノートを削除しますか？",
-            "renameNote": "✏️ このノートを以下のパスに移動/名前変更しますか:",
-            "updateFrontmatter": "🏷️ フロントマターを更新しますか:",
-            "saveAttachment": "📎 添付ファイルを保存しますか？ サイズ: {{size}} バイト",
-            "executeCode": "⚡ このコードを実行しますか？",
-            "accept": "承認",
-            "reject": "拒否"
-        },
-        "emptyResponseTokenLimit": "⚠️ モデルが空の応答を返しました。最大出力トークン（Max Output Tokens）制限に達したため、生成が中断されました。設定の「最大出力トークン」制限を増やしてください。",
-        "tokenLimitHitWarning": "\n\n⚠️ （最大出力トークン制限に達したため、回答が途中で途切れました。設定の「最大出力トークン」の値を増やしてください。）",
-        "toolExecutionRejected": "ツールの実行をユーザーが承認しませんでした。",
-        "inlineReplace": "上書き",
-        "inlineAppend": "追記",
-        "inlineSend": "チャットに送信",
-        "inlineEmpty": "現在の行には対象テキストが見つかりません。テキストを入力またはドラッグしてください。",
-        "qaEmptySel": "テキストが選択されていません。",
-        "qaNotConfigured": "クイックアクションモデルが設定されていません。設定で専用モデルを選択してください。",
-        "qaNoProvider": "LLMプロバイダーが設定されていません。",
-        "qaInvalidProvider": "有効なLLMプロバイダーが見つからないか、認証されていません。",
-        "qaNoModel": "利用可能なモデルがありません。",
-        "qaSelectedText": "選択されたテキスト",
-        "qaExecuting": "{{name}} 実行中...",
-        "qaCompleted": "{{name}} 完了",
-        "qaError": "エラー発生: {{msg}}",
-        "qaWaitingAI": "⏳ AIの応答を待機中...",
-        "qaEmptyResponse": "⚠️ モデルが空のテキストを返しました。（無限ループまたはプロンプトの互換性問題）",
-        "qaUnknownError": "不明なエラー",
-        "qaReasoningDetected": "🚫 推論モデルの思考プロセス(<think>)が検出されたため、クイックアクションを強制終了しました。設定で標準Instructモデルに変更してください。",
-        "modalCancel": "キャンセル",
-        "modalProceed": "実行",
-        "modelPlaceholder": "モデル名を入力...（例: claude, gpt-4）",
-        "fsAdapterErr": "FileSystemAdapterが見つかりません。デスクトップ環境でのみサポートされています。",
-        "searchSource": "出典",
-        "debugDelAllMsg": "すべてのデバッグログを削除してもよろしいですか？",
-        "debugAutoScroll": "自動スクロール",
-        "debugExport": "JSONでエクスポート",
-        "debugDelAll": "ログ全体を削除",
-        "debugNoLogs": "ログなし",
-        "debugWaitLlm": "LLMリクエスト時に表示されます",
-        "debugTurnOn": "設定 › 詳細 からデバッグモードをオンにしてください",
-        "debugChunks": "チャンク",
-        "debugExpandAll": "すべて展開",
-        "debugCollapseAll": "すべて折りたたむ",
-        "ragTooLong": "[Lumina] RAGコンテキストが長すぎるため{{max}}文字に切り捨てられました。",
-        "ragWorkerInitErr": "不明なワーカー初期化エラー（コンソールを確認）",
-        "ragWorkerTimeout": "埋め込みモデルの読み込みタイムアウト(60秒超)。ネットワーク接続を確認するか、キャッシュを削除して再試行してください。",
-        "ragWorkerTerm": "ワーカーが終了しました。",
-        "ragWorkerNotReady": "EmbeddingWorkerが準備されていません。まずinit()を呼び出してください。",
-        "ragWorkerNotInit": "モデルが初期化されていません。initメッセージを先に送信してください。",
-        "ragWorkerLoadFail": "モデルの読み込みに失敗しました: ",
-        "localizedPrompt": "Always respond in Japanese (日本語).",
-        "cmdCtxMenu": "💬 Luminaチャットに送信",
-        "cmdAutoLinkNote": "🔗 現在のノートを自動リンク",
-        "cmdChatTitle": "チャットを開く",
-        "cmdLogTitle": "DevLogを開く",
-        "cmdReindex": "全体再インデックス",
-        "cmdClearIdx": "インデックスをクリア",
-        "ribbonTitle": "Luminaチャットを開く",
-        "noticeMobileRag": "モバイルではローカル埋め込みがブロックされています。RAGを使用するには設定でクラウド埋め込みを設定してください。",
-        "noticeLargeVault": "現在のVaultにはノートが{{count}}件と非常に多いです。バックグラウンドの初回インデックスにリソースと時間を要する場合があります。",
-        "noticeIndexing": "Lumina: 初期設定とノートのインデックス作成をバックグラウンドで進行中...",
-        "errNoProvider": "選択した埋め込みプロバイダーの設定が見つかりません。",
-        "errMobileAuto": "モバイルデバイスではローカル埋め込み(Autoモード)はサポートされていません。設定でクラウド埋め込みを選択してください。",
-        "mcpTokenCopied": "認証トークンがクリップボードにコピーされました。",
-        "mcpConnectFailed": "MCPサーバー「{{name}}」への接続に失敗したため無効化されました。",
-        "mcpLocalServerStartFailed": "内蔵MCPサーバーの起動に失敗しました: {{error}}",
-        "mcpDisconnectedDuringExecution": "ツール実行中にMCPサーバー「{{name}}」との接続が切断されたため、無効化されました。",
-        "mcpToolExecutionFailed": "MCPサーバー「{{name}}」でツールの実行に失敗しました。サーバーが無効化されました。設定を確認してください。",
-        "searchModelShort": "モデルを検索...",
-        "noSearchResults": "検索結果がありません。",
-        "unsupportedFileType": "サポートされていないファイル形式です: {{ext}}",
-        "attachFileFailed": "ファイルの添付に失敗しました: {{file}}",
-        "mcpManagerNotInitialized": "⚠️ MCP Managerが初期化されていません。",
-        "mcpSyncError": "⚠️ MCPサーバーの同期中にエラーが発生しました。",
-        "mcpLocalServerRestarted": "✅ 内蔵MCPサーバーが再起動しました (ポート: {{port}})",
-        "mcpLocalServerStarted": "✅ 内蔵MCPサーバーが起動しました (ポート: {{port}})",
-        "mcpLocalServerStopped": "🛑 内蔵MCPサーバーが停止しました (ポート: {{port}})",
-        "mcpLocalServerDisconnectAgentDisabled": "⚠️ 内蔵サーバーの接続エラーにより、エージェントモードが無効になりました。",
-        "mcpClientDisconnected": "🔌 MCPサーバー「{{name}}」が切断されました。",
-        "mcpClientConnected": "✅ MCPサーバー「{{name}}」が正常に接続されました。",
-        "mcpClientToolExecutionFailedStatusError": "⚠️ MCPサーバー「{{name}}」でのツールの実行に失敗しました。ステータスがエラーに設定されました。",
-        "mcpClientToolExecuteFailedTryReconnect": "MCPサーバー「{{name}}」でのツールの実行に失敗しました。再接続を試してください。",
-        "toolExecutionBlockedReadMode": "エラー：現在読み取りモードです。書き込みまたは変更権限が必要なツール（{{toolName}}）を実行するには、「編集モード」に切り替えてください。",
-        "agentModeLlmRequired": "⚠️ エージェントを使用するには、まずLLMプロバイダーを設定し、検証する必要があります。",
-        "agentModeLocalServerStarting": "🚀 エージェント有効化: ローカルMCPサーバーに接続しています...",
-        "agentModeLocalServerConnecting": "🚀 エージェント有効化: ローカルMCPサーバーに接続しています...",
-        "agentModeEnabled": "🤖 エージェントモードが有効になりました。",
-        "agentModeDisabled": "🤖 エージェントモードが無効になりました。",
-        "agentModeLocalServerStoppedDisabled": "⚠️ 内蔵MCPサーバーが停止したため、エージェントモードも無効になりました。",
-        "agentModeLocalServerStoppedDisabledShort": "⚠️ ローカルサーバーが停止したため、エージェント機能が無効になりました。",
-        "mcpLocalServerTokenInputFromLocal": "ローカルサーバーのトークンが入力されました。",
-        "mcpLocalServerTokenInputFromLocalTooltip": "内蔵MCPサーバーの認証トークンを自動入力",
-        "thoughtProcess": "思考プロセス",
-        "agentMaxStepsReached": "⚠️ ツールの最大実行回数に達しました。",
-        "agentRepeatedToolCalls": "⚠️ 同じツールの呼び出しが繰り返されたため、中断されました。別の方法で質問してください。",
-        "agentToolNotFound": "接続されたMCPサーバーにツール「{{name}}」が見つかりません。",
-        "agentToolTruncatedNote": "\n\n⚠️ 注意: ツールの出力結果が{{total}}文字から{{max}}文字に切り捨てられました。完全な内容はVaultのファイルで確認できます。このツールを再度呼び出さず、切り捨てられた内容を参照してユーザーに応答してください。",
-        "agentToolResultFor": "ツール「{{name}}」の実行結果:",
-        "agentToolError": "ツール「{{name}}」のエラー: {{error}}",
-        "agentToolExecuteError": "ツールの実行中にエラーが発生しました: {{error}}",
-        "agentBetaActivateTitle": "🤖 エージェント（ベータ版）を有効にしますか？",
-        "agentBetaActivateDesc": "LLM接続完了！エージェントモードを有効にしますか？\n\nエージェントはノートの読み取り、新しいノートの作成、ノートへの内容の追加を自動的に実行できます。\n\nチャット画面のMCPボタンからいつでもオン/オフを切り替えられます。",
-        "agentBetaActivateConfirm": "有効にする",
-        "agentBetaActivateSkip": "後で",
-        "agentBetaEnabled": "🤖 エージェントモードが有効になりました！エージェントがノート作業のお手伝いをします。",
-        "copiedToClipboard": "クリップボードにコピーしました。",
-        "contentInserted": "ノートに内容が挿入されました。",
-        "noActiveMarkdown": "アクティブなMarkdownウィンドウがありません。先にノートをクリックしてください。",
-        "editConfirm": "これ以降のメッセージはすべて削除されます。続行しますか？",
-        "regenerateConfirm": "これ以降のすべての会話が削除され、回答が再生成されます。続行しますか？",
-        "fileNotFound": "ファイルが見つかりません。",
-        "saveAndSend": "保存して送信",
-        "insertToNote": "ノートに挿入",
-        "regenerate": "再生成",
-        "edit": "編集",
-        "openReferenceNote": "参照ノートを開く",
-        "ragProgress": {
-            "searching": "🔍 拡張検索中...",
-            "reranking": "⚖️ リランク演算中...",
-            "compressing": "🗜️ コンテキスト圧縮中...",
-            "generating": "💡 回答生成中..."
-        }
-    },
-    "mcpServerTools": {
-        "read_active_note": {
-            "desc": "現在Obsidianでアクティブな（開かれている）ノートの内容を読み取ります。",
-            "noActive": "現在アクティブなノートはありません。"
-        },
-        "read_note": {
-            "desc": "Vault内の特定のノートを読み取ります。",
-            "argPath": "読み取るファイルのパス (例: folder/note.md)",
-            "notFound": "ファイルが見つかりません: {{path}}"
-        },
-        "create_note": {
-            "desc": "新しいノートを作成します。すでにファイルが存在する場合、上書きせずにエラーを返します。",
-            "argPath": "作成するファイルのパス (例: folder/new_note.md)",
-            "argContent": "ノートの初期内容",
-            "tooLong": "作成する内容が制限（{{limit}}文字）を超えています。",
-            "alreadyExists": "ファイルがすでに存在します。上書きは許可されていません: {{path}}",
-            "parentFolderNotFound": "親フォルダが存在しません: {{parentPath}}",
-            "success": "ノートが作成されました: {{path}}"
-        },
-        "search_notes": {
-            "desc": "Vault内のすべてのMarkdownファイルから特定のテキストを検索します。",
-            "argQuery": "検索するテキスト",
-            "foundPrefix": "次のファイルで発見されました（最大{{max}}件）:\n\n",
-            "noResults": "検索結果がありません。"
-        },
-        "append_to_note": {
-            "desc": "既存のノートの末尾に内容を追加します。無限ループを防ぐため、ファイルの最大長制限（100,000文字）があります。",
-            "argPath": "内容を追加するファイルのパス",
-            "argContent": "追加する内容",
-            "tooLong": "1回に追加できる最大長は{{limit}}文字です。",
-            "notFound": "ファイルが見つかりません: {{path}}",
-            "maxLengthExceeded": "ファイルの最大長（100,000文字）を超えているため、これ以上追加できません。（無限ループ防止）",
-            "success": "内容が正常に追加されました: {{path}}"
-        },
-        "read_daily_note": {
-            "desc": "今日の日付のデイリーノートを読み取ります。（形式: YYYY-MM-DD.md）",
-            "notFound": "今日のデイリーノートが存在しません: {{path}}"
-        },
-        "append_to_daily_note": {
-            "desc": "今日の日付のデイリーノートに内容を追加します。ノートがない場合は新しく作成します。",
-            "argContent": "追加する内容",
-            "tooLong": "1回に追加できる最大長は{{limit}}文字です。",
-            "maxLengthExceeded": "ファイルの最大長（100,000文字）を超えているため、これ以上追加できません。",
-            "successAppend": "デイリーノートに内容が追加されました: {{path}}",
-            "successCreate": "デイリーノートを作成し、内容を追加しました: {{path}}"
-        },
-        "list_notes": {
-            "desc": "Vault内のすべてのMarkdownノートの一覧を取得します。特定のフォルダパスを指定すると、そのフォルダ内のノートのみを表示できます。",
-            "argPath": "ノートを一覧表示するフォルダのパス（例: folder/subfolder）。指定しない場合、Vault全体のすべてのノートを表示します。",
-            "noNotes": "ノートが見つかりません{{path}}。",
-            "listPrefix": "ノート一覧{{path}}（全{{count}}件）:\n\n"
-        },
-        "rag_search": {
-            "desc": "RAG (Retrieval-Augmented Generation) を使用して、Vault内のノートを意味的に検索します。単純なキーワードマッチングではなく、クエリの意味に最も類似したドキュメントチャンクをハイブリッド検索（ベクトル+BM25）で探し出します。RAGのインデックス作成が完了している状態でのみ動作します。",
-            "argQuery": "意味的検索を実行するクエリ文字列",
-            "argTopK": "返す結果の最大数 (デフォルト: 5)",
-            "argMinSimilarity": "最小類似度の閾値 (0~1, デフォルト: 0.65)",
-            "notReady": "RAGインデックスの準備ができていません。設定でRAGを有効にし、インデックス作成を完了してください。",
-            "emptyQuery": "検索クエリが空です。",
-            "noResults": "RAGの検索結果がありません。クエリを変更するか、min_similarityの値を下げてみてください。",
-            "error": "RAGの検索中にエラーが発生しました: {{error}}",
-            "summary": "RAG検索結果 ({{count}}件のチャンク発見, 類似度 {{minSim}} 以上):\n\n{{context}}"
-        },
-        "common": {
-            "truncated": "\n\n... (長さ制限{{limit}}文字のため内容が切り捨てられました)",
-            "unknownTool": "不明なツールです。",
-            "executionError": "ツールの実行中にエラーが発生しました: {{error}}",
-            "pathExcluded": "RAGの除外/包含設定により、このパスへのアクセスが制限されています: {{path}}"
-        },
-        "generate_moc": {
-            "desc": "フォルダ、タグ、またはファイルリストを基準に関連するノートを収集し、MOC (Map of Content) ハブノートを作成します。",
-            "argTitle": "MOCノートのタイトル（H1見出しとして使用）",
-            "argOutputPath": "MOCファイルを保存するパス（例: Project MOC または Maps/Project MOC）。.md拡張子は自動的に追加されます。",
-            "argFolder": "ノートを収集するフォルダパス（オプション）",
-            "argTags": "これらのタグをすべて持つノートを収集します（オプション）",
-            "argFiles": "含めるノートパスのリスト（オプション、指定した場合はfolder/tagsは無視されます）",
-            "argGroupBy": "セクションのグループ化戦略: \"folder\"(フォルダ別)、\"tag\"(タグ別)、\"none\"(リスト) (デフォルト: \"none\")",
-            "argOverwrite": "ファイルが既に存在する場合に上書きするかどうか (デフォルト: false)",
-            "successCreate": "MOCが作成されました: {{path}} (ノート{{count}}個)",
-            "successUpdate": "MOCが更新されました: {{path}} (ノート{{count}}個)",
-            "emptyWarning": "指定された範囲に一致するノートが見つかりませんでした。このMOCは現在空です。",
-            "noScope": "folder, tags, files のいずれかを指定する必要があります。"
-        }
+    "generate_moc": {
+      "desc": "フォルダ、タグ、またはファイルリストを基準に関連するノートを収集し、MOC (Map of Content) ハブノートを作成します。",
+      "argTitle": "MOCノートのタイトル（H1見出しとして使用）",
+      "argOutputPath": "MOCファイルを保存するパス（例: Project MOC または Maps/Project MOC）。.md拡張子は自動的に追加されます。",
+      "argFolder": "ノートを収集するフォルダパス（オプション）",
+      "argTags": "これらのタグをすべて持つノートを収集します（オプション）",
+      "argFiles": "含めるノートパスのリスト（オプション、指定した場合はfolder/tagsは無視されます）",
+      "argGroupBy": "セクションのグループ化戦略: \"folder\"(フォルダ別)、\"tag\"(タグ別)、\"none\"(リスト) (デフォルト: \"none\")",
+      "argOverwrite": "ファイルが既に存在する場合に上書きするかどうか (デフォルト: false)",
+      "successCreate": "MOCが作成されました: {{path}} (ノート{{count}}個)",
+      "successUpdate": "MOCが更新されました: {{path}} (ノート{{count}}個)",
+      "emptyWarning": "指定された範囲に一致するノートが見つかりませんでした。このMOCは現在空です。",
+      "noScope": "folder, tags, files のいずれかを指定する必要があります。"
     }
+  },
+  "graph": {
+    "title": "Lumina RAGグラフ",
+    "settings": "グラフ設定",
+    "globalMode": "グローバル",
+    "localMode": "ローカル",
+    "searchPlaceholder": "ノードを検索...",
+    "clearSearch": "検索をクリア",
+    "similarity": "類似度",
+    "maxLinks": "最大リンク数",
+    "localDepth": "ローカルの深さ",
+    "folder": "フォルダー:",
+    "connections": "接続数:",
+    "initializing": "グラフを初期化しています...",
+    "indexing": "RAGグラフのインデックスを作成しています...",
+    "noNodes": "現在のビューに表示できるノードがありません。",
+    "calculating": "類似度を計算しています...",
+    "calcError": "グラフエッジの作成に失敗しました。"
+  }
 }

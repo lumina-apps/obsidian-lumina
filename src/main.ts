@@ -5,6 +5,7 @@ import { EmbeddingWorkerBridge } from './features/rag/workerBridge';
 import { VaultIndexer } from './features/rag/indexer';
 import { ChatView, CHAT_VIEW_TYPE } from './features/chat/chatView';
 import { DebugView, DEBUG_VIEW_TYPE } from './features/debug/debugView';
+import { GraphView, GRAPH_VIEW_TYPE } from './features/graph/graphView';
 import { loadSystemLocaleCache } from './shared/locales/translator';
 import { setLanguage, t } from './shared/locales/helpers';
 import { McpManager } from './core/mcp/mcpManager';
@@ -16,7 +17,7 @@ import { registerLuminaIcons } from './shared/icons';
 import { FrontmatterManager } from './features/frontmatter/frontmatterManager';
 import { runMigrations } from './core/settings/migrations';
 import { initEmbeddingWorker } from './features/rag/ragInitializer';
-import { activateView } from './core/views/viewHelper';
+import { activateView, activateMainView } from './core/views/viewHelper';
 import { setupApprovalListener, cleanupApprovalListener } from './features/chat/utils/approvalListener';
 import { SettingsManager } from './core/settings/settingsManager';
 import { CommandManager } from './core/commands/commandManager';
@@ -30,6 +31,7 @@ export default class LuminaPlugin extends Plugin {
 	mcpManager!: McpManager;
 	isFirstRun: boolean = false;
 	private ribbonEl: HTMLElement | null = null;
+	private graphRibbonEl: HTMLElement | null = null;
 	public settingTab: LuminaSettingTab | null = null;
 	public frontmatterManager!: FrontmatterManager;
 	public quickActionHandler!: QuickActionHandler;
@@ -94,6 +96,7 @@ export default class LuminaPlugin extends Plugin {
 		// ── View 등록 ──────────────────────────────────────────────────
 		this.registerView(CHAT_VIEW_TYPE, (leaf) => new ChatView(leaf, this));
 		this.registerView(DEBUG_VIEW_TYPE, (leaf) => new DebugView(leaf, this));
+		this.registerView(GRAPH_VIEW_TYPE, (leaf) => new GraphView(leaf, this));
 
 		// ── 리본 아이콘 ────────────────────────────────────────────────
 		this.updateRibbonIcon();
@@ -165,16 +168,51 @@ export default class LuminaPlugin extends Plugin {
 		}
 	}
 
+	// ─── Locales ────────────────────────────────────────────────────────
+
+	refreshLocales(): void {
+		this.updateRibbonIcon();
+		for (const type of [CHAT_VIEW_TYPE, GRAPH_VIEW_TYPE, DEBUG_VIEW_TYPE]) {
+			const leaves = this.app.workspace.getLeavesOfType(type);
+			leaves.forEach((leaf) => {
+				const view = leaf.view;
+				if (typeof view.getDisplayText === 'function') {
+					const newTitle = view.getDisplayText();
+					const tabHeaderInnerTitleEl = (leaf as any).tabHeaderInnerTitleEl;
+					if (tabHeaderInnerTitleEl) tabHeaderInnerTitleEl.innerText = newTitle;
+				}
+			});
+		}
+	}
+
 	// ─── Ribbon Icon ────────────────────────────────────────────────────
 
 	updateRibbonIcon(): void {
-		if (this.settings.misc.showRibbonIcon && !this.ribbonEl) {
-			this.ribbonEl = this.addRibbonIcon('message-circle', t('uiMessages.ribbonTitle'), () => {
-				void activateView(this.app.workspace, CHAT_VIEW_TYPE);
-			});
-		} else if (!this.settings.misc.showRibbonIcon && this.ribbonEl) {
-			this.ribbonEl.remove();
-			this.ribbonEl = null;
+		if (this.settings.misc.showRibbonIcon) {
+			if (!this.ribbonEl) {
+				this.ribbonEl = this.addRibbonIcon('message-circle', t('uiMessages.ribbonTitle'), () => {
+					void activateView(this.app.workspace, CHAT_VIEW_TYPE);
+				});
+			} else {
+				this.ribbonEl.setAttribute('aria-label', t('uiMessages.ribbonTitle'));
+			}
+
+			if (!this.graphRibbonEl) {
+				this.graphRibbonEl = this.addRibbonIcon('network', t('graph.title'), () => {
+					void activateMainView(this.app.workspace, GRAPH_VIEW_TYPE);
+				});
+			} else {
+				this.graphRibbonEl.setAttribute('aria-label', t('graph.title'));
+			}
+		} else {
+			if (this.ribbonEl) {
+				this.ribbonEl.remove();
+				this.ribbonEl = null;
+			}
+			if (this.graphRibbonEl) {
+				this.graphRibbonEl.remove();
+				this.graphRibbonEl = null;
+			}
 		}
 	}
 }

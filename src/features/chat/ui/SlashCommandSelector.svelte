@@ -54,6 +54,7 @@
 
 	// Global keydown capture (SlashCommandSelector는 capture phase로 등록)
 	function handleGlobalKeydown(e: KeyboardEvent) {
+		if (e.isComposing && e.key === "Enter") return; // Ignore IME composition Enter
 		if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === "Escape") {
 			e.stopPropagation();
 		}

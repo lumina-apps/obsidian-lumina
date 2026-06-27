@@ -818,6 +818,32 @@ export interface TranslationUiMessages {
     compressing: string;
     generating: string;
   };
+  cmdGraphViewTitle: string;
+  llmStatusReady: string;
+  llmStatusIndexing: string;
+  llmStatusError: string;
+  llmStatusSetup: string;
+  llmStatusNoConn: string;
+}
+
+// Graph
+export interface TranslationGraph {
+  title: string;
+  settings: string;
+  globalMode: string;
+  localMode: string;
+  searchPlaceholder: string;
+  clearSearch: string;
+  similarity: string;
+  maxLinks: string;
+  localDepth: string;
+  folder: string;
+  connections: string;
+  initializing: string;
+  indexing: string;
+  noNodes: string;
+  calculating: string;
+  calcError: string;
 }
 
 // mcpServerTools
@@ -869,6 +895,7 @@ export interface Translation {
   discovery: TranslationDiscovery;
   uiMessages: TranslationUiMessages;
   mcpServerTools: TranslationMcpServerTools;
+  graph: TranslationGraph;
 }
 
 // DeepPartial 타입

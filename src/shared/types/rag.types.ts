@@ -61,6 +61,8 @@ export interface IndexingState {
 	startTime?: number;
 	errorMessage?: string;
 	progressPct?: number;
+	lastUpdateTime?: number;
+	currentRateEMA?: number;
 }
 
 // ─── Worker Message Protocol ─────────────────────

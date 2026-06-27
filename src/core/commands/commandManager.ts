@@ -2,9 +2,10 @@ import { Notice, Editor, MarkdownView, App } from 'obsidian';
 import type { MarkdownFileInfo } from 'obsidian';
 import type LuminaPlugin from '../../main';
 import { t } from '../../shared/locales/helpers';
-import { activateView } from '../views/viewHelper';
+import { activateView, activateMainView } from '../views/viewHelper';
 import { CHAT_VIEW_TYPE } from '../../features/chat/chatView';
 import { DEBUG_VIEW_TYPE } from '../../features/debug/debugView';
+import { GRAPH_VIEW_TYPE } from '../../features/graph/graphView';
 
 interface ObsidianAppWithCommands extends App {
 	commands: {
@@ -34,6 +35,14 @@ export class CommandManager {
 			name: t('uiMessages.cmdLogTitle'),
 			callback: () => {
 				void activateView(this.plugin.app.workspace, DEBUG_VIEW_TYPE);
+			},
+		});
+
+		this.plugin.addCommand({
+			id: 'open-graph-view',
+			name: t('graph.title'),
+			callback: () => {
+				void activateMainView(this.plugin.app.workspace, GRAPH_VIEW_TYPE);
 			},
 		});
 

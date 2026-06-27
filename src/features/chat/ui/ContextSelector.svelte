@@ -150,6 +150,7 @@
 
 	function handleUrlKeydown(e: KeyboardEvent) {
 		if (e.key === "Enter") {
+			if (e.isComposing) return; // Ignore IME composition Enter
 			e.preventDefault();
 			submitUrl();
 		} else if (e.key === "Escape") {
@@ -215,6 +216,7 @@
 		activeDocument.addEventListener("click", handleClickOutside);
 		const onGlobalKeydown = (e: KeyboardEvent) => {
 			if (view === "url_input") return;
+			if (e.isComposing && e.key === "Enter") return; // Ignore IME composition Enter
 			nav.handleKeydown(e);
 		};
 		activeDocument.addEventListener("keydown", onGlobalKeydown, true);

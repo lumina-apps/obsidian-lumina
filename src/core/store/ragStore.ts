@@ -87,10 +87,10 @@ export const isRagReady = derived(indexingState, ($s) => $s.status === 'ready');
 export const estimatedTimeRemaining = derived(indexingState, ($s): number | null => {
 	if ($s.status !== 'indexing') return null;
 	if (!$s.startTime || $s.processedFiles === 0) return null;
-	const elapsed = (Date.now() - $s.startTime) / 1000; // 초
-	// 첫 30초 동안은 rate가 불안정 → 표시 안 함
-	if (elapsed < 30) return null;
-	const rate = $s.processedFiles / elapsed; // 파일/초
+	
+	// EMA 속도가 있으면 그것을 사용, 없으면 전체 평균 사용
+	const rate = $s.currentRateEMA || ($s.processedFiles / ((Date.now() - $s.startTime) / 1000));
+	
 	if (rate <= 0) return null;
 	const remaining = ($s.totalFiles - $s.processedFiles) / rate;
 	return Math.ceil(remaining);
@@ -111,16 +111,33 @@ export function setIndexingStatus(
 
 /** 처리된 파일 수 증가 (1씩) */
 export function incrementProcessed(): void {
-	indexingState.update(s => ({ ...s, processedFiles: s.processedFiles + 1 }));
+	incrementProcessedBy(1);
 }
 
 /**
  * 처리된 파일 수를 한 번에 count만큼 증가 (배치 업데이트).
- * 10,000개 이상 파일 인덱싱 시 store 업데이트 횟수를 count만큼 줄입니다.
- * (예: PROGRESS_BATCH_SIZE=20 → 10,000회 → 500회)
+ * 지수 이동 평균(EMA)을 사용하여 최근 인덱싱 속도를 추적합니다.
  */
 export function incrementProcessedBy(count: number): void {
-	indexingState.update(s => ({ ...s, processedFiles: s.processedFiles + count }));
+	indexingState.update(s => {
+		const now = Date.now();
+		const lastTime = s.lastUpdateTime || s.startTime || now;
+		const elapsedSec = (now - lastTime) / 1000;
+		let newEMA = s.currentRateEMA || 0;
+
+		if (elapsedSec > 0.1) {
+			const currentRate = count / elapsedSec;
+			// 가중치 7:3으로 최근 속도 반영 (첫 계산이면 현재 속도 그대로 사용)
+			newEMA = newEMA === 0 ? currentRate : (newEMA * 0.7 + currentRate * 0.3);
+		}
+
+		return { 
+			...s, 
+			processedFiles: s.processedFiles + count,
+			lastUpdateTime: elapsedSec > 0.1 ? now : s.lastUpdateTime,
+			currentRateEMA: newEMA
+		};
+	});
 }
 
 /**
@@ -140,6 +157,8 @@ export function setTotalFiles(
 		processedFiles: initialProcessed,
 		status: 'indexing',
 		startTime: initialStartTime,
+		lastUpdateTime: initialStartTime,
+		currentRateEMA: 0,
 	}));
 }
 
