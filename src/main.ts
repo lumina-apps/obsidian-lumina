@@ -36,7 +36,7 @@ class LazyLuminaSettingTab extends PluginSettingTab {
 
 	display(): void {
 		if (this.realTab) {
-			this.realTab.display();
+			this.realTab.refreshDisplay();
 			return;
 		}
 
@@ -54,7 +54,7 @@ class LazyLuminaSettingTab extends PluginSettingTab {
 
 		this.loadingPromise.then(() => {
 			if (this.realTab) {
-				this.realTab.display();
+				this.realTab.refreshDisplay();
 			}
 		}).catch(console.error);
 	}
