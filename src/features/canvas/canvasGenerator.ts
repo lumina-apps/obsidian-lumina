@@ -4,8 +4,8 @@
  * Canvas 파일 저장 및 Obsidian에서 자동으로 열기를 담당하는 오케스트레이터.
  */
 
-import type { App, TFile, TFolder } from 'obsidian';
-import { Notice } from 'obsidian';
+import type { App } from 'obsidian';
+import { Notice, TFile, TFolder } from 'obsidian';
 import { collectGraph, buildCanvasData, addFolderGroups } from './canvasBuilder';
 import type { CanvasBuildOptions } from './canvasTypes';
 import { t } from '../../shared/locales/helpers';
@@ -95,10 +95,10 @@ export async function generateCanvasForFile(
 function getFilesRecursively(folder: TFolder, maxDepth: number, currentDepth: number = 0): TFile[] {
 	let files: TFile[] = [];
 	for (const child of folder.children) {
-		if ('extension' in child && (child as TFile).extension === 'md') {
-			files.push(child as TFile);
-		} else if ('children' in child && currentDepth < maxDepth) {
-			files = files.concat(getFilesRecursively(child as TFolder, maxDepth, currentDepth + 1));
+		if (child instanceof TFile && child.extension === 'md') {
+			files.push(child);
+		} else if (child instanceof TFolder && currentDepth < maxDepth) {
+			files = files.concat(getFilesRecursively(child, maxDepth, currentDepth + 1));
 		}
 	}
 	return files;

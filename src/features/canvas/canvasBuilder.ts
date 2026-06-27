@@ -441,7 +441,7 @@ export function addFolderGroups(
 	const folderNodes = new Map<string, CanvasTextNode[]>();
 	for (const node of canvasData.nodes) {
 		if (node.type !== 'text') continue;
-		const textNode = node as CanvasTextNode;
+		const textNode = node;
 		
 		const match = textNode.text.match(/^\[\[(.*?)(?:\|.*)?\]\]$/);
 		if (!match) continue;

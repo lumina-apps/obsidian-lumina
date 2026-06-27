@@ -53,7 +53,6 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			slider
 				.setLimits(1, 5, 1)
 				.setValue(cs.depth)
-				.setDynamicTooltip()
 				.onChange(async (val) => {
 					cs.depth = val;
 					depthText.setValue(val.toString());
@@ -73,7 +72,7 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 					}
 				});
 			text.inputEl.type = 'number';
-			text.inputEl.style.width = '50px';
+			text.inputEl.setCssStyles({ width: '50px' });
 		});
 
 	new Setting(el)
@@ -118,7 +117,6 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			slider
 				.setLimits(20, 500, 10)
 				.setValue(cs.maxNodes)
-				.setDynamicTooltip()
 				.onChange(async (val) => {
 					cs.maxNodes = val;
 					maxNodesText.setValue(val.toString());
@@ -138,7 +136,7 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 					}
 				});
 			text.inputEl.type = 'number';
-			text.inputEl.style.width = '60px';
+			text.inputEl.setCssStyles({ width: '60px' });
 		});
 
 	let folderDepthSlider: SliderComponent;
@@ -151,7 +149,6 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			slider
 				.setLimits(0, 3, 1)
 				.setValue(cs.folderDepth)
-				.setDynamicTooltip()
 				.onChange(async (val) => {
 					cs.folderDepth = val;
 					folderDepthText.setValue(val.toString());
@@ -171,7 +168,7 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 					}
 				});
 			text.inputEl.type = 'number';
-			text.inputEl.style.width = '50px';
+			text.inputEl.setCssStyles({ width: '50px' });
 		});
 
 	new Setting(el)
