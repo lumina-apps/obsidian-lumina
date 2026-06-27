@@ -1741,7 +1741,12 @@ div.lumina-diff-added-widget {
 }
 
 .lumina-popup-selector__item {
-	all: unset;
+	background: transparent;
+	border: none;
+	margin: 0;
+	outline: none;
+	appearance: none;
+	-webkit-appearance: none;
 	box-sizing: border-box;
 	width: 100%;
 	display: flex;

@@ -26,7 +26,7 @@ import type { LuminaSettingTab } from './core/settings/settingTab';
 
 class LazyLuminaSettingTab extends PluginSettingTab {
 	private plugin: LuminaPlugin;
-	private realTab: any = null; // using any temporarily to avoid circular/missing type issues if LuminaSettingTab is not fully available
+	private realTab: LuminaSettingTab | null = null;
 	private loadingPromise: Promise<void> | null = null;
 
 	constructor(app: App, plugin: LuminaPlugin) {
@@ -34,7 +34,7 @@ class LazyLuminaSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
-	async display(): Promise<void> {
+	display(): void {
 		if (this.realTab) {
 			this.realTab.display();
 			return;
@@ -52,10 +52,11 @@ class LazyLuminaSettingTab extends PluginSettingTab {
 			})();
 		}
 
-		await this.loadingPromise;
-		if (this.realTab) {
-			this.realTab.display();
-		}
+		this.loadingPromise.then(() => {
+			if (this.realTab) {
+				this.realTab.display();
+			}
+		}).catch(console.error);
 	}
 
 	hide(): void {
@@ -140,8 +141,8 @@ export default class LuminaPlugin extends Plugin {
 
 			// 지연 로딩할 무거운 모듈들 및 locale 설정 병렬 대기
 			const [
-				_,
-				__,
+				,
+				,
 				[
 					{ McpManager },
 					{ setupApprovalListener },
