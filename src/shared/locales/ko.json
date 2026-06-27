@@ -808,5 +808,50 @@
     "noNodes": "현재 뷰에 표시할 노드가 없습니다.",
     "calculating": "유사도 계산 중...",
     "calcError": "그래프 엣지 생성에 실패했습니다."
+  },
+  "canvas": {
+    "menuItem": "캔버스로 시각화",
+    "menuItemFolder": "캔버스로 시각화 (폴더)",
+    "noticeCreated": "'{{name}}' 캔버스를 생성했습니다.",
+    "noticeFolderCreated": "'{{name}}' 폴더의 캔버스 {{count}}개를 생성했습니다.",
+    "noticeTruncated": "노드 수가 최대({{max}}개)를 초과하여 일부가 제외되었습니다.",
+    "noticeNoFiles": "폴더에 md 파일이 없습니다.",
+    "noticeError": "캔버스 생성 중 오류가 발생했습니다.",
+    "settings": {
+      "depth": {
+        "name": "탐색 깊이",
+        "desc": "위키링크를 몇 단계까지 타고 들어갈지 설정합니다. (1 = 직접 링크만, 2 이상은 노드 수가 크게 늘어난 수 있음) (기본: 1)"
+      },
+      "layout": {
+        "name": "레이아웃",
+        "desc": "노드 배치 방식을 선택합니다. (기본: 방사형)",
+        "radial": "방사형 (중심 노드 기준 원형 배치)",
+        "tree": "계층형 (LR 트리 배치)"
+      },
+      "bidirectional": {
+        "name": "양방향 링크",
+        "desc": "아웃링크(outlink)와 백링크(backlink)를 모두 포함합니다. (기본: 활성화)"
+      },
+      "includeAttachments": {
+        "name": "첨부파일 포함",
+        "desc": "md 파일이 링크하는 이미지, PDF 등 첨부파일도 시각화에 포함합니다. (기본: 비활성화)"
+      },
+      "maxNodes": {
+        "name": "최대 노드 수",
+        "desc": "이 수를 초과하는 노드는 수집에서 제외됩니다. (기본: 200)"
+      },
+      "folderDepth": {
+        "name": "폴더 하위탐색 깊이",
+        "desc": "폴더 우클릭 시 하위 폴더를 몇 단계까지 탐색할지 설정합니다. (0 = 직접 자식만) (기본: 0)"
+      },
+      "outputPath": {
+        "name": "Canvas 저장 경로",
+        "desc": "생성된 Canvas 파일이 저장될 폴더 경로입니다. (기본: canvasVisualize)"
+      },
+      "showFolderGroups": {
+        "name": "폴더 그룹 표시",
+        "desc": "폴더 모드에서 폴더별로 노드를 그룹으로 묶어 시각화합니다. (기본: 비활성화)"
+      }
+    }
   }
 }

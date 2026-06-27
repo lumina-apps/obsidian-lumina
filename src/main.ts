@@ -1,28 +1,26 @@
 import { Notice, Platform, Plugin } from 'obsidian';
 import { LuminaSettingTab } from './core/settings/settingTab';
-import type { LuminaSettings } from './core/settings/settings.types';
-import { EmbeddingWorkerBridge } from './features/rag/workerBridge';
-import { VaultIndexer } from './features/rag/indexer';
 import { ChatView, CHAT_VIEW_TYPE } from './features/chat/chatView';
 import { DebugView, DEBUG_VIEW_TYPE } from './features/debug/debugView';
 import { GraphView, GRAPH_VIEW_TYPE } from './features/graph/graphView';
+import type { LuminaSettings } from './core/settings/settings.types';
+import { EmbeddingWorkerBridge } from './features/rag/workerBridge';
+import { VaultIndexer } from './features/rag/indexer';
 import { loadSystemLocaleCache } from './shared/locales/translator';
 import { setLanguage, t } from './shared/locales/helpers';
-import { McpManager } from './core/mcp/mcpManager';
-import { QuickActionHandler } from './features/editor/quickActionHandler';
-import { InlineAISuggest } from './features/editor/inlineSuggest';
-import { inlineDiffExtension } from './features/editor/diffExtension';
 import { debugLogger } from './shared/debugLogger';
 import { registerLuminaIcons } from './shared/icons';
-import { FrontmatterManager } from './features/frontmatter/frontmatterManager';
 import { runMigrations } from './core/settings/migrations';
-import { initEmbeddingWorker } from './features/rag/ragInitializer';
 import { activateView, activateMainView } from './core/views/viewHelper';
-import { setupApprovalListener, cleanupApprovalListener } from './features/chat/utils/approvalListener';
+import { cleanupApprovalListener } from './features/chat/utils/approvalListener';
 import { SettingsManager } from './core/settings/settingsManager';
 import { CommandManager } from './core/commands/commandManager';
 import { EventManager } from './core/events/eventManager';
 import { RagWatchManager } from './features/rag/watchManager';
+
+import type { McpManager } from './core/mcp/mcpManager';
+import type { QuickActionHandler } from './features/editor/quickActionHandler';
+import type { FrontmatterManager } from './features/frontmatter/frontmatterManager';
 
 export default class LuminaPlugin extends Plugin {
 	settings!: LuminaSettings;
@@ -74,25 +72,6 @@ export default class LuminaPlugin extends Plugin {
 			await this.settingsManager.saveSettings();
 		}
 
-		// ── MCP 매니저 초기화 ─────────────────────────────────────────
-		this.mcpManager = new McpManager(this);
-
-		// ── Approval Listener 초기화 ──────────────────────────────────
-		setupApprovalListener(this.app);
-
-		// ── 퀵 액션 핸들러 및 커맨드/이벤트 등록 ─────────────────────────
-		this.quickActionHandler = new QuickActionHandler(this);
-		this.commandManager.registerCommands();
-		this.eventManager.registerEvents();
-
-		// ── 인라인 서제스트 및 Diff Extension 초기화 ──────────────────────
-		this.registerEditorSuggest(new InlineAISuggest(this));
-		this.registerEditorExtension(inlineDiffExtension);
-
-		// ── 프론트매터 매니저 초기화 ──────────────────────────────────
-		this.frontmatterManager = new FrontmatterManager(this);
-		this.frontmatterManager.registerIfEnabled();
-
 		// ── View 등록 ──────────────────────────────────────────────────
 		this.registerView(CHAT_VIEW_TYPE, (leaf) => new ChatView(leaf, this));
 		this.registerView(DEBUG_VIEW_TYPE, (leaf) => new DebugView(leaf, this));
@@ -106,15 +85,49 @@ export default class LuminaPlugin extends Plugin {
 		this.addSettingTab(this.settingTab);
 
 		// ── 지연 초기화 (onLayoutReady) ──────────────────────────────────
-		this.app.workspace.onLayoutReady(() => {
-			// MCP 서버 동기화
-			this.mcpManager.syncServers().catch((err) => {
+		this.app.workspace.onLayoutReady(async () => {
+			// 지연 로딩할 무거운 모듈들
+			const [
+				{ McpManager },
+				{ setupApprovalListener },
+				{ QuickActionHandler },
+				{ InlineAISuggest },
+				{ inlineDiffExtension },
+				{ FrontmatterManager }
+			] = await Promise.all([
+				import('./core/mcp/mcpManager'),
+				import('./features/chat/utils/approvalListener'),
+				import('./features/editor/quickActionHandler'),
+				import('./features/editor/inlineSuggest'),
+				import('./features/editor/diffExtension'),
+				import('./features/frontmatter/frontmatterManager')
+			]);
+
+			// ── Approval Listener 초기화
+			setupApprovalListener(this.app);
+
+			// ── MCP 매니저 초기화 및 동기화
+			this.mcpManager = new McpManager(this);
+			this.mcpManager.syncServers().catch((err: unknown) => {
 				debugLogger.logError(
 					'mcp',
 					err instanceof Error ? err : new Error(`MCP sync failed on startup: ${err}`),
 				);
 				new Notice(t('uiMessages.mcpSyncError'));
 			});
+
+			// ── 퀵 액션 핸들러 및 커맨드/이벤트 등록
+			this.quickActionHandler = new QuickActionHandler(this);
+			this.commandManager.registerCommands();
+			this.eventManager.registerEvents();
+
+			// ── 인라인 서제스트 및 Diff Extension 초기화
+			this.registerEditorSuggest(new InlineAISuggest(this));
+			this.registerEditorExtension(inlineDiffExtension);
+
+			// ── 프론트매터 매니저 초기화
+			this.frontmatterManager = new FrontmatterManager(this);
+			this.frontmatterManager.registerIfEnabled();
 
 			// debugMode ON이면 자동으로 패널 열기
 			if (this.settings.misc.debugMode) {
@@ -134,7 +147,9 @@ export default class LuminaPlugin extends Plugin {
 							new Notice(t('uiMessages.noticeIndexing'), 8000);
 						}
 					}
-					initEmbeddingWorker(this, true, this.isFirstRun).catch(console.error);
+					import('./features/rag/ragInitializer').then(({ initEmbeddingWorker }) => {
+						initEmbeddingWorker(this, true, this.isFirstRun).catch(console.error);
+					}).catch(console.error);
 				}
 			}
 		});

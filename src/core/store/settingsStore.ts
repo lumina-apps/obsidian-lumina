@@ -64,5 +64,6 @@ export function syncSettingsStore(settings: LuminaSettings): void {
 		misc: { ...settings.misc },
 		mcp: { ...settings.mcp, servers: [...settings.mcp.servers] },
 		webSearch: { ...settings.webSearch, providers: [...settings.webSearch.providers] },
+		canvas: { ...settings.canvas },
 	});
 }

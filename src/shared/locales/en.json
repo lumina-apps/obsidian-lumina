@@ -808,5 +808,50 @@
     "noNodes": "No nodes available in current view.",
     "calculating": "Calculating similarities...",
     "calcError": "Failed to build graph edges."
+  },
+  "canvas": {
+    "menuItem": "Visualize in Canvas",
+    "menuItemFolder": "Visualize in Canvas (Folder)",
+    "noticeCreated": "Canvas created for '{{name}}'.",
+    "noticeFolderCreated": "Created {{count}} canvas(es) for folder '{{name}}'.",
+    "noticeTruncated": "Node count exceeded the maximum ({{max}}). Some nodes were excluded.",
+    "noticeNoFiles": "No markdown files found in this folder.",
+    "noticeError": "An error occurred while generating the canvas.",
+    "settings": {
+      "depth": {
+        "name": "Traversal Depth",
+        "desc": "How many levels of wiki-links to follow. (1 = direct links only; higher values can dramatically increase node count) (Default: 1)"
+      },
+      "layout": {
+        "name": "Layout",
+        "desc": "Choose how nodes are arranged. (Default: Radial)",
+        "radial": "Radial (concentric circles around root)",
+        "tree": "Tree (left-to-right hierarchy)"
+      },
+      "bidirectional": {
+        "name": "Bidirectional Links",
+        "desc": "Include both outgoing links and backlinks. (Default: Enabled)"
+      },
+      "includeAttachments": {
+        "name": "Include Attachments",
+        "desc": "Also visualize images, PDFs, and other attachments linked from notes. (Default: Disabled)"
+      },
+      "maxNodes": {
+        "name": "Max Nodes",
+        "desc": "Nodes exceeding this count will be excluded from the canvas. (Default: 200)"
+      },
+      "folderDepth": {
+        "name": "Folder Traversal Depth",
+        "desc": "When right-clicking a folder, how many subfolder levels to include. (0 = direct children only) (Default: 0)"
+      },
+      "outputPath": {
+        "name": "Canvas Output Path",
+        "desc": "The folder where generated canvas files will be saved. (Default: canvasVisualize)"
+      },
+      "showFolderGroups": {
+        "name": "Show Folder Groups",
+        "desc": "In folder mode, group nodes by their parent folder on the canvas. (Default: Disabled)"
+      }
+    }
   }
 }

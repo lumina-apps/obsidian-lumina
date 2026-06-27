@@ -175,6 +175,27 @@ export function migrateWebSearch(plugin: LuminaPlugin): boolean {
 }
 
 /**
+ * Canvas 설정 마이그레이션.
+ * 기존 사용자 설정에 canvas 속성이 없으면 기본값을 주입합니다.
+ */
+export function migrateCanvasSettings(plugin: LuminaPlugin): boolean {
+	if (!plugin.settings.canvas) {
+		plugin.settings.canvas = {
+			depth: 1,
+			layout: 'radial',
+			bidirectional: true,
+			includeAttachments: false,
+			maxNodes: 200,
+			folderDepth: 0,
+			outputPath: 'canvasVisualize',
+			showFolderGroups: false,
+		};
+		return true;
+	}
+	return false;
+}
+
+/**
  * 모든 마이그레이션을 순차 실행하고 변경이 있으면 저장합니다.
  * @returns 저장이 필요하면 true
  */
@@ -186,5 +207,6 @@ export function runMigrations(plugin: LuminaPlugin): boolean {
 	if (migrateMemoryMethod(plugin)) needsSave = true;
 	if (migrateContextWindowTurns(plugin)) needsSave = true;
 	if (migrateWebSearch(plugin)) needsSave = true;
+	if (migrateCanvasSettings(plugin)) needsSave = true;
 	return needsSave;
 }

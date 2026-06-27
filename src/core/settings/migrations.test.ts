@@ -209,6 +209,7 @@ describe('runMigrations', () => {
 				rag: { excludedPaths: ['.obsidian', 'chatHistory', 'backups'], minSimilarity: 0.5 },
 				chat: { quickActions: [], memoryMethod: 'tokens', contextWindowTurns: 10 },
 				webSearch: { enabled: false, providers: [], activeProviderId: 'tavily', maxResults: 5, maxContentLength: 3000 },
+				canvas: { depth: 1, layout: 'radial', bidirectional: true, includeAttachments: false, maxNodes: 200, folderDepth: 0, outputPath: 'canvasVisualize', showFolderGroups: false },
 			},
 			app: { vault: { configDir: '.obsidian' } },
 			commandManager: { registerQuickActions: vi.fn() }

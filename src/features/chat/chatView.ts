@@ -5,7 +5,6 @@
 import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { mount, unmount } from 'svelte';
 import type LuminaPlugin from '../../main';
-import Sidebar from '../rag/ui/Sidebar.svelte';
 
 export const CHAT_VIEW_TYPE = 'lumina-chat';
 
@@ -34,7 +33,9 @@ export class ChatView extends ItemView {
 		this.contentEl.empty();
 		this.contentEl.addClass('lumina-chat-view');
 
-		// Svelte 컴포넌트를 Obsidian 탭 컨테이너에 마운트
+		// Svelte 컴포넌트를 비동기로 지연 로딩하여 플러그인 초기 로딩 속도 최적화
+		const { default: Sidebar } = await import('../rag/ui/Sidebar.svelte');
+		
 		this.component = mount(Sidebar, {
 			target: this.contentEl,
 			props: { plugin: this.plugin },

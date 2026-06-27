@@ -808,5 +808,50 @@
     "noNodes": "Keine Knoten in der aktuellen Ansicht verfügbar.",
     "calculating": "Ähnlichkeiten werden berechnet...",
     "calcError": "Erstellen der Graphkanten fehlgeschlagen."
+  },
+  "canvas": {
+    "menuItem": "In Canvas visualisieren",
+    "menuItemFolder": "In Canvas visualisieren (Ordner)",
+    "noticeCreated": "Canvas für '{{name}}' erstellt.",
+    "noticeFolderCreated": "{{count}} Canvas(es) für den Ordner '{{name}}' erstellt.",
+    "noticeTruncated": "Knotenanzahl hat das Maximum ({{max}}) überschritten. Einige Knoten wurden ausgeschlossen.",
+    "noticeNoFiles": "Keine Markdown-Dateien in diesem Ordner gefunden.",
+    "noticeError": "Ein Fehler ist beim Erstellen des Canvas aufgetreten.",
+    "settings": {
+      "depth": {
+        "name": "Durchsuchungstiefe",
+        "desc": "Wie viele Ebenen von Wiki-Links verfolgt werden sollen. (1 = nur direkte Links; höhere Werte können die Knotenanzahl drastisch erhöhen) (Standard: 1)"
+      },
+      "layout": {
+        "name": "Layout",
+        "desc": "Wählen Sie, wie die Knoten angeordnet werden. (Standard: Radial)",
+        "radial": "Radial (konzentrische Kreise um den Ursprung)",
+        "tree": "Baum (Links-nach-rechts-Hierarchie)"
+      },
+      "bidirectional": {
+        "name": "Bidirektionale Links",
+        "desc": "Sowohl ausgehende Links als auch Backlinks einschließen. (Standard: Aktiviert)"
+      },
+      "includeAttachments": {
+        "name": "Anhänge einschließen",
+        "desc": "Auch Bilder, PDFs und andere in Notizen verlinkte Anhänge visualisieren. (Standard: Deaktiviert)"
+      },
+      "maxNodes": {
+        "name": "Maximale Knotenanzahl",
+        "desc": "Knoten, die diese Anzahl überschreiten, werden aus dem Canvas ausgeschlossen. (Standard: 200)"
+      },
+      "folderDepth": {
+        "name": "Ordner-Durchsuchungstiefe",
+        "desc": "Wie viele Unterordner-Ebenen beim Rechtsklick auf einen Ordner eingeschlossen werden sollen. (0 = nur direkte Kinder) (Standard: 0)"
+      },
+      "outputPath": {
+        "name": "Canvas-Ausgabepfad",
+        "desc": "Der Ordner, in dem generierte Canvas-Dateien gespeichert werden. (Standard: canvasVisualize)"
+      },
+      "showFolderGroups": {
+        "name": "Ordnergruppen anzeigen",
+        "desc": "Im Ordnermodus Knoten im Canvas nach ihrem übergeordneten Ordner gruppieren. (Standard: Deaktiviert)"
+      }
+    }
   }
 }

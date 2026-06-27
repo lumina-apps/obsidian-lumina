@@ -3,7 +3,6 @@
 import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { mount, unmount } from 'svelte';
 import type LuminaPlugin from '../../main';
-import DebugPanel from './ui/DebugPanel.svelte';
 
 export const DEBUG_VIEW_TYPE = 'lumina-debug-panel';
 
@@ -33,6 +32,7 @@ export class DebugView extends ItemView {
 		contentEl.empty();
 		contentEl.addClass('lumina-debug-view');
 
+		const { default: DebugPanel } = await import('./ui/DebugPanel.svelte');
 		this.component = mount(DebugPanel, {
 			target: contentEl,
 			props: { plugin: this.plugin },

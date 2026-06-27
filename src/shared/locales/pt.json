@@ -808,5 +808,50 @@
     "noNodes": "Nenhum nó disponível na visualização atual.",
     "calculating": "Calculando similaridades...",
     "calcError": "Falha ao construir arestas do grafo."
+  },
+  "canvas": {
+    "menuItem": "Visualizar no Canvas",
+    "menuItemFolder": "Visualizar no Canvas (Pasta)",
+    "noticeCreated": "Canvas criado para '{{name}}'.",
+    "noticeFolderCreated": "{{count}} canvas criados para a pasta '{{name}}'.",
+    "noticeTruncated": "O número de nós excedeu o máximo ({{max}}). Alguns nós foram excluídos.",
+    "noticeNoFiles": "Nenhum arquivo markdown encontrado nesta pasta.",
+    "noticeError": "Ocorreu um erro ao gerar o canvas.",
+    "settings": {
+      "depth": {
+        "name": "Profundidade de travessia",
+        "desc": "Quantos níveis de links wiki seguir. (1 = apenas links diretos; valores mais altos podem aumentar drasticamente o número de nós) (Padrão: 1)"
+      },
+      "layout": {
+        "name": "Layout",
+        "desc": "Escolha como os nós são organizados. (Padrão: Radial)",
+        "radial": "Radial (círculos concêntricos ao redor da raiz)",
+        "tree": "Árvore (hierarquia da esquerda para a direita)"
+      },
+      "bidirectional": {
+        "name": "Links bidirecionais",
+        "desc": "Incluir tanto links de saída quanto backlinks. (Padrão: Ativado)"
+      },
+      "includeAttachments": {
+        "name": "Incluir anexos",
+        "desc": "Também visualizar imagens, PDFs e outros anexos vinculados das notas. (Padrão: Desativado)"
+      },
+      "maxNodes": {
+        "name": "Nós máximos",
+        "desc": "Os nós que excederem esse número serão excluídos do canvas. (Padrão: 200)"
+      },
+      "folderDepth": {
+        "name": "Profundidade da pasta",
+        "desc": "Ao clicar com o botão direito em uma pasta, quantos níveis de subpastas incluir. (0 = apenas filhos diretos) (Padrão: 0)"
+      },
+      "outputPath": {
+        "name": "Caminho de saída do Canvas",
+        "desc": "A pasta onde os arquivos canvas gerados serão salvos. (Padrão: canvasVisualize)"
+      },
+      "showFolderGroups": {
+        "name": "Mostrar grupos de pastas",
+        "desc": "No modo pasta, agrupar nós por sua pasta principal no canvas. (Padrão: Desativado)"
+      }
+    }
   }
 }

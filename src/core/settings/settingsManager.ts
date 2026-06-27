@@ -26,6 +26,7 @@ export class SettingsManager {
 			misc: Object.assign({}, DEFAULT_SETTINGS.misc, safeSaved.misc ?? {}),
 			mcp: Object.assign({}, DEFAULT_SETTINGS.mcp, safeSaved.mcp ?? {}),
 			webSearch: Object.assign({}, DEFAULT_SETTINGS.webSearch, safeSaved.webSearch ?? {}),
+			canvas: Object.assign({}, DEFAULT_SETTINGS.canvas, safeSaved.canvas ?? {}),
 		};
 
 		// SecretStorage에서 자격 증명 로드 (LLM Provider)

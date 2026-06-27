@@ -808,5 +808,50 @@
     "noNodes": "Nessun nodo disponibile nella vista attuale.",
     "calculating": "Calcolo delle somiglianze in corso...",
     "calcError": "Costruzione degli archi del grafo non riuscita."
+  },
+  "canvas": {
+    "menuItem": "Visualizza in Canvas",
+    "menuItemFolder": "Visualizza in Canvas (Cartella)",
+    "noticeCreated": "Canvas creato per '{{name}}'.",
+    "noticeFolderCreated": "{{count}} canvas creati per la cartella '{{name}}'.",
+    "noticeTruncated": "Il numero di nodi ha superato il massimo ({{max}}). Alcuni nodi sono stati esclusi.",
+    "noticeNoFiles": "Nessun file markdown trovato in questa cartella.",
+    "noticeError": "Si è verificato un errore durante la generazione del canvas.",
+    "settings": {
+      "depth": {
+        "name": "Profondità di attraversamento",
+        "desc": "Quanti livelli di wiki-link seguire. (1 = solo link diretti; valori più alti possono aumentare drasticamente il numero di nodi) (Predefinito: 1)"
+      },
+      "layout": {
+        "name": "Layout",
+        "desc": "Scegli come disporre i nodi. (Predefinito: Radiale)",
+        "radial": "Radiale (cerchi concentrici intorno alla radice)",
+        "tree": "Albero (gerarchia da sinistra a destra)"
+      },
+      "bidirectional": {
+        "name": "Link bidirezionali",
+        "desc": "Includere sia i link in uscita che i backlink. (Predefinito: Attivato)"
+      },
+      "includeAttachments": {
+        "name": "Includi allegati",
+        "desc": "Visualizza anche immagini, PDF e altri allegati collegati dalle note. (Predefinito: Disattivato)"
+      },
+      "maxNodes": {
+        "name": "Nodi massimi",
+        "desc": "I nodi che superano questo limite saranno esclusi dal canvas. (Predefinito: 200)"
+      },
+      "folderDepth": {
+        "name": "Profondità cartella",
+        "desc": "Quando fai clic con il tasto destro su una cartella, quanti livelli di sottocartelle includere. (0 = solo figli diretti) (Predefinito: 0)"
+      },
+      "outputPath": {
+        "name": "Percorso di output del Canvas",
+        "desc": "La cartella in cui verranno salvati i file canvas generati. (Predefinito: canvasVisualize)"
+      },
+      "showFolderGroups": {
+        "name": "Mostra gruppi di cartelle",
+        "desc": "Nella modalità cartella, raggruppa i nodi per la loro cartella principale nel canvas. (Predefinito: Disattivato)"
+      }
+    }
   }
 }

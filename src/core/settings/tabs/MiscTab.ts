@@ -1,4 +1,4 @@
-import { Notice, Setting, Platform, ButtonComponent } from 'obsidian';
+import { Notice, Setting, Platform, ButtonComponent, SliderComponent, TextComponent } from 'obsidian';
 import type { LuminaSettingTab } from '../settingTab';
 import { t, setLanguage } from '../../../shared/locales/helpers';
 import { wrapAsync } from '../../../shared/utils/settingHelpers';
@@ -39,7 +39,166 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 		});
 
 
+	// ── Canvas 시각화 설정 ────────────────────────────────────────────────────
+	const cs = tab.plugin.settings.canvas;
+	tab.sectionHeading(el, t('canvas.menuItem'));
+
+	let depthSlider: SliderComponent;
+	let depthText: TextComponent;
+	new Setting(el)
+		.setName(t('canvas.settings.depth.name'))
+		.setDesc(t('canvas.settings.depth.desc'))
+		.addSlider(slider => {
+			depthSlider = slider;
+			slider
+				.setLimits(1, 5, 1)
+				.setValue(cs.depth)
+				.setDynamicTooltip()
+				.onChange(async (val) => {
+					cs.depth = val;
+					depthText.setValue(val.toString());
+					await tab.saveAndSync();
+				});
+		})
+		.addText(text => {
+			depthText = text;
+			text
+				.setValue(cs.depth.toString())
+				.onChange(async (val) => {
+					const num = parseInt(val, 10);
+					if (!isNaN(num) && num >= 1 && num <= 5) {
+						cs.depth = num;
+						depthSlider.setValue(num);
+						await tab.saveAndSync();
+					}
+				});
+			text.inputEl.type = 'number';
+			text.inputEl.style.width = '50px';
+		});
+
+	new Setting(el)
+		.setName(t('canvas.settings.layout.name'))
+		.setDesc(t('canvas.settings.layout.desc'))
+		.addDropdown(dd => {
+			dd.addOption('radial', t('canvas.settings.layout.radial'));
+			dd.addOption('tree', t('canvas.settings.layout.tree'));
+			dd.setValue(cs.layout).onChange(async (val) => {
+				cs.layout = val as 'radial' | 'tree';
+				await tab.saveAndSync();
+			});
+		});
+
+	new Setting(el)
+		.setName(t('canvas.settings.bidirectional.name'))
+		.setDesc(t('canvas.settings.bidirectional.desc'))
+		.addToggle(toggle => {
+			toggle.setValue(cs.bidirectional).onChange(async (val) => {
+				cs.bidirectional = val;
+				await tab.saveAndSync();
+			});
+		});
+
+	new Setting(el)
+		.setName(t('canvas.settings.includeAttachments.name'))
+		.setDesc(t('canvas.settings.includeAttachments.desc'))
+		.addToggle(toggle => {
+			toggle.setValue(cs.includeAttachments).onChange(async (val) => {
+				cs.includeAttachments = val;
+				await tab.saveAndSync();
+			});
+		});
+
+	let maxNodesSlider: SliderComponent;
+	let maxNodesText: TextComponent;
+	new Setting(el)
+		.setName(t('canvas.settings.maxNodes.name'))
+		.setDesc(t('canvas.settings.maxNodes.desc'))
+		.addSlider(slider => {
+			maxNodesSlider = slider;
+			slider
+				.setLimits(20, 500, 10)
+				.setValue(cs.maxNodes)
+				.setDynamicTooltip()
+				.onChange(async (val) => {
+					cs.maxNodes = val;
+					maxNodesText.setValue(val.toString());
+					await tab.saveAndSync();
+				});
+		})
+		.addText(text => {
+			maxNodesText = text;
+			text
+				.setValue(cs.maxNodes.toString())
+				.onChange(async (val) => {
+					const num = parseInt(val, 10);
+					if (!isNaN(num) && num >= 20 && num <= 500) {
+						cs.maxNodes = num;
+						maxNodesSlider.setValue(num);
+						await tab.saveAndSync();
+					}
+				});
+			text.inputEl.type = 'number';
+			text.inputEl.style.width = '60px';
+		});
+
+	let folderDepthSlider: SliderComponent;
+	let folderDepthText: TextComponent;
+	new Setting(el)
+		.setName(t('canvas.settings.folderDepth.name'))
+		.setDesc(t('canvas.settings.folderDepth.desc'))
+		.addSlider(slider => {
+			folderDepthSlider = slider;
+			slider
+				.setLimits(0, 3, 1)
+				.setValue(cs.folderDepth)
+				.setDynamicTooltip()
+				.onChange(async (val) => {
+					cs.folderDepth = val;
+					folderDepthText.setValue(val.toString());
+					await tab.saveAndSync();
+				});
+		})
+		.addText(text => {
+			folderDepthText = text;
+			text
+				.setValue(cs.folderDepth.toString())
+				.onChange(async (val) => {
+					const num = parseInt(val, 10);
+					if (!isNaN(num) && num >= 0 && num <= 3) {
+						cs.folderDepth = num;
+						folderDepthSlider.setValue(num);
+						await tab.saveAndSync();
+					}
+				});
+			text.inputEl.type = 'number';
+			text.inputEl.style.width = '50px';
+		});
+
+	new Setting(el)
+		.setName(t('canvas.settings.outputPath.name'))
+		.setDesc(t('canvas.settings.outputPath.desc'))
+		.addText(text => {
+			text
+				.setPlaceholder('canvasVisualize')
+				.setValue(cs.outputPath)
+				.onChange(async (val) => {
+					cs.outputPath = val.trim() || 'canvasVisualize';
+					await tab.saveAndSync();
+				});
+		});
+
+	new Setting(el)
+		.setName(t('canvas.settings.showFolderGroups.name'))
+		.setDesc(t('canvas.settings.showFolderGroups.desc'))
+		.addToggle(toggle => {
+			toggle.setValue(cs.showFolderGroups).onChange(async (val) => {
+				cs.showFolderGroups = val;
+				await tab.saveAndSync();
+			});
+		});
+
 	// ── 고급 ─────────────────────────────────────────────────────────────
+
 	if (tab.showAdvanced) {
 		tab.advancedLabel(el);
 

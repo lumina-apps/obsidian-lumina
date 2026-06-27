@@ -180,6 +180,27 @@ export interface WebSearchSettings {
 	maxContentLength: number;
 }
 
+// ─── Section 7: Canvas 시각화 ────────────────────────────────────────────────
+
+export interface CanvasSettings {
+	/** 위키링크 탐색 깊이 (1~5) */
+	depth: number;
+	/** 레이아웃 방식 */
+	layout: 'radial' | 'tree';
+	/** 양방향 링크(백링크) 포함 여부 */
+	bidirectional: boolean;
+	/** md 외 첨부파일(이미지, PDF 등) 포함 여부 */
+	includeAttachments: boolean;
+	/** 최대 노드 수 (초과 시 잘라냄) */
+	maxNodes: number;
+	/** 폴더 우클릭 시 하위 폴더 탐색 깊이 (0 = 직접 자식만) */
+	folderDepth: number;
+	/** Canvas 파일 저장 경로 */
+	outputPath: string;
+	/** 폴더 모드에서 폴더별 그룹 노드 표시 여부 */
+	showFolderGroups: boolean;
+}
+
 // ─── Root Settings ────────────────────────────────────────────────────────────
 
 export interface LuminaSettings {
@@ -189,4 +210,5 @@ export interface LuminaSettings {
 	misc: MiscSettings;
 	mcp: McpSettings;
 	webSearch: WebSearchSettings;
+	canvas: CanvasSettings;
 }

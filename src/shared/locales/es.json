@@ -307,7 +307,7 @@
         "selectedText": "Texto seleccionado ({{length}} caracteres)",
         "folderFiles": "[Archivos en la carpeta: {{name}}]",
         "activeNotePrefix": "[Nota activa: {{name}}]",
-        "canvasFile": "[Archivo Canvas: {{name}}]",
+        "canvasFile": "[Archivo Lienzo: {{name}}]",
         "tagFiles": "[Archivos con etiqueta: {{name}} (Máx. 5)]",
         "activeNotePrompt": "Nota activa",
         "categoryActiveNote": "📄 Incluir nota actual",
@@ -316,7 +316,7 @@
         "categoryFile": "📝 Añadir archivo",
         "categoryTag": "🏷️ Añadir etiqueta",
         "categoryUrl": "🔗 Introducir URL",
-        "categoryCanvas": "🎨 Añadir Canvas",
+        "categoryCanvas": "🎨 Añadir Lienzo",
         "categoryBack": "Atrás",
         "categoryTitle": "Seleccionar tipo de contexto",
         "urlInputPlaceholder": "Introducir URL (ej. https://...)",
@@ -808,5 +808,50 @@
     "noNodes": "No hay nodos disponibles en la vista actual.",
     "calculating": "Calculando similitudes...",
     "calcError": "Error al construir las aristas del gráfico."
+  },
+  "canvas": {
+    "menuItem": "Visualizar en Lienzo",
+    "menuItemFolder": "Visualizar en Lienzo (Carpeta)",
+    "noticeCreated": "Lienzo creado para '{{name}}'.",
+    "noticeFolderCreated": "{{count}} lienzo creados para la carpeta '{{name}}'.",
+    "noticeTruncated": "El número de nodos superó el máximo ({{max}}). Se excluyeron algunos nodos.",
+    "noticeNoFiles": "No se encontraron archivos markdown en esta carpeta.",
+    "noticeError": "Ocurrió un error al generar el lienzo.",
+    "settings": {
+      "depth": {
+        "name": "Profundidad de exploración",
+        "desc": "Cuántos niveles de enlaces wiki seguir. (1 = solo enlaces directos; valores más altos pueden aumentar drásticamente el número de nodos) (Predeterminado: 1)"
+      },
+      "layout": {
+        "name": "Diseño",
+        "desc": "Elija cómo se organizan los nodos. (Predeterminado: Radial)",
+        "radial": "Radial (círculos concéntricos alrededor de la raíz)",
+        "tree": "Árbol (jerarquía de izquierda a derecha)"
+      },
+      "bidirectional": {
+        "name": "Enlaces bidireccionales",
+        "desc": "Incluir tanto enlaces salientes como enlaces entrantes (backlinks). (Predeterminado: Activado)"
+      },
+      "includeAttachments": {
+        "name": "Incluir archivos adjuntos",
+        "desc": "Visualizar también imágenes, archivos PDF y otros adjuntos enlazados en las notas. (Predeterminado: Desactivado)"
+      },
+      "maxNodes": {
+        "name": "Nodos máximos",
+        "desc": "Los nodos que superen esta cantidad se excluirán del lienzo. (Predeterminado: 200)"
+      },
+      "folderDepth": {
+        "name": "Profundidad de exploración de carpetas",
+        "desc": "Al hacer clic derecho en una carpeta, cuántos niveles de subcarpetas incluir. (0 = solo hijos directos) (Predeterminado: 0)"
+      },
+      "outputPath": {
+        "name": "Ruta de salida del Lienzo",
+        "desc": "La carpeta donde se guardarán los archivos lienzo generados. (Predeterminado: canvasVisualize)"
+      },
+      "showFolderGroups": {
+        "name": "Mostrar grupos de carpetas",
+        "desc": "En el modo de carpeta, agrupar los nodos por su carpeta principal en el lienzo. (Predeterminado: Desactivado)"
+      }
+    }
   }
 }

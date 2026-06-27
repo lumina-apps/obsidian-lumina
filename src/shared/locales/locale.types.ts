@@ -846,6 +846,27 @@ export interface TranslationGraph {
   calcError: string;
 }
 
+// canvas
+export interface TranslationCanvas {
+  menuItem: string;
+  menuItemFolder: string;
+  noticeCreated: string;
+  noticeFolderCreated: string;
+  noticeTruncated: string;
+  noticeNoFiles: string;
+  noticeError: string;
+  settings: {
+    depth: { name: string; desc: string };
+    layout: { name: string; desc: string; radial: string; tree: string };
+    bidirectional: { name: string; desc: string };
+    includeAttachments: { name: string; desc: string };
+    maxNodes: { name: string; desc: string };
+    folderDepth: { name: string; desc: string };
+    outputPath: { name: string; desc: string };
+    showFolderGroups: { name: string; desc: string };
+  };
+}
+
 // mcpServerTools
 export interface TranslationMcpServerToolsCommon {
   truncated: string;
@@ -896,6 +917,7 @@ export interface Translation {
   uiMessages: TranslationUiMessages;
   mcpServerTools: TranslationMcpServerTools;
   graph: TranslationGraph;
+  canvas: TranslationCanvas;
 }
 
 // DeepPartial 타입

@@ -119,4 +119,15 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		maxResults: 5,
 		maxContentLength: 3000,
 	},
+	// ── Section 7: Canvas 시각화 ───────────────────────────────────────────────
+	canvas: {
+		depth: 1,
+		layout: 'radial',
+		bidirectional: true,
+		includeAttachments: false,
+		maxNodes: 200,
+		folderDepth: 0,
+		outputPath: 'canvasVisualize',
+		showFolderGroups: false,
+	},
 };

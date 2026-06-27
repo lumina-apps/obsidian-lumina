@@ -307,7 +307,7 @@
         "selectedText": "Texte sélectionné ({{length}} caractères)",
         "folderFiles": "[Fichiers dans le dossier : {{name}}]",
         "activeNotePrefix": "[Note active : {{name}}]",
-        "canvasFile": "[Fichier Canvas : {{name}}]",
+        "canvasFile": "[Fichier Toile : {{name}}]",
         "tagFiles": "[Fichiers avec tag : {{name}} (Max 5)]",
         "activeNotePrompt": "Note active",
         "categoryActiveNote": "📄 Inclure la note actuelle",
@@ -316,7 +316,7 @@
         "categoryFile": "📝 Ajouter un fichier",
         "categoryTag": "🏷️ Ajouter un tag",
         "categoryUrl": "🔗 Saisir une URL",
-        "categoryCanvas": "🎨 Ajouter un Canvas",
+        "categoryCanvas": "🎨 Ajouter un Toile",
         "categoryBack": "Retour",
         "categoryTitle": "Sélectionner le type de contexte",
         "urlInputPlaceholder": "Saisir une URL (ex. https://...)",
@@ -808,5 +808,50 @@
     "noNodes": "Aucun nœud disponible dans la vue actuelle.",
     "calculating": "Calcul des similitudes...",
     "calcError": "Échec de la construction des arêtes du graphe."
+  },
+  "canvas": {
+    "menuItem": "Visualiser dans Toile",
+    "menuItemFolder": "Visualiser dans Toile (Dossier)",
+    "noticeCreated": "Toile créé pour '{{name}}'.",
+    "noticeFolderCreated": "{{count}} toile créé(s) pour le dossier '{{name}}'.",
+    "noticeTruncated": "Le nombre de nœuds a dépassé le maximum ({{max}}). Certains nœuds ont été exclus.",
+    "noticeNoFiles": "Aucun fichier markdown trouvé dans ce dossier.",
+    "noticeError": "Une erreur s'est produite lors de la génération du toile.",
+    "settings": {
+      "depth": {
+        "name": "Profondeur d'exploration",
+        "desc": "Combien de niveaux de liens wiki suivre. (1 = liens directs uniquement ; des valeurs plus élevées peuvent augmenter considérablement le nombre de nœuds) (Par défaut : 1)"
+      },
+      "layout": {
+        "name": "Mise en page",
+        "desc": "Choisissez comment les nœuds sont organisés. (Par défaut : Radial)",
+        "radial": "Radial (cercles concentriques autour de la racine)",
+        "tree": "Arbre (hiérarchie de gauche à droite)"
+      },
+      "bidirectional": {
+        "name": "Liens bidirectionnels",
+        "desc": "Inclure à la fois les liens sortants et les rétroliens. (Par défaut : Activé)"
+      },
+      "includeAttachments": {
+        "name": "Inclure les pièces jointes",
+        "desc": "Visualiser également les images, les PDF et les autres pièces jointes liés depuis les notes. (Par défaut : Désactivé)"
+      },
+      "maxNodes": {
+        "name": "Nœuds maximum",
+        "desc": "Les nœuds dépassant ce nombre seront exclus du toile. (Par défaut : 200)"
+      },
+      "folderDepth": {
+        "name": "Profondeur d'exploration des dossiers",
+        "desc": "Lors d'un clic droit sur un dossier, combien de niveaux de sous-dossiers inclure. (0 = enfants directs uniquement) (Par défaut : 0)"
+      },
+      "outputPath": {
+        "name": "Chemin de sortie du Toile",
+        "desc": "Le dossier où les fichiers toile générés seront enregistrés. (Par défaut : canvasVisualize)"
+      },
+      "showFolderGroups": {
+        "name": "Afficher les groupes de dossiers",
+        "desc": "En mode dossier, regrouper les nœuds par leur dossier parent sur le toile. (Par défaut : Désactivé)"
+      }
+    }
   }
 }

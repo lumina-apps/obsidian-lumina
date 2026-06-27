@@ -1,7 +1,6 @@
 import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { mount, unmount } from 'svelte';
 import type LuminaPlugin from '../../main';
-import GraphPanel from './ui/GraphPanel.svelte';
 import { t } from '../../shared/locales/helpers';
 
 export const GRAPH_VIEW_TYPE = 'lumina-graph';
@@ -32,6 +31,7 @@ export class GraphView extends ItemView {
 		this.contentEl.addClass('lumina-graph-view');
 
 		// Mount Svelte component
+		const { default: GraphPanel } = await import('./ui/GraphPanel.svelte');
 		this.component = mount(GraphPanel, {
 			target: this.contentEl,
 			props: { plugin: this.plugin },

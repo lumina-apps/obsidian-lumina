@@ -316,7 +316,7 @@
         "categoryFile": "📝 新增檔案",
         "categoryTag": "🏷️ 新增標籤",
         "categoryUrl": "🔗 輸入網址",
-        "categoryCanvas": "🎨 新增 Canvas",
+        "categoryCanvas": "🎨 新增 白板",
         "categoryBack": "返回",
         "categoryTitle": "選擇上下文類型",
         "urlInputPlaceholder": "輸入網址（例：https://...）",
@@ -808,5 +808,50 @@
     "noNodes": "目前視圖中沒有可用的節點。",
     "calculating": "正在計算相似度...",
     "calcError": "建立圖譜邊緣失敗。"
+  },
+  "canvas": {
+    "menuItem": "在 白板 中視覺化",
+    "menuItemFolder": "在 白板 中視覺化 (資料夾)",
+    "noticeCreated": "已為 '{{name}}' 建立 白板。",
+    "noticeFolderCreated": "已為資料夾 '{{name}}' 建立 {{count}} 個 白板。",
+    "noticeTruncated": "節點數量超過上限 ({{max}})。某些節點已被排除。",
+    "noticeNoFiles": "在此資料夾中找不到 markdown 檔案。",
+    "noticeError": "生成 白板 時發生錯誤。",
+    "settings": {
+      "depth": {
+        "name": "遍歷深度",
+        "desc": "要跟隨多少層的 wiki 連結。(1 = 僅直接連結；較高的值可能會大幅增加節點數量) (預設：1)"
+      },
+      "layout": {
+        "name": "佈局",
+        "desc": "選擇節點的排列方式。(預設：放射狀)",
+        "radial": "放射狀 (圍繞根節點的同心圓)",
+        "tree": "樹狀 (從左到右的階層)"
+      },
+      "bidirectional": {
+        "name": "雙向連結",
+        "desc": "包含傳出連結和反向連結 (backlinks)。(預設：啟用)"
+      },
+      "includeAttachments": {
+        "name": "包含附件",
+        "desc": "同時視覺化筆記中連結的圖片、PDF 和其他附件。(預設：停用)"
+      },
+      "maxNodes": {
+        "name": "節點數量上限",
+        "desc": "超過此數量的節點將被排除在 白板 之外。(預設：200)"
+      },
+      "folderDepth": {
+        "name": "資料夾深度",
+        "desc": "右鍵單擊資料夾時，要包含多少層的子資料夾。(0 = 僅直接子層) (預設：0)"
+      },
+      "outputPath": {
+        "name": "白板 輸出路徑",
+        "desc": "儲存生成的 白板 檔案的資料夾。(預設：canvasVisualize)"
+      },
+      "showFolderGroups": {
+        "name": "顯示資料夾群組",
+        "desc": "在資料夾模式下，將節點按其父資料夾分組顯示在 白板 上。(預設：停用)"
+      }
+    }
   }
 }
