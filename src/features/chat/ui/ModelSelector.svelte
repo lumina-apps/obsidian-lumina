@@ -113,7 +113,7 @@
 
 	function scrollToSelected() {
 		if (!listEl || !selectedProviderId || !selectedModelId) return;
-		const items = listEl.querySelectorAll(".lumina-model-selector__item");
+		const items = listEl.querySelectorAll(".lumina-popup-selector__item");
 		for (let i = 0; i < items.length; i++) {
 			const el = items[i] as HTMLElement;
 			if (
@@ -146,7 +146,7 @@
 	</button>
 
 	{#if isOpen}
-		<div class="lumina-model-selector__dropdown">
+		<div class="lumina-popup-selector lumina-model-selector__dropdown">
 			<div class="lumina-model-selector__search-wrap">
 				<input
 					bind:this={inputEl}
@@ -158,13 +158,13 @@
 				/>
 			</div>
 
-			<div class="lumina-model-selector__list lumina-scrollbar-thin" bind:this={listEl}>
+			<div class="lumina-popup-selector__list lumina-scrollbar-thin" bind:this={listEl}>
 				{#if filteredModels.length === 0}
-					<div class="lumina-model-selector__empty">{$tStore('uiMessages.noSearchResults')}</div>
+					<div class="lumina-popup-selector__empty">{$tStore('uiMessages.noSearchResults')}</div>
 				{:else}
 					{#each filteredModels as item, i}
 						<button
-							class="lumina-model-selector__item"
+							class="lumina-popup-selector__item"
 							class:is-selected={item.providerId === selectedProviderId && item.modelId === selectedModelId}
 							class:is-active={i === nav.activeIndex}
 							data-provider-id={item.providerId}
@@ -173,11 +173,11 @@
 							onmouseenter={() => nav.setActiveIndex(i)}
 							type="button"
 						>
-							<div class="lumina-model-selector__item-info">
-								<span class="lumina-model-selector__item-badge">
+							<div class="lumina-popup-selector__item-info" style="flex-direction: row; align-items: center; gap: 8px;">
+								<span class="lumina-popup-selector__item-badge">
 									{stripProviderSuffix(item.providerName)}
 								</span>
-								<span class="lumina-model-selector__item-name">{item.modelId}</span>
+								<span class="lumina-popup-selector__item-name">{item.modelId}</span>
 							</div>
 						</button>
 					{/each}
@@ -238,20 +238,12 @@
 		height: 12px;
 	}
 
+	/* Overriding default popup selector for model selector dropdown */
 	.lumina-model-selector__dropdown {
-		position: absolute;
 		top: calc(100% + 4px);
-		right: 0;
+		bottom: auto;
 		width: 280px;
-		background: var(--background-primary);
-		border: 1px solid var(--background-modifier-border);
-		border-radius: 8px;
-		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-		z-index: 1000;
-		display: flex;
-		flex-direction: column;
-		overflow: hidden;
-		animation: lumina-popover-fade-in 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+		padding: 0;
 	}
 
 	.lumina-model-selector__search-wrap {
@@ -276,73 +268,15 @@
 		border-color: var(--interactive-accent);
 	}
 
-	.lumina-model-selector__list {
-		max-height: 220px;
-		overflow-y: auto;
-		padding: 4px 0;
-	}
-
-	.lumina-model-selector__empty {
-		font-size: 11px;
-		color: var(--text-muted);
-		padding: 12px;
-		text-align: center;
-	}
-
-	.lumina-model-selector__item {
-		all: unset;
-		box-sizing: border-box;
-		width: 100%;
-		display: flex;
-		align-items: center;
-		padding: 6px 12px;
-		font-size: 11px;
-		color: var(--text-normal);
-		cursor: pointer;
-		transition: background-color 0.15s ease;
-	}
-
-	.lumina-model-selector__item.is-active {
-		background-color: var(--background-modifier-hover);
-	}
-
-	.lumina-model-selector__item.is-selected {
+	.lumina-popup-selector__item.is-selected {
 		background-color: rgba(var(--color-accent-rgb, 139, 92, 246), 0.1);
 		color: var(--interactive-accent);
 		font-weight: 600;
 	}
 
-	.lumina-model-selector__item-info {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		width: 100%;
-		overflow: hidden;
-	}
-
-	.lumina-model-selector__item-badge {
-		font-size: 9px;
-		font-weight: 700;
-		padding: 2px 5px;
-		border-radius: 4px;
-		background: var(--background-secondary-alt);
-		color: var(--text-muted);
-		border: 1px solid var(--background-modifier-border);
-		text-transform: uppercase;
-		flex-shrink: 0;
-	}
-
-	.lumina-model-selector__item.is-selected .lumina-model-selector__item-badge {
+	.lumina-popup-selector__item.is-selected .lumina-popup-selector__item-badge {
 		background: rgba(var(--color-accent-rgb, 139, 92, 246), 0.2);
 		color: var(--interactive-accent);
 		border-color: var(--interactive-accent);
-	}
-
-	.lumina-model-selector__item-name {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		flex-grow: 1;
-		text-align: left;
 	}
 </style>

@@ -248,27 +248,27 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
-<div class="lumina-context-selector" bind:this={containerEl} onclick={(e) => e.stopPropagation()}>
+<div class="lumina-popup-selector" bind:this={containerEl} onclick={(e) => e.stopPropagation()}>
 	{#if view === 'categories'}
-		<div class="lumina-context-selector__header">
+		<div class="lumina-popup-selector__header">
 			<span class="lumina-context-selector__header-title">{$tStore('settings.chat.context.categoryTitle')}</span>
 		</div>
-		<div class="lumina-context-selector__list" bind:this={listEl}>
+		<div class="lumina-popup-selector__list" bind:this={listEl}>
 			{#if filteredCategories.length === 0}
-				<div class="lumina-context-selector__empty">{$tStore('uiMessages.noSearchResults')}</div>
+				<div class="lumina-popup-selector__empty">{$tStore('uiMessages.noSearchResults')}</div>
 			{:else}
 				{#each filteredCategories as cat, i}
 					<button
-						class="lumina-context-selector__item lumina-context-selector__item--category"
+						class="lumina-popup-selector__item lumina-context-selector__item--category"
 						class:is-active={i === nav.activeIndex}
 						onclick={() => selectCategory(cat)}
 						onmouseenter={() => { if (!nav.isKeyboardNavigating) nav.activeIndex = i; }}
 						onmousemove={() => { if (!nav.isKeyboardNavigating && nav.activeIndex !== i) nav.activeIndex = i; }}
 						type="button"
 					>
-						<span class="lumina-context-selector__item-icon" use:icon={cat.icon}></span>
-						<div class="lumina-context-selector__item-info">
-							<span class="lumina-context-selector__item-name">{cat.label}</span>
+						<span class="lumina-popup-selector__item-icon" use:icon={cat.icon}></span>
+						<div class="lumina-popup-selector__item-info">
+							<span class="lumina-popup-selector__item-name">{cat.label}</span>
 						</div>
 						<span class="lumina-context-selector__item-arrow">→</span>
 					</button>
@@ -276,40 +276,40 @@
 			{/if}
 		</div>
 	{:else if view === 'items'}
-		<div class="lumina-context-selector__header">
+		<div class="lumina-popup-selector__header">
 			<button class="lumina-context-selector__back-btn" onclick={goBack} type="button">
 				<span use:icon={"arrow-left"}></span>
 				<span>{$tStore('settings.chat.context.categoryBack')}</span>
 			</button>
 		</div>
-		<div class="lumina-context-selector__list" bind:this={listEl}>
+		<div class="lumina-popup-selector__list" bind:this={listEl}>
 			{#if categoryItems.length === 0}
-				<div class="lumina-context-selector__empty">{$tStore('uiMessages.noSearchResults')}</div>
+				<div class="lumina-popup-selector__empty">{$tStore('uiMessages.noSearchResults')}</div>
 			{:else}
 				{#each categoryItems as item, i}
 					<button
-						class="lumina-context-selector__item"
+						class="lumina-popup-selector__item"
 						class:is-active={i === nav.activeIndex}
 						onclick={() => selectItem(item)}
 						onmouseenter={() => { if (!nav.isKeyboardNavigating) nav.activeIndex = i; }}
 						onmousemove={() => { if (!nav.isKeyboardNavigating && nav.activeIndex !== i) nav.activeIndex = i; }}
 						type="button"
 					>
-						<span class="lumina-context-selector__item-icon" use:icon={getAttachmentIcon(item.type)}></span>
-						<div class="lumina-context-selector__item-info">
-							<span class="lumina-context-selector__item-name">{item.name}</span>
+						<span class="lumina-popup-selector__item-icon" use:icon={getAttachmentIcon(item.type)}></span>
+						<div class="lumina-popup-selector__item-info">
+							<span class="lumina-popup-selector__item-name">{item.name}</span>
 							{#if item.type === 'file' || item.type === 'folder' || item.type === 'canvas'}
 								<span class="lumina-context-selector__item-path">{item.path}</span>
 							{/if}
 						</div>
-						<span class="lumina-context-selector__item-badge">{item.type}</span>
+						<span class="lumina-popup-selector__item-badge">{item.type}</span>
 					</button>
 				{/each}
 			{/if}
 		</div>
 	{:else if view === 'url_input'}
 		<div class="lumina-context-selector__url-input-area">
-			<div class="lumina-context-selector__header">
+			<div class="lumina-popup-selector__header">
 				<button class="lumina-context-selector__back-btn" onclick={() => { view = 'categories'; activeCategory = null; }} type="button">
 					<span use:icon={"arrow-left"}></span>
 					<span>{$tStore('settings.chat.context.categoryBack')}</span>
@@ -335,40 +335,6 @@
 </div>
 
 <style>
-	.lumina-context-selector {
-		position: absolute;
-		bottom: 100%;
-		left: 0;
-		width: 340px;
-		max-width: calc(100vw - 32px);
-		margin-bottom: 8px;
-		background: var(--background-primary);
-		border: 1px solid var(--background-modifier-border);
-		border-radius: 8px;
-		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-		z-index: 1000;
-		display: flex;
-		flex-direction: column;
-		overflow: hidden;
-		animation: popover-fade-in 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-	}
-
-	@keyframes popover-fade-in {
-		from {
-			opacity: 0;
-			transform: translateY(4px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	.lumina-context-selector__header {
-		padding: 8px 12px 4px;
-		border-bottom: 1px solid var(--background-modifier-border);
-	}
-
 	.lumina-context-selector__header-title {
 		font-size: 11px;
 		font-weight: 600;
@@ -400,79 +366,8 @@
 		height: 14px;
 	}
 
-	.lumina-context-selector__list {
-		max-height: 280px;
-		overflow-y: auto;
-		padding: 4px 0;
-	}
-
-	.lumina-context-selector__list::-webkit-scrollbar {
-		width: 4px;
-	}
-
-	.lumina-context-selector__list::-webkit-scrollbar-thumb {
-		background: var(--background-modifier-border);
-		border-radius: 2px;
-	}
-
-	.lumina-context-selector__empty {
-		font-size: 12px;
-		color: var(--text-muted);
-		padding: 12px;
-		text-align: center;
-	}
-
-	.lumina-context-selector__item {
-		all: unset;
-		box-sizing: border-box;
-		width: 100%;
-		display: flex;
-		align-items: center;
-		padding: 8px 12px;
-		font-size: 12px;
-		color: var(--text-normal);
-		cursor: pointer;
-		transition: background-color 0.1s ease;
-		gap: 10px;
-	}
-
 	.lumina-context-selector__item--category {
 		padding: 10px 12px;
-	}
-
-	.lumina-context-selector__item.is-active {
-		background-color: var(--background-modifier-hover);
-	}
-
-	.lumina-context-selector__item-icon {
-		display: flex;
-		align-items: center;
-		color: var(--text-muted);
-		flex-shrink: 0;
-	}
-
-	.lumina-context-selector__item-icon :global(svg) {
-		width: 16px;
-		height: 16px;
-	}
-
-	.lumina-context-selector__item.is-active .lumina-context-selector__item-icon {
-		color: var(--interactive-accent);
-	}
-
-	.lumina-context-selector__item-info {
-		display: flex;
-		flex-direction: column;
-		flex-grow: 1;
-		overflow: hidden;
-		gap: 2px;
-	}
-
-	.lumina-context-selector__item-name {
-		font-weight: 500;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
 	.lumina-context-selector__item-path {
@@ -483,18 +378,6 @@
 		white-space: nowrap;
 	}
 
-	.lumina-context-selector__item-badge {
-		font-size: 9px;
-		font-weight: 700;
-		padding: 2px 5px;
-		border-radius: 4px;
-		background: var(--background-secondary-alt);
-		color: var(--text-muted);
-		border: 1px solid var(--background-modifier-border);
-		text-transform: uppercase;
-		flex-shrink: 0;
-	}
-
 	.lumina-context-selector__item-arrow {
 		font-size: 14px;
 		color: var(--text-faint);
@@ -502,7 +385,7 @@
 		margin-left: auto;
 	}
 
-	.lumina-context-selector__item.is-active .lumina-context-selector__item-arrow {
+	.lumina-popup-selector__item.is-active .lumina-context-selector__item-arrow {
 		color: var(--interactive-accent);
 	}
 

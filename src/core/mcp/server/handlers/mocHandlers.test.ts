@@ -68,6 +68,19 @@ function makePathGuard(allowed = true): PathGuard {
 	} as unknown as PathGuard;
 }
 
+function setupMockFiles(existingFile?: TFile) {
+	vi.mocked(getValidatedPathAndFile).mockReturnValue({
+		path: 'out/MOC.md',
+		file: existingFile,
+	});
+	vi.mocked(safeCreateFile).mockResolvedValue({
+		content: [{ type: 'text', text: 'created' }],
+	});
+	vi.mocked(safeModifyFile).mockResolvedValue({
+		content: [{ type: 'text', text: 'modified' }],
+	});
+}
+
 // ── 공통 setup ──────────────────────────────────────────────────────────────
 
 beforeEach(() => {
@@ -113,10 +126,7 @@ describe('generateMocHandler: 인자 유효성', () => {
 		const ctx = makeCtx(files);
 		const pathGuard = makePathGuard();
 
-		vi.mocked(getValidatedPathAndFile).mockReturnValue({ path: 'out/MOC.md' });
-		vi.mocked(safeCreateFile).mockResolvedValue({
-			content: [{ type: 'text', text: 'ok' }],
-		});
+		setupMockFiles();
 
 		await generateMocHandler(
 			{ title: 'Test', outputPath: 'out/MOC', folder: 'notes' },
@@ -142,10 +152,7 @@ describe('generateMocHandler: folder scope', () => {
 		const ctx = makeCtx(files);
 		const pathGuard = makePathGuard();
 
-		vi.mocked(getValidatedPathAndFile).mockReturnValue({ path: 'out/MOC.md' });
-		vi.mocked(safeCreateFile).mockResolvedValue({
-			content: [{ type: 'text', text: 'created' }],
-		});
+		setupMockFiles();
 
 		await generateMocHandler(
 			{ title: 'Project MOC', outputPath: 'out/MOC', folder: 'Projects' },
@@ -163,10 +170,7 @@ describe('generateMocHandler: folder scope', () => {
 		const ctx = makeCtx([]);
 		const pathGuard = makePathGuard();
 
-		vi.mocked(getValidatedPathAndFile).mockReturnValue({ path: 'out/MOC.md' });
-		vi.mocked(safeCreateFile).mockResolvedValue({
-			content: [{ type: 'text', text: 'created' }],
-		});
+		setupMockFiles();
 
 		await generateMocHandler(
 			{ title: 'Empty MOC', outputPath: 'out/MOC', folder: 'NonExistent' },
@@ -191,10 +195,7 @@ describe('generateMocHandler: files scope', () => {
 		const ctx = makeCtx(files);
 		const pathGuard = makePathGuard();
 
-		vi.mocked(getValidatedPathAndFile).mockReturnValue({ path: 'out/MOC.md' });
-		vi.mocked(safeCreateFile).mockResolvedValue({
-			content: [{ type: 'text', text: 'created' }],
-		});
+		setupMockFiles();
 
 		await generateMocHandler(
 			{
@@ -217,10 +218,7 @@ describe('generateMocHandler: files scope', () => {
 		const ctx = makeCtx(files);
 		const pathGuard = makePathGuard();
 
-		vi.mocked(getValidatedPathAndFile).mockReturnValue({ path: 'out/MOC.md' });
-		vi.mocked(safeCreateFile).mockResolvedValue({
-			content: [{ type: 'text', text: 'created' }],
-		});
+		setupMockFiles();
 
 		await generateMocHandler(
 			{
@@ -248,10 +246,7 @@ describe('generateMocHandler: overwrite 플래그', () => {
 
 		// file이 존재하는 상황
 		const existingFile = makeTFile('out/MOC.md');
-		vi.mocked(getValidatedPathAndFile).mockReturnValue({
-			path: 'out/MOC.md',
-			file: existingFile,
-		});
+		setupMockFiles(existingFile);
 
 		const result = await generateMocHandler(
 			{ title: 'MOC', outputPath: 'out/MOC', folder: 'notes', overwrite: false },
@@ -269,17 +264,11 @@ describe('generateMocHandler: overwrite 플래그', () => {
 		const pathGuard = makePathGuard();
 
 		const existingFile = makeTFile('out/MOC.md');
-		vi.mocked(getValidatedPathAndFile).mockReturnValue({
-			path: 'out/MOC.md',
-			file: existingFile,
-		});
+		setupMockFiles(existingFile);
 		// vault.read mock
 		(ctx.plugin.app.vault as any).read = vi.fn(() =>
 			Promise.resolve('old content'),
 		);
-		vi.mocked(safeModifyFile).mockResolvedValue({
-			content: [{ type: 'text', text: 'modified' }],
-		});
 
 		await generateMocHandler(
 			{ title: 'MOC', outputPath: 'out/MOC', folder: 'notes', overwrite: true },
@@ -296,10 +285,7 @@ describe('generateMocHandler: overwrite 플래그', () => {
 		const ctx = makeCtx(files);
 		const pathGuard = makePathGuard();
 
-		vi.mocked(getValidatedPathAndFile).mockReturnValue({ path: 'out/MOC.md' }); // file 없음
-		vi.mocked(safeCreateFile).mockResolvedValue({
-			content: [{ type: 'text', text: 'created' }],
-		});
+		setupMockFiles();
 
 		await generateMocHandler(
 			{ title: 'MOC', outputPath: 'out/MOC', folder: 'notes' },
@@ -325,10 +311,7 @@ describe('generateMocHandler: pathGuard 필터링', () => {
 			lock: vi.fn(),
 		} as unknown as PathGuard;
 
-		vi.mocked(getValidatedPathAndFile).mockReturnValue({ path: 'out/MOC.md' });
-		vi.mocked(safeCreateFile).mockResolvedValue({
-			content: [{ type: 'text', text: 'created' }],
-		});
+		setupMockFiles();
 
 		await generateMocHandler(
 			{ title: 'MOC', outputPath: 'out/MOC', folder: '' },
@@ -355,10 +338,7 @@ describe('generateMocHandler: groupBy 기본값', () => {
 		const ctx = makeCtx(files);
 		const pathGuard = makePathGuard();
 
-		vi.mocked(getValidatedPathAndFile).mockReturnValue({ path: 'out/MOC.md' });
-		vi.mocked(safeCreateFile).mockResolvedValue({
-			content: [{ type: 'text', text: 'created' }],
-		});
+		setupMockFiles();
 
 		await generateMocHandler(
 			{ title: 'MOC', outputPath: 'out/MOC', folder: 'A' },
