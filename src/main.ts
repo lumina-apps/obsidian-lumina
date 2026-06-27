@@ -1,5 +1,5 @@
-import { Notice, Platform, Plugin } from 'obsidian';
-import { LuminaSettingTab } from './core/settings/settingTab';
+import { Notice, Platform, Plugin, PluginSettingTab, App } from 'obsidian';
+// Note: LuminaSettingTab is no longer imported statically to improve startup time.
 import { ChatView, CHAT_VIEW_TYPE } from './features/chat/chatView';
 import { DebugView, DEBUG_VIEW_TYPE } from './features/debug/debugView';
 import { GraphView, GRAPH_VIEW_TYPE } from './features/graph/graphView';
@@ -21,6 +21,57 @@ import { RagWatchManager } from './features/rag/watchManager';
 import type { McpManager } from './core/mcp/mcpManager';
 import type { QuickActionHandler } from './features/editor/quickActionHandler';
 import type { FrontmatterManager } from './features/frontmatter/frontmatterManager';
+// Lazy Loading Type
+import type { LuminaSettingTab } from './core/settings/settingTab';
+
+class LazyLuminaSettingTab extends PluginSettingTab {
+	private plugin: LuminaPlugin;
+	private realTab: any = null; // using any temporarily to avoid circular/missing type issues if LuminaSettingTab is not fully available
+	private loadingPromise: Promise<void> | null = null;
+
+	constructor(app: App, plugin: LuminaPlugin) {
+		super(app, plugin);
+		this.plugin = plugin;
+	}
+
+	async display(): Promise<void> {
+		if (this.realTab) {
+			this.realTab.display();
+			return;
+		}
+
+		this.containerEl.empty();
+		this.containerEl.createEl('div', { text: t('uiMessages.noticeIndexing') || 'Loading settings...', cls: 'setting-item-description' });
+
+		if (!this.loadingPromise) {
+			this.loadingPromise = (async () => {
+				const { LuminaSettingTab: RealTab } = await import('./core/settings/settingTab');
+				this.realTab = new RealTab(this.app, this.plugin);
+				// Proxy the container element so real tab can manipulate it
+				this.realTab.containerEl = this.containerEl;
+			})();
+		}
+
+		await this.loadingPromise;
+		if (this.realTab) {
+			this.realTab.display();
+		}
+	}
+
+	hide(): void {
+		if (this.realTab) {
+			this.realTab.hide();
+		} else {
+			super.hide();
+		}
+	}
+
+	refreshDisplay(): void {
+		if (this.realTab) {
+			this.realTab.refreshDisplay();
+		}
+	}
+}
 
 export default class LuminaPlugin extends Plugin {
 	settings!: LuminaSettings;
@@ -30,7 +81,7 @@ export default class LuminaPlugin extends Plugin {
 	isFirstRun: boolean = false;
 	private ribbonEl: HTMLElement | null = null;
 	private graphRibbonEl: HTMLElement | null = null;
-	public settingTab: LuminaSettingTab | null = null;
+	public settingTab: LazyLuminaSettingTab | null = null;
 	public frontmatterManager!: FrontmatterManager;
 	public quickActionHandler!: QuickActionHandler;
 
@@ -54,23 +105,9 @@ export default class LuminaPlugin extends Plugin {
 
 		await this.settingsManager.loadSettings();
 
-		// ── 언어 초기화 ───────────────────────────────────────────────
-		if (this.settings.connections.language === 'system') {
-			const success = await loadSystemLocaleCache(this.app);
-			if (success) {
-				await setLanguage('system');
-			} else {
-				await setLanguage('en');
-			}
-		} else {
-			await setLanguage(this.settings.connections.language);
-		}
-
-		// ── 설정 마이그레이션 ──────────────────────────────────────────
-		const needsSave = runMigrations(this);
-		if (needsSave) {
-			await this.settingsManager.saveSettings();
-		}
+		// 기본 언어 즉시 적용 (en.json은 정적 캐시되어 있어 지연 없음)
+		// 이후 onLayoutReady에서 비동기적으로 실제 시스템/사용자 언어 적용
+		void setLanguage('en');
 
 		// ── View 등록 ──────────────────────────────────────────────────
 		this.registerView(CHAT_VIEW_TYPE, (leaf) => new ChatView(leaf, this));
@@ -80,28 +117,57 @@ export default class LuminaPlugin extends Plugin {
 		// ── 리본 아이콘 ────────────────────────────────────────────────
 		this.updateRibbonIcon();
 
-		// ── 설정 탭 ────────────────────────────────────────────────────
-		this.settingTab = new LuminaSettingTab(this.app, this);
+		// ── 설정 탭 (Lazy Wrapper 등록) ─────────────────────────────────
+		this.settingTab = new LazyLuminaSettingTab(this.app, this);
 		this.addSettingTab(this.settingTab);
 
 		// ── 지연 초기화 (onLayoutReady) ──────────────────────────────────
 		this.app.workspace.onLayoutReady(async () => {
-			// 지연 로딩할 무거운 모듈들
+			
+			// ── 언어 및 동적 모듈 로딩 병렬 처리 ─────────────────────────────
+			const initLocale = async () => {
+				if (this.settings.connections.language === 'system') {
+					const success = await loadSystemLocaleCache(this.app);
+					if (success) {
+						await setLanguage('system');
+					} else {
+						await setLanguage('en');
+					}
+				} else {
+					await setLanguage(this.settings.connections.language);
+				}
+			};
+
+			// 지연 로딩할 무거운 모듈들 및 locale 설정 병렬 대기
 			const [
-				{ McpManager },
-				{ setupApprovalListener },
-				{ QuickActionHandler },
-				{ InlineAISuggest },
-				{ inlineDiffExtension },
-				{ FrontmatterManager }
+				_,
+				__,
+				[
+					{ McpManager },
+					{ setupApprovalListener },
+					{ QuickActionHandler },
+					{ InlineAISuggest },
+					{ inlineDiffExtension },
+					{ FrontmatterManager }
+				]
 			] = await Promise.all([
-				import('./core/mcp/mcpManager'),
-				import('./features/chat/utils/approvalListener'),
-				import('./features/editor/quickActionHandler'),
-				import('./features/editor/inlineSuggest'),
-				import('./features/editor/diffExtension'),
-				import('./features/frontmatter/frontmatterManager')
+				initLocale(),
+				this.settingsManager.loadSecrets(),
+				Promise.all([
+					import('./core/mcp/mcpManager'),
+					import('./features/chat/utils/approvalListener'),
+					import('./features/editor/quickActionHandler'),
+					import('./features/editor/inlineSuggest'),
+					import('./features/editor/diffExtension'),
+					import('./features/frontmatter/frontmatterManager')
+				])
 			]);
+
+			// ── 설정 마이그레이션 ──────────────────────────────────────────
+			const needsSave = runMigrations(this);
+			if (needsSave) {
+				await this.settingsManager.saveSettings();
+			}
 
 			// ── Approval Listener 초기화
 			setupApprovalListener(this.app);

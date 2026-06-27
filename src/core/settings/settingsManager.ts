@@ -29,6 +29,16 @@ export class SettingsManager {
 			canvas: Object.assign({}, DEFAULT_SETTINGS.canvas, safeSaved.canvas ?? {}),
 		};
 
+		if (this.plugin.isFirstRun) {
+			this.plugin.settings.connections.language = this.detectSystemLanguage();
+			await this.saveSettings();
+		}
+		
+		// Initialize the settings store immediately after loading
+		initSettingsStore(this.plugin.settings);
+	}
+
+	async loadSecrets(): Promise<void> {
 		// SecretStorage에서 자격 증명 로드 (LLM Provider)
 		for (const provider of this.plugin.settings.connections.providers) {
 			const storedSecret = this.app.secretStorage.getSecret(`lumina-provider-${provider.id}`);
@@ -63,14 +73,9 @@ export class SettingsManager {
 				}
 			}
 		}
-
-		if (this.plugin.isFirstRun) {
-			this.plugin.settings.connections.language = this.detectSystemLanguage();
-			await this.saveSettings();
-		}
 		
-		// Initialize the settings store immediately after loading
-		initSettingsStore(this.plugin.settings);
+		// Sync the store again after secrets are loaded
+		syncSettingsStore(this.plugin.settings);
 	}
 
 	async saveSettings(): Promise<void> {

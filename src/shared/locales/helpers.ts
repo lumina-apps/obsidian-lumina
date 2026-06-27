@@ -3,7 +3,6 @@ import type { Translation, DeepPartial, TranslationKeys } from './locale.types';
 
 // 동적 JSON import 로더. esbuild에서 코드 스플리팅으로 별도 청크 분리
 const localeLoaders: Record<string, () => Promise<{ default: DeepPartial<Translation> }>> = {
-  en: () => import('./en.json'),
   ko: () => import('./ko.json'),
   ja: () => import('./ja.json'),
   zh: () => import('./zh.json'),
@@ -16,10 +15,14 @@ const localeLoaders: Record<string, () => Promise<{ default: DeepPartial<Transla
   ru: () => import('./ru.json'),
 };
 
+import enJson from './en.json';
+
 export type Language = 'en' | 'ko' | 'ja' | 'zh' | 'zh-tw' | 'es' | 'pt' | 'it' | 'de' | 'fr' | 'ru';
 
 // 로드된 로캘 캐시
-const loadedLocales: Record<string, DeepPartial<Translation>> = {};
+const loadedLocales: Record<string, DeepPartial<Translation>> = {
+  en: enJson
+};
 
 let currentLanguage: Language | 'system' = 'en';
 
@@ -64,28 +67,11 @@ export async function setLanguage(lang: string): Promise<void> {
     } catch (e) {
       console.warn(`[Lumina Localization] Failed to load locale "${lang}", falling back to en:`, e);
       currentLanguage = 'en';
-      // en 로드 보장
-      if (!loadedLocales['en']) {
-        try {
-          const enMod = await localeLoaders['en']();
-          loadedLocales['en'] = enMod.default || enMod;
-        } catch {
-          // 최후의 fallback
-        }
-      }
     }
   } else {
     // 지원되지 않는 언어 → en 폴백
     console.warn(`[Lumina Localization] Unsupported language: "${lang}", falling back to en`);
     currentLanguage = 'en';
-    if (!loadedLocales['en']) {
-      try {
-        const enMod = await localeLoaders['en']();
-        loadedLocales['en'] = enMod.default || enMod;
-      } catch {
-        // 최후의 fallback
-      }
-    }
   }
 
   currentLanguageStore.set(currentLanguage);
@@ -97,14 +83,8 @@ export function getLanguage(): string {
 
 /** en locale 프리로드 (앱 시작 시 필수) */
 export async function preloadDefaultLocale(): Promise<void> {
-  if (!loadedLocales['en']) {
-    try {
-      const enMod = await localeLoaders['en']();
-      loadedLocales['en'] = enMod.default || enMod;
-    } catch (e) {
-      console.error('[Lumina Localization] CRITICAL: Failed to load en locale', e);
-    }
-  }
+  // en is now statically imported, so no action is needed here.
+  return Promise.resolve();
 }
 
 /** 점 경로 키로 번역 텍스트 조회. 누락 시 en 폴백, {{key}} 치환 지원 */
