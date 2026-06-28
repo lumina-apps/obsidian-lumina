@@ -1,7 +1,6 @@
 import { createProvider } from '../../core/llm-providers';
 import type LuminaPlugin from '../../main';
 import { debugLogger } from '../../shared/debugLogger';
-import { Editor } from 'obsidian';
 
 export class AutocompleteHandler {
 	private plugin: LuminaPlugin;

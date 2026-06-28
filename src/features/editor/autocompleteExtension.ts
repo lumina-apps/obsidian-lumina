@@ -1,7 +1,6 @@
 import { StateField, StateEffect } from '@codemirror/state';
 import { EditorView, Decoration, WidgetType, ViewPlugin, ViewUpdate, keymap } from '@codemirror/view';
 import { Prec } from '@codemirror/state';
-import type { DecorationSet } from '@codemirror/view';
 import type { AutocompleteHandler } from './autocompleteHandler';
 
 interface AutocompleteSuggestion {
@@ -14,7 +13,7 @@ export const setSuggestion = StateEffect.define<AutocompleteSuggestion | null>()
 class GhostTextWidget extends WidgetType {
 	constructor(public text: string) { super(); }
 	toDOM() {
-		const span = document.createElement('span');
+		const span = activeDocument.createElement('span');
 		span.className = 'lumina-autocomplete-ghost';
 		span.textContent = this.text;
 		return span;
@@ -87,24 +86,26 @@ export const autocompletePlugin = (handler: AutocompleteHandler) => ViewPlugin.f
 	update(update: ViewUpdate) {
 		if (update.docChanged) {
 			if (this.timer) window.clearTimeout(this.timer);
-			this.timer = window.setTimeout(async () => {
-				// Get current cursor
-				const pos = this.view.state.selection.main.head;
-				
-				// Extract context (up to 1000 chars before cursor)
-				const startOffset = Math.max(0, pos - 1000);
-				const contextText = this.view.state.doc.sliceString(startOffset, pos);
-				
-				const suggestion = await handler.fetchSuggestion(contextText);
-				
-				if (suggestion) {
-					// Check if cursor hasn't moved
-					if (this.view.state.selection.main.head === pos) {
-						this.view.dispatch({
-							effects: setSuggestion.of({ text: suggestion, pos })
-						});
+			this.timer = window.setTimeout(() => {
+				void (async () => {
+					// Get current cursor
+					const pos = this.view.state.selection.main.head;
+					
+					// Extract context (up to 1000 chars before cursor)
+					const startOffset = Math.max(0, pos - 1000);
+					const contextText = this.view.state.doc.sliceString(startOffset, pos);
+					
+					const suggestion = await handler.fetchSuggestion(contextText);
+					
+					if (suggestion) {
+						// Check if cursor hasn't moved
+						if (this.view.state.selection.main.head === pos) {
+							this.view.dispatch({
+								effects: setSuggestion.of({ text: suggestion, pos })
+							});
+						}
 					}
-				}
+				})();
 			}, 700);
 		}
 	}

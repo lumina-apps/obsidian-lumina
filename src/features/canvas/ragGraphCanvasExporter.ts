@@ -7,7 +7,7 @@
  * - 레이아웃: 간소화된 force-directed 알고리즘
  */
 
-import type { CanvasData, CanvasFileNode, CanvasEdge } from './canvasTypes';
+import type { CanvasData, CanvasEdge, CanvasTextNode } from './canvasTypes';
 import type { GraphData, GraphNode, GraphEdge } from '../graph/graphDataBuilder';
 import { getEdgeSides } from './canvasBuilder';
 
@@ -97,8 +97,8 @@ function computeForceLayout(
   // adjacency map
   const adjacency = new Map<string, { target: string; weight: number }[]>();
   for (const link of links) {
-    const sourceId = typeof link.source === 'object' ? (link.source as any).id : link.source;
-    const targetId = typeof link.target === 'object' ? (link.target as any).id : link.target;
+    const sourceId = typeof link.source === 'object' && link.source !== null && 'id' in link.source ? (link.source as GraphNode).id : link.source as string;
+    const targetId = typeof link.target === 'object' && link.target !== null && 'id' in link.target ? (link.target as GraphNode).id : link.target as string;
     
     if (!adjacency.has(sourceId)) adjacency.set(sourceId, []);
     if (!adjacency.has(targetId)) adjacency.set(targetId, []);
@@ -231,8 +231,8 @@ export function buildRagGraphCanvasData(
   const sortedLinks = [...links].sort((a, b) => b.weight - a.weight);
   
   for (const link of sortedLinks) {
-    const srcId = typeof link.source === 'object' ? (link.source as any).id : link.source;
-    const tgtId = typeof link.target === 'object' ? (link.target as any).id : link.target;
+    const srcId = typeof link.source === 'object' && link.source !== null && 'id' in link.source ? (link.source as GraphNode).id : link.source as string;
+    const tgtId = typeof link.target === 'object' && link.target !== null && 'id' in link.target ? (link.target as GraphNode).id : link.target as string;
     if (uf.find(srcId) !== uf.find(tgtId)) {
       uf.union(srcId, tgtId);
       prunedLinksSet.add(link);
@@ -243,8 +243,8 @@ export function buildRagGraphCanvasData(
   const MAX_EXTRA_LINKS = 1;
   nodes.forEach(node => {
     const connected = sortedLinks.filter(l => {
-      const srcId = typeof l.source === 'object' ? (l.source as any).id : l.source;
-      const tgtId = typeof l.target === 'object' ? (l.target as any).id : l.target;
+      const srcId = typeof l.source === 'object' && l.source !== null && 'id' in l.source ? (l.source as GraphNode).id : l.source as string;
+      const tgtId = typeof l.target === 'object' && l.target !== null && 'id' in l.target ? (l.target as GraphNode).id : l.target as string;
       return srcId === node.id || tgtId === node.id;
     });
     
@@ -265,7 +265,7 @@ export function buildRagGraphCanvasData(
 
   // 2. 노드 빌드 (CanvasTextNode)
   const idMap = new Map<string, string>();
-  const canvasNodes: any[] = []; // type it dynamically
+  const canvasNodes: CanvasTextNode[] = [];
   const maxDegree = Math.max(1, ...nodes.map(nd => nd.degree));
 
   nodes.forEach((node, index) => {
@@ -295,8 +295,8 @@ export function buildRagGraphCanvasData(
   const processedEdges = new Set<string>();
 
   for (const link of prunedLinks) {
-    const sourcePath = typeof link.source === 'object' ? (link.source as any).id : link.source;
-    const targetPath = typeof link.target === 'object' ? (link.target as any).id : link.target;
+    const sourcePath = typeof link.source === 'object' && link.source !== null && 'id' in link.source ? (link.source as GraphNode).id : link.source as string;
+    const targetPath = typeof link.target === 'object' && link.target !== null && 'id' in link.target ? (link.target as GraphNode).id : link.target as string;
 
     const fromId = idMap.get(sourcePath);
     const toId = idMap.get(targetPath);
