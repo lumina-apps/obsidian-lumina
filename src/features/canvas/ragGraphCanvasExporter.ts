@@ -97,8 +97,8 @@ function computeForceLayout(
   // adjacency map
   const adjacency = new Map<string, { target: string; weight: number }[]>();
   for (const link of links) {
-    const sourceId = typeof link.source === 'object' && link.source !== null && 'id' in link.source ? (link.source as GraphNode).id : link.source as string;
-    const targetId = typeof link.target === 'object' && link.target !== null && 'id' in link.target ? (link.target as GraphNode).id : link.target as string;
+    const sourceId = typeof link.source === 'object' && link.source !== null && 'id' in link.source ? (link.source as GraphNode).id : link.source;
+    const targetId = typeof link.target === 'object' && link.target !== null && 'id' in link.target ? (link.target as GraphNode).id : link.target;
     
     if (!adjacency.has(sourceId)) adjacency.set(sourceId, []);
     if (!adjacency.has(targetId)) adjacency.set(targetId, []);
@@ -231,8 +231,8 @@ export function buildRagGraphCanvasData(
   const sortedLinks = [...links].sort((a, b) => b.weight - a.weight);
   
   for (const link of sortedLinks) {
-    const srcId = typeof link.source === 'object' && link.source !== null && 'id' in link.source ? (link.source as GraphNode).id : link.source as string;
-    const tgtId = typeof link.target === 'object' && link.target !== null && 'id' in link.target ? (link.target as GraphNode).id : link.target as string;
+    const srcId = typeof link.source === 'object' && link.source !== null && 'id' in link.source ? (link.source as GraphNode).id : link.source;
+    const tgtId = typeof link.target === 'object' && link.target !== null && 'id' in link.target ? (link.target as GraphNode).id : link.target;
     if (uf.find(srcId) !== uf.find(tgtId)) {
       uf.union(srcId, tgtId);
       prunedLinksSet.add(link);
@@ -243,8 +243,8 @@ export function buildRagGraphCanvasData(
   const MAX_EXTRA_LINKS = 1;
   nodes.forEach(node => {
     const connected = sortedLinks.filter(l => {
-      const srcId = typeof l.source === 'object' && l.source !== null && 'id' in l.source ? (l.source as GraphNode).id : l.source as string;
-      const tgtId = typeof l.target === 'object' && l.target !== null && 'id' in l.target ? (l.target as GraphNode).id : l.target as string;
+      const srcId = typeof l.source === 'object' && l.source !== null && 'id' in l.source ? (l.source as GraphNode).id : l.source;
+      const tgtId = typeof l.target === 'object' && l.target !== null && 'id' in l.target ? (l.target as GraphNode).id : l.target;
       return srcId === node.id || tgtId === node.id;
     });
     
@@ -295,8 +295,8 @@ export function buildRagGraphCanvasData(
   const processedEdges = new Set<string>();
 
   for (const link of prunedLinks) {
-    const sourcePath = typeof link.source === 'object' && link.source !== null && 'id' in link.source ? (link.source as GraphNode).id : link.source as string;
-    const targetPath = typeof link.target === 'object' && link.target !== null && 'id' in link.target ? (link.target as GraphNode).id : link.target as string;
+    const sourcePath = typeof link.source === 'object' && link.source !== null && 'id' in link.source ? (link.source as GraphNode).id : link.source;
+    const targetPath = typeof link.target === 'object' && link.target !== null && 'id' in link.target ? (link.target as GraphNode).id : link.target;
 
     const fromId = idMap.get(sourcePath);
     const toId = idMap.get(targetPath);
