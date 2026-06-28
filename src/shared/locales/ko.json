@@ -807,7 +807,11 @@
     "indexing": "RAG 그래프용 인덱싱 중...",
     "noNodes": "현재 뷰에 표시할 노드가 없습니다.",
     "calculating": "유사도 계산 중...",
-    "calcError": "그래프 엣지 생성에 실패했습니다."
+    "calcError": "그래프 엣지 생성에 실패했습니다.",
+    "exportToCanvas": "캔버스로 내보내기",
+    "exporting": "내보내는 중...",
+    "exportSuccess": "RAG 그래프 캔버스를 생성했습니다.",
+    "exportError": "캔버스 내보내기에 실패했습니다."
   },
   "canvas": {
     "menuItem": "캔버스로 시각화",

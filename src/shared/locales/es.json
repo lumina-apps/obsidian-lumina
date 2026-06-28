@@ -807,7 +807,11 @@
     "indexing": "Indexando el baúl para el gráfico RAG...",
     "noNodes": "No hay nodos disponibles en la vista actual.",
     "calculating": "Calculando similitudes...",
-    "calcError": "Error al construir las aristas del gráfico."
+    "calcError": "Error al construir las aristas del gráfico.",
+    "exportToCanvas": "Exportar a Canvas",
+    "exporting": "Exportando...",
+    "exportSuccess": "Canvas del grafo RAG creado.",
+    "exportError": "Error al exportar el canvas."
   },
   "canvas": {
     "menuItem": "Visualizar en Lienzo",

@@ -8,6 +8,9 @@ import type { App } from 'obsidian';
 import { Notice, TFile, TFolder } from 'obsidian';
 import { collectGraph, buildCanvasData, addFolderGroups } from './canvasBuilder';
 import type { CanvasBuildOptions } from './canvasTypes';
+import { buildRagGraphCanvasData } from './ragGraphCanvasExporter';
+import type { RagGraphCanvasOptions } from './ragGraphCanvasExporter';
+import type { GraphData } from '../graph/graphDataBuilder';
 import { t } from '../../shared/locales/helpers';
 
 // ─── 파일명 생성 ──────────────────────────────────────────────────────────────
@@ -145,5 +148,37 @@ export async function generateCanvasForFolder(
 	} catch (e) {
 		console.error('[Lumina Canvas] 폴더 캔버스 생성 실패:', e);
 		new Notice(t('canvas.noticeError'), 5000);
+	}
+}
+
+// ─── RAG 그래프 기반 Canvas 생성 ─────────────────────────────────────────────
+
+/**
+ * RAG 시맨틱 그래프(GraphData)를 Canvas 파일로 저장하고 Obsidian에서 엽니다.
+ */
+export async function generateCanvasForRagGraph(
+	app: App,
+	graphData: GraphData,
+	opts: RagGraphCanvasOptions,
+	outputFolder: string,
+): Promise<void> {
+	try {
+		const canvasData = buildRagGraphCanvasData(graphData, opts);
+
+		const json = JSON.stringify(canvasData, null, 2);
+		const baseName = `rag-graph-canvas-${getTimestamp()}`;
+		const outputPath = await resolveOutputPath(app, baseName, outputFolder);
+
+		await app.vault.create(outputPath, json);
+
+		const canvasFile = app.vault.getFileByPath(outputPath);
+		if (canvasFile) {
+			await app.workspace.getLeaf(false).openFile(canvasFile);
+		}
+
+		new Notice(t('graph.exportSuccess'), 3000);
+	} catch (e) {
+		console.error('[Lumina Canvas] RAG 그래프 캔버스 생성 실패:', e);
+		new Notice(t('graph.exportError'), 5000);
 	}
 }

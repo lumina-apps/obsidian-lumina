@@ -121,11 +121,11 @@
 		</div>
 	{:else if graphData.nodes.length === 0 && !$graphState.isCalculating}
 		<div class="lumina-graph-panel__empty">
-			<GraphControls />
+			<GraphControls {plugin} {graphData} />
 			<p>{$tStore('graph.noNodes')}</p>
 		</div>
 	{:else}
-		<GraphControls />
+		<GraphControls {plugin} {graphData} />
 		
 		{#if $graphState.isCalculating}
 			<div class="lumina-graph-panel__overlay">

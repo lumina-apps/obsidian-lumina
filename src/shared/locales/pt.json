@@ -807,7 +807,11 @@
     "indexing": "Indexando o cofre para o grafo RAG...",
     "noNodes": "Nenhum nó disponível na visualização atual.",
     "calculating": "Calculando similaridades...",
-    "calcError": "Falha ao construir arestas do grafo."
+    "calcError": "Falha ao construir arestas do grafo.",
+    "exportToCanvas": "Exportar para Canvas",
+    "exporting": "Exportando...",
+    "exportSuccess": "Canvas do grafo RAG criado.",
+    "exportError": "Falha ao exportar canvas."
   },
   "canvas": {
     "menuItem": "Visualizar no Canvas",

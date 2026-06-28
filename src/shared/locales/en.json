@@ -807,7 +807,11 @@
     "indexing": "Indexing vault for RAG graph...",
     "noNodes": "No nodes available in current view.",
     "calculating": "Calculating similarities...",
-    "calcError": "Failed to build graph edges."
+    "calcError": "Failed to build graph edges.",
+    "exportToCanvas": "Export to Canvas",
+    "exporting": "Exporting...",
+    "exportSuccess": "RAG graph canvas created.",
+    "exportError": "Failed to export canvas."
   },
   "canvas": {
     "menuItem": "Visualize in Canvas",

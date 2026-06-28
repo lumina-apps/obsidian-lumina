@@ -807,7 +807,11 @@
     "indexing": "Vault für RAG-Graph wird indiziert...",
     "noNodes": "Keine Knoten in der aktuellen Ansicht verfügbar.",
     "calculating": "Ähnlichkeiten werden berechnet...",
-    "calcError": "Erstellen der Graphkanten fehlgeschlagen."
+    "calcError": "Erstellen der Graphkanten fehlgeschlagen.",
+    "exportToCanvas": "In Canvas exportieren",
+    "exporting": "Wird exportiert...",
+    "exportSuccess": "RAG-Graph-Canvas wurde erstellt.",
+    "exportError": "Canvas-Export fehlgeschlagen."
   },
   "canvas": {
     "menuItem": "In Canvas visualisieren",

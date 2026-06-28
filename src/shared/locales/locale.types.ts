@@ -844,6 +844,10 @@ export interface TranslationGraph {
   noNodes: string;
   calculating: string;
   calcError: string;
+  exportToCanvas: string;
+  exporting: string;
+  exportSuccess: string;
+  exportError: string;
 }
 
 // canvas

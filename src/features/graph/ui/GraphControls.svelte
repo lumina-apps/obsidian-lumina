@@ -2,9 +2,15 @@
 	import { graphState, updateGraphState } from '../graphStore';
 	import { tStore } from '../../../shared/locales/index';
 	import { iconAction } from '../../../shared/utils/domUtils';
+	import type LuminaPlugin from '../../../main';
+	import type { GraphData } from '../graphDataBuilder';
+	import { generateCanvasForRagGraph } from '../../canvas/canvasGenerator';
+
+	let { plugin, graphData }: { plugin: LuminaPlugin; graphData: GraphData | null } = $props();
 
 	let expanded = $state(false);
 	let searchValue = $state($graphState.searchQuery);
+	let isExporting = $state(false);
 
 	$effect(() => {
 		updateGraphState({ searchQuery: searchValue });
@@ -12,6 +18,24 @@
 
 	function toggleMode() {
 		updateGraphState({ mode: $graphState.mode === 'local' ? 'global' : 'local' });
+	}
+
+	async function handleExportToCanvas() {
+		if (!graphData || graphData.nodes.length === 0 || isExporting) return;
+		isExporting = true;
+		try {
+			await generateCanvasForRagGraph(
+				plugin.app,
+				graphData,
+				{
+					showSimilarityLabel: false,
+					showGroups: plugin.settings.canvas.showFolderGroups,
+				},
+				plugin.settings.canvas.outputPath,
+			);
+		} finally {
+			isExporting = false;
+		}
 	}
 </script>
 
@@ -111,6 +135,16 @@
 					/>
 				</div>
 			{/if}
+
+			<!-- Export to Canvas -->
+			<button
+				class="lumina-graph-controls__export-btn"
+				onclick={handleExportToCanvas}
+				disabled={isExporting || !graphData || graphData.nodes.length === 0}
+			>
+				<span use:iconAction={"share-2"} style="width:14px; height:14px; display:inline-block; flex-shrink:0;"></span>
+				{isExporting ? $tStore('graph.exporting') : $tStore('graph.exportToCanvas')}
+			</button>
 		</div>
 	{/if}
 </div>
@@ -243,5 +277,31 @@
 		width: 100%;
 		margin: 4px 0 0 0;
 		accent-color: var(--interactive-accent);
+	}
+
+	.lumina-graph-controls__export-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		width: 100%;
+		padding: 6px 10px;
+		background: var(--interactive-accent);
+		color: var(--text-on-accent);
+		border: none;
+		border-radius: 6px;
+		font-size: 12px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: opacity 0.15s ease;
+	}
+
+	.lumina-graph-controls__export-btn:hover:not(:disabled) {
+		opacity: 0.85;
+	}
+
+	.lumina-graph-controls__export-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
 	}
 </style>

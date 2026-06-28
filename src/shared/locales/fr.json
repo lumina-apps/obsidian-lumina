@@ -807,7 +807,11 @@
     "indexing": "Indexation du coffre pour le graphe RAG...",
     "noNodes": "Aucun nœud disponible dans la vue actuelle.",
     "calculating": "Calcul des similitudes...",
-    "calcError": "Échec de la construction des arêtes du graphe."
+    "calcError": "Échec de la construction des arêtes du graphe.",
+    "exportToCanvas": "Exporter vers Canvas",
+    "exporting": "Exportation en cours...",
+    "exportSuccess": "Canvas du graphe RAG créé.",
+    "exportError": "Échec de l'exportation du canvas."
   },
   "canvas": {
     "menuItem": "Visualiser dans Toile",

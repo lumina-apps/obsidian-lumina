@@ -807,7 +807,11 @@
     "indexing": "正在為RAG圖譜建立索引...",
     "noNodes": "目前視圖中沒有可用的節點。",
     "calculating": "正在計算相似度...",
-    "calcError": "建立圖譜邊緣失敗。"
+    "calcError": "建立圖譜邊緣失敗。",
+    "exportToCanvas": "匯出至畫布",
+    "exporting": "匯出中...",
+    "exportSuccess": "RAG圖譜畫布已建立。",
+    "exportError": "匯出畫布失敗。"
   },
   "canvas": {
     "menuItem": "在 白板 中視覺化",

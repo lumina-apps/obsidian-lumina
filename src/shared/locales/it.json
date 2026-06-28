@@ -807,7 +807,11 @@
     "indexing": "Indicizzazione del vault per il grafo RAG...",
     "noNodes": "Nessun nodo disponibile nella vista attuale.",
     "calculating": "Calcolo delle somiglianze in corso...",
-    "calcError": "Costruzione degli archi del grafo non riuscita."
+    "calcError": "Costruzione degli archi del grafo non riuscita.",
+    "exportToCanvas": "Esporta in Canvas",
+    "exporting": "Esportazione in corso...",
+    "exportSuccess": "Canvas del grafo RAG creato.",
+    "exportError": "Esportazione canvas non riuscita."
   },
   "canvas": {
     "menuItem": "Visualizza in Canvas",
