@@ -56,6 +56,8 @@ export interface ChatSettings {
 	/** 커스텀 퀵 액션 프롬프트 목록 */
 	quickActions: QuickAction[];
 	inlineTrigger: string;
+	/** 인라인 고스트 텍스트 자동완성 사용 여부 */
+	enableAutocomplete: boolean;
 
 	// ── Advanced ──
 	/** 대화 기억 방식: 자동 요약 / 턴 수 / 토큰 수 */

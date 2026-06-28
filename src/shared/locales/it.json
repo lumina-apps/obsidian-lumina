@@ -275,6 +275,10 @@
         "name": "Trigger Comando Inline",
         "desc": "Parola chiave per invocare il popup di autocompletamento quick action nell'editor. (Default: /ai)"
       },
+      "enableAutocomplete": {
+        "name": "Abilita completamento automatico in linea (Ghost Text)",
+        "desc": "Quando fai una pausa durante la digitazione, Task LLM prevederà la frase successiva e la mostrerà come testo fantasma (Premi Tab per accettare)."
+      },
       "memoryLimit": {
         "name": "Limite Memoria Conversazione",
         "desc": "Quanta cronologia conversazione conservare (per turni o token).",

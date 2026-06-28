@@ -275,6 +275,10 @@
         "name": "行内命令触发词",
         "desc": "在编辑器中调用快捷操作自动完成弹出窗口的关键词。 (Default: /ai)"
       },
+      "enableAutocomplete": {
+        "name": "启用内联自动补全 (Ghost Text)",
+        "desc": "当您暂停输入时，Task LLM将预测下一句并将其显示为幽灵文本（按Tab键接受）。"
+      },
       "memoryLimit": {
         "name": "对话记忆限制",
         "desc": "保留多少对话历史（按轮数或 Token 数）。",

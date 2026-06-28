@@ -319,6 +319,11 @@ export interface TranslationSettingsChatInlineTrigger {
   desc: string;
 }
 
+export interface TranslationSettingsChatEnableAutocomplete {
+  name: string;
+  desc: string;
+}
+
 export interface TranslationSettingsChatMemoryLimit {
   name: string;
   desc: string;
@@ -358,6 +363,7 @@ export interface TranslationSettingsChat {
   sendMode: TranslationSettingsChatSendMode;
   quickActions: TranslationSettingsChatQuickActions;
   inlineTrigger: TranslationSettingsChatInlineTrigger;
+  enableAutocomplete: TranslationSettingsChatEnableAutocomplete;
   memoryLimit: TranslationSettingsChatMemoryLimit;
   modelParams: TranslationSettingsChatModelParams;
   streaming: TranslationSettingsChatStreaming;

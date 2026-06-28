@@ -21,6 +21,27 @@ export async function rerankChunks(
 	try {
 		const provider = createProvider(providerConfig);
 
+		// 1. 네이티브 Rerank API 지원 여부 확인 및 시도
+		if (provider.rerank) {
+			try {
+				const documentTexts = chunks.map(c => c.chunk.text);
+				const results = await provider.rerank(query, documentTexts, { model: modelId, topN: topK });
+				
+				// 네이티브 API의 정렬 결과 및 점수를 반영하여 반환
+				return results.map(r => ({
+					...chunks[r.index],
+					score: r.score
+				}));
+			} catch (err) {
+				if (err instanceof Error && err.name === 'AbortError') {
+					throw err;
+				}
+				// API 호출 실패(예: 지원하지 않는 모델) 시 프롬프트 기반으로 우회
+				debugLogger.logError('rag_rerank', new Error(`Native rerank API failed, falling back to prompt-based: ${err}`));
+			}
+		}
+
+		// 2. 프롬프트 기반 Listwise Reranking (Fallback)
 		const prompt = `You are an expert relevance ranker.
 Given the following user query and a list of document chunks, rank the chunks by their relevance to the query.
 

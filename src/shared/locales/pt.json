@@ -275,6 +275,10 @@
         "name": "Acionador de Comando Inline",
         "desc": "Palavra-chave para invocar o popup de autocompletar ação rápida no editor. (Default: /ai)"
       },
+      "enableAutocomplete": {
+        "name": "Ativar preenchimento automático embutido (Ghost Text)",
+        "desc": "Quando você faz uma pausa na digitação, o Task LLM prevê a próxima frase e a exibe como texto fantasma (Pressione Tab para aceitar)."
+      },
       "memoryLimit": {
         "name": "Limite de Memória de Conversa",
         "desc": "Quanto histórico de conversa manter (por turnos ou tokens).",

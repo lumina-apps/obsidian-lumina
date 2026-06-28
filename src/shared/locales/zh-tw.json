@@ -275,6 +275,10 @@
         "name": "內嵌命令觸發字元",
         "desc": "在編輯器中呼叫快速操作自動完成 pop-up 時使用的關鍵字。 (Default: /ai)"
       },
+      "enableAutocomplete": {
+        "name": "啟用內聯自動補全 (Ghost Text)",
+        "desc": "當您暫停輸入時，Task LLM將預測下一句並將其顯示為幽靈文本（按Tab鍵接受）。"
+      },
       "memoryLimit": {
         "name": "對話記憶限制",
         "desc": "保留多少對話歷史（按輪數或 Token 數）。",

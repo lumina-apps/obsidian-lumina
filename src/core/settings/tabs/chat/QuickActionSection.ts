@@ -43,6 +43,18 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 				});
 		});
 
+	new Setting(el)
+		.setName(t('settings.chat.enableAutocomplete.name'))
+		.setDesc(t('settings.chat.enableAutocomplete.desc'))
+		.addToggle(toggle => {
+			toggle.setValue(s.enableAutocomplete)
+				.onChange(async (val) => {
+					s.enableAutocomplete = val;
+					await tab.saveAndSync();
+					// Toggle extension on/off dynamically if possible, or just require restart/re-focus
+				});
+		});
+
 	for (const action of s.quickActions || []) {
 		const card = el.createEl('details', { cls: 'lumina-prompt-card' });
 

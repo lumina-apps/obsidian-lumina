@@ -76,4 +76,11 @@ export interface ILLMProvider {
 
 	/** 임베딩 (벡터화) */
 	embed(texts: string[], options: { model: string }): Promise<number[][]>;
+
+	/** 리랭크 (문서 재정렬) - 전용 모델(API) 지원 시 선택적 구현 */
+	rerank?(
+		query: string,
+		documents: string[],
+		options: { model: string; topN?: number }
+	): Promise<{ index: number; score: number }[]>;
 }

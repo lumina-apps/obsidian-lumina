@@ -71,4 +71,40 @@ export class OpenAICompatProvider extends BaseOpenAIProvider {
 			return []; // should not reach here since raiseApiError throws
 		}
 	}
+
+	async rerank(
+		query: string,
+		documents: string[],
+		options: { model: string; topN?: number }
+	): Promise<{ index: number; score: number }[]> {
+		try {
+			const res = await requestUrl({
+				url: `${this.baseUrl}/v1/rerank`,
+				method: 'POST',
+				headers: this.buildHeaders(),
+				body: JSON.stringify({
+					model: options.model,
+					query,
+					documents,
+					top_n: options.topN,
+				}),
+			});
+
+			if (res.status >= 400) {
+				throw new Error(`Rerank API Error: ${res.text}`);
+			}
+
+			const data = res.json as { results: { index: number; relevance_score: number }[] };
+			if (!data.results) {
+				throw new Error('Invalid response from rerank API');
+			}
+
+			return data.results.map((r) => ({
+				index: r.index,
+				score: r.relevance_score,
+			}));
+		} catch (error) {
+			throw new Error(`${this.type} Reranking Error: ${error instanceof Error ? error.message : String(error)}`);
+		}
+	}
 }

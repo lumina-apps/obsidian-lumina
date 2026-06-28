@@ -297,6 +297,10 @@
         "name": "Inline Command Trigger",
         "desc": "Keyword to invoke the quick action autocomplete popup in the editor. (Default: /ai)"
       },
+      "enableAutocomplete": {
+        "name": "Enable Inline Autocomplete (Ghost Text)",
+        "desc": "When you pause typing, Task LLM will predict the next sentence and show it as ghost text (Press Tab to accept)."
+      },
       "memoryLimit": {
         "name": "Conversation Memory Limit",
         "desc": "How much conversation history to retain (by turns or tokens).",

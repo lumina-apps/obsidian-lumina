@@ -35,6 +35,7 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		historyPath: 'chatHistory',
 		sendKey: 'enter',
 		inlineTrigger: '/ai',
+		enableAutocomplete: false,
 		quickActions: [
 			{ id: 'qa-summarize', name: '요약하기', prompt: '다음 텍스트를 핵심만 요약해줘:\n\n', actionType: 'append' },
 			{ id: 'qa-translate', name: '한국어로 번역', prompt: '다음 텍스트를 자연스러운 한국어로 번역해줘:\n\n', actionType: 'replace' },

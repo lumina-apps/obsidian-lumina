@@ -275,6 +275,10 @@
         "name": "Inline-Befehlstrigger",
         "desc": "Stichwort, um das Quick-Aktion-Autovervollständigungspopup im Editor aufzurufen. (Default: /ai)"
       },
+      "enableAutocomplete": {
+        "name": "Inline-Autovervollständigung (Ghost Text) aktivieren",
+        "desc": "Wenn Sie mit dem Tippen innehalten, sagt Task LLM den nächsten Satz voraus und zeigt ihn als Geistertext an (Drücken Sie Tab zum Akzeptieren)."
+      },
       "memoryLimit": {
         "name": "Konversations-Speicherlimit",
         "desc": "Wie viel Konversationsverlauf gespeichert wird (nach Turns oder Tokens).",

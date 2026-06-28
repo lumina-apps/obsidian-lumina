@@ -275,6 +275,10 @@
         "name": "Disparador de comando en línea",
         "desc": "Palabra clave para invocar el autocompletado de acciones rápidas en el editor. (Default: /ai)"
       },
+      "enableAutocomplete": {
+        "name": "Habilitar autocompletado en línea (Ghost Text)",
+        "desc": "Cuando haces una pausa al escribir, Task LLM predecirá la siguiente oración y la mostrará como texto fantasma (Presiona Tab para aceptar)."
+      },
       "memoryLimit": {
         "name": "Límite de memoria de conversación",
         "desc": "Cuánto historial de conversación conservar (por turnos o tokens).",

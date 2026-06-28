@@ -1804,3 +1804,13 @@ div.lumina-diff-added-widget {
 	border: 1px solid var(--background-modifier-border);
 	flex-shrink: 0;
 }
+
+/* ── Inline Autocomplete (Ghost Text) ── */
+.lumina-autocomplete-ghost {
+	color: var(--text-faint);
+	font-style: italic;
+	opacity: 0.7;
+	pointer-events: none;
+	user-select: none;
+}
+

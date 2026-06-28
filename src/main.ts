@@ -155,7 +155,9 @@ export default class LuminaPlugin extends Plugin {
 					{ QuickActionHandler },
 					{ InlineAISuggest },
 					{ inlineDiffExtension },
-					{ FrontmatterManager }
+					{ FrontmatterManager },
+					{ AutocompleteHandler },
+					{ buildInlineAutocompleteExtension }
 				]
 			] = await Promise.all([
 				initLocale(),
@@ -166,7 +168,9 @@ export default class LuminaPlugin extends Plugin {
 					import('./features/editor/quickActionHandler'),
 					import('./features/editor/inlineSuggest'),
 					import('./features/editor/diffExtension'),
-					import('./features/frontmatter/frontmatterManager')
+					import('./features/frontmatter/frontmatterManager'),
+					import('./features/editor/autocompleteHandler'),
+					import('./features/editor/autocompleteExtension')
 				])
 			]);
 
@@ -197,6 +201,10 @@ export default class LuminaPlugin extends Plugin {
 			// ── 인라인 서제스트 및 Diff Extension 초기화
 			this.registerEditorSuggest(new InlineAISuggest(this));
 			this.registerEditorExtension(inlineDiffExtension);
+			
+			// ── 인라인 고스트 텍스트 자동완성 초기화
+			const autocompleteHandler = new AutocompleteHandler(this);
+			this.registerEditorExtension(buildInlineAutocompleteExtension(autocompleteHandler));
 
 			// ── 프론트매터 매니저 초기화
 			this.frontmatterManager = new FrontmatterManager(this);
