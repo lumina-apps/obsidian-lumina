@@ -34,8 +34,13 @@ class LazyLuminaSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
+	/**
+	 * @deprecated Since 1.13.0. Use {@link getSettingDefinitions } instead.
+	 */
+	// eslint-disable-next-line @typescript-eslint/no-deprecated
 	display(): void {
 		if (this.realTab) {
+			// eslint-disable-next-line @typescript-eslint/no-deprecated
 			this.realTab.refreshDisplay();
 			return;
 		}
@@ -54,6 +59,7 @@ class LazyLuminaSettingTab extends PluginSettingTab {
 
 		this.loadingPromise.then(() => {
 			if (this.realTab) {
+				// eslint-disable-next-line @typescript-eslint/no-deprecated
 				this.realTab.refreshDisplay();
 			}
 		}).catch(console.error);
