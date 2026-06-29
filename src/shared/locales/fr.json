@@ -277,7 +277,8 @@
       },
       "enableAutocomplete": {
         "name": "Activer la saisie semi-automatique en ligne (Ghost Text)",
-        "desc": "Lorsque vous faites une pause dans la frappe, Task LLM prédit la phrase suivante et l'affiche sous forme de texte fantôme (Appuyez sur Tab pour accepter)."
+        "desc": "Lorsque vous faites une pause dans la frappe, Task LLM prédit la phrase suivante et l'affiche sous forme de texte fantôme (Appuyez sur Tab pour accepter).",
+        "needsTaskModel": "Pour utiliser cette fonctionnalité, vous devez d'abord spécifier un modèle de Tâche dans l'onglet Connexions."
       },
       "memoryLimit": {
         "name": "Limite de mémoire de conversation",

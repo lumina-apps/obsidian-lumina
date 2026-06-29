@@ -41,6 +41,8 @@ export function renderTaskModelSection(tab: LuminaSettingTab, el: HTMLElement): 
 			if (val === '') {
 				s.taskProviderId = '';
 				s.taskModelId = '';
+				// Task 모델이 없으면 인라인 자동완성 기능도 강제로 끕니다.
+				tab.plugin.settings.chat.enableAutocomplete = false;
 			} else {
 				const parsed = parseProviderModelValue(val);
 				if (parsed) {

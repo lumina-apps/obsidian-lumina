@@ -277,7 +277,8 @@
       },
       "enableAutocomplete": {
         "name": "Ativar preenchimento automático embutido (Ghost Text)",
-        "desc": "Quando você faz uma pausa na digitação, o Task LLM prevê a próxima frase e a exibe como texto fantasma (Pressione Tab para aceitar)."
+        "desc": "Quando você faz uma pausa na digitação, o Task LLM prevê a próxima frase e a exibe como texto fantasma (Pressione Tab para aceitar).",
+        "needsTaskModel": "Para usar este recurso, você deve primeiro especificar um modelo de Tarefa na guia Conexões."
       },
       "memoryLimit": {
         "name": "Limite de Memória de Conversa",

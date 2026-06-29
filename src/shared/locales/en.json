@@ -299,7 +299,8 @@
       },
       "enableAutocomplete": {
         "name": "Enable Inline Autocomplete (Ghost Text)",
-        "desc": "When you pause typing, Task LLM will predict the next sentence and show it as ghost text (Press Tab to accept)."
+        "desc": "When you pause typing, Task LLM will predict the next sentence and show it as ghost text (Press Tab to accept).",
+        "needsTaskModel": "To use this feature, you must first specify a Task model in the Connections tab."
       },
       "memoryLimit": {
         "name": "Conversation Memory Limit",

@@ -277,7 +277,8 @@
       },
       "enableAutocomplete": {
         "name": "啟用內聯自動補全 (Ghost Text)",
-        "desc": "當您暫停輸入時，Task LLM將預測下一句並將其顯示為幽靈文本（按Tab鍵接受）。"
+        "desc": "當您暫停輸入時，Task LLM將預測下一句並將其顯示為幽靈文本（按Tab鍵接受）。",
+        "needsTaskModel": "要使用此功能，您必須先在「連線」分頁中指定一個 Task 模型。"
       },
       "memoryLimit": {
         "name": "對話記憶限制",

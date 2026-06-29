@@ -277,7 +277,8 @@
       },
       "enableAutocomplete": {
         "name": "Habilitar autocompletado en línea (Ghost Text)",
-        "desc": "Cuando haces una pausa al escribir, Task LLM predecirá la siguiente oración y la mostrará como texto fantasma (Presiona Tab para aceptar)."
+        "desc": "Cuando haces una pausa al escribir, Task LLM predecirá la siguiente oración y la mostrará como texto fantasma (Presiona Tab para aceptar).",
+        "needsTaskModel": "Para usar esta función, primero debe especificar un modelo de Tarea en la pestaña Conexiones."
       },
       "memoryLimit": {
         "name": "Límite de memoria de conversación",

@@ -299,7 +299,8 @@
       },
       "enableAutocomplete": {
         "name": "인라인 자동완성 (Ghost Text) 사용",
-        "desc": "글을 작성하다 멈추면 Task LLM이 다음 문장을 예측해 회색 텍스트로 보여줍니다 (Tab키로 수락)."
+        "desc": "글을 작성하다 멈추면 Task LLM이 다음 문장을 예측해 회색 텍스트로 보여줍니다 (Tab키로 수락).",
+        "needsTaskModel": "이 기능을 사용하려면 연결 탭에서 Task 모델을 먼저 지정해야 합니다."
       },
       "memoryLimit": {
         "name": "대화 기억 제한",

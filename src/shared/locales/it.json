@@ -277,7 +277,8 @@
       },
       "enableAutocomplete": {
         "name": "Abilita completamento automatico in linea (Ghost Text)",
-        "desc": "Quando fai una pausa durante la digitazione, Task LLM prevederà la frase successiva e la mostrerà come testo fantasma (Premi Tab per accettare)."
+        "desc": "Quando fai una pausa durante la digitazione, Task LLM prevederà la frase successiva e la mostrerà come testo fantasma (Premi Tab per accettare).",
+        "needsTaskModel": "Per utilizzare questa funzione, devi prima specificare un modello Task nella scheda Connessioni."
       },
       "memoryLimit": {
         "name": "Limite Memoria Conversazione",

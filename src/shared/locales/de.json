@@ -277,7 +277,8 @@
       },
       "enableAutocomplete": {
         "name": "Inline-Autovervollständigung (Ghost Text) aktivieren",
-        "desc": "Wenn Sie mit dem Tippen innehalten, sagt Task LLM den nächsten Satz voraus und zeigt ihn als Geistertext an (Drücken Sie Tab zum Akzeptieren)."
+        "desc": "Wenn Sie mit dem Tippen innehalten, sagt Task LLM den nächsten Satz voraus und zeigt ihn als Geistertext an (Drücken Sie Tab zum Akzeptieren).",
+        "needsTaskModel": "Um diese Funktion nutzen zu können, müssen Sie zuerst ein Task-Modell im Tab Verbindungen festlegen."
       },
       "memoryLimit": {
         "name": "Konversations-Speicherlimit",

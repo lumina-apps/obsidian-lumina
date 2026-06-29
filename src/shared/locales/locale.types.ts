@@ -322,6 +322,7 @@ export interface TranslationSettingsChatInlineTrigger {
 export interface TranslationSettingsChatEnableAutocomplete {
   name: string;
   desc: string;
+  needsTaskModel: string;
 }
 
 export interface TranslationSettingsChatMemoryLimit {

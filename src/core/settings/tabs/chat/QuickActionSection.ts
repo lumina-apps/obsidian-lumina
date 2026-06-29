@@ -43,11 +43,20 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 				});
 		});
 
+	const hasTaskModel = !!tab.plugin.settings.connections.taskModelId;
+	if (!hasTaskModel && s.enableAutocomplete) {
+		s.enableAutocomplete = false;
+		void tab.saveAndSync();
+	}
+	
 	new Setting(el)
 		.setName(t('settings.chat.enableAutocomplete.name'))
-		.setDesc(t('settings.chat.enableAutocomplete.desc'))
+		.setDesc(hasTaskModel 
+			? t('settings.chat.enableAutocomplete.desc') 
+			: t('settings.chat.enableAutocomplete.desc') + '\n\n⚠️ ' + t('settings.chat.enableAutocomplete.needsTaskModel'))
 		.addToggle(toggle => {
 			toggle.setValue(s.enableAutocomplete)
+				.setDisabled(!hasTaskModel)
 				.onChange(async (val) => {
 					s.enableAutocomplete = val;
 					await tab.saveAndSync();
