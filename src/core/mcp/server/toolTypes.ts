@@ -31,7 +31,13 @@ export type ToolName =
 	| 'list_tags'
 	| 'create_canvas'
 	| 'generate_moc'
-	| 'auto_link_note';
+	| 'auto_link_note'
+	| 'run_shell_command';
+
+export interface RunShellCommandArguments extends ToolArguments {
+	command: string;
+	cwd?: string;
+}
 
 /** CallTool 요청에서 전달되는 원시 인자 */
 export type ToolArguments = Record<string, unknown>;

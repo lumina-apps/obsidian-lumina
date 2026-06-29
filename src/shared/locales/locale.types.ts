@@ -163,6 +163,11 @@ export interface TranslationSettingsMcpLocalServerMaxAppend {
   desc: string;
 }
 
+export interface TranslationSettingsMcpLocalServerEnableShellCommands {
+  name: string;
+  desc: string;
+}
+
 export interface TranslationSettingsMcpLocalServer {
   sectionTitle: string;
   desc: string;
@@ -174,6 +179,7 @@ export interface TranslationSettingsMcpLocalServer {
   searchSnippet: TranslationSettingsMcpLocalServerSearchSnippet;
   searchMaxResults: TranslationSettingsMcpLocalServerSearchMaxResults;
   maxAppend: TranslationSettingsMcpLocalServerMaxAppend;
+  enableShellCommands: TranslationSettingsMcpLocalServerEnableShellCommands;
 }
 
 export interface TranslationSettingsMcpExternalServerSseUrl {
@@ -708,6 +714,7 @@ export interface TranslationUiMessages {
     updateFrontmatter: string;
     saveAttachment: string;
     executeCode: string;
+    shellCommand: string;
     accept: string;
     reject: string;
   };

@@ -1814,3 +1814,42 @@ div.lumina-diff-added-widget {
 	user-select: none;
 }
 
+
+/* Fix MCP Token setting layout (Stack vertically) */
+.vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-token {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 8px;
+	padding-right: 0;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-token .setting-item-info {
+	width: 100%;
+	padding-top: 0;
+	padding-right: 0;
+	padding-bottom: 0;
+}
+
+.vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-token .setting-item-control {
+	width: 100%;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	gap: 10px;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	padding-left: 20px;
+	box-sizing: border-box;
+}
+
+.vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-token .setting-item-control input[type="text"],
+.vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-token .setting-item-control input[type="password"] {
+	flex: 1 1 auto;
+	min-width: 0;
+	margin-bottom: 0;
+}

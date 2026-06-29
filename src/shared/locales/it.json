@@ -135,6 +135,10 @@
         "maxAppend": {
           "name": "Append - Caratteri max",
           "desc": "Caratteri max per operazione di aggiunta (Predefinito: 10000)"
+        },
+        "enableShellCommands": {
+          "name": "Abilita strumento comando Terminale/Shell",
+          "desc": "Consente al LLM di eseguire comandi della shell sul sistema operativo desktop. Disabilitato per impostazione predefinita per motivi di sicurezza."
         }
       },
       "externalServer": {
@@ -595,7 +599,8 @@
       "saveAttachment": "📎 Vuoi SALVARE l'ALLEGATO? Dimensioni: {{size}} byte",
       "executeCode": "⚡ Vuoi ESEGUIRE questo codice?",
       "accept": "Accetta",
-      "reject": "Rifiuta"
+      "reject": "Rifiuta",
+      "shellCommand": "💻 Vuoi ESEGUIRE questo comando shell sul sistema operativo desktop?"
     },
     "emptyResponseTokenLimit": "⚠️ Il modello ha restituito una risposta vuota. La generazione è stata interrotta perché è stato raggiunto il limite massimo di token di output. Aumenta il limite \"Token di output massimi\" nelle impostazioni.",
     "tokenLimitHitWarning": "\n\n⚠️ (La generazione è stata interrotta perché è stato raggiunto il limite massimo di token di output. Aumenta il valore di \"Token di output massimi\" nelle impostazioni.)",

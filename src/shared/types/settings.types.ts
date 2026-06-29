@@ -129,6 +129,8 @@ export interface McpSettings {
 	serverSearchMaxResults: number;
 	serverMaxAppendChars: number;
 	clientToolsEnabled: boolean;
+	serverEnableShellCommands: boolean;
+	agentRespectRagExclusions: boolean;
 }
 
 export interface McpServerConfig {

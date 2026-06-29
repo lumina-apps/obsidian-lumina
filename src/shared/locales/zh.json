@@ -135,6 +135,10 @@
         "maxAppend": {
           "name": "Append 最大字符数",
           "desc": "单次追加操作的最大字符数 (默认: 10000)"
+        },
+        "enableShellCommands": {
+          "name": "启用终端/Shell 命令工具",
+          "desc": "允许 LLM 在桌面操作系统上执行 Shell 命令。出于安全原因，默认处于禁用状态。"
         }
       },
       "externalServer": {
@@ -595,7 +599,8 @@
       "saveAttachment": "📎 是否要保存附件？ 大小: {{size}} 字节",
       "executeCode": "⚡ 是否要执行此代码？",
       "accept": "批准",
-      "reject": "拒绝"
+      "reject": "拒绝",
+      "shellCommand": "💻 您要在桌面操作系统上执行此 Shell 命令吗？"
     },
     "emptyResponseTokenLimit": "⚠️ 模型返回了空响应。由于达到最大输出 Token 限制，生成已停止。请在设置中增加“最大输出 Token”限制。",
     "tokenLimitHitWarning": "\n\n⚠️ (由于达到最大输出 Token 限制，生成已中断。请在设置中增加“最大输出 Token”值。)",

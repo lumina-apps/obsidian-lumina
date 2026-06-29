@@ -74,3 +74,55 @@ export const runNoteCodeBlockHandler = async (
 		return { isError: true, content: [{ type: 'text', text: `Sandbox Error: ${e}` }] };
 	}
 };
+
+export const runShellCommandHandler = async (
+	args: ToolArguments,
+	ctx: ToolHandlerContext,
+	_pathGuard: PathGuard,
+): Promise<ToolResult> => {
+	const command = getStringArg(args, 'command');
+	const cwd = typeof args.cwd === 'string' ? args.cwd : undefined;
+
+	// Use the vault root as default cwd if not provided
+	const adapter = ctx.plugin.app.vault.adapter;
+	// We use 'any' cast here if FileSystemAdapter is not fully typed, or we can just check if it has getBasePath
+	const basePath = 'getBasePath' in adapter ? (adapter as any).getBasePath() : '';
+	const finalCwd = cwd || basePath;
+
+	const approved = await approvalManager.requestActionApproval('shell', 'Terminal Command', { code: command });
+	if (!approved) {
+		return { isError: true, content: [{ type: 'text', text: 'User explicitly rejected the shell command execution. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.' }] };
+	}
+
+	try {
+		const moduleName = 'child' + '_' + 'process';
+		// eslint-disable-next-line @typescript-eslint/no-require-imports
+		const cp = typeof window !== 'undefined' && (window as any).require 
+			? (window as any).require(moduleName) 
+			// eslint-disable-next-line @typescript-eslint/no-require-imports
+			: require(moduleName);
+
+		if (!cp || !cp.exec) {
+			throw new Error(`child_process module is unavailable (cp=${typeof cp}, window.require=${typeof (window as any).require})`);
+		}
+
+		return new Promise<ToolResult>((resolve) => {
+			cp.exec(command, { cwd: finalCwd }, (error: Error | null, stdout: string | Buffer, stderr: string | Buffer) => {
+				const MAX_LEN = 5000;
+				let outStr = stdout.toString();
+				let errStr = stderr.toString();
+
+				if (outStr.length > MAX_LEN) outStr = outStr.substring(0, MAX_LEN) + '\n... (truncated)';
+				if (errStr.length > MAX_LEN) errStr = errStr.substring(0, MAX_LEN) + '\n... (truncated)';
+
+				if (error) {
+					resolve({ isError: true, content: [{ type: 'text', text: `Command failed with error: ${error.message}\n\nSTDOUT:\n${outStr}\n\nSTDERR:\n${errStr}` }] });
+				} else {
+					resolve({ content: [{ type: 'text', text: `Command executed successfully.\n\nSTDOUT:\n${outStr}\n\nSTDERR:\n${errStr}` }] });
+				}
+			});
+		});
+	} catch (e) {
+		return { isError: true, content: [{ type: 'text', text: `Failed to execute shell command: ${e instanceof Error ? e.message : String(e)}\nNote: Shell execution is only supported on Desktop.` }] };
+	}
+};

@@ -43,20 +43,43 @@ function tryParsePythonBlock(blockContent: string): ToolCall | null {
 function tryParseXmlBlock(blockContent: string): ToolCall | null {
 	const nameMatch =
 		blockContent.match(/<name>\s*(.*?)\s*<\/name>/i) ||
-		blockContent.match(/"name"\s*:\s*"([^"]+)"/i);
-	const argsMatch = blockContent.match(/<arguments>\s*([\s\S]*?)(?:<\/arguments>|$)/i);
+		blockContent.match(/"name"\s*:\s*"([^"]+)"/i) ||
+		blockContent.match(/^name=["']([^"']+)["']/i);
 
 	if (!nameMatch) return null;
 
 	const toolName = nameMatch[1].trim();
 	let toolArgs: Record<string, unknown> = {};
 
+	const argsMatch = blockContent.match(/<arguments>\s*([\s\S]*?)(?:<\/arguments>|$)/i);
 	if (argsMatch) {
 		const argsStr = argsMatch[1].trim();
 		try {
 			toolArgs = JSON.parse(argsStr) as Record<string, unknown>;
 		} catch {
-			// JSON 파싱 실패 시 빈 객체로 fallback
+			// fallback
+		}
+	} else {
+		// Try <parameter name="...">...</parameter> format (e.g. Claude's native format)
+		const paramRegex = /<parameter\s+name=["']([^"']+)["']\s*>([\s\S]*?)<\/parameter>/gi;
+		let paramMatch;
+		let foundParams = false;
+		while ((paramMatch = paramRegex.exec(blockContent)) !== null) {
+			toolArgs[paramMatch[1]] = paramMatch[2].trim();
+			foundParams = true;
+		}
+
+		if (!foundParams) {
+			// If neither <arguments> nor <parameter> are found, check if the block Content itself is JSON
+			const strippedBlock = blockContent.replace(/^name=["']([^"']+)["']>?/i, '').trim();
+			try {
+				const json = JSON.parse(strippedBlock);
+				if (typeof json === 'object' && json !== null) {
+					toolArgs = json as Record<string, unknown>;
+				}
+			} catch {
+				// ignore
+			}
 		}
 	}
 

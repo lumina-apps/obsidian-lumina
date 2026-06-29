@@ -51,6 +51,11 @@ export class ActionApprovalModal extends Modal {
 			const code = metadata?.code as string | undefined;
 			const pre = descEl.createEl('pre', { cls: 'code-preview', attr: { style: 'max-height: 200px; overflow-y: auto; background: var(--background-secondary-alt); padding: 8px;' } });
 			pre.setText(code || '');
+		} else if (actionType === 'shell') {
+			descEl.createEl('p', { text: t('uiMessages.actionApproval.shellCommand') });
+			const code = metadata?.code as string | undefined;
+			const pre = descEl.createEl('pre', { cls: 'code-preview', attr: { style: 'max-height: 200px; overflow-y: auto; background: var(--background-secondary-alt); padding: 8px; color: var(--text-error); font-weight: bold;' } });
+			pre.setText(code || '');
 		}
 
 		new Setting(contentEl)

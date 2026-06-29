@@ -12,12 +12,14 @@ export interface ToolDefinition {
 	};
 }
 
+import type { LuminaSettings } from '../../settings/settings.types';
+
 /**
  * 등록된 모든 툴의 메타데이터 정의를 반환합니다.
  * MCP ListTools 요청 핸들러에서 사용됩니다.
  */
-export function getToolDefinitions(): ToolDefinition[] {
-	return [
+export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
+	const tools: ToolDefinition[] = [
 		{
 			name: 'read_active_note',
 			description: t('mcpServerTools.read_active_note.desc'),
@@ -240,6 +242,18 @@ export function getToolDefinitions(): ToolDefinition[] {
 			}
 		},
 		{
+			name: 'run_shell_command',
+			description: 'Execute a terminal shell command on the desktop OS. Use with caution.',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					command: { type: 'string', description: 'The terminal command to execute' },
+					cwd: { type: 'string', description: 'Optional. The working directory for the command' }
+				},
+				required: ['command']
+			}
+		},
+		{
 			name: 'run_note_code_block',
 			description: 'Run a specific code block from a note in the sandbox.',
 			inputSchema: {
@@ -343,4 +357,10 @@ export function getToolDefinitions(): ToolDefinition[] {
 			}
 		},
 	];
+
+	if (!settings.mcp.serverEnableShellCommands) {
+		return tools.filter((t) => t.name !== 'run_shell_command');
+	}
+
+	return tools;
 }

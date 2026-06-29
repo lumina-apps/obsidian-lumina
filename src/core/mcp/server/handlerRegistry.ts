@@ -5,7 +5,7 @@ import { readActiveNoteHandler, readNoteHandler, readDailyNoteHandler, getBackli
 import { createNoteHandler, appendToNoteHandler, appendToDailyNoteHandler, replaceNoteHandler, patchNoteHandler, deleteNoteHandler, moveNoteHandler, updateFrontmatterHandler, saveAttachmentHandler } from './handlers/writeHandlers';
 import { searchNotesHandler, listNotesHandler, listTagsHandler } from './handlers/searchHandlers';
 import { ragSearchHandler } from './handlers/ragHandlers';
-import { executeCodeHandler, runNoteCodeBlockHandler } from './handlers/executeHandlers';
+import { executeCodeHandler, runNoteCodeBlockHandler, runShellCommandHandler } from './handlers/executeHandlers';
 import { createCanvasHandler } from './handlers/canvasHandlers';
 import { generateMocHandler } from './handlers/mocHandlers';
 import { autoLinkNoteHandler } from './handlers/autoLinkHandlers';
@@ -41,6 +41,7 @@ const handlerMap: Record<ToolName, ToolHandlerImpl> = {
 	create_canvas: createCanvasHandler,
 	generate_moc: generateMocHandler,
 	auto_link_note: autoLinkNoteHandler,
+	run_shell_command: runShellCommandHandler,
 };
 
 /**

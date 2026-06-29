@@ -135,6 +135,10 @@
         "maxAppend": {
           "name": "Append Max. Zeichen",
           "desc": "Max. Zeichen pro Anhänge-Vorgang (Standard: 10000)"
+        },
+        "enableShellCommands": {
+          "name": "Terminal-/Shell-Befehls-Tool aktivieren",
+          "desc": "Erlaubt dem LLM, Shell-Befehle auf dem Desktop-Betriebssystem auszuführen. Aus Sicherheitsgründen standardmäßig deaktiviert."
         }
       },
       "externalServer": {
@@ -595,7 +599,8 @@
       "saveAttachment": "📎 Möchten Sie den ANHANG SPEICHERN? Größe: {{size}} Bytes",
       "executeCode": "⚡ Möchten Sie diesen Code AUSFÜHREN?",
       "accept": "Akzeptieren",
-      "reject": "Ablehnen"
+      "reject": "Ablehnen",
+      "shellCommand": "💻 Möchten Sie diesen Shell-Befehl auf dem Desktop-Betriebssystem AUSFÜHREN?"
     },
     "emptyResponseTokenLimit": "⚠️ Das Modell hat eine leere Antwort zurückgegeben. Die Generierung wurde gestoppt, da das Limit für maximale Ausgabe-Token erreicht wurde. Bitte erhöhen Sie das Limit für \"Maximale Ausgabe-Token\" in den Einstellungen.",
     "tokenLimitHitWarning": "\n\n⚠️ (Die Generierung wurde unterbrochen, da das Limit für maximale Ausgabetoken erreicht wurde. Bitte erhöhen Sie den Wert \"Max Output Tokens\" in den Einstellungen.)",

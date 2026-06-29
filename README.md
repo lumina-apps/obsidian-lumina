@@ -87,7 +87,7 @@ Lumina offers two tracks tailored to your skill level. Choose the one that suits
 <details>
 <summary><b>🚀 Smart Agent Mode</b></summary>
 
-- **Description:** When activated, the LLM autonomously determines and orchestrates 24 built-in MCP tools to perform tasks. It can complete complex, multi-step operations by combining note searching, reading, writing, RAG retrieval, sandbox code execution, and daily notes integration.
+- **Description:** When activated, the LLM autonomously determines and orchestrates various built-in MCP tools to perform tasks. It can complete complex, multi-step operations by combining note searching, reading, writing, RAG retrieval, sandbox code execution, and daily notes integration.
 - **Local LLM Support:** Implements a dedicated parser that supports text-based tool prompting, allowing the agent to function smoothly even in Local LLM environments, not just with high-performance cloud models.
 - **Robust Security & User Control (Human-in-the-Loop):** Destructive operations such as content modification, file deletion, or code execution cannot be processed by the agent alone. They are executed safely with overwrite-protection backups only after prompting the user with a UI (Diff Viewer and Task Warning Modal) and receiving final approval (Accept).
 - **Cost Prevention & Limits:** Default limits on tool usage count and append character length are applied to prevent AI malfunctions or infinite loops. (These limits can be freely adjusted by the user in advanced settings.)
@@ -102,11 +102,11 @@ Lumina offers two tracks tailored to your skill level. Choose the one that suits
   - Interact and work directly with AI within Obsidian.
   - Connect numerous external MCP servers (GitHub, local DBs, web search, etc.) to instantly scrape and organize vast amounts of data into your notes.
 - **🖥️ Server Mode (External AI-led):**
-  - Provides 25 tools allowing external AI assistants (Claude, Cursor, etc.) or the Agent Mode AI to directly access your vault and the internet.
+  - Provides various tools allowing external AI assistants (Claude, Cursor, etc.) or the Agent Mode AI to directly access your vault and the internet.
   - **Web Search:** \`lumina_web_search\` (Search the web using various providers like Tavily, Exa, Google with smart truncation to save API costs).
   - **Read & Search:** `read_active_note`, `read_note`, `search_notes` (supports tag filtering), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` to provide extensive context to the AI.
   - **Write & Modify:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (create/modify notes/canvases, generate Map of Content notes, auto-link mentions, and save binary files).
-  - **Manage & Execute:** `delete_note`, `move_note` (move/rename), `execute_code`, `run_note_code_block` (execute code within a sandbox).
+  - **Manage & Execute:** `delete_note`, `move_note` (move/rename), `execute_code`, `run_note_code_block` (execute code within a sandbox, `run_shell_command` (execute terminal shell commands on desktop OS).
   - **Daily Notes:** `read_daily_note`, `append_to_daily_note` (read/write integration for today's daily note).
   - **Robust Security & User Control:** Destructive operations such as content modification, file deletion, or code execution cannot be processed by the agent alone. They are executed safely with overwrite-protection backups only after prompting the user with a UI (Diff Viewer and Task Warning Modal) and receiving final approval (Accept).
 - **How to use:** Enable MCP features in the plugin settings and configure the client/server transport method (SSE).

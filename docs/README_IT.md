@@ -20,7 +20,7 @@
 | **🧠 RAG Zero-Config** | Dispone di embedding locali al 100% offline per prevenire perdite di dati. Indicizza automaticamente il tuo vault in tempo reale senza configurazioni complesse. |
 | **🔗 Smart Discovery** | Trova istantaneamente documenti altamente rilevanti per la nota in corso di scrittura tramite ricerca semantica, rileva e avverte di potenziali duplicati e inserisce tag consigliati e collegamenti correlati con un solo clic. |
 | **⚡ Azioni Rapide IA Inline** | Evidenzia il testo nell'editor per riassumere, tradurre o correggere all'istante senza interrompere il tuo flusso di scrittura. |
-| **🚀 Modalità Agente Intelligente** | L'IA pianifica ed esegue autonomamente compiti complessi come la ricerca, la creazione, la modifica, l'eliminazione/spostamento di note e l'esecuzione di codice in una sandbox utilizzando 25 strumenti MCP integrati. |
+| **🚀 Modalità Agente Intelligente** | L'IA pianifica ed esegue autonomamente compiti complessi come la ricerca, la creazione, la modifica, l'eliminazione/spostamento di note e l'esecuzione di codice in una sandbox utilizzando vari strumenti MCP integrati. |
 | **🔌 Integrazione MCP (Client & Server)** | Un'integrazione bidirezionale full-stack che consente di utilizzare strumenti esterni all'interno di Obsidian (Client) o consentire a IA esterne di interagire con le note (Server). |
 
 ---
@@ -86,7 +86,7 @@ Lumina offre due modalità in base al tuo livello di competenza. Scegli quella c
 <details>
 <summary><b>🚀 Modalità Agente Intelligente</b></summary>
 
-- **Descrizione:** Quando attivata, l'LLM determina e orchestra autonomamente 25 strumenti MCP integrati per eseguire attività. Può completare complesse operazioni in più passaggi combinando la ricerca, la lettura e la scrittura di note, il recupero RAG, l'esecuzione di codice in una sandbox e l'integrazione delle note giornaliere.
+- **Descrizione:** Quando attivata, l'LLM determina e orchestra autonomamente vari strumenti MCP integrati per eseguire attività. Può completare complesse operazioni in più passaggi combinando la ricerca, la lettura e la scrittura di note, il recupero RAG, l'esecuzione di codice in una sandbox e l'integrazione delle note giornaliere.
 - **Supporto LLM locale:** Implementa un parser dedicato che supporta il prompt degli strumenti basato su testo, consentendo all'agente di funzionare senza problemi anche in ambienti LLM locali, non solo con modelli cloud ad alte prestazioni.
 - **Sicurezza robusta e controllo utente (Human-in-the-Loop):** Le operazioni distruttive come la modifica dei contenuti, l'eliminazione di file o l'esecuzione di codice non possono essere elaborate dall'agente da solo. Vengono eseguite in sicurezza con backup di protezione contro la sovrascrittura solo dopo aver mostrato all'utente un'interfaccia utente (visualizzatore di differenze e finestra di avviso dell'attività) e aver ricevuto l'approvazione finale (Accetta).
 - **Prevenzione dei costi e limiti:** Vengono applicati limiti predefiniti sul numero di utilizzi degli strumenti e sulla lunghezza dei caratteri aggiunti per prevenire malfunzionamenti dell'IA o cicli infiniti. (Questi limiti possono essere regolati liberamente nelle impostazioni avanzate).
@@ -101,11 +101,11 @@ Lumina offre due modalità in base al tuo livello di competenza. Scegli quella c
   - Interagisci e lavora direttamente con l'IA all'interno di Obsidian.
   - Connetti numerosi server MCP esterni (GitHub, DB locali, ricerca web, ecc.) per raschiare (scrape) e organizzare all'istante grandi quantità di dati nelle tue note.
 - **🖥️ Modalità Server (Guidata da IA Esterna):**
-  - Fornisce 25 strumenti che consentono agli assistenti IA esterni (Claude, Cursor, etc.) o all'IA in Modalità Agente di accedere direttamente al tuo vault.
+  - Fornisce vari strumenti che consentono agli assistenti IA esterni (Claude, Cursor, etc.) o all'IA in Modalità Agente di accedere direttamente al tuo vault.
   - **Ricerca Web:** `lumina_web_search` (Ricerca di informazioni su Internet in tempo reale utilizzando vari motori di ricerca come Tavily, Exa, Google, con supporto di troncamento intelligente)
   - **Lettura e Ricerca:** `read_active_note`, `read_note`, `search_notes` (supporta il filtraggio per tag), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` per fornire un ampio contesto all'IA.
   - **Scrittura e Modifica:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (creazione/modifica di note/canvas, generazione di note MOC (Map of Content) e salvataggio di file binari).
-  - **Gestione ed Esecuzione:** `delete_note`, `move_note` (sposta/rinomina), `execute_code`, `run_note_code_block` (esecuzione di codice all'interno di una sandbox).
+  - **Gestione ed Esecuzione:** `delete_note`, `move_note` (sposta/rinomina), `execute_code`, `run_note_code_block` (esecuzione di codice all'interno di una sandbox, `run_shell_command` (eseguire comandi della shell del terminale sul sistema operativo desktop).
 - **Nota:** *Lumina è dotato di meccanismi di sicurezza a più livelli tra cui l'esecuzione di codice in sandbox, approvazioni dell'utente basate su un visualizzatore di differenze in tempo reale (Human-in-the-Loop), backup automatici durante le modifiche ai file (protezione da sovrascrittura) e limiti per prevenire cicli infiniti. Tuttavia, poiché l'agente e le IA esterne accedono direttamente al tuo vault, consigliamo inizialmente di monitorare attentamente le operazioni.*
   - **Sicurezza Robusta e Controllo Utente:** Operazioni distruttive come la modifica del contenuto, l'eliminazione di file o l'esecuzione di codice non possono essere elaborate dall'agente da solo. Vengono eseguite in sicurezza con backup di protezione da sovrascrittura solo dopo aver mostrato all'utente un'interfaccia (Visualizzatore di Differenze e Modale di Avviso Attività) e aver ricevuto l'approvazione finale (Accept).
 - **Come usare:** Abilita le funzioni MCP nelle impostazioni del plugin e configura il metodo di trasporto client/server (SSE).

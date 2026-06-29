@@ -145,6 +145,10 @@
         "maxAppend": {
           "name": "Append Max Characters",
           "desc": "Max characters per append operation (Default: 10000)"
+        },
+        "enableShellCommands": {
+          "name": "Enable Terminal/Shell Command Tool",
+          "desc": "Allows the LLM to execute shell commands on the desktop OS. Disabled by default for security."
         }
       },
       "externalServer": {
@@ -594,6 +598,7 @@
       "updateFrontmatter": "🏷️ Do you want to UPDATE FRONTMATTER for key:",
       "saveAttachment": "📎 Do you want to SAVE ATTACHMENT? Size: {{size}} bytes",
       "executeCode": "⚡ Do you want to EXECUTE this code?",
+      "shellCommand": "💻 Do you want to EXECUTE this shell command on the desktop OS?",
       "accept": "Accept",
       "reject": "Reject"
     },

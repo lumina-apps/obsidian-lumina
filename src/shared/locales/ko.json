@@ -145,6 +145,10 @@
         "maxAppend": {
           "name": "추가(Append) 최대 글자 수",
           "desc": "한 번에 추가할 수 있는 최대 글자 수 (기본값: 10000)"
+        },
+        "enableShellCommands": {
+          "name": "터미널 명령어 실행 툴 활성화",
+          "desc": "LLM이 데스크탑 운영 체제에서 쉘(터미널) 명령어를 실행할 수 있도록 허용합니다. 보안상 기본적으로 꺼져 있습니다."
         }
       },
       "externalServer": {
@@ -594,6 +598,7 @@
       "updateFrontmatter": "🏷️ 프론트매터를 업데이트하시겠습니까:",
       "saveAttachment": "📎 첨부파일을 저장하시겠습니까? 크기: {{size}} bytes",
       "executeCode": "⚡ 이 코드를 실행하시겠습니까?",
+      "shellCommand": "💻 데스크탑 터미널 명령어를 실행하시겠습니까?",
       "accept": "승인",
       "reject": "거절"
     },

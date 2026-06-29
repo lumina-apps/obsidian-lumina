@@ -163,6 +163,9 @@ export interface McpSettings {
 	/** MCP 클라이언트 도구를 LLM function calling에 주입할지 여부 */
 	clientToolsEnabled: boolean;
 
+	/** 터미널(Shell) 명령어 실행 툴 허용 여부 (기본: false) */
+	serverEnableShellCommands: boolean;
+
 	/** RAG 제외/포함 경로 설정을 에이전트 MCP 툴에도 적용할지 여부 (기본: true) */
 	agentRespectRagExclusions: boolean;
 }

@@ -8,7 +8,7 @@ export interface DiffChunk {
 	status: 'pending' | 'accepted' | 'rejected';
 }
 
-export type ActionType = 'edit' | 'create_note' | 'delete' | 'rename' | 'frontmatter' | 'attachment' | 'execute';
+export type ActionType = 'edit' | 'create_note' | 'delete' | 'rename' | 'frontmatter' | 'attachment' | 'execute' | 'shell';
 
 export interface ApprovalRequest {
 	id: string;
@@ -124,7 +124,7 @@ export const approvalManager = {
 	 * Submits a new action proposal (delete, rename, execute, etc). Returns a promise that resolves when approved/rejected.
 	 */
 	requestActionApproval(
-		actionType: 'create_note' | 'delete' | 'rename' | 'frontmatter' | 'attachment' | 'execute',
+		actionType: 'create_note' | 'delete' | 'rename' | 'frontmatter' | 'attachment' | 'execute' | 'shell',
 		filePath: string,
 		metadata: Record<string, unknown> = {}
 	): Promise<boolean> {

@@ -51,7 +51,8 @@ export function renderLocalServerSection(tab: LuminaSettingTab, el: HTMLElement,
 	// ─── Auth Token ───
 	const tokenSetting = new Setting(serverCard)
 		.setName(t('settings.mcp.localServer.token.name'))
-		.setDesc(t('settings.mcp.localServer.token.desc'));
+		.setDesc(t('settings.mcp.localServer.token.desc'))
+		.setClass('lumina-setting-token');
 
 	tokenSetting.addText(text => {
 		createImePasswordBinding(text, s.serverAuthToken, '', async (val) => {
@@ -76,6 +77,22 @@ export function renderLocalServerSection(tab: LuminaSettingTab, el: HTMLElement,
 				tab.refreshDisplay();
 			});
 	});
+
+	new Setting(serverCard)
+		.setName(t('settings.mcp.localServer.enableShellCommands.name'))
+		.setDesc(t('settings.mcp.localServer.enableShellCommands.desc'))
+		.addToggle(toggle => {
+			toggle.setValue(s.serverEnableShellCommands ?? false).onChange(async (val) => {
+				s.serverEnableShellCommands = val;
+				await tab.saveAndSync(false, false); 
+				
+				// 실시간으로 툴 목록 업데이트
+				const localClient = tab.plugin.mcpManager?.clients.get('__lumina_local__');
+				if (localClient) {
+					await localClient.refreshTools().catch(console.error);
+				}
+			});
+		});
 
 	tab.infoBox(serverCard, t('settings.mcp.localServer.guide', { port: s.serverPort }), 'info');
 

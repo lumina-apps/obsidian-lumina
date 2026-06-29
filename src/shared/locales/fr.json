@@ -135,6 +135,10 @@
         "maxAppend": {
           "name": "Append - Caractères max",
           "desc": "Caractères max par opération d'ajout (Défaut : 10000)"
+        },
+        "enableShellCommands": {
+          "name": "Activer l'outil de commande Terminal/Shell",
+          "desc": "Permet au LLM d'exécuter des commandes shell sur le système d'exploitation de bureau. Désactivé par défaut pour des raisons de sécurité."
         }
       },
       "externalServer": {
@@ -595,7 +599,8 @@
       "saveAttachment": "📎 Voulez-vous ENREGISTRER la PIÈCE JOINTE ? Taille : {{size}} octets",
       "executeCode": "⚡ Voulez-vous EXÉCUTER ce code ?",
       "accept": "Accepter",
-      "reject": "Rejeter"
+      "reject": "Rejeter",
+      "shellCommand": "💻 Voulez-vous EXÉCUTER cette commande shell sur le système d'exploitation de bureau ?"
     },
     "emptyResponseTokenLimit": "⚠️ Le modèle a renvoyé une réponse vide. La génération a été arrêtée car la limite de jetons de sortie maximaux a été atteinte. Veuillez augmenter la limite de \"jetons de sortie maximaux\" dans les paramètres.",
     "tokenLimitHitWarning": "\n\n⚠️ (La génération a été interrompue car la limite de jetons de sortie maximaux a été atteinte. Veuillez augmenter la valeur de \"jetons de sortie maximaux\" dans les paramètres.)",

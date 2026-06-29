@@ -73,7 +73,7 @@ export class LuminaMcpServer {
 		// ListTools 핸들러
 		this.server.server.setRequestHandler(ListToolsRequestSchema, async () => {
 			return {
-				tools: getToolDefinitions(),
+				tools: getToolDefinitions(this.plugin.settings),
 			};
 		});
 

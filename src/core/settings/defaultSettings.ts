@@ -105,6 +105,7 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		serverSearchMaxResults: 10,
 		serverMaxAppendChars: 10000,
 		clientToolsEnabled: true,
+		serverEnableShellCommands: false,
 		agentRespectRagExclusions: true,
 	},
 

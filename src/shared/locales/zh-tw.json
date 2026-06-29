@@ -135,6 +135,10 @@
         "maxAppend": {
           "name": "Append 最大字元數",
           "desc": "單次附加操作的最大字元數 (預設: 10000)"
+        },
+        "enableShellCommands": {
+          "name": "啟用終端機/Shell 指令工具",
+          "desc": "允許 LLM 在桌面作業系統上執行 Shell 指令。基於安全考量，預設為停用。"
         }
       },
       "externalServer": {
@@ -595,7 +599,8 @@
       "saveAttachment": "📎 是否要儲存附件？ 大小: {{size}} 位元組",
       "executeCode": "⚡ 是否要執行此程式碼？",
       "accept": "批准",
-      "reject": "拒絕"
+      "reject": "拒絕",
+      "shellCommand": "💻 您要在桌面作業系統上執行此 Shell 指令嗎？"
     },
     "emptyResponseTokenLimit": "⚠️ 模組傳回了空回應。由於達到最大輸出 Token 限制，生成已停止。請在設定中增加「最大輸出 Token」限制。",
     "tokenLimitHitWarning": "\n\n⚠️ (由於達到最大輸出 Token 限制，生成已中斷。請在設定中增加「最大輸出 Token」值。)",
