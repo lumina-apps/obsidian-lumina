@@ -1,4 +1,4 @@
-import { TFile } from 'obsidian';
+import { TFile, FileSystemAdapter } from 'obsidian';
 import { sanitizeFilePath } from '../../../../shared/utils/fileUtils';
 import { getStringArg, blockIfPathNotAllowed } from '../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
@@ -85,8 +85,7 @@ export const runShellCommandHandler = async (
 
 	// Use the vault root as default cwd if not provided
 	const adapter = ctx.plugin.app.vault.adapter;
-	// We use 'any' cast here if FileSystemAdapter is not fully typed, or we can just check if it has getBasePath
-	const basePath = 'getBasePath' in adapter ? (adapter as any).getBasePath() : '';
+	const basePath = adapter instanceof FileSystemAdapter ? adapter.getBasePath() : '';
 	const finalCwd = cwd || basePath;
 
 	const approved = await approvalManager.requestActionApproval('shell', 'Terminal Command', { code: command });
@@ -96,18 +95,34 @@ export const runShellCommandHandler = async (
 
 	try {
 		const moduleName = 'child' + '_' + 'process';
-		// eslint-disable-next-line @typescript-eslint/no-require-imports
-		const cp = typeof window !== 'undefined' && (window as any).require 
-			? (window as any).require(moduleName) 
-			// eslint-disable-next-line @typescript-eslint/no-require-imports
-			: require(moduleName);
-
-		if (!cp || !cp.exec) {
-			throw new Error(`child_process module is unavailable (cp=${typeof cp}, window.require=${typeof (window as any).require})`);
+		interface ChildProcess {
+			exec(
+				command: string,
+				options: { cwd?: string },
+				callback: (error: Error | null, stdout: string | Buffer, stderr: string | Buffer) => void
+			): unknown;
+		}
+		interface WindowWithRequire extends Window {
+			require?: (id: string) => ChildProcess;
 		}
 
+		let cp: ChildProcess | undefined;
+		const win = window as unknown as WindowWithRequire;
+		if (typeof window !== 'undefined' && typeof win.require === 'function') {
+			cp = win.require(moduleName);
+		} else {
+			// eslint-disable-next-line @typescript-eslint/no-require-imports -- Require child_process dynamically at runtime to avoid static bundling issues in browser configurations.
+			cp = require(moduleName) as ChildProcess;
+		}
+
+		if (!cp || typeof cp.exec !== 'function') {
+			throw new Error(`child_process module is unavailable (cp=${typeof cp}, window.require=${typeof win.require})`);
+		}
+
+		const cpModule = cp;
+
 		return new Promise<ToolResult>((resolve) => {
-			cp.exec(command, { cwd: finalCwd }, (error: Error | null, stdout: string | Buffer, stderr: string | Buffer) => {
+			cpModule.exec(command, { cwd: finalCwd }, (error: Error | null, stdout: string | Buffer, stderr: string | Buffer) => {
 				const MAX_LEN = 5000;
 				let outStr = stdout.toString();
 				let errStr = stderr.toString();

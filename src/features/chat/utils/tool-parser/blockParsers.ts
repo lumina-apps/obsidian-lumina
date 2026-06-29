@@ -73,7 +73,7 @@ function tryParseXmlBlock(blockContent: string): ToolCall | null {
 			// If neither <arguments> nor <parameter> are found, check if the block Content itself is JSON
 			const strippedBlock = blockContent.replace(/^name=["']([^"']+)["']>?/i, '').trim();
 			try {
-				const json = JSON.parse(strippedBlock);
+				const json = JSON.parse(strippedBlock) as unknown;
 				if (typeof json === 'object' && json !== null) {
 					toolArgs = json as Record<string, unknown>;
 				}
