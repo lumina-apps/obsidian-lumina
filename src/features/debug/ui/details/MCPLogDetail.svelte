@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { setIcon } from 'obsidian';
+	import { icon } from '../../../../shared/utils/iconAction';
 	import type { MCPLog } from '../../../../shared/types/debug.types';
 	import { copyToClipboard } from '../../../../shared/utils/clipboardUtils';
 
@@ -14,15 +14,6 @@
 		void copyToClipboard(text);
 	}
 
-	function icon(node: HTMLElement, iconId: string) {
-		setIcon(node, iconId);
-		return {
-			update(newId: string) {
-				node.empty();
-				setIcon(node, newId);
-			},
-		};
-	}
 </script>
 
 <section class="lumina-debug__section">

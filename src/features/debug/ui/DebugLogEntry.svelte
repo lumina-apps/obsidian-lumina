@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { setIcon } from 'obsidian';
+	import { icon } from '../../../shared/utils/iconAction';
 	import type {
 		DebugLogEntry,
 		LLMRequestLog,
@@ -32,16 +32,6 @@
 		if (e.key === 'Enter') {
 			ontoggle(entry.id);
 		}
-	}
-
-	function icon(node: HTMLElement, iconId: string) {
-		setIcon(node, iconId);
-		return {
-			update(newId: string) {
-				node.empty();
-				setIcon(node, newId);
-			},
-		};
 	}
 </script>
 
@@ -125,3 +115,107 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	.lumina-debug__entry {
+		border-bottom: 1px solid var(--background-modifier-border);
+		cursor: pointer;
+		transition: background 0.1s ease;
+	}
+
+	.lumina-debug__entry:hover {
+		background: var(--background-secondary);
+	}
+
+	.lumina-debug__entry.is-expanded {
+		background: var(--background-secondary);
+	}
+
+	.lumina-debug__entry-header {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 12px;
+		min-height: 32px;
+	}
+
+	/* Type Badge */
+	.lumina-debug__entry-type {
+		flex-shrink: 0;
+		font-size: 9px;
+		font-weight: 800;
+		letter-spacing: 0.05em;
+		padding: 1px 5px;
+		border-radius: 3px;
+		font-family: var(--font-monospace);
+	}
+
+	.lumina-debug__entry-type--llm-request {
+		background: rgba(99, 102, 241, 0.15);
+		color: #818cf8;
+	}
+
+	.lumina-debug__entry-type--llm-response {
+		background: rgba(34, 197, 94, 0.15);
+		color: #4ade80;
+	}
+
+	.lumina-debug__entry-type--rag {
+		background: rgba(234, 179, 8, 0.15);
+		color: #facc15;
+	}
+
+	.lumina-debug__entry-type--system {
+		background: rgba(148, 163, 184, 0.15);
+		color: var(--text-muted);
+	}
+
+	.lumina-debug__entry-type--error {
+		background: rgba(239, 68, 68, 0.15);
+		color: #f87171;
+	}
+
+	.lumina-debug__entry-type--mcp {
+		background: rgba(168, 85, 247, 0.15);
+		color: #c084fc;
+	}
+
+	.lumina-debug__entry-time {
+		flex-shrink: 0;
+		font-size: 10px;
+		font-family: var(--font-monospace);
+		color: var(--text-faint);
+	}
+
+	.lumina-debug__entry-summary {
+		flex: 1;
+		font-size: 11px;
+		color: var(--text-muted);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.lumina-debug__entry-summary--error {
+		color: #f87171;
+	}
+
+	.lumina-debug__entry-chevron {
+		flex-shrink: 0;
+		color: var(--text-faint);
+		width: 14px;
+		height: 14px;
+		display: flex;
+		align-items: center;
+	}
+
+	/* Entry Body */
+	.lumina-debug__entry-body {
+		padding: 0 12px 10px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		border-top: 1px solid var(--background-modifier-border);
+		margin-top: 0;
+	}
+</style>

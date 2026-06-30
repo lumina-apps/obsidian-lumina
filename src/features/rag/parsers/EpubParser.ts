@@ -80,7 +80,7 @@ export class EpubParser {
 					.replace(/&gt;/g, '>')
 					.replace(/&nbsp;/g, ' ')
 					.replace(/&quot;/g, '"')
-					.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))
+					.replace(/&#(\d+);/g, (_: string, code: string) => String.fromCharCode(parseInt(code, 10)))
 					.replace(/\s+/g, ' ')
 					.trim();
 
