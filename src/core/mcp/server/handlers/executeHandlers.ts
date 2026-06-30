@@ -1,4 +1,4 @@
-import { TFile, FileSystemAdapter } from 'obsidian';
+import { TFile } from 'obsidian';
 import { sanitizeFilePath } from '../../../../shared/utils/fileUtils';
 import { getStringArg, blockIfPathNotAllowed } from '../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
