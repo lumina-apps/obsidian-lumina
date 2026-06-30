@@ -184,10 +184,12 @@
 		}
 	}
 
-	function handleBack() {
+	function handleBack(): boolean {
 		if (view === "items" && !searchQuery) {
 			goBack();
+			return true;
 		}
+		return false;
 	}
 
 	let activeIndex = $state(0);

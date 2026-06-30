@@ -14,6 +14,8 @@ import type { WorkerRequest, WorkerResponse } from '../../../shared/types/rag.ty
 import { PdfParser } from '../parsers/PdfParser';
 import { DocxParser } from '../parsers/DocxParser';
 import { XlsxParser } from '../parsers/XlsxParser';
+import { PptxParser } from '../parsers/PptxParser';
+import { EpubParser } from '../parsers/EpubParser';
 
 interface EnvWasmConfig {
 	numThreads?: number;
@@ -242,6 +244,10 @@ async function parseDocument(requestId: string, buffer: ArrayBuffer, ext: string
 			text = await DocxParser.parse(buffer);
 		} else if (ext === 'xlsx' || ext === 'xls') {
 			text = await XlsxParser.parse(buffer);
+		} else if (ext === 'pptx') {
+			text = await PptxParser.parse(buffer);
+		} else if (ext === 'epub') {
+			text = await EpubParser.parse(buffer);
 		}
 		send({ type: 'parseResult', requestId, text });
 	} catch (err) {

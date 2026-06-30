@@ -3,7 +3,8 @@ import { TextParser } from './TextParser';
 /** 지원하는 확장자 목록 */
 export const SUPPORTED_EXTENSIONS = new Set([
 	'md', 'txt', 'csv', 'json', 'jsonl', 'html', 'htm',
-	'pdf', 'docx', 'xlsx', 'xls'
+	'pdf', 'docx', 'xlsx', 'xls',
+	'pptx', 'epub', 'yaml', 'yml',
 ]);
 
 export class DocumentParserRouter {

@@ -86,7 +86,7 @@ export class ChatAttachmentHandler {
 		// 2. 문서 파일 처리 (파서 라우터 재사용)
 		if (SUPPORTED_EXTENSIONS.has(ext)) {
 			let text = '';
-			if (['pdf', 'docx', 'xlsx', 'xls'].includes(ext)) {
+			if (['pdf', 'docx', 'xlsx', 'xls', 'pptx', 'epub'].includes(ext)) {
 				if (plugin?.embeddingWorker) {
 					const buffer = await app.vault.readBinary(file);
 					text = await plugin.embeddingWorker.parse(buffer, ext);

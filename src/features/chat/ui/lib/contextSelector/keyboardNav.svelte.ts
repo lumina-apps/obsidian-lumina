@@ -16,8 +16,8 @@ export interface KeyboardNavConfig {
 	onSelectCurrent: () => void;
 	/** 닫기 동작 (Escape 시) */
 	onEscape: () => void;
-	/** 뒤로 가기 동작 (Backspace 시, 선택 사항) */
-	onBack?: () => void;
+	/** 뒤로 가기 동작 (Backspace 시, 선택 사항). 실제로 뒤로 갔으면 true 반환. */
+	onBack?: () => boolean | void;
 	/** 활성 항목을 뷰로 스크롤하는 함수 */
 	scrollIntoView: () => void;
 	/** 마우스 충돌 방지 플래그 사용 여부 (기본 false) */
@@ -83,9 +83,11 @@ export function useKeyboardNav(config: KeyboardNavConfig) {
 			e.stopPropagation();
 			config.onEscape();
 		} else if (e.key === "Backspace" && config.onBack) {
-			e.preventDefault();
-			e.stopPropagation();
-			config.onBack();
+			const handled = config.onBack();
+			if (handled) {
+				e.preventDefault();
+				e.stopPropagation();
+			}
 		}
 	}
 

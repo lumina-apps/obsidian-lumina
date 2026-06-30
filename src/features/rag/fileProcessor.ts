@@ -42,7 +42,7 @@ export async function readAndPrepareFile(
 	const ext = file.extension.toLowerCase();
 	let content = '';
 
-	if (['pdf', 'docx', 'xlsx', 'xls'].includes(ext)) {
+	if (['pdf', 'docx', 'xlsx', 'xls', 'pptx', 'epub'].includes(ext)) {
 		const buffer = await app.vault.readBinary(file);
 		content = await parseBinaryFn(buffer, ext);
 	} else {
