@@ -73,15 +73,17 @@ export function extractFileName(path: string): string {
 
 /** 파일의 프론트매터에 태그를 추가합니다. */
 export async function insertTagIntoFrontmatter(app: App, file: TFile, tag: string): Promise<void> {
-	await app.fileManager.processFrontMatter(file, (frontmatter) => {
-		if (!frontmatter.tags) {
-			frontmatter.tags = [];
-		}
+	await app.fileManager.processFrontMatter(file, (frontmatter: any) => {
+		const fm = frontmatter as Record<string, unknown>;
 		const tagValue = tag.replace('#', '');
-		if (Array.isArray(frontmatter.tags)) {
-			if (!frontmatter.tags.includes(tagValue)) frontmatter.tags.push(tagValue);
+
+		if (!fm.tags) {
+			fm.tags = [tagValue];
+		} else if (Array.isArray(fm.tags)) {
+			const tagsArray = fm.tags as unknown[];
+			if (!tagsArray.includes(tagValue)) tagsArray.push(tagValue);
 		} else {
-			frontmatter.tags = [frontmatter.tags, tagValue];
+			fm.tags = [fm.tags, tagValue];
 		}
 	});
 }

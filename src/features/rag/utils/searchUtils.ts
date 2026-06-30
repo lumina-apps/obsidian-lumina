@@ -1,4 +1,4 @@
-import type { App, TFile } from 'obsidian';
+import type { App } from 'obsidian';
 import type { ParentChunk } from '../../../shared/types/rag.types';
 
 /**
