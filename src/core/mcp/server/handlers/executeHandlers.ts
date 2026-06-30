@@ -83,9 +83,11 @@ export const runShellCommandHandler = async (
 	const command = getStringArg(args, 'command');
 	const cwd = typeof args.cwd === 'string' ? args.cwd : undefined;
 
-	// Use the vault root as default cwd if not provided
-	const adapter = ctx.plugin.app.vault.adapter;
-	const basePath = adapter instanceof FileSystemAdapter ? adapter.getBasePath() : '';
+	// Use the vault root as default cwd if not provided.
+	// Cast adapter to unknown first to avoid unsafe member access if it's implicitly any.
+	const adapter = ctx.plugin.app.vault.adapter as unknown;
+	const isFileSystemAdapter = adapter && typeof adapter === 'object' && 'getBasePath' in adapter && typeof (adapter as { getBasePath: unknown }).getBasePath === 'function';
+	const basePath = isFileSystemAdapter ? ((adapter as { getBasePath: () => string }).getBasePath() || '') : '';
 	const finalCwd = cwd || basePath;
 
 	const approved = await approvalManager.requestActionApproval('shell', 'Terminal Command', { code: command });
@@ -99,7 +101,7 @@ export const runShellCommandHandler = async (
 			exec(
 				command: string,
 				options: { cwd?: string },
-				callback: (error: Error | null, stdout: string | Buffer, stderr: string | Buffer) => void
+				callback: (error: Error | null, stdout: unknown, stderr: unknown) => void
 			): unknown;
 		}
 		interface WindowWithRequire extends Window {
@@ -112,7 +114,8 @@ export const runShellCommandHandler = async (
 			cp = win.require(moduleName);
 		} else {
 			// eslint-disable-next-line @typescript-eslint/no-require-imports -- Require child_process dynamically at runtime to avoid static bundling issues in browser configurations.
-			cp = require(moduleName) as ChildProcess;
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call -- require is implicitly any here, we safely cast it.
+			cp = typeof require !== 'undefined' ? (require as (id: string) => ChildProcess)(moduleName) : undefined;
 		}
 
 		if (!cp || typeof cp.exec !== 'function') {
@@ -122,10 +125,10 @@ export const runShellCommandHandler = async (
 		const cpModule = cp;
 
 		return new Promise<ToolResult>((resolve) => {
-			cpModule.exec(command, { cwd: finalCwd }, (error: Error | null, stdout: string | Buffer, stderr: string | Buffer) => {
+			cpModule.exec(command, { cwd: finalCwd }, (error: Error | null, stdout: unknown, stderr: unknown) => {
 				const MAX_LEN = 5000;
-				let outStr = stdout.toString();
-				let errStr = stderr.toString();
+				let outStr = typeof stdout === 'string' ? stdout : (stdout && typeof (stdout as { toString: () => string }).toString === 'function' ? String(stdout) : '');
+				let errStr = typeof stderr === 'string' ? stderr : (stderr && typeof (stderr as { toString: () => string }).toString === 'function' ? String(stderr) : '');
 
 				if (outStr.length > MAX_LEN) outStr = outStr.substring(0, MAX_LEN) + '\n... (truncated)';
 				if (errStr.length > MAX_LEN) errStr = errStr.substring(0, MAX_LEN) + '\n... (truncated)';
