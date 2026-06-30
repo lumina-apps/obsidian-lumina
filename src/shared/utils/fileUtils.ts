@@ -70,3 +70,18 @@ export function sanitizeFilePath(rawPath: string, enforceMd: boolean = true): st
 export function extractFileName(path: string): string {
 	return path.replace(/\.md$/, '').split('/').pop() ?? '';
 }
+
+/** 파일의 프론트매터에 태그를 추가합니다. */
+export async function insertTagIntoFrontmatter(app: App, file: TFile, tag: string): Promise<void> {
+	await app.fileManager.processFrontMatter(file, (frontmatter) => {
+		if (!frontmatter.tags) {
+			frontmatter.tags = [];
+		}
+		const tagValue = tag.replace('#', '');
+		if (Array.isArray(frontmatter.tags)) {
+			if (!frontmatter.tags.includes(tagValue)) frontmatter.tags.push(tagValue);
+		} else {
+			frontmatter.tags = [frontmatter.tags, tagValue];
+		}
+	});
+}

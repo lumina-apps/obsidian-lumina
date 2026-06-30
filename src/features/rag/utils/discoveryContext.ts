@@ -7,6 +7,7 @@ import { searchVault } from '../search';
 import { collectRecommendedTags } from '../tagExtractor';
 import { preprocessMarkdown } from '../../../shared/utils/markdownPreprocessor';
 import { rerankChunks } from '../reranker';
+import { filterParentChunks } from './searchUtils';
 
 export interface ContextUpdateResult {
 	similarNotes: SearchResult[];
@@ -32,7 +33,7 @@ export async function buildContextFromActiveFile(
 	if (!plugin.indexer) return emptyResult;
 
 	const allParentChunks = plugin.indexer.indexedParentChunks;
-	const otherParentChunks = filterChunks(allParentChunks.filter(c => c.path !== file.path), filterQuery, plugin);
+	const otherParentChunks = filterParentChunks(plugin.app, allParentChunks.filter(c => c.path !== file.path), filterQuery);
 
 	let results: SearchResult[] = [];
 	let queryText = '';
@@ -119,27 +120,4 @@ function deduplicateByPath(results: SearchResult[]): SearchResult[] {
 		}
 	}
 	return unique;
-}
-
-function filterChunks(
-	chunks: ParentChunk[],
-	filterQuery: string,
-	plugin: LuminaPlugin,
-): ParentChunk[] {
-	const q = filterQuery.trim();
-	if (!q) return chunks;
-
-	return chunks.filter(c => {
-		if (q.startsWith('#')) {
-			const cache = plugin.app.metadataCache.getCache(c.path);
-			const tags = cache?.tags?.map(t => t.tag) ?? [];
-			const rawTags: unknown = cache?.frontmatter?.tags;
-			const fmTags: string[] | undefined = Array.isArray(rawTags) && rawTags.every((v): v is string => typeof v === 'string')
-				? rawTags
-				: undefined;
-			const cleanQ = q.replace('#', '');
-			return tags.includes(q) || (fmTags !== undefined && fmTags.includes(cleanQ));
-		}
-		return c.path.toLowerCase().includes(q.toLowerCase());
-	});
 }
