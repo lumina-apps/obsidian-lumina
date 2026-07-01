@@ -200,7 +200,7 @@ export class EmbeddingWorkerBridge {
 		const requestId = generateUUID();
 		return new Promise<number[][]>((resolve, reject) => {
 			inst.embedRequests.add(requestId, resolve, reject);
-			inst.worker.postMessage({ type: 'embed', requestId, texts } as WorkerRequest);
+			inst.worker.postMessage({ type: 'embed', requestId, texts });
 		});
 	}
 
@@ -220,7 +220,7 @@ export class EmbeddingWorkerBridge {
 		try {
 			const result = await new Promise<string>((resolve, reject) => {
 				inst.parseRequests.add(requestId, resolve, reject);
-				inst.worker.postMessage({ type: 'parse', requestId, buffer, ext } as WorkerRequest, [buffer]);
+				inst.worker.postMessage({ type: 'parse', requestId, buffer, ext }, [buffer]);
 			});
 			return result;
 		} finally {

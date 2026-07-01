@@ -17,7 +17,7 @@ export function debounce<T extends (...args: unknown[]) => void>(
 		timer = window.setTimeout(() => {
 			timer = null;
 			fn(...args);
-		}, delay) as unknown as number;
+		}, delay);
 	};
 
 	return { invoke, cancel };

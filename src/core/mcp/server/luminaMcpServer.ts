@@ -92,7 +92,7 @@ export class LuminaMcpServer {
 				return {
 					isError: true,
 					content: [{ type: 'text' as const, text: t('mcpServerTools.common.executionError', { error: message }) }],
-				} as CallToolResult;
+				};
 			}
 		});
 	}

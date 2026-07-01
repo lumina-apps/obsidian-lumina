@@ -86,7 +86,7 @@ export const runShellCommandHandler = async (
 	// Use the vault root as default cwd if not provided.
 	// Cast adapter to unknown first to avoid unsafe member access if it's implicitly any.
 	const adapter = ctx.plugin.app.vault.adapter as unknown;
-	const isFileSystemAdapter = adapter && typeof adapter === 'object' && 'getBasePath' in adapter && typeof (adapter as { getBasePath: unknown }).getBasePath === 'function';
+	const isFileSystemAdapter = adapter && typeof adapter === 'object' && 'getBasePath' in adapter && typeof adapter.getBasePath === 'function';
 	const basePath = isFileSystemAdapter ? ((adapter as { getBasePath: () => string }).getBasePath() || '') : '';
 	const finalCwd = cwd || basePath;
 

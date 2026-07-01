@@ -105,7 +105,7 @@ export class QuickActionHandler {
 				maxTokens: chat.maxOutputTokens,
 				stream: chat.streaming,
 				systemPrompt: sysPrompt,
-				messages: llmMessages.map(m => ({ role: m.role, content: m.content as string })) as { role: string; content: string }[],
+				messages: llmMessages.map(m => ({ role: m.role, content: m.content as string })),
 			});
 
 			// 스트리밍 응답 중 로딩 표시

@@ -66,7 +66,7 @@ export class WorkerPool {
 					cacheDir: initParams.cacheDir,
 					modelName: initParams.modelName,
 					pluginDir: initParams.pluginDir,
-				} as WorkerRequest);
+				});
 
 				await withTimeout(workerReady, INIT_TIMEOUT_MS, `Worker #${i} 초기화 타임아웃`);
 			}

@@ -55,7 +55,7 @@ ${c.chunk.text}`;
 						...c.chunk,
 						text: finalContent
 					}
-				} as SearchResult;
+				};
 			} catch (innerErr) {
 				if (innerErr instanceof Error && innerErr.name === 'AbortError') {
 					throw innerErr;

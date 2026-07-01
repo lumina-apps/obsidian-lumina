@@ -29,7 +29,7 @@ function triggerReindexAfterPathChange(tab: LuminaSettingTab): void {
 			.catch((err: Error) => {
 				new Notice(`${t('settings.rag.reindex.fail')}${err.message}`, 5000);
 			});
-	}, PATH_CHANGE_DEBOUNCE_MS) as unknown as number;
+	}, PATH_CHANGE_DEBOUNCE_MS);
 }
 
 export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
@@ -99,32 +99,32 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 
 		addSliderWithInput(
 			new Setting(el)
-				.setName(t('settings.rag.chunking.parentSizeName' as TranslationKeys))
-				.setDesc(t('settings.rag.chunking.parentSizeDesc' as TranslationKeys)),
+				.setName(t('settings.rag.chunking.parentSizeName'))
+				.setDesc(t('settings.rag.chunking.parentSizeDesc')),
 			{ min: 1000, max: 3000, step: 100, value: s.parentChunkSize },
 			wrapAsync(async (val) => { s.parentChunkSize = val; await tab.saveAndSync(); }),
 		);
 
 		addSliderWithInput(
 			new Setting(el)
-				.setName(t('settings.rag.chunking.parentOverlapName' as TranslationKeys))
-				.setDesc(t('settings.rag.chunking.parentOverlapDesc' as TranslationKeys)),
+				.setName(t('settings.rag.chunking.parentOverlapName'))
+				.setDesc(t('settings.rag.chunking.parentOverlapDesc')),
 			{ min: 0, max: 500, step: 50, value: s.parentChunkOverlap },
 			wrapAsync(async (val) => { s.parentChunkOverlap = val; await tab.saveAndSync(); }),
 		);
 
 		addSliderWithInput(
 			new Setting(el)
-				.setName(t('settings.rag.chunking.childSizeName' as TranslationKeys))
-				.setDesc(t('settings.rag.chunking.childSizeDesc' as TranslationKeys)),
+				.setName(t('settings.rag.chunking.childSizeName'))
+				.setDesc(t('settings.rag.chunking.childSizeDesc')),
 			{ min: 100, max: 500, step: 10, value: s.childChunkSize },
 			wrapAsync(async (val) => { s.childChunkSize = val; await tab.saveAndSync(); }),
 		);
 
 		addSliderWithInput(
 			new Setting(el)
-				.setName(t('settings.rag.chunking.childOverlapName' as TranslationKeys))
-				.setDesc(t('settings.rag.chunking.childOverlapDesc' as TranslationKeys)),
+				.setName(t('settings.rag.chunking.childOverlapName'))
+				.setDesc(t('settings.rag.chunking.childOverlapDesc')),
 			{ min: 0, max: 100, step: 10, value: s.childChunkOverlap },
 			wrapAsync(async (val) => { s.childChunkOverlap = val; await tab.saveAndSync(); }),
 		);

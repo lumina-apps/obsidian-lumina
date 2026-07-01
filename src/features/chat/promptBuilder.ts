@@ -122,7 +122,7 @@ export function buildMessages(
 			content = content.replace(/<think>([\s\S]*?)(?:<\/think>|$)/gi, '').trim();
 		}
 		messages.push({
-			role: m.role as 'user' | 'assistant',
+			role: m.role,
 			content: content,
 		});
 	}
