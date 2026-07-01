@@ -103,7 +103,7 @@ Luminaは、あなたのスキルレベルに合わせた2つのトラックを�
 - **🖥️ サーバーモード（外部AI主導）:**
   - 外部のAIアシスタント（Claude、Cursorなど）またはエージェントモードのAIがあなたのボルトに直接アクセスできる多数のツールを提供します。
   - **ウェブ検索:** `lumina_web_search` (Tavily、Exa、Googleなどのさまざまな検索エンジンを活用したリアルタイムのインターネット情報検索、スマート切り詰めサポート)
-  - **読み取りと検索:** `read_active_note`, `read_note`, `search_notes` (タグフィルター対応), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` を提供し、広範な文脈をAIに提供します。
+  - **読み取りと検索:** `read_active_note`, `read_note`, `search_notes` (タグフィルター対応), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags`, `query_metadata` を提供し、広範な文脈をAIに提供します。
   - **作成と修正:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` （ノートおよびキャンバスの作成・修正、MOCノートの生成、バイナリファイルの保存）。
   - **管理と実行:** `delete_note`, `move_note`（移動・名前変更）, `execute_code`, `run_note_code_block` （サンドボックス内でのコード実行）, `run_shell_command` (デスクトップOSのターミナルシェルコマンドの実行)。
   - **デイリーノート:** `read_daily_note`, `append_to_daily_note` （今日のノートへの読み書き統合）。

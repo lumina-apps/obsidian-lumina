@@ -104,7 +104,7 @@ Lumina offers two tracks tailored to your skill level. Choose the one that suits
 - **🖥️ Server Mode (External AI-led):**
   - Provides various tools allowing external AI assistants (Claude, Cursor, etc.) or the Agent Mode AI to directly access your vault and the internet.
   - **Web Search:** \`lumina_web_search\` (Search the web using various providers like Tavily, Exa, Google with smart truncation to save API costs).
-  - **Read & Search:** `read_active_note`, `read_note`, `search_notes` (supports tag filtering), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` to provide extensive context to the AI.
+  - **Read & Search:** `read_active_note`, `read_note`, `search_notes` (supports tag filtering), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags`, `query_metadata` to provide extensive context to the AI.
   - **Write & Modify:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (create/modify notes/canvases, generate Map of Content notes, auto-link mentions, and save binary files).
   - **Manage & Execute:** `delete_note`, `move_note` (move/rename), `execute_code`, `run_note_code_block` (execute code within a sandbox, `run_shell_command` (execute terminal shell commands on desktop OS).
   - **Daily Notes:** `read_daily_note`, `append_to_daily_note` (read/write integration for today's daily note).

@@ -103,7 +103,7 @@ Lumina 根据您的熟练程度提供两种模式。选择适合您的方式！
 - **🖥️ 服务端模式 (外部 AI 主导):**
   - 提供 多个工具，允许外部 AI 助手（Claude、Cursor 等）或代理模式的 AI 直接访问您的库。
   - **网页搜索:** `lumina_web_search` (使用Tavily、Exa、Google等各种搜索引擎进行实时互联网信息搜索，支持智能截断)
-  - **读取与搜索:** `read_active_note`, `read_note`, `search_notes` (支持标签过滤), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags` 为 AI 提供广泛的上下文。
+  - **读取与搜索:** `read_active_note`, `read_note`, `search_notes` (支持标签过滤), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags`, `query_metadata` 为 AI 提供广泛的上下文。
   - **编写与修改:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (创建/修改笔记和画布文件、生成 MOC 核心笔记以及保存二进制文件)。
   - **管理与执行:** `delete_note`, `move_note` (移动/重命名), `execute_code`, `run_note_code_block` (在沙盒内执行代码, `run_shell_command` (在桌面操作系统上执行终端 shell 命令)。
   - **每日笔记:** `read_daily_note`, `append_to_daily_note` (针对今天每日笔记的读写集成)。

@@ -32,7 +32,8 @@ export type ToolName =
 	| 'create_canvas'
 	| 'generate_moc'
 	| 'auto_link_note'
-	| 'run_shell_command';
+	| 'run_shell_command'
+	| 'query_metadata';
 
 export interface RunShellCommandArguments extends ToolArguments {
 	command: string;

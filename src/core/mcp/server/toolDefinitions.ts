@@ -356,6 +356,43 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 				required: ['path']
 			}
 		},
+		{
+			name: 'query_metadata',
+			description: 'Query and filter vault notes by their frontmatter properties, tags, or folders. Returns a markdown table of the results. Use this tool when the user asks to list or aggregate notes based on their metadata (e.g. status, author, rating, dates).',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					folder: { type: 'string', description: 'Optional folder path to restrict search' },
+					tags: { type: 'array', items: { type: 'string' }, description: 'Optional list of tags. Notes must contain ALL these tags.' },
+					filters: {
+						type: 'array',
+						description: "Optional frontmatter filters. e.g. status == 'active'",
+						items: {
+							type: 'object',
+							properties: {
+								key: { type: 'string' },
+								operator: { type: 'string', enum: ['==', '!=', '>', '<', '>=', '<=', 'contains', 'not_contains'] },
+								value: { type: 'string', description: "Value to compare against. Use string 'true'/'false' for booleans." }
+							},
+							required: ['key', 'operator', 'value']
+						}
+					},
+					sort: {
+						type: 'object',
+						properties: {
+							key: { type: 'string', description: "Frontmatter key to sort by, or 'ctime'/'mtime'/'basename'" },
+							dir: { type: 'string', enum: ['asc', 'desc'] }
+						}
+					},
+					returnFields: {
+						type: 'array',
+						items: { type: 'string' },
+						description: "Frontmatter keys to include as columns in the returned markdown table. 'File' is always included."
+					},
+					limit: { type: 'number', description: 'Max results to return (default: 50)' }
+				}
+			}
+		}
 	];
 
 	if (!settings.mcp.serverEnableShellCommands) {
