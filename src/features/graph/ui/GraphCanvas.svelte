@@ -42,6 +42,9 @@
 	let neighborSet = new Set<string>();
 	let searchQueryLower = '';
 
+	const handleMouseDown = () => { if (container) container.style.cursor = 'grabbing'; };
+	const handleMouseUp = () => { if (container) container.style.cursor = 'grab'; };
+
 	function isHighlighted(node: GraphNode) {
 		if (!searchQueryLower) return false;
 		return highlightSet.has(node.id);
@@ -142,14 +145,18 @@
 		
 		// Set initial cursor
 		container.style.cursor = 'grab';
-		container.addEventListener('mousedown', () => container.style.cursor = 'grabbing');
-		container.addEventListener('mouseup', () => container.style.cursor = 'grab');
+		container.addEventListener('mousedown', handleMouseDown);
+		container.addEventListener('mouseup', handleMouseUp);
 	});
 
 	onDestroy(() => {
 		if (resizeObserver) resizeObserver.disconnect();
 		if (graph) {
 			graph._destructor?.();
+		}
+		if (container) {
+			container.removeEventListener('mousedown', handleMouseDown);
+			container.removeEventListener('mouseup', handleMouseUp);
 		}
 	});
 

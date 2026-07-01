@@ -51,7 +51,6 @@ export function createImeTextBinding(
 	text.setValue(initialValue);
 	text.onChange((val: string) => {
 		if (handler.isComposing()) return;
-		handler.dispose();
 		void onChange(val);
 	});
 }
@@ -71,7 +70,6 @@ export function createImePasswordBinding(
 	text.setPlaceholder(placeholder);
 	text.onChange((val: string) => {
 		if (handler.isComposing()) return;
-		handler.dispose();
 		void onChange(val);
 	});
 }
