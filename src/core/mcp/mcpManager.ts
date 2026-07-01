@@ -110,24 +110,14 @@ export class McpManager {
 		try {
 			return await client.callTool(toolName, args);
 		} catch (e: unknown) {
-			debugLogger.logError('mcp', formatMcpError(e, `Failed to execute tool ${toolName} on server ${client.config.name}`));
-			client.config.status = 'error';
-			// 일시적 오류로 인한 전체 서버 비활성화 방지: enabled는 그대로 유지하고 상태만 error로 표시
-			this.clients.delete(serverId);
-			client.disconnect().catch(console.error);
-
-			new Notice(t('uiMessages.mcpClientToolExecutionFailedStatusError', { name: client.config.name }));
-
-			if (serverId === LOCAL_MCP_CLIENT_ID) {
-				await this.localLifecycle.teardownServer();
-			}
-
-			await this.plugin.saveSettings();
-			this.plugin.refreshSettingTab();
-
+			const errorMsg = formatMcpError(e, `Failed to execute tool ${toolName} on server ${client.config.name}`);
+			debugLogger.logError('mcp', errorMsg);
+			
+			// DO NOT disconnect the server on tool execution error.
+			// It is often just a tool-level logical error (e.g., file not found).
 			return {
 				isError: true,
-				content: [{ type: 'text', text: t('uiMessages.mcpClientToolExecuteFailedTryReconnect', { name: client.config.name }) }],
+				content: [{ type: 'text', text: errorMsg }],
 			};
 		}
 	}

@@ -90,9 +90,6 @@ export class LuminaSettingTab extends PluginSettingTab {
 		this.renderDonationFooter(body);
 	}
 
-	/**
-	 * @deprecated Since 1.13.0. Use {@link getSettingDefinitions } instead.
-	 */
 	display(): void {
 		this.refreshDisplay();
 	}

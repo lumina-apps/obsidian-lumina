@@ -34,9 +34,6 @@ class LazyLuminaSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
-	/**
-	 * @deprecated Since 1.13.0. Use {@link getSettingDefinitions } instead.
-	 */
 	display(): void {
 		if (this.realTab) {
 			this.realTab.refreshDisplay();
