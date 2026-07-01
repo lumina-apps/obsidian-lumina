@@ -129,15 +129,15 @@ export const queryMetadataHandler = async (
 	// 6. Sort
 	if (sort && sort.key) {
 		results.sort((a, b) => {
-			let valA = a.fields[sort.key!];
-			let valB = b.fields[sort.key!];
+			let valA = a.fields[sort.key];
+			let valB = b.fields[sort.key];
 			
 			// Fallback to frontmatter if not collected
 			if (valA === undefined && sort.key !== 'basename' && sort.key !== 'ctime' && sort.key !== 'mtime') {
-				valA = extractFrontmatterValue(ctx.plugin.app.metadataCache.getFileCache(a.file), sort.key!);
+				valA = extractFrontmatterValue(ctx.plugin.app.metadataCache.getFileCache(a.file), sort.key);
 			}
 			if (valB === undefined && sort.key !== 'basename' && sort.key !== 'ctime' && sort.key !== 'mtime') {
-				valB = extractFrontmatterValue(ctx.plugin.app.metadataCache.getFileCache(b.file), sort.key!);
+				valB = extractFrontmatterValue(ctx.plugin.app.metadataCache.getFileCache(b.file), sort.key);
 			}
 
 			if (valA === valB) return 0;
