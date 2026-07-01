@@ -1,4 +1,4 @@
-import { TFile } from 'obsidian';
+import { TFile, Platform } from 'obsidian';
 import { sanitizeFilePath } from '../../../../shared/utils/fileUtils';
 import { getStringArg, blockIfPathNotAllowed } from '../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
@@ -49,7 +49,7 @@ export const runNoteCodeBlockHandler = async (
 	const content = await ctx.plugin.app.vault.read(file);
 	
 	// 간단한 코드블록 추출 (``` 언어 ... ```)
-	const blockRegex = /```[a-zA-Z]*\n([\s\S]*?)```/g;
+	const blockRegex = /```[a-zA-Z]*\r?\n([\s\S]*?)```/g;
 	const matches = [...content.matchAll(blockRegex)];
 	
 	if (blockIndex < 0 || blockIndex >= matches.length) {
@@ -124,22 +124,34 @@ export const runShellCommandHandler = async (
 
 		const cpModule = cp;
 
-		return new Promise<ToolResult>((resolve) => {
-			cpModule.exec(command, { cwd: finalCwd }, (error: Error | null, stdout: unknown, stderr: unknown) => {
-				const MAX_LEN = 5000;
-				let outStr = typeof stdout === 'string' ? stdout : (stdout && typeof (stdout as { toString: () => string }).toString === 'function' ? String(stdout) : '');
-				let errStr = typeof stderr === 'string' ? stderr : (stderr && typeof (stderr as { toString: () => string }).toString === 'function' ? String(stderr) : '');
-
-				if (outStr.length > MAX_LEN) outStr = outStr.substring(0, MAX_LEN) + '\n... (truncated)';
-				if (errStr.length > MAX_LEN) errStr = errStr.substring(0, MAX_LEN) + '\n... (truncated)';
-
-				if (error) {
-					resolve({ isError: true, content: [{ type: 'text', text: `Command failed with error: ${error.message}\n\nSTDOUT:\n${outStr}\n\nSTDERR:\n${errStr}` }] });
-				} else {
-					resolve({ content: [{ type: 'text', text: `Command executed successfully.\n\nSTDOUT:\n${outStr}\n\nSTDERR:\n${errStr}` }] });
-				}
+		const runExec = (options: { cwd?: string; shell?: string }) => {
+			return new Promise<{ error: Error | null; stdout: unknown; stderr: unknown }>((resolveExec) => {
+				cpModule.exec(command, options, (error: Error | null, stdout: unknown, stderr: unknown) => {
+					resolveExec({ error, stdout, stderr });
+				});
 			});
-		});
+		};
+
+		// 윈도우 환경에서는 PowerShell 우선 시도
+		let result = await runExec({ cwd: finalCwd, shell: Platform.isWin ? 'powershell.exe' : undefined });
+
+		// PowerShell을 찾을 수 없거나 실행 불가능한 경우 (fallback to default cmd.exe)
+		if (Platform.isWin && result.error && result.error.message.toLowerCase().includes('powershell')) {
+			result = await runExec({ cwd: finalCwd });
+		}
+
+		const MAX_LEN = 5000;
+		let outStr = typeof result.stdout === 'string' ? result.stdout : (result.stdout && typeof (result.stdout as { toString: () => string }).toString === 'function' ? String(result.stdout) : '');
+		let errStr = typeof result.stderr === 'string' ? result.stderr : (result.stderr && typeof (result.stderr as { toString: () => string }).toString === 'function' ? String(result.stderr) : '');
+
+		if (outStr.length > MAX_LEN) outStr = outStr.substring(0, MAX_LEN) + '\n... (truncated)';
+		if (errStr.length > MAX_LEN) errStr = errStr.substring(0, MAX_LEN) + '\n... (truncated)';
+
+		if (result.error) {
+			return { isError: true, content: [{ type: 'text', text: `Command failed with error: ${result.error.message}\n\nSTDOUT:\n${outStr}\n\nSTDERR:\n${errStr}` }] };
+		} else {
+			return { content: [{ type: 'text', text: `Command executed successfully.\n\nSTDOUT:\n${outStr}\n\nSTDERR:\n${errStr}` }] };
+		}
 	} catch (e) {
 		return { isError: true, content: [{ type: 'text', text: `Failed to execute shell command: ${e instanceof Error ? e.message : String(e)}\nNote: Shell execution is only supported on Desktop.` }] };
 	}
