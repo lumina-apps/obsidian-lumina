@@ -3,7 +3,6 @@
  * 다중 Worker 풀 관리, Promise 기반 embed() API, 라운드로빈 분배, 캐시 공유를 담당합니다.
  */
 
-import type { WorkerRequest } from '../../shared/types/rag.types';
 import { generateUUID } from '../../shared/utils/uuid';
 import { t } from '../../shared/locales/helpers';
 import { WORKER_COMPRESSED_BASE64 } from './worker/workerCode';

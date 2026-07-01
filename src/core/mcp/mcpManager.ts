@@ -2,7 +2,7 @@ import type { LuminaMcpClient, McpTool } from './mcpClient';
 import type LuminaPlugin from '../../main';
 import { McpPermissionModal } from '../../shared/utils/mcpPermissionModal';
 import { t } from '../../shared/locales/helpers';
-import { Notice, Platform } from 'obsidian';
+import { Platform } from 'obsidian';
 import { debugLogger } from '../../shared/debugLogger';
 import {
 	formatMcpError,

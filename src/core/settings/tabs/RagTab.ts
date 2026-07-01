@@ -1,7 +1,6 @@
 import { Notice, Setting, ButtonComponent } from 'obsidian';
 import type { LuminaSettingTab } from '../settingTab';
 import { wrapAsync, addSliderWithInput } from '../../../shared/utils/settingHelpers';
-import type { TranslationKeys } from '../../../shared/locales/locale.types';
 import { t } from '../../../shared/locales/helpers';
 import { indexingState } from '../../store/ragStore';
 import { ConfirmModal } from '../../../shared/utils/modal';

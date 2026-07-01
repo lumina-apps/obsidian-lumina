@@ -1,5 +1,4 @@
-import { TFile, normalizePath, getAllTags } from 'obsidian';
-import { t } from '../../../../shared/locales/helpers';
+import { TFile, normalizePath, getAllTags, type CachedMetadata } from 'obsidian';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
 import type { PathGuard } from '../pathGuard';
 
@@ -14,47 +13,47 @@ interface Sort {
 	dir: 'asc' | 'desc';
 }
 
-function extractFrontmatterValue(cache: any, key: string): any {
+function extractFrontmatterValue(cache: CachedMetadata | null, key: string): unknown {
 	if (!cache || !cache.frontmatter) return undefined;
 	return cache.frontmatter[key];
 }
 
-function evaluateFilter(actualValue: any, filter: Filter): boolean {
+function evaluateFilter(actualValue: unknown, filter: Filter): boolean {
 	if (actualValue === undefined || actualValue === null) {
 		return filter.operator === '!=' || filter.operator === 'not_contains';
 	}
 
 	// Normalize target value
-	let targetValue: any = filter.value;
+	let targetValue: unknown = filter.value;
 	if (targetValue === 'true') targetValue = true;
 	else if (targetValue === 'false') targetValue = false;
 	else if (!isNaN(Number(targetValue))) targetValue = Number(targetValue);
 
 	// Convert actualValue for comparison if necessary
-	let actualStr = String(actualValue).toLowerCase();
-	let targetStr = String(targetValue).toLowerCase();
+	const actualStr = String(actualValue).toLowerCase();
+	const targetStr = String(targetValue).toLowerCase();
 
 	switch (filter.operator) {
 		case '==':
-			return Array.isArray(actualValue) ? actualValue.includes(targetValue) : actualValue == targetValue;
+			return Array.isArray(actualValue) ? (actualValue as unknown[]).includes(targetValue) : actualValue == targetValue;
 		case '!=':
-			return Array.isArray(actualValue) ? !actualValue.includes(targetValue) : actualValue != targetValue;
+			return Array.isArray(actualValue) ? !(actualValue as unknown[]).includes(targetValue) : actualValue != targetValue;
 		case '>':
-			return actualValue > targetValue;
+			return (actualValue as number) > (targetValue as number);
 		case '<':
-			return actualValue < targetValue;
+			return (actualValue as number) < (targetValue as number);
 		case '>=':
-			return actualValue >= targetValue;
+			return (actualValue as number) >= (targetValue as number);
 		case '<=':
-			return actualValue <= targetValue;
+			return (actualValue as number) <= (targetValue as number);
 		case 'contains':
 			if (Array.isArray(actualValue)) {
-				return actualValue.some(v => String(v).toLowerCase().includes(targetStr));
+				return (actualValue as unknown[]).some(v => String(v).toLowerCase().includes(targetStr));
 			}
 			return actualStr.includes(targetStr);
 		case 'not_contains':
 			if (Array.isArray(actualValue)) {
-				return !actualValue.some(v => String(v).toLowerCase().includes(targetStr));
+				return !(actualValue as unknown[]).some(v => String(v).toLowerCase().includes(targetStr));
 			}
 			return !actualStr.includes(targetStr);
 		default:
@@ -75,7 +74,7 @@ export const queryMetadataHandler = async (
 	const limit = typeof args.limit === 'number' ? args.limit : 50;
 
 	const allFiles = ctx.plugin.app.vault.getMarkdownFiles();
-	const results: { file: TFile; fields: Record<string, any> }[] = [];
+	const results: { file: TFile; fields: Record<string, unknown> }[] = [];
 
 	for (const file of allFiles) {
 		// 1. PathGuard check
@@ -114,7 +113,7 @@ export const queryMetadataHandler = async (
 		if (!passesFilters) continue;
 
 		// 5. Collect return fields
-		const fields: Record<string, any> = {};
+		const fields: Record<string, unknown> = {};
 		for (const field of returnFields) {
 			fields[field] = extractFrontmatterValue(cache, field);
 		}
@@ -130,22 +129,22 @@ export const queryMetadataHandler = async (
 	// 6. Sort
 	if (sort && sort.key) {
 		results.sort((a, b) => {
-			let valA = a.fields[sort.key];
-			let valB = b.fields[sort.key];
+			let valA = a.fields[sort.key!];
+			let valB = b.fields[sort.key!];
 			
 			// Fallback to frontmatter if not collected
 			if (valA === undefined && sort.key !== 'basename' && sort.key !== 'ctime' && sort.key !== 'mtime') {
-				valA = extractFrontmatterValue(ctx.plugin.app.metadataCache.getFileCache(a.file), sort.key);
+				valA = extractFrontmatterValue(ctx.plugin.app.metadataCache.getFileCache(a.file), sort.key!);
 			}
 			if (valB === undefined && sort.key !== 'basename' && sort.key !== 'ctime' && sort.key !== 'mtime') {
-				valB = extractFrontmatterValue(ctx.plugin.app.metadataCache.getFileCache(b.file), sort.key);
+				valB = extractFrontmatterValue(ctx.plugin.app.metadataCache.getFileCache(b.file), sort.key!);
 			}
 
 			if (valA === valB) return 0;
 			if (valA === undefined) return sort.dir === 'asc' ? 1 : -1;
 			if (valB === undefined) return sort.dir === 'asc' ? -1 : 1;
 
-			const comparison = valA > valB ? 1 : -1;
+			const comparison = (valA as number) > (valB as number) ? 1 : -1;
 			return sort.dir === 'asc' ? comparison : -comparison;
 		});
 	}

@@ -1,4 +1,4 @@
-import type { IWorker, WorkerRequest, WorkerResponse } from '../../../shared/types/rag.types';
+import type { IWorker, WorkerResponse } from '../../../shared/types/rag.types';
 import { PendingRequestManager } from './PendingRequestManager';
 import { withTimeout } from '../../../shared/utils/asyncUtils';
 import { t } from '../../../shared/locales/helpers';
