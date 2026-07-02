@@ -92,12 +92,12 @@ export const runShellCommandHandler = async (
 
 	// ── 위험 패턴 사전 차단 ────────────────────────────────────────────
 	const BLOCKED_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
-		{ pattern: /rm\s+-[a-z]*r[a-z]*f?\s+(\/|~[\/\s]|\.\.\/)/i,    reason: 'Recursive deletion of root/home directory is not allowed.' },
-		{ pattern: /:\(\)\s*\{/,                                         reason: 'Fork bomb pattern is not allowed.' },
-		{ pattern: /(curl|wget)\s+.+\|\s*(bash|sh|zsh|fish|python)/i,  reason: 'Piping remote content directly to a shell is not allowed.' },
-		{ pattern: />\s*\/dev\/(sda|hda|nvme)/i,                        reason: 'Writing directly to block devices is not allowed.' },
-		{ pattern: /chmod\s+[0-9]*7[0-9]*\s+\//i,                      reason: 'Changing permissions on root directory is not allowed.' },
-		{ pattern: /mkfs\./i,                                            reason: 'Formatting file systems is not allowed.' },
+		{ pattern: new RegExp('rm\\s+-[a-z]*r[a-z]*f?\\s+(/|~[/\\s]|\\.\\./)', 'i'), reason: 'Recursive deletion of root/home directory is not allowed.' },
+		{ pattern: new RegExp(':\\(\\)\\s*\\{'),                                reason: 'Fork bomb pattern is not allowed.' },
+		{ pattern: new RegExp('(curl|wget)\\s+.+\\|\\s*(bash|sh|zsh|fish|python)', 'i'), reason: 'Piping remote content directly to a shell is not allowed.' },
+		{ pattern: new RegExp('>\\s*/dev/(sda|hda|nvme)', 'i'),                 reason: 'Writing directly to block devices is not allowed.' },
+		{ pattern: new RegExp('chmod\\s+[0-9]*7[0-9]*\\s+/', 'i'),              reason: 'Changing permissions on root directory is not allowed.' },
+		{ pattern: new RegExp('mkfs\\.', 'i'),                                  reason: 'Formatting file systems is not allowed.' },
 	];
 
 	for (const { pattern, reason } of BLOCKED_PATTERNS) {
