@@ -52,10 +52,17 @@ export function buildMessages(
 	let systemContent = activePreset?.content ?? '';
 
 	if (systemContent) {
-		// 옵시디언 환경에서는 window.moment가 사용 가능합니다. (테스트 환경 예외 처리 포함)
-		const now = typeof window.moment !== 'undefined' ? window.moment() : new Date();
-		const dateStr = typeof window.moment !== 'undefined' ? (now as any).format('YYYY-MM-DD') : (now as Date).toISOString().split('T')[0];
-		const timeStr = typeof window.moment !== 'undefined' ? (now as any).format('HH:mm') : `${(now as Date).getHours()}:${(now as Date).getMinutes()}`;
+		let dateStr: string;
+		let timeStr: string;
+		if (typeof window.moment !== 'undefined') {
+			const m = window.moment() as { format: (fmt: string) => string };
+			dateStr = m.format('YYYY-MM-DD');
+			timeStr = m.format('HH:mm');
+		} else {
+			const now = new Date();
+			dateStr = now.toISOString().split('T')[0];
+			timeStr = `${now.getHours()}:${now.getMinutes()}`;
+		}
 		const activePathStr = opts.activeFilePath ?? 'No active file';
 		const activeTitleStr = opts.activeFileTitle ?? 'No active file';
 

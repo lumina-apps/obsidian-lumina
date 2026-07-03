@@ -27,10 +27,10 @@ export async function openFile(
 				const rawLines = content.split('\n');
 				for (const chunkLine of linesOfChunk) {
 					// 모든 마크다운 구문과 공백을 제거하여 순수 텍스트(알파벳, 한글, 숫자 등)만 비교
-					const cleanTarget = chunkLine.replace(/[\[\]|\-*#>`'"{}\s]/g, '').slice(0, 50);
+					const cleanTarget = chunkLine.replace(/[[\]|\-*#>`'"{}\s]/g, '').slice(0, 50);
 					if (cleanTarget.length < 5) continue;
 					
-					foundIdx = rawLines.findIndex(l => l.replace(/[\[\]|\-*#>`'"{}\s]/g, '').includes(cleanTarget));
+					foundIdx = rawLines.findIndex(l => l.replace(/[[\]|\-*#>`'"{}\s]/g, '').includes(cleanTarget));
 					if (foundIdx !== -1) {
 						break;
 					}

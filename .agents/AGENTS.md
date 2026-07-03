@@ -23,6 +23,7 @@
 - **Errors**: `try/catch` -> `debugLogger.logError(module, err)` -> `new Notice(t('...'))`.
 - **i18n**: Use `t('key')`. Add to ALL `src/shared/locales/` files.
 - **UI**: Check `Platform.isMobile`. Cleanup events/DOM on destroy (`onunload` or `$destroy`).
+- **Cross-Platform**: Ensure Windows compatibility. Use `normalizePath` for file paths and sanitize filenames (remove `\/:*?"<>|`).
 
 **4. FORBIDDEN (Obsidian Guidelines)**
 - `eval()`, `new Function()`, `innerHTML`, `outerHTML` -> Use `createEl`/`createDiv`.

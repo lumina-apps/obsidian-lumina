@@ -277,8 +277,9 @@ export async function exportSessionToMarkdown(app: App, session: ChatSession): P
 	const fullContent = header + body;
 
 	let file: TFile;
-	if (await app.vault.adapter.exists(filePath)) {
-		file = app.vault.getAbstractFileByPath(filePath) as TFile;
+	const existingFile = app.vault.getAbstractFileByPath(filePath);
+	if (existingFile instanceof TFile) {
+		file = existingFile;
 		await app.vault.modify(file, fullContent);
 	} else {
 		file = await app.vault.create(filePath, fullContent);
