@@ -69,7 +69,7 @@ export async function initEmbeddingWorker(
 					plugin.app.saveLocalStorage('lumina-cache-cleared-v1.2.3', 'true');
 					debugLogger.logSystem('rag', 'Cleared transformers-cache for migration');
 				} catch (e) {
-					console.error('Failed to clear transformers-cache', e);
+					debugLogger.logError('rag', e instanceof Error ? e : new Error(`Failed to clear transformers-cache: ${e}`));
 				}
 			}
 
@@ -102,16 +102,16 @@ export async function initEmbeddingWorker(
 		await embeddingStore.init(modelName);
 
 		// 인덱서 생성 (modelName 전달로 스키마 무효화 감지)
-		plugin.indexer = new VaultIndexer(
-			plugin.app,
+		plugin.indexer = new VaultIndexer({
+			app: plugin.app,
 			embedFn,
-			(buffer, ext) => plugin.embeddingWorker!.parse(buffer, ext),
-			plugin.settings.rag,
-			plugin.settings.chat.historyPath,
+			parseBinaryFn: (buffer, ext) => plugin.embeddingWorker!.parse(buffer, ext),
+			settings: plugin.settings.rag,
+			chatHistoryPath: plugin.settings.chat.historyPath,
 			modelName,
 			embeddingStore,
-			plugin.embeddingWorker ? () => plugin.embeddingWorker!.persistCache() : undefined,
-		);
+			persistCacheFn: plugin.embeddingWorker ? () => plugin.embeddingWorker!.persistCache() : undefined,
+		});
 
 		if (!isStartup) progressNotice?.setMessage(t('settings.rag.init.indexingVault'));
 

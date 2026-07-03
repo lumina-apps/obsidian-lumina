@@ -225,7 +225,8 @@
         "active": "✅ Actif",
         "activate": "Activer",
         "addPrompt": "+ Ajouter un prompt",
-        "defaultName": "Prompt système"
+        "defaultName": "Prompt système",
+        "variablesHint": "Cliquez pour insérer une variable :"
       },
       "history": {
         "name": "Sauvegarde automatique de l'historique de chat",
@@ -240,7 +241,10 @@
         "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cet historique de discussion ?",
         "title": "Historique de discussion",
         "empty": "Aucun historique de discussion enregistré.",
-        "unknownModel": "Modèle inconnu"
+        "unknownModel": "Modèle inconnu",
+        "exportSuccess": "Exporté vers le dossier Lumina Exports avec succès.",
+        "exportFail": "Échec de l'exportation de la session.",
+        "exportToolTip": "Exporter la session"
       },
       "sendMode": {
         "name": "Mode d'envoi de message",

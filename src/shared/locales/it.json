@@ -225,7 +225,8 @@
         "active": "✅ Attivo",
         "activate": "Attiva",
         "addPrompt": "+ Aggiungi Prompt",
-        "defaultName": "Prompt di Sistema"
+        "defaultName": "Prompt di Sistema",
+        "variablesHint": "Fai clic per inserire la variabile:"
       },
       "history": {
         "name": "Salvataggio Automatico Cronologia Chat",
@@ -240,7 +241,10 @@
         "deleteConfirm": "Sei sicuro di voler eliminare questa cronologia chat?",
         "title": "Cronologia Chat",
         "empty": "Nessuna cronologia chat salvata.",
-        "unknownModel": "Modello sconosciuto"
+        "unknownModel": "Modello sconosciuto",
+        "exportSuccess": "Esportato con successo nella cartella Lumina Exports.",
+        "exportFail": "Errore durante l'esportazione della sessione.",
+        "exportToolTip": "Esporta sessione"
       },
       "sendMode": {
         "name": "Modalità di Invio Messaggi",

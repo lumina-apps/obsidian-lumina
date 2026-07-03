@@ -6,6 +6,7 @@
 
 	let {
 		result,
+		searchQuery = '',
 		isStaged = false,
 		onOpen,
 		onInsertLink,
@@ -13,6 +14,7 @@
 		onToggleStage
 	}: {
 		result: SearchResult;
+		searchQuery?: string;
 		isStaged?: boolean;
 		onOpen: (path: string, e?: MouseEvent, chunkText?: string) => void;
 		onInsertLink: (path: string) => void;
@@ -21,19 +23,42 @@
 	} = $props();
 
 	function handleOpen(e: MouseEvent) {
-		onOpen(result.chunk.path, e, result.chunk.text);
+		onOpen(result.chunk.path, e, result.bestChildText || result.chunk.text);
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
-			onOpen(result.chunk.path, undefined, result.chunk.text);
+			onOpen(result.chunk.path, undefined, result.bestChildText || result.chunk.text);
 		}
 	}
 
 	function handleStage() {
 		onToggleStage(result);
 	}
+
+	let snippetText = $derived.by(() => {
+		let text = result.bestChildText;
+		if (!text) {
+			const fullText = result.chunk.text;
+			if (searchQuery.trim()) {
+				const lowerText = fullText.toLowerCase();
+				const queryTerms = searchQuery.toLowerCase().split(/\s+/).filter(t => t.length > 0);
+				let bestIndex = 0;
+				for (const term of queryTerms) {
+					const idx = lowerText.indexOf(term);
+					if (idx !== -1) {
+						bestIndex = Math.max(0, idx - 50);
+						break;
+					}
+				}
+				text = fullText.substring(bestIndex, bestIndex + 300);
+			} else {
+				text = fullText;
+			}
+		}
+		return text.substring(0, 150) + '...';
+	});
 </script>
 
 <div class="lumina-discovery__card">
@@ -58,7 +83,7 @@
 		tabindex="0"
 		onkeydown={handleKeydown}
 	>
-		{result.chunk.text.substring(0, 150)}...
+		{snippetText}
 	</div>
 	<div class="lumina-discovery__card-actions">
 		<button class="lumina-discovery__action-btn" onclick={() => onInsertLink(result.chunk.path)}>

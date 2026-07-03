@@ -225,7 +225,8 @@
         "active": "✅ Active",
         "activate": "Activate",
         "addPrompt": "+ Add Prompt",
-        "defaultName": "System Prompt"
+        "defaultName": "System Prompt",
+        "variablesHint": "Click to insert variable:"
       },
       "history": {
         "name": "Auto-save Chat History",
@@ -240,7 +241,10 @@
         "deleteConfirm": "Are you sure you want to delete this chat history?",
         "title": "Chat History",
         "empty": "No saved chat history.",
-        "unknownModel": "Unknown Model"
+        "unknownModel": "Unknown Model",
+        "exportSuccess": "Exported to Lumina Exports folder successfully.",
+        "exportFail": "Failed to export session.",
+        "exportToolTip": "Export Session"
       },
       "context": {
         "activeNote": "Include Current Note: {{name}}",

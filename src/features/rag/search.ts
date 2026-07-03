@@ -6,6 +6,7 @@ import type { SearchResult, ParentChunk, ChildChunk } from '../../shared/types/r
 import { calculateBM25 } from './bm25';
 import { t } from '../../shared/locales/helpers';
 import type { OramaStore } from './oramaStore';
+import { debugLogger } from '../../shared/debugLogger';
 
 // ─── Similarity ───────────────────────────────────────────────────────────────
 
@@ -57,10 +58,10 @@ export async function searchVault(
 	// 2. Orama 벡터 검색 (여유있게 topK의 2배 이상, 최소 10개)
 	const limit = Math.max(10, topK * 2);
 	const hits = await oramaDb.search(queryEmbedding, limit, activeFilePath);
-	console.log(`[Lumina RAG Debug] Orama hits: ${hits.length}`);
+	debugLogger.logDebug('rag', `Orama hits: ${hits.length}`);
 
 	// 3. 하위 청크 결과를 상위 청크 기준으로 그룹화
-	const parentVectorScores = new Map<string, { maxScore: number; sumScore: number; count: number }>();
+	const parentVectorScores = new Map<string, { maxScore: number; sumScore: number; count: number; bestChildText?: string }>();
 
 	for (const hit of hits) {
 		const child = hit.activeDocument as unknown as ChildChunk;
@@ -70,22 +71,31 @@ export async function searchVault(
 		const score = hit.score;
 
 		if (!parentVectorScores.has(parentId)) {
-			parentVectorScores.set(parentId, { maxScore: score, sumScore: score, count: 1 });
+			parentVectorScores.set(parentId, { maxScore: score, sumScore: score, count: 1, bestChildText: child.text });
 		} else {
 			const current = parentVectorScores.get(parentId)!;
-			current.maxScore = Math.max(current.maxScore, score);
+			if (score > current.maxScore) {
+				current.maxScore = score;
+				current.bestChildText = child.text;
+			}
 			current.sumScore += score;
 			current.count += 1;
 		}
 	}
 
-	// 4. 상위 청크 대상 BM25 점수 계산
-	const bm25Results = calculateBM25(query, parentChunks);
+	// 4. 상위 청크 대상 BM25 점수 계산 (키워드 매칭 최적화)
+	const queryTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 0);
+	const bm25Candidates = parentChunks.filter(p => {
+		const lowerText = p.text.toLowerCase();
+		return queryTerms.some(term => lowerText.includes(term));
+	});
+
+	const bm25Results = calculateBM25(query, bm25Candidates);
 	const bm25ScoreMap = new Map<string, number>();
 	let maxBm25Score = 0.0001;
-	for (let i = 0; i < parentChunks.length; i++) {
+	for (let i = 0; i < bm25Candidates.length; i++) {
 		const score = bm25Results[i].score;
-		bm25ScoreMap.set(parentChunks[i].id, score);
+		bm25ScoreMap.set(bm25Candidates[i].id, score);
 		if (score > maxBm25Score) {
 			maxBm25Score = score;
 		}
@@ -113,6 +123,7 @@ export async function searchVault(
 			score: 0, // 나중에 정규화 후 계산
 			vectorScore,
 			bm25Score,
+			bestChildText: stats.bestChildText,
 		});
 		
 		// BM25 맵에서 제거하여 나중에 중복 처리되지 않게 함
@@ -147,7 +158,7 @@ export async function searchVault(
 		.sort((a, b) => b.score - a.score)
 		.slice(0, topK);
 		
-	console.log(`[Lumina RAG Debug] hybridResults before filter: ${hybridResults.length}, after filter: ${finalResults.length}`);
+	debugLogger.logDebug('rag', `hybridResults before filter: ${hybridResults.length}, after filter: ${finalResults.length}`);
 	return finalResults;
 }
 

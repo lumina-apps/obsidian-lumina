@@ -225,7 +225,8 @@
         "active": "✅ Aktiv",
         "activate": "Aktivieren",
         "addPrompt": "+ Prompt hinzufügen",
-        "defaultName": "System-Prompt"
+        "defaultName": "System-Prompt",
+        "variablesHint": "Klicken, um Variable einzufügen:"
       },
       "history": {
         "name": "Chat-Verlauf automatisch speichern",
@@ -240,7 +241,10 @@
         "deleteConfirm": "Sind Sie sicher, dass Sie diesen Chatverlauf löschen möchten?",
         "title": "Chatverlauf",
         "empty": "Kein gespeicherter Chatverlauf.",
-        "unknownModel": "Unbekanntes Modell"
+        "unknownModel": "Unbekanntes Modell",
+        "exportSuccess": "Erfolgreich in den Lumina Exports Ordner exportiert.",
+        "exportFail": "Sitzung konnte nicht exportiert werden.",
+        "exportToolTip": "Sitzung exportieren"
       },
       "sendMode": {
         "name": "Nachrichtensende-Modus",

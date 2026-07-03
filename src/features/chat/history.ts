@@ -244,6 +244,49 @@ function serializeSession(session: ChatSession): string {
 	return frontmatter + body + rawDataBlock;
 }
 
+// ─── Export ───────────────────────────────────────────────────────────────────
+
+export async function exportSessionToMarkdown(app: App, session: ChatSession): Promise<void> {
+	const dateObj = new Date(session.createdAt);
+	const yy = String(dateObj.getFullYear()).slice(2);
+	const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+	const dd = String(dateObj.getDate()).padStart(2, '0');
+	const hh = String(dateObj.getHours()).padStart(2, '0');
+	const min = String(dateObj.getMinutes()).padStart(2, '0');
+	const safeTitle = session.title.replace(/[\\/:*?"<>|]/g, '_').trim();
+	const filename = `${yy}${mm}${dd}_${hh}${min} - ${safeTitle}.md`;
+
+	const exportFolder = normalizePath('Lumina Exports');
+	const filePath = normalizePath(`${exportFolder}/${filename}`);
+
+	if (!(await app.vault.adapter.exists(exportFolder))) {
+		await app.vault.createFolder(exportFolder);
+	}
+
+	const body = session.messages
+		.filter(m => m.role !== 'system')
+		.map(m => {
+			const label = m.role === 'user' ? '**👤 You**' : `**✦ Lumina** _(${m.model ?? ''})_`;
+			const time = new Date(m.timestamp).toLocaleTimeString();
+			const content = m.role === 'assistant' ? stripThoughtProcess(m.content) : m.content;
+			return `${label} · ${time}\n\n${content}\n`;
+		})
+		.join('\n---\n\n');
+	
+	const header = `# ${session.title}\n\n- **Date**: ${dateObj.toLocaleString()}\n- **Model**: ${session.modelId || 'Unknown'}\n\n---\n\n`;
+	const fullContent = header + body;
+
+	let file: TFile;
+	if (await app.vault.adapter.exists(filePath)) {
+		file = app.vault.getAbstractFileByPath(filePath) as TFile;
+		await app.vault.modify(file, fullContent);
+	} else {
+		file = await app.vault.create(filePath, fullContent);
+	}
+
+	await app.workspace.getLeaf('tab').openFile(file);
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export function generateTitle(messages: UIChatMessage[]): string {

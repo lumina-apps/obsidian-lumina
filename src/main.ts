@@ -56,7 +56,10 @@ class LazyLuminaSettingTab extends PluginSettingTab {
 			if (this.realTab) {
 				this.realTab.refreshDisplay();
 			}
-		}).catch(console.error);
+		}).catch((err) => {
+			new Notice(t('uiMessages.errorLoadingSettings') || 'Failed to load settings tab.');
+			debugLogger.logError('ui', err instanceof Error ? err : new Error(`Setting tab load error: ${err}`));
+		});
 	}
 
 	hide(): void {
@@ -223,8 +226,12 @@ export default class LuminaPlugin extends Plugin {
 						}
 					}
 					import('./features/rag/ragInitializer').then(({ initEmbeddingWorker }) => {
-						initEmbeddingWorker(this, true, this.isFirstRun).catch(console.error);
-					}).catch(console.error);
+						initEmbeddingWorker(this, true, this.isFirstRun).catch((err) => {
+							debugLogger.logError('rag', err instanceof Error ? err : new Error(`RAG init fail: ${err}`));
+						});
+					}).catch((err) => {
+						debugLogger.logError('rag', err instanceof Error ? err : new Error(`ragInitializer import fail: ${err}`));
+					});
 				}
 			}
 		});

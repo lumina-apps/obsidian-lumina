@@ -43,11 +43,17 @@ export class ChatController {
 		this._unsubMessages = messages.subscribe(() => {
 			const sid = get(currentSessionId);
 			if (sid && this.lastProviderId && this.lastModelId) {
+				// 스트리밍 중일 때는 저장을 지연시킴
+				const msgs = get(messages);
+				if (msgs.some(m => m.isStreaming)) return;
+
 				if (this.autoSaveTimeout) {
 					window.clearTimeout(this.autoSaveTimeout);
 				}
 				this.autoSaveTimeout = window.setTimeout(() => {
-					this.history.saveHistory(this.lastProviderId, this.lastModelId).catch(console.error);
+					this.history.saveHistory(this.lastProviderId, this.lastModelId).catch((e: unknown) => {
+						debugLogger.logError('history', e instanceof Error ? e : new Error(String(e)));
+					});
 				}, 3000);
 			}
 		});
@@ -137,6 +143,7 @@ export class ChatController {
 		options?: { useRagContext?: boolean; includeActiveNote?: boolean },
 		signal?: AbortSignal,
 	): Promise<void> {
+		const reqStart = Date.now();
 		const { chat, rag, connections } = this.plugin.settings;
 		const providerConfig = connections.providers.find(p => p.id === providerId);
 
@@ -192,14 +199,18 @@ export class ChatController {
 		}
 
 		// ── 8. 디버그: LLM 요청/응답 로그 ─────────────────────────────────
-		const activePreset = chat.systemPrompts.find(p => p.id === chat.activeSystemPromptId);
+		const systemMessage = ctx.llmMessages.find(m => m.role === 'system');
+		const systemPromptText = typeof systemMessage?.content === 'string' 
+			? systemMessage.content 
+			: (systemMessage?.content ? JSON.stringify(systemMessage.content) : '');
+
 		const requestId = debugLogger.logRequest({
 			provider: providerConfig.type,
 			model: resolvedModelId,
 			temperature: chat.temperature,
 			maxTokens: chat.maxOutputTokens,
 			stream: chat.streaming,
-			systemPrompt: activePreset?.content ?? '',
+			systemPrompt: systemPromptText,
 			messages: ctx.llmMessages.map(m => ({
 				role: m.role,
 				content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
@@ -209,7 +220,7 @@ export class ChatController {
 		debugLogger.logResponse(requestId, {
 			model: resolvedModelId,
 			content: fullResponse,
-			durationMs: 0,
+			durationMs: Date.now() - reqStart,
 			usage: tokenUsage,
 		});
 	}

@@ -198,14 +198,35 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 
 		// ── 중복 호출 감지 ────────────────────────────────────────────────────
 		const currentKey = buildToolCallKey(resolvedToolCalls);
-		if (lastToolCallKeys.length >= 2 && lastToolCallKeys.every(k => k === currentKey)) {
-			debugLogger.logMcp('Loop Error', '⚠️ 동일한 툴 호출 3회 연속 감지, 루프 강제 종료');
+		lastToolCallKeys.push(currentKey);
+		
+		let isLooping = false;
+		if (lastToolCallKeys.length >= 3) {
+			const last3 = lastToolCallKeys.slice(-3);
+			if (last3[0] === last3[1] && last3[1] === last3[2]) {
+				isLooping = true;
+				debugLogger.logMcp('Loop Error', '⚠️ 동일한 툴 호출 3회 연속 감지, 루프 강제 종료');
+			}
+		}
+		if (!isLooping && lastToolCallKeys.length >= 4) {
+			const last4 = lastToolCallKeys.slice(-4);
+			if (last4[0] === last4[2] && last4[1] === last4[3] && last4[0] !== last4[1]) {
+				isLooping = true;
+				debugLogger.logMcp('Loop Error', '⚠️ 동일한 툴 호출 패턴(A-B-A-B) 반복 감지, 루프 강제 종료');
+			}
+		}
+
+		if (isLooping) {
 			const fullResponse = accumulatedText || t('uiMessages.agentRepeatedToolCalls');
-			appendChunk(assistantId, fullResponse);
+			if (!chatSettings.streaming) {
+				appendChunk(assistantId, fullResponse);
+			} else {
+				syncMessageContent(assistantId, fullResponse);
+			}
 			return { fullResponse, tokenUsage, hasTokenLimitBeenHit };
 		}
-		lastToolCallKeys.push(currentKey);
-		if (lastToolCallKeys.length > 2) lastToolCallKeys.shift();
+		
+		if (lastToolCallKeys.length > 4) lastToolCallKeys.shift();
 
 		debugLogger.logMcp(
 			'Tool Requested',

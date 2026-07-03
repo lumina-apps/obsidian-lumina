@@ -225,7 +225,8 @@
         "active": "✅ 目前啟用",
         "activate": "啟用",
         "addPrompt": "+ 新增提示詞",
-        "defaultName": "系統提示詞"
+        "defaultName": "系統提示詞",
+        "variablesHint": "點擊插入變數："
       },
       "history": {
         "name": "自動儲存聊天記錄",
@@ -240,7 +241,10 @@
         "deleteConfirm": "您確定要刪除此聊天記錄嗎？",
         "title": "聊天記錄",
         "empty": "沒有儲存的聊天記錄。",
-        "unknownModel": "未知模型"
+        "unknownModel": "未知模型",
+        "exportSuccess": "成功匯出至 Lumina Exports 資料夾。",
+        "exportFail": "匯出對話失敗。",
+        "exportToolTip": "匯出對話"
       },
       "sendMode": {
         "name": "訊息發送方式",

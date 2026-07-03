@@ -8,6 +8,7 @@ import type { ChatMessage, ChatOptions } from '../../../shared/types/llm.types';
 import { debugLogger } from '../../../shared/debugLogger';
 import { saveSession } from '../history';
 import type { ChatSession } from '../../../shared/types/chat.types';
+import { t } from '../../../shared/locales/helpers';
 
 /**
  * 대화가 특정 턴 수를 초과하면 가장 최근 2턴을 제외한 나머지 이전 대화를 백그라운드에서 요약합니다.
@@ -48,18 +49,20 @@ export async function triggerAutoSummarization(
 	const newUpToId = targetMessagesToSummarize[targetMessagesToSummarize.length - 1].id;
 
 	// 프롬프트 구성
-	let prompt = `다음은 사용자와 AI 간의 채팅 기록입니다.\n\n`;
+	let prompt = t('summarization.prompt.intro') || `다음은 사용자와 AI 간의 채팅 기록입니다.\n\n`;
 	
 	if (currentSummary) {
-		prompt += `[이전 대화 요약]\n${currentSummary}\n\n`;
-		prompt += `위의 이전 대화 요약에 이어서, 아래의 추가 대화를 포함하여 전체 대화의 핵심 내용, 문맥, 사용자의 목적 등을 종합적으로 요약해 주세요. 요약은 다른 AI가 읽었을 때 이전 대화 흐름을 완벽히 이해할 수 있도록 명확하게 작성해야 합니다.\n\n`;
+		prompt += (t('summarization.prompt.previousSummary') || `[이전 대화 요약]\n`) + `${currentSummary}\n\n`;
+		prompt += (t('summarization.prompt.instructionWithSummary') || `위의 이전 대화 요약에 이어서, 아래의 추가 대화를 포함하여 전체 대화의 핵심 내용, 문맥, 사용자의 목적 등을 종합적으로 요약해 주세요. 요약은 다른 AI가 읽었을 때 이전 대화 흐름을 완벽히 이해할 수 있도록 명확하게 작성해야 합니다.\n\n`);
 	} else {
-		prompt += `아래 대화 기록의 핵심 내용, 문맥, 사용자의 목적 등을 종합적으로 요약해 주세요. 요약은 다른 AI가 읽었을 때 대화 흐름을 완벽히 이해할 수 있도록 명확하게 작성해야 합니다.\n\n`;
+		prompt += (t('summarization.prompt.instructionWithoutSummary') || `아래 대화 기록의 핵심 내용, 문맥, 사용자의 목적 등을 종합적으로 요약해 주세요. 요약은 다른 AI가 읽었을 때 대화 흐름을 완벽히 이해할 수 있도록 명확하게 작성해야 합니다.\n\n`);
 	}
 
-	prompt += `[추가 대화]\n`;
+	prompt += (t('summarization.prompt.additionalConversation') || `[추가 대화]\n`);
 	for (const m of targetMessagesToSummarize) {
-		const roleName = m.role === 'user' ? '사용자' : 'AI';
+		const roleName = m.role === 'user' 
+			? (t('summarization.prompt.roleUser') || '사용자')
+			: (t('summarization.prompt.roleAI') || 'AI');
 		prompt += `${roleName}: ${m.content}\n\n`;
 	}
 
@@ -122,14 +125,13 @@ export async function triggerAutoSummarization(
 						summaryUpToMessageId: newUpToId,
 					};
 					saveSession(plugin.app, session, chat.historyPath).catch((e: unknown) => {
-						console.error("AutoSummary save error:", e);
+						debugLogger.logError('AutoSummary', e instanceof Error ? e : new Error(String(e)));
 					});
 				}
 			}
 		}
 	} catch (error) {
 		// 오류 시 로그만 남기고, 다음 메시지 전송 시 재시도되도록 함
-		console.error('[Lumina] Auto Summarization failed:', error);
 		debugLogger.logError('AutoSummary', error as Error);
 	}
 }

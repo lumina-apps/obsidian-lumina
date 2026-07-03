@@ -225,7 +225,8 @@
         "active": "✅ 현재 활성",
         "activate": "활성화",
         "addPrompt": "+ 프롬프트 추가",
-        "defaultName": "시스템 프롬프트"
+        "defaultName": "시스템 프롬프트",
+        "variablesHint": "클릭하여 변수 삽입:"
       },
       "history": {
         "name": "채팅 기록 자동 저장",
@@ -240,7 +241,10 @@
         "deleteConfirm": "이 채팅 기록을 삭제하시겠습니까?",
         "title": "대화 기록",
         "empty": "저장된 대화 기록이 없습니다.",
-        "unknownModel": "알 수 없는 모델"
+        "unknownModel": "알 수 없는 모델",
+        "exportSuccess": "Lumina Exports 폴더에 성공적으로 내보냈습니다.",
+        "exportFail": "세션 내보내기에 실패했습니다.",
+        "exportToolTip": "대화 내보내기"
       },
       "context": {
         "activeNote": "현재 노트 포함: {{name}}",

@@ -125,7 +125,9 @@ export class McpManager {
 	async restartServer(serverId: string): Promise<void> {
 		const client = this.clients.get(serverId);
 		if (client) {
-			await client.disconnect().catch(console.error);
+			await client.disconnect().catch((err) => {
+				debugLogger.logError('mcp', err instanceof Error ? err : new Error(`Failed to disconnect client ${serverId}: ${err}`));
+			});
 			this.clients.delete(serverId);
 		}
 		const config = this.plugin.settings.mcp.servers.find((c) => c.id === serverId);
@@ -138,7 +140,9 @@ export class McpManager {
 	async destroy(): Promise<void> {
 		await this.localLifecycle.disconnectLocalClient();
 		for (const client of this.clients.values()) {
-			await client.disconnect().catch(console.error);
+			await client.disconnect().catch((err) => {
+				debugLogger.logError('mcp', err instanceof Error ? err : new Error(`Failed to disconnect client: ${err}`));
+			});
 		}
 		this.clients.clear();
 		await this.localLifecycle.stopServer();

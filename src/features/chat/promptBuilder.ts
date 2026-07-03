@@ -7,6 +7,7 @@ import type { ChatMessage } from '../../shared/types/llm.types';
 import type { UIChatMessage } from '../../shared/types/chat.types';
 import type { ChatSettings } from '../../core/settings/settings.types';
 import { t } from '../../shared/locales/helpers';
+import { debugLogger } from '../../shared/debugLogger';
 
 const LANGUAGE_HINTS: Record<string, string> = {
 	ko: 'Always respond in Korean (한국어).',
@@ -27,6 +28,10 @@ export interface PromptBuilderOptions {
 	sessionSummary?: string;
 	/** 요약이 완료된 메시지 ID (auto_summary 모드일 경우) */
 	summaryUpToMessageId?: string;
+	/** 치환될 활성 파일 경로 */
+	activeFilePath?: string;
+	/** 치환될 활성 파일 제목 (basename) */
+	activeFileTitle?: string;
 }
 
 /**
@@ -45,6 +50,21 @@ export function buildMessages(
 	// ── 1. 시스템 프롬프트 구성 ───────────────────────────────────────────────
 	const activePreset = chat.systemPrompts.find(p => p.id === chat.activeSystemPromptId);
 	let systemContent = activePreset?.content ?? '';
+
+	if (systemContent) {
+		// 옵시디언 환경에서는 window.moment가 사용 가능합니다. (테스트 환경 예외 처리 포함)
+		const now = typeof window.moment !== 'undefined' ? window.moment() : new Date();
+		const dateStr = typeof window.moment !== 'undefined' ? (now as any).format('YYYY-MM-DD') : (now as Date).toISOString().split('T')[0];
+		const timeStr = typeof window.moment !== 'undefined' ? (now as any).format('HH:mm') : `${(now as Date).getHours()}:${(now as Date).getMinutes()}`;
+		const activePathStr = opts.activeFilePath ?? 'No active file';
+		const activeTitleStr = opts.activeFileTitle ?? 'No active file';
+
+		systemContent = systemContent
+			.replace(/\{\{date\}\}/g, dateStr)
+			.replace(/\{\{time\}\}/g, timeStr)
+			.replace(/\{\{activeFile\}\}/g, activePathStr)
+			.replace(/\{\{title\}\}/g, activeTitleStr);
+	}
 
 	// 응답 언어 지정
 	if (chat.responseLanguage !== 'auto') {
@@ -135,8 +155,19 @@ export function buildMessages(
 		const MAX_RAG_CHARS = 20000;
 		let optimizedRag = ragContext;
 		if (optimizedRag.length > MAX_RAG_CHARS) {
-			optimizedRag = optimizedRag.substring(0, MAX_RAG_CHARS) + '\n\n... (Context truncated due to length limits)';
-			console.warn(t('uiMessages.ragTooLong', { max: MAX_RAG_CHARS }));
+			const chunks = optimizedRag.split('\n\n---\n\n');
+			let currentLen = 0;
+			const validChunks: string[] = [];
+			for (const chunk of chunks) {
+				if (currentLen + chunk.length > MAX_RAG_CHARS && validChunks.length > 0) {
+					validChunks.push('... (Context truncated due to length limits)');
+					break;
+				}
+				validChunks.push(chunk);
+				currentLen += chunk.length + 9; // 9 is length of separator
+			}
+			optimizedRag = validChunks.join('\n\n---\n\n');
+			debugLogger.logWarn('rag', t('uiMessages.ragTooLong', { max: MAX_RAG_CHARS }) || `RAG context exceeded ${MAX_RAG_CHARS} chars`);
 		}
 		
 		// User 메시지 상단에 컨텍스트를 주입

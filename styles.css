@@ -678,6 +678,44 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 	margin-top: 4px;
 }
 
+.lumina-prompt-vars {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 10px;
+}
+
+.lumina-prompt-vars__hint {
+	font-size: 0.85em;
+	color: var(--text-muted);
+	white-space: nowrap;
+}
+
+.lumina-prompt-vars__list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.lumina-prompt-vars__btn {
+	background-color: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	color: var(--text-normal);
+	font-size: 0.8em;
+	padding: 2px 8px;
+	border-radius: 12px;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+.lumina-prompt-vars__btn:hover {
+	background-color: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+	color: #ffffff;
+}
+
 /* 11. Settings description guide styling */
 .lumina-settings__desc-guide {
 	margin-top: 4px;

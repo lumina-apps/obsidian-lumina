@@ -99,6 +99,32 @@ class DebugLogger {
 		this.push(entry);
 	}
 
+	/** Warning 기록 */
+	logWarn(domain: string, message: string): void {
+		if (!this.isEnabled) return;
+		const entry: SystemLog = {
+			id: this.nextId(),
+			type: 'system',
+			timestamp: Date.now(),
+			event: 'warn',
+			message: `[${domain}] ${message}`,
+		};
+		this.push(entry);
+	}
+
+	/** Debug 기록 */
+	logDebug(domain: string, message: string): void {
+		if (!this.isEnabled) return;
+		const entry: SystemLog = {
+			id: this.nextId(),
+			type: 'system',
+			timestamp: Date.now(),
+			event: 'debug',
+			message: `[${domain}] ${message}`,
+		};
+		this.push(entry);
+	}
+
 	/** 에러 기록 */
 	logError(domain: string, error: Error | string): void {
 		if (!this.isEnabled) return;

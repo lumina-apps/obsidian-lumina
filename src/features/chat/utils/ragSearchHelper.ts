@@ -119,12 +119,30 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 			? `${existingContext}\n\n---\n\n${ragText}`
 			: ragText;
 
-		const ragChunksForLog: RagChunkMeta[] = results.map((r) => ({
-			filePath: r.chunk?.path ?? '',
-			score: r.score ?? 0,
-			preview: (r.chunk?.text ?? '').slice(0, 200),
-			fullContent: r.chunk?.text ?? '',
-		}));
+		const ragChunksForLog: RagChunkMeta[] = results.map((r) => {
+			let bestText = r.bestChildText;
+			if (!bestText) {
+				const fullText = r.chunk?.text || '';
+				const lowerText = fullText.toLowerCase();
+				const queryTerms = userText.toLowerCase().split(/\s+/).filter(t => t.length > 0);
+				let bestIndex = 0;
+				for (const term of queryTerms) {
+					const idx = lowerText.indexOf(term);
+					if (idx !== -1) {
+						bestIndex = Math.max(0, idx - 50);
+						break;
+					}
+				}
+				bestText = fullText.slice(bestIndex, bestIndex + 1000);
+			}
+
+			return {
+				filePath: r.chunk?.path ?? '',
+				score: r.score ?? 0,
+				preview: bestText.slice(0, 200),
+				fullContent: bestText,
+			};
+		});
 
 		debugLogger.logRagSearch({
 			query: userText,
@@ -133,9 +151,20 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 			durationMs: Date.now() - ragStart,
 		});
 
-		const uniquePaths = Array.from(new Set(ragChunksForLog.map(c => c.filePath).filter(Boolean)));
-		if (uniquePaths.length > 0) {
-			setMessageSources(assistantId, uniquePaths.map(p => ({ filePath: p })));
+		const uniqueSourcesMap = new Map<string, string>();
+		for (const chunk of ragChunksForLog) {
+			if (chunk.filePath && !uniqueSourcesMap.has(chunk.filePath)) {
+				// 가장 점수가 높은 (순서상 앞선) 청크의 원문 텍스트를 저장
+				uniqueSourcesMap.set(chunk.filePath, chunk.fullContent);
+			}
+		}
+
+		if (uniqueSourcesMap.size > 0) {
+			const sourcesToSet = Array.from(uniqueSourcesMap.entries()).map(([p, text]) => ({
+				filePath: p,
+				chunkText: text
+			}));
+			setMessageSources(assistantId, sourcesToSet);
 		}
 
 		return { ragContext, ragChunksForLog };

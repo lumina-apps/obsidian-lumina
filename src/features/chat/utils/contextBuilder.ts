@@ -128,11 +128,17 @@ export async function buildLlmContext(
 		toolServerMap[webSearchTool.name] = '__web_search__';
 	}
 
+	const activeFile = plugin.app.workspace.getActiveFile();
+	const activeFilePath = activeFile?.path;
+	const activeFileTitle = activeFile?.basename;
+
 	let llmMessages: ChatMessage[] = buildMessages(history, userText, {
 		chat: chatSettings,
 		ragContext,
 		sessionSummary: get(sessionSummary),
-		summaryUpToMessageId: get(summaryUpToMessageId)
+		summaryUpToMessageId: get(summaryUpToMessageId),
+		activeFilePath,
+		activeFileTitle
 	});
 
 	// 툴 사용 지침 주입

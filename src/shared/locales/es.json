@@ -225,7 +225,8 @@
         "active": "✅ Activo",
         "activate": "Activar",
         "addPrompt": "+ Agregar prompt",
-        "defaultName": "Prompt del sistema"
+        "defaultName": "Prompt del sistema",
+        "variablesHint": "Haga clic para insertar variable:"
       },
       "history": {
         "name": "Guardado automático del historial de chat",
@@ -240,7 +241,10 @@
         "deleteConfirm": "¿Está seguro de que desea eliminar este historial de chat?",
         "title": "Historial de chat",
         "empty": "No hay historial de chat guardado.",
-        "unknownModel": "Modelo desconocido"
+        "unknownModel": "Modelo desconocido",
+        "exportSuccess": "Exportado a la carpeta Lumina Exports correctamente.",
+        "exportFail": "Error al exportar la sesión.",
+        "exportToolTip": "Exportar sesión"
       },
       "sendMode": {
         "name": "Modo de envío de mensajes",

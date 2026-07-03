@@ -7,6 +7,7 @@ export interface ContextAttachment {
 
 export interface ChatRagSource {
 	filePath: string;
+	chunkText?: string;
 }
 
 export type RagPipelineStep = 'searching' | 'reranking' | 'compressing' | 'generating' | null;

@@ -4,6 +4,7 @@
 
 	let {
 		searchResults,
+		searchQuery,
 		isSearching,
 		stagedItems,
 		onOpenFile,
@@ -12,6 +13,7 @@
 		onToggleStage,
 	} = $props<{
 		searchResults: SearchResult[];
+		searchQuery: string;
 		isSearching: boolean;
 		stagedItems: SearchResult[];
 		onOpenFile: (path: string, e?: MouseEvent) => void;
@@ -25,6 +27,7 @@
 	{#each searchResults as result (result.chunk.id)}
 		<DiscoveryCard
 			{result}
+			{searchQuery}
 			isStaged={stagedItems.some((i: SearchResult) => i.chunk.id === result.chunk.id)}
 			onOpen={onOpenFile}
 			onInsertLink={onInsertLink}

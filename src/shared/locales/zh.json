@@ -225,7 +225,8 @@
         "active": "✅ 当前激活",
         "activate": "激活",
         "addPrompt": "+ 添加提示词",
-        "defaultName": "系统提示词"
+        "defaultName": "系统提示词",
+        "variablesHint": "点击插入变量："
       },
       "history": {
         "name": "自动保存聊天记录",
@@ -240,7 +241,10 @@
         "deleteConfirm": "您确定要删除此聊天记录吗？",
         "title": "聊天记录",
         "empty": "没有保存的聊天记录。",
-        "unknownModel": "未知模型"
+        "unknownModel": "未知模型",
+        "exportSuccess": "成功导出到 Lumina Exports 文件夹。",
+        "exportFail": "导出对话失败。",
+        "exportToolTip": "导出对话"
       },
       "sendMode": {
         "name": "消息发送方式",

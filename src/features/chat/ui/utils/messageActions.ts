@@ -9,13 +9,42 @@ export async function openFile(
 	app: App,
 	filePath: string,
 	e: MouseEvent | KeyboardEvent,
+	chunkText?: string
 ): Promise<void> {
 	const file = app.vault.getAbstractFileByPath(filePath);
 	if (file instanceof TFile) {
 		const leaf = app.workspace.getLeaf(
 			e.ctrlKey || e.metaKey || ("button" in e && e.button === 1) ? "tab" : false,
 		);
-		await leaf.openFile(file);
+		let lineNo: number | undefined = undefined;
+		if (chunkText) {
+			try {
+				const content = await app.vault.cachedRead(file);
+				
+				const linesOfChunk = chunkText.split('\n').map(l => l.trim()).filter(l => l.length > 5);
+				let foundIdx = -1;
+				
+				const rawLines = content.split('\n');
+				for (const chunkLine of linesOfChunk) {
+					// 모든 마크다운 구문과 공백을 제거하여 순수 텍스트(알파벳, 한글, 숫자 등)만 비교
+					const cleanTarget = chunkLine.replace(/[\[\]|\-*#>`'"{}\s]/g, '').slice(0, 50);
+					if (cleanTarget.length < 5) continue;
+					
+					foundIdx = rawLines.findIndex(l => l.replace(/[\[\]|\-*#>`'"{}\s]/g, '').includes(cleanTarget));
+					if (foundIdx !== -1) {
+						break;
+					}
+				}
+				
+				if (foundIdx !== -1) {
+					lineNo = foundIdx;
+				}
+			} catch (err) {
+				console.warn('Lumina: Failed to read file for chunk search', err);
+			}
+		}
+		
+		await leaf.openFile(file, lineNo !== undefined ? { eState: { line: lineNo } } : undefined);
 	} else {
 		new Notice(t("uiMessages.fileNotFound"));
 	}

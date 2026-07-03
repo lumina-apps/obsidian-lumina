@@ -25,7 +25,7 @@ export interface ChildChunk {
 // ─── Persistence ─────────────────────────────────
 
 /** 스키마 버전. 청크 구조 변경 시 증가 → 기존 인덱스 자동 무효화 */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 export interface PersistedIndex {
 	version: number;
@@ -43,6 +43,7 @@ export interface SearchResult {
 	score: number;
 	vectorScore?: number;
 	bm25Score?: number;
+	bestChildText?: string;
 }
 
 // ─── Indexing State ──────────────────────────────

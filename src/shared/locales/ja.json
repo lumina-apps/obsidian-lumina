@@ -225,7 +225,8 @@
         "active": "✅ 現在有効",
         "activate": "有効化",
         "addPrompt": "+ プロンプトを追加",
-        "defaultName": "システムプロンプト"
+        "defaultName": "システムプロンプト",
+        "variablesHint": "クリックして変数を挿入:"
       },
       "history": {
         "name": "チャット履歴の自動保存",
@@ -240,7 +241,10 @@
         "deleteConfirm": "このチャット履歴を削除してもよろしいですか？",
         "title": "チャット履歴",
         "empty": "保存されたチャット履歴はありません。",
-        "unknownModel": "不明なモデル"
+        "unknownModel": "不明なモデル",
+        "exportSuccess": "Lumina Exports フォルダにエクスポートしました。",
+        "exportFail": "セッションのエクスポートに失敗しました。",
+        "exportToolTip": "チャットをエクスポート"
       },
       "sendMode": {
         "name": "メッセージ送信モード",

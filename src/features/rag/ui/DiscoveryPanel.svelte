@@ -224,6 +224,7 @@
 					{:else}
 						<DiscoverySearchResults
 							{searchResults}
+							{searchQuery}
 							{isSearching}
 							stagedItems={$discoveryState.stagedItems}
 							onOpenFile={handleOpenFile}

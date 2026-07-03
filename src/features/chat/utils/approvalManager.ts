@@ -283,6 +283,11 @@ export const approvalManager = {
 					if (!change.added) {
 						result += change.value;
 					}
+				} else {
+					// Fallback for pending or missing chunks: keep base content
+					if (!change.added) {
+						result += change.value;
+					}
 				}
 			} else {
 				if (!change.removed && !change.added) {

@@ -246,6 +246,7 @@ export interface TranslationSettingsChatSystemPrompt {
   activate: string;
   addPrompt: string;
   defaultName: string;
+  variablesHint: string;
 }
 
 export interface TranslationSettingsChatHistory {
@@ -262,6 +263,9 @@ export interface TranslationSettingsChatHistory {
   title: string;
   empty: string;
   unknownModel: string;
+  exportSuccess: string;
+  exportFail: string;
+  exportToolTip: string;
 }
 
 export interface TranslationSettingsChatContext {
@@ -718,6 +722,7 @@ export interface TranslationUiMessages {
     accept: string;
     reject: string;
   };
+  errorLoadingSettings: string;
   emptyResponseTokenLimit: string;
   tokenLimitHitWarning: string;
   toolExecutionRejected: string;
@@ -925,6 +930,21 @@ export interface TranslationMcpServerTools {
   common: TranslationMcpServerToolsCommon;
 }
 
+// summarization
+export interface TranslationSummarizationPrompt {
+  intro: string;
+  previousSummary: string;
+  instructionWithSummary: string;
+  instructionWithoutSummary: string;
+  additionalConversation: string;
+  roleUser: string;
+  roleAI: string;
+}
+
+export interface TranslationSummarization {
+  prompt: TranslationSummarizationPrompt;
+}
+
 // 최상위 Translation 타입
 export interface Translation {
   settings: TranslationSettings;
@@ -936,6 +956,7 @@ export interface Translation {
   mcpServerTools: TranslationMcpServerTools;
   graph: TranslationGraph;
   canvas: TranslationCanvas;
+  summarization: TranslationSummarization;
 }
 
 // DeepPartial 타입

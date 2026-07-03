@@ -14,6 +14,18 @@ import type { EmbeddingStore } from './embeddingStore';
 import { OramaStore } from './oramaStore';
 import { IndexState } from './utils/indexState';
 import { calculateIndexDiff } from './utils/indexDiff';
+import { debugLogger } from '../../shared/debugLogger';
+
+export interface VaultIndexerConfig {
+	app: App;
+	embedFn: EmbedFn;
+	parseBinaryFn: ParseBinaryFn;
+	settings: RagSettings;
+	chatHistoryPath: string;
+	modelName: string;
+	embeddingStore: EmbeddingStore;
+	persistCacheFn?: () => Promise<void>;
+}
 
 export class VaultIndexer {
 	private readonly app: App;
@@ -32,15 +44,15 @@ export class VaultIndexer {
 	private indexingStartedAt = 0;
 	private isIndexing = false;
 
-	constructor(app: App, embedFn: EmbedFn, parseBinaryFn: ParseBinaryFn, settings: RagSettings, chatHistoryPath: string, modelName: string, embeddingStore: EmbeddingStore, persistCacheFn?: () => Promise<void>) {
-		this.app = app;
-		this.embedFn = embedFn;
-		this.parseBinaryFn = parseBinaryFn;
-		this.settings = settings;
-		this.chatHistoryPath = chatHistoryPath;
-		this.modelName = modelName;
-		this.embeddingStore = embeddingStore;
-		this.persistCacheFn = persistCacheFn;
+	constructor(config: VaultIndexerConfig) {
+		this.app = config.app;
+		this.embedFn = config.embedFn;
+		this.parseBinaryFn = config.parseBinaryFn;
+		this.settings = config.settings;
+		this.chatHistoryPath = config.chatHistoryPath;
+		this.modelName = config.modelName;
+		this.embeddingStore = config.embeddingStore;
+		this.persistCacheFn = config.persistCacheFn;
 	}
 
 	public destroy(): void {
@@ -238,7 +250,7 @@ export class VaultIndexer {
 	private async persist(): Promise<void> {
 		await saveIndex(this.app, this.modelName, this.state.parentChunks, this.state.childChunks, this.state.fileMtimes, this.state.fileHashes);
 		await this.embeddingStore.storeEmbeddings(this.state.childChunks).catch((err) => {
-			console.warn('[VaultIndexer] embeddingStore.storeEmbeddings failed:', err);
+			debugLogger.logWarn('indexer', `embeddingStore.storeEmbeddings failed: ${err}`);
 		});
 	}
 }

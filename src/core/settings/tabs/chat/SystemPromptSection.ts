@@ -83,6 +83,34 @@ export function renderSystemPromptSection(tab: LuminaSettingTab, el: HTMLElement
 			prompt.content = textarea.value;
 			await tab.saveAndSync();
 		}));
+
+		// Variables insert section
+		const varsContainer = body.createDiv({ cls: 'lumina-prompt-vars' });
+		varsContainer.createSpan({ text: t('settings.chat.systemPrompt.variablesHint'), cls: 'lumina-prompt-vars__hint' });
+		const varsList = varsContainer.createDiv({ cls: 'lumina-prompt-vars__list' });
+
+		const addVarChip = (varName: string) => {
+			const btn = varsList.createEl('button', { text: varName, cls: 'lumina-prompt-vars__btn' });
+			btn.addEventListener('click', wrapAsync(async (e) => {
+				e.preventDefault();
+				const start = textarea.selectionStart;
+				const end = textarea.selectionEnd;
+				const text = textarea.value;
+				const newText = text.substring(0, start) + varName + text.substring(end);
+				textarea.value = newText;
+				
+				prompt.content = newText;
+				await tab.saveAndSync();
+				
+				textarea.focus();
+				textarea.selectionStart = textarea.selectionEnd = start + varName.length;
+			}));
+		};
+
+		addVarChip('{{title}}');
+		addVarChip('{{date}}');
+		addVarChip('{{time}}');
+		addVarChip('{{activeFile}}');
 	}
 
 	const addBtnContainer = createButtonContainer(el, 'lumina-settings-add-prompt-container');

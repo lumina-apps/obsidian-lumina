@@ -18,8 +18,8 @@
 		<button
 			class="lumina-message__rag-source"
 			aria-label={t("uiMessages.openReferenceNote")}
-			onclick={(e) => openFile(app, source.filePath, e)}
-			onauxclick={(e) => openFile(app, source.filePath, e)}
+			onclick={(e) => openFile(app, source.filePath, e, source.chunkText)}
+			onauxclick={(e) => openFile(app, source.filePath, e, source.chunkText)}
 		>
 			📄 {source.filePath.split('/').pop()?.replace('.md', '') || source.filePath}
 		</button>

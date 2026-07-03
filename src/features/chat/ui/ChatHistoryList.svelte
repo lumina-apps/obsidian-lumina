@@ -5,7 +5,7 @@
 	import { currentSessionId } from "../../../core/store/chatStore";
 	import { tStore } from "../../../shared/locales/index";
 	import { formatDate } from "../../../shared/utils/dateUtils";
-	import { SVG_BACK_ARROW, SVG_REFRESH, SVG_TRASH } from "../../../shared/svgIcons";
+	import { SVG_BACK_ARROW, SVG_REFRESH, SVG_TRASH, SVG_EXPORT } from "../../../shared/svgIcons";
 
 	let { ctrl, onSessionSelect, onBack }: { ctrl: ChatController; onSessionSelect: () => void; onBack: () => void } = $props();
 
@@ -38,6 +38,11 @@
 				await loadSessions();
 			}
 		}
+	}
+
+	async function handleExport(e: Event, sessionId: string) {
+		e.stopPropagation();
+		await ctrl.history.exportSession(sessionId);
 	}
 
 	onMount(() => {
@@ -85,11 +90,18 @@
 							<span>{session.modelId || $tStore('settings.chat.history.unknownModel')}</span>
 						</div>
 					</div>
-					<button class="lumina-history__delete" onclick={(e) => handleDelete(e, session.id)} aria-label={$tStore('common.delete')}>
-						<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-							{@html SVG_TRASH}
-						</svg>
-					</button>
+					<div class="lumina-history__actions">
+						<button class="lumina-history__action-btn" onclick={(e) => handleExport(e, session.id)} aria-label={$tStore('settings.chat.history.exportToolTip') || 'Export'}>
+							<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								{@html SVG_EXPORT}
+							</svg>
+						</button>
+						<button class="lumina-history__action-btn lumina-history__action-btn--delete" onclick={(e) => handleDelete(e, session.id)} aria-label={$tStore('common.delete')}>
+							<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								{@html SVG_TRASH}
+							</svg>
+						</button>
+					</div>
 				</div>
 			{/each}
 		{/if}
@@ -211,7 +223,19 @@
 		opacity: 0.5;
 	}
 
-	.lumina-history__delete {
+	.lumina-history__actions {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		opacity: 0;
+		transition: opacity 0.2s ease;
+	}
+
+	.lumina-history__item:hover .lumina-history__actions {
+		opacity: 1;
+	}
+
+	.lumina-history__action-btn {
 		background: transparent;
 		border: none;
 		color: var(--text-faint);
@@ -221,15 +245,15 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		opacity: 0;
 		transition: all 0.2s ease;
 	}
 
-	.lumina-history__item:hover .lumina-history__delete {
-		opacity: 1;
+	.lumina-history__action-btn:hover {
+		background: var(--background-modifier-hover);
+		color: var(--text-normal);
 	}
 
-	.lumina-history__delete:hover {
+	.lumina-history__action-btn--delete:hover {
 		background: var(--background-modifier-error-hover);
 		color: var(--text-error);
 	}

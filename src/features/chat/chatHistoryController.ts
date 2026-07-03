@@ -112,4 +112,23 @@ export class ChatHistoryController {
 		}
 		return success;
 	}
+
+	/** 특정 세션을 마크다운 파일로 내보냅니다. */
+	async exportSession(sessionId: string): Promise<boolean> {
+		try {
+			const session = await loadSession(this.app, sessionId, this.plugin.settings.chat.historyPath);
+			if (session) {
+				const { exportSessionToMarkdown } = await import('./history');
+				await exportSessionToMarkdown(this.app, session);
+				new Notice(t('settings.chat.history.exportSuccess') || 'Exported to Lumina Exports folder successfully.');
+				return true;
+			}
+			new Notice(t('settings.chat.history.loadFail') || 'Failed to load session.');
+			return false;
+		} catch (e) {
+			console.error(e);
+			new Notice(t('settings.chat.history.exportFail') || 'Failed to export session.');
+			return false;
+		}
+	}
 }
