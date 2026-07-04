@@ -17,6 +17,7 @@ main.js
 embedding.worker.js
 ort-wasm-*
 *.map
+meta.json
 
 # Obsidian
 data.json
