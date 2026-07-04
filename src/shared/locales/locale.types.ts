@@ -928,6 +928,23 @@ export interface TranslationMcpServerTools {
   list_notes: TranslationMcpServerToolsListNotes;
   rag_search: TranslationMcpServerToolsRagSearch;
   common: TranslationMcpServerToolsCommon;
+  replace_note: { desc: string };
+  patch_note: { desc: string };
+  delete_note: { desc: string };
+  move_note: { desc: string };
+  get_backlinks: { desc: string };
+  update_frontmatter: { desc: string };
+  get_note_metadata: { desc: string };
+  list_attachments: { desc: string };
+  save_attachment: { desc: string };
+  execute_code: { desc: string };
+  run_shell_command: { desc: string };
+  run_note_code_block: { desc: string };
+  list_tags: { desc: string };
+  create_canvas: { desc: string };
+  generate_moc: { desc: string };
+  auto_link_note: { desc: string };
+  query_metadata: { desc: string };
 }
 
 // summarization

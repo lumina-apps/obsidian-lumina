@@ -82,9 +82,20 @@ export class HttpTransport {
 		this.transports.clear();
 		if (this.httpServer) {
 			await new Promise<void>((resolve) => {
-				this.httpServer!.close(() => resolve());
-				// 3초 후 강제 해제 (Fallback)
-				window.setTimeout(() => resolve(), 3000);
+				let resolved = false;
+				const timeoutId = window.setTimeout(() => {
+					if (!resolved) {
+						resolved = true;
+						resolve();
+					}
+				}, 3000);
+				this.httpServer!.close(() => {
+					if (!resolved) {
+						resolved = true;
+						window.clearTimeout(timeoutId);
+						resolve();
+					}
+				});
 			});
 			this.httpServer = null;
 		}
@@ -93,8 +104,9 @@ export class HttpTransport {
 
 	// ─── 내부 요청 처리 ─────────────────────────────────────────────────────
 
-	private setCorsHeaders(res: http.ServerResponse): void {
-		res.setHeader('Access-Control-Allow-Origin', 'app://obsidian.md');
+	private setCorsHeaders(req: http.IncomingMessage, res: http.ServerResponse): void {
+		const origin = req.headers.origin || '*';
+		res.setHeader('Access-Control-Allow-Origin', origin);
 		res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE');
 		res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, mcp-protocol-version, mcp-session-id');
 		res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id, mcp-protocol-version');
@@ -134,7 +146,7 @@ export class HttpTransport {
 		mcpServer: McpServer,
 	): Promise<void> {
 		try {
-			this.setCorsHeaders(res);
+			this.setCorsHeaders(req, res);
 
 			if (req.method === 'OPTIONS') {
 				res.writeHead(200);

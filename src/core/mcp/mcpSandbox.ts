@@ -9,7 +9,7 @@ export interface SandboxResult<T = unknown> {
 }
 
 export class McpSandbox {
-    private static readonly DEFAULT_TIMEOUT_MS = 3000;
+    private static readonly DEFAULT_TIMEOUT_MS = 10000;
 
     /**
      * Executes arbitrary JavaScript code securely in a Web Worker.
@@ -30,7 +30,7 @@ export class McpSandbox {
             const workerScript = `
                 // --- Security Sandbox Setup ---
                 // Disable network access to prevent data exfiltration
-                const globalsToHide = ['fetch', 'XMLHttpRequest', 'WebSocket', 'importScripts'];
+                const globalsToHide = ['fetch', 'XMLHttpRequest', 'WebSocket', 'importScripts', 'eval'];
                 globalsToHide.forEach(g => {
                     try {
                         Object.defineProperty(self, g, {

@@ -1,4 +1,5 @@
 import * as http from 'http';
+import { timingSafeEqual } from 'crypto';
 
 /**
  * MCP HTTP 요청 인증 유틸리티.
@@ -13,7 +14,13 @@ export function authenticateRequest(req: http.IncomingMessage, authToken: string
 	const authHeader = req.headers['authorization'];
 	if (authHeader && authHeader.startsWith('Bearer ')) {
 		const token = authHeader.substring(7);
-		if (token === authToken) return true;
+		if (token.length === authToken.length) {
+			try {
+				return timingSafeEqual(Buffer.from(token), Buffer.from(authToken));
+			} catch (e) {
+				return false;
+			}
+		}
 	}
 
 	return false;

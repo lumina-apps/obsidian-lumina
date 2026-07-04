@@ -791,7 +791,7 @@
       "pathExcluded": "Access to this path is restricted by RAG exclusion/inclusion settings: {{path}}"
     },
     "generate_moc": {
-      "desc": "Generate a Map of Content (MOC) note that collects and links related notes from a folder, by tag, or from an explicit file list.",
+      "desc": "Generate a Map of Content (MOC) note that collects and links related notes. Use folder, tags, or files to define which notes to include.",
       "argTitle": "Title of the MOC note (used as the H1 heading)",
       "argOutputPath": "Vault-relative path for the MOC file (e.g. \"Project MOC\" or \"Maps/Project MOC\"). .md is appended automatically.",
       "argFolder": "Collect notes from this folder path (optional)",
@@ -803,6 +803,54 @@
       "successUpdate": "MOC updated at {{path}} ({{count}} notes)",
       "emptyWarning": "No notes were found matching the given scope. This MOC is currently empty.",
       "noScope": "At least one of folder, tags, or files must be provided."
+    },
+    "replace_note": {
+      "desc": "Replace the entire content of an existing note."
+    },
+    "patch_note": {
+      "desc": "Apply one or more text replacements to a note. Prefer using the patches array to batch multiple changes into a single tool call — this is more efficient and presents all changes to the user at once as a unified diff."
+    },
+    "delete_note": {
+      "desc": "Delete a note."
+    },
+    "move_note": {
+      "desc": "Move or rename a note."
+    },
+    "get_backlinks": {
+      "desc": "Get a list of notes that link to the specified note."
+    },
+    "update_frontmatter": {
+      "desc": "Update a frontmatter property in a note."
+    },
+    "get_note_metadata": {
+      "desc": "Get metadata (frontmatter, tags, creation date, etc) for a note."
+    },
+    "list_attachments": {
+      "desc": "List all attachment files (images, pdfs) inside the vault, or linked in a note."
+    },
+    "save_attachment": {
+      "desc": "Save a binary attachment file from base64 string."
+    },
+    "execute_code": {
+      "desc": "Execute javascript/typescript code in a secure sandbox."
+    },
+    "run_shell_command": {
+      "desc": "Execute a terminal shell command on the desktop OS. Use with caution."
+    },
+    "run_note_code_block": {
+      "desc": "Run a specific code block from a note in the sandbox."
+    },
+    "list_tags": {
+      "desc": "List all tags used in the vault."
+    },
+    "create_canvas": {
+      "desc": "Create an Obsidian Canvas file (.canvas) with nodes and edges."
+    },
+    "auto_link_note": {
+      "desc": "Automatically find unlinked mentions (note titles or aliases) in a note and replace them with internal markdown links ([[Title|Alias]]). CRITICAL: ALWAYS use this tool when the user asks to add backlinks or auto-link a note. NEVER try to manually read the note and use patch_note or replace_note to add links yourself, as it will crash the system."
+    },
+    "query_metadata": {
+      "desc": "Query and filter vault notes by their frontmatter properties, tags, or folders. Returns a markdown table of the results. Use this tool when the user asks to list or aggregate notes based on their metadata (e.g. status, author, rating, dates)."
     }
   },
   "graph": {

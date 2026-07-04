@@ -791,7 +791,7 @@
       "pathExcluded": "RAG 제외/포함 설정에 의해 접근이 제한된 경로입니다: {{path}}"
     },
     "generate_moc": {
-      "desc": "폴더, 태그 또는 파일 목록을 기준으로 관련 노트를 수집하여 MOC(Map of Content) 허브 노트를 생성합니다.",
+      "desc": "관련 노트를 수집하고 연결하는 MOC(Map of Content) 노트를 생성합니다. 폴더, 태그 또는 파일을 사용하여 포함할 노트를 정의합니다.",
       "argTitle": "MOC 노트의 제목 (H1 헤딩으로 사용됨)",
       "argOutputPath": "MOC 파일을 저장할 경로 (예: Project MOC 또는 Maps/Project MOC). .md 확장자는 자동으로 추가됩니다.",
       "argFolder": "노트를 수집할 폴더 경로 (선택사항)",
@@ -803,6 +803,54 @@
       "successUpdate": "MOC가 업데이트되었습니다: {{path}} ({{count}}개 노트)",
       "emptyWarning": "지정된 범위에 해당하는 노트를 찾을 수 없습니다. 이 MOC는 현재 비어 있습니다.",
       "noScope": "folder, tags, files 중 하나 이상을 지정해야 합니다."
+    },
+    "replace_note": {
+      "desc": "기존 노트의 전체 내용을 바꿉니다."
+    },
+    "patch_note": {
+      "desc": "노트에 하나 이상의 텍스트 변경 사항을 적용합니다. 여러 변경 사항을 한 번에 일괄 처리하려면 patches 배열을 사용하는 것이 좋습니다."
+    },
+    "delete_note": {
+      "desc": "노트를 삭제합니다."
+    },
+    "move_note": {
+      "desc": "노트를 이동하거나 이름을 변경합니다."
+    },
+    "get_backlinks": {
+      "desc": "특정 노트를 링크하고 있는 노트 목록을 가져옵니다."
+    },
+    "update_frontmatter": {
+      "desc": "노트의 프론트매터(Frontmatter) 속성을 업데이트합니다."
+    },
+    "get_note_metadata": {
+      "desc": "노트의 메타데이터(프론트매터, 태그, 생성일 등)를 가져옵니다."
+    },
+    "list_attachments": {
+      "desc": "볼트 내의 모든 첨부 파일(이미지, PDF 등)을 나열하거나 특정 노트에 링크된 첨부 파일을 찾습니다."
+    },
+    "save_attachment": {
+      "desc": "Base64 문자열에서 바이너리 첨부 파일을 저장합니다."
+    },
+    "execute_code": {
+      "desc": "보안 샌드박스에서 Javascript/Typescript 코드를 실행합니다."
+    },
+    "run_shell_command": {
+      "desc": "데스크톱 OS에서 터미널 쉘 명령을 실행합니다. 주의해서 사용하세요."
+    },
+    "run_note_code_block": {
+      "desc": "노트 내의 특정 코드 블록을 샌드박스에서 실행합니다."
+    },
+    "list_tags": {
+      "desc": "볼트에서 사용된 모든 태그를 나열합니다."
+    },
+    "create_canvas": {
+      "desc": "노드와 에지가 포함된 Obsidian Canvas 파일(.canvas)을 생성합니다."
+    },
+    "auto_link_note": {
+      "desc": "노트 내에서 연결되지 않은 멘션(노트 제목 또는 별칭)을 자동으로 찾아 내부 마크다운 링크로 바꿉니다."
+    },
+    "query_metadata": {
+      "desc": "프론트매터 속성, 태그 또는 폴더를 기준으로 볼트 노트를 필터링하고 검색합니다. 결과를 마크다운 테이블로 반환합니다."
     }
   },
   "graph": {

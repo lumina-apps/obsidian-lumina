@@ -6,17 +6,18 @@ import { Workspace } from 'obsidian';
 export async function activateView(
 	workspace: Workspace,
 	viewType: string,
+	reveal: boolean = true
 ): Promise<void> {
 	const existing = workspace.getLeavesOfType(viewType);
 	if (existing.length > 0) {
-		await workspace.revealLeaf(existing[0]);
+		if (reveal) await workspace.revealLeaf(existing[0]);
 		return;
 	}
 
 	const leaf = workspace.getRightLeaf(false);
 	if (!leaf) return;
-	await leaf.setViewState({ type: viewType, active: true });
-	await workspace.revealLeaf(leaf);
+	await leaf.setViewState({ type: viewType, active: reveal });
+	if (reveal) await workspace.revealLeaf(leaf);
 }
 
 /** 특정 View Type 패널을 메인 워크스페이스(가운데 탭)에 열거나 포커스 */

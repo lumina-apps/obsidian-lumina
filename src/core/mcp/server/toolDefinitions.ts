@@ -114,7 +114,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'replace_note',
-			description: 'Replace the entire content of an existing note.',
+			description: t('mcpServerTools.replace_note.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -126,7 +126,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'patch_note',
-			description: 'Apply one or more text replacements to a note. Prefer using the patches array to batch multiple changes into a single tool call — this is more efficient and presents all changes to the user at once as a unified diff.',
+			description: t('mcpServerTools.patch_note.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -151,7 +151,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'delete_note',
-			description: 'Delete a note.',
+			description: t('mcpServerTools.delete_note.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -162,7 +162,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'move_note',
-			description: 'Move or rename a note.',
+			description: t('mcpServerTools.move_note.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -174,7 +174,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'get_backlinks',
-			description: 'Get a list of notes that link to the specified note.',
+			description: t('mcpServerTools.get_backlinks.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -185,7 +185,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'update_frontmatter',
-			description: 'Update a frontmatter property in a note.',
+			description: t('mcpServerTools.update_frontmatter.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -198,7 +198,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'get_note_metadata',
-			description: 'Get metadata (frontmatter, tags, creation date, etc) for a note.',
+			description: t('mcpServerTools.get_note_metadata.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -209,7 +209,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'list_attachments',
-			description: 'List all attachment files (images, pdfs) inside the vault, or linked in a note.',
+			description: t('mcpServerTools.list_attachments.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -220,7 +220,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'save_attachment',
-			description: 'Save a binary attachment file from base64 string.',
+			description: t('mcpServerTools.save_attachment.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -232,7 +232,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'execute_code',
-			description: 'Execute javascript/typescript code in a secure sandbox.',
+			description: t('mcpServerTools.execute_code.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -243,7 +243,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'run_shell_command',
-			description: 'Execute a terminal shell command on the desktop OS. Use with caution.',
+			description: t('mcpServerTools.run_shell_command.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -255,7 +255,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'run_note_code_block',
-			description: 'Run a specific code block from a note in the sandbox.',
+			description: t('mcpServerTools.run_note_code_block.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -267,7 +267,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'list_tags',
-			description: 'List all tags used in the vault.',
+			description: t('mcpServerTools.list_tags.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {},
@@ -276,7 +276,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'create_canvas',
-			description: 'Create an Obsidian Canvas file (.canvas) with nodes and edges.',
+			description: t('mcpServerTools.create_canvas.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -306,7 +306,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'generate_moc',
-			description: 'Generate a Map of Content (MOC) note that collects and links related notes. Use folder, tags, or files to define which notes to include.',
+			description: t('mcpServerTools.generate_moc.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -347,7 +347,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'auto_link_note',
-			description: 'Automatically find unlinked mentions (note titles or aliases) in a note and replace them with internal markdown links ([[Title|Alias]]). CRITICAL: ALWAYS use this tool when the user asks to add backlinks or auto-link a note. NEVER try to manually read the note and use patch_note or replace_note to add links yourself, as it will crash the system.',
+			description: t('mcpServerTools.auto_link_note.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -358,7 +358,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'query_metadata',
-			description: 'Query and filter vault notes by their frontmatter properties, tags, or folders. Returns a markdown table of the results. Use this tool when the user asks to list or aggregate notes based on their metadata (e.g. status, author, rating, dates).',
+			description: t('mcpServerTools.query_metadata.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {

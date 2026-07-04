@@ -209,7 +209,7 @@ export default class LuminaPlugin extends Plugin {
 
 			// debugMode ON이면 자동으로 패널 열기
 			if (this.settings.misc.debugMode) {
-				void activateView(this.app.workspace, DEBUG_VIEW_TYPE);
+				void activateView(this.app.workspace, DEBUG_VIEW_TYPE, false);
 			}
 
 			// RAG 워커 초기화
