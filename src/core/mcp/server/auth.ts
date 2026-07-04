@@ -17,7 +17,7 @@ export function authenticateRequest(req: http.IncomingMessage, authToken: string
 		if (token.length === authToken.length) {
 			try {
 				return timingSafeEqual(Buffer.from(token), Buffer.from(authToken));
-			} catch (e) {
+			} catch {
 				return false;
 			}
 		}
