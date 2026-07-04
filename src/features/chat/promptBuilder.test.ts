@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildMessages } from './promptBuilder';
+import { buildMessages, estimateTokens } from './promptBuilder';
 import type { UIChatMessage } from '../../shared/types/chat.types';
 import type { ChatSettings } from '../../core/settings/settings.types';
 
@@ -108,5 +108,31 @@ describe('promptBuilder', () => {
 		const messages = buildMessages(mockHistory, 'Next', { chat: mockChatSettings });
 		
 		expect(messages[1].content).toBe('Actual response');
+	});
+});
+
+describe('estimateTokens', () => {
+	it('should estimate English text at ~4 chars per token', () => {
+		const text = 'This is a test message.'; // 23 chars
+		// cjkCount = 0, otherCount = 23
+		// tokens = 23 * 0.25 = 5.75 -> Math.ceil(5.75) = 6
+		expect(estimateTokens(text)).toBe(6);
+	});
+
+	it('should estimate Korean text at ~1.5 tokens per char', () => {
+		const text = '안녕하세요'; // 5 chars
+		// cjkCount = 5, otherCount = 0
+		// tokens = 5 * 1.5 = 7.5 -> Math.ceil(7.5) = 8
+		expect(estimateTokens(text)).toBe(8);
+	});
+
+	it('should estimate mixed text correctly', () => {
+		const text = '안녕하세요 Hello'; // 5 CJK chars, 6 other chars (space + 'Hello')
+		// tokens = (5 * 1.5) + (6 * 0.25) = 7.5 + 1.5 = 9
+		expect(estimateTokens(text)).toBe(9);
+	});
+
+	it('should return 0 for empty string', () => {
+		expect(estimateTokens('')).toBe(0);
 	});
 });

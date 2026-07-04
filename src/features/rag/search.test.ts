@@ -51,6 +51,9 @@ describe('search module', () => {
 			const mockOramaStore = {
 				search: vi.fn().mockResolvedValue([
 					{ id: 'c1', score: 0.9, activeDocument: { parentId: 'p1', text: 'This is a test' } }
+				]),
+				searchFulltext: vi.fn().mockResolvedValue([
+					{ id: 'c1', parentId: 'p1' }
 				])
 			} as unknown as OramaStore;
 

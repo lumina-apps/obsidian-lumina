@@ -74,6 +74,28 @@ export class OramaStore {
 		}));
 	}
 
+	/** 쿼리 텍스트에 기반해 BM25/Full-text 검색을 수행하여 하위 청크들을 찾습니다. */
+	async searchFulltext(query: string, limit: number, activeFilePath?: string | null): Promise<{ id: string; parentId: string }[]> {
+		if (!this.db) throw new Error('OramaStore not initialized');
+		
+		const searchParams: Parameters<typeof search>[1] = {
+			term: query,
+			limit,
+			properties: ['text'],
+		};
+
+		if (activeFilePath) {
+			searchParams.where = { path: { eq: activeFilePath } };
+		}
+
+		const results = await search(this.db, searchParams);
+
+		return results.hits.map(hit => ({
+			id: hit.id,
+			parentId: (hit.document as Record<string, unknown>).parentId as string,
+		}));
+	}
+
 	/** DB 초기화 */
 	async clear(): Promise<void> {
 		await this.init(); // 새 인스턴스로 덮어쓰기

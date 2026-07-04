@@ -84,11 +84,22 @@ export async function searchVault(
 	}
 
 	// 4. 상위 청크 대상 BM25 점수 계산 (키워드 매칭 최적화)
-	const queryTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 0);
-	const bm25Candidates = parentChunks.filter(p => {
-		const lowerText = p.text.toLowerCase();
-		return queryTerms.some(term => lowerText.includes(term));
-	});
+	let bm25Candidates: ParentChunk[] = [];
+	if (query.trim().length > 0) {
+		// Orama 풀텍스트 검색을 활용해 후보군을 매우 빠르게 추출
+		const fulltextLimit = Math.max(20, topK * 3);
+		const fulltextHits = await oramaDb.searchFulltext(query, fulltextLimit, activeFilePath);
+		
+		const candidateParentIds = new Set<string>();
+		for (const hit of fulltextHits) {
+			if (hit.parentId) candidateParentIds.add(hit.parentId);
+		}
+		
+		for (const pid of candidateParentIds) {
+			const p = parentMap.get(pid);
+			if (p) bm25Candidates.push(p);
+		}
+	}
 
 	const bm25Results = calculateBM25(query, bm25Candidates);
 	const bm25ScoreMap = new Map<string, number>();

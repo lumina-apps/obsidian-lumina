@@ -198,6 +198,7 @@ const mainContext = await esbuild.context({
 	sourcemap: prod ? false : "inline",
 	minify: prod,
 	treeShaking: true,
+	metafile: true,
 	outfile,
 });
 
@@ -278,7 +279,9 @@ const workerContext = await esbuild.context({
 // ─── Watch / Build ────────────────────────────────────────────────────────────
 if (prod) {
 	await workerContext.rebuild();
-	await mainContext.rebuild();
+	const result = await mainContext.rebuild();
+	const fs = await import("fs");
+	if (result && result.metafile) fs.writeFileSync('meta.json', JSON.stringify(result.metafile));
 	process.exit(0);
 } else {
 	await workerContext.rebuild();

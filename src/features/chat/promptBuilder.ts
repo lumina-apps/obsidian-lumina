@@ -9,6 +9,22 @@ import type { ChatSettings } from '../../core/settings/settings.types';
 import { t } from '../../shared/locales/helpers';
 import { debugLogger } from '../../shared/debugLogger';
 
+/**
+ * 대략적인 토큰 길이를 추정합니다.
+ * 한글/CJK 문자는 1글자당 약 1.5 토큰으로, 영어/기호 등 기타 문자는 4글자당 1 토큰으로 계산합니다.
+ */
+export function estimateTokens(text: string): number {
+	if (!text) return 0;
+	// CJK 문자 매칭 정규식 (한글, 한자, 카나 등)
+	const cjkMatch = text.match(/[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/g);
+	const cjkCount = cjkMatch ? cjkMatch.length : 0;
+	const otherCount = text.length - cjkCount;
+	
+	// 한글/CJK는 보수적으로 글자당 1.5 토큰, 기타 문자는 글자당 0.25 토큰
+	const tokens = (cjkCount * 1.5) + (otherCount * 0.25);
+	return Math.ceil(tokens);
+}
+
 const LANGUAGE_HINTS: Record<string, string> = {
 	ko: 'Always respond in Korean (한국어).',
 	en: 'Always respond in English.',
@@ -124,12 +140,12 @@ export function buildMessages(
 			}
 		}
 	} else if (chat.memoryMethod === 'tokens') {
-		// 토큰 기반: 뒤에서부터 토큰 합산 (간이 추정: 4 chars ≈ 1 token)
+		// 토큰 기반: 뒤에서부터 토큰 합산 (정규식 기반 가중치 추정)
 		let tokenCount = 0;
 		const maxTokens = chat.maxContextTokens;
 		const collected: UIChatMessage[] = [];
 		for (let i = turns.length - 1; i >= 0; i--) {
-			const estimated = Math.ceil(turns[i].content.length / 4);
+			const estimated = estimateTokens(turns[i].content);
 			if (tokenCount + estimated > maxTokens) break;
 			tokenCount += estimated;
 			collected.unshift(turns[i]);
