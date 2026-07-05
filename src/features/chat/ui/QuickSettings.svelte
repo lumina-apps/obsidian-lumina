@@ -12,7 +12,9 @@
 
 	// ── Store derived 값 직접 참조 (local state 복사 제거) ──────────
 	let systemPrompts = $derived($settingsStore?.chat.systemPrompts ?? []);
-	let activePromptId = $derived($settingsStore?.chat.activeSystemPromptId ?? "default");
+	let activeProjectId = $derived($settingsStore?.projects.activeProjectId ?? "default");
+	let activeProject = $derived($settingsStore?.projects.list.find(p => p.id === activeProjectId));
+	let activePromptId = $derived(activeProject?.systemPromptId || "default");
 	let temperature = $derived($settingsStore?.chat.temperature ?? 0.7);
 	let maxTokens = $derived($settingsStore?.chat.maxOutputTokens ?? 4000);
 
@@ -26,7 +28,6 @@
 
 	// ── 설정 저장 ────────────────────────────────────────────────────
 	async function saveSettings(updates: Partial<{
-		activeSystemPromptId: string;
 		temperature: number;
 		maxOutputTokens: number;
 	}>) {
@@ -34,9 +35,14 @@
 		await plugin.saveSettings();
 	}
 
-	function handlePromptChange(e: Event) {
+	async function handlePromptChange(e: Event) {
 		const target = e.target as HTMLSelectElement;
-		saveSettings({ activeSystemPromptId: target.value });
+		const projectId = $settingsStore?.projects.activeProjectId ?? "default";
+		const pIndex = plugin.settings.projects.list.findIndex(p => p.id === projectId);
+		if (pIndex !== -1) {
+			plugin.settings.projects.list[pIndex].systemPromptId = target.value;
+			await plugin.saveSettings();
+		}
 	}
 
 	function closePopup() {

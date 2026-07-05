@@ -104,7 +104,7 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			setting.addButton(btn => {
 				btn.setIcon('trash')
 					.setTooltip(t('common.delete') || '삭제')
-					.setDestructive()
+					.setWarning()
 					.onClick(() => {
 						new ConfirmModal(
 							tab.plugin.app,

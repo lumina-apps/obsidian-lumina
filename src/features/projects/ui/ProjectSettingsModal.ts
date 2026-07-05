@@ -52,10 +52,15 @@ export class ProjectSettingsModal extends Modal {
 			this.defaultModelId = '';
 			this.systemPromptId = '';
 			// Auto detect default excludes
-			const commonExcludes = ['Templates', 'templates', '_templates', 'chatHistory', 'Chat History', 'Attachments', 'attachments', 'backups'];
+			const chatHistoryPath = this.plugin.settings.chat.historyPath || 'Chat History';
+			const backupPath = 'backups';
+			const mustHaveExcludes = [chatHistoryPath, backupPath];
+			
+			const commonExcludes = ['Templates', 'templates', '_templates', 'Attachments', 'attachments'];
 			const existingFolders = this.app.vault.getAllLoadedFiles().filter(f => f instanceof TFolder).map(f => f.path);
 			const detectedExcludes = commonExcludes.filter(ex => existingFolders.includes(ex));
-			this.excludedPaths = new Set(detectedExcludes);
+			
+			this.excludedPaths = new Set([...mustHaveExcludes, ...detectedExcludes]);
 		}
 	}
 

@@ -182,6 +182,13 @@
 		plugin.settings.projects.activeProjectId = newProjectId;
 		await plugin.saveSettings();
 
+		// 4.5. 새 프로젝트의 기본 모델로 전환
+		const activeProject = getActiveProject();
+		if (activeProject.defaultProviderId && activeProject.defaultModelId) {
+			selectedProviderId = activeProject.defaultProviderId;
+			selectedModelId = activeProject.defaultModelId;
+		}
+
 		// 5. RAG 인덱서 hot-swap (비동기, await 없이 시작만)
 		if ($isRagEnabled) {
 			import("../../../features/rag/ragInitializer").then(
