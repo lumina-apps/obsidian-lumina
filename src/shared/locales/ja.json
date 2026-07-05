@@ -902,7 +902,7 @@
       "nameRequired": "プロジェクト名は必須であり、'default'にはできません。",
       "nameExists": "この名前のプロジェクトは既に存在します。",
       "title": "プロジェクト",
-      "defaultDesc": "デフォルトプロジェクト — グローバルなRAGおよび履歴設定を使用",
+      "defaultDesc": "デフォルトプロジェクト",
       "historyPath": "履歴",
       "noSubfolder": "履歴: グローバルパスを使用",
       "activate": "切り替え",

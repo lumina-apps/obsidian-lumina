@@ -950,7 +950,7 @@
       "nameRequired": "Project name is required and cannot be 'default'.",
       "nameExists": "A project with this name already exists.",
       "title": "Projects",
-      "defaultDesc": "Default Project — Uses global RAG and History settings",
+      "defaultDesc": "Default Project",
       "historyPath": "History",
       "noSubfolder": "History: Uses global path",
       "activate": "Switch",

@@ -894,7 +894,7 @@
       "nameRequired": "项目名称为必填项，且不能为 'default'。",
       "nameExists": "已存在同名项目。",
       "title": "项目",
-      "defaultDesc": "默认项目 — 使用全局 RAG 和历史记录设置",
+      "defaultDesc": "默认项目",
       "historyPath": "历史记录",
       "noSubfolder": "历史记录：使用全局路径",
       "activate": "切换",

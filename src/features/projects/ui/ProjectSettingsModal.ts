@@ -30,17 +30,8 @@ export class ProjectSettingsModal extends Modal {
 			this.project = project;
 			this.projectName = (project.id === 'default' && project.name === 'Default') ? (t('projects.settings.defaultProjectName') || 'Default Project') : project.name;
 
-			const existingFolders = new Set(
-				this.app.vault.getAllLoadedFiles()
-					.filter(f => f instanceof TFolder)
-					.map(f => f.path)
-			);
-
-			const validIncluded = project.ragIncludedPaths.filter(p => p === '/' || existingFolders.has(p));
-			const validExcluded = project.ragExcludedPaths.filter(p => p === '/' || existingFolders.has(p));
-
-			this.includedPaths = new Set(validIncluded);
-			this.excludedPaths = new Set(validExcluded);
+			this.includedPaths = new Set(project.ragIncludedPaths);
+			this.excludedPaths = new Set(project.ragExcludedPaths);
 			this.defaultProviderId = project.defaultProviderId || '';
 			this.defaultModelId = project.defaultModelId || '';
 			this.systemPromptId = project.systemPromptId || '';
@@ -54,13 +45,9 @@ export class ProjectSettingsModal extends Modal {
 			// Auto detect default excludes
 			const chatHistoryPath = this.plugin.settings.chat.historyPath || 'Chat History';
 			const backupPath = 'backups';
-			const mustHaveExcludes = [chatHistoryPath, backupPath];
-			
 			const commonExcludes = ['Templates', 'templates', '_templates', 'Attachments', 'attachments'];
-			const existingFolders = this.app.vault.getAllLoadedFiles().filter(f => f instanceof TFolder).map(f => f.path);
-			const detectedExcludes = commonExcludes.filter(ex => existingFolders.includes(ex));
 			
-			this.excludedPaths = new Set([...mustHaveExcludes, ...detectedExcludes]);
+			this.excludedPaths = new Set([chatHistoryPath, backupPath, ...commonExcludes]);
 		}
 	}
 
@@ -293,7 +280,7 @@ export class ProjectSettingsModal extends Modal {
 		);
 
 		// Save Button
-		new Setting(contentEl)
+		const saveSetting = new Setting(contentEl)
 			.addButton(btn => btn
 				.setButtonText(t('projects.settings.save') || '저장')
 				.setCta()
@@ -302,6 +289,8 @@ export class ProjectSettingsModal extends Modal {
 					this.close();
 				})
 			);
+		
+		saveSetting.settingEl.addClass('lumina-sticky-save-setting');
 	}
 
 	private getHistoryDisplayPath(): string {
@@ -315,9 +304,14 @@ export class ProjectSettingsModal extends Modal {
 	async saveProject() {
 		const name = this.projectName.trim();
 		if (!name) return;
+		
+		let finalName = name;
+		if (this.project?.id === 'default' && name === (t('projects.settings.defaultProjectName') || 'Default Project')) {
+			finalName = 'Default';
+		}
 
 		const sanitizeName = (n: string) => n.trim().replace(/[\\/:*?"<>|]/g, '_');
-		const historySubfolder = this.project?.id === 'default' ? '' : sanitizeName(name);
+		const historySubfolder = this.project?.id === 'default' ? '' : sanitizeName(finalName);
 
 		const ragIncludedPaths = Array.from(this.includedPaths);
 		const ragExcludedPaths = Array.from(this.excludedPaths);
@@ -325,7 +319,7 @@ export class ProjectSettingsModal extends Modal {
 		if (this.isNewProject) {
 			const newProject: ProjectConfig = {
 				id: crypto.randomUUID(),
-				name,
+				name: finalName,
 				ragIncludedPaths,
 				ragExcludedPaths,
 				historySubfolder,
@@ -336,7 +330,7 @@ export class ProjectSettingsModal extends Modal {
 			};
 			this.plugin.settings.projects.list.push(newProject);
 		} else if (this.project) {
-			this.project.name = name;
+			this.project.name = finalName;
 			this.project.ragIncludedPaths = ragIncludedPaths;
 			this.project.ragExcludedPaths = ragExcludedPaths;
 			this.project.defaultProviderId = this.defaultProviderId;
@@ -362,6 +356,9 @@ export class ProjectSettingsModal extends Modal {
 					this.plugin.indexer.isDestroyed = true;
 					this.plugin.indexer.destroy();
 					setTotalFiles(0);
+
+					const { projectIndexCache } = await import('../../../features/rag/projectIndexCache');
+					projectIndexCache.delete(activeId);
 
 					// Use switchProjectIndex to re-init
 					await switchProjectIndex(this.plugin, activeId);

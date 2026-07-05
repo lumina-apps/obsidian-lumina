@@ -802,6 +802,16 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 	background-color: rgba(239, 68, 68, 0.12);
 }
 
+.lumina-project-info-desc {
+	margin-bottom: 12px;
+	margin-top: -10px;
+}
+
+.lumina-dropdown-ellipsis {
+	max-width: 230px;
+	text-overflow: ellipsis;
+}
+
 /* MCP Server Card - 2열 그리드 레이아웃 (기본 provider card grid 오버라이드) */
 .vertical-tab-content-container .lumina-settings .lumina-provider-card.mcp-server-card {
 	display: grid;
@@ -2114,3 +2124,14 @@ div.lumina-diff-added-widget {
 .lumina-settings .lumina-prompt-card[open] .lumina-prompt-card__chevron {
 	transform: rotate(90deg);
 }
+
+/* 16. Project Settings Sticky Save Button */
+.lumina-sticky-save-setting {
+	position: sticky;
+	bottom: 0;
+	background: var(--background-primary);
+	z-index: 10;
+	margin-bottom: 0;
+	padding-bottom: 20px;
+}
+

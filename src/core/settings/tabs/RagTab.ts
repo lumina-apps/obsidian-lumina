@@ -66,9 +66,9 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			.setName(displayName + (isActive ? ' ✓' : ''))
 			.setDesc(
 				isDefault
-					? (t('projects.settings.defaultDesc') || '기본 프로젝트 — RAG 및 히스토리 전역 설정 사용')
+					? (t('projects.settings.defaultDesc') || '기본 프로젝트')
 					: (project.historySubfolder
-						? `${t('projects.settings.historyPath') || '히스토리'}: ${project.historySubfolder}`
+						? `${t('projects.settings.historyPath') || '히스토리'}: ${tab.plugin.settings.chat.historyPath || 'Chat History'}/${project.historySubfolder}`
 						: (t('projects.settings.noSubfolder') || '히스토리: 전역 경로 사용'))
 			);
 
@@ -102,9 +102,14 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 		// 삭제 버튼
 		if (!isDefault) {
 			setting.addButton(btn => {
+				const btnCompat = btn as unknown as { setWarning?: () => void };
+				if (typeof btnCompat.setWarning === 'function') {
+					btnCompat.setWarning();
+				} else {
+					btn.buttonEl.classList.add('mod-warning');
+				}
 				btn.setIcon('trash')
 					.setTooltip(t('common.delete') || '삭제')
-					.setWarning()
 					.onClick(() => {
 						new ConfirmModal(
 							tab.plugin.app,

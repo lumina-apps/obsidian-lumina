@@ -34,6 +34,7 @@ export function getTargetFiles(
 	const maxSizeBytes = settings.maxFileSizeMB > 0 ? settings.maxFileSizeMB * 1024 * 1024 : 0;
 
 	return files.filter(f => {
+		if (f.path.startsWith('.') || f.path.includes('/.')) return false;
 		if (!isIncluded(f.path, includedPaths)) return false;
 		if (isExcluded(f.path, finalExcludedPaths)) return false;
 		if (maxSizeBytes > 0 && f.stat.size > maxSizeBytes) {

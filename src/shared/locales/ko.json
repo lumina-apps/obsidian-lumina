@@ -950,7 +950,7 @@
       "nameRequired": "프로젝트 이름은 필수이며, 'default'일 수 없습니다.",
       "nameExists": "해당 이름의 프로젝트가 이미 존재합니다.",
       "title": "프로젝트",
-      "defaultDesc": "기본 프로젝트 — RAG 및 히스토리 전역 설정 사용",
+      "defaultDesc": "기본 프로젝트",
       "historyPath": "히스토리",
       "noSubfolder": "히스토리: 전역 경로 사용",
       "activate": "전환",

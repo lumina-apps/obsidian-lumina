@@ -36,7 +36,6 @@ export function renderDefaultSystemPromptSection(tab: LuminaSettingTab, el: HTML
 				}
 			});
 
-			dropdown.selectEl.style.maxWidth = '230px';
-			dropdown.selectEl.style.textOverflow = 'ellipsis';
+			dropdown.selectEl.classList.add('lumina-dropdown-ellipsis');
 		});
 }

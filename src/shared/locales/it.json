@@ -894,7 +894,7 @@
       "nameRequired": "Il nome del progetto è obbligatorio e non può essere 'default'.",
       "nameExists": "Un progetto con questo nome esiste già.",
       "title": "Progetti",
-      "defaultDesc": "Progetto Predefinito — Usa le impostazioni globali di RAG e Cronologia",
+      "defaultDesc": "Progetto Predefinito",
       "historyPath": "Cronologia",
       "noSubfolder": "Cronologia: Usa percorso globale",
       "activate": "Cambia",

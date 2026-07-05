@@ -894,7 +894,7 @@
       "nameRequired": "Le nom du projet est requis et ne peut pas être 'default'.",
       "nameExists": "Un projet avec ce nom existe déjà.",
       "title": "Projets",
-      "defaultDesc": "Projet par défaut — Utilise les paramètres globaux de RAG et d'historique",
+      "defaultDesc": "Projet par défaut",
       "historyPath": "Historique",
       "noSubfolder": "Historique : Utilise le chemin global",
       "activate": "Changer",

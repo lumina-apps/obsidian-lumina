@@ -20,6 +20,7 @@ export function isExcluded(filePath: string, userPaths: string[]): boolean {
 	const allExclusions = [...DEFAULT_EXCLUDED_PATHS, ...userPaths];
 	return allExclusions.some(ex => {
 		let normalized = ex.trim().replace(/\\/g, '/');
+		if (normalized === '/' || normalized === '') return true;
 		if (normalized.endsWith('/')) {
 			normalized = normalized.slice(0, -1);
 		}
@@ -41,6 +42,7 @@ export function isIncluded(filePath: string, includePaths: string[]): boolean {
 
 	return includePaths.some(inc => {
 		let normalized = inc.trim().replace(/\\/g, '/');
+		if (normalized === '/' || normalized === '') return true;
 		if (normalized.endsWith('/')) {
 			normalized = normalized.slice(0, -1);
 		}

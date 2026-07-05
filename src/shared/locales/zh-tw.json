@@ -894,7 +894,7 @@
       "nameRequired": "專案名稱為必填項目，且不能為 'default'。",
       "nameExists": "已存在同名專案。",
       "title": "專案",
-      "defaultDesc": "預設專案 — 使用全域 RAG 和歷史紀錄設定",
+      "defaultDesc": "預設專案",
       "historyPath": "歷史紀錄",
       "noSubfolder": "歷史紀錄：使用全域路徑",
       "activate": "切換",
