@@ -1,4 +1,8 @@
-import { Component, MarkdownRenderer, type App } from "obsidian";
+import { Component, MarkdownRenderer, type App, type WorkspaceLeaf } from "obsidian";
+
+interface SearchView {
+	setQuery?: (query: string) => void;
+}
 
 /**
  * 마크다운 렌더링 헬퍼.
@@ -15,18 +19,23 @@ import { Component, MarkdownRenderer, type App } from "obsidian";
  * 옵시디언 검색 창을 열고 주어진 쿼리를 실행한다.
  */
 function openTagSearch(app: App, query: string): void {
-	const workspace = app.workspace as any;
+	const workspace = app.workspace;
 
 	// 기존 search leaf가 있으면 재사용, 없으면 새로 생성
-	let searchLeaf = workspace.getLeavesOfType("search")[0];
+	let searchLeaf: WorkspaceLeaf | undefined = workspace.getLeavesOfType("search")[0];
 	if (!searchLeaf) {
 		searchLeaf = workspace.getLeaf("tab");
-		searchLeaf.setViewState({ type: "search" });
+		if (searchLeaf) {
+			void searchLeaf.setViewState({ type: "search" });
+		}
 	}
 
+	if (!searchLeaf) return;
+
 	// SearchView의 setQuery로 쿼리 설정
-	if (searchLeaf?.view?.setQuery) {
-		searchLeaf.view.setQuery(query);
+	const view = searchLeaf.view as unknown as SearchView;
+	if (typeof view.setQuery === "function") {
+		view.setQuery(query);
 	}
 
 	// 검색 탭 활성화
