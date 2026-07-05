@@ -104,7 +104,7 @@ export function buildMessages(
 	// 읽기 모드 강제 안내 프롬프트 추가
 	if (chat.agentExecutionMode === 'read') {
 		const editModeLabel = t('settings.mcp.agentMode.editMode') || 'Edit Mode';
-		systemContent = `${systemContent}\n\n[IMPORTANT STATUS]\nYou are currently in READ-ONLY mode. You cannot modify, delete, or execute any files or notes. If the user requests any modifying action, DO NOT say "I don't have the tool". Instead, politely inform them that they must click the "${editModeLabel}" toggle to enable modifications.`.trim();
+		systemContent = `${systemContent}\n\n[IMPORTANT STATUS]\nYou are currently in READ-ONLY mode. You cannot modify, delete, or execute any files or notes. If the user requests any modifying action, DO NOT say "I don't have the tool". Instead, politely inform them that they must click the "${editModeLabel}" toggle located at the bottom right to enable modifications.`.trim();
 	}
 
 	// RAG 컨텍스트 주입은 이제 마지막 User 메시지에서 처리합니다.

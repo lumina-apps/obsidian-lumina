@@ -29,16 +29,16 @@ const OPEN_TAG_REGEX = new RegExp(
  * $/tag$ → </tag>, 짝이 맞지 않는 $tag$는 <tag> / </tag> 교대로 변환.
  */
 function normalizeDollarDelimiters(content: string): string {
-	// 1) $/tag$ → </tag>
+	// 1) $/tag$ 또는 $/tag → </tag>
 	let result = content.replace(
-		new RegExp(`\\$/(${TOOL_CALL_TAG_ALT})\\$`, 'gi'),
+		new RegExp(`\\$/(${TOOL_CALL_TAG_ALT})\\$?`, 'gi'),
 		'</$1>',
 	);
 
-	// 2) 남은 $tag$ 패턴: 첫 번째는 <tag>, 이후는 </tag> 교대로 변환
+	// 2) 남은 $tag$ 또는 $tag 패턴: 첫 번째는 <tag>, 이후는 </tag> 교대로 변환
 	let isOpen = false;
 	result = result.replace(
-		new RegExp(`\\$(${TOOL_CALL_TAG_ALT})\\$`, 'gi'),
+		new RegExp(`\\$(${TOOL_CALL_TAG_ALT})\\$?`, 'gi'),
 		(_match, tag) => {
 			if (!isOpen) {
 				isOpen = true;
