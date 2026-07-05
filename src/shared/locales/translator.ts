@@ -1,3 +1,5 @@
+import { getActiveProject } from "../../core/store/projectStore";
+
 import { App, Notice, Modal } from 'obsidian';
 import type { LLMProviderConfig } from '../types/settings.types';
 import type { LuminaSettings } from '../../core/settings/settings.types';
@@ -11,9 +13,10 @@ export async function translatePluginLocales(app: App, settings: LuminaSettings)
     let providerConfig: LLMProviderConfig | undefined;
     let modelName = '';
 
-    if (settings.connections.defaultProviderId && settings.connections.defaultModelId) {
-        providerConfig = settings.connections.providers.find((p: LLMProviderConfig) => p.id === settings.connections.defaultProviderId);
-        modelName = settings.connections.defaultModelId;
+    const activeProject = getActiveProject();
+    if (activeProject.defaultProviderId && activeProject.defaultModelId) {
+        providerConfig = settings.connections.providers.find((p: LLMProviderConfig) => p.id === activeProject.defaultProviderId);
+        modelName = activeProject.defaultModelId;
     }
 
     if (!providerConfig) {

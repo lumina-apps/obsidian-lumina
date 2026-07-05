@@ -871,5 +871,56 @@
         "desc": "フォルダモードで、親フォルダごとにノードをグループ化して表示します。（デフォルト: 無効）"
       }
     }
+  },
+  "projects": {
+    "settings": {
+      "deleteConfirmDesc": "このプロジェクトを削除してもよろしいですか？ 履歴ファイルは削除されません。",
+      "addProjectBtn": "+ 新しいプロジェクトを作成",
+      "newProjectTitle": "新しいプロジェクトを作成",
+      "modalTitle": "プロジェクト設定",
+      "projectName": "プロジェクト名",
+      "projectNameDesc": "プロジェクトの名前を設定します。",
+      "chatHistoryPath": "チャット履歴の保存パス",
+      "chatHistoryPathDesc": "このプロジェクトのチャット履歴が保存されるパスです。（自動割り当て）",
+      "vaultRoot": "ボルト全体 (/)",
+      "ragTargetFolder": "RAG対象フォルダー",
+      "ragTargetFolderDesc": "インデックスに登録するフォルダーをツリーでチェックします。サブフォルダーを展開して特定のフォルダーを選択できます。",
+      "ragTargetFolderEmpty": "対象フォルダーが選択されていません。（ボルト全体が対象）",
+      "ragExcludedFolders": "RAG除外フォルダー",
+      "ragExcludedFoldersDesc": "インデックスから除外するフォルダーをチェックします。",
+      "ragExcludedFoldersEmpty": "除外されたフォルダーはありません。",
+      "defaultModel": "デフォルトのチャットモデル",
+      "defaultModelDesc": "このプロジェクトで新しいチャットを開始する際に使用するデフォルトのモデルです。",
+      "defaultModelAuto": "自動選択（利用可能な最初のモデル）",
+      "systemPrompt": "デフォルトのシステムプロンプト",
+      "systemPromptDesc": "このプロジェクトで新しいチャットを開始する際に使用するシステムプロンプトです。",
+      "systemPromptAuto": "自動選択（最初のシステムプロンプト）",
+      "deletedModel": "[削除済み] モデル",
+      "deletedPrompt": "[削除済み] プロンプト",
+      "save": "保存",
+      "saveSuccess": "プロジェクト設定を保存しました",
+      "nameRequired": "プロジェクト名は必須であり、'default'にはできません。",
+      "nameExists": "この名前のプロジェクトは既に存在します。",
+      "title": "プロジェクト",
+      "defaultDesc": "デフォルトプロジェクト — グローバルなRAGおよび履歴設定を使用",
+      "historyPath": "履歴",
+      "noSubfolder": "履歴: グローバルパスを使用",
+      "activate": "切り替え",
+      "config": "プロジェクト設定",
+      "deleteConfirmTitle": "プロジェクトを削除",
+      "addProjectDesc": "新しいプロジェクトを作成し、RAGおよびチャット設定を構成します。",
+      "namePlaceholder": "Project Name",
+      "subfolderPlaceholder": "Subfolder Name",
+      "add": "Add",
+      "duplicateName": "A project with this name already exists.",
+      "defaultProjectName": "デフォルト",
+      "modalTitleActive": "プロジェクト設定 (現在: {{projectName}})",
+      "activeProjectModelDesc": "現在アクティブなプロジェクト (<strong>{{projectName}}</strong>) のデフォルトチャットモデルを設定します。プロジェクト設定 (RAGタブ) からも変更できます。"
+    },
+    "selector": {
+      "label": "プロジェクトを選択",
+      "default": "デフォルト",
+      "manage": "設定で管理"
+    }
   }
 }

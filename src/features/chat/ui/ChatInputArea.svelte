@@ -408,7 +408,7 @@
 					placeholder={hasProvider
 						? $tStore("errors.chatPlaceholder")
 						: $tStore("errors.llmConnectRequired")}
-					disabled={!hasProvider}
+					disabled={!hasProvider || isLoading}
 					rows="1"
 					onkeydown={handleKeydown}
 					oninput={handleInput}

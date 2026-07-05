@@ -871,5 +871,56 @@
         "desc": "在資料夾模式下，將節點按其父資料夾分組顯示在 白板 上。(預設：停用)"
       }
     }
+  },
+  "projects": {
+    "settings": {
+      "deleteConfirmDesc": "確定要刪除此專案嗎？歷史紀錄檔案不會被刪除。",
+      "addProjectBtn": "+ 建立新專案",
+      "newProjectTitle": "建立新專案",
+      "modalTitle": "專案設定",
+      "projectName": "專案名稱",
+      "projectNameDesc": "設定專案名稱。",
+      "chatHistoryPath": "聊天紀錄儲存路徑",
+      "chatHistoryPathDesc": "此專案聊天紀錄的儲存路徑。（自動分配）",
+      "vaultRoot": "整個儲存庫 (/)",
+      "ragTargetFolder": "RAG 目標資料夾",
+      "ragTargetFolderDesc": "在樹狀結構中勾選要建立索引的資料夾。您可以展開子資料夾以選擇特定資料夾。",
+      "ragTargetFolderEmpty": "未選擇目標資料夾。（整個儲存庫為目標）",
+      "ragExcludedFolders": "RAG 排除資料夾",
+      "ragExcludedFoldersDesc": "勾選要從索引中排除的資料夾。",
+      "ragExcludedFoldersEmpty": "沒有排除的資料夾。",
+      "save": "儲存",
+      "saveSuccess": "專案設定已儲存",
+      "nameRequired": "專案名稱為必填項目，且不能為 'default'。",
+      "nameExists": "已存在同名專案。",
+      "title": "專案",
+      "defaultDesc": "預設專案 — 使用全域 RAG 和歷史紀錄設定",
+      "historyPath": "歷史紀錄",
+      "noSubfolder": "歷史紀錄：使用全域路徑",
+      "activate": "切換",
+      "config": "專案設定",
+      "deleteConfirmTitle": "刪除專案",
+      "addProjectDesc": "建立新專案並設定 RAG 和聊天設定。",
+      "namePlaceholder": "Project Name",
+      "subfolderPlaceholder": "Subfolder Name",
+      "add": "Add",
+      "duplicateName": "A project with this name already exists.",
+      "defaultProjectName": "預設",
+      "defaultModel": "預設聊天模型",
+      "defaultModelDesc": "在此專案中開始新聊天時使用的預設模型。",
+      "defaultModelAuto": "自動選擇 (第一個可用模型)",
+      "systemPrompt": "預設系統提示詞",
+      "systemPromptDesc": "在此專案中開始新聊天時使用的系統提示詞。",
+      "systemPromptAuto": "自動選擇 (第一個系統提示詞)",
+      "deletedModel": "[已刪除] 模型",
+      "deletedPrompt": "[已刪除] 提示詞",
+      "modalTitleActive": "專案設定 (目前: {{projectName}})",
+      "activeProjectModelDesc": "設定目前活動專案 (<strong>{{projectName}}</strong>) 的預設聊天模型。您也可以在專案設定（RAG標籤）中更改此設定。"
+    },
+    "selector": {
+      "label": "選擇專案",
+      "default": "預設",
+      "manage": "在設定中管理"
+    }
   }
 }

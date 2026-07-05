@@ -28,6 +28,7 @@ export interface ProcessContext {
 	childChunkSize: number;
 	childChunkOverlap: number;
 	modelName: string;
+	projectId: string;
 	parentChunks: ParentChunk[];
 	childChunks: ChildChunk[];
 	oramaStore: OramaStore;
@@ -57,7 +58,7 @@ export async function processFiles(files: TFile[], ctx: ProcessContext, startedA
 
 	const persistIndexCtx: IndexPersistContext = {
 		modelName: ctx.modelName, chunks: ctx.parentChunks, childChunks: ctx.childChunks,
-		fileMtimes: ctx.fileMtimes, fileHashes: ctx.fileHashes,
+		fileMtimes: ctx.fileMtimes, fileHashes: ctx.fileHashes, projectId: ctx.projectId,
 	};
 
 	const processId = ctx.getCurrentProcessId();

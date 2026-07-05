@@ -10,6 +10,7 @@
 
 import { t } from '../../shared/locales/helpers';
 import type LuminaPlugin from '../../main';
+import { createDefaultProject } from '../../shared/types/project.types';
 
 /** 마이그레이션 대상인 구버전 chat 설정 타입 */
 interface LegacyChatSettings {
@@ -85,28 +86,35 @@ export function migrateQuickActions(plugin: LuminaPlugin): boolean {
 export function migrateExcludedPaths(plugin: LuminaPlugin): boolean {
 	let changed = false;
 
-	if (!plugin.settings.misc.hasMigratedChatHistory) {
-		if (!plugin.settings.rag.excludedPaths.includes('chatHistory')) {
-			plugin.settings.rag.excludedPaths.push('chatHistory');
-		}
-		plugin.settings.misc.hasMigratedChatHistory = true;
-		changed = true;
-	}
-
 	const configDir = plugin.app.vault.configDir;
-	if (configDir && !plugin.settings.rag.excludedPaths.includes(configDir)) {
-		plugin.settings.rag.excludedPaths.push(configDir);
-		changed = true;
-	}
-
 	const oldConfigDir = '.' + 'obsidian';
-	if (configDir !== oldConfigDir && plugin.settings.rag.excludedPaths.includes(oldConfigDir)) {
-		plugin.settings.rag.excludedPaths = plugin.settings.rag.excludedPaths.filter(p => p !== oldConfigDir);
-		changed = true;
+
+	for (const p of plugin.settings.projects.list) {
+		if (!plugin.settings.misc.hasMigratedChatHistory) {
+			if (!p.ragExcludedPaths.includes('chatHistory')) {
+				p.ragExcludedPaths.push('chatHistory');
+				changed = true;
+			}
+		}
+
+		if (configDir && !p.ragExcludedPaths.includes(configDir)) {
+			p.ragExcludedPaths.push(configDir);
+			changed = true;
+		}
+
+		if (configDir !== oldConfigDir && p.ragExcludedPaths.includes(oldConfigDir)) {
+			p.ragExcludedPaths = p.ragExcludedPaths.filter(path => path !== oldConfigDir);
+			changed = true;
+		}
+
+		if (!p.ragExcludedPaths.includes('backups')) {
+			p.ragExcludedPaths.push('backups');
+			changed = true;
+		}
 	}
 
-	if (!plugin.settings.rag.excludedPaths.includes('backups')) {
-		plugin.settings.rag.excludedPaths.push('backups');
+	if (!plugin.settings.misc.hasMigratedChatHistory) {
+		plugin.settings.misc.hasMigratedChatHistory = true;
 		changed = true;
 	}
 
@@ -196,11 +204,93 @@ export function migrateCanvasSettings(plugin: LuminaPlugin): boolean {
 }
 
 /**
+ * Projects 설정 마이그레이션.
+ * projects 필드가 없는 기존 사용자에게 Default 프로젝트를 초기화합니다.
+ */
+export function migrateProjects(plugin: LuminaPlugin): boolean {
+	let needsSave = false;
+
+	if (!plugin.settings.projects) {
+		plugin.settings.projects = {
+			list: [createDefaultProject()],
+			activeProjectId: 'default',
+		};
+		needsSave = true;
+	}
+	// list가 비어있으면 Default 복구
+	if (!plugin.settings.projects.list || plugin.settings.projects.list.length === 0) {
+		plugin.settings.projects.list = [createDefaultProject()];
+		plugin.settings.projects.activeProjectId = 'default';
+		needsSave = true;
+	}
+
+	// ── 전역 RAG 설정을 프로젝트(Default) 단위로 이관 ──
+	const legacyRag = plugin.settings.rag as any;
+	if (legacyRag && (legacyRag.includedPaths !== undefined || legacyRag.excludedPaths !== undefined)) {
+		const defaultProject = plugin.settings.projects.list.find(p => p.id === 'default');
+		if (defaultProject) {
+			if (legacyRag.includedPaths !== undefined) {
+				defaultProject.ragIncludedPaths = legacyRag.includedPaths;
+				delete legacyRag.includedPaths;
+			}
+			if (legacyRag.excludedPaths !== undefined) {
+				defaultProject.ragExcludedPaths = legacyRag.excludedPaths;
+				delete legacyRag.excludedPaths;
+			}
+			if (legacyRag.dataScope !== undefined) {
+				delete legacyRag.dataScope;
+			}
+		}
+		needsSave = true;
+	}
+
+	// ── 전역 디폴트 모델/프롬프트를 프로젝트 단위로 이관 ──
+	const legacyConnections = plugin.settings.connections as any;
+	const legacyChat = plugin.settings.chat as any;
+
+	for (const p of plugin.settings.projects.list) {
+		let projectChanged = false;
+		if (p.defaultProviderId === undefined) {
+			p.defaultProviderId = legacyConnections?.defaultProviderId || '';
+			projectChanged = true;
+		}
+		if (p.defaultModelId === undefined) {
+			p.defaultModelId = legacyConnections?.defaultModelId || '';
+			projectChanged = true;
+		}
+		if (p.systemPromptId === undefined) {
+			p.systemPromptId = legacyChat?.activeSystemPromptId || 'default';
+			projectChanged = true;
+		}
+		if (projectChanged) needsSave = true;
+	}
+
+	// 구버전 전역 설정 클린업
+	if (legacyConnections?.defaultProviderId !== undefined) {
+		delete legacyConnections.defaultProviderId;
+		needsSave = true;
+	}
+	if (legacyConnections?.defaultModelId !== undefined) {
+		delete legacyConnections.defaultModelId;
+		needsSave = true;
+	}
+	if (legacyChat?.activeSystemPromptId !== undefined) {
+		delete legacyChat.activeSystemPromptId;
+		needsSave = true;
+	}
+
+	return needsSave;
+}
+
+/**
  * 모든 마이그레이션을 순차 실행하고 변경이 있으면 저장합니다.
  * @returns 저장이 필요하면 true
  */
 export function runMigrations(plugin: LuminaPlugin): boolean {
 	let needsSave = false;
+	// projects 마이그레이션을 가장 먼저 수행하여 p.ragExcludedPaths 등을 보장
+	if (migrateProjects(plugin)) needsSave = true;
+	
 	if (migrateQuickActions(plugin)) needsSave = true;
 	if (migrateExcludedPaths(plugin)) needsSave = true;
 	if (migrateMinSimilarity(plugin)) needsSave = true;

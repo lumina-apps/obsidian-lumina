@@ -78,7 +78,7 @@ export class AnthropicStreamAccumulator {
 			const index = chunk.index ?? 0;
 			const block = this.accumulatedBlocks[index];
 			if (block) {
-				if (chunk.delta?.type === 'text_delta' && chunk.delta.text) {
+				if (chunk.delta?.type === 'text_delta' && chunk.delta.text && block.type === 'text') {
 					block.text = (block.text || '') + chunk.delta.text;
 					this.fullContent += chunk.delta.text;
 					this.onChunk?.(chunk.delta.text);
@@ -86,6 +86,7 @@ export class AnthropicStreamAccumulator {
 				else if (chunk.delta?.type === 'input_json_delta' && chunk.delta.partial_json) {
 					block.input = (block.input || '') + chunk.delta.partial_json;
 				}
+				// thinking_delta (extended thinking block) 는 의도적으로 무시 - fullContent에 포함하지 않음
 			}
 		}
 		else if (chunk.type === 'message_delta') {

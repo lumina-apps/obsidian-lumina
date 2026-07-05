@@ -3,9 +3,11 @@
 	import type { ChatSession } from "../../../shared/types/chat.types";
 	import type { ChatController } from "../chatController";
 	import { currentSessionId } from "../../../core/store/chatStore";
+	import { activeProjectId } from "../../../core/store/projectStore";
 	import { tStore } from "../../../shared/locales/index";
 	import { formatDate } from "../../../shared/utils/dateUtils";
 	import { SVG_BACK_ARROW, SVG_REFRESH, SVG_TRASH, SVG_EXPORT } from "../../../shared/svgIcons";
+	import { debugLogger } from "../../../shared/debugLogger";
 
 	let { ctrl, onSessionSelect, onBack }: { ctrl: ChatController; onSessionSelect: () => void; onBack: () => void } = $props();
 
@@ -17,7 +19,7 @@
 		try {
 			sessions = await ctrl.fetchSessions();
 		} catch (e) {
-			console.error("Failed to fetch sessions", e);
+			debugLogger.logError('history', e instanceof Error ? e : new Error(String(e)));
 		} finally {
 			loading = false;
 		}
@@ -45,7 +47,9 @@
 		await ctrl.history.exportSession(sessionId);
 	}
 
-	onMount(() => {
+	$effect(() => {
+		// activeProjectId가 변경될 때마다(또는 초기 마운트 시) 세션 목록 새로고침
+		$activeProjectId;
 		loadSessions();
 	});
 </script>

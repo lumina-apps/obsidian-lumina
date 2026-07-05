@@ -1,3 +1,5 @@
+import { getActiveProject } from "../../core/store/projectStore";
+
 import { Notice, Editor, MarkdownView } from 'obsidian';
 import type { MarkdownFileInfo } from 'obsidian';
 import type LuminaPlugin from '../../main';
@@ -31,8 +33,9 @@ export class QuickActionHandler {
 		let modelId = connections.quickActionModelId;
 
 		if (action.actionType === 'chat') {
-			providerId = connections.defaultProviderId || providerId;
-			modelId = connections.defaultModelId || modelId;
+			const activeProject = getActiveProject();
+			providerId = activeProject.defaultProviderId || providerId;
+			modelId = activeProject.defaultModelId || modelId;
 
 			if (!providerId || !modelId) {
 				const verified = connections.providers.filter(p => p.isVerified);

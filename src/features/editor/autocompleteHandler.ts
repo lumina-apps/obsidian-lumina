@@ -1,3 +1,5 @@
+import { sanitizeDisplayContent } from "../../shared/utils/llmTextSanitizer";
+
 import { createProvider } from '../../core/llm-providers';
 import type LuminaPlugin from '../../main';
 import { debugLogger } from '../../shared/debugLogger';
@@ -41,7 +43,7 @@ export class AutocompleteHandler {
 			
 			// 간단한 후처리: 
 			// LLM이 생각 과정(think tag)을 포함한 경우 제거
-			let cleanSuggestion = suggestion.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+			let cleanSuggestion = sanitizeDisplayContent(suggestion);
 			
 			// 문맥 끝에 맞춰 띄어쓰기 조절
 			if (cleanSuggestion && !contextText.endsWith(' ') && !contextText.endsWith('\n')) {

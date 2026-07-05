@@ -32,6 +32,8 @@ export interface AnthropicStreamChunk {
 	delta?: {
 		type?: string;
 		text?: string;
+		/** extended thinking 블록 전용 (thinking_delta 이벤트) */
+		thinking?: string;
 		partial_json?: string;
 		stop_reason?: string | null;
 	};

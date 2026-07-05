@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { migrateQuickActions, migrateExcludedPaths } from './migrations';
+import { migrateQuickActions, migrateExcludedPaths, migrateProjects } from './migrations';
 import { addDynamicLocale, setLanguage } from '../../shared/locales/helpers';
 import type LuminaPlugin from '../../main';
 
@@ -96,18 +96,19 @@ describe('migrateExcludedPaths', () => {
 				misc: {
 					hasMigratedChatHistory: false,
 				},
-				rag: {
-					excludedPaths: ['templates', 'Templates', '_templates'],
-				},
+				projects: {
+					list: [{ id: 'default', name: 'Default', ragIncludedPaths: [], ragExcludedPaths: ['templates', 'Templates', '_templates'], historySubfolder: '', createdAt: 0, defaultProviderId: '', defaultModelId: '', systemPromptId: 'default' }],
+					activeProjectId: 'default'
+				}
 			},
 		} as unknown as LuminaPlugin;
 
 		const result = migrateExcludedPaths(mockPlugin);
 
 		expect(result).toBe(true);
-		expect(mockPlugin.settings.rag.excludedPaths).toContain('backups');
-		expect(mockPlugin.settings.rag.excludedPaths).toContain('.obsidian');
-		expect(mockPlugin.settings.rag.excludedPaths).toContain('chatHistory');
+		expect(mockPlugin.settings.projects.list[0].ragExcludedPaths).toContain('backups');
+		expect(mockPlugin.settings.projects.list[0].ragExcludedPaths).toContain('.obsidian');
+		expect(mockPlugin.settings.projects.list[0].ragExcludedPaths).toContain('chatHistory');
 	});
 
 	it('does not add backups if already present', () => {
@@ -121,8 +122,9 @@ describe('migrateExcludedPaths', () => {
 				misc: {
 					hasMigratedChatHistory: true,
 				},
-				rag: {
-					excludedPaths: ['templates', 'Templates', '_templates', 'chatHistory', '.obsidian', 'backups'],
+				projects: {
+					list: [{ id: 'default', name: 'Default', ragIncludedPaths: [], ragExcludedPaths: ['templates', 'Templates', '_templates', 'chatHistory', '.obsidian', 'backups'], historySubfolder: '', createdAt: 0, defaultProviderId: '', defaultModelId: '', systemPromptId: 'default' }],
+					activeProjectId: 'default'
 				},
 			},
 		} as unknown as LuminaPlugin;
@@ -188,9 +190,10 @@ describe('runMigrations', () => {
 		const mockPlugin = {
 			settings: {
 				misc: { hasMigratedChatHistory: false },
-				rag: { excludedPaths: [], minSimilarity: 0.65 },
+				rag: { minSimilarity: 0.65 },
 				chat: { quickActions: [], memoryMethod: undefined, useTokenLimit: true, contextWindowTurns: 3 },
 				webSearch: undefined,
+				projects: { list: [{ id: 'default', name: 'Default', ragIncludedPaths: [], ragExcludedPaths: [], historySubfolder: '', createdAt: 0, defaultProviderId: '', defaultModelId: '', systemPromptId: 'default' }], activeProjectId: 'default' },
 			},
 			app: { vault: { configDir: '.obsidian' } },
 			commandManager: { registerQuickActions: vi.fn() }
@@ -206,16 +209,52 @@ describe('runMigrations', () => {
 		const mockPlugin = {
 			settings: {
 				misc: { hasMigratedChatHistory: true },
-				rag: { excludedPaths: ['.obsidian', 'chatHistory', 'backups'], minSimilarity: 0.5 },
+				rag: { minSimilarity: 0.5 },
 				chat: { quickActions: [], memoryMethod: 'tokens', contextWindowTurns: 10 },
 				webSearch: { enabled: false, providers: [], activeProviderId: 'tavily', maxResults: 5, maxContentLength: 3000 },
 				canvas: { depth: 1, layout: 'radial', bidirectional: true, includeAttachments: false, maxNodes: 200, folderDepth: 0, outputPath: 'canvasVisualize', showFolderGroups: false },
+				projects: { list: [{ id: 'default', name: 'Default', ragIncludedPaths: [], ragExcludedPaths: ['.obsidian', 'chatHistory', 'backups'], historySubfolder: '', createdAt: 0, defaultProviderId: '', defaultModelId: '', systemPromptId: 'default' }], activeProjectId: 'default' },
 			},
 			app: { vault: { configDir: '.obsidian' } },
 			commandManager: { registerQuickActions: vi.fn() }
 		} as any;
 		
 		expect(runMigrations(mockPlugin)).toBe(false);
+	});
+});
+
+describe('migrateProjects', () => {
+	it('initializes projects when missing', () => {
+		const mockPlugin = {
+			settings: {} as any,
+		} as any;
+		const result = migrateProjects(mockPlugin);
+		expect(result).toBe(true);
+		expect(mockPlugin.settings.projects.list).toHaveLength(1);
+		expect(mockPlugin.settings.projects.list[0].id).toBe('default');
+		expect(mockPlugin.settings.projects.activeProjectId).toBe('default');
+	});
+
+	it('recovers empty list with Default project', () => {
+		const mockPlugin = {
+			settings: { projects: { list: [], activeProjectId: 'default' } } as any,
+		} as any;
+		const result = migrateProjects(mockPlugin);
+		expect(result).toBe(true);
+		expect(mockPlugin.settings.projects.list).toHaveLength(1);
+	});
+
+	it('does not modify existing projects', () => {
+		const mockPlugin = {
+			settings: {
+				projects: {
+					list: [{ id: 'default', name: 'Default', ragIncludedPaths: [], ragExcludedPaths: [], historySubfolder: '', createdAt: 0, defaultProviderId: '', defaultModelId: '', systemPromptId: 'default' }],
+					activeProjectId: 'default',
+				},
+			} as any,
+		} as any;
+		const result = migrateProjects(mockPlugin);
+		expect(result).toBe(false);
 	});
 });
 

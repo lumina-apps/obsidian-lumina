@@ -1,4 +1,6 @@
 import type { LuminaSettings } from './settings.types';
+import { createDefaultProject } from '../../shared/types/project.types';
+
 
 export const DEFAULT_SETTINGS: LuminaSettings = {
 	// ── Section 1: Connections & Models ──────────────────────────────────────
@@ -11,8 +13,6 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 			providerId: '',
 			modelId: '',
 		},
-		defaultProviderId: '',
-		defaultModelId: '',
 		quickActionProviderId: '',
 		quickActionModelId: '',
 		taskProviderId: '',
@@ -30,7 +30,6 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 				content: 'You are a helpful assistant integrated into Obsidian.\nDo not use conversational filler or introductory phrases. Go straight to the point.',
 			},
 		],
-		activeSystemPromptId: 'default',
 		autoSaveHistory: true,
 		historyPath: 'chatHistory',
 		sendKey: 'enter',
@@ -58,16 +57,7 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 
 	// ── Section 3: RAG & Context ─────────────────────────────────────────────
 	rag: {
-		dataScope: 'vault',
 		includeActiveNote: false,  // 채팅 입력 영역 토글로 이동 → 설정 디폴트는 false
-		includedPaths: [],
-		excludedPaths: [
-			'templates',
-			'Templates',
-			'_templates',
-			'chatHistory',
-			'backups',
-		],
 
 		// Advanced
 		parentChunkSize: 2000,
@@ -131,5 +121,11 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		folderDepth: 0,
 		outputPath: 'canvasVisualize',
 		showFolderGroups: false,
+	},
+
+	// ── Section 8: Projects ───────────────────────────────────────────────
+	projects: {
+		list: [createDefaultProject()],
+		activeProjectId: 'default',
 	},
 };

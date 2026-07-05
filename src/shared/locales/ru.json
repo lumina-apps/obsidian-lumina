@@ -871,5 +871,56 @@
         "desc": "В режиме папки группировать узлы по родительской папке на холст. (По умолчанию: Выключено)"
       }
     }
+  },
+  "projects": {
+    "settings": {
+      "deleteConfirmDesc": "Вы уверены, что хотите удалить этот проект? Файлы истории не будут удалены.",
+      "addProjectBtn": "+ Создать новый проект",
+      "newProjectTitle": "Создать новый проект",
+      "modalTitle": "Настройки проекта",
+      "projectName": "Имя проекта",
+      "projectNameDesc": "Задайте имя проекта.",
+      "chatHistoryPath": "Путь истории чата",
+      "chatHistoryPathDesc": "Путь, по которому будет сохраняться история чата для этого проекта. (Назначается автоматически)",
+      "vaultRoot": "Весь Vault (/)",
+      "ragTargetFolder": "Целевые папки RAG",
+      "ragTargetFolderDesc": "Отметьте папки для индексации в дереве. Вы можете развернуть подпапки для выбора определенных папок.",
+      "ragTargetFolderEmpty": "Целевые папки не выбраны. (Целевой весь Vault)",
+      "ragExcludedFolders": "Исключенные папки RAG",
+      "ragExcludedFoldersDesc": "Отметьте папки, которые нужно исключить из индексации.",
+      "ragExcludedFoldersEmpty": "Нет исключенных папок.",
+      "save": "Сохранить",
+      "saveSuccess": "Настройки проекта сохранены",
+      "nameRequired": "Имя проекта обязательно и не может быть 'default'.",
+      "nameExists": "Проект с таким именем уже существует.",
+      "title": "Проекты",
+      "defaultDesc": "Проект по умолчанию — Использует глобальные настройки RAG и истории",
+      "historyPath": "История",
+      "noSubfolder": "История: Использует глобальный путь",
+      "activate": "Переключить",
+      "config": "Настройки проекта",
+      "deleteConfirmTitle": "Удалить проект",
+      "addProjectDesc": "Создайте новый проект и настройте параметры RAG и чата.",
+      "namePlaceholder": "Project Name",
+      "subfolderPlaceholder": "Subfolder Name",
+      "add": "Add",
+      "duplicateName": "A project with this name already exists.",
+      "defaultProjectName": "По умолчанию",
+      "defaultModel": "Модель чата по умолчанию",
+      "defaultModelDesc": "Модель по умолчанию, которая будет использоваться при запуске нового чата в этом проекте.",
+      "defaultModelAuto": "Автоматический выбор (Первая доступная модель)",
+      "systemPrompt": "Системный промпт по умолчанию",
+      "systemPromptDesc": "Системный промпт, который будет использоваться при запуске нового чата в этом проекте.",
+      "systemPromptAuto": "Автоматический выбор (Первый системный промпт)",
+      "deletedModel": "[Удалено] Модель",
+      "deletedPrompt": "[Удалено] Промпт",
+      "modalTitleActive": "Настройки проекта (Текущий: {{projectName}})",
+      "activeProjectModelDesc": "Устанавливает модель чата по умолчанию для активного проекта (<strong>{{projectName}}</strong>). Вы также можете изменить это в Настройках проекта (Вкладка RAG)."
+    },
+    "selector": {
+      "label": "Выбрать проект",
+      "default": "По умолчанию",
+      "manage": "Управление в настройках"
+    }
   }
 }

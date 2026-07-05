@@ -1,6 +1,7 @@
 import { Notice, type App } from 'obsidian';
 import { t } from '../../shared/locales/helpers';
 import type LuminaPlugin from '../../main';
+import { debugLogger } from '../../shared/debugLogger';
 import {
 	getMessages,
 	setSession,
@@ -20,6 +21,9 @@ import {
 	deleteSession,
 } from './history';
 import type { ChatSession } from '../../shared/types/chat.types';
+import { normalizePath } from 'obsidian';
+import { getActiveProject } from '../../core/store/projectStore';
+import { sanitizeDisplayContent } from '../../shared/utils/llmTextSanitizer';
 
 export class ChatHistoryController {
 	private app: App;
@@ -28,6 +32,20 @@ export class ChatHistoryController {
 	constructor(plugin: LuminaPlugin) {
 		this.app = plugin.app;
 		this.plugin = plugin;
+	}
+
+	/**
+	 * 활성 프로젝트를 기반으로 히스토리 저장 경로를 계산합니다.
+	 * - Default 프로젝트(historySubfolder=''): chat.historyPath 그대로
+	 * - 다른 프로젝트: chat.historyPath/historySubfolder
+	 */
+	private resolveHistoryPath(): string {
+		const basePath = this.plugin.settings.chat.historyPath;
+		const project = getActiveProject();
+		if (!project.historySubfolder) {
+			return basePath;
+		}
+		return normalizePath(`${basePath}/${project.historySubfolder}`);
 	}
 
 	/**
@@ -60,10 +78,16 @@ export class ChatHistoryController {
 			}
 		}
 
+		// 히스토리 저장 전 assistant 메시지에서 생각 과정(<think> 태그)을 제거
+		const sanitizedMsgs = msgs.map(m => ({
+			...m,
+			content: m.role === 'assistant' ? sanitizeDisplayContent(m.content) : m.content,
+		}));
+
 		const session: ChatSession = {
 			id: newId,
 			title,
-			messages: msgs,
+			messages: sanitizedMsgs,
 			createdAt: msgs[0].timestamp,
 			updatedAt: Date.now(),
 			providerId,
@@ -72,8 +96,9 @@ export class ChatHistoryController {
 			summaryUpToMessageId: get(summaryUpToMessageId),
 		};
 
+		const historyPath = this.resolveHistoryPath();
 		try {
-			await saveSession(this.app, session, chat.historyPath);
+			await saveSession(this.app, session, historyPath);
 			if (!currentId) {
 				currentSessionId.set(newId);
 			}
@@ -84,12 +109,12 @@ export class ChatHistoryController {
 
 	/** 히스토리 세션 목록을 반환합니다. */
 	async fetchSessions(): Promise<ChatSession[]> {
-		return loadSessionsList(this.app, this.plugin.settings.chat.historyPath);
+		return loadSessionsList(this.app, this.resolveHistoryPath());
 	}
 
 	/** 특정 세션을 불러와 현재 대화창을 덮어씁니다. */
 	async restoreSession(sessionId: string): Promise<boolean> {
-		const session = await loadSession(this.app, sessionId, this.plugin.settings.chat.historyPath);
+		const session = await loadSession(this.app, sessionId, this.resolveHistoryPath());
 		if (session) {
 			setSession(session);
 			return true;
@@ -100,7 +125,7 @@ export class ChatHistoryController {
 
 	/** 특정 세션을 삭제합니다. */
 	async removeSession(sessionId: string): Promise<boolean> {
-		const success = await deleteSession(this.app, sessionId, this.plugin.settings.chat.historyPath);
+		const success = await deleteSession(this.app, sessionId, this.resolveHistoryPath());
 		if (success) {
 			const currentId = get(currentSessionId);
 			if (currentId === sessionId) {
@@ -116,7 +141,7 @@ export class ChatHistoryController {
 	/** 특정 세션을 마크다운 파일로 내보냅니다. */
 	async exportSession(sessionId: string): Promise<boolean> {
 		try {
-			const session = await loadSession(this.app, sessionId, this.plugin.settings.chat.historyPath);
+			const session = await loadSession(this.app, sessionId, this.resolveHistoryPath());
 			if (session) {
 				const { exportSessionToMarkdown } = await import('./history');
 				await exportSessionToMarkdown(this.app, session);
@@ -126,7 +151,7 @@ export class ChatHistoryController {
 			new Notice(t('settings.chat.history.loadFail') || 'Failed to load session.');
 			return false;
 		} catch (e) {
-			console.error(e);
+			debugLogger.logError('history', e instanceof Error ? e : new Error(String(e)));
 			new Notice(t('settings.chat.history.exportFail') || 'Failed to export session.');
 			return false;
 		}

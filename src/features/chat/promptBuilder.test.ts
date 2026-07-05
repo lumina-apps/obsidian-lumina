@@ -12,6 +12,11 @@ vi.mock('../../shared/debugLogger', () => ({
 		logWarn: vi.fn(),
 	}
 }));
+vi.mock('../../core/store/projectStore', () => ({
+	getActiveProject: vi.fn(() => ({
+		systemPromptId: '1'
+	}))
+}));
 
 describe('promptBuilder', () => {
 	let mockChatSettings: ChatSettings;
@@ -96,9 +101,9 @@ describe('promptBuilder', () => {
 		
 		const lastMessage = messages[messages.length - 1];
 		expect(lastMessage.role).toBe('user');
-		expect(lastMessage.content).toContain('[Context from the vault]');
+		expect(lastMessage.content).toContain('<context>');
 		expect(lastMessage.content).toContain(ragContext);
-		expect(lastMessage.content).toContain('What does the context say?');
+		expect(lastMessage.content).toContain('<instruction>');
 	});
 
 	it('should strip think tags from assistant messages', () => {

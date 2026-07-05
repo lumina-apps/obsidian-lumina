@@ -13,14 +13,12 @@ import { compressChunks } from '../../rag/compressor';
 /** RAG 검색 수행 여부 결정 */
 export function resolveRagSearchFlag(opts: {
 	ragEnabled: boolean;
-	dataScope: string;
 	useRagContext?: boolean;
 }): boolean {
-	const { ragEnabled, dataScope, useRagContext } = opts;
+	const { ragEnabled, useRagContext } = opts;
 	if (!ragEnabled) return false;
 	if (useRagContext === false) return false;
 	if (useRagContext === true) return true;
-	if (dataScope === 'manual') return false;
 	return ragEnabled;
 }
 
@@ -55,10 +53,6 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 			parentChunks = parentChunks.filter(c =>
 				filterPaths.some(fp => c.path === fp || c.path.startsWith(fp + '/'))
 			);
-		} else if (rag.dataScope === 'active-note') {
-			parentChunks = activeFilePath
-				? parentChunks.filter(c => c.path === activeFilePath)
-				: [];
 		}
 
 		const ragStart = Date.now();
@@ -80,10 +74,10 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 			initialTopK,
 			rag.minSimilarity,
 			0.5,
-			rag.dataScope === 'active-note' ? activeFilePath : null
+			null // no more active-note scope
 		);
 
-		debugLogger.logSystem('rag', `Scope: ${rag.dataScope}, parentChunks: ${parentChunks.length}, Initial Results: ${results.length}`);
+		debugLogger.logSystem('rag', `parentChunks: ${parentChunks.length}, Initial Results: ${results.length}`);
 
 		if (results.length === 0) {
 			setMessageRagStep(assistantId, null);

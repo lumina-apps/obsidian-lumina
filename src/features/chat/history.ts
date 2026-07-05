@@ -186,9 +186,7 @@ export async function deleteSession(app: App, sessionId: string, basePath: strin
 
 // ─── Serialize ────────────────────────────────────────────────────────────────
 
-function stripThoughtProcess(content: string): string {
-	return content.replace(/<think>[\s\S]*?<\/think>\n*/gi, '').trim();
-}
+import { sanitizeDisplayContent } from '../../shared/utils/llmTextSanitizer';
 
 /**
  * 첨부파일에서 민감한 content 필드(base64 이미지, 파일 본문 등)를 제거한다.
@@ -211,7 +209,7 @@ function serializeSession(session: ChatSession): string {
 		...session,
 		messages: session.messages.map(m => ({
 			...m,
-			content: m.role === 'assistant' ? stripThoughtProcess(m.content) : m.content,
+			content: m.role === 'assistant' ? sanitizeDisplayContent(m.content) : m.content,
 			// base64 이미지 등 무거운 content 필드를 파일에 저장하지 않음
 			attachments: sanitizeAttachmentsForStorage(m.attachments),
 		}))
@@ -222,7 +220,7 @@ function serializeSession(session: ChatSession): string {
 		`id: ${cleanSession.id}`,
 		`title: ${JSON.stringify(cleanSession.title)}`,
 		`provider: ${cleanSession.providerId}`,
-		`model: ${cleanSession.modelId}`,
+		`model: "${cleanSession.modelId.replace(/:/g, '_')}"`,
 		`created: ${new Date(cleanSession.createdAt).toISOString()}`,
 		`updated: ${new Date(cleanSession.updatedAt).toISOString()}`,
 		'---',
@@ -268,7 +266,7 @@ export async function exportSessionToMarkdown(app: App, session: ChatSession): P
 		.map(m => {
 			const label = m.role === 'user' ? '**👤 You**' : `**✦ Lumina** _(${m.model ?? ''})_`;
 			const time = new Date(m.timestamp).toLocaleTimeString();
-			const content = m.role === 'assistant' ? stripThoughtProcess(m.content) : m.content;
+			const content = m.role === 'assistant' ? sanitizeDisplayContent(m.content) : m.content;
 			return `${label} · ${time}\n\n${content}\n`;
 		})
 		.join('\n---\n\n');
@@ -325,7 +323,7 @@ export async function generateTitleWithLLM(
 				maxOutputTokens: 20
 			}
 		);
-		const title = response.content.replace(/["']/g, '').trim();
+		const title = sanitizeDisplayContent(response.content).replace(/["']/g, '').trim();
 		return title || generateTitle(messages);
 	} catch (e) {
 		console.warn('Lumina: Failed to generate title with LLM, falling back to text extraction.', e);

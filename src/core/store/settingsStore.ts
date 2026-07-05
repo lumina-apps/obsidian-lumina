@@ -60,10 +60,11 @@ export function syncSettingsStore(settings: LuminaSettings): void {
 	settingsStore.set({
 		connections: { ...settings.connections, providers: [...settings.connections.providers], embedding: { ...settings.connections.embedding } },
 		chat: { ...settings.chat, quickActions: [...settings.chat.quickActions] },
-		rag: { ...settings.rag, excludedPaths: [...settings.rag.excludedPaths] },
+		rag: { ...settings.rag },
 		misc: { ...settings.misc },
 		mcp: { ...settings.mcp, servers: [...settings.mcp.servers] },
 		webSearch: { ...settings.webSearch, providers: [...settings.webSearch.providers] },
 		canvas: { ...settings.canvas },
+		projects: { ...settings.projects, list: [...settings.projects.list.map(p => ({ ...p }))] },
 	});
 }

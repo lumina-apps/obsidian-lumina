@@ -10,12 +10,15 @@ export function stripMaskTokens(text: string): string {
 		.trim();
 }
 
-/** <think>/<thinking> 블록 제거 */
+/** <think>/<thinking>/<response>/<thought>/<reasoning> 등 추론/사고 블록 제거 */
 export function stripThinkTags(text: string): string {
-	return text
-		.replace(/<think>([\s\S]*?)(?:<\/think>|$)/gi, '')
-		.replace(/<thinking>([\s\S]*?)(?:<\/thinking>|$)/gi, '')
-		.trim();
+	const thinkTags = ['think', 'thinking', 'response', 'thought', 'reasoning'];
+	let result = text;
+	for (const tag of thinkTags) {
+		const pattern = new RegExp(`<${tag}>([\\s\\S]*?)(?:<\\/${tag}>|$)`, 'gi');
+		result = result.replace(pattern, '');
+	}
+	return result.trim();
 }
 
 /** 텍스트 기반 tool call 태그 제거 */
@@ -24,11 +27,16 @@ export function stripToolCallTags(text: string): string {
 	return text.replace(pattern, '').trim();
 }
 
-/** <think>/<thinking> 블록 내용만 추출 (UI 표시용) */
+/** <think>/<thinking>/<response>/<thought>/<reasoning> 블록 내용만 추출 (UI 표시용) */
 export function extractThinkBlocks(text: string): string[] {
-	const matches1 = Array.from(text.matchAll(/<think>([\s\S]*?)(?:<\/think>|$)/gi));
-	const matches2 = Array.from(text.matchAll(/<thinking>([\s\S]*?)(?:<\/thinking>|$)/gi));
-	return [...matches1, ...matches2].map(m => m[1].trim()).filter(Boolean);
+	const thinkTags = ['think', 'thinking', 'response', 'thought', 'reasoning'];
+	const results: string[] = [];
+	for (const tag of thinkTags) {
+		const pattern = new RegExp(`<${tag}>([\\s\\S]*?)(?:<\\/${tag}>|$)`, 'gi');
+		const matches = Array.from(text.matchAll(pattern));
+		results.push(...matches.map(m => m[1].trim()).filter(Boolean));
+	}
+	return results;
 }
 
 /** 모든 특수 태그 제거 후 표시용 콘텐츠 반환 */

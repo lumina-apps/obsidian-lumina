@@ -1,3 +1,5 @@
+import { getActiveProject } from "../../core/store/projectStore";
+
 /**
  * UIChatMessage[] + 설정 정보 → LLM API 전송용 ChatMessage[] 변환.
  * 시스템 프롬프트, 컨텍스트 길이 제한, RAG 컨텍스트 주입을 처리한다.
@@ -8,6 +10,7 @@ import type { UIChatMessage } from '../../shared/types/chat.types';
 import type { ChatSettings } from '../../core/settings/settings.types';
 import { t } from '../../shared/locales/helpers';
 import { debugLogger } from '../../shared/debugLogger';
+import { stripThinkTags } from '../../shared/utils/llmTextSanitizer';
 
 /**
  * 대략적인 토큰 길이를 추정합니다.
@@ -64,8 +67,11 @@ export function buildMessages(
 	const { chat, ragContext, sessionSummary, summaryUpToMessageId } = opts;
 
 	// ── 1. 시스템 프롬프트 구성 ───────────────────────────────────────────────
-	const activePreset = chat.systemPrompts.find(p => p.id === chat.activeSystemPromptId);
-	let systemContent = activePreset?.content ?? '';
+	const project = getActiveProject();
+	const activePresetId = project.systemPromptId || 'default';
+	const activePreset = chat.systemPrompts.find(p => p.id === activePresetId) || chat.systemPrompts[0];
+	
+	let systemContent = activePreset?.content || '';
 
 	if (systemContent) {
 		let dateStr: string;
@@ -160,9 +166,9 @@ export function buildMessages(
 	// ── 3. 이전 대화 추가 ─────────────────────────────────────────────────────
 	for (const m of trimmedTurns) {
 		let content = m.content;
-		// assistant 메시지의 경우 <think> 태그 내용 제거 (DeepSeek API 등 에러 방지)
+		// assistant 메시지의 경우 <think>/<thinking> 태그 내용 제거 (DeepSeek/Anthropic thinking 모델 에러 방지)
 		if (m.role === 'assistant') {
-			content = content.replace(/<think>([\s\S]*?)(?:<\/think>|$)/gi, '').trim();
+			content = stripThinkTags(content);
 		}
 		messages.push({
 			role: m.role,
@@ -194,7 +200,7 @@ export function buildMessages(
 		}
 		
 		// User 메시지 상단에 컨텍스트를 주입
-		finalUserText = `[Context from the vault]\n${optimizedRag}\n\n---\n\n${userText}`;
+		finalUserText = `<context>\n${optimizedRag}\n</context>\n\nUser Question: ${userText}\n\n<instruction>\nAnswer the user's question using ONLY the provided context. If the context is irrelevant or does not contain the answer, explicitly state that you cannot answer based on the context. DO NOT repeat, regurgitate, or summarize the context unless explicitly requested by the user.\n</instruction>`;
 	}
 
 	messages.push({ role: 'user', content: finalUserText });

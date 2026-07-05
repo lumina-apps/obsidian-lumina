@@ -1,3 +1,5 @@
+import { sanitizeDisplayContent } from "../../shared/utils/llmTextSanitizer";
+
 import type { SearchResult } from '../../shared/types/rag.types';
 import type { LLMProviderConfig } from '../../shared/types/settings.types';
 import { createProvider } from '../../core/llm-providers';
@@ -46,7 +48,7 @@ ${c.chunk.text}`;
 				);
 
 				// 불필요한 생각 과정(추론 모델) 제거
-				const finalContent = response.content.replace(/<think>[\s\S]*?<\/think>\n*/gi, '').trim();
+				const finalContent = sanitizeDisplayContent(response.content);
 
 				// 원본 객체를 복제하여 텍스트만 갱신
 				return {

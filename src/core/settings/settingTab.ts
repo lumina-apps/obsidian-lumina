@@ -182,7 +182,7 @@ export class LuminaSettingTab extends PluginSettingTab {
 		switch (this.activeTab) {
 			case 'connections': return renderConnectionsTab(this, el);
 			case 'chat': return renderChatTab(this, el);
-			case 'rag': return renderRagTab(this, el);
+			case 'rag': void renderRagTab(this, el); break;
 			case 'mcp': return renderMcpTab(this, el);
 			case 'webSearch': return renderWebSearchTab(this, el);
 			case 'misc': return renderMiscTab(this, el);

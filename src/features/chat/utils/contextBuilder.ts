@@ -75,7 +75,6 @@ export async function buildLlmContext(
 	// RAG 벡터 검색
 	const shouldSearchRag = resolveRagSearchFlag({
 		ragEnabled,
-		dataScope: ragSettings.dataScope,
 		useRagContext,
 	});
 

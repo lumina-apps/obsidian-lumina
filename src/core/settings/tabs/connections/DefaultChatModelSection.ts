@@ -1,59 +1,57 @@
-/** 기본 채팅 모델 선택 섹션 */
-
 import { Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
 import { t } from '../../../../shared/locales/helpers';
-import {
-	buildChatModelOptions,
-	parseProviderModelValue,
-	toProviderModelValue,
-} from '../../../../shared/utils/settingHelpers';
+import { getActiveProject } from '../../../store/projectStore';
+import { buildChatModelOptions, toProviderModelValue, parseProviderModelValue } from '../../../../shared/utils/modelUtils';
 
 export function renderDefaultChatModelSection(tab: LuminaSettingTab, el: HTMLElement): void {
-	const s = tab.plugin.settings.connections;
+	const activeProject = getActiveProject();
+	
+	// Create options using utility
+	const chatModelOptions = buildChatModelOptions(tab.plugin.settings.connections.providers);
 
-	tab.sectionHeading(el, t('settings.connections.defaultChatModel.name'));
-
-	const chatModelOptions = buildChatModelOptions(s.providers);
-
-	if (chatModelOptions.length === 0) {
-		tab.infoBox(el, t('settings.connections.defaultChatModel.noConnections'));
-		return;
-	}
-
-	const defaultChatSetting = new Setting(el)
-		.setName(t('settings.connections.defaultChatModel.sidebarDefault'))
-		.setDesc(t('settings.connections.defaultChatModel.desc'));
-
-	const currentChatValue = s.defaultProviderId && s.defaultModelId
-		? toProviderModelValue(s.defaultProviderId, s.defaultModelId)
+	const currentModelValue = (activeProject.defaultProviderId && activeProject.defaultModelId)
+		? toProviderModelValue(activeProject.defaultProviderId, activeProject.defaultModelId)
 		: '';
-	const currentChatLabel = currentChatValue
-		? (chatModelOptions.find(opt => opt.value === currentChatValue)?.label || currentChatValue)
-		: t('settings.connections.apiKey.selectModel');
 
-	const adjustedChatModelOptions = currentChatValue === ''
-		? [{ value: '', label: t('settings.connections.apiKey.selectModel') }, ...chatModelOptions]
-		: chatModelOptions;
+	const isModelMissing = currentModelValue !== '' && !chatModelOptions.some(opt => opt.value === currentModelValue);
 
-	tab.addModelSelector(
-		defaultChatSetting,
-		adjustedChatModelOptions,
-		currentChatValue,
-		currentChatLabel,
-		async (val) => {
-			if (val === '') {
-				s.defaultProviderId = '';
-				s.defaultModelId = '';
-			} else {
-				const parsed = parseProviderModelValue(val);
-				if (parsed) {
-					s.defaultProviderId = parsed.providerId;
-					s.defaultModelId = parsed.modelId;
-				}
+	new Setting(el)
+		.setName(t('projects.settings.defaultModel') || '기본 채팅 모델')
+		.setDesc(t('projects.settings.defaultModelDesc') || '이 프로젝트에서 새 채팅을 시작할 때 사용할 기본 모델입니다.')
+		.addDropdown(dropdown => {
+			dropdown.addOption('', t('projects.settings.defaultModelAuto') || '자동 선택 (첫 번째 사용 가능한 모델)');
+			
+			if (isModelMissing) {
+				dropdown.addOption(currentModelValue, `${t('projects.settings.deletedModel') || '[삭제됨] 모델'} (${activeProject.defaultModelId})`);
 			}
-			await tab.saveAndSync();
-		},
-		() => s.defaultProviderId && s.defaultModelId ? toProviderModelValue(s.defaultProviderId, s.defaultModelId) : '',
-	);
+			
+			chatModelOptions.forEach(opt => {
+				dropdown.addOption(opt.value, opt.label);
+			});
+
+			dropdown.setValue(currentModelValue);
+			dropdown.onChange(async (val) => {
+				if (val === '') {
+					activeProject.defaultProviderId = '';
+					activeProject.defaultModelId = '';
+				} else {
+					const parsed = parseProviderModelValue(val);
+					if (parsed) {
+						activeProject.defaultProviderId = parsed.providerId;
+						activeProject.defaultModelId = parsed.modelId;
+					}
+				}
+				
+				// Sync to global settings
+				const projIndex = tab.plugin.settings.projects.list.findIndex((p: any) => p.id === activeProject.id);
+				if (projIndex !== -1) {
+					tab.plugin.settings.projects.list[projIndex] = activeProject;
+					await tab.saveAndSync();
+				}
+			});
+
+			dropdown.selectEl.style.maxWidth = '230px';
+			dropdown.selectEl.style.textOverflow = 'ellipsis';
+		});
 }

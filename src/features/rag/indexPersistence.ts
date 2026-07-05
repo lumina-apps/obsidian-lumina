@@ -29,9 +29,11 @@ export interface LoadResult {
 export async function loadIndex(
 	app: App,
 	currentModelName: string,
+	projectId: string,
 ): Promise<LoadResult> {
+	const filename = projectId ? `index_${projectId}.json` : 'index.json';
 	const indexPath = normalizePath(
-		`${app.vault.configDir}/${STORAGE_SUBPATH}/index.json`,
+		`${app.vault.configDir}/${STORAGE_SUBPATH}/${filename}`,
 	);
 
 	const emptyResult: LoadResult = {
@@ -81,12 +83,14 @@ export async function saveIndex(
 	childChunks: ChildChunk[],
 	fileMtimes: Record<string, number>,
 	fileHashes: Record<string, number>,
+	projectId: string,
 ): Promise<void> {
 	const storageDirPath = normalizePath(
 		`${app.vault.configDir}/${STORAGE_SUBPATH}`,
 	);
+	const filename = projectId ? `index_${projectId}.json` : 'index.json';
 	const indexPath = normalizePath(
-		`${app.vault.configDir}/${STORAGE_SUBPATH}/index.json`,
+		`${app.vault.configDir}/${STORAGE_SUBPATH}/${filename}`,
 	);
 
 	try {
@@ -126,12 +130,14 @@ export async function saveCheckpoint(
 	processedPaths: string[],
 	totalFiles: number,
 	startedAt: number,
+	projectId: string,
 ): Promise<void> {
 	const storageDirPath = normalizePath(
 		`${app.vault.configDir}/${STORAGE_SUBPATH}`,
 	);
+	const filename = projectId ? `checkpoint_${projectId}.json` : 'checkpoint.json';
 	const checkpointPath = normalizePath(
-		`${app.vault.configDir}/${STORAGE_SUBPATH}/checkpoint.json`,
+		`${app.vault.configDir}/${STORAGE_SUBPATH}/${filename}`,
 	);
 
 	try {
@@ -156,9 +162,10 @@ export async function saveCheckpoint(
 }
 
 /** 디스크에서 체크포인트를 로드합니다. 없으면 null. */
-export async function loadCheckpoint(app: App): Promise<IndexingCheckpoint | null> {
+export async function loadCheckpoint(app: App, projectId: string): Promise<IndexingCheckpoint | null> {
+	const filename = projectId ? `checkpoint_${projectId}.json` : 'checkpoint.json';
 	const checkpointPath = normalizePath(
-		`${app.vault.configDir}/${STORAGE_SUBPATH}/checkpoint.json`,
+		`${app.vault.configDir}/${STORAGE_SUBPATH}/${filename}`,
 	);
 
 	try {
@@ -183,9 +190,10 @@ export async function loadCheckpoint(app: App): Promise<IndexingCheckpoint | nul
 }
 
 /** 체크포인트 파일을 삭제합니다. 인덱싱 완료 후 호출. */
-export async function deleteCheckpoint(app: App): Promise<void> {
+export async function deleteCheckpoint(app: App, projectId: string): Promise<void> {
+	const filename = projectId ? `checkpoint_${projectId}.json` : 'checkpoint.json';
 	const checkpointPath = normalizePath(
-		`${app.vault.configDir}/${STORAGE_SUBPATH}/checkpoint.json`,
+		`${app.vault.configDir}/${STORAGE_SUBPATH}/${filename}`,
 	);
 
 	try {

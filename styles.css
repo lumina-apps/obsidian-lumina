@@ -2104,3 +2104,13 @@ div.lumina-diff-added-widget {
 .lumina-debug__error-text {
 	color: #f87171;
 }
+
+.lumina-settings .lumina-prompt-card__chevron {
+	display: flex;
+	align-items: center;
+	color: var(--text-muted);
+	transition: transform 0.2s ease-in-out;
+}
+.lumina-settings .lumina-prompt-card[open] .lumina-prompt-card__chevron {
+	transform: rotate(90deg);
+}

@@ -919,5 +919,56 @@
         "desc": "In folder mode, group nodes by their parent folder on the canvas. (Default: Disabled)"
       }
     }
+  },
+  "projects": {
+    "settings": {
+      "deleteConfirmDesc": "Are you sure you want to delete this project? History files will not be deleted.",
+      "addProjectBtn": "+ Create New Project",
+      "newProjectTitle": "Create New Project",
+      "modalTitle": "Project Settings",
+      "projectName": "Project Name",
+      "projectNameDesc": "Set the name of the project.",
+      "chatHistoryPath": "Chat History Path",
+      "chatHistoryPathDesc": "The path where chat history for this project will be saved. (Auto-assigned)",
+      "vaultRoot": "Entire Vault (/)",
+      "ragTargetFolder": "RAG Target Folders",
+      "ragTargetFolderDesc": "Check the folders to index in the tree. You can expand subfolders to select specific folders.",
+      "ragTargetFolderEmpty": "No target folders selected. (Entire vault target)",
+      "ragExcludedFolders": "RAG Excluded Folders",
+      "ragExcludedFoldersDesc": "Check the folders to exclude from indexing.",
+      "ragExcludedFoldersEmpty": "No excluded folders.",
+      "defaultModel": "Default Chat Model",
+      "defaultModelDesc": "The default model to use when starting a new chat in this project.",
+      "defaultModelAuto": "Auto Select (First available model)",
+      "systemPrompt": "Default System Prompt",
+      "systemPromptDesc": "The system prompt to use when starting a new chat in this project.",
+      "systemPromptAuto": "Auto Select (First system prompt)",
+      "deletedModel": "(Deleted) Model",
+      "deletedPrompt": "(Deleted) Prompt",
+      "save": "Save",
+      "saveSuccess": "Project settings saved",
+      "nameRequired": "Project name is required and cannot be 'default'.",
+      "nameExists": "A project with this name already exists.",
+      "title": "Projects",
+      "defaultDesc": "Default Project — Uses global RAG and History settings",
+      "historyPath": "History",
+      "noSubfolder": "History: Uses global path",
+      "activate": "Switch",
+      "config": "Project Settings",
+      "deleteConfirmTitle": "Delete Project",
+      "addProjectDesc": "Create a new project and configure RAG and chat settings.",
+      "namePlaceholder": "Project Name",
+      "subfolderPlaceholder": "Subfolder Name",
+      "add": "Add",
+      "duplicateName": "A project with this name already exists.",
+      "defaultProjectName": "Default",
+      "modalTitleActive": "Project Settings (Current: {{projectName}})",
+      "activeProjectModelDesc": "Sets the default chat model for the active project (<strong>{{projectName}}</strong>). You can also change this in Project Settings (RAG tab)."
+    },
+    "selector": {
+      "label": "Select Project",
+      "default": "Default",
+      "manage": "Manage in Settings"
+    }
   }
 }

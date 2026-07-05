@@ -1,9 +1,11 @@
 import { Notice, Setting, ButtonComponent } from 'obsidian';
+import { ProjectSettingsModal } from '../../../features/projects/ui/ProjectSettingsModal';
 import type { LuminaSettingTab } from '../settingTab';
 import { wrapAsync, addSliderWithInput } from '../../../shared/utils/settingHelpers';
 import { t } from '../../../shared/locales/helpers';
 import { indexingState } from '../../store/ragStore';
 import { ConfirmModal } from '../../../shared/utils/modal';
+import { syncProjectStore } from '../../../core/store/projectStore';
 
 /** 경로 설정 변경 후 자동 재인덱싱 디바운스 타이머 */
 let pathChangeDebounceTimer: number | null = null;
@@ -46,49 +48,94 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 		tab.infoBox(el, t('settings.rag.disabledWarning'), 'warning');
 	}
 
-	// ── 데이터 범위 ───────────────────────────────────────────────────────
-	tab.sectionHeading(el, t('settings.rag.dataScope.name'));
+	// ── 프로젝트 관리 ──────────────────────────────────────────────────────
+	tab.sectionHeading(el, t('projects.settings.title') || '프로젝트');
 
-	new Setting(el)
-		.setName(t('settings.rag.dataScope.name'))
-		.setDesc(t('settings.rag.dataScope.desc'))
-		.addDropdown(drop => {
-			drop
-				.addOption('vault', t('settings.rag.dataScope.vaultWide'))
-				.addOption('active-note', t('settings.rag.dataScope.activeNote'))
-				.addOption('manual', t('settings.rag.dataScope.manual'))
-				.setValue(s.dataScope)
-				.onChange(async (val) => {
-					s.dataScope = val as typeof s.dataScope;
-					await tab.saveAndSync();
+	const projects = tab.plugin.settings.projects;
+
+	// 프로젝트 목록 렌더링
+	for (const project of [...projects.list]) {
+		const isDefault = project.id === 'default';
+		const isActive = projects.activeProjectId === project.id;
+
+		const card = el.createDiv({ cls: `lumina-feature-card${isActive ? ' is-active' : ''}` });
+		
+		const displayName = (project.id === 'default' && project.name === 'Default') ? (t('projects.settings.defaultProjectName') || 'Default Project') : project.name;
+
+		const setting = new Setting(card)
+			.setName(displayName + (isActive ? ' ✓' : ''))
+			.setDesc(
+				isDefault
+					? (t('projects.settings.defaultDesc') || '기본 프로젝트 — RAG 및 히스토리 전역 설정 사용')
+					: (project.historySubfolder
+						? `${t('projects.settings.historyPath') || '히스토리'}: ${project.historySubfolder}`
+						: (t('projects.settings.noSubfolder') || '히스토리: 전역 경로 사용'))
+			);
+
+		// 활성 전환 버튼
+		if (!isActive) {
+			setting.addButton(btn => {
+				btn.setButtonText(t('projects.settings.activate') || '전환')
+					.onClick(async () => {
+						projects.activeProjectId = project.id;
+						await tab.saveAndSync();
+						syncProjectStore(projects.list, projects.activeProjectId);
+						tab.plugin.refreshSettingTab();
+						// RAG 인덱서 hot-swap
+						if (tab.plugin.settings.connections.ragEnabled) {
+							const { switchProjectIndex } = await import('../../../features/rag/ragInitializer');
+							void switchProjectIndex(tab.plugin, project.id);
+						}
+					});
+			});
+		}
+
+		// 설정 버튼
+		setting.addButton(btn => {
+			btn.setIcon('settings')
+				.setTooltip('프로젝트 설정')
+				.onClick(() => {
+					new ProjectSettingsModal(tab.plugin, project).open();
 				});
 		});
 
-	new Setting(el)
-		.setName(t('settings.rag.includePaths.name'))
-		.setDesc(t('settings.rag.includePaths.desc'))
-		.addText(text => {
-			text
-				.setPlaceholder('Projects, Notes')
-				.setValue(s.includedPaths.join(', '))
-				.onChange(async (val) => {
-					s.includedPaths = val.split(',').map(v => v.trim()).filter(Boolean);
-					await tab.saveAndSync();
-					if (tab.plugin.indexer) triggerReindexAfterPathChange(tab);
-				});
-		});
+		// 삭제 버튼
+		if (!isDefault) {
+			setting.addButton(btn => {
+				btn.setIcon('trash')
+					.setTooltip(t('common.delete') || '삭제')
+					.setWarning()
+					.onClick(() => {
+						new ConfirmModal(
+							tab.plugin.app,
+							t('projects.settings.deleteConfirmTitle') || '프로젝트 삭제',
+							(t('projects.settings.deleteConfirmDesc') || '\"{name}\" 프로젝트를 삭제하시겠습니까? 히스토리 파일은 삭제되지 않습니다.').replace('{name}', project.name),
+							async () => {
+								projects.list = projects.list.filter(p => p.id !== project.id);
+								if (projects.activeProjectId === project.id) {
+									projects.activeProjectId = 'default';
+								}
+								const { projectIndexCache } = await import('../../../features/rag/projectIndexCache');
+								projectIndexCache.delete(project.id);
+								await tab.saveAndSync();
+								syncProjectStore(projects.list, projects.activeProjectId);
+								tab.plugin.refreshSettingTab();
+							},
+						).open();
+					});
+			});
+		}
+	}
 
+	// 새 프로젝트 추가
 	new Setting(el)
-		.setName(t('settings.rag.ignorePaths.name'))
-		.setDesc(t('settings.rag.ignorePaths.desc'))
-		.addText(text => {
-			text
-				.setPlaceholder('Templates, Attachments/')
-				.setValue(s.excludedPaths.join(', '))
-				.onChange(async (val) => {
-					s.excludedPaths = val.split(',').map(v => v.trim()).filter(Boolean);
-					await tab.saveAndSync();
-					if (tab.plugin.indexer) triggerReindexAfterPathChange(tab);
+		.setName(t('projects.settings.newProjectTitle') || '새 프로젝트 추가')
+		.setDesc(t('projects.settings.addProjectDesc') || '새로운 프로젝트를 생성하고 RAG 및 채팅 설정을 구성합니다.')
+		.addButton(btn => {
+			btn.setButtonText(t('projects.settings.addProjectBtn') || '+ 새 프로젝트 만들기')
+				.setCta()
+				.onClick(() => {
+					new ProjectSettingsModal(tab.plugin).open();
 				});
 		});
 

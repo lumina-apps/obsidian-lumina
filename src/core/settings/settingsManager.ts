@@ -4,6 +4,7 @@ import { DEFAULT_SETTINGS } from './defaultSettings';
 import type { LuminaSettings } from './settings.types';
 import type { PluginLanguage } from '../../shared/types/settings.types';
 import { initSettingsStore, syncSettingsStore } from '../store/settingsStore';
+import { initProjectStore, syncProjectStore } from '../store/projectStore';
 
 export class SettingsManager {
 	private plugin: LuminaPlugin;
@@ -27,6 +28,7 @@ export class SettingsManager {
 			mcp: Object.assign({}, DEFAULT_SETTINGS.mcp, safeSaved.mcp ?? {}),
 			webSearch: Object.assign({}, DEFAULT_SETTINGS.webSearch, safeSaved.webSearch ?? {}),
 			canvas: Object.assign({}, DEFAULT_SETTINGS.canvas, safeSaved.canvas ?? {}),
+			projects: Object.assign({}, DEFAULT_SETTINGS.projects, safeSaved.projects ?? {}),
 		};
 
 		if (this.plugin.isFirstRun) {
@@ -36,6 +38,12 @@ export class SettingsManager {
 		
 		// Initialize the settings store immediately after loading
 		initSettingsStore(this.plugin.settings);
+		// Initialize the project store
+		const proj = this.plugin.settings.projects;
+		initProjectStore(
+			proj?.list ?? DEFAULT_SETTINGS.projects.list,
+			proj?.activeProjectId ?? 'default',
+		);
 	}
 
 	async loadSecrets(): Promise<void> {
@@ -131,6 +139,10 @@ export class SettingsManager {
 
 		await this.plugin.saveData(settingsToSave);
 		syncSettingsStore(this.plugin.settings);
+		syncProjectStore(
+			this.plugin.settings.projects.list,
+			this.plugin.settings.projects.activeProjectId,
+		);
 	}
 
 	private detectSystemLanguage(): PluginLanguage {

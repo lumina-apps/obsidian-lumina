@@ -871,5 +871,56 @@
         "desc": "Im Ordnermodus Knoten im Canvas nach ihrem übergeordneten Ordner gruppieren. (Standard: Deaktiviert)"
       }
     }
+  },
+  "projects": {
+    "settings": {
+      "deleteConfirmDesc": "Möchten Sie dieses Projekt wirklich löschen? Verlaufsdateien werden nicht gelöscht.",
+      "addProjectBtn": "+ Neues Projekt erstellen",
+      "newProjectTitle": "Neues Projekt erstellen",
+      "modalTitle": "Projekteinstellungen",
+      "projectName": "Projektname",
+      "projectNameDesc": "Legen Sie den Namen des Projekts fest.",
+      "chatHistoryPath": "Chat-Verlaufspfad",
+      "chatHistoryPathDesc": "Der Pfad, in dem der Chat-Verlauf für dieses Projekt gespeichert wird. (Automatisch zugewiesen)",
+      "vaultRoot": "Gesamter Vault (/)",
+      "ragTargetFolder": "RAG-Zielordner",
+      "ragTargetFolderDesc": "Markieren Sie die zu indizierenden Ordner in der Baumstruktur. Sie können Unterordner erweitern, um bestimmte Ordner auszuwählen.",
+      "ragTargetFolderEmpty": "Keine Zielordner ausgewählt. (Gesamter Vault-Ziel)",
+      "ragExcludedFolders": "Von RAG ausgeschlossene Ordner",
+      "ragExcludedFoldersDesc": "Markieren Sie die Ordner, die von der Indizierung ausgeschlossen werden sollen.",
+      "ragExcludedFoldersEmpty": "Keine ausgeschlossenen Ordner.",
+      "save": "Speichern",
+      "saveSuccess": "Projekteinstellungen gespeichert",
+      "nameRequired": "Der Projektname ist erforderlich und darf nicht 'default' sein.",
+      "nameExists": "Ein Projekt mit diesem Namen existiert bereits.",
+      "title": "Projekte",
+      "defaultDesc": "Standardprojekt — Verwendet globale RAG- und Verlaufs-Einstellungen",
+      "historyPath": "Verlauf",
+      "noSubfolder": "Verlauf: Verwendet globalen Pfad",
+      "activate": "Wechseln",
+      "config": "Projekteinstellungen",
+      "deleteConfirmTitle": "Projekt löschen",
+      "addProjectDesc": "Erstellen Sie ein neues Projekt und konfigurieren Sie die RAG- und Chat-Einstellungen.",
+      "namePlaceholder": "Project Name",
+      "subfolderPlaceholder": "Subfolder Name",
+      "add": "Add",
+      "duplicateName": "A project with this name already exists.",
+      "defaultProjectName": "Standard",
+      "defaultModel": "Standard-Chatmodell",
+      "defaultModelDesc": "Das Standardmodell, das beim Starten eines neuen Chats in diesem Projekt verwendet wird.",
+      "defaultModelAuto": "Automatisch auswählen (Erstes verfügbares Modell)",
+      "systemPrompt": "Standard-System-Prompt",
+      "systemPromptDesc": "Der System-Prompt, der beim Starten eines neuen Chats in diesem Projekt verwendet wird.",
+      "systemPromptAuto": "Automatisch auswählen (Erster System-Prompt)",
+      "deletedModel": "[Gelöscht] Modell",
+      "deletedPrompt": "[Gelöscht] Prompt",
+      "modalTitleActive": "Projekteinstellungen (Aktuell: {{projectName}})",
+      "activeProjectModelDesc": "Legt das Standard-Chatmodell für das aktive Projekt (<strong>{{projectName}}</strong>) fest. Sie können dies auch in den Projekteinstellungen (RAG-Tab) ändern."
+    },
+    "selector": {
+      "label": "Projekt auswählen",
+      "default": "Standard",
+      "manage": "In den Einstellungen verwalten"
+    }
   }
 }

@@ -10,6 +10,7 @@ import type {
 	McpServerConfig,
 	QuickAction,
 } from '../../shared/types/settings.types';
+import type { ProjectSettings } from '../../shared/types/project.types';
 
 // ─── Section 1: Connections & Models ────────────────────────────────────────
 
@@ -22,10 +23,6 @@ export interface ConnectionsSettings {
 	ragEnabled: boolean;
 	/** 임베딩 모델 설정 */
 	embedding: EmbeddingConfig;
-	/** 사이드바 채팅에서 디폴트로 사용할 프로바이더 ID */
-	defaultProviderId: string;
-	/** 사이드바 채팅에서 디폴트로 사용할 모델 ID */
-	defaultModelId: string;
 	/** 퀵 액션 전용 프로바이더 ID */
 	quickActionProviderId: string;
 	/** 퀵 액션 전용 모델 ID */
@@ -45,8 +42,6 @@ export interface ConnectionsSettings {
 export interface ChatSettings {
 	/** 시스템 프롬프트 프리셋 목록 */
 	systemPrompts: SystemPromptPreset[];
-	/** 현재 활성 시스템 프롬프트 ID */
-	activeSystemPromptId: string;
 	/** 채팅 기록 자동저장 여부 */
 	autoSaveHistory: boolean;
 	/** 채팅 기록 저장 경로 (autoSaveHistory=true 일 때) */
@@ -87,14 +82,8 @@ export interface ChatSettings {
 // ─── Section 3: RAG & Context ────────────────────────────────────────────────
 
 export interface RagSettings {
-	/** 기본 RAG 데이터 범위 */
-	dataScope: RAGDataScope;
 	/** 채팅 시 현재 활성 노트 자동 포함 여부 */
 	includeActiveNote: boolean;
-	/** 인덱싱 포함 경로 목록 (비어있으면 전체) */
-	includedPaths: string[];
-	/** 인덱싱 제외 경로 목록 */
-	excludedPaths: string[];
 
 	// ── Advanced ──
 	/** 상위 청크 크기 (문자 수) */
@@ -216,4 +205,6 @@ export interface LuminaSettings {
 	mcp: McpSettings;
 	webSearch: WebSearchSettings;
 	canvas: CanvasSettings;
+	/** 프로젝트 구분 설정 */
+	projects: ProjectSettings;
 }

@@ -15,8 +15,9 @@ export function getTargetFiles(
 	app: App,
 	settings: RagSettings,
 	chatHistoryPath: string,
+	includedPaths: string[],
+	excludedPaths: string[],
 ): TFile[] {
-	const { excludedPaths, includedPaths } = settings;
 	const configDir = app.vault.configDir;
 	const finalExcludedPaths = [...excludedPaths];
 	if (configDir && !finalExcludedPaths.includes(configDir)) {

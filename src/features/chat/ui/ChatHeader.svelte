@@ -3,6 +3,8 @@
 	import type LuminaPlugin from "../../../main";
 	import ModelSelector from "./ModelSelector.svelte";
 	import QuickSettings from "./QuickSettings.svelte";
+	import ProjectSelector from "./ProjectSelector.svelte";
+	import type { ProjectConfig } from "../../../shared/types/project.types";
 
 	let {
 		plugin,
@@ -16,9 +18,12 @@
 		tStore,
 		selectedProviderId = $bindable(),
 		selectedModelId = $bindable(),
+		projectList,
+		activeProjectId,
 		onToggleRag,
 		onToggleHistory,
 		onNewChat,
+		onProjectSelect,
 	} = $props<{
 		plugin: LuminaPlugin;
 		verifiedProviders: any[];
@@ -31,9 +36,12 @@
 		tStore: any;
 		selectedProviderId: string;
 		selectedModelId: string;
+		projectList: ProjectConfig[];
+		activeProjectId: string;
 		onToggleRag: () => void;
 		onToggleHistory: () => void;
 		onNewChat: () => void;
+		onProjectSelect: (projectId: string) => void;
 	}>();
 
 	let showQuickSettings = $state(false);
@@ -52,7 +60,16 @@
 <div class="lumina-chat__header">
 	<div class="lumina-chat__title">
 		<span class="lumina-chat__logo">✦</span>
-		<span>Lumina</span>
+		{#if projectList.length >= 2}
+			<ProjectSelector
+				{plugin}
+				{projectList}
+				{activeProjectId}
+				onSelect={onProjectSelect}
+			/>
+		{:else}
+			<span class="lumina-chat__title-text">Lumina</span>
+		{/if}
 	</div>
 
 	<div class="lumina-chat__controls">
@@ -60,8 +77,10 @@
 			{#if indexingState.status === "ready"}
 				<span
 					class="lumina-chat__rag-badge lumina-chat__rag-badge--ready"
-					title={$tStore("settings.rag.status.ready")}>RAG ✓</span
+					title={$tStore("settings.rag.status.ready")}
 				>
+					RAG ✓
+				</span>
 			{:else if indexingState.status === "indexing" || indexingState.status === "loading-model"}
 				<span
 					class="lumina-chat__rag-badge lumina-chat__rag-badge--indexing"
@@ -80,7 +99,7 @@
 						{/if}
 					{/if}
 				</span>
-			{:else}
+			{:else if indexingState.status !== "ready"}
 				<span
 					class="lumina-chat__rag-badge lumina-chat__rag-badge--idle"
 					title={indexingState.status === "error" ? $tStore("settings.rag.status.error") : $tStore("settings.rag.status.waiting")}

@@ -871,5 +871,56 @@
         "desc": "En mode dossier, regrouper les nœuds par leur dossier parent sur le toile. (Par défaut : Désactivé)"
       }
     }
+  },
+  "projects": {
+    "settings": {
+      "deleteConfirmDesc": "Êtes-vous sûr de vouloir supprimer ce projet ? Les fichiers d'historique ne seront pas supprimés.",
+      "addProjectBtn": "+ Créer un nouveau projet",
+      "newProjectTitle": "Créer un nouveau projet",
+      "modalTitle": "Paramètres du projet",
+      "projectName": "Nom du projet",
+      "projectNameDesc": "Définissez le nom du projet.",
+      "chatHistoryPath": "Chemin de l'historique des discussions",
+      "chatHistoryPathDesc": "Le chemin où l'historique des discussions de ce projet sera enregistré. (Attribué automatiquement)",
+      "vaultRoot": "Coffre-fort entier (/)",
+      "ragTargetFolder": "Dossiers cibles RAG",
+      "ragTargetFolderDesc": "Cochez les dossiers à indexer dans l'arborescence. Vous pouvez développer les sous-dossiers pour sélectionner des dossiers spécifiques.",
+      "ragTargetFolderEmpty": "Aucun dossier cible sélectionné. (Coffre-fort entier cible)",
+      "ragExcludedFolders": "Dossiers exclus RAG",
+      "ragExcludedFoldersDesc": "Cochez les dossiers à exclure de l'indexation.",
+      "ragExcludedFoldersEmpty": "Aucun dossier exclu.",
+      "save": "Enregistrer",
+      "saveSuccess": "Paramètres du projet enregistrés",
+      "nameRequired": "Le nom du projet est requis et ne peut pas être 'default'.",
+      "nameExists": "Un projet avec ce nom existe déjà.",
+      "title": "Projets",
+      "defaultDesc": "Projet par défaut — Utilise les paramètres globaux de RAG et d'historique",
+      "historyPath": "Historique",
+      "noSubfolder": "Historique : Utilise le chemin global",
+      "activate": "Changer",
+      "config": "Paramètres du projet",
+      "deleteConfirmTitle": "Supprimer le projet",
+      "addProjectDesc": "Créez un nouveau projet et configurez les paramètres de RAG et de chat.",
+      "namePlaceholder": "Project Name",
+      "subfolderPlaceholder": "Subfolder Name",
+      "add": "Add",
+      "duplicateName": "A project with this name already exists.",
+      "defaultProjectName": "Défaut",
+      "defaultModel": "Modèle de chat par défaut",
+      "defaultModelDesc": "Le modèle par défaut à utiliser lors du démarrage d'un nouveau chat dans ce projet.",
+      "defaultModelAuto": "Sélection automatique (Premier modèle disponible)",
+      "systemPrompt": "Prompt système par défaut",
+      "systemPromptDesc": "Le prompt système à utiliser lors du démarrage d'un nouveau chat dans ce projet.",
+      "systemPromptAuto": "Sélection automatique (Premier prompt système)",
+      "deletedModel": "[Supprimé] Modèle",
+      "deletedPrompt": "[Supprimé] Prompt",
+      "modalTitleActive": "Paramètres du projet (Actuel : {{projectName}})",
+      "activeProjectModelDesc": "Définit le modèle de chat par défaut pour le projet actif (<strong>{{projectName}}</strong>). Vous pouvez également modifier ceci dans les paramètres du projet (Onglet RAG)."
+    },
+    "selector": {
+      "label": "Sélectionner un projet",
+      "default": "Défaut",
+      "manage": "Gérer dans les paramètres"
+    }
   }
 }

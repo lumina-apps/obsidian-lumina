@@ -962,6 +962,60 @@ export interface TranslationSummarization {
   prompt: TranslationSummarizationPrompt;
 }
 
+
+export interface TranslationProjectsSettings {
+  defaultProjectName: string;
+  title: string;
+  defaultDesc: string;
+  historyPath: string;
+  noSubfolder: string;
+  activate: string;
+  config: string;
+  deleteConfirmTitle: string;
+  deleteConfirmDesc: string;
+  addProjectBtn: string;
+  addProjectDesc: string;
+  newProjectTitle: string;
+  modalTitle: string;
+  modalTitleActive: string;
+  activeProjectModelDesc: string;
+  projectName: string;
+  projectNameDesc: string;
+  chatHistoryPath: string;
+  chatHistoryPathDesc: string;
+  vaultRoot: string;
+  ragTargetFolder: string;
+  ragTargetFolderDesc: string;
+  ragTargetFolderEmpty: string;
+  ragExcludedFolders: string;
+  ragExcludedFoldersDesc: string;
+  ragExcludedFoldersEmpty: string;
+  defaultModel: string;
+  defaultModelDesc: string;
+  defaultModelAuto: string;
+  systemPrompt: string;
+  systemPromptDesc: string;
+  systemPromptAuto: string;
+  deletedModel: string;
+  deletedPrompt: string;
+  save: string;
+  saveSuccess: string;
+  nameRequired: string;
+  nameExists: string;
+}
+
+
+export interface TranslationProjectsSelector {
+  label: string;
+  default: string;
+  manage: string;
+}
+
+export interface TranslationProjects {
+  settings: TranslationProjectsSettings;
+  selector: TranslationProjectsSelector;
+}
+
 // 최상위 Translation 타입
 export interface Translation {
   settings: TranslationSettings;
@@ -974,6 +1028,7 @@ export interface Translation {
   graph: TranslationGraph;
   canvas: TranslationCanvas;
   summarization: TranslationSummarization;
+  projects: TranslationProjects;
 }
 
 // DeepPartial 타입

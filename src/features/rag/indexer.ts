@@ -21,8 +21,11 @@ export interface VaultIndexerConfig {
 	embedFn: EmbedFn;
 	parseBinaryFn: ParseBinaryFn;
 	settings: RagSettings;
+	includedPaths: string[];
+	excludedPaths: string[];
 	chatHistoryPath: string;
 	modelName: string;
+	projectId: string;
 	embeddingStore: EmbeddingStore;
 	persistCacheFn?: () => Promise<void>;
 }
@@ -32,8 +35,11 @@ export class VaultIndexer {
 	private readonly embedFn: EmbedFn;
 	private readonly parseBinaryFn: ParseBinaryFn;
 	private readonly settings: RagSettings;
+	private readonly includedPaths: string[];
+	private readonly excludedPaths: string[];
 	private readonly chatHistoryPath: string;
 	private readonly modelName: string;
+	public readonly projectId: string;
 	private readonly embeddingStore: EmbeddingStore;
 	private oramaStore: OramaStore | null = null;
 	private persistCacheFn?: () => Promise<void>;
@@ -49,8 +55,11 @@ export class VaultIndexer {
 		this.embedFn = config.embedFn;
 		this.parseBinaryFn = config.parseBinaryFn;
 		this.settings = config.settings;
+		this.includedPaths = config.includedPaths;
+		this.excludedPaths = config.excludedPaths;
 		this.chatHistoryPath = config.chatHistoryPath;
 		this.modelName = config.modelName;
+		this.projectId = config.projectId;
 		this.embeddingStore = config.embeddingStore;
 		this.persistCacheFn = config.persistCacheFn;
 	}
@@ -112,10 +121,10 @@ export class VaultIndexer {
 	}
 
 	private async processSync(isUpdate: boolean): Promise<void> {
-		const files = getTargetFiles(this.app, this.settings, this.chatHistoryPath);
+		const files = getTargetFiles(this.app, this.settings, this.chatHistoryPath, this.includedPaths, this.excludedPaths);
 
 		if (isUpdate) {
-			const loadResult = await loadIndex(this.app, this.modelName);
+			const loadResult = await loadIndex(this.app, this.modelName, this.projectId);
 			if (loadResult.needsFullReindex) {
 				this.state.clear();
 				await this.embeddingStore.clear();
@@ -141,12 +150,12 @@ export class VaultIndexer {
 					return;
 				}
 
-				const restoreResult = await restoreFromCheckpoint(this.app, this.modelName, files, false);
+				const restoreResult = await restoreFromCheckpoint(this.app, this.modelName, files, false, this.projectId);
 				const changedSet = new Set(changedFiles.map(f => f.path));
 				const filesToProcess = restoreResult.filesToProcess.filter(f => changedSet.has(f.path));
 
 				if (filesToProcess.length === 0) {
-					await deleteCheckpoint(this.app);
+					await deleteCheckpoint(this.app, this.projectId);
 					await this.persist();
 					setIndexingStatus('ready', { totalFiles: files.length, processedFiles: files.length });
 					return;
@@ -159,7 +168,7 @@ export class VaultIndexer {
 		}
 
 		// Initial Indexing Flow (or Fallback from needsFullReindex)
-		const restoreResult = await restoreFromCheckpoint(this.app, this.modelName, files, true);
+		const restoreResult = await restoreFromCheckpoint(this.app, this.modelName, files, true, this.projectId);
 
 		if (restoreResult.filesToProcess.length === 0) { 
 			setIndexingStatus('ready', { totalFiles: files.length, processedFiles: files.length });
@@ -167,7 +176,7 @@ export class VaultIndexer {
 		}
 
 		if (restoreResult.indexRestored) {
-			const loadResult = await loadIndex(this.app, this.modelName);
+			const loadResult = await loadIndex(this.app, this.modelName, this.projectId);
 			this.state.loadFrom(loadResult);
 			await this.embeddingStore.loadEmbeddings(this.state.childChunks).catch(() => {});
 		} else {
@@ -194,7 +203,7 @@ export class VaultIndexer {
 			await this.oramaStore.clear();
 		}
 		resetIndexing();
-		await deleteCheckpoint(this.app);
+		await deleteCheckpoint(this.app, this.projectId);
 		await this.embeddingStore.clear();
 		await this.persist();
 		this.isIndexing = false;
@@ -230,7 +239,7 @@ export class VaultIndexer {
 				app: this.app, embedFn: this.embedFn, parseBinaryFn: this.parseBinaryFn,
 				parentChunkSize: this.settings.parentChunkSize, parentChunkOverlap: this.settings.parentChunkOverlap,
 				childChunkSize: this.settings.childChunkSize, childChunkOverlap: this.settings.childChunkOverlap,
-				modelName: this.modelName, parentChunks: this.state.parentChunks, childChunks: this.state.childChunks,
+				modelName: this.modelName, projectId: this.projectId, parentChunks: this.state.parentChunks, childChunks: this.state.childChunks,
 				oramaStore: this.oramaStore!, indexedPaths: this.state.indexedPaths,
 				fileMtimes: this.state.fileMtimes, fileHashes: this.state.fileHashes,
 				getIsDestroyed: () => this.isDestroyed, getCurrentProcessId: () => this.currentProcessId,
@@ -243,12 +252,12 @@ export class VaultIndexer {
 		}
 
 		setIndexingStatus('ready', { totalFiles: totalFiles.length, processedFiles: totalFiles.length });
-		await deleteCheckpoint(this.app);
+		await deleteCheckpoint(this.app, this.projectId);
 		resumedFromCheckpoint.set(false);
 	}
 
 	private async persist(): Promise<void> {
-		await saveIndex(this.app, this.modelName, this.state.parentChunks, this.state.childChunks, this.state.fileMtimes, this.state.fileHashes);
+		await saveIndex(this.app, this.modelName, this.state.parentChunks, this.state.childChunks, this.state.fileMtimes, this.state.fileHashes, this.projectId);
 		await this.embeddingStore.storeEmbeddings(this.state.childChunks).catch((err) => {
 			debugLogger.logWarn('indexer', `embeddingStore.storeEmbeddings failed: ${err}`);
 		});

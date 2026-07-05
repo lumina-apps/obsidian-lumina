@@ -242,8 +242,11 @@
 	.lumina-model-selector__dropdown {
 		top: calc(100% + 4px);
 		bottom: auto;
+		right: 0;
+		left: auto;
 		width: 280px;
 		padding: 0;
+		z-index: 100;
 	}
 
 	.lumina-model-selector__search-wrap {

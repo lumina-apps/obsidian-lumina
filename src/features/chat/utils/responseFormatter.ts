@@ -1,3 +1,5 @@
+import { sanitizeDisplayContent } from "../../../shared/utils/llmTextSanitizer";
+
 import { calculateEstimatedCost } from '../../../shared/pricing';
 import {
 	setMessageTokenUsage,
@@ -31,8 +33,8 @@ export function handleLlmResponse(
 		});
 	}
 
-	// 생각 과정(<think>...</think>) 제거
-	let finalContent = fullResponse.replace(/<think>[\s\S]*?<\/think>\n*/gi, '').trim();
+	// 특수 태그(<think>, <tool_call>, <|mask_start|> 등) 제거
+	let finalContent = sanitizeDisplayContent(fullResponse);
 
 	// 빈 응답 / 토큰 한도 처리
 	if (!finalContent) {

@@ -871,5 +871,56 @@
         "desc": "在文件夹模式下，将节点按其父文件夹分组显示在 白板 上。(默认：停用)"
       }
     }
+  },
+  "projects": {
+    "settings": {
+      "deleteConfirmDesc": "确定要删除此项目吗？历史记录文件不会被删除。",
+      "addProjectBtn": "+ 创建新项目",
+      "newProjectTitle": "创建新项目",
+      "modalTitle": "项目设置",
+      "projectName": "项目名称",
+      "projectNameDesc": "设置项目名称。",
+      "chatHistoryPath": "聊天记录保存路径",
+      "chatHistoryPathDesc": "此项目聊天记录的保存路径。（自动分配）",
+      "vaultRoot": "整个库 (/)",
+      "ragTargetFolder": "RAG 目标文件夹",
+      "ragTargetFolderDesc": "在树中选中要编制索引的文件夹。您可以展开子文件夹以选择特定文件夹。",
+      "ragTargetFolderEmpty": "未选择目标文件夹。（整个库为目标）",
+      "ragExcludedFolders": "RAG 排除文件夹",
+      "ragExcludedFoldersDesc": "选中要从索引中排除的文件夹。",
+      "ragExcludedFoldersEmpty": "没有排除的文件夹。",
+      "save": "保存",
+      "saveSuccess": "项目设置已保存",
+      "nameRequired": "项目名称为必填项，且不能为 'default'。",
+      "nameExists": "已存在同名项目。",
+      "title": "项目",
+      "defaultDesc": "默认项目 — 使用全局 RAG 和历史记录设置",
+      "historyPath": "历史记录",
+      "noSubfolder": "历史记录：使用全局路径",
+      "activate": "切换",
+      "config": "项目设置",
+      "deleteConfirmTitle": "删除项目",
+      "addProjectDesc": "创建新项目并配置 RAG 和聊天设置。",
+      "namePlaceholder": "Project Name",
+      "subfolderPlaceholder": "Subfolder Name",
+      "add": "Add",
+      "duplicateName": "A project with this name already exists.",
+      "defaultProjectName": "默认",
+      "defaultModel": "默认聊天模型",
+      "defaultModelDesc": "在此项目中开始新聊天时使用的默认模型。",
+      "defaultModelAuto": "自动选择 (第一个可用模型)",
+      "systemPrompt": "默认系统提示词",
+      "systemPromptDesc": "在此项目中开始新聊天时使用的系统提示词。",
+      "systemPromptAuto": "自动选择 (第一个系统提示词)",
+      "deletedModel": "[已删除] 模型",
+      "deletedPrompt": "[已删除] 提示词",
+      "modalTitleActive": "项目设置 (当前: {{projectName}})",
+      "activeProjectModelDesc": "设置当前活动项目 (<strong>{{projectName}}</strong>) 的默认聊天模型。您也可以在项目设置（RAG选项卡）中更改此设置。"
+    },
+    "selector": {
+      "label": "选择项目",
+      "default": "默认",
+      "manage": "在设置中管理"
+    }
   }
 }

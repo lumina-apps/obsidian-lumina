@@ -871,5 +871,56 @@
         "desc": "No modo pasta, agrupar nós por sua pasta principal no canvas. (Padrão: Desativado)"
       }
     }
+  },
+  "projects": {
+    "settings": {
+      "deleteConfirmDesc": "Tem certeza que deseja excluir este projeto? Os arquivos de histórico não serão excluídos.",
+      "addProjectBtn": "+ Criar Novo Projeto",
+      "newProjectTitle": "Criar Novo Projeto",
+      "modalTitle": "Configurações do Projeto",
+      "projectName": "Nome do Projeto",
+      "projectNameDesc": "Defina o nome do projeto.",
+      "chatHistoryPath": "Caminho do Histórico de Chat",
+      "chatHistoryPathDesc": "O caminho onde o histórico de chat deste projeto será salvo. (Atribuído automaticamente)",
+      "vaultRoot": "Cofre Inteiro (/)",
+      "ragTargetFolder": "Pastas Alvo do RAG",
+      "ragTargetFolderDesc": "Marque as pastas para indexar na árvore. Você pode expandir subpastas para selecionar pastas específicas.",
+      "ragTargetFolderEmpty": "Nenhuma pasta alvo selecionada. (Cofre inteiro alvo)",
+      "ragExcludedFolders": "Pastas Excluídas do RAG",
+      "ragExcludedFoldersDesc": "Marque as pastas para excluir da indexação.",
+      "ragExcludedFoldersEmpty": "Nenhuma pasta excluída.",
+      "save": "Salvar",
+      "saveSuccess": "Configurações do projeto salvas",
+      "nameRequired": "O nome do projeto é obrigatório e não pode ser 'default'.",
+      "nameExists": "Já existe um projeto com este nome.",
+      "title": "Projetos",
+      "defaultDesc": "Projeto Padrão — Usa as configurações globais de RAG e Histórico",
+      "historyPath": "Histórico",
+      "noSubfolder": "Histórico: Usa caminho global",
+      "activate": "Trocar",
+      "config": "Configurações do Projeto",
+      "deleteConfirmTitle": "Excluir Projeto",
+      "addProjectDesc": "Crie um novo projeto e defina as configurações de RAG e chat.",
+      "namePlaceholder": "Project Name",
+      "subfolderPlaceholder": "Subfolder Name",
+      "add": "Add",
+      "duplicateName": "A project with this name already exists.",
+      "defaultProjectName": "Padrão",
+      "defaultModel": "Modelo de chat padrão",
+      "defaultModelDesc": "O modelo padrão a ser usado ao iniciar um novo chat neste projeto.",
+      "defaultModelAuto": "Seleção automática (Primeiro modelo disponível)",
+      "systemPrompt": "Prompt de sistema padrão",
+      "systemPromptDesc": "O prompt de sistema a ser usado ao iniciar um novo chat neste projeto.",
+      "systemPromptAuto": "Seleção automática (Primeiro prompt de sistema)",
+      "deletedModel": "[Excluído] Modelo",
+      "deletedPrompt": "[Excluído] Prompt",
+      "modalTitleActive": "Configurações do projeto (Atual: {{projectName}})",
+      "activeProjectModelDesc": "Define o modelo de chat padrão para o projeto ativo (<strong>{{projectName}}</strong>). Você também pode alterar isso nas Configurações do Projeto (Guia RAG)."
+    },
+    "selector": {
+      "label": "Selecionar Projeto",
+      "default": "Padrão",
+      "manage": "Gerenciar nas Configurações"
+    }
   }
 }

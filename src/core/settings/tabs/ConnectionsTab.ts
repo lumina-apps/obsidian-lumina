@@ -8,10 +8,11 @@ import type { LLMProviderConfig } from '../../../shared/types/settings.types';
 import { renderLanguageSection } from './connections/LanguageSection';
 import { renderProviderCard } from './connections/ProviderCard';
 import { renderRagEngineSection } from './connections/RagEngineSection';
-import { renderDefaultChatModelSection } from './connections/DefaultChatModelSection';
-import { renderQuickActionModelSection } from './connections/QuickActionModelSection';
+	import { renderQuickActionModelSection } from './connections/QuickActionModelSection';
 import { renderTaskModelSection } from './connections/TaskModelSection';
 import { renderRerankerModelSection } from './connections/RerankerModelSection';
+import { renderDefaultChatModelSection } from './connections/DefaultChatModelSection';
+import { getActiveProject } from '../../store/projectStore';
 
 export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): void {
 	const s = tab.plugin.settings.connections;
@@ -56,9 +57,6 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 	// ── RAG 엔진 (임베딩) ─────────────────────────────────────────────────
 	renderRagEngineSection(tab, el);
 
-	// ── 기본 채팅 모델 ────────────────────────────────────────────────────
-	renderDefaultChatModelSection(tab, el);
-
 	// ── 퀵 액션 전용 모델 ──────────────────────────────────────────────────
 	renderQuickActionModelSection(tab, el);
 
@@ -68,4 +66,11 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 		renderTaskModelSection(tab, el);
 		renderRerankerModelSection(tab, el);
 	}
+
+	tab.sectionHeading(el, t('projects.settings.modalTitleActive', { projectName: getActiveProject().name }));
+	const projectInfo = el.createEl('div', { cls: 'setting-item-description', text: t('projects.settings.activeProjectModelDesc', { projectName: getActiveProject().name }) });
+	projectInfo.style.marginBottom = '12px';
+	projectInfo.style.marginTop = '-10px';
+	
+	renderDefaultChatModelSection(tab, el);
 }

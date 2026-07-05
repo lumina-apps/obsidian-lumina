@@ -243,6 +243,10 @@ export default class LuminaPlugin extends Plugin {
 		this.frontmatterManager?.destroy();
 		cleanupApprovalListener();
 		void this.mcpManager?.destroy();
+		// 프로젝트별 인덱서 캐시 정리
+		import('./features/rag/projectIndexCache').then(({ projectIndexCache }) => {
+			projectIndexCache.destroyAll();
+		}).catch(() => { /* ignore */ });
 	}
 
 	// ─── Settings ───────────────────────────────────────────────────────

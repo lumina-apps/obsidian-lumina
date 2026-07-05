@@ -32,6 +32,12 @@
 		isRagEnabled,
 		settingsStore,
 	} from "../../../core/store/settingsStore";
+	import {
+		projectList,
+		activeProjectId,
+		setActiveProject,
+		getActiveProject,
+	} from "../../../core/store/projectStore";
 	import { PROVIDER_LABELS } from "../../../shared/types/settings.types";
 	import { tStore } from "../../../shared/locales/index";
 
@@ -112,8 +118,9 @@
 
 	// ── Initialization ────────────────────────────────────────────────────
 	function initChatPanel(): void {
-		selectedProviderId = plugin.settings.connections.defaultProviderId;
-		selectedModelId = plugin.settings.connections.defaultModelId;
+		const activeProject = getActiveProject();
+		selectedProviderId = activeProject.defaultProviderId;
+		selectedModelId = activeProject.defaultModelId;
 		if (!selectedProviderId && modelOptions.length > 0) {
 			const [pid, mid] = splitProviderModel(modelOptions[0].value);
 			selectedProviderId = pid;
@@ -140,6 +147,50 @@
 			includeActiveNote = false;
 		}
 	});
+
+	// ── Project switch handler ────────────────────────────────────────────
+	async function handleProjectSwitch(newProjectId: string): Promise<void> {
+		if (newProjectId === $activeProjectId) return;
+
+		// 1. 스트리밍 중이면 즉시 중단
+		if (abortController) {
+			abortController.abort();
+			abortController = null;
+			
+			// 강제로 스트리밍 상태 해제 (비동기 abort 처리 전 미리 상태 정리하여 히스토리에 오류 상태가 저장되지 않게 함)
+			messages.update(msgs => msgs.map(m => ({
+				...m,
+				isStreaming: false,
+				ragPipelineStep: null
+			})));
+		}
+
+		// 2. 현재 세션 저장
+		if (ctrl && $messages.length > 0) {
+			try {
+				await ctrl.saveHistory(selectedProviderId, selectedModelId);
+			} catch (e) {
+				// 저장 실패해도 전환은 계속 진행
+			}
+		}
+
+		// 3. 채팅 초기화
+		resetChat();
+
+		// 4. activeProjectId store 업데이트 + plugin.settings 저장
+		setActiveProject(newProjectId);
+		plugin.settings.projects.activeProjectId = newProjectId;
+		await plugin.saveSettings();
+
+		// 5. RAG 인덱서 hot-swap (비동기, await 없이 시작만)
+		if ($isRagEnabled) {
+			import("../../../features/rag/ragInitializer").then(
+				({ switchProjectIndex }) => {
+					void switchProjectIndex(plugin, newProjectId);
+				},
+			);
+		}
+	}
 
 	// ── Pending attachments sync ──────────────────────────────────────────
 	$effect(() => {
@@ -252,9 +303,14 @@
 
 	function clearChat(): void {
 		if ($isLoading) cancelStream();
-		if (plugin.settings.connections.defaultProviderId) {
-			selectedProviderId = plugin.settings.connections.defaultProviderId;
-			selectedModelId = plugin.settings.connections.defaultModelId;
+		const activeProject = getActiveProject();
+		if (activeProject.defaultProviderId) {
+			selectedProviderId = activeProject.defaultProviderId;
+			selectedModelId = activeProject.defaultModelId;
+		} else if (modelOptions.length > 0) {
+			const [pid, mid] = splitProviderModel(modelOptions[0].value);
+			selectedProviderId = pid;
+			selectedModelId = mid;
 		}
 		resetChat();
 	}
@@ -297,9 +353,12 @@
 		{tStore}
 		bind:selectedProviderId
 		bind:selectedModelId
+		projectList={$projectList}
+		activeProjectId={$activeProjectId}
 		onToggleRag={toggleRagMode}
 		onToggleHistory={() => (showHistory = !showHistory)}
 		onNewChat={clearChat}
+		onProjectSelect={handleProjectSwitch}
 	/>
 
 	{#if showHistory}

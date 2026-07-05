@@ -1,5 +1,6 @@
 import type LuminaPlugin from '../../../main';
 import { isExcluded, isIncluded } from '../../../features/rag/exclusions';
+import { getActiveProject } from '../../store/projectStore';
 
 /**
  * 경로 접근 제어 및 쓰기 잠금 관리.
@@ -17,11 +18,11 @@ export class PathGuard {
 		if (!mcpSettings.agentRespectRagExclusions) {
 			return true;
 		}
-		const ragSettings = plugin.settings.rag;
-		if (!isIncluded(filePath, ragSettings.includedPaths)) {
+		const project = getActiveProject();
+		if (!isIncluded(filePath, project.ragIncludedPaths)) {
 			return false;
 		}
-		if (isExcluded(filePath, ragSettings.excludedPaths)) {
+		if (isExcluded(filePath, project.ragExcludedPaths)) {
 			return false;
 		}
 		return true;

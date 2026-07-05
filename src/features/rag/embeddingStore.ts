@@ -23,13 +23,16 @@ interface EmbeddingRecord {
 export class EmbeddingStore {
 	private db: IDBDatabase | null = null;
 	private modelName: string | null = null;
+	private dbName: string = DB_NAME;
 
 	/** IndexedDB를 오픈하고 ObjectStore를 준비합니다. */
-	async init(modelName: string): Promise<void> {
+	async init(modelName: string, projectId?: string): Promise<void> {
 		this.modelName = modelName;
+		// 프로젝트별 격리: 각 프로젝트의 임베딩 벡터를 독립된 IndexedDB에 저장
+		this.dbName = projectId ? `${DB_NAME}-${projectId}` : DB_NAME;
 
 		return new Promise((resolve, reject) => {
-			const request = indexedDB.open(DB_NAME, DB_VERSION);
+			const request = indexedDB.open(this.dbName, DB_VERSION);
 
 			request.onupgradeneeded = () => {
 				const db = request.result;
@@ -172,7 +175,7 @@ export class EmbeddingStore {
 		}
 
 		await new Promise<void>((resolve, reject) => {
-			const request = indexedDB.deleteDatabase(DB_NAME);
+			const request = indexedDB.deleteDatabase(this.dbName);
 
 			request.onsuccess = () => {
 				resolve();

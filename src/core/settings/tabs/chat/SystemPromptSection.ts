@@ -3,20 +3,21 @@ import type { LuminaSettingTab } from '../../settingTab';
 import { t } from '../../../../shared/locales/helpers';
 import { createButtonContainer } from '../../../../shared/utils/domUtils';
 
+import { setIcon } from 'obsidian';
+
 export function renderSystemPromptSection(tab: LuminaSettingTab, el: HTMLElement): void {
 	const s = tab.plugin.settings.chat;
 
 	tab.sectionHeading(el, t('settings.chat.systemPrompt.name'));
 
 	for (const prompt of s.systemPrompts) {
-		const isActive = prompt.id === s.activeSystemPromptId;
 		const card = el.createEl('details', { cls: 'lumina-prompt-card' });
-		if (isActive) {
-			card.open = true;
-		}
 
 		// Header row
 		const header = card.createEl('summary', { cls: 'lumina-prompt-card__header' });
+
+		const chevron = header.createSpan({ cls: 'lumina-prompt-card__chevron' });
+		setIcon(chevron, 'chevron-right');
 
 		// Name input
 		const nameInput = header.createEl('input', {
@@ -31,30 +32,11 @@ export function renderSystemPromptSection(tab: LuminaSettingTab, el: HTMLElement
 			void tab.saveAndSync();
 		});
 
-		// Status badge
-		if (isActive) {
-			header.createSpan({
-				text: t('settings.chat.systemPrompt.active'),
-				cls: 'lumina-prompt-card__status'
-			});
-		}
+
 
 		// Actions
 		const actions = header.createDiv({ cls: 'lumina-prompt-card__actions' });
 
-		// Activate button
-		if (!isActive) {
-			const actBtn = actions.createEl('button', {
-				text: t('settings.chat.systemPrompt.activate'),
-				cls: 'lumina-prompt-card__btn-activate'
-			});
-			actBtn.addEventListener('click', wrapAsync(async (e) => {
-				e.stopPropagation();
-				s.activeSystemPromptId = prompt.id;
-				await tab.saveAndSync();
-				tab.refreshDisplay();
-			}));
-		}
 
 		// Delete button
 		const delBtn = actions.createEl('button', {
@@ -64,9 +46,6 @@ export function renderSystemPromptSection(tab: LuminaSettingTab, el: HTMLElement
 		delBtn.addEventListener('click', wrapAsync(async (e) => {
 			e.stopPropagation();
 			s.systemPrompts = s.systemPrompts.filter(p => p.id !== prompt.id);
-			if (s.activeSystemPromptId === prompt.id) {
-				s.activeSystemPromptId = s.systemPrompts[0]?.id ?? '';
-			}
 			await tab.saveAndSync();
 			tab.refreshDisplay();
 		}));
