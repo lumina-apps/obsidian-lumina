@@ -84,7 +84,7 @@ export async function buildContextFromActiveFile(
 		}
 	}
 
-	const duplicate = results.find(r => r.score >= 0.90) ?? null;
+	const duplicate = results.find(r => (r.rawVectorScore ?? r.vectorScore ?? r.score) >= 0.90) ?? null;
 
 	const recommendedTags = collectRecommendedTags({
 		results,

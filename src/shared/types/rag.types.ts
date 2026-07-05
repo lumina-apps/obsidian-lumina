@@ -41,7 +41,10 @@ export interface PersistedIndex {
 export interface SearchResult {
 	chunk: ParentChunk;
 	score: number;
+	/** 랭킹용 벡터 점수 (child chunk 보너스 포함, 1.0 초과 가능). */
 	vectorScore?: number;
+	/** 표시/중복감지용 순수 코사인 유사도 (0~1). */
+	rawVectorScore?: number;
 	bm25Score?: number;
 	bestChildText?: string;
 }

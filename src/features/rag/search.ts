@@ -133,6 +133,7 @@ export async function searchVault(
 			chunk: parentChunk,
 			score: 0, // 나중에 정규화 후 계산
 			vectorScore,
+			rawVectorScore: stats.maxScore, // 보너스 없는 순수 코사인 유사도 (0~1)
 			bm25Score,
 			bestChildText: stats.bestChildText,
 		});

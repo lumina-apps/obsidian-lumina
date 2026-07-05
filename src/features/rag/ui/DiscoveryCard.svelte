@@ -37,6 +37,16 @@
 		onToggleStage(result);
 	}
 
+	/** 표시용 연관도 점수. rawVectorScore(순수 코사인 유사도 0~1)를 우선 사용하고,
+	 *  없을 경우 vectorScore 클램프 → score 순으로 fallback합니다. */
+	let displayScore = $derived(
+		result.rawVectorScore != null
+			? result.rawVectorScore
+			: result.vectorScore != null
+				? Math.min(1, result.vectorScore)
+				: result.score
+	);
+
 	let snippetText = $derived.by(() => {
 		let text = result.bestChildText;
 		if (!text) {
@@ -73,7 +83,7 @@
 		<span class="lumina-discovery__card-title">
 			{extractFileName(result.chunk.path)}
 		</span>
-		<span class="lumina-discovery__card-score">{Math.round(result.score * 100)}%</span>
+		<span class="lumina-discovery__card-score">{Math.round(displayScore * 100)}%</span>
 	</div>
 	<div
 		class="lumina-discovery__card-snippet"
