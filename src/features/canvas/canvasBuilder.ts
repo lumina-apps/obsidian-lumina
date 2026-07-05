@@ -51,12 +51,14 @@ export function getEdgeSides(fromPos: {x: number, y: number}, toPos: {x: number,
  */
 function getOutlinks(app: App, file: TFile): TFile[] {
 	const cache = app.metadataCache.getFileCache(file);
-	if (!cache?.links) return [];
+	if (!cache) return [];
 
 	const result: TFile[] = [];
-	for (const link of cache.links) {
-		const resolved = app.metadataCache.getFirstLinkpathDest(link.link, file.path);
-		if (resolved) result.push(resolved);
+	if (cache.links) {
+		for (const link of cache.links) {
+			const resolved = app.metadataCache.getFirstLinkpathDest(link.link, file.path);
+			if (resolved) result.push(resolved);
+		}
 	}
 	// 임베드 링크도 포함 (![[...]])
 	if (cache.embeds) {

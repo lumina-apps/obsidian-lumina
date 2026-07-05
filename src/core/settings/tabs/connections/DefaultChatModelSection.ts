@@ -44,7 +44,7 @@ export function renderDefaultChatModelSection(tab: LuminaSettingTab, el: HTMLEle
 				}
 				
 				// Sync to global settings
-				const projIndex = tab.plugin.settings.projects.list.findIndex((p: any) => p.id === activeProject.id);
+				const projIndex = tab.plugin.settings.projects.list.findIndex(p => p.id === activeProject.id);
 				if (projIndex !== -1) {
 					tab.plugin.settings.projects.list[projIndex] = activeProject;
 					await tab.saveAndSync();

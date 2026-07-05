@@ -1,6 +1,6 @@
 import { t } from "../../../shared/locales/helpers";
 
-import { App, Modal, Setting, TFolder } from 'obsidian';
+import { Modal, Setting, TFolder, TextComponent } from 'obsidian';
 import type LuminaPlugin from '../../../main';
 import type { ProjectConfig } from '../../../shared/types/project.types';
 import { getActiveProject, syncProjectStore } from '../../../core/store/projectStore';
@@ -65,21 +65,19 @@ export class ProjectSettingsModal extends Modal {
 
 		contentEl.createEl('h2', { text: this.isNewProject ? t('projects.settings.newProjectTitle') || '새 프로젝트 생성' : t('projects.settings.modalTitle') || '프로젝트 설정' });
 
-		const isDefault = this.project?.id === 'default';
-
-		const nameInput = new Setting(contentEl)
+		new Setting(contentEl)
 			.setName(t('projects.settings.projectName') || '프로젝트 이름')
 			.setDesc(t('projects.settings.projectNameDesc') || '프로젝트의 이름을 지정합니다.')
 			.addText(text => {
 				text.setValue(this.projectName)
 					.onChange(val => {
 						this.projectName = val;
-						historyPathInput.setValue(this.getHistoryDisplayPath());
+						historyPathInput?.setValue(this.getHistoryDisplayPath());
 					});
 			});
 
 		// Auto history path display
-		let historyPathInput: any = null;
+		let historyPathInput: TextComponent | null = null;
 		new Setting(contentEl)
 			.setName(t('projects.settings.chatHistoryPath') || '채팅 히스토리 저장 경로')
 			.setDesc(t('projects.settings.chatHistoryPathDesc') || '이 프로젝트의 채팅 기록이 저장될 경로입니다. (자동 지정)')
@@ -125,8 +123,7 @@ export class ProjectSettingsModal extends Modal {
 				});
 				
 				// Make sure the dropdown can handle long text without breaking layout
-				dropdown.selectEl.style.maxWidth = '230px';
-				dropdown.selectEl.style.textOverflow = 'ellipsis';
+				dropdown.selectEl.setCssStyles({ maxWidth: '230px', textOverflow: 'ellipsis' });
 			});
 
 		// --- Default System Prompt Selector ---
@@ -153,8 +150,7 @@ export class ProjectSettingsModal extends Modal {
 				});
 
 				// Make sure the dropdown can handle long text without breaking layout
-				dropdown.selectEl.style.maxWidth = '230px';
-				dropdown.selectEl.style.textOverflow = 'ellipsis';
+				dropdown.selectEl.setCssStyles({ maxWidth: '230px', textOverflow: 'ellipsis' });
 			});
 
 		const folders = this.app.vault.getAllLoadedFiles().filter(f => f instanceof TFolder).map(f => f.path);
@@ -168,33 +164,28 @@ export class ProjectSettingsModal extends Modal {
 			isRoot: boolean = true
 		) => {
 			const itemEl = container.createDiv({ cls: 'lumina-tree-item' });
-			itemEl.style.marginLeft = isRoot ? '0' : '20px';
-			itemEl.style.marginTop = '4px';
+			itemEl.setCssStyles({ marginLeft: isRoot ? '0' : '20px', marginTop: '4px' });
 
 			const rowEl = itemEl.createDiv({ cls: 'lumina-tree-row' });
-			rowEl.style.display = 'flex';
-			rowEl.style.alignItems = 'center';
-			rowEl.style.gap = '6px';
+			rowEl.setCssStyles({ display: 'flex', alignItems: 'center', gap: '6px' });
 
 			const subFolders = folder.children.filter((c): c is TFolder => c instanceof TFolder);
 			subFolders.sort((a, b) => a.name.localeCompare(b.name));
 			const hasChildren = subFolders.length > 0;
 
 			const toggleEl = rowEl.createSpan({ cls: 'lumina-tree-toggle' });
-			toggleEl.style.width = '16px';
-			toggleEl.style.display = 'inline-block';
-			toggleEl.style.cursor = hasChildren ? 'pointer' : 'default';
+			toggleEl.setCssStyles({ width: '16px', display: 'inline-block', cursor: hasChildren ? 'pointer' : 'default' });
 			
 			const childrenContainer = itemEl.createDiv({ cls: 'lumina-tree-children' });
-			childrenContainer.style.display = 'none'; // collapsed by default
+			childrenContainer.setCssStyles({ display: 'none' }); // collapsed by default
 
 			if (hasChildren) {
-				toggleEl.innerHTML = '▶'; // Collapsed state
-				toggleEl.style.fontSize = '0.8em';
+				toggleEl.setText('▶'); // Collapsed state
+				toggleEl.setCssStyles({ fontSize: '0.8em' });
 				toggleEl.onclick = () => {
 					const isCollapsed = childrenContainer.style.display === 'none';
-					childrenContainer.style.display = isCollapsed ? 'block' : 'none';
-					toggleEl.innerHTML = isCollapsed ? '▼' : '▶';
+					childrenContainer.setCssStyles({ display: isCollapsed ? 'block' : 'none' });
+					toggleEl.setText(isCollapsed ? '▼' : '▶');
 				};
 			}
 
@@ -202,7 +193,7 @@ export class ProjectSettingsModal extends Modal {
 			const folderPath = isRoot ? '/' : folder.path;
 			
 			if (isRoot) {
-				cb.style.display = 'none'; // Hide root checkbox to prevent confusion
+				cb.setCssStyles({ display: 'none' }); // Hide root checkbox to prevent confusion
 			} else {
 				cb.checked = selectedPaths.has(folderPath);
 				cb.onchange = () => {
@@ -216,7 +207,7 @@ export class ProjectSettingsModal extends Modal {
 			}
 
 			const nameEl = rowEl.createSpan({ text: isRoot ? t('projects.settings.vaultRoot') || '전체 볼트 (/)' : folder.name });
-			nameEl.style.cursor = hasChildren ? 'pointer' : 'default';
+			nameEl.setCssStyles({ cursor: hasChildren ? 'pointer' : 'default' });
 			nameEl.onclick = () => {
 				if (hasChildren) toggleEl.click();
 			};
@@ -235,65 +226,36 @@ export class ProjectSettingsModal extends Modal {
 			emptyText?: string
 		) => {
 			const details = contentEl.createEl('details');
-			details.style.marginBottom = '16px';
-			details.style.border = '1px solid var(--background-modifier-border)';
-			details.style.borderRadius = '8px';
-			details.style.padding = '12px 16px';
-			details.style.background = 'var(--background-secondary-alt)';
+			details.setCssStyles({ marginBottom: '16px', border: '1px solid var(--background-modifier-border)', borderRadius: '8px', padding: '12px 16px', background: 'var(--background-secondary-alt)' });
 			
 			const summary = details.createEl('summary', { text: name, cls: 'setting-item-heading' });
-			summary.style.cursor = 'pointer';
-			summary.style.outline = 'none';
-			summary.style.fontWeight = 'var(--font-semibold)';
-			summary.style.margin = '0';
-			summary.style.padding = '4px 0';
+			summary.setCssStyles({ cursor: 'pointer', outline: 'none', fontWeight: 'var(--font-semibold)', margin: '0', padding: '4px 0' });
 
 			const descEl = details.createEl('p', { text: desc, cls: 'setting-item-description' });
-			descEl.style.marginTop = '8px';
-			descEl.style.marginBottom = '12px';
+			descEl.setCssStyles({ marginTop: '8px', marginBottom: '12px' });
 
 			const treeContainer = details.createDiv();
-			treeContainer.style.maxHeight = '180px';
-			treeContainer.style.overflowY = 'auto';
-			treeContainer.style.border = '1px solid var(--background-modifier-border)';
-			treeContainer.style.padding = '10px';
-			treeContainer.style.borderRadius = '6px';
-			treeContainer.style.marginBottom = '10px';
-			treeContainer.style.background = 'var(--background-secondary)';
+			treeContainer.setCssStyles({ maxHeight: '180px', overflowY: 'auto', border: '1px solid var(--background-modifier-border)', padding: '10px', borderRadius: '6px', marginBottom: '10px', background: 'var(--background-secondary)' });
 
 			const tagsContainer = details.createDiv();
-			tagsContainer.style.display = 'flex';
-			tagsContainer.style.flexWrap = 'wrap';
-			tagsContainer.style.gap = '6px';
-			tagsContainer.style.marginBottom = '10px';
-			tagsContainer.style.padding = '0 10px';
+			tagsContainer.setCssStyles({ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px', padding: '0 10px' });
 
 			const renderTags = () => {
 				tagsContainer.empty();
 				if (selectedPaths.size === 0 && emptyText) {
 					const emptySpan = tagsContainer.createSpan({ text: emptyText });
-					emptySpan.style.color = 'var(--text-muted)';
-					emptySpan.style.fontSize = '0.9em';
-					emptySpan.style.fontStyle = 'italic';
+					emptySpan.setCssStyles({ color: 'var(--text-muted)', fontSize: '0.9em', fontStyle: 'italic' });
 					return;
 				}
 
 				selectedPaths.forEach(path => {
 					const tag = tagsContainer.createDiv();
-					tag.style.display = 'flex';
-					tag.style.alignItems = 'center';
-					tag.style.padding = '4px 8px';
-					tag.style.background = 'var(--background-primary)';
-					tag.style.border = '1px solid var(--background-modifier-border)';
-					tag.style.borderRadius = '4px';
-					tag.style.fontSize = '0.9em';
+					tag.setCssStyles({ display: 'flex', alignItems: 'center', padding: '4px 8px', background: 'var(--background-primary)', border: '1px solid var(--background-modifier-border)', borderRadius: '4px', fontSize: '0.9em' });
 
 					tag.createSpan({ text: path });
 
 					const removeBtn = tag.createSpan({ text: '✕' });
-					removeBtn.style.marginLeft = '8px';
-					removeBtn.style.cursor = 'pointer';
-					removeBtn.style.color = 'var(--text-error)';
+					removeBtn.setCssStyles({ marginLeft: '8px', cursor: 'pointer', color: 'var(--text-error)' });
 					removeBtn.onclick = () => {
 						selectedPaths.delete(path);
 						treeContainer.empty();

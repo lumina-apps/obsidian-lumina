@@ -95,7 +95,6 @@ export async function buildLlmContext(
 			existingContext: ragContext,
 			assistantId,
 			indexer: plugin.indexer,
-			activeFilePath: plugin.app.workspace.getActiveFile()?.path ?? null,
 			filterPaths: filterPaths.length > 0 ? filterPaths : undefined,
 			signal,
 		});

@@ -29,7 +29,6 @@ export interface PerformRagSearchParams {
 	existingContext: string | undefined;
 	assistantId: string;
 	indexer: import('../../rag/indexer').VaultIndexer;
-	activeFilePath: string | null;
 	filterPaths?: string[];
 	signal?: AbortSignal;
 }
@@ -44,7 +43,7 @@ export interface RagSearchResult {
  * 검색 결과가 있으면 assistantId 메시지에 RAG 소스도 설정한다.
  */
 export async function performRagSearch(params: PerformRagSearchParams): Promise<RagSearchResult> {
-	const { userText, rag, connections, existingContext, assistantId, indexer, activeFilePath, filterPaths, signal } = params;
+	const { userText, rag, connections, existingContext, assistantId, indexer, filterPaths, signal } = params;
 
 	try {
 		let parentChunks = indexer.indexedParentChunks;

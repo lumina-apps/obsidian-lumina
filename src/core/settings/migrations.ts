@@ -225,16 +225,16 @@ export function migrateProjects(plugin: LuminaPlugin): boolean {
 	}
 
 	// ── 전역 RAG 설정을 프로젝트(Default) 단위로 이관 ──
-	const legacyRag = plugin.settings.rag as any;
+	const legacyRag = plugin.settings.rag as unknown as Record<string, unknown>;
 	if (legacyRag && (legacyRag.includedPaths !== undefined || legacyRag.excludedPaths !== undefined)) {
 		const defaultProject = plugin.settings.projects.list.find(p => p.id === 'default');
 		if (defaultProject) {
 			if (legacyRag.includedPaths !== undefined) {
-				defaultProject.ragIncludedPaths = legacyRag.includedPaths;
+				defaultProject.ragIncludedPaths = legacyRag.includedPaths as string[];
 				delete legacyRag.includedPaths;
 			}
 			if (legacyRag.excludedPaths !== undefined) {
-				defaultProject.ragExcludedPaths = legacyRag.excludedPaths;
+				defaultProject.ragExcludedPaths = legacyRag.excludedPaths as string[];
 				delete legacyRag.excludedPaths;
 			}
 			if (legacyRag.dataScope !== undefined) {
@@ -245,21 +245,21 @@ export function migrateProjects(plugin: LuminaPlugin): boolean {
 	}
 
 	// ── 전역 디폴트 모델/프롬프트를 프로젝트 단위로 이관 ──
-	const legacyConnections = plugin.settings.connections as any;
-	const legacyChat = plugin.settings.chat as any;
+	const legacyConnections = plugin.settings.connections as unknown as Record<string, unknown>;
+	const legacyChat = plugin.settings.chat as unknown as Record<string, unknown>;
 
 	for (const p of plugin.settings.projects.list) {
 		let projectChanged = false;
 		if (p.defaultProviderId === undefined) {
-			p.defaultProviderId = legacyConnections?.defaultProviderId || '';
+			p.defaultProviderId = (legacyConnections?.defaultProviderId as string) || '';
 			projectChanged = true;
 		}
 		if (p.defaultModelId === undefined) {
-			p.defaultModelId = legacyConnections?.defaultModelId || '';
+			p.defaultModelId = (legacyConnections?.defaultModelId as string) || '';
 			projectChanged = true;
 		}
 		if (p.systemPromptId === undefined) {
-			p.systemPromptId = legacyChat?.activeSystemPromptId || 'default';
+			p.systemPromptId = (legacyChat?.activeSystemPromptId as string) || 'default';
 			projectChanged = true;
 		}
 		if (projectChanged) needsSave = true;

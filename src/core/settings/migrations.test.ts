@@ -135,7 +135,33 @@ describe('migrateExcludedPaths', () => {
 	});
 });
 
-import { migrateMinSimilarity, migrateMemoryMethod, migrateContextWindowTurns, runMigrations } from './migrations';
+import { migrateMinSimilarity, migrateMemoryMethod, migrateContextWindowTurns, runMigrations, migrateWebSearch, migrateCanvasSettings } from './migrations';
+
+describe('migrateWebSearch', () => {
+	it('initializes webSearch if missing', () => {
+		const mockPlugin = { settings: {} } as any;
+		expect(migrateWebSearch(mockPlugin)).toBe(true);
+		expect(mockPlugin.settings.webSearch).toBeDefined();
+		expect(mockPlugin.settings.webSearch.activeProviderId).toBe('tavily');
+	});
+	it('does not modify existing webSearch', () => {
+		const mockPlugin = { settings: { webSearch: { enabled: true } } } as any;
+		expect(migrateWebSearch(mockPlugin)).toBe(false);
+	});
+});
+
+describe('migrateCanvasSettings', () => {
+	it('initializes canvas if missing', () => {
+		const mockPlugin = { settings: {} } as any;
+		expect(migrateCanvasSettings(mockPlugin)).toBe(true);
+		expect(mockPlugin.settings.canvas).toBeDefined();
+		expect(mockPlugin.settings.canvas.layout).toBe('radial');
+	});
+	it('does not modify existing canvas settings', () => {
+		const mockPlugin = { settings: { canvas: { layout: 'tree' } } } as any;
+		expect(migrateCanvasSettings(mockPlugin)).toBe(false);
+	});
+});
 
 describe('migrateMinSimilarity', () => {
 	it('migrates 0.65 to 0.0 and returns true', () => {
@@ -244,7 +270,7 @@ describe('migrateProjects', () => {
 		expect(mockPlugin.settings.projects.list).toHaveLength(1);
 	});
 
-	it('does not modify existing projects', () => {
+	it('does not modify existing projects if complete', () => {
 		const mockPlugin = {
 			settings: {
 				projects: {
@@ -255,6 +281,41 @@ describe('migrateProjects', () => {
 		} as any;
 		const result = migrateProjects(mockPlugin);
 		expect(result).toBe(false);
+	});
+
+	it('migrates legacy global settings to the default project', () => {
+		const mockPlugin = {
+			settings: {
+				projects: {
+					list: [{ id: 'default', name: 'Default', ragIncludedPaths: [], ragExcludedPaths: [], historySubfolder: '', createdAt: 0 }],
+					activeProjectId: 'default',
+				},
+				rag: { includedPaths: ['path1'], excludedPaths: ['path2'], dataScope: 'all' },
+				connections: { defaultProviderId: 'ollama', defaultModelId: 'llama3' },
+				chat: { activeSystemPromptId: 'sys1' }
+			} as any,
+		} as any;
+		
+		const result = migrateProjects(mockPlugin);
+		
+		expect(result).toBe(true);
+		
+		// Legacy RAG
+		expect(mockPlugin.settings.projects.list[0].ragIncludedPaths).toEqual(['path1']);
+		expect(mockPlugin.settings.projects.list[0].ragExcludedPaths).toEqual(['path2']);
+		expect(mockPlugin.settings.rag.includedPaths).toBeUndefined();
+		expect(mockPlugin.settings.rag.excludedPaths).toBeUndefined();
+		expect(mockPlugin.settings.rag.dataScope).toBeUndefined();
+		
+		// Legacy Connections
+		expect(mockPlugin.settings.projects.list[0].defaultProviderId).toBe('ollama');
+		expect(mockPlugin.settings.projects.list[0].defaultModelId).toBe('llama3');
+		expect(mockPlugin.settings.connections.defaultProviderId).toBeUndefined();
+		expect(mockPlugin.settings.connections.defaultModelId).toBeUndefined();
+
+		// Legacy Chat
+		expect(mockPlugin.settings.projects.list[0].systemPromptId).toBe('sys1');
+		expect(mockPlugin.settings.chat.activeSystemPromptId).toBeUndefined();
 	});
 });
 

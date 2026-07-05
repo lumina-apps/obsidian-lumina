@@ -2,7 +2,6 @@ import type {
 	EmbeddingConfig,
 	LLMProviderConfig,
 	PluginLanguage,
-	RAGDataScope,
 	RAGSyncMode,
 	ResponseLanguage,
 	SendKeyMode,

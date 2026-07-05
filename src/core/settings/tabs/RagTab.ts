@@ -104,13 +104,13 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			setting.addButton(btn => {
 				btn.setIcon('trash')
 					.setTooltip(t('common.delete') || '삭제')
-					.setWarning()
+					.setDestructive()
 					.onClick(() => {
 						new ConfirmModal(
 							tab.plugin.app,
 							t('projects.settings.deleteConfirmTitle') || '프로젝트 삭제',
-							(t('projects.settings.deleteConfirmDesc') || '\"{name}\" 프로젝트를 삭제하시겠습니까? 히스토리 파일은 삭제되지 않습니다.').replace('{name}', project.name),
-							async () => {
+							(t('projects.settings.deleteConfirmDesc') || '"{name}" 프로젝트를 삭제하시겠습니까? 히스토리 파일은 삭제되지 않습니다.').replace('{name}', project.name),
+							wrapAsync(async () => {
 								projects.list = projects.list.filter(p => p.id !== project.id);
 								if (projects.activeProjectId === project.id) {
 									projects.activeProjectId = 'default';
@@ -120,7 +120,7 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 								await tab.saveAndSync();
 								syncProjectStore(projects.list, projects.activeProjectId);
 								tab.plugin.refreshSettingTab();
-							},
+							}),
 						).open();
 					});
 			});

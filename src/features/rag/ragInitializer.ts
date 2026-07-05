@@ -16,7 +16,6 @@ import { projectIndexCache } from './projectIndexCache';
 import { getActiveProject } from '../../core/store/projectStore';
 import { debugLogger } from '../../shared/debugLogger';
 import type LuminaPlugin from '../../main';
-import type { RagSettings } from '../../core/settings/settings.types';
 
 /** 기본 임베딩 모델 (auto 모드). 다국어 지원. */
 export const DEFAULT_EMBEDDING_MODEL = 'ibm-granite/granite-embedding-97m-multilingual-r2';
