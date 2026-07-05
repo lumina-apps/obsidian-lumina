@@ -39,7 +39,7 @@ function openTagSearch(app: App, query: string): void {
 	}
 
 	// 검색 탭 활성화
-	workspace.revealLeaf(searchLeaf);
+	void workspace.revealLeaf(searchLeaf);
 }
 
 /**
