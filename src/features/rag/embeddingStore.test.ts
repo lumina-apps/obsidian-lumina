@@ -230,7 +230,7 @@ describe('EmbeddingStore', () => {
 			expect(() => store.close()).not.toThrow();
 		});
 
-		it('should clear by deleting database and re-initializing', async () => {
+		it('should clear by deleting database and re-initializing (no projectId)', async () => {
 			await store.init('test');
 			
 			const deleteReq = {
@@ -250,7 +250,30 @@ describe('EmbeddingStore', () => {
 			
 			expect(mockDb.close).toHaveBeenCalled();
 			expect(indexedDB.deleteDatabase).toHaveBeenCalledWith('lumina-embeddings');
-			expect(initSpy).toHaveBeenCalledWith('test');
+			expect(initSpy).toHaveBeenCalledWith('test', undefined);
+		});
+
+		it('should preserve projectId when clearing (projectId provided)', async () => {
+			await store.init('test', 'proj-abc');
+			
+			const deleteReq = {
+				onsuccess: null as any,
+				onerror: null as any,
+				onblocked: null as any
+			};
+			
+			indexedDB.deleteDatabase = vi.fn().mockImplementation(() => {
+				setTimeout(() => deleteReq.onsuccess && deleteReq.onsuccess(), 0);
+				return deleteReq;
+			});
+
+			const initSpy = vi.spyOn(store, 'init');
+			
+			await store.clear();
+			
+			expect(indexedDB.deleteDatabase).toHaveBeenCalledWith('lumina-embeddings-proj-abc');
+			// 재초기화 시 projectId가 유지되어야 함
+			expect(initSpy).toHaveBeenCalledWith('test', 'proj-abc');
 		});
 
 		it('should handle clear error', async () => {

@@ -132,7 +132,11 @@ export class VaultIndexer {
 				// Full reindex -> proceed with normal indexing flow below
 			} else {
 				this.state.loadFrom(loadResult);
-				await this.embeddingStore.loadEmbeddings(this.state.childChunks).catch(() => {});
+				await this.embeddingStore.loadEmbeddings(this.state.childChunks).catch((e) => {
+					debugLogger.logError('rag', e instanceof Error ? e : new Error(`loadEmbeddings failed: ${e}`));
+				});
+				const withEmb = this.state.childChunks.filter(c => c.embedding && c.embedding.length > 0).length;
+				debugLogger.logSystem('rag', `updateIndex: childChunks=${this.state.childChunks.length}, with embedding=${withEmb}`);
 				await this.initOramaStore();
 				
 				if (files.length === 0 && this.state.indexedFileCount > 0) {
@@ -179,7 +183,11 @@ export class VaultIndexer {
 		if (restoreResult.indexRestored) {
 			const loadResult = await loadIndex(this.app, this.modelName, this.projectId);
 			this.state.loadFrom(loadResult);
-			await this.embeddingStore.loadEmbeddings(this.state.childChunks).catch(() => {});
+			await this.embeddingStore.loadEmbeddings(this.state.childChunks).catch((e) => {
+				debugLogger.logError('rag', e instanceof Error ? e : new Error(`loadEmbeddings (indexVault path) failed: ${e}`));
+			});
+			const withEmb = this.state.childChunks.filter(c => c.embedding && c.embedding.length > 0).length;
+			debugLogger.logSystem('rag', `indexVault (restored): childChunks=${this.state.childChunks.length}, with embedding=${withEmb}`);
 		} else {
 			this.state.clear();
 			await this.embeddingStore.clear();

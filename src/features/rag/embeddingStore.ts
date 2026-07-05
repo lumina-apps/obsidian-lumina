@@ -24,11 +24,13 @@ export class EmbeddingStore {
 	private db: IDBDatabase | null = null;
 	private modelName: string | null = null;
 	private dbName: string = DB_NAME;
+	private projectId: string | undefined = undefined;
 
 	/** IndexedDB를 오픈하고 ObjectStore를 준비합니다. */
 	async init(modelName: string, projectId?: string): Promise<void> {
 		this.modelName = modelName;
 		// 프로젝트별 격리: 각 프로젝트의 임베딩 벡터를 독립된 IndexedDB에 저장
+		this.projectId = projectId;
 		this.dbName = projectId ? `${DB_NAME}-${projectId}` : DB_NAME;
 
 		return new Promise((resolve, reject) => {
@@ -81,7 +83,7 @@ export class EmbeddingStore {
 	/** 여러 청크의 임베딩을 벌크 저장합니다. */
 	async storeEmbeddings(chunks: Array<{ id: string; embedding?: number[] | Float32Array }>): Promise<void> {
 		if (!this.db && this.modelName) {
-			await this.init(this.modelName);
+			await this.init(this.modelName, this.projectId);
 		}
 		if (!this.db) throw new Error('EmbeddingStore not initialized');
 
@@ -108,7 +110,7 @@ export class EmbeddingStore {
 	/** 여러 청크의 embedding 필드를 IndexedDB에서 로드하여 채웁니다. */
 	async loadEmbeddings(chunks: Array<{ id: string; embedding?: number[] | Float32Array }>): Promise<void> {
 		if (!this.db && this.modelName) {
-			await this.init(this.modelName);
+			await this.init(this.modelName, this.projectId);
 		}
 		if (!this.db) throw new Error('EmbeddingStore not initialized');
 		if (chunks.length === 0) return;
@@ -192,7 +194,7 @@ export class EmbeddingStore {
 		});
 
 		if (this.modelName) {
-			await this.init(this.modelName);
+			await this.init(this.modelName, this.projectId);
 		}
 	}
 
