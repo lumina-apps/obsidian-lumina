@@ -5,7 +5,7 @@ export class OramaStore {
 	private db: AnyOrama | null = null;
 	private dimension: number;
 
-	private koreanBigramTokenizer(raw: string): string[] {
+	private koreanBigramTokenizer(this: void, raw: string): string[] {
 		if (typeof raw !== 'string') return [String(raw)];
 		const text = raw.normalize('NFC').toLowerCase();
 		const tokens = new Set<string>();

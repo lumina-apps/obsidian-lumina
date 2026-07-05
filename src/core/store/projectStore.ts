@@ -11,6 +11,7 @@
 import { writable, derived, get } from 'svelte/store';
 import type { ProjectConfig } from '../../shared/types/project.types';
 import { DEFAULT_PROJECT_ID } from '../../shared/types/project.types';
+import { debugLogger } from '../../shared/debugLogger';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -47,7 +48,6 @@ export function syncProjectStore(
 	projectList.set([...list.map(p => ({ ...p, ragIncludedPaths: [...p.ragIncludedPaths], ragExcludedPaths: [...p.ragExcludedPaths] }))]);
 	activeProjectId.set(currentActiveId);
 	
-	const { debugLogger } = require('../../shared/debugLogger');
 	debugLogger.logSystem('projects', `syncProjectStore: activeProjectId=${currentActiveId}, list.length=${list.length}`);
 }
 

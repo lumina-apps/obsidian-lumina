@@ -104,13 +104,13 @@ async function enforceLuminaMetadata(path: string, ctx: ToolHandlerContext) {
 	const file = ctx.plugin.app.vault.getAbstractFileByPath(path);
 	if (file instanceof TFile && file.extension === 'md') {
 		try {
-			await ctx.plugin.app.fileManager.processFrontMatter(file, (fm) => {
+			await ctx.plugin.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
 				const now = new Date().toISOString();
-				fm.luminaCreated = fm.luminaCreated || now;
-				fm.luminaModified = now;
-				fm.luminaVersion = ctx.plugin.manifest.version;
+				(fm as Record<string, string>).luminaCreated = (fm as Record<string, string>).luminaCreated || now;
+				(fm as Record<string, string>).luminaModified = now;
+				(fm as Record<string, string>).luminaVersion = ctx.plugin.manifest.version;
 			});
-		} catch (e) {
+		} catch {
 			// ignore errors if frontmatter is invalid
 		}
 	}
