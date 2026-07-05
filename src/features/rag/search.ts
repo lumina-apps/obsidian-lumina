@@ -87,7 +87,7 @@ export async function searchVault(
 	let bm25Candidates: ParentChunk[] = [];
 	if (query.trim().length > 0) {
 		// Orama 풀텍스트 검색을 활용해 후보군을 매우 빠르게 추출
-		const fulltextLimit = Math.max(20, topK * 3);
+		const fulltextLimit = Math.max(50, topK * 5);
 		const fulltextHits = await oramaDb.searchFulltext(query, fulltextLimit, activeFilePath);
 		
 		const candidateParentIds = new Set<string>();
@@ -156,11 +156,26 @@ export async function searchVault(
 		}
 	}
 
-	// 5. 점수 정규화 및 최종 하이브리드 점수 계산
+	// 5. 점수 정규화 및 최종 하이브리드 점수 계산 (Reciprocal Rank Fusion)
+	const k = 60;
+	
+	const sortedByVector = [...hybridResults].sort((a, b) => (b.vectorScore ?? 0) - (a.vectorScore ?? 0));
+	const sortedByBm25 = [...hybridResults].sort((a, b) => (b.bm25Score ?? 0) - (a.bm25Score ?? 0));
+
+	const vectorRankMap = new Map<string, number>();
+	sortedByVector.forEach((r, i) => vectorRankMap.set(r.chunk.id, i + 1));
+
+	const bm25RankMap = new Map<string, number>();
+	sortedByBm25.forEach((r, i) => bm25RankMap.set(r.chunk.id, i + 1));
+
 	for (const r of hybridResults) {
-		const normalizedVector = Math.max(0, (r.vectorScore ?? 0) / maxVectorScore);
-		const normalizedBm25 = Math.max(0, (r.bm25Score ?? 0) / maxBm25Score);
-		r.score = (alpha * normalizedVector) + ((1 - alpha) * normalizedBm25);
+		const vRank = vectorRankMap.get(r.chunk.id)!;
+		const bRank = bm25RankMap.get(r.chunk.id)!;
+		
+		const vScore = (r.vectorScore ?? 0) > 0 ? 1 / (k + vRank) : 0;
+		const bScore = (r.bm25Score ?? 0) > 0 ? 1 / (k + bRank) : 0;
+		
+		r.score = (alpha * vScore) + ((1 - alpha) * bScore);
 	}
 
 	// 벡터 점수 ≥ 임계값 또는 BM25 점수 > 0 인 결과만 필터링 후 정렬

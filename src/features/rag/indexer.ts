@@ -122,6 +122,7 @@ export class VaultIndexer {
 
 	private async processSync(isUpdate: boolean): Promise<void> {
 		const files = getTargetFiles(this.app, this.settings, this.chatHistoryPath, this.includedPaths, this.excludedPaths);
+		debugLogger.logSystem('rag', `VaultIndexer.processSync (project=${this.projectId}): found ${files.length} target files. Included=${JSON.stringify(this.includedPaths)}, Excluded=${JSON.stringify(this.excludedPaths)}`);
 
 		if (isUpdate) {
 			const loadResult = await loadIndex(this.app, this.modelName, this.projectId);

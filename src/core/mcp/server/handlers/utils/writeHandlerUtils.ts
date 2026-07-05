@@ -95,9 +95,26 @@ export const safeCreateFile = async (
 	await pathGuard.lock(path, async () => {
 		await ensureFolderExists(ctx.plugin.app, path);
 		await ctx.plugin.app.vault.create(path, content);
+		await enforceLuminaMetadata(path, ctx);
 	});
 	return { content: [{ type: 'text', text: successMessage }] };
 };
+
+async function enforceLuminaMetadata(path: string, ctx: ToolHandlerContext) {
+	const file = ctx.plugin.app.vault.getAbstractFileByPath(path);
+	if (file instanceof TFile && file.extension === 'md') {
+		try {
+			await ctx.plugin.app.fileManager.processFrontMatter(file, (fm) => {
+				const now = new Date().toISOString();
+				fm.luminaCreated = fm.luminaCreated || now;
+				fm.luminaModified = now;
+				fm.luminaVersion = ctx.plugin.manifest.version;
+			});
+		} catch (e) {
+			// ignore errors if frontmatter is invalid
+		}
+	}
+}
 
 export const safeActionFile = async (
 	actionName: Exclude<ActionType, 'edit'>,
@@ -116,6 +133,7 @@ export const safeActionFile = async (
 	return await pathGuard.lock(path, async () => {
 		await createBackup(ctx.plugin.app, path);
 		const successMessage = await actionFn();
+		await enforceLuminaMetadata(path, ctx);
 		return { content: [{ type: 'text', text: successMessage }] };
 	});
 };

@@ -111,6 +111,8 @@ export async function initEmbeddingWorker(
 		const embeddingStore = new EmbeddingStore();
 		await embeddingStore.init(modelName, activeProject.id);
 
+		debugLogger.logSystem('rag', `initEmbeddingWorker: Creating VaultIndexer for project '${activeProject.id}'. Included: ${JSON.stringify(activeProject.ragIncludedPaths)}, Excluded: ${JSON.stringify(activeProject.ragExcludedPaths)}`);
+
 		// 인덱서 생성 (modelName + projectId 전달로 프로젝트별 인덱스 분리)
 		plugin.indexer = new VaultIndexer({
 			app: plugin.app,
@@ -236,6 +238,8 @@ export async function switchProjectIndex(
 	}
 
 	const project = getActiveProject();
+
+	debugLogger.logSystem('rag', `switchProjectIndex: Cache miss for '${newProjectId}'. Current active project in store is '${project.id}'. Included: ${JSON.stringify(project.ragIncludedPaths)}, Excluded: ${JSON.stringify(project.ragExcludedPaths)}`);
 
 	// IndexedDB 임베딩 저장소 초기화 (프로젝트별 격리)
 	const embeddingStore = new EmbeddingStore();

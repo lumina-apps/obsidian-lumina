@@ -46,6 +46,9 @@ export function syncProjectStore(
 ): void {
 	projectList.set([...list.map(p => ({ ...p, ragIncludedPaths: [...p.ragIncludedPaths], ragExcludedPaths: [...p.ragExcludedPaths] }))]);
 	activeProjectId.set(currentActiveId);
+	
+	const { debugLogger } = require('../../shared/debugLogger');
+	debugLogger.logSystem('projects', `syncProjectStore: activeProjectId=${currentActiveId}, list.length=${list.length}`);
 }
 
 /** 특정 프로젝트로 활성 전환 (store만 업데이트; plugin.settings 저장은 호출부에서) */

@@ -1,6 +1,6 @@
 /** ConnectionsTab — connections 탭 진입점. 하위 섹션 모듈에 렌더링 위임 */
 
-import { Platform, Setting } from 'obsidian';
+import { Platform, Setting, sanitizeHTMLToDom } from 'obsidian';
 import type { LuminaSettingTab } from '../settingTab';
 import { wrapAsync } from '../../../shared/utils/settingHelpers';
 import { t } from '../../../shared/locales/helpers';
@@ -72,7 +72,7 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 
 	tab.sectionHeading(el, t('projects.settings.modalTitleActive', { projectName: displayName }));
 	const projectInfo = el.createEl('div', { cls: 'setting-item-description lumina-project-info-desc' });
-	projectInfo.innerHTML = t('projects.settings.activeProjectModelDesc', { projectName: displayName });
+	projectInfo.appendChild(sanitizeHTMLToDom(t('projects.settings.activeProjectModelDesc', { projectName: displayName })));
 	
 	renderDefaultChatModelSection(tab, el);
 }

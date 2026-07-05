@@ -18,7 +18,7 @@ vi.mock('./indexProcessing');
 vi.mock('./utils/indexDiff');
 vi.mock('../../core/store/ragStore');
 vi.mock('../../shared/debugLogger', () => ({
-	debugLogger: { logWarn: vi.fn(), logInfo: vi.fn(), logError: vi.fn() }
+	debugLogger: { logWarn: vi.fn(), logInfo: vi.fn(), logError: vi.fn(), logSystem: vi.fn() }
 }));
 
 const mockOramaInit = vi.fn();

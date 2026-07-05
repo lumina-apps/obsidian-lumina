@@ -7,6 +7,7 @@ import { getActiveProject, syncProjectStore } from '../../../core/store/projectS
 import { switchProjectIndex } from '../../../features/rag/ragInitializer';
 import { setTotalFiles } from '../../../core/store/ragStore';
 import { buildChatModelOptions, toProviderModelValue, parseProviderModelValue } from '../../../shared/utils/modelUtils';
+import { debugLogger } from '../../../shared/debugLogger';
 
 export class ProjectSettingsModal extends Modal {
 	private plugin: LuminaPlugin;
@@ -43,7 +44,7 @@ export class ProjectSettingsModal extends Modal {
 			this.defaultModelId = '';
 			this.systemPromptId = '';
 			// Auto detect default excludes
-			const chatHistoryPath = this.plugin.settings.chat.historyPath || 'Chat History';
+			const chatHistoryPath = this.plugin.settings.chat.historyPath || 'chatHistory';
 			const backupPath = 'backups';
 			const commonExcludes = ['Templates', 'templates', '_templates', 'Attachments', 'attachments'];
 			
@@ -54,6 +55,9 @@ export class ProjectSettingsModal extends Modal {
 	onOpen() {
 		const { contentEl } = this;
 		contentEl.empty();
+		contentEl.addClass('lumina-settings-modal');
+
+		debugLogger.logSystem('projects', `ProjectSettingsModal.onOpen: project=${this.project?.id}, initialIncluded=${JSON.stringify(Array.from(this.includedPaths))}, initialExcluded=${JSON.stringify(Array.from(this.excludedPaths))}`);
 
 		contentEl.createEl('h2', { text: this.isNewProject ? t('projects.settings.newProjectTitle') || '새 프로젝트 생성' : t('projects.settings.modalTitle') || '프로젝트 설정' });
 
@@ -315,6 +319,8 @@ export class ProjectSettingsModal extends Modal {
 
 		const ragIncludedPaths = Array.from(this.includedPaths);
 		const ragExcludedPaths = Array.from(this.excludedPaths);
+
+		debugLogger.logSystem('projects', `ProjectSettingsModal.saveProject: isNewProject=${this.isNewProject}, targetId=${this.project?.id}, finalName=${finalName}, included=${JSON.stringify(ragIncludedPaths)}, excluded=${JSON.stringify(ragExcludedPaths)}`);
 
 		if (this.isNewProject) {
 			const newProject: ProjectConfig = {

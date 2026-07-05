@@ -60,7 +60,7 @@ export function createDefaultProject(): ProjectConfig {
 		id: DEFAULT_PROJECT_ID,
 		name: 'Default',
 		ragIncludedPaths: [],
-		ragExcludedPaths: ['Chat History', 'backups', 'Templates', 'templates', '_templates', 'Attachments', 'attachments'],
+		ragExcludedPaths: ['chatHistory', 'backups', 'Templates', 'templates', '_templates', 'Attachments', 'attachments'],
 		historySubfolder: '',
 		defaultProviderId: '',
 		defaultModelId: '',

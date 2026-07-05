@@ -5,6 +5,25 @@ export class OramaStore {
 	private db: AnyOrama | null = null;
 	private dimension: number;
 
+	private koreanBigramTokenizer(raw: string): string[] {
+		if (typeof raw !== 'string') return [String(raw)];
+		const text = raw.normalize('NFC').toLowerCase();
+		const tokens = new Set<string>();
+		const words = text.match(/[\p{L}\p{N}_]+/gu) || [];
+		
+		for (const word of words) {
+			tokens.add(word);
+			for (let i = 0; i < word.length - 1; i++) {
+				const char1 = word.charCodeAt(i);
+				const char2 = word.charCodeAt(i+1);
+				if (char1 >= 0xAC00 && char1 <= 0xD7A3 && char2 >= 0xAC00 && char2 <= 0xD7A3) {
+					tokens.add(word.substring(i, i+2));
+				}
+			}
+		}
+		return Array.from(tokens);
+	}
+
 	constructor(dimension: number) {
 		this.dimension = dimension;
 	}
@@ -19,6 +38,13 @@ export class OramaStore {
 				text: 'string',
 				embedding: `vector[${this.dimension}]`,
 			},
+			components: {
+				tokenizer: {
+					language: 'ko',
+					normalizationCache: new Map(),
+					tokenize: this.koreanBigramTokenizer
+				}
+			}
 		});
 	}
 
