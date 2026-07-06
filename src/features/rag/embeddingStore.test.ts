@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { EmbeddingStore } from './embeddingStore';
+import { debugLogger } from '../../shared/debugLogger';
+
+vi.mock('../../shared/debugLogger', () => ({
+	debugLogger: { logWarn: vi.fn(), logInfo: vi.fn(), logError: vi.fn(), logSystem: vi.fn() }
+}));
 
 describe('EmbeddingStore', () => {
 	let store: EmbeddingStore;
@@ -311,9 +316,8 @@ describe('EmbeddingStore', () => {
 				return deleteReq;
 			});
 
-			const warnSpy = vi.spyOn(console, 'warn');
 			await store.clear();
-			expect(warnSpy).toHaveBeenCalledWith('IndexedDB delete blocked: waiting for other transactions to finish');
+			expect(debugLogger.logWarn).toHaveBeenCalledWith('rag', 'IndexedDB delete blocked: waiting for other transactions to finish');
 		});
 	});
 });

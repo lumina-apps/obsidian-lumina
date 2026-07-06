@@ -24,7 +24,7 @@ vi.mock('../../shared/debugLogger', () => ({
 const mockOramaInit = vi.fn();
 const mockOramaInsert = vi.fn();
 const mockOramaClear = vi.fn();
-const mockOramaDelete = vi.fn();
+const mockOramaDelete = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('./oramaStore', () => {
 	return {

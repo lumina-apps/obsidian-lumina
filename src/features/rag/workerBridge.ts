@@ -9,6 +9,7 @@ import { WORKER_COMPRESSED_BASE64 } from './worker/workerCode';
 import { decompressWorkerCode } from './utils/workerCodec';
 import { EmbeddingCacheManager } from './utils/EmbeddingCacheManager';
 import { WorkerPool, type EmbeddingProgressCallback, type WorkerInstance } from './utils/WorkerPool';
+import { debugLogger } from '../../shared/debugLogger';
 
 export class EmbeddingWorkerBridge {
 	private workerPool = new WorkerPool();
@@ -40,10 +41,9 @@ export class EmbeddingWorkerBridge {
 		try {
 			workerCode = await decompressWorkerCode(WORKER_COMPRESSED_BASE64);
 		} catch (decompErr: unknown) {
-			console.error('[EmbeddingWorker] decompression failed:', decompErr);
-			throw new Error(
-				`워커 코드 압축 해제 실패: ${decompErr instanceof Error ? decompErr.message : String(decompErr)}`,
-			);
+			const errMsg = decompErr instanceof Error ? decompErr.message : String(decompErr);
+			debugLogger.logError('rag', new Error(`[EmbeddingWorker] decompression failed: ${errMsg}`));
+			throw new Error(`워커 코드 압축 해제 실패: ${errMsg}`);
 		}
 
 		// Worker 수: 논리 코어 절반, 최소 1, 최대 4
@@ -102,14 +102,14 @@ export class EmbeddingWorkerBridge {
 		}
 		// 5분(300,000ms) 미사용 시 워커 종료
 		this.idleTimer = window.setTimeout(() => {
-			console.log('[EmbeddingWorkerBridge] Idle timeout reached. Terminating workers to free memory.');
+			debugLogger.logSystem('rag', '[EmbeddingWorkerBridge] Idle timeout reached. Terminating workers to free memory.');
 			this.terminate();
 		}, 300000);
 	}
 
 	private async ensureReady(): Promise<void> {
 		if (!this.ready && this.initArgs) {
-			console.log('[EmbeddingWorkerBridge] Reviving workers from idle state...');
+			debugLogger.logSystem('rag', '[EmbeddingWorkerBridge] Reviving workers from idle state...');
 			await this.init(
 				this.initArgs.modelName,
 				this.initArgs.cacheDir,

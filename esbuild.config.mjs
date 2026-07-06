@@ -278,13 +278,17 @@ const workerContext = await esbuild.context({
 
 // ─── Watch / Build ────────────────────────────────────────────────────────────
 if (prod) {
-	await workerContext.rebuild();
-	const result = await mainContext.rebuild();
+	const [workerResult, mainResult] = await Promise.all([
+		workerContext.rebuild(),
+		mainContext.rebuild()
+	]);
 	const fs = await import("fs");
-	if (result && result.metafile) fs.writeFileSync('meta.json', JSON.stringify(result.metafile));
+	if (mainResult && mainResult.metafile) fs.writeFileSync('meta.json', JSON.stringify(mainResult.metafile));
 	process.exit(0);
 } else {
-	await workerContext.rebuild();
-	await mainContext.rebuild();
+	await Promise.all([
+		workerContext.rebuild(),
+		mainContext.rebuild()
+	]);
 	await Promise.all([mainContext.watch(), workerContext.watch()]);
 }

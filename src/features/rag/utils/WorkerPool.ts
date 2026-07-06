@@ -2,6 +2,7 @@ import type { IWorker, WorkerResponse } from '../../../shared/types/rag.types';
 import { PendingRequestManager } from './PendingRequestManager';
 import { withTimeout } from '../../../shared/utils/asyncUtils';
 import { t } from '../../../shared/locales/helpers';
+import { debugLogger } from '../../../shared/debugLogger';
 
 export interface WorkerInstance {
 	worker: IWorker;
@@ -49,8 +50,8 @@ export class WorkerPool {
 					this.handleMessage(event, instance, onProgress);
 				});
 				worker.addEventListener('error', (e: Event) => {
-					console.error(`[EmbeddingWorker] worker #${i} uncaught error:`, e);
 					const msg = e instanceof ErrorEvent ? e.message : t('uiMessages.ragWorkerInitErr');
+					debugLogger.logError('rag', new Error(`[EmbeddingWorker] worker #${i} uncaught error: ${msg}`));
 					instance.readyReject?.(new Error(`Worker 오류: ${msg}`));
 				});
 
@@ -159,6 +160,6 @@ export class WorkerPool {
 			}
 		}
 
-		console.error('[EmbeddingWorker] error:', message);
+		debugLogger.logError('rag', new Error(`[EmbeddingWorker] error: ${message}`));
 	}
 }

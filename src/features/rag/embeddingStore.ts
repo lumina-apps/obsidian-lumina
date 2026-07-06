@@ -13,6 +13,8 @@ const DB_NAME = 'lumina-embeddings';
 const STORE_NAME = 'embeddings';
 const DB_VERSION = 1;
 
+import { debugLogger } from '../../shared/debugLogger';
+
 interface EmbeddingRecord {
 	id: string;
 	modelName: string;
@@ -189,7 +191,7 @@ export class EmbeddingStore {
 
 			request.onblocked = () => {
 				// 다른 연결이 DB를 사용 중이면 차단됨 (트랜잭션이 끝날 때까지 대기)
-				console.warn('IndexedDB delete blocked: waiting for other transactions to finish');
+				debugLogger.logWarn('rag', 'IndexedDB delete blocked: waiting for other transactions to finish');
 			};
 		});
 

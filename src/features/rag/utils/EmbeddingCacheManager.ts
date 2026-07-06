@@ -10,6 +10,8 @@ interface NodePath {
 	dirname(path: string): string;
 }
 
+import { debugLogger } from '../../../shared/debugLogger';
+
 /** 디스크 캐시 파일의 각 항목 타입 */
 type CacheEntry = [string, number[] | undefined, number];
 
@@ -58,14 +60,18 @@ export class EmbeddingCacheManager {
 
 	public trimCacheIfNecessary(): void {
 		if (this.embedCache.size > this.MAX_CACHE_ENTRIES) {
+			const entries = Array.from(this.embedCache.keys()).map((k) => ({
+				k,
+				access: this.embedAccess.get(k) ?? 0,
+			}));
+			// 접근 순서가 낮은(오래된/적게 쓰인) 순으로 정렬
+			entries.sort((a, b) => a.access - b.access);
+			
 			let toRemove = Math.floor(this.MAX_CACHE_ENTRIES / 2);
-			const keysIter = this.embedCache.keys();
-			while (toRemove-- > 0) {
-				const next = keysIter.next();
-				if (next.done ?? false) break;
-				const key: string = next.value;
-				if (!key) break;
+			for (let i = 0; i < toRemove && i < entries.length; i++) {
+				const key = entries[i].k;
 				this.embedCache.delete(key);
+				this.embedAccess.delete(key);
 			}
 		}
 	}
@@ -103,7 +109,7 @@ export class EmbeddingCacheManager {
 			this.accessCounter = max + 1;
 		} catch (e: unknown) {
 			if ((e as { code?: string })?.code !== 'ENOENT') {
-				console.warn('[EmbeddingWorker] loadEmbedCache failed:', e);
+				debugLogger.logWarn('rag', `[EmbeddingWorker] loadEmbedCache failed: ${e instanceof Error ? e.message : String(e)}`);
 			}
 		}
 	}
@@ -137,7 +143,7 @@ export class EmbeddingCacheManager {
 			await nodeFS.promises.mkdir(dir, { recursive: true });
 			await nodeFS.promises.writeFile(this.cacheFilePath, JSON.stringify(out), 'utf-8');
 		} catch (e: unknown) {
-			console.warn('[EmbeddingWorker] saveEmbedCache failed:', e);
+			debugLogger.logWarn('rag', `[EmbeddingWorker] saveEmbedCache failed: ${e instanceof Error ? e.message : String(e)}`);
 		}
 	}
 

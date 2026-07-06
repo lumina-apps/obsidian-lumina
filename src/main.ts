@@ -57,6 +57,7 @@ class LazyLuminaSettingTab extends PluginSettingTab {
 				this.realTab.refreshDisplay();
 			}
 		}).catch((err) => {
+			this.loadingPromise = null;
 			new Notice(t('uiMessages.errorLoadingSettings') || 'Failed to load settings tab.');
 			debugLogger.logError('ui', err instanceof Error ? err : new Error(`Setting tab load error: ${err}`));
 		});

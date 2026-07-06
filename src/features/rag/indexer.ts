@@ -224,11 +224,15 @@ export class VaultIndexer {
 		this.state.removePaths(paths);
 		
 		if (this.oramaStore && removedChildChunks.length > 0) {
-			void this.oramaStore.deleteByIds(removedChildChunks.map(c => c.id));
+			void this.oramaStore.deleteByIds(removedChildChunks.map(c => c.id)).catch(err => {
+				debugLogger.logError('rag', err instanceof Error ? err : new Error(`Orama delete failed: ${err}`));
+			});
 		}
 		
 		if (removedChildChunks.length > 0) {
-			void this.embeddingStore.deleteEmbeddings(removedChildChunks.map(c => c.id)).catch(() => {});
+			void this.embeddingStore.deleteEmbeddings(removedChildChunks.map(c => c.id)).catch(err => {
+				debugLogger.logError('rag', err instanceof Error ? err : new Error(`Embedding DB delete failed: ${err}`));
+			});
 		}
 	}
 
