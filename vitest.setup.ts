@@ -46,8 +46,7 @@ vi.mock('obsidian', () => {
 		},
 	};
 
-	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	const noop = () => {};
+
 
 	return {
 		App: vi.fn(() => mockApp),

@@ -88,7 +88,7 @@ export async function initEmbeddingWorker(
 				modelName,
 				cacheDir,
 				pluginDir,
-				(progress, status) => {
+				(progress, _status) => {
 					const pct = Math.round(progress * 100);
 					if (!isStartup) progressNotice?.setMessage(t('settings.rag.init.loadingProgress', { pct: pct }));
 					setIndexingStatus('loading-model', { progressPct: pct });

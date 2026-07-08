@@ -6,7 +6,7 @@ import type { McpSettings } from '../../../../shared/types/settings.types';
 
 const AGENT_DEFAULT_MAX_STEPS = 15;
 
-export function renderAgentSection(tab: LuminaSettingTab, el: HTMLElement, s: McpSettings): void {
+export function renderAgentSection(tab: LuminaSettingTab, el: HTMLElement, _s: McpSettings): void {
 	tab.sectionHeading(el, t('settings.mcp.agentMode.name'));
 
 	const agentCard = createFeatureCard(el, tab.plugin.settings.chat.agentEnabled);

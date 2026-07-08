@@ -25,7 +25,7 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 	onTrigger(
 		cursor: EditorPosition,
 		editor: Editor,
-		file: TFile
+		_file: TFile
 	): EditorSuggestTriggerInfo | null {
 		const trigger = this.plugin.settings.chat.inlineTrigger || '/ai';
 		const line = editor.getLine(cursor.line);
@@ -92,7 +92,7 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 		});
 	}
 
-	selectSuggestion(action: QuickAction, evt: MouseEvent | KeyboardEvent): void {
+	selectSuggestion(action: QuickAction, _evt: MouseEvent | KeyboardEvent): void {
 		if (!this.context) return;
 		const { editor, start, end } = this.context;
 

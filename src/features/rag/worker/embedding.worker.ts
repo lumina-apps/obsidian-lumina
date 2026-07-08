@@ -111,7 +111,7 @@ function send(msg: WorkerResponse): void {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
-async function initModel(modelName: string, cacheDir: string, pluginDir?: string): Promise<void> {
+async function initModel(modelName: string, cacheDir: string, _pluginDir?: string): Promise<void> {
 	// 캐시 디렉토리 지정 (Electron 환경에서는 절대 경로 전달 필요)
 	env.cacheDir = cacheDir;
 

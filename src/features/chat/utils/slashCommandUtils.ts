@@ -2,7 +2,7 @@ import type { SlashCommand } from "../types/slashCommand.types";
 import type LuminaPlugin from "../../../main";
 
 export function buildSlashCommands(
-	plugin: LuminaPlugin,
+	_plugin: LuminaPlugin,
 	t: (key: string, params?: Record<string, string | number>) => string,
 	onClearChat: () => void,
 	onToggleRagMode: () => void,

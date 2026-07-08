@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { McpSandbox } from './mcpSandbox';
 
 describe('McpSandbox', () => {
-	let mockWorker: any;
 
 	beforeEach(() => {
 		// Mock URL.createObjectURL and URL.revokeObjectURL
@@ -18,7 +17,7 @@ describe('McpSandbox', () => {
 			terminate = vi.fn();
 			
 			postMessage(data: any) {
-				const { code, context } = data;
+				const { code } = data;
 				// Simulate worker execution
 				setTimeout(async () => {
 					try {

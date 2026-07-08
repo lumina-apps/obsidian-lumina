@@ -6,7 +6,7 @@ import {
 	t,
 	getSystemLocale,
 	getLangSuffix,
-	currentLanguageStore,
+
 } from './helpers';
 
 describe('Locale Helpers', () => {

@@ -94,9 +94,9 @@ export const listNotesHandler = async (
 };
 
 export const listTagsHandler = async (
-	args: ToolArguments,
+	_args: ToolArguments,
 	ctx: ToolHandlerContext,
-	pathGuard: PathGuard,
+	_pathGuard: PathGuard,
 ): Promise<ToolResult> => {
 	const tagsRecord = (ctx.plugin.app.metadataCache as unknown as { getTags(): Record<string, number> }).getTags();
 	// tagsRecord is Record<string, number> where key is tag like '#foo' and value is count

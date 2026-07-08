@@ -20,7 +20,7 @@ export class QuickActionHandler {
 		this.plugin = plugin;
 	}
 
-	async executeAction(action: QuickAction, editor: Editor, view: MarkdownView | MarkdownFileInfo) {
+	async executeAction(action: QuickAction, editor: Editor, _view: MarkdownView | MarkdownFileInfo) {
 		const selection = editor.getSelection();
 		if (!selection) {
 			new Notice(t('uiMessages.qaEmptySel'));

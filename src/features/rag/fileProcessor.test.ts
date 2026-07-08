@@ -4,7 +4,7 @@ import { App, TFile } from 'obsidian';
 import * as DocumentParserRouter from './parsers/DocumentParserRouter';
 import * as chunker from './chunker';
 import * as hashModule from '../../shared/utils/hash';
-import * as markdownPreprocessor from '../../shared/utils/markdownPreprocessor';
+
 
 vi.mock('./chunker', () => ({
 	chunkDocument: vi.fn()

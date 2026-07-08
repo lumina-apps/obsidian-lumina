@@ -58,7 +58,7 @@ export async function refreshAfterConnectionToggle(
 /** MCP 서버 연결/해제 후 UI 갱신 */
 export function refreshAfterMcpConnectionToggle(
 	isCurrentlyConnected: boolean,
-	serverName: string,
+	_serverName: string,
 	refreshSettingTab: () => void,
 ): void {
 	showDisconnectedNotice();

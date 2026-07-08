@@ -25,7 +25,7 @@ import {
 
 // ── 헬퍼: TFile mock 생성 ────────────────────────────────────────────────────
 
-function makeTFile(path: string, tags: string[] = []): TFile {
+function makeTFile(path: string, _tags: string[] = []): TFile {
 	const parts = path.split('/');
 	const basename = parts[parts.length - 1].replace(/\.md$/, '');
 	// TFile은 vitest.setup.ts에서 vi.fn()으로 교체됨
