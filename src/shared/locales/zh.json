@@ -593,6 +593,7 @@
     "noActiveEditor": "未找到激活的 Markdown 编辑器。"
   },
   "uiMessages": {
+    "toolExecuting": "⚙️ 正在执行 {{name}}...",
     "actionApproval": {
       "title": "需要批准: {{action}}",
       "targetFile": "目标文件: {{path}}",

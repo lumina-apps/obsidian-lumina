@@ -7,6 +7,7 @@
 	import ChatHeader from "./ChatHeader.svelte";
 	import ChatMessageList from "./ChatMessageList.svelte";
 	import ChatInputArea from "./ChatInputArea.svelte";
+	import InlineApprovalQueue from "./InlineApprovalQueue.svelte";
 
 	import { approvalStore } from "../utils/approvalManager";
 	import type { ContextAttachment } from "../../../shared/types/chat.types";
@@ -398,7 +399,7 @@
 		/>
 
 		{#if $approvalStore.queue.length > 0}
-			<!-- 승인 대기 큐는 ActionApprovalModal 및 Editor Inline Diff에서 처리합니다 -->
+			<InlineApprovalQueue {tStore} />
 		{/if}
 
 		<ChatInputArea

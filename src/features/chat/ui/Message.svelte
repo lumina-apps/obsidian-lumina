@@ -2,7 +2,7 @@
 	import { Component, type App } from "obsidian";
 	import { onDestroy } from "svelte";
 	import type { UIChatMessage } from "../../../shared/types/chat.types";
-	import { getLanguage } from "../../../shared/locales/helpers";
+	import { getLanguage, t } from "../../../shared/locales/helpers";
 	import { formatTime } from "../../../shared/utils/dateUtils";
 	import { extractThinkBlocks, sanitizeDisplayContent } from "../../../shared/utils/llmTextSanitizer";
 	import { renderMessageContent } from "./utils/markdownRendererHelper";
@@ -101,8 +101,18 @@
 				/>
 			{/if}
 			<div class="lumina-message__content" bind:this={contentEl}></div>
-			{#if message.isStreaming && !isThinking}
+			{#if message.isStreaming && !isThinking && (!message.executingTools || message.executingTools.length === 0)}
 				<span class="lumina-message__cursor">▋</span>
+			{/if}
+
+			{#if message.executingTools && message.executingTools.length > 0}
+				<div class="lumina-message__executing-tools">
+					{#each message.executingTools as tool}
+						<span class="lumina-tool-indicator">
+							<span class="lumina-spinner"></span> {t('uiMessages.toolExecuting', { name: tool.name }) || `⚙️ ${tool.name} 실행 중...`}
+						</span>
+					{/each}
+				</div>
 			{/if}
 		{/if}
 	</div>
@@ -156,6 +166,46 @@
 		border: 1px solid rgba(var(--mono-rgb-100), 0.04);
 		border-left: 3px solid var(--interactive-accent);
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.01);
+	}
+
+	.lumina-message__executing-tools {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		margin-top: 8px;
+	}
+
+	.lumina-tool-indicator {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: var(--font-ui-smaller);
+		color: var(--text-muted);
+		background-color: var(--background-secondary);
+		padding: 4px 8px;
+		border-radius: var(--radius-s);
+		width: max-content;
+		animation: pulseIndicator 1.5s infinite;
+	}
+
+	@keyframes pulseIndicator {
+		0% { opacity: 0.7; }
+		50% { opacity: 1; }
+		100% { opacity: 0.7; }
+	}
+
+	.lumina-spinner {
+		display: inline-block;
+		width: 12px;
+		height: 12px;
+		border: 2px solid var(--text-muted);
+		border-top-color: transparent;
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
 	}
 
 	.lumina-message__header {

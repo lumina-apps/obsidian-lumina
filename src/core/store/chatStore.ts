@@ -98,6 +98,28 @@ export function setMessageRagStep(messageId: string, step: RagPipelineStep): voi
 	);
 }
 
+/** 실행 중인 도구 추가 */
+export function addExecutingTool(messageId: string, tool: { id: string; name: string }): void {
+	messages.update(ms =>
+		ms.map(m => {
+			if (m.id !== messageId) return m;
+			const current = m.executingTools || [];
+			return { ...m, executingTools: [...current, tool] };
+		})
+	);
+}
+
+/** 실행 완료된 도구 제거 */
+export function removeExecutingTool(messageId: string, toolId: string): void {
+	messages.update(ms =>
+		ms.map(m => {
+			if (m.id !== messageId) return m;
+			const current = m.executingTools || [];
+			return { ...m, executingTools: current.filter(t => t.id !== toolId) };
+		})
+	);
+}
+
 /** 메시지를 오류 상태로 변경 */
 export function setMessageError(messageId: string, errMsg: string): void {
 	messages.update(ms =>

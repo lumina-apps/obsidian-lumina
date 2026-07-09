@@ -593,6 +593,7 @@
     "noActiveEditor": "활성화된 마크다운 에디터를 찾을 수 없습니다."
   },
   "uiMessages": {
+    "toolExecuting": "⚙️ {{name}} 실행 중...",
     "actionApproval": {
       "title": "승인 필요: {{action}}",
       "targetFile": "대상 파일: {{path}}",

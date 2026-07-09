@@ -593,6 +593,7 @@
     "noActiveEditor": "No se encontró ningún editor Markdown activo."
   },
   "uiMessages": {
+    "toolExecuting": "⚙️ Ejecutando {{name}}...",
     "actionApproval": {
       "title": "Aprobación Requerida: {{action}}",
       "targetFile": "Archivo de Destino: {{path}}",

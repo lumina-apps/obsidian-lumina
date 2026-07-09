@@ -12,12 +12,13 @@ export interface KeydownContext {
 	plugin: LuminaPlugin;
 	showSlashSelector: boolean;
 	showContextSelector: boolean;
+	isLoading?: boolean;
 	onSendMessage: () => void;
 }
 
 export function createKeydownHandler(ctx: KeydownContext): (e: KeyboardEvent) => void {
 	return (e: KeyboardEvent) => {
-		const { plugin, showSlashSelector, showContextSelector, onSendMessage } = ctx;
+		const { plugin, showSlashSelector, showContextSelector, isLoading, onSendMessage } = ctx;
 
 		// 셀렉터가 열려 있으면 Enter 방지 후 반환 (Selector 컴포넌트가 처리)
 		if (showSlashSelector && ["Enter", "ArrowUp", "ArrowDown", "Escape"].includes(e.key)) {
@@ -34,6 +35,7 @@ export function createKeydownHandler(ctx: KeydownContext): (e: KeyboardEvent) =>
 		const isComposing = e.isComposing;
 
 		if (sendKey === "enter" && e.key === "Enter" && !e.shiftKey) {
+			if (isLoading) return; // Allow default newline
 			e.preventDefault();
 			if (isComposing) {
 				window.setTimeout(() => onSendMessage(), 50);
@@ -41,6 +43,7 @@ export function createKeydownHandler(ctx: KeydownContext): (e: KeyboardEvent) =>
 				onSendMessage();
 			}
 		} else if (sendKey === "ctrl_enter" && e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+			if (isLoading) return; // Allow default newline
 			e.preventDefault();
 			if (isComposing) {
 				window.setTimeout(() => onSendMessage(), 50);

@@ -8,7 +8,7 @@ import { t } from '../../shared/locales/helpers';
 import type { ChatMessage, ChatOptions, ToolCall, TokenUsage, ILLMProvider } from '../../shared/types/llm.types';
 import type { ChatSettings } from '../../core/settings/settings.types';
 import type { McpManager } from '../../core/mcp/mcpManager';
-import { appendChunk, syncMessageContent } from '../../core/store/chatStore';
+import { appendChunk, syncMessageContent, addExecutingTool, removeExecutingTool } from '../../core/store/chatStore';
 import { debugLogger } from '../../shared/debugLogger';
 import { parseTextToolCalls } from './utils/textToolParser';
 import { stripMaskTokens, stripThinkTags } from '../../shared/utils/llmTextSanitizer';
@@ -239,7 +239,9 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 
 		// ── 각 tool call 실행 후 결과 메시지 추가 ───────────────────────────
 		for (const tc of resolvedToolCalls) {
+			addExecutingTool(assistantId, { id: tc.id, name: tc.name });
 			messagesForLLM.push(await executeToolCall(tc, mcpManager, toolServerMap, useTextTools, opts.webSearchSettings));
+			removeExecutingTool(assistantId, tc.id);
 		}
 	}
 

@@ -21,6 +21,8 @@ export interface UIChatMessage {
 	ragSources?: ChatRagSource[];
 	/** RAG 파이프라인 진행 상태 (스트리밍 중 인디케이터 표시용) */
 	ragPipelineStep?: RagPipelineStep;
+	/** 현재 백그라운드에서 실행 중인 도구 목록 */
+	executingTools?: { id: string; name: string }[];
 	isStreaming: boolean;
 	timestamp: number;
 	model?: string;

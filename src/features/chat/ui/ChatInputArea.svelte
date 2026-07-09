@@ -102,6 +102,9 @@
 		get showContextSelector() {
 			return showContextSelector;
 		},
+		get isLoading() {
+			return isLoading;
+		},
 		get onSendMessage() {
 			return onSendMessage;
 		},
@@ -408,7 +411,7 @@
 					placeholder={hasProvider
 						? $tStore("errors.chatPlaceholder")
 						: $tStore("errors.llmConnectRequired")}
-					disabled={!hasProvider || isLoading}
+					disabled={!hasProvider}
 					rows="1"
 					onkeydown={handleKeydown}
 					oninput={handleInput}

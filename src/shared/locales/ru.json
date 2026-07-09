@@ -593,6 +593,7 @@
     "noActiveEditor": "Активный Markdown редактор не найден."
   },
   "uiMessages": {
+    "toolExecuting": "⚙️ Выполнение {{name}}...",
     "actionApproval": {
       "title": "Требуется одобрение: {{action}}",
       "targetFile": "Целевой файл: {{path}}",

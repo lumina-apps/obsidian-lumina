@@ -1,6 +1,5 @@
 import type { LuminaMcpClient, McpTool } from './mcpClient';
 import type LuminaPlugin from '../../main';
-import { McpPermissionModal } from '../../shared/utils/mcpPermissionModal';
 import { t } from '../../shared/locales/helpers';
 import { Platform } from 'obsidian';
 import { debugLogger } from '../../shared/debugLogger';
@@ -11,6 +10,7 @@ import {
 import type { LuminaMcpServer } from './server/luminaMcpServer';
 import { LocalServerLifecycle } from './localServerLifecycle';
 import { ClientConnectionSync } from './clientConnectionSync';
+import { approvalManager } from '../../features/chat/utils/approvalManager';
 
 const LOCAL_MCP_CLIENT_ID = '__lumina_local__';
 
@@ -96,12 +96,11 @@ export class McpManager {
 			}
 
 			if (serverId !== LOCAL_MCP_CLIENT_ID) {
-				const modal = new McpPermissionModal(this.plugin.app, client.config.name, toolName, args);
-				const approved = await modal.waitForResponse();
+				const approved = await approvalManager.requestActionApproval('mcp_tool', client.config.name, { toolName, args });
 				if (!approved) {
 					return {
 						isError: true,
-						content: [{ type: 'text', text: t('uiMessages.toolExecutionRejected') }],
+						content: [{ type: 'text', text: t('uiMessages.toolExecutionRejected') || 'Tool execution was rejected by the user.' }],
 					};
 				}
 			}

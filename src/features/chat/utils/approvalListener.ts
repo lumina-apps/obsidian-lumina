@@ -1,9 +1,7 @@
 import { App, TFile } from 'obsidian';
 import { approvalStore } from './approvalManager';
-import { ActionApprovalModal } from '../ui/ActionApprovalModal';
 
 let unsubscribe: (() => void) | null = null;
-const activeModals = new Set<string>();
 const openingFiles = new Set<string>();
 
 export function setupApprovalListener(app: App) {
@@ -14,20 +12,8 @@ export function setupApprovalListener(app: App) {
 	unsubscribe = approvalStore.subscribe((state) => {
 		void (async () => {
 			for (const req of state.queue) {
-				// Handle non-edit actions with a Modal
-				if (req.actionType !== 'edit' && req.actionType !== undefined) {
-					if (!activeModals.has(req.id)) {
-						activeModals.add(req.id);
-						const modal = new ActionApprovalModal(app, req);
-						// Override onClose to remove from activeModals
-						const originalOnClose = modal.onClose.bind(modal);
-						modal.onClose = () => {
-							activeModals.delete(req.id);
-							originalOnClose();
-						};
-						modal.open();
-					}
-				} else {
+				// Note: For actionType !== 'edit', the InlineApprovalQueue component handles the rendering.
+				if (req.actionType === 'edit') {
 					// Handle edit actions - make sure the file is open
 					const file = app.vault.getAbstractFileByPath(req.filePath);
 					if (file instanceof TFile) {

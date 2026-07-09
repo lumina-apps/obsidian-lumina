@@ -593,6 +593,7 @@
     "noActiveEditor": "アクティブなMarkdownエディターが見つかりません。"
   },
   "uiMessages": {
+    "toolExecuting": "⚙️ {{name}} を実行中...",
     "actionApproval": {
       "title": "承認が必要です: {{action}}",
       "targetFile": "対象ファイル: {{path}}",
