@@ -21,6 +21,12 @@ const OPEN_TAG_REGEX = new RegExp(
 	'i',
 );
 
+/** Qwen 등에서 발생하는 변형 태그 포맷 (ex: <tool_name><argument>{...}</argument></lumina_tool_call>) */
+const MALFORMED_XML_REGEX = new RegExp(
+	`<([a-zA-Z0-9_]+)>\\s*(?:<argument>\\s*)?(\\{[\\s\\S]*?\\})(?:\\s*<\\/argument>)?\\s*(?:<\\/(?:${TOOL_CALL_TAG_ALT})>|<\\/\\1>)`,
+	'gi',
+);
+
 // ─── $...$ 구분자 정규화 ─────────────────────────────────────────────────────
 
 /**
@@ -62,26 +68,49 @@ export function parseTextToolCalls(content: string): {
 	// $...$ 구분자를 XML 태그로 정규화
 	content = normalizeDollarDelimiters(content);
 	const toolCalls: ToolCall[] = [];
+	const parts: string[] = [];
+	let lastEnd = 0;
 
 	// 1차: 닫는 태그가 있는 완전한 블록 파싱
 	CLOSED_TAG_REGEX.lastIndex = 0;
-	const parts: string[] = [];
-	let lastEnd = 0;
 	let match: RegExpExecArray | null;
 
 	while ((match = CLOSED_TAG_REGEX.exec(content)) !== null) {
-		parts.push(content.substring(lastEnd, match.index));
 		const blockContent = match[2].trim();
 		if (blockContent) {
 			const result = tryParseBlock(blockContent);
 			if (result) {
+				parts.push(content.substring(lastEnd, match.index));
 				toolCalls.push(result);
+				lastEnd = CLOSED_TAG_REGEX.lastIndex;
 			}
 		}
-		lastEnd = CLOSED_TAG_REGEX.lastIndex;
 	}
 
-	// 2차: 닫는 태그 없이 끝난 경우 폴백 (스트리밍 도중 잘린 경우)
+	// 2차: Qwen 등에서 발생하는 변형 태그 포맷 파싱
+	if (toolCalls.length === 0) {
+		MALFORMED_XML_REGEX.lastIndex = 0;
+		while ((match = MALFORMED_XML_REGEX.exec(content)) !== null) {
+			const toolName = match[1];
+			// think 등 내부 태그는 무시
+			if (toolName.toLowerCase() !== 'think') {
+				try {
+					const args = JSON.parse(match[2]) as Record<string, unknown>;
+					parts.push(content.substring(lastEnd, match.index));
+					toolCalls.push({
+						id: crypto.randomUUID(),
+						name: toolName,
+						arguments: args,
+					});
+					lastEnd = MALFORMED_XML_REGEX.lastIndex;
+				} catch {
+					// JSON 파싱 실패시 무시
+				}
+			}
+		}
+	}
+
+	// 3차: 닫는 태그 없이 끝난 경우 폴백 (스트리밍 도중 잘린 경우)
 	if (toolCalls.length === 0) {
 		OPEN_TAG_REGEX.lastIndex = 0;
 		const openMatch = OPEN_TAG_REGEX.exec(content);

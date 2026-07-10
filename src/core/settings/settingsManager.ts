@@ -15,21 +15,31 @@ export class SettingsManager {
 		this.app = plugin.app;
 	}
 
+	private deepMergeSettings<T extends Record<string, any>>(defaultSettings: T, savedSettings: Partial<T>): T {
+		const result: any = { ...defaultSettings };
+		for (const key in savedSettings) {
+			const savedValue = savedSettings[key];
+			if (savedValue === undefined) continue;
+
+			if (
+				savedValue !== null &&
+				typeof savedValue === 'object' &&
+				!Array.isArray(savedValue)
+			) {
+				result[key] = this.deepMergeSettings(result[key] || {}, savedValue);
+			} else {
+				result[key] = savedValue;
+			}
+		}
+		return result;
+	}
+
 	async loadSettings(): Promise<void> {
 		const saved = (await this.plugin.loadData()) as Partial<LuminaSettings> | null;
 		this.plugin.isFirstRun = !saved || Object.keys(saved).length === 0;
 		const safeSaved = saved ?? {};
 
-		this.plugin.settings = {
-			connections: Object.assign({}, DEFAULT_SETTINGS.connections, safeSaved.connections ?? {}),
-			chat: Object.assign({}, DEFAULT_SETTINGS.chat, safeSaved.chat ?? {}),
-			rag: Object.assign({}, DEFAULT_SETTINGS.rag, safeSaved.rag ?? {}),
-			misc: Object.assign({}, DEFAULT_SETTINGS.misc, safeSaved.misc ?? {}),
-			mcp: Object.assign({}, DEFAULT_SETTINGS.mcp, safeSaved.mcp ?? {}),
-			webSearch: Object.assign({}, DEFAULT_SETTINGS.webSearch, safeSaved.webSearch ?? {}),
-			canvas: Object.assign({}, DEFAULT_SETTINGS.canvas, safeSaved.canvas ?? {}),
-			projects: Object.assign({}, DEFAULT_SETTINGS.projects, safeSaved.projects ?? {}),
-		};
+		this.plugin.settings = this.deepMergeSettings(DEFAULT_SETTINGS, safeSaved) as LuminaSettings;
 
 		if (this.plugin.isFirstRun) {
 			this.plugin.settings.connections.language = this.detectSystemLanguage();

@@ -67,7 +67,7 @@
 					{/if}
 				</div>
 				<div class="lumina-inline-approval-footer">
-					<button class="mod-warning" onclick={() => reject(req.id)}>
+					<button class="lumina-inline-approval-btn-reject" onclick={() => reject(req.id)}>
 						{$tStore("uiMessages.actionApproval.reject") || "Reject"}
 					</button>
 					<button class="mod-cta" onclick={() => accept(req.id)}>
@@ -108,7 +108,8 @@
 	}
 	.lumina-inline-approval-path {
 		font-size: var(--font-ui-smaller);
-		color: var(--text-muted);
+		color: var(--text-accent);
+		font-weight: 600;
 	}
 	.lumina-inline-approval-body p {
 		margin: 0;
@@ -133,5 +134,14 @@
 		justify-content: flex-end;
 		gap: 8px;
 		margin-top: 4px;
+	}
+	.lumina-inline-approval-btn-reject {
+		background: transparent;
+		box-shadow: none;
+		color: var(--text-muted);
+	}
+	.lumina-inline-approval-btn-reject:hover {
+		color: var(--text-normal);
+		background: var(--background-modifier-hover);
 	}
 </style>
