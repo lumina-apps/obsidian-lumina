@@ -41,6 +41,8 @@ export interface ChatOptions {
 	signal?: AbortSignal;
 	tools?: ToolDefinition[];
 	stop?: string[];
+	ttftTimeoutMs?: number;
+	interTokenTimeoutMs?: number;
 }
 
 // ─── Provider Interface ─────────────────────────

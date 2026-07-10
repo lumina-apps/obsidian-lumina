@@ -42,6 +42,8 @@ describe('promptBuilder', () => {
 			agentEnabled: false,
 			agentExecutionMode: 'edit',
 			agentMaxSteps: 15,
+			ttftTimeoutMs: 0,
+			interTokenTimeoutMs: 0,
 		} as ChatSettings;
 
 		mockHistory = [

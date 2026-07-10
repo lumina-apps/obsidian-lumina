@@ -336,6 +336,12 @@
         "urlInputPrompt": "EnterでURLを追加",
         "includeNote": "ノートを含める",
         "excludeNote": "ノートを除外"
+      },
+      "timeout": {
+        "ttftLabel": "最初の応答制限時間 (ms)",
+        "ttftDesc": "リクエスト後、最初の単語を受信するまでの最大待機時間です。0に設定すると無制限になります。",
+        "interTokenLabel": "チャンク間の制限時間 (ms)",
+        "interTokenDesc": "ストリーミング中、次の文章を受信するまでの最大待機時間です。0に設定すると無制限になります。"
       }
     },
     "rag": {
@@ -488,7 +494,9 @@
       "ollamaNoModel": "Ollamaに実行中のモデルがありません。`ollama run <model>`でモデルを先に起動してください。",
       "connectFail": "接続に失敗しました: {{status}} {{text}}",
       "anthropicNoEmbed": "Anthropicは埋め込みAPIをサポートしていません。",
-      "visionNotSupported": "⚠️ 選択したプロバイダー({{provider}})は画像分析をサポートしていません。画像を使用するには、OpenAI、Anthropic、またはGoogle（ビジョン対応モデル）を選択してください。"
+      "visionNotSupported": "⚠️ 選択したプロバイダー({{provider}})は画像分析をサポートしていません。画像を使用するには、OpenAI、Anthropic、またはGoogle（ビジョン対応モデル）を選択してください。",
+      "timeoutTTFT": "タイムアウト: 最初のトークンの応答が遅延しました。 ({{fallback}})",
+      "timeoutInterToken": "タイムアウト: ストリーミング中に通信が途切れたか、遅延しました。 ({{fallback}})"
     },
     "translation": {
       "confirmTitle": "システム言語への翻訳",

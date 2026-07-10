@@ -378,6 +378,12 @@ export interface TranslationSettingsChat {
   memoryLimit: TranslationSettingsChatMemoryLimit;
   modelParams: TranslationSettingsChatModelParams;
   streaming: TranslationSettingsChatStreaming;
+  timeout: {
+    ttftLabel: string;
+    ttftDesc: string;
+    interTokenLabel: string;
+    interTokenDesc: string;
+  };
   emptyResponseFallback: string;
 }
 
@@ -586,6 +592,8 @@ export interface TranslationSettingsProviderErrors {
   connectFail: string;
   anthropicNoEmbed: string;
   visionNotSupported: string;
+  timeoutTTFT: string;
+  timeoutInterToken: string;
 }
 
 export interface TranslationSettingsTranslation {

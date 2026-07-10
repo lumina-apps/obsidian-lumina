@@ -4,7 +4,7 @@ import { GOOGLE_MODELS, mapUsageMetadata } from './google.types';
 import type { GeminiResponse, GeminiStreamChunk, GeminiToolCallInfo } from './google.types';
 import { formatGeminiMessages, formatGeminiTools, getGeminiSystemInstruction } from './google-message-formatter';
 import { readGeminiStreamChunks } from './google-stream-parser';
-import { raiseApiError, requestUrlWithAbort } from '../provider-helpers';
+import { raiseApiError, requestUrlWithAbort, IdleTimeoutController } from '../provider-helpers';
 
 type GeminiCandidate = NonNullable<GeminiResponse['candidates']>[number];
 
@@ -81,25 +81,28 @@ export class GoogleProvider implements ILLMProvider {
 			};
 		}
 
-		// 비스트리밍
 		const { url, headers, payload } = this.buildRequest('generateContent', options, messages, true);
-		const res = await requestUrlWithAbort({ url, method: 'POST', headers, body: JSON.stringify(payload) }, options.signal);
+		const timeoutCtrl = new IdleTimeoutController(options.signal, options.ttftTimeoutMs, options.interTokenTimeoutMs);
 
-		const data = res.json as GeminiResponse;
-		const candidate = data.candidates?.[0];
-		if (!candidate) {
-			throw new Error(`Google Gemini API returned an empty response. Response: ${res.text}`);
-		}
+		return timeoutCtrl.run(async () => {
+			const res = await requestUrlWithAbort({ url, method: 'POST', headers, body: JSON.stringify(payload) }, timeoutCtrl.signal);
 
-		const { fullContent, toolCalls } = parseNonStreamingResponse(candidate);
-		const usage = data.usageMetadata ? mapUsageMetadata(data.usageMetadata) : undefined;
+			const data = res.json as GeminiResponse;
+			const candidate = data.candidates?.[0];
+			if (!candidate) {
+				throw new Error(`Google Gemini API returned an empty response. Response: ${res.text}`);
+			}
 
-		return {
-			content: fullContent,
-			usage,
-			toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-			finishReason: candidate.finishReason || undefined,
-		};
+			const { fullContent, toolCalls } = parseNonStreamingResponse(candidate);
+			const usage = data.usageMetadata ? mapUsageMetadata(data.usageMetadata) : undefined;
+
+			return {
+				content: fullContent,
+				usage,
+				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+				finishReason: candidate.finishReason || undefined,
+			};
+		});
 	}
 
 	async stream(
@@ -190,11 +193,13 @@ export class GoogleProvider implements ILLMProvider {
 		let usage: TokenUsage | undefined;
 		let finishReason: string | undefined;
 
+		const timeoutCtrl = new IdleTimeoutController(options.signal, options.ttftTimeoutMs, options.interTokenTimeoutMs);
+
 		const response = await window.fetch(url, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),
-			signal: options.signal,
+			signal: timeoutCtrl.signal,
 		});
 
 		if (!response.ok) {
@@ -202,30 +207,33 @@ export class GoogleProvider implements ILLMProvider {
 			throw new Error(`Google Gemini Error (HTTP ${response.status}): ${errText}`);
 		}
 
-		await readGeminiStreamChunks(response, options.signal, (chunk) => {
-			const candidate = chunk.candidates?.[0];
-			if (candidate) {
-				if (candidate.finishReason) {
-					finishReason = candidate.finishReason;
-				}
-				const parts = candidate.content?.parts;
-				if (parts) {
-					for (const part of parts) {
-						if (part.text) {
-							fullContent += part.text;
+		return timeoutCtrl.run(async () => {
+			await readGeminiStreamChunks(response, timeoutCtrl.signal, (chunk) => {
+				timeoutCtrl.onChunkReceived();
+				const candidate = chunk.candidates?.[0];
+				if (candidate) {
+					if (candidate.finishReason) {
+						finishReason = candidate.finishReason;
+					}
+					const parts = candidate.content?.parts;
+					if (parts) {
+						for (const part of parts) {
+							if (part.text) {
+								fullContent += part.text;
+							}
+							// 어떤 part든 원본 chunkData가 유실되지 않도록 콜백 호출
+							// (상위 chat 함수에서 functionCall 파싱을 위해 chunkData가 필요함)
+							onChunk(part.text || '', chunk);
 						}
-						// 어떤 part든 원본 chunkData가 유실되지 않도록 콜백 호출
-						// (상위 chat 함수에서 functionCall 파싱을 위해 chunkData가 필요함)
-						onChunk(part.text || '', chunk);
 					}
 				}
-			}
-			if (chunk.usageMetadata) {
-				usage = mapUsageMetadata(chunk.usageMetadata);
-			}
-		});
+				if (chunk.usageMetadata) {
+					usage = mapUsageMetadata(chunk.usageMetadata);
+				}
+			});
 
-		return { content: fullContent, usage, finishReason };
+			return { content: fullContent, usage, finishReason };
+		});
 	}
 }
 

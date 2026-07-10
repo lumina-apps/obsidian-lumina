@@ -8,7 +8,7 @@ import type {
 } from '../../shared/types/llm.types';
 import { formatOpenAIMessages, formatOpenAITools } from './openai-formatter';
 import type { OpenAIResponse, OpenAIToolCallInfo } from './openai-types';
-import { readStreamLines, requestUrlWithAbort } from './provider-helpers';
+import { readStreamLines, requestUrlWithAbort, IdleTimeoutController } from './provider-helpers';
 import {
 	mapOpenAIUsage,
 	convertOpenAIToolCalls,
@@ -38,10 +38,14 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 		const headers = this.buildHeaders();
 		const payload = this.buildPayload(options, messages, !!onChunk);
 
-		if (onChunk) {
-			return this.handleStreamingChat(url, headers, payload, options.signal, onChunk);
-		}
-		return this.handleNonStreamingChat(url, headers, payload, options.signal);
+		const timeoutCtrl = new IdleTimeoutController(options.signal, options.ttftTimeoutMs, options.interTokenTimeoutMs);
+
+		return timeoutCtrl.run(async () => {
+			if (onChunk) {
+				return await this.handleStreamingChat(url, headers, payload, timeoutCtrl, onChunk);
+			}
+			return await this.handleNonStreamingChat(url, headers, payload, timeoutCtrl);
+		});
 	}
 
 	async stream(
@@ -53,7 +57,11 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 		const headers = this.buildHeaders();
 		const payload = this.buildStreamOnlyPayload(options, messages);
 
-		return this.handleStreamingChatRaw(url, headers, payload, options.signal, onChunk);
+		const timeoutCtrl = new IdleTimeoutController(options.signal, options.ttftTimeoutMs, options.interTokenTimeoutMs);
+
+		return timeoutCtrl.run(async () => {
+			return await this.handleStreamingChatRaw(url, headers, payload, timeoutCtrl, onChunk);
+		});
 	}
 
 	async embed(texts: string[], options: { model: string }): Promise<number[][]> {
@@ -138,14 +146,14 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 		url: string,
 		headers: Record<string, string>,
 		payload: Record<string, unknown>,
-		signal: AbortSignal | undefined,
+		timeoutCtrl: IdleTimeoutController,
 		onChunk: (chunk: string) => void,
 	): Promise<ChatResponse> {
 		const response = await window.fetch(url, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),
-			signal,
+			signal: timeoutCtrl.signal,
 		});
 
 		if (!response.ok) {
@@ -155,7 +163,8 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 
 		const accumulator = new StreamChunkAccumulator(onChunk, this.enableReasoning ? { enableReasoning: true } : undefined);
 
-		await readStreamLines(response, signal, (line) => {
+		await readStreamLines(response, timeoutCtrl.signal, (line) => {
+			timeoutCtrl.onChunkReceived();
 			accumulator.processLine(line);
 		});
 
@@ -174,14 +183,14 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 		url: string,
 		headers: Record<string, string>,
 		payload: Record<string, unknown>,
-		signal: AbortSignal | undefined,
+		timeoutCtrl: IdleTimeoutController,
 		onChunk: (chunk: string) => void,
 	): Promise<{ usage?: TokenUsage; finishReason?: string }> {
 		const response = await window.fetch(url, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),
-			signal,
+			signal: timeoutCtrl.signal,
 		});
 
 		if (!response.ok) {
@@ -191,7 +200,8 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 
 		const accumulator = new StreamChunkAccumulator(onChunk, this.enableReasoning ? { enableReasoning: true } : undefined);
 
-		await readStreamLines(response, signal, (line) => {
+		await readStreamLines(response, timeoutCtrl.signal, (line) => {
+			timeoutCtrl.onChunkReceived();
 			accumulator.processLine(line);
 		});
 
@@ -204,14 +214,14 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 		url: string,
 		headers: Record<string, string>,
 		payload: Record<string, unknown>,
-		signal?: AbortSignal,
+		timeoutCtrl: IdleTimeoutController,
 	): Promise<ChatResponse> {
 		const res = await requestUrlWithAbort({
 			url,
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),
-		}, signal);
+		}, timeoutCtrl.signal);
 
 		const data = res.json as OpenAIResponse;
 		const choice = data.choices?.[0];

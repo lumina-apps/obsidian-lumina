@@ -336,6 +336,12 @@
         "urlInputPrompt": "Enter drücken, um URL hinzuzufügen",
         "includeNote": "Notiz einschließen",
         "excludeNote": "Notiz ausschließen"
+      },
+      "timeout": {
+        "ttftLabel": "Zeitlimit für die erste Antwort (ms)",
+        "ttftDesc": "Maximale Wartezeit bis zum Empfang des ersten Wortes nach der Anfrage. Auf 0 setzen für unbegrenzt.",
+        "interTokenLabel": "Zeitlimit zwischen den Blöcken (ms)",
+        "interTokenDesc": "Maximale Wartezeit bis zum Empfang des nächsten Satzes während des Streamings. Auf 0 setzen für unbegrenzt."
       }
     },
     "rag": {
@@ -488,7 +494,9 @@
       "ollamaNoModel": "In Ollama laufen keine Modelle. Bitte starten Sie zuerst ein Modell mit `ollama run <model>`.",
       "connectFail": "Verbindung fehlgeschlagen: {{status}} {{text}}",
       "anthropicNoEmbed": "Anthropic unterstützt die Embedding-API nicht.",
-      "visionNotSupported": "⚠️ Der ausgewählte Anbieter ({{provider}}) unterstützt keine Bildanalyse. Bitte verwenden Sie OpenAI, Anthropic oder Google mit einem visionsfähigen Modell."
+      "visionNotSupported": "⚠️ Der ausgewählte Anbieter ({{provider}}) unterstützt keine Bildanalyse. Bitte verwenden Sie OpenAI, Anthropic oder Google mit einem visionsfähigen Modell.",
+      "timeoutTTFT": "Zeitüberschreitung: Die Antwort des ersten Tokens hat sich verzögert. ({{fallback}})",
+      "timeoutInterToken": "Zeitüberschreitung: Die Kommunikation wurde während des Streamings unterbrochen oder verzögert. ({{fallback}})"
     },
     "translation": {
       "confirmTitle": "Systemsprache-Übersetzung",

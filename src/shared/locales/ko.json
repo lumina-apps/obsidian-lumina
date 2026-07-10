@@ -333,8 +333,14 @@
         "responseLangAuto": "자동"
       },
       "streaming": {
-        "name": "스트리밍",
-        "desc": "스트리밍 응답을 활성화합니다."
+        "name": "스트리밍 텍스트",
+        "desc": "응답을 타자기처럼 실시간으로 출력합니다."
+      },
+      "timeout": {
+        "ttftLabel": "첫 응답 제한 시간 (ms)",
+        "ttftDesc": "요청 후 첫 번째 단어가 수신될 때까지의 최대 대기 시간입니다. 0으로 설정하면 무제한 대기합니다.",
+        "interTokenLabel": "청크 간 제한 시간 (ms)",
+        "interTokenDesc": "스트리밍 중 다음 문장이 수신될 때까지의 최대 대기 시간입니다. 0으로 설정하면 무제한 대기합니다."
       },
       "emptyResponseFallback": "⚠️ 모델이 빈 응답을 반환했습니다. (지원되지 않는 언어/형식, 프롬프트 필터링, 또는 컨텍스트 초과 등의 이유일 수 있습니다.)"
     },
@@ -488,7 +494,9 @@
       "ollamaNoModel": "Ollama에 실행 중인 모델이 없습니다. `ollama run <model>` 로 모델을 먼저 실행해 주세요.",
       "connectFail": "연결 실패: {{status}} {{text}}",
       "anthropicNoEmbed": "Anthropic은 임베딩 API를 지원하지 않습니다.",
-      "visionNotSupported": "⚠️ 선택한 프로바이더({{provider}})는 이미지 분석을 지원하지 않습니다. 이미지 첨부를 사용하려면 OpenAI, Anthropic 또는 Google(비전 모델)을 선택해 주세요."
+      "visionNotSupported": "⚠️ 선택한 프로바이더({{provider}})는 이미지 분석을 지원하지 않습니다. 이미지 첨부를 사용하려면 OpenAI, Anthropic 또는 Google(비전 모델)을 선택해 주세요.",
+      "timeoutTTFT": "타임아웃: 첫 번째 토큰 응답이 지연되었습니다. ({{fallback}})",
+      "timeoutInterToken": "타임아웃: 스트리밍 도중 통신이 끊겼거나 지연되었습니다. ({{fallback}})"
     },
     "translation": {
       "confirmTitle": "시스템 언어 번역",

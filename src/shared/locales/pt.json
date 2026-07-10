@@ -336,6 +336,12 @@
         "urlInputPrompt": "Pressione Enter para adicionar URL",
         "includeNote": "Incluir Nota",
         "excludeNote": "Excluir Nota"
+      },
+      "timeout": {
+        "ttftLabel": "Tempo de espera para a primeira resposta (ms)",
+        "ttftDesc": "Tempo máximo de espera até receber a primeira palavra após a solicitação. Defina como 0 para ilimitado.",
+        "interTokenLabel": "Tempo de espera entre fragmentos (ms)",
+        "interTokenDesc": "Tempo máximo de espera até receber a próxima frase durante a transmissão. Defina como 0 para ilimitado."
       }
     },
     "rag": {
@@ -488,7 +494,9 @@
       "ollamaNoModel": "Não há modelos em execução no Ollama. Inicie um modelo com `ollama run <model>` primeiro.",
       "connectFail": "Falha na conexão: {{status}} {{text}}",
       "anthropicNoEmbed": "A Anthropic não suporta a API de incorporação (embedding).",
-      "visionNotSupported": "⚠️ O provedor selecionado ({{provider}}) não suporta análise de imagens. Por favor, use OpenAI, Anthropic ou Google com um modelo compatível com visão."
+      "visionNotSupported": "⚠️ O provedor selecionado ({{provider}}) não suporta análise de imagens. Por favor, use OpenAI, Anthropic ou Google com um modelo compatível com visão.",
+      "timeoutTTFT": "Tempo esgotado: A resposta do primeiro token atrasou. ({{fallback}})",
+      "timeoutInterToken": "Tempo esgotado: A comunicação foi interrompida ou atrasada durante a transmissão. ({{fallback}})"
     },
     "translation": {
       "confirmTitle": "Tradução do Idioma do Sistema",

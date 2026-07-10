@@ -6,6 +6,80 @@ import type { ChatMessage } from '../../shared/types/llm.types';
 import { t } from '../../shared/locales/helpers';
 import { requestUrl, type RequestUrlParam, type RequestUrlResponse } from 'obsidian';
 
+export class IdleTimeoutController {
+	private controller: AbortController;
+	private timeoutId: number | null = null;
+	private interTokenMs: number;
+	
+	constructor(
+		userSignal: AbortSignal | undefined,
+		ttftMs: number | undefined,
+		interTokenMs: number | undefined
+	) {
+		this.controller = new AbortController();
+		this.interTokenMs = (interTokenMs && interTokenMs > 0) ? Math.max(interTokenMs, 2000) : 0;
+		
+		if (userSignal) {
+			if (userSignal.aborted) {
+				this.controller.abort(userSignal.reason);
+			} else {
+				userSignal.addEventListener('abort', () => {
+					this.controller.abort(userSignal.reason);
+				});
+			}
+		}
+
+		const actualTtft = (ttftMs && ttftMs > 0) ? Math.max(ttftMs, 5000) : 0;
+		if (actualTtft > 0) {
+			this.timeoutId = window.setTimeout(() => {
+				const err = new Error(t('settings.providerErrors.timeoutTTFT', { fallback: 'Timeout: First token response took too long' }));
+				err.name = 'IdleTimeoutError';
+				this.controller.abort(err);
+			}, actualTtft);
+		}
+	}
+	
+	get signal(): AbortSignal {
+		return this.controller.signal;
+	}
+	
+	onChunkReceived() {
+		if (this.timeoutId !== null) {
+			window.clearTimeout(this.timeoutId);
+			this.timeoutId = null;
+		}
+		
+		if (this.interTokenMs > 0 && !this.signal.aborted) {
+			this.timeoutId = window.setTimeout(() => {
+				const err = new Error(t('settings.providerErrors.timeoutInterToken', { fallback: 'Timeout: Stream interrupted or hung' }));
+				err.name = 'IdleTimeoutError';
+				this.controller.abort(err);
+			}, this.interTokenMs);
+		}
+	}
+	
+	cleanup() {
+		if (this.timeoutId !== null) {
+			window.clearTimeout(this.timeoutId);
+			this.timeoutId = null;
+		}
+	}
+	
+	async run<T>(fn: () => Promise<T>): Promise<T> {
+		try {
+			return await fn();
+		} catch (e: any) {
+			if (e.name === 'AbortError' && this.controller.signal.reason && this.controller.signal.reason.name === 'IdleTimeoutError') {
+				throw this.controller.signal.reason;
+			}
+			throw e;
+		} finally {
+			this.cleanup();
+		}
+	}
+}
+
+
 function toError(err: unknown): Error {
 	if (err instanceof Error) {
 		return err;
@@ -39,9 +113,13 @@ export async function requestUrlWithAbort(params: RequestUrlParam, signal?: Abor
 		}
 
 		const abortHandler = () => {
-			const error = new Error('Aborted');
-			error.name = 'AbortError';
-			reject(error);
+			if (signal.reason) {
+				reject(signal.reason);
+			} else {
+				const error = new Error('Aborted');
+				error.name = 'AbortError';
+				reject(error);
+			}
 		};
 
 		signal.addEventListener('abort', abortHandler);

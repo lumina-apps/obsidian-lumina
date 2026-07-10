@@ -76,6 +76,11 @@ export interface ChatSettings {
 	agentExecutionMode: 'read' | 'edit';
 	/** 에이전트 최대 실행 스텝 수 (무한 루프 방지) */
 	agentMaxSteps: number;
+
+	/** 첫 번째 토큰 응답 대기 시간 (밀리초, 0이면 비활성화) */
+	ttftTimeoutMs: number;
+	/** 스트리밍 중 다음 토큰 대기 시간 (밀리초, 0이면 비활성화) */
+	interTokenTimeoutMs: number;
 }
 
 // ─── Section 3: RAG & Context ────────────────────────────────────────────────

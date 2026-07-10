@@ -5,7 +5,7 @@
 import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, TokenUsage, ToolCall } from '../../../shared/types/llm.types';
 import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
-import { extractSystemContent, raiseApiError, readStreamLines, requestUrlWithAbort } from '../provider-helpers';
+import { extractSystemContent, raiseApiError, readStreamLines, requestUrlWithAbort, IdleTimeoutController } from '../provider-helpers';
 import { ANTHROPIC_MODELS } from './anthropic.types';
 import type { AnthropicResponse } from './anthropic.types';
 import { formatAnthropicMessages, formatAnthropicTools } from './anthropic-message-formatter';
@@ -58,22 +58,26 @@ export class AnthropicProvider implements ILLMProvider {
 		const headers = this.buildHeaders();
 		const payload = this.buildPayload(options, messages, false);
 
-		const res = await requestUrlWithAbort({
-			url,
-			method: 'POST',
-			headers,
-			body: JSON.stringify(payload),
-		}, options.signal);
+		const timeoutCtrl = new IdleTimeoutController(options.signal, options.ttftTimeoutMs, options.interTokenTimeoutMs);
 
-		const data = res.json as AnthropicResponse;
-		const { fullContent, toolCalls, usage, finishReason } = parseAnthropicNonStreamResponse(res.text, data);
+		return timeoutCtrl.run(async () => {
+			const res = await requestUrlWithAbort({
+				url,
+				method: 'POST',
+				headers,
+				body: JSON.stringify(payload),
+			}, timeoutCtrl.signal);
 
-		return {
-			content: fullContent,
-			usage,
-			toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-			finishReason,
-		};
+			const data = res.json as AnthropicResponse;
+			const { fullContent, toolCalls, usage, finishReason } = parseAnthropicNonStreamResponse(res.text, data);
+
+			return {
+				content: fullContent,
+				usage,
+				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+				finishReason,
+			};
+		});
 	}
 
 	async stream(
@@ -138,11 +142,13 @@ export class AnthropicProvider implements ILLMProvider {
 		const headers = this.buildHeaders();
 		const payload = this.buildPayload(options, messages, true);
 
+		const timeoutCtrl = new IdleTimeoutController(options.signal, options.ttftTimeoutMs, options.interTokenTimeoutMs);
+
 		const response = await window.fetch(url, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify(payload),
-			signal: options.signal,
+			signal: timeoutCtrl.signal,
 		});
 
 		if (!response.ok) {
@@ -152,10 +158,13 @@ export class AnthropicProvider implements ILLMProvider {
 
 		const accumulator = new AnthropicStreamAccumulator(onChunk);
 
-		await readStreamLines(response, options.signal, (line) => {
-			accumulator.processLine(line);
-		});
+		return timeoutCtrl.run(async () => {
+			await readStreamLines(response, timeoutCtrl.signal, (line) => {
+				timeoutCtrl.onChunkReceived();
+				accumulator.processLine(line);
+			});
 
-		return accumulator.getResult();
+			return accumulator.getResult();
+		});
 	}
 }

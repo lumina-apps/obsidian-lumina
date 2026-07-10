@@ -94,6 +94,46 @@ export function renderAdvancedSection(tab: LuminaSettingTab, el: HTMLElement): v
 		});
 
 	new Setting(el)
+		.setName(t('settings.chat.timeout.ttftLabel', { fallback: 'Time-To-First-Token Timeout (ms)' }))
+		.setDesc(t('settings.chat.timeout.ttftDesc', { fallback: 'Wait time for the very first token to arrive. Set to 0 to disable.' }))
+		.addText(text => {
+			let composing = false;
+			const inputEl = text.inputEl;
+			inputEl.type = 'number';
+			inputEl.addEventListener('compositionstart', () => { composing = true; });
+			inputEl.addEventListener('compositionend', () => {
+				composing = false;
+				const n = parseInt(inputEl.value);
+				if (!isNaN(n)) { s.ttftTimeoutMs = n; void tab.saveAndSync(); }
+			});
+			text.setValue(String(s.ttftTimeoutMs ?? 0)).onChange(wrapAsync(async (val) => {
+				if (composing) return;
+				const n = parseInt(val);
+				if (!isNaN(n)) { s.ttftTimeoutMs = n; await tab.saveAndSync(); }
+			}));
+		});
+
+	new Setting(el)
+		.setName(t('settings.chat.timeout.interTokenLabel', { fallback: 'Inter-Token Timeout (ms)' }))
+		.setDesc(t('settings.chat.timeout.interTokenDesc', { fallback: 'Wait time between subsequent streaming chunks. Set to 0 to disable.' }))
+		.addText(text => {
+			let composing = false;
+			const inputEl = text.inputEl;
+			inputEl.type = 'number';
+			inputEl.addEventListener('compositionstart', () => { composing = true; });
+			inputEl.addEventListener('compositionend', () => {
+				composing = false;
+				const n = parseInt(inputEl.value);
+				if (!isNaN(n)) { s.interTokenTimeoutMs = n; void tab.saveAndSync(); }
+			});
+			text.setValue(String(s.interTokenTimeoutMs ?? 0)).onChange(wrapAsync(async (val) => {
+				if (composing) return;
+				const n = parseInt(val);
+				if (!isNaN(n)) { s.interTokenTimeoutMs = n; await tab.saveAndSync(); }
+			}));
+		});
+
+	new Setting(el)
 		.setName(t('settings.chat.modelParams.responseLang'))
 		.setDesc(t('settings.chat.modelParams.responseLangDesc'))
 		.addDropdown(drop => {

@@ -336,6 +336,12 @@
         "name": "Streaming",
         "desc": "Enable streaming responses."
       },
+      "timeout": {
+        "ttftLabel": "Time-To-First-Token Timeout (ms)",
+        "ttftDesc": "Wait time for the very first token to arrive. Set to 0 to disable.",
+        "interTokenLabel": "Inter-Token Timeout (ms)",
+        "interTokenDesc": "Wait time between subsequent streaming chunks. Set to 0 to disable."
+      },
       "emptyResponseFallback": "⚠️ The model returned an empty response. (This may be due to an unsupported language/format, prompt filtering, or exceeding the context limit.)"
     },
     "rag": {
@@ -488,7 +494,9 @@
       "ollamaNoModel": "There are no running models in Ollama. Please start a model with `ollama run <model>` first.",
       "connectFail": "Connection failed: {{status}} {{text}}",
       "anthropicNoEmbed": "Anthropic does not support the embedding API.",
-      "visionNotSupported": "⚠️ The selected provider ({{provider}}) does not support image analysis. Please use OpenAI, Anthropic, or Google with a vision-capable model."
+      "visionNotSupported": "⚠️ The selected provider ({{provider}}) does not support image analysis. Please use OpenAI, Anthropic, or Google with a vision-capable model.",
+      "timeoutTTFT": "Timeout: First token response took too long. ({{fallback}})",
+      "timeoutInterToken": "Timeout: Stream interrupted or hung. ({{fallback}})"
     },
     "translation": {
       "confirmTitle": "System Language Translation",

@@ -336,6 +336,12 @@
         "urlInputPrompt": "Premi Invio per aggiungere URL",
         "includeNote": "Includi nota",
         "excludeNote": "Escludi nota"
+      },
+      "timeout": {
+        "ttftLabel": "Tempo di attesa per la prima risposta (ms)",
+        "ttftDesc": "Tempo massimo di attesa per ricevere la prima parola dopo la richiesta. Imposta a 0 per illimitato.",
+        "interTokenLabel": "Tempo di attesa tra i frammenti (ms)",
+        "interTokenDesc": "Tempo massimo di attesa per ricevere la frase successiva durante lo streaming. Imposta a 0 per illimitato."
       }
     },
     "rag": {
@@ -488,7 +494,9 @@
       "ollamaNoModel": "Non ci sono modelli in esecuzione in Ollama. Avvia un modello con `ollama run <model>` prima.",
       "connectFail": "Connessione fallita: {{status}} {{text}}",
       "anthropicNoEmbed": "Anthropic non supporta l'API embedding.",
-      "visionNotSupported": "⚠️ Il provider selezionato ({{provider}}) non supporta l'analisi delle immagini. Si prega di utilizzare OpenAI, Anthropic o Google con un modello compatibile con la visione."
+      "visionNotSupported": "⚠️ Il provider selezionato ({{provider}}) non supporta l'analisi delle immagini. Si prega di utilizzare OpenAI, Anthropic o Google con un modello compatibile con la visione.",
+      "timeoutTTFT": "Tempo scaduto: La risposta del primo token ha ritardato. ({{fallback}})",
+      "timeoutInterToken": "Tempo scaduto: La comunicazione si è interrotta o ha ritardato durante lo streaming. ({{fallback}})"
     },
     "translation": {
       "confirmTitle": "Traduzione Lingua di Sistema",

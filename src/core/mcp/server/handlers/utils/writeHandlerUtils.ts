@@ -1,4 +1,4 @@
-import { TFile } from 'obsidian';
+import { App, TFile } from 'obsidian';
 import { t } from '../../../../../shared/locales/helpers';
 import { sanitizeFilePath, ensureFolderExists } from '../../../../../shared/utils/fileUtils';
 import { getStringArg, blockIfPathNotAllowed } from '../../handlerHelpers';
@@ -14,6 +14,22 @@ export const getRejectionResult = (message: string): ToolResult => ({
 	isError: true,
 	content: [{ type: 'text', text: message }]
 });
+
+async function openFileInWorkspace(app: App, path: string) {
+	const file = app.vault.getAbstractFileByPath(path);
+	if (file instanceof TFile) {
+		const leaves = app.workspace.getLeavesOfType('markdown');
+		for (const leaf of leaves) {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			if ((leaf.view as any).file?.path === path) {
+				app.workspace.setActiveLeaf(leaf, { focus: true });
+				return;
+			}
+		}
+		const leaf = app.workspace.getLeaf('tab');
+		await leaf.openFile(file);
+	}
+}
 
 export interface ValidatedFileResult {
 	path: string;
@@ -76,6 +92,7 @@ export const safeModifyFile = async (
 		}
 		await createBackup(ctx.plugin.app, path);
 		await ctx.plugin.app.vault.modify(file, result.content);
+		await openFileInWorkspace(ctx.plugin.app, path);
 		return { content: [{ type: 'text', text: successMessage }] };
 	});
 };
@@ -96,6 +113,7 @@ export const safeCreateFile = async (
 		await ensureFolderExists(ctx.plugin.app, path);
 		await ctx.plugin.app.vault.create(path, content);
 		await enforceLuminaMetadata(path, ctx);
+		await openFileInWorkspace(ctx.plugin.app, path);
 	});
 	return { content: [{ type: 'text', text: successMessage }] };
 };
@@ -133,7 +151,14 @@ export const safeActionFile = async (
 	return await pathGuard.lock(path, async () => {
 		await createBackup(ctx.plugin.app, path);
 		const successMessage = await actionFn();
-		await enforceLuminaMetadata(path, ctx);
+		
+		const targetPath = (actionName === 'rename' && actionParams?.targetPath) ? String(actionParams.targetPath) : path;
+		await enforceLuminaMetadata(targetPath, ctx);
+		
+		if (actionName !== 'delete') {
+			await openFileInWorkspace(ctx.plugin.app, targetPath);
+		}
+		
 		return { content: [{ type: 'text', text: successMessage }] };
 	});
 };

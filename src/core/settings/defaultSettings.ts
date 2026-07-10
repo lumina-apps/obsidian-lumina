@@ -53,6 +53,8 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		agentEnabled: false,
 		agentExecutionMode: 'read',
 		agentMaxSteps: 15,
+		ttftTimeoutMs: 0,
+		interTokenTimeoutMs: 0,
 	},
 
 	// ── Section 3: RAG & Context ─────────────────────────────────────────────

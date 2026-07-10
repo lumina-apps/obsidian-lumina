@@ -336,6 +336,12 @@
         "urlInputPrompt": "按 Enter 添加网址",
         "includeNote": "包含笔记",
         "excludeNote": "排除笔记"
+      },
+      "timeout": {
+        "ttftLabel": "首次响应超时时间 (ms)",
+        "ttftDesc": "请求后等待第一个单词接收的最大时间。设置为0表示无限制。",
+        "interTokenLabel": "区块间超时时间 (ms)",
+        "interTokenDesc": "流式传输期间等待下一句话接收的最大时间。设置为0表示无限制。"
       }
     },
     "rag": {
@@ -488,7 +494,9 @@
       "ollamaNoModel": "Ollama 中没有正在运行的模型。请先使用 `ollama run <model>` 运行模型。",
       "connectFail": "连接失败：{{status}} {{text}}",
       "anthropicNoEmbed": "Anthropic 不支持嵌入 API。",
-      "visionNotSupported": "⚠️ 所选提供商（{{provider}}）不支持图像分析。如需使用图片，请选择 OpenAI、Anthropic 或 Google（支持视觉的模型）。"
+      "visionNotSupported": "⚠️ 所选提供商（{{provider}}）不支持图像分析。如需使用图片，请选择 OpenAI、Anthropic 或 Google（支持视觉的模型）。",
+      "timeoutTTFT": "超时：第一个Token响应延迟。 ({{fallback}})",
+      "timeoutInterToken": "超时：流式传输期间通信中断或延迟。 ({{fallback}})"
     },
     "translation": {
       "confirmTitle": "系统语言翻译",

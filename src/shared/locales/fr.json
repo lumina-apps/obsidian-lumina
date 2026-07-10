@@ -336,6 +336,12 @@
         "urlInputPrompt": "Appuyez sur Entrée pour ajouter l'URL",
         "includeNote": "Inclure la note",
         "excludeNote": "Exclure la note"
+      },
+      "timeout": {
+        "ttftLabel": "Délai d'attente pour la première réponse (ms)",
+        "ttftDesc": "Temps d'attente maximum pour recevoir le premier mot après la demande. Réglez sur 0 pour illimité.",
+        "interTokenLabel": "Délai d'attente entre les fragments (ms)",
+        "interTokenDesc": "Temps d'attente maximum pour recevoir la phrase suivante pendant la diffusion en continu. Réglez sur 0 pour illimité."
       }
     },
     "rag": {
@@ -488,7 +494,9 @@
       "ollamaNoModel": "Aucun modèle en cours d'exécution dans Ollama. Veuillez d'abord démarrer un modèle avec `ollama run <model>`.",
       "connectFail": "Échec de la connexion : {{status}} {{text}}",
       "anthropicNoEmbed": "Anthropic ne prend pas en charge l'API d'embedding.",
-      "visionNotSupported": "⚠️ Le fournisseur sélectionné ({{provider}}) ne prend pas en charge l'analyse d'images. Veuillez utiliser OpenAI, Anthropic ou Google avec un modèle compatible avec la vision."
+      "visionNotSupported": "⚠️ Le fournisseur sélectionné ({{provider}}) ne prend pas en charge l'analyse d'images. Veuillez utiliser OpenAI, Anthropic ou Google avec un modèle compatible avec la vision.",
+      "timeoutTTFT": "Délai d'attente : La réponse du premier jeton a été retardée. ({{fallback}})",
+      "timeoutInterToken": "Délai d'attente : La communication a été interrompue ou retardée pendant la diffusion. ({{fallback}})"
     },
     "translation": {
       "confirmTitle": "Traduction dans la langue du système",

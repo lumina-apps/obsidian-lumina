@@ -336,6 +336,12 @@
         "urlInputPrompt": "按 Enter 新增網址",
         "includeNote": "包含筆記",
         "excludeNote": "排除筆記"
+      },
+      "timeout": {
+        "ttftLabel": "首次回應超時時間 (ms)",
+        "ttftDesc": "請求後等待第一個單詞接收的最大時間。設置為0表示無限制。",
+        "interTokenLabel": "區塊間超時時間 (ms)",
+        "interTokenDesc": "流式傳輸期間等待下一句話接收的最大時間。設置為0表示無限制。"
       }
     },
     "rag": {
@@ -488,7 +494,9 @@
       "ollamaNoModel": "Ollama 中沒有正在運行的模型。請先使用 `ollama run <model>` 執行模型。",
       "connectFail": "連線失敗：{{status}} {{text}}",
       "anthropicNoEmbed": "Anthropic 不支援嵌入 API。",
-      "visionNotSupported": "⚠️ 所選的提供商（{{provider}}）不支援圖像分析。如需使用圖片，請選擇 OpenAI、Anthropic 或 Google（支援視覺的模型）。"
+      "visionNotSupported": "⚠️ 所選的提供商（{{provider}}）不支援圖像分析。如需使用圖片，請選擇 OpenAI、Anthropic 或 Google（支援視覺的模型）。",
+      "timeoutTTFT": "超時：第一個Token回應延遲。 ({{fallback}})",
+      "timeoutInterToken": "超時：流式傳輸期間通信中斷或延遲。 ({{fallback}})"
     },
     "translation": {
       "confirmTitle": "系統語言翻譯",

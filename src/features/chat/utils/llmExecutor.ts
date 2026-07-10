@@ -47,6 +47,8 @@ export async function executeLlmCall(
 		signal,
 		tools: (!useTextTools && mcpTools.length > 0) ? mcpTools : undefined,
 		stop: (useTextTools && mcpTools.length > 0) ? [] : undefined,
+		ttftTimeoutMs: chatSettings.ttftTimeoutMs,
+		interTokenTimeoutMs: chatSettings.interTokenTimeoutMs,
 	};
 
 	const hasTools = mcpTools.length > 0;
