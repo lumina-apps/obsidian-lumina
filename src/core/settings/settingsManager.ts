@@ -15,10 +15,12 @@ export class SettingsManager {
 		this.app = plugin.app;
 	}
 
-	private deepMergeSettings<T extends Record<string, any>>(defaultSettings: T, savedSettings: Partial<T>): T {
-		const result: any = { ...defaultSettings };
-		for (const key in savedSettings) {
-			const savedValue = savedSettings[key];
+	private deepMergeSettings<T extends object>(defaultSettings: T, savedSettings: Partial<T>): T {
+		const result = { ...defaultSettings } as Record<string, unknown>;
+		const saved = savedSettings as Record<string, unknown>;
+
+		for (const key in saved) {
+			const savedValue = saved[key];
 			if (savedValue === undefined) continue;
 
 			if (
@@ -26,12 +28,16 @@ export class SettingsManager {
 				typeof savedValue === 'object' &&
 				!Array.isArray(savedValue)
 			) {
-				result[key] = this.deepMergeSettings(result[key] || {}, savedValue);
+				const defaultValue = result[key];
+				const defaultObj = (defaultValue !== null && typeof defaultValue === 'object' && !Array.isArray(defaultValue))
+					? (defaultValue as object)
+					: {};
+				result[key] = this.deepMergeSettings(defaultObj, savedValue as Partial<object>);
 			} else {
 				result[key] = savedValue;
 			}
 		}
-		return result;
+		return result as T;
 	}
 
 	async loadSettings(): Promise<void> {
@@ -39,7 +45,7 @@ export class SettingsManager {
 		this.plugin.isFirstRun = !saved || Object.keys(saved).length === 0;
 		const safeSaved = saved ?? {};
 
-		this.plugin.settings = this.deepMergeSettings(DEFAULT_SETTINGS, safeSaved) as LuminaSettings;
+		this.plugin.settings = this.deepMergeSettings(DEFAULT_SETTINGS, safeSaved);
 
 		if (this.plugin.isFirstRun) {
 			this.plugin.settings.connections.language = this.detectSystemLanguage();
