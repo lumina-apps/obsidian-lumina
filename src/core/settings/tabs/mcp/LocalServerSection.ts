@@ -41,10 +41,8 @@ export function renderLocalServerSection(tab: LuminaSettingTab, el: HTMLElement,
 			text.inputEl.type = 'number';
 			text.setValue(s.serverPort.toString()).onChange(async (val) => {
 				const num = parseInt(val, 10);
-				if (!isNaN(num)) {
-					s.serverPort = num;
-					await tab.saveAndSync();
-				}
+				s.serverPort = isNaN(num) ? 3000 : num;
+				await tab.saveAndSync();
 			});
 		});
 
@@ -109,30 +107,35 @@ function renderLocalServerAdvancedSettings(tab: LuminaSettingTab, parentEl: HTML
 		descKey: string;
 		get: () => number;
 		set: (val: number) => void;
+		default: number;
 	}> = [
 		{
 			nameKey: 'settings.mcp.localServer.maxRead.name',
 			descKey: 'settings.mcp.localServer.maxRead.desc',
 			get: () => s.serverMaxReadChars,
 			set: (v) => { s.serverMaxReadChars = v; },
+			default: 20000,
 		},
 		{
 			nameKey: 'settings.mcp.localServer.searchSnippet.name',
 			descKey: 'settings.mcp.localServer.searchSnippet.desc',
 			get: () => s.serverSearchSnippetLength,
 			set: (v) => { s.serverSearchSnippetLength = v; },
+			default: 300,
 		},
 		{
 			nameKey: 'settings.mcp.localServer.searchMaxResults.name',
 			descKey: 'settings.mcp.localServer.searchMaxResults.desc',
 			get: () => s.serverSearchMaxResults,
 			set: (v) => { s.serverSearchMaxResults = v; },
+			default: 10,
 		},
 		{
 			nameKey: 'settings.mcp.localServer.maxAppend.name',
 			descKey: 'settings.mcp.localServer.maxAppend.desc',
 			get: () => s.serverMaxAppendChars,
 			set: (v) => { s.serverMaxAppendChars = v; },
+			default: 10000,
 		},
 	];
 
@@ -144,10 +147,8 @@ function renderLocalServerAdvancedSettings(tab: LuminaSettingTab, parentEl: HTML
 				text.inputEl.type = 'number';
 				text.setValue(field.get().toString()).onChange(async (val) => {
 					const num = parseInt(val, 10);
-					if (!isNaN(num)) {
-						field.set(num);
-						await tab.saveAndSync();
-					}
+					field.set(isNaN(num) ? field.default : num);
+					await tab.saveAndSync();
 				});
 			});
 	}

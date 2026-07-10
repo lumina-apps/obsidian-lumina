@@ -66,10 +66,8 @@ export function renderAgentSection(tab: LuminaSettingTab, el: HTMLElement, _s: M
 			const currentValue = tab.plugin.settings.chat.agentMaxSteps || AGENT_DEFAULT_MAX_STEPS;
 			text.setValue(currentValue.toString()).onChange(async (val) => {
 				const num = parseInt(val, 10);
-				if (!isNaN(num) && num > 0) {
-					tab.plugin.settings.chat.agentMaxSteps = num;
-					await tab.saveAndSync();
-				}
+				tab.plugin.settings.chat.agentMaxSteps = isNaN(num) || num <= 0 ? AGENT_DEFAULT_MAX_STEPS : num;
+				await tab.saveAndSync();
 			});
 		});
 }

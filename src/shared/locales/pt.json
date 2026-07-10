@@ -339,9 +339,9 @@
       },
       "timeout": {
         "ttftLabel": "Tempo de espera para a primeira resposta (ms)",
-        "ttftDesc": "Tempo máximo de espera até receber a primeira palavra após a solicitação. Defina como 0 para ilimitado.",
+        "ttftDesc": "Tempo máximo de espera até receber a primeira palavra após a solicitação. Defina como 0 para ilimitado.. (Padrão: 0)",
         "interTokenLabel": "Tempo de espera entre fragmentos (ms)",
-        "interTokenDesc": "Tempo máximo de espera até receber a próxima frase durante a transmissão. Defina como 0 para ilimitado."
+        "interTokenDesc": "Tempo máximo de espera até receber a próxima frase durante a transmissão. Defina como 0 para ilimitado.. (Padrão: 0)"
       }
     },
     "rag": {
@@ -561,7 +561,13 @@
     },
     "sessionUsage": "Uso acumulado da sessão atual",
     "sessionTokens": "Total: {{tokens}} tokens",
-    "sessionCost": "(aprox. ${{cost}})"
+    "sessionCost": "(aprox. ${{cost}})",
+    "timeout": {
+      "ttftLabel": "Time-To-First-Token Timeout (ms)",
+      "ttftDesc": "Wait time for the very first token to arrive. Set to 0 to disable.. (Padrão: 0)",
+      "interTokenLabel": "Inter-Token Timeout (ms)",
+      "interTokenDesc": "Wait time between subsequent streaming chunks. Set to 0 to disable.. (Padrão: 0)"
+    }
   },
   "common": {
     "save": "Salvar",
@@ -931,5 +937,9 @@
       "default": "Padrão",
       "manage": "Gerenciar nas Configurações"
     }
+  },
+  "providerErrors": {
+    "timeoutTTFT": "Timeout: First token response took too long. ({{fallback}})",
+    "timeoutInterToken": "Timeout: Stream interrupted or hung. ({{fallback}})"
   }
 }

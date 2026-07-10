@@ -45,12 +45,14 @@ export function renderAdvancedSection(tab: LuminaSettingTab, el: HTMLElement): v
 				inputEl.addEventListener('compositionend', () => {
 					composing = false;
 					const n = parseInt(inputEl.value);
-					if (!isNaN(n)) { s.maxContextTokens = n; void tab.saveAndSync(); }
+					s.maxContextTokens = isNaN(n) ? 8000 : n;
+					void tab.saveAndSync();
 				});
 				text.setValue(String(s.maxContextTokens)).onChange(wrapAsync(async (val) => {
 					if (composing) return;
 					const n = parseInt(val);
-					if (!isNaN(n)) { s.maxContextTokens = n; await tab.saveAndSync(); }
+					s.maxContextTokens = isNaN(n) ? 8000 : n;
+					await tab.saveAndSync();
 				}));
 			});
 	}
@@ -74,12 +76,14 @@ export function renderAdvancedSection(tab: LuminaSettingTab, el: HTMLElement): v
 			inputEl.addEventListener('compositionend', () => {
 				composing = false;
 				const n = parseInt(inputEl.value);
-				if (!isNaN(n)) { s.maxOutputTokens = n; void tab.saveAndSync(); }
+				s.maxOutputTokens = isNaN(n) ? 4000 : n;
+				void tab.saveAndSync();
 			});
 			text.setValue(String(s.maxOutputTokens)).onChange(wrapAsync(async (val) => {
 				if (composing) return;
 				const n = parseInt(val);
-				if (!isNaN(n)) { s.maxOutputTokens = n; await tab.saveAndSync(); }
+				s.maxOutputTokens = isNaN(n) ? 4000 : n;
+				await tab.saveAndSync();
 			}));
 		});
 
@@ -95,7 +99,7 @@ export function renderAdvancedSection(tab: LuminaSettingTab, el: HTMLElement): v
 
 	new Setting(el)
 		.setName(t('settings.chat.timeout.ttftLabel', { fallback: 'Time-To-First-Token Timeout (ms)' }))
-		.setDesc(t('settings.chat.timeout.ttftDesc', { fallback: 'Wait time for the very first token to arrive. Set to 0 to disable.' }))
+		.setDesc(t('settings.chat.timeout.ttftDesc', { fallback: 'Wait time for the very first token to arrive. Set to 0 to disable. (Default: 0)' }))
 		.addText(text => {
 			let composing = false;
 			const inputEl = text.inputEl;
@@ -104,18 +108,20 @@ export function renderAdvancedSection(tab: LuminaSettingTab, el: HTMLElement): v
 			inputEl.addEventListener('compositionend', () => {
 				composing = false;
 				const n = parseInt(inputEl.value);
-				if (!isNaN(n)) { s.ttftTimeoutMs = n; void tab.saveAndSync(); }
+				s.ttftTimeoutMs = isNaN(n) ? 0 : n;
+				void tab.saveAndSync();
 			});
 			text.setValue(String(s.ttftTimeoutMs ?? 0)).onChange(wrapAsync(async (val) => {
 				if (composing) return;
 				const n = parseInt(val);
-				if (!isNaN(n)) { s.ttftTimeoutMs = n; await tab.saveAndSync(); }
+				s.ttftTimeoutMs = isNaN(n) ? 0 : n;
+				await tab.saveAndSync();
 			}));
 		});
 
 	new Setting(el)
 		.setName(t('settings.chat.timeout.interTokenLabel', { fallback: 'Inter-Token Timeout (ms)' }))
-		.setDesc(t('settings.chat.timeout.interTokenDesc', { fallback: 'Wait time between subsequent streaming chunks. Set to 0 to disable.' }))
+		.setDesc(t('settings.chat.timeout.interTokenDesc', { fallback: 'Wait time between subsequent streaming chunks. Set to 0 to disable. (Default: 0)' }))
 		.addText(text => {
 			let composing = false;
 			const inputEl = text.inputEl;
@@ -124,12 +130,14 @@ export function renderAdvancedSection(tab: LuminaSettingTab, el: HTMLElement): v
 			inputEl.addEventListener('compositionend', () => {
 				composing = false;
 				const n = parseInt(inputEl.value);
-				if (!isNaN(n)) { s.interTokenTimeoutMs = n; void tab.saveAndSync(); }
+				s.interTokenTimeoutMs = isNaN(n) ? 0 : n;
+				void tab.saveAndSync();
 			});
 			text.setValue(String(s.interTokenTimeoutMs ?? 0)).onChange(wrapAsync(async (val) => {
 				if (composing) return;
 				const n = parseInt(val);
-				if (!isNaN(n)) { s.interTokenTimeoutMs = n; await tab.saveAndSync(); }
+				s.interTokenTimeoutMs = isNaN(n) ? 0 : n;
+				await tab.saveAndSync();
 			}));
 		});
 

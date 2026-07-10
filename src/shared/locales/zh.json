@@ -339,9 +339,9 @@
       },
       "timeout": {
         "ttftLabel": "首次响应超时时间 (ms)",
-        "ttftDesc": "请求后等待第一个单词接收的最大时间。设置为0表示无限制。",
+        "ttftDesc": "请求后等待第一个单词接收的最大时间。设置为0表示无限制。. (默认值: 0)",
         "interTokenLabel": "区块间超时时间 (ms)",
-        "interTokenDesc": "流式传输期间等待下一句话接收的最大时间。设置为0表示无限制。"
+        "interTokenDesc": "流式传输期间等待下一句话接收的最大时间。设置为0表示无限制。. (默认值: 0)"
       }
     },
     "rag": {
@@ -561,7 +561,13 @@
     },
     "sessionUsage": "当前会话累计用量",
     "sessionTokens": "累计: {{tokens}} tokens",
-    "sessionCost": "(约 ${{cost}})"
+    "sessionCost": "(约 ${{cost}})",
+    "timeout": {
+      "ttftLabel": "Time-To-First-Token Timeout (ms)",
+      "ttftDesc": "Wait time for the very first token to arrive. Set to 0 to disable.. (默认值: 0)",
+      "interTokenLabel": "Inter-Token Timeout (ms)",
+      "interTokenDesc": "Wait time between subsequent streaming chunks. Set to 0 to disable.. (默认值: 0)"
+    }
   },
   "common": {
     "save": "保存",
@@ -931,5 +937,9 @@
       "default": "默认",
       "manage": "在设置中管理"
     }
+  },
+  "providerErrors": {
+    "timeoutTTFT": "Timeout: First token response took too long. ({{fallback}})",
+    "timeoutInterToken": "Timeout: Stream interrupted or hung. ({{fallback}})"
   }
 }

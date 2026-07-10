@@ -338,9 +338,9 @@
       },
       "timeout": {
         "ttftLabel": "Time-To-First-Token Timeout (ms)",
-        "ttftDesc": "Wait time for the very first token to arrive. Set to 0 to disable.",
+        "ttftDesc": "Wait time for the very first token to arrive. Set to 0 to disable. (Default: 0)",
         "interTokenLabel": "Inter-Token Timeout (ms)",
-        "interTokenDesc": "Wait time between subsequent streaming chunks. Set to 0 to disable."
+        "interTokenDesc": "Wait time between subsequent streaming chunks. Set to 0 to disable. (Default: 0)"
       },
       "emptyResponseFallback": "⚠️ The model returned an empty response. (This may be due to an unsupported language/format, prompt filtering, or exceeding the context limit.)"
     },
