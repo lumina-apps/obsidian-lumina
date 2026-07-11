@@ -20,8 +20,8 @@ async function openFileInWorkspace(app: App, path: string) {
 	if (file instanceof TFile) {
 		const leaves = app.workspace.getLeavesOfType('markdown');
 		for (const leaf of leaves) {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			if ((leaf.view as any).file?.path === path) {
+			const view = leaf.view as { file?: { path?: string } };
+			if (view.file?.path === path) {
 				app.workspace.setActiveLeaf(leaf, { focus: true });
 				return;
 			}

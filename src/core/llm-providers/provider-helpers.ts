@@ -68,8 +68,10 @@ export class IdleTimeoutController {
 	async run<T>(fn: () => Promise<T>): Promise<T> {
 		try {
 			return await fn();
-		} catch (e: any) {
-			if (e.name === 'AbortError' && this.controller.signal.reason && this.controller.signal.reason.name === 'IdleTimeoutError') {
+		} catch (e: unknown) {
+			const err = toError(e);
+			const reason = this.controller.signal.reason ? toError(this.controller.signal.reason) : undefined;
+			if (err.name === 'AbortError' && reason?.name === 'IdleTimeoutError') {
 				throw this.controller.signal.reason;
 			}
 			throw e;
@@ -114,7 +116,7 @@ export async function requestUrlWithAbort(params: RequestUrlParam, signal?: Abor
 
 		const abortHandler = () => {
 			if (signal.reason) {
-				reject(signal.reason);
+				reject(toError(signal.reason));
 			} else {
 				const error = new Error('Aborted');
 				error.name = 'AbortError';

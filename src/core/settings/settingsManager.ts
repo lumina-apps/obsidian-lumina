@@ -30,9 +30,9 @@ export class SettingsManager {
 			) {
 				const defaultValue = result[key];
 				const defaultObj = (defaultValue !== null && typeof defaultValue === 'object' && !Array.isArray(defaultValue))
-					? (defaultValue as object)
+					? defaultValue
 					: {};
-				result[key] = this.deepMergeSettings(defaultObj, savedValue as Partial<object>);
+				result[key] = this.deepMergeSettings(defaultObj, savedValue);
 			} else {
 				result[key] = savedValue;
 			}
