@@ -117,7 +117,7 @@ Lumina offers two tracks tailored to your skill level. Choose the one that suits
 
 ## 🐛 Debug Mode & Bug Reports
 
-You can view all internal data processed by the plugin by enabling Advanced Settings and toggling [Debug Mode] under the [Add-ons & Misc] tab in settings. (Debug logs are not saved until downloaded.)
+You can view all internal data processed by the plugin by enabling Advanced Settings and toggling [Debug Mode] under the [Misc & Extensions] tab in settings. (Debug logs are not saved until downloaded.)
 
 **💡 Helpful Information for Resolution:**
 - Your OS (Windows, macOS, Linux) and Obsidian version.

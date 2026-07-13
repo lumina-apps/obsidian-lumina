@@ -116,7 +116,7 @@ Lumina offre due modalità in base al tuo livello di competenza. Scegli quella c
 
 ## 🐛 Modalità di Debug e Segnalazioni Bug
 
-Puoi visualizzare tutti i dati interni elaborati dal plugin abilitando le Impostazioni Avanzate e attivando la [Modalità di Debug] sotto la scheda [Add-on & Varie] nelle impostazioni. (I log di debug non vengono salvati finché non vengono scaricati).
+Puoi visualizzare tutti i dati interni elaborati dal plugin abilitando le Impostazioni Avanzate e attivando la [Modalità di Debug] sotto la scheda [Varie ed Estensioni] nelle impostazioni. (I log di debug non vengono salvati finché non vengono scaricati).
 
 **💡 Informazioni Utili per la Risoluzione:**
 - Il tuo sistema operativo (Windows, macOS, Linux) e la versione di Obsidian.

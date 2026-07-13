@@ -116,7 +116,7 @@ Lumina bietet zwei auf dein Können zugeschnittene Modi. Wähle die Methode, die
 
 ## 🐛 Debug-Modus & Fehlerberichte
 
-Du kannst alle internen Daten einsehen, die das Plugin verarbeitet, indem du die Erweiterten Einstellungen aktivierst und den [Debug-Modus] unter dem Tab [Add-ons & Sonstiges] einschaltest. (Debug-Logs werden erst nach dem Herunterladen gespeichert).
+Du kannst alle internen Daten einsehen, die das Plugin verarbeitet, indem du die Erweiterten Einstellungen aktivierst und den [Debug-Modus] unter dem Tab [Sonstiges & Extras] einschaltest. (Debug-Logs werden erst nach dem Herunterladen gespeichert).
 
 **💡 Hilfreiche Informationen zur Fehlerbehebung:**
 - Dein Betriebssystem (Windows, macOS, Linux) und die Obsidian-Version.

@@ -116,7 +116,7 @@ Lumina propose deux modes adaptés à votre niveau. Choisissez celui qui vous co
 
 ## 🐛 Mode Débogage & Rapports de Bugs
 
-Vous pouvez afficher toutes les données internes traitées par le plugin en activant les Paramètres Avancés et en cochant le [Mode Débogage] sous l'onglet [Add-ons & Divers] dans les paramètres. (Les journaux de débogage ne sont sauvegardés qu'une fois téléchargés).
+Vous pouvez afficher toutes les données internes traitées par le plugin en activant les Paramètres Avancés et en cochant le [Mode Débogage] sous l'onglet [Divers et Extensions] dans les paramètres. (Les journaux de débogage ne sont sauvegardés qu'une fois téléchargés).
 
 **💡 Informations Utiles pour la Résolution :**
 - Votre système d'exploitation (Windows, macOS, Linux) et la version d'Obsidian.

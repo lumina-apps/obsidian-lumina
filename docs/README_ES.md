@@ -116,7 +116,7 @@ Lumina ofrece dos modos según tu nivel de experiencia. ¡Elige el que más te g
 
 ## 🐛 Modo de Depuración e Informes de Errores
 
-Puedes ver todos los datos internos procesados por el plugin habilitando la Configuración Avanzada y activando el [Modo de Depuración] bajo la pestaña [Complementos y Varios] en la configuración. (Los registros de depuración no se guardan hasta que se descargan).
+Puedes ver todos los datos internos procesados por el plugin habilitando la Configuración Avanzada y activando el [Modo de Depuración] bajo la pestaña [Varios y extensiones] en la configuración. (Los registros de depuración no se guardan hasta que se descargan).
 
 **💡 Información Útil para la Resolución:**
 - Tu sistema operativo (Windows, macOS, Linux) y la versión de Obsidian.
