@@ -24,14 +24,14 @@ export function renderDescriptionLines(
 
 /** 개행 포함 텍스트 → DocumentFragment (Setting.setDesc() 용) */
 export function createMultilineDesc(text: string): DocumentFragment {
-	const frag = document.createDocumentFragment();
-	text.split('\n').forEach((line, i) => {
-		if (i > 0) {
-			frag.appendChild(document.createElement('br'));
-		}
-		frag.append(line);
+	return createFragment((frag) => {
+		text.split('\n').forEach((line, i) => {
+			if (i > 0) {
+				frag.createEl('br');
+			}
+			frag.append(line);
+		});
 	});
-	return frag;
 }
 
 /** feature-card 생성 (MCP 탭용) */

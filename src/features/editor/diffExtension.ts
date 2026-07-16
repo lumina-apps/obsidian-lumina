@@ -10,18 +10,14 @@ export const setDiffs = StateEffect.define<ApprovalRequest | null>();
 class DiffAddedWidget extends WidgetType {
 	constructor(public text: string) { super(); }
 	toDOM() {
-		const div = document.createElement('div');
-		div.className = 'lumina-diff-added-widget';
+		const div = createEl('div', { cls: 'lumina-diff-added-widget' });
 		
 			// Remove trailing newline for visual neatness
 		const display = this.text.endsWith('\n') ? this.text.slice(0, -1) : this.text;
 		
 		const lines = display.split('\n');
 		lines.forEach(line => {
-			const lineDiv = document.createElement('div');
-			lineDiv.className = 'lumina-diff-added-line';
-			lineDiv.innerText = '+ ' + line;
-			div.appendChild(lineDiv);
+			div.createEl('div', { cls: 'lumina-diff-added-line', text: '+ ' + line });
 		});
 		return div;
 	}
@@ -30,21 +26,14 @@ class DiffAddedWidget extends WidgetType {
 class DiffActionWidget extends WidgetType {
 	constructor(public requestId: string, public chunkId: string) { super(); }
 	toDOM() {
-		const div = document.createElement('div');
-		div.className = 'lumina-diff-action-widget';
+		const div = createEl('div', { cls: 'lumina-diff-action-widget' });
 		
-		const acceptBtn = document.createElement('button');
-		acceptBtn.innerText = '✓ Accept';
-		acceptBtn.className = 'lumina-diff-btn accept';
+		const acceptBtn = div.createEl('button', { cls: 'lumina-diff-btn accept', text: '✓ Accept' });
 		acceptBtn.onclick = () => approvalManager.acceptChunk(this.requestId, this.chunkId);
 		
-		const rejectBtn = document.createElement('button');
-		rejectBtn.innerText = '✗ Reject';
-		rejectBtn.className = 'lumina-diff-btn reject';
+		const rejectBtn = div.createEl('button', { cls: 'lumina-diff-btn reject', text: '✗ Reject' });
 		rejectBtn.onclick = () => approvalManager.rejectChunk(this.requestId, this.chunkId);
 		
-		div.appendChild(acceptBtn);
-		div.appendChild(rejectBtn);
 		return div;
 	}
 }
