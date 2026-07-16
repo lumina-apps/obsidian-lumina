@@ -41,7 +41,7 @@ class LazyLuminaSettingTab extends PluginSettingTab {
 		}
 
 		this.containerEl.empty();
-		this.containerEl.createEl('div', { text: t('uiMessages.noticeIndexing') || 'Loading settings...', cls: 'setting-item-description' });
+		this.containerEl.createDiv({ text: t('uiMessages.noticeIndexing') || 'Loading settings...', cls: 'setting-item-description' });
 
 		if (!this.loadingPromise) {
 			this.loadingPromise = (async () => {

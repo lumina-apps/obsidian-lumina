@@ -75,7 +75,7 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 
 	renderSuggestion(action: QuickAction, el: HTMLElement): void {
 		if (action.id === '__unconfigured__') {
-			el.createEl('span', { text: `⚠️ ${action.name}`, cls: 'lumina-inline-suggest-name' });
+			el.createSpan({ text: `⚠️ ${action.name}`, cls: 'lumina-inline-suggest-name' });
 			el.createEl('small', {
 				text: t('common.settings'),
 				cls: 'lumina-inline-suggest-type',
@@ -84,7 +84,7 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 			return;
 		}
 
-		el.createEl('span', { text: `✨ ${action.name}`, cls: 'lumina-inline-suggest-name' });
+		el.createSpan({ text: `✨ ${action.name}`, cls: 'lumina-inline-suggest-name' });
 		el.createEl('small', {
 			text: action.actionType === 'replace' ? t('uiMessages.inlineReplace') : action.actionType === 'append' ? t('uiMessages.inlineAppend') : t('uiMessages.inlineSend'),
 			cls: 'lumina-inline-suggest-type',

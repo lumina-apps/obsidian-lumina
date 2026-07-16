@@ -71,7 +71,7 @@ export function renderConnectionsTab(tab: LuminaSettingTab, el: HTMLElement): vo
 	const displayName = (activeProject.id === 'default' && activeProject.name === 'Default') ? (t('projects.settings.defaultProjectName') || 'Default Project') : activeProject.name;
 
 	tab.sectionHeading(el, t('projects.settings.modalTitleActive', { projectName: displayName }));
-	const projectInfo = el.createEl('div', { cls: 'setting-item-description lumina-project-info-desc' });
+	const projectInfo = el.createDiv({ cls: 'setting-item-description lumina-project-info-desc' });
 	projectInfo.appendChild(sanitizeHTMLToDom(t('projects.settings.activeProjectModelDesc', { projectName: displayName })));
 	
 	renderDefaultChatModelSection(tab, el);

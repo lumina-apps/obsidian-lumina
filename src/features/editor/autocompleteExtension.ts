@@ -13,7 +13,7 @@ export const setSuggestion = StateEffect.define<AutocompleteSuggestion | null>()
 	class GhostTextWidget extends WidgetType {
 		constructor(public text: string) { super(); }
 		toDOM() {
-			const span = createEl('span', { cls: 'lumina-autocomplete-ghost', text: this.text });
+			const span = createSpan({ cls: 'lumina-autocomplete-ghost', text: this.text });
 			return span;
 		}
 	}
