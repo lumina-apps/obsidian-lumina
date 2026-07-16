@@ -186,28 +186,8 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 		timeoutCtrl: IdleTimeoutController,
 		onChunk: (chunk: string) => void,
 	): Promise<{ usage?: TokenUsage; finishReason?: string }> {
-		const response = await window.fetch(url, {
-			method: 'POST',
-			headers,
-			body: JSON.stringify(payload),
-			signal: timeoutCtrl.signal,
-		});
-
-		if (!response.ok) {
-			const errText = await response.text();
-			throw new Error(`${this.type} Error (HTTP ${response.status}): ${errText}`);
-		}
-
-		const accumulator = new StreamChunkAccumulator(onChunk, this.enableReasoning ? { enableReasoning: true } : undefined);
-
-		await readStreamLines(response, timeoutCtrl.signal, (line) => {
-			timeoutCtrl.onChunkReceived();
-			accumulator.processLine(line);
-		});
-
-		accumulator.finalize();
-
-		return { usage: accumulator.usage, finishReason: accumulator.finishReason };
+		const result = await this.handleStreamingChat(url, headers, payload, timeoutCtrl, onChunk);
+		return { usage: result.usage, finishReason: result.finishReason };
 	}
 
 	private async handleNonStreamingChat(

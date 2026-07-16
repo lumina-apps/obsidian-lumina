@@ -19,6 +19,16 @@
       "@typescript-eslint/ban-ts-comment": "off",
       "no-prototype-builtins": "off",
       "@typescript-eslint/no-empty-function": "off",
-      "@typescript-eslint/no-deprecated": "warn"
+      "@typescript-eslint/no-deprecated": "warn",
+
+      "curly": ["error", "multi-line"],
+      "prefer-const": "error",
+      "no-var": "error",
+      "eqeqeq": ["error", "always", { "null": "ignore" }],
+      "no-console": ["warn", { "allow": ["warn", "error"] }],
+      "@typescript-eslint/explicit-function-return-type": "off",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-non-null-assertion": "warn",
+      "@typescript-eslint/prefer-optional-chain": "warn"
     } 
   }
