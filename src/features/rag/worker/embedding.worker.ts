@@ -136,8 +136,6 @@ async function initModel(modelName: string, cacheDir: string, _pluginDir?: strin
 	// env.wasm.wasmPaths를 설정하면 transformers.js가 이 값을 ONNX 런타임에 전달합니다.
 	customEnv.wasm!.wasmPaths = WASM_CDN_BASE;
 	
-	console.log(`[EmbeddingWorker] WASM paths set to CDN: ${WASM_CDN_BASE}`);
-	
 	// 파이프라인 생성
 	// transformers.js v3에서는 dtype으로 모델 파일을 선택합니다.
 	// 이 모델은 quantized 버전(model_quantized.onnx)이 존재하지 않으므로 fp32로 지정합니다.

@@ -6,6 +6,8 @@
  */
 
 import { Notice, Platform, Setting } from 'obsidian';
+
+import { createMultilineDesc } from '../../../../shared/utils/domUtils';
 import type { LuminaSettingTab } from '../../settingTab';
 import { t } from '../../../../shared/locales/helpers';
 import { setIndexingStatus } from '../../../store/ragStore';
@@ -24,17 +26,7 @@ export function renderRagEngineSection(tab: LuminaSettingTab, el: HTMLElement): 
 
 	tab.sectionHeading(el, t('settings.connections.ragEngine.name'));
 
-	const descEl = activeDocument.createDocumentFragment();
-	descEl.createEl('div', {
-		text: t('settings.connections.ragEngine.desc'),
-		attr: { style: 'margin-bottom: 6px;' }
-	});
-
-	descEl.createEl('div', {
-		text: t('settings.connections.ragEngine.privacyNotice'),
-		cls: 'lumina-settings__desc-guide',
-		attr: { style: 'color: var(--text-success); font-weight: 500;' }
-	});
+	const descEl = createMultilineDesc(`${t('settings.connections.ragEngine.desc')}\n${t('settings.connections.ragEngine.privacyNotice')}`);
 
 	const isMobileLocked = Platform.isMobile && s.embedding.mode === 'auto';
 	if (Platform.isMobile) {
@@ -103,12 +95,7 @@ function renderEmbeddingModelSelector(tab: LuminaSettingTab, el: HTMLElement): v
 	const s = tab.plugin.settings.connections;
 
 	tab.advancedLabel(el);
-	const customDesc = activeDocument.createDocumentFragment();
-	customDesc.createEl('div', { text: t('settings.connections.customEmbedding.desc') });
-	customDesc.createEl('div', {
-		text: t('settings.connections.customEmbedding.guide'),
-		cls: 'lumina-settings__desc-guide'
-	});
+	const customDesc = createMultilineDesc(`${t('settings.connections.customEmbedding.desc')}\n${t('settings.connections.customEmbedding.guide')}`);
 
 	// 임베딩 모델 옵션 생성
 	const autoOption = { value: 'auto', label: t('settings.connections.customEmbedding.auto') };

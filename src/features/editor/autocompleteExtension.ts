@@ -10,15 +10,15 @@ interface AutocompleteSuggestion {
 
 export const setSuggestion = StateEffect.define<AutocompleteSuggestion | null>();
 
-class GhostTextWidget extends WidgetType {
-	constructor(public text: string) { super(); }
-	toDOM() {
-		const span = activeDocument.createElement('span');
-		span.className = 'lumina-autocomplete-ghost';
-		span.textContent = this.text;
-		return span;
+	class GhostTextWidget extends WidgetType {
+		constructor(public text: string) { super(); }
+		toDOM() {
+			const span = document.createElement('span');
+			span.className = 'lumina-autocomplete-ghost';
+			span.textContent = this.text;
+			return span;
+		}
 	}
-}
 
 export const autocompleteStateField = StateField.define<AutocompleteSuggestion | null>({
 	create() { return null; },

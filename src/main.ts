@@ -76,6 +76,10 @@ class LazyLuminaSettingTab extends PluginSettingTab {
 			this.realTab.refreshDisplay();
 		}
 	}
+
+	getSettingDefinitions(): import('obsidian').SettingDefinition[] {
+		return [];
+	}
 }
 
 export default class LuminaPlugin extends Plugin {

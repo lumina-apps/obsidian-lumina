@@ -6,7 +6,7 @@
  * 공통 유틸리티는 shared/utils/ 하위 모듈에서 import하여 사용합니다.
  */
 
-import { App, PluginSettingTab, setTooltip } from 'obsidian';
+import { App, PluginSettingTab, setTooltip, type SettingDefinition } from 'obsidian';
 import { debugLogger } from '../../shared/debugLogger';
 import type LuminaPlugin from '../../main';
 import { syncSettingsStore } from '../store/settingsStore';
@@ -233,5 +233,10 @@ export class LuminaSettingTab extends PluginSettingTab {
 		getDynamicValue: () => string,
 	): void {
 		addModelSelector(setting, options, currentValue, currentLabel, onChange, getDynamicValue, this.app);
+	}
+
+	// Declarative settings API support (required for Obsidian 1.13.0+ settings search)
+	getSettingDefinitions(): SettingDefinition[] {
+		return [];
 	}
 }
