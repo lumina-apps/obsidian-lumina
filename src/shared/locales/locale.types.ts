@@ -728,6 +728,21 @@ export interface TranslationDiscovery {
 }
 
 // uiMessages
+// summarization
+export interface TranslationSummarizationPrompt {
+  intro: string;
+  previousSummary: string;
+  instructionWithSummary: string;
+  instructionWithoutSummary: string;
+  additionalConversation: string;
+  roleUser: string;
+  roleAI: string;
+}
+
+export interface TranslationSummarization {
+  prompt: TranslationSummarizationPrompt;
+}
+
 export interface TranslationUiMessages {
   actionApproval: {
     title: string;
@@ -1025,6 +1040,7 @@ export interface Translation {
   mcpServerTools: TranslationMcpServerTools;
   graph: TranslationGraph;
   canvas: TranslationCanvas;
+  summarization: TranslationSummarization;
   projects: TranslationProjects;
 }
 
