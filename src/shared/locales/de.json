@@ -91,6 +91,18 @@
         "name": "Reranker-Modell (Optional)",
         "desc": "Modell zur Neuordnung von RAG-Ergebnissen für bessere Relevanz.",
         "noneSelected": "Keines ausgewählt (Deaktiviert)"
+      },
+      "connectionStatus": {
+        "noConnection": "Nicht verbunden",
+        "availableModelsCount": "{{models}} Modell(e) verfügbar",
+        "localModelsDisabled": "Lokale Modelle deaktiviert",
+        "connectedCountLabel": "{{provider}}: {{count}} Modell(e)",
+        "success": "Verbindung erfolgreich",
+        "syncFail": "Sync fehlgeschlagen",
+        "mcpDisconnected": "MCP getrennt",
+        "mcpConnected": "MCP verbunden",
+        "connected": "Verbunden: {{name}}",
+        "disconnected": "Getrennt: {{name}}"
       }
     },
     "mcp": {
@@ -916,10 +928,10 @@
       "config": "Projekteinstellungen",
       "deleteConfirmTitle": "Projekt löschen",
       "addProjectDesc": "Erstellen Sie ein neues Projekt und konfigurieren Sie die RAG- und Chat-Einstellungen.",
-      "namePlaceholder": "Project Name",
-      "subfolderPlaceholder": "Subfolder Name",
-      "add": "Add",
-      "duplicateName": "A project with this name already exists.",
+      "namePlaceholder": "Projektname",
+      "subfolderPlaceholder": "Unterordnername",
+      "add": "Hinzufügen",
+      "duplicateName": "Ein Projekt mit diesem Namen existiert bereits.",
       "defaultProjectName": "Standard",
       "defaultModel": "Standard-Chatmodell",
       "defaultModelDesc": "Das Standardmodell, das beim Starten eines neuen Chats in diesem Projekt verwendet wird.",

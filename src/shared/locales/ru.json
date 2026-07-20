@@ -91,6 +91,18 @@
         "name": "Модель переранжирования (необязательно)",
         "desc": "Модель для переранжирования результатов RAG и повышения релевантности контекста.",
         "noneSelected": "Не выбрано (Отключено)"
+      },
+      "connectionStatus": {
+        "noConnection": "Не подключено",
+        "availableModelsCount": "{{models}} модель(и) доступно",
+        "localModelsDisabled": "Локальные модели отключены",
+        "connectedCountLabel": "{{provider}}: {{count}} модель(и)",
+        "success": "Подключение успешно",
+        "syncFail": "Синхронизация не удалась",
+        "mcpDisconnected": "MCP отключен",
+        "mcpConnected": "MCP подключен",
+        "connected": "Подключено: {{name}}",
+        "disconnected": "Отключено: {{name}}"
       }
     },
     "mcp": {
@@ -433,9 +445,7 @@
         "ready": "✅ Lumina: RAG движок готов",
         "indexFail": "❌ Lumina: Индексирование не удалось\n{{error}}",
         "readyManual": "✅ Lumina: RAG движок готов (Ручной режим индексации)",
-        "initFail": "❌ Lumina: Ошибка инициализации RAG воркера\n{{error}}",
-        "downloading": "Загрузка модели RAG...",
-        "indexingNotes": "Индексирование моих заметок..."
+        "initFail": "❌ Lumina: Ошибка инициализации RAG воркера\n{{error}}"
       },
       "reset": {
         "name": "Сброс индекса",
@@ -561,13 +571,7 @@
     },
     "sessionUsage": "Текущее использование сессии",
     "sessionTokens": "Всего: {{tokens}} токенов",
-    "sessionCost": "(прим. ${{cost}})",
-    "timeout": {
-      "ttftLabel": "Time-To-First-Token Timeout (ms)",
-      "ttftDesc": "Wait time for the very first token to arrive. Set to 0 to disable.. (По умолчанию: 0)",
-      "interTokenLabel": "Inter-Token Timeout (ms)",
-      "interTokenDesc": "Wait time between subsequent streaming chunks. Set to 0 to disable.. (По умолчанию: 0)"
-    }
+    "sessionCost": "(прим. ${{cost}})"
   },
   "common": {
     "save": "Сохранить",
@@ -916,10 +920,10 @@
       "config": "Настройки проекта",
       "deleteConfirmTitle": "Удалить проект",
       "addProjectDesc": "Создайте новый проект и настройте параметры RAG и чата.",
-      "namePlaceholder": "Project Name",
-      "subfolderPlaceholder": "Subfolder Name",
-      "add": "Add",
-      "duplicateName": "A project with this name already exists.",
+      "namePlaceholder": "Название проекта",
+      "subfolderPlaceholder": "Название подпапки",
+      "add": "Добавить",
+      "duplicateName": "Проект с таким именем уже существует.",
       "defaultProjectName": "По умолчанию",
       "defaultModel": "Модель чата по умолчанию",
       "defaultModelDesc": "Модель по умолчанию, которая будет использоваться при запуске нового чата в этом проекте.",
@@ -937,9 +941,5 @@
       "default": "По умолчанию",
       "manage": "Управление в настройках"
     }
-  },
-  "providerErrors": {
-    "timeoutTTFT": "Timeout: First token response took too long. ({{fallback}})",
-    "timeoutInterToken": "Timeout: Stream interrupted or hung. ({{fallback}})"
   }
 }

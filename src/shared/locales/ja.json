@@ -91,6 +91,18 @@
         "name": "リランカーモデル (任意)",
         "desc": "RAG検索結果を再ランク付けし、回答の関連性を高めるモデルを選択します。",
         "noneSelected": "未選択 (無効)"
+      },
+      "connectionStatus": {
+        "noConnection": "未接続",
+        "availableModelsCount": "{{models}} モデル利用可能",
+        "localModelsDisabled": "ローカルモデル無効",
+        "connectedCountLabel": "{{provider}}: {{count}} モデル",
+        "success": "接続成功",
+        "syncFail": "同期失敗",
+        "mcpDisconnected": "MCP切断",
+        "mcpConnected": "MCP接続",
+        "connected": "接続済み: {{name}}",
+        "disconnected": "切断済み: {{name}}"
       }
     },
     "mcp": {
@@ -433,9 +445,7 @@
         "ready": "✅ Lumina: RAGエンジン準備完了",
         "indexFail": "❌ Lumina: インデックス作成に失敗しました\n{{error}}",
         "readyManual": "✅ Lumina: RAGエンジン準備完了（手動インデックスモード）",
-        "initFail": "❌ Lumina: RAGワーカーの初期化に失敗しました\n{{error}}",
-        "downloading": "RAGモデルをダウンロードしています...",
-        "indexingNotes": "ノートのインデックスを作成しています..."
+        "initFail": "❌ Lumina: RAGワーカーの初期化に失敗しました\n{{error}}"
       },
       "reset": {
         "name": "インデックスをリセット",
@@ -561,13 +571,7 @@
     },
     "sessionUsage": "現在のセッションの累積使用量",
     "sessionTokens": "累積: {{tokens}} トークン",
-    "sessionCost": "(約 ${{cost}})",
-    "timeout": {
-      "ttftLabel": "Time-To-First-Token Timeout (ms)",
-      "ttftDesc": "Wait time for the very first token to arrive. Set to 0 to disable.. (デフォルト: 0)",
-      "interTokenLabel": "Inter-Token Timeout (ms)",
-      "interTokenDesc": "Wait time between subsequent streaming chunks. Set to 0 to disable.. (デフォルト: 0)"
-    }
+    "sessionCost": "(約 ${{cost}})"
   },
   "common": {
     "save": "保存",
@@ -924,10 +928,10 @@
       "config": "プロジェクト設定",
       "deleteConfirmTitle": "プロジェクトを削除",
       "addProjectDesc": "新しいプロジェクトを作成し、RAGおよびチャット設定を構成します。",
-      "namePlaceholder": "Project Name",
-      "subfolderPlaceholder": "Subfolder Name",
-      "add": "Add",
-      "duplicateName": "A project with this name already exists.",
+      "namePlaceholder": "プロジェクト名",
+      "subfolderPlaceholder": "サブフォルダ名",
+      "add": "追加",
+      "duplicateName": "この名前のプロジェクトは既に存在します。",
       "defaultProjectName": "デフォルト",
       "modalTitleActive": "プロジェクト設定 (現在: {{projectName}})",
       "activeProjectModelDesc": "現在アクティブなプロジェクト (<strong>{{projectName}}</strong>) のデフォルトチャットモデルを設定します。プロジェクト設定 (RAGタブ) からも変更できます。"
@@ -937,9 +941,5 @@
       "default": "デフォルト",
       "manage": "設定で管理"
     }
-  },
-  "providerErrors": {
-    "timeoutTTFT": "Timeout: First token response took too long. ({{fallback}})",
-    "timeoutInterToken": "Timeout: Stream interrupted or hung. ({{fallback}})"
   }
 }

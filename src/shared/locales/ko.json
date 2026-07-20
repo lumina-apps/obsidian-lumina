@@ -91,6 +91,18 @@
         "name": "리랭커 모델 (선택)",
         "desc": "RAG 검색 결과를 재정렬하여 답변 연관성을 높일 모델을 선택합니다.",
         "noneSelected": "선택 안 함 (비활성화)"
+      },
+      "connectionStatus": {
+        "noConnection": "연결되지 않음",
+        "availableModelsCount": "{{models}}개 모델 사용 가능",
+        "localModelsDisabled": "로컬 모델 비활성화됨",
+        "connectedCountLabel": "{{provider}}: {{count}}개 모델",
+        "success": "연결 성공",
+        "syncFail": "동기화 실패",
+        "mcpDisconnected": "MCP 연결 해제됨",
+        "mcpConnected": "MCP 연결됨",
+        "connected": "연결됨: {{name}}",
+        "disconnected": "연결 해제됨: {{name}}"
       }
     },
     "mcp": {
@@ -433,9 +445,7 @@
         "ready": "✅ Lumina: RAG 엔진 준비 완료",
         "indexFail": "❌ Lumina: 인덱싱 실패\n{{error}}",
         "readyManual": "✅ Lumina: RAG 엔진 준비 완료 (수동 인덱싱 모드)",
-        "initFail": "❌ Lumina: RAG 워커 초기화 실패\n{{error}}",
-        "downloading": "RAG 모델 다운로드 중...",
-        "indexingNotes": "내 노트 인덱싱 중..."
+        "initFail": "❌ Lumina: RAG 워커 초기화 실패\n{{error}}"
       },
       "reset": {
         "name": "인덱스 초기화",

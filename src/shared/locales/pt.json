@@ -91,6 +91,18 @@
         "name": "Modelo Reranker (Opcional)",
         "desc": "Modelo para reordenar resultados RAG e melhorar a relevância do contexto.",
         "noneSelected": "Nenhum selecionado (Desativado)"
+      },
+      "connectionStatus": {
+        "noConnection": "Não conectado",
+        "availableModelsCount": "{{models}} modelo(s) disponível(eis)",
+        "localModelsDisabled": "Modelos locais desativados",
+        "connectedCountLabel": "{{provider}}: {{count}} modelo(s)",
+        "success": "Conexão bem-sucedida",
+        "syncFail": "Falha na sincronização",
+        "mcpDisconnected": "MCP desconectado",
+        "mcpConnected": "MCP conectado",
+        "connected": "Conectado: {{name}}",
+        "disconnected": "Desconectado: {{name}}"
       }
     },
     "mcp": {
@@ -433,9 +445,7 @@
         "ready": "✅ Lumina: Motor RAG pronto",
         "indexFail": "❌ Lumina: Falha na indexação\n{{error}}",
         "readyManual": "✅ Lumina: Motor RAG pronto (Modo de indexação manual)",
-        "initFail": "❌ Lumina: Falha na inicialização do worker RAG\n{{error}}",
-        "downloading": "Baixando modelo RAG...",
-        "indexingNotes": "Indexando minhas notas..."
+        "initFail": "❌ Lumina: Falha na inicialização do worker RAG\n{{error}}"
       },
       "reset": {
         "name": "Redefinir Índice",
@@ -561,13 +571,7 @@
     },
     "sessionUsage": "Uso acumulado da sessão atual",
     "sessionTokens": "Total: {{tokens}} tokens",
-    "sessionCost": "(aprox. ${{cost}})",
-    "timeout": {
-      "ttftLabel": "Time-To-First-Token Timeout (ms)",
-      "ttftDesc": "Wait time for the very first token to arrive. Set to 0 to disable.. (Padrão: 0)",
-      "interTokenLabel": "Inter-Token Timeout (ms)",
-      "interTokenDesc": "Wait time between subsequent streaming chunks. Set to 0 to disable.. (Padrão: 0)"
-    }
+    "sessionCost": "(aprox. ${{cost}})"
   },
   "common": {
     "save": "Salvar",
@@ -916,10 +920,10 @@
       "config": "Configurações do Projeto",
       "deleteConfirmTitle": "Excluir Projeto",
       "addProjectDesc": "Crie um novo projeto e defina as configurações de RAG e chat.",
-      "namePlaceholder": "Project Name",
-      "subfolderPlaceholder": "Subfolder Name",
-      "add": "Add",
-      "duplicateName": "A project with this name already exists.",
+      "namePlaceholder": "Nome do Projeto",
+      "subfolderPlaceholder": "Nome da Subpasta",
+      "add": "Adicionar",
+      "duplicateName": "Já existe um projeto com este nome.",
       "defaultProjectName": "Padrão",
       "defaultModel": "Modelo de chat padrão",
       "defaultModelDesc": "O modelo padrão a ser usado ao iniciar um novo chat neste projeto.",
@@ -937,9 +941,5 @@
       "default": "Padrão",
       "manage": "Gerenciar nas Configurações"
     }
-  },
-  "providerErrors": {
-    "timeoutTTFT": "Timeout: First token response took too long. ({{fallback}})",
-    "timeoutInterToken": "Timeout: Stream interrupted or hung. ({{fallback}})"
   }
 }

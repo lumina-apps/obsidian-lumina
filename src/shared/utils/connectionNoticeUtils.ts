@@ -8,34 +8,34 @@ import { t } from '../locales/helpers';
 const _t = t as (key: string, params?: Record<string, string | number>) => string;
 
 export function showConnectionSuccess(providerName: string): void {
-	new Notice(`${_t('connection.success')}: ${providerName}`);
+	new Notice(`${_t('settings.connections.connectionStatus.success')}: ${providerName}`);
 }
 
 export function showSyncFailNotice(): void {
-	new Notice(_t('connection.syncFail'));
+	new Notice(_t('settings.connections.connectionStatus.syncFail'));
 }
 
 export function showDisconnectedNotice(): void {
-	new Notice(_t('connection.mcpDisconnected'));
+	new Notice(_t('settings.connections.connectionStatus.mcpDisconnected'));
 }
 
 export function showConnectedNotice(): void {
-	new Notice(_t('connection.mcpConnected'));
+	new Notice(_t('settings.connections.connectionStatus.mcpConnected'));
 }
 
 /** Provider 연결 상태와 사용 가능한 모델 수를 문자열로 반환 */
 export function getConnectionStatus(provider: LLMProviderConfig): string {
-	if (!provider.isVerified) return _t('connections.noConnection');
+	if (!provider.isVerified) return _t('settings.connections.connectionStatus.noConnection');
 	const count = provider.availableModels?.length ?? 0;
 	if (count <= 0) {
-		return _t('connections.availableModelsCount', { models: count.toString() });
+		return _t('settings.connections.connectionStatus.availableModelsCount', { models: count.toString() });
 	}
 	const category = PROVIDER_CATEGORIES[provider.type];
 	if (category === 'local') {
-		return _t('connections.localModelsDisabled');
+		return _t('settings.connections.connectionStatus.localModelsDisabled');
 	}
 	const providerLabel = PROVIDER_LABELS[provider.type] ?? provider.type;
-	return _t('connections.connectedCountLabel', { provider: providerLabel, count: count.toString() });
+	return _t('settings.connections.connectionStatus.connectedCountLabel', { provider: providerLabel, count: count.toString() });
 }
 
 /** Provider 연결/해제 후 UI 갱신 핸들러 */
@@ -48,9 +48,9 @@ export async function refreshAfterConnectionToggle(
 	} else {
 		const providerLabel = PROVIDER_LABELS[provider.type] ?? provider.type;
 		if (provider.isVerified) {
-			new Notice(_t('connection.disconnected', { name: providerLabel }));
+			new Notice(_t('settings.connections.connectionStatus.disconnected', { name: providerLabel }));
 		} else {
-			new Notice(_t('connection.connected', { name: providerLabel }));
+			new Notice(_t('settings.connections.connectionStatus.connected', { name: providerLabel }));
 		}
 	}
 }

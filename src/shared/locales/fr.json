@@ -91,6 +91,18 @@
         "name": "Modèle de reclassement (Optionnel)",
         "desc": "Modèle pour reclasser les résultats RAG et améliorer la pertinence du contexte.",
         "noneSelected": "Aucun sélectionné (Désactivé)"
+      },
+      "connectionStatus": {
+        "noConnection": "Non connecté",
+        "availableModelsCount": "{{models}} modèle(s) disponible(s)",
+        "localModelsDisabled": "Modèles locaux désactivés",
+        "connectedCountLabel": "{{provider}} : {{count}} modèle(s)",
+        "success": "Connexion réussie",
+        "syncFail": "Échec de la synchronisation",
+        "mcpDisconnected": "MCP déconnecté",
+        "mcpConnected": "MCP connecté",
+        "connected": "Connecté : {{name}}",
+        "disconnected": "Déconnecté : {{name}}"
       }
     },
     "mcp": {
@@ -433,9 +445,7 @@
         "ready": "✅ Lumina : Moteur RAG prêt",
         "indexFail": "❌ Lumina : Échec de l'indexation\n{{error}}",
         "readyManual": "✅ Lumina : Moteur RAG prêt (Mode d'indexation manuel)",
-        "initFail": "❌ Lumina : Échec de l'initialisation du worker RAG\n{{error}}",
-        "downloading": "Téléchargement du modèle RAG...",
-        "indexingNotes": "Indexation de mes notes..."
+        "initFail": "❌ Lumina : Échec de l'initialisation du worker RAG\n{{error}}"
       },
       "reset": {
         "name": "Réinitialiser l'index",
@@ -561,13 +571,7 @@
     },
     "sessionUsage": "Utilisation cumulée de la session actuelle",
     "sessionTokens": "Total: {{tokens}} jetons",
-    "sessionCost": "(env. ${{cost}})",
-    "timeout": {
-      "ttftLabel": "Time-To-First-Token Timeout (ms)",
-      "ttftDesc": "Wait time for the very first token to arrive. Set to 0 to disable.. (Défaut: 0)",
-      "interTokenLabel": "Inter-Token Timeout (ms)",
-      "interTokenDesc": "Wait time between subsequent streaming chunks. Set to 0 to disable.. (Défaut: 0)"
-    }
+    "sessionCost": "(env. ${{cost}})"
   },
   "common": {
     "save": "Enregistrer",
@@ -916,10 +920,10 @@
       "config": "Paramètres du projet",
       "deleteConfirmTitle": "Supprimer le projet",
       "addProjectDesc": "Créez un nouveau projet et configurez les paramètres de RAG et de chat.",
-      "namePlaceholder": "Project Name",
-      "subfolderPlaceholder": "Subfolder Name",
-      "add": "Add",
-      "duplicateName": "A project with this name already exists.",
+      "namePlaceholder": "Nom du Projet",
+      "subfolderPlaceholder": "Nom du Sous-Dossier",
+      "add": "Ajouter",
+      "duplicateName": "Un projet avec ce nom existe déjà.",
       "defaultProjectName": "Défaut",
       "defaultModel": "Modèle de chat par défaut",
       "defaultModelDesc": "Le modèle par défaut à utiliser lors du démarrage d'un nouveau chat dans ce projet.",

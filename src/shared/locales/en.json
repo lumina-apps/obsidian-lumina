@@ -91,6 +91,18 @@
         "name": "Reranker Model (Optional)",
         "desc": "Select a model to rerank RAG search results and improve context relevance.",
         "noneSelected": "None Selected (Disabled)"
+      },
+      "connectionStatus": {
+        "noConnection": "Not connected",
+        "availableModelsCount": "{{models}} model(s) available",
+        "localModelsDisabled": "Local models disabled",
+        "connectedCountLabel": "{{provider}}: {{count}} model(s)",
+        "success": "Connection successful",
+        "syncFail": "Sync failed",
+        "mcpDisconnected": "MCP disconnected",
+        "mcpConnected": "MCP connected",
+        "connected": "Connected: {{name}}",
+        "disconnected": "Disconnected: {{name}}"
       }
     },
     "mcp": {
@@ -433,9 +445,7 @@
         "ready": "✅ Lumina: RAG engine ready",
         "indexFail": "❌ Lumina: Indexing failed\\n{{error}}",
         "readyManual": "✅ Lumina: RAG engine ready (Manual indexing mode)",
-        "initFail": "❌ Lumina: RAG worker initialization failed\\n{{error}}",
-        "downloading": "Downloading RAG Model...",
-        "indexingNotes": "Indexing my notes..."
+        "initFail": "❌ Lumina: RAG worker initialization failed\\n{{error}}"
       },
       "reset": {
         "name": "Reset Index",

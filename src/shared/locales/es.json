@@ -91,6 +91,18 @@
         "name": "Modelo Reranker (Opcional)",
         "desc": "Modelo para reordenar resultados RAG y mejorar la relevancia del contexto.",
         "noneSelected": "Ninguno seleccionado (Desactivado)"
+      },
+      "connectionStatus": {
+        "noConnection": "No conectado",
+        "availableModelsCount": "{{models}} modelo(s) disponible(s)",
+        "localModelsDisabled": "Modelos locales desactivados",
+        "connectedCountLabel": "{{provider}}: {{count}} modelo(s)",
+        "success": "Conexión exitosa",
+        "syncFail": "Sincronización fallida",
+        "mcpDisconnected": "MCP desconectado",
+        "mcpConnected": "MCP conectado",
+        "connected": "Conectado: {{name}}",
+        "disconnected": "Desconectado: {{name}}"
       }
     },
     "mcp": {
@@ -433,9 +445,7 @@
         "ready": "✅ Lumina: Motor RAG listo",
         "indexFail": "❌ Lumina: Error de indexación\n{{error}}",
         "readyManual": "✅ Lumina: Motor RAG listo (Modo de indexación manual)",
-        "initFail": "❌ Lumina: Error al inicializar el worker RAG\n{{error}}",
-        "downloading": "Descargando modelo RAG...",
-        "indexingNotes": "Indexando mis notas..."
+        "initFail": "❌ Lumina: Error al inicializar el worker RAG\n{{error}}"
       },
       "reset": {
         "name": "Restablecer índice",
@@ -561,13 +571,7 @@
     },
     "sessionUsage": "Uso acumulado de la sesión actual",
     "sessionTokens": "Total: {{tokens}} tokens",
-    "sessionCost": "(aprox. ${{cost}})",
-    "timeout": {
-      "ttftLabel": "Time-To-First-Token Timeout (ms)",
-      "ttftDesc": "Wait time for the very first token to arrive. Set to 0 to disable.. (Predeterminado: 0)",
-      "interTokenLabel": "Inter-Token Timeout (ms)",
-      "interTokenDesc": "Wait time between subsequent streaming chunks. Set to 0 to disable.. (Predeterminado: 0)"
-    }
+    "sessionCost": "(aprox. ${{cost}})"
   },
   "common": {
     "save": "Guardar",
@@ -916,10 +920,10 @@
       "config": "Configuración del Proyecto",
       "deleteConfirmTitle": "Eliminar Proyecto",
       "addProjectDesc": "Crea un nuevo proyecto y configura los ajustes de RAG y chat.",
-      "namePlaceholder": "Project Name",
-      "subfolderPlaceholder": "Subfolder Name",
-      "add": "Add",
-      "duplicateName": "A project with this name already exists.",
+      "namePlaceholder": "Nombre del Proyecto",
+      "subfolderPlaceholder": "Nombre de la Subcarpeta",
+      "add": "Agregar",
+      "duplicateName": "Ya existe un proyecto con este nombre.",
       "defaultProjectName": "Predeterminado",
       "defaultModel": "Modelo de chat predeterminado",
       "defaultModelDesc": "El modelo predeterminado que se utilizará al iniciar un nuevo chat en este proyecto.",

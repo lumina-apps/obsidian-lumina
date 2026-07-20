@@ -102,6 +102,19 @@ export interface TranslationSettingsConnectionsRerankerModel {
   noneSelected: string;
 }
 
+export interface TranslationSettingsConnectionsConnectionStatus {
+  noConnection: string;
+  availableModelsCount: string;
+  localModelsDisabled: string;
+  connectedCountLabel: string;
+  success: string;
+  syncFail: string;
+  mcpDisconnected: string;
+  mcpConnected: string;
+  connected: string;
+  disconnected: string;
+}
+
 export interface TranslationSettingsConnections {
   title: string;
   provider: string;
@@ -114,6 +127,7 @@ export interface TranslationSettingsConnections {
   quickActionModel: TranslationSettingsConnectionsQuickActionModel;
   taskModel: TranslationSettingsConnectionsTaskModel;
   rerankerModel: TranslationSettingsConnectionsRerankerModel;
+  connectionStatus: TranslationSettingsConnectionsConnectionStatus;
 }
 
 // MCP
@@ -482,8 +496,6 @@ export interface TranslationSettingsRagInit extends Record<string, string | unde
   indexFail?: string;
   readyManual?: string;
   initFail?: string;
-  downloading?: string;
-  indexingNotes?: string;
 }
 
 export interface TranslationSettingsRagReset {
@@ -845,12 +857,6 @@ export interface TranslationUiMessages {
     compressing: string;
     generating: string;
   };
-  cmdGraphViewTitle: string;
-  llmStatusReady: string;
-  llmStatusIndexing: string;
-  llmStatusError: string;
-  llmStatusSetup: string;
-  llmStatusNoConn: string;
 }
 
 // Graph
@@ -955,22 +961,6 @@ export interface TranslationMcpServerTools {
   query_metadata: { desc: string };
 }
 
-// summarization
-export interface TranslationSummarizationPrompt {
-  intro: string;
-  previousSummary: string;
-  instructionWithSummary: string;
-  instructionWithoutSummary: string;
-  additionalConversation: string;
-  roleUser: string;
-  roleAI: string;
-}
-
-export interface TranslationSummarization {
-  prompt: TranslationSummarizationPrompt;
-}
-
-
 export interface TranslationProjectsSettings {
   defaultProjectName: string;
   title: string;
@@ -1035,7 +1025,6 @@ export interface Translation {
   mcpServerTools: TranslationMcpServerTools;
   graph: TranslationGraph;
   canvas: TranslationCanvas;
-  summarization: TranslationSummarization;
   projects: TranslationProjects;
 }
 

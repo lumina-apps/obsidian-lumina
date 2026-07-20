@@ -91,6 +91,18 @@
         "name": "重排序模型 (可選)",
         "desc": "選擇用於對RAG搜尋結果進行重排序的模型，以提高上下文相關性。",
         "noneSelected": "未選擇 (停用)"
+      },
+      "connectionStatus": {
+        "noConnection": "未連線",
+        "availableModelsCount": "{{models}} 個模型可用",
+        "localModelsDisabled": "本地模型已停用",
+        "connectedCountLabel": "{{provider}}: {{count}} 個模型",
+        "success": "連線成功",
+        "syncFail": "同步失敗",
+        "mcpDisconnected": "MCP 已斷線",
+        "mcpConnected": "MCP 已連線",
+        "connected": "已連線: {{name}}",
+        "disconnected": "已斷線: {{name}}"
       }
     },
     "mcp": {
@@ -433,9 +445,7 @@
         "ready": "✅ Lumina: RAG 引擎準備就緒",
         "indexFail": "❌ Lumina: 索引失敗\n{{error}}",
         "readyManual": "✅ Lumina: RAG 引擎準備就緒 (手動索引模式)",
-        "initFail": "❌ Lumina: RAG Worker 初始化失敗\n{{error}}",
-        "downloading": "正在下載 RAG 模型...",
-        "indexingNotes": "正在索引我的筆記..."
+        "initFail": "❌ Lumina: RAG Worker 初始化失敗\n{{error}}"
       },
       "reset": {
         "name": "重置索引",
@@ -561,13 +571,7 @@
     },
     "sessionUsage": "目前會話累計用量",
     "sessionTokens": "累計: {{tokens}} tokens",
-    "sessionCost": "(約 ${{cost}})",
-    "timeout": {
-      "ttftLabel": "Time-To-First-Token Timeout (ms)",
-      "ttftDesc": "Wait time for the very first token to arrive. Set to 0 to disable.. (預設值: 0)",
-      "interTokenLabel": "Inter-Token Timeout (ms)",
-      "interTokenDesc": "Wait time between subsequent streaming chunks. Set to 0 to disable.. (預設值: 0)"
-    }
+    "sessionCost": "(約 ${{cost}})"
   },
   "common": {
     "save": "儲存",
@@ -916,10 +920,10 @@
       "config": "專案設定",
       "deleteConfirmTitle": "刪除專案",
       "addProjectDesc": "建立新專案並設定 RAG 和聊天設定。",
-      "namePlaceholder": "Project Name",
-      "subfolderPlaceholder": "Subfolder Name",
-      "add": "Add",
-      "duplicateName": "A project with this name already exists.",
+      "namePlaceholder": "專案名稱",
+      "subfolderPlaceholder": "子資料夾名稱",
+      "add": "新增",
+      "duplicateName": "已有相同名稱的專案存在。",
       "defaultProjectName": "預設",
       "defaultModel": "預設聊天模型",
       "defaultModelDesc": "在此專案中開始新聊天時使用的預設模型。",
@@ -937,9 +941,5 @@
       "default": "預設",
       "manage": "在設定中管理"
     }
-  },
-  "providerErrors": {
-    "timeoutTTFT": "Timeout: First token response took too long. ({{fallback}})",
-    "timeoutInterToken": "Timeout: Stream interrupted or hung. ({{fallback}})"
   }
 }
