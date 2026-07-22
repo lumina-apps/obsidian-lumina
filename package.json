@@ -39,7 +39,7 @@
 		"@codemirror/state": "^6.6.0",
 		"@codemirror/view": "^6.43.1",
 		"@huggingface/transformers": "^3.8.1",
-		"@modelcontextprotocol/sdk": "^1.29.0",
+		"@modelcontextprotocol/sdk": "^1.24.3",
 		"@orama/orama": "^3.1.18",
 		"diff": "^9.0.0",
 		"force-graph": "^1.51.4",
