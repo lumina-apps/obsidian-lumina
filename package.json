@@ -14,6 +14,10 @@
 	"keywords": [],
 	"author": "",
 	"license": "GPL-3.0-only",
+	"overrides": {
+		"@hono/node-server": ">=2.0.5",
+		"sharp": ">=0.35.0"
+	},
 	"devDependencies": {
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
 		"@testing-library/jest-dom": "^6.9.1",
