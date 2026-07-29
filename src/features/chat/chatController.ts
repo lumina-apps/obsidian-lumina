@@ -15,7 +15,6 @@ import {
 	isLoading,
 	getMessages,
 	messages,
-	currentSessionId,
 } from '../../core/store/chatStore';
 import { get } from 'svelte/store';
 import type { UIChatMessage, ChatSession, ContextAttachment } from '../../shared/types/chat.types';
