@@ -131,7 +131,7 @@
           "desc": "Token, den externe Clients zur Verbindung benötigen. Halten Sie diesen geheim.",
           "regenerate": "Neu generieren"
         },
-        "guide": "SSE: http://localhost:{{port}}/sse\nAuth: Header \"Authorization: Bearer <token>\"",
+        "guide": "http://localhost:{{port}}/sse\nAuth: Header \"Authorization: Bearer <token>\"",
         "maxRead": {
           "name": "Read Max. Zeichen",
           "desc": "Max. Zeichen pro Datei-Lesevorgang (Standard: 20000)"

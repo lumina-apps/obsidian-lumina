@@ -131,7 +131,7 @@
           "desc": "Jeton requis pour la connexion des clients externes. Gardez-le confidentiel.",
           "regenerate": "Régénérer"
         },
-        "guide": "SSE : http://localhost:{{port}}/sse\nAuth : Header \"Authorization: Bearer <token>\"",
+        "guide": "http://localhost:{{port}}/sse\nAuth : Header \"Authorization: Bearer <token>\"",
         "maxRead": {
           "name": "Read - Caractères max",
           "desc": "Caractères max retournés par lecture de fichier (Défaut : 20000)"

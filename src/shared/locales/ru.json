@@ -131,7 +131,7 @@
           "desc": "Токен, необходимый для подключения внешних клиентов. Держите его в секрете.",
           "regenerate": "Перевыпустить"
         },
-        "guide": "SSE: http://localhost:{{port}}/sse\nAuth: Заголовок \"Authorization: Bearer <token>\"",
+        "guide": "http://localhost:{{port}}/sse\nAuth: Заголовок \"Authorization: Bearer <token>\"",
         "maxRead": {
           "name": "Read - Макс. символов",
           "desc": "Макс. символов при чтении файла (По умолчанию: 20000)"

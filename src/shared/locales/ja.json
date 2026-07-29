@@ -131,7 +131,7 @@
           "desc": "外部クライアントが接続する際に必要なトークンです。外部に公開しないでください。",
           "regenerate": "再発行"
         },
-        "guide": "SSE: http://localhost:{{port}}/sse\n認証: ヘッダーに Authorization: Bearer <トークン>",
+        "guide": "http://localhost:{{port}}/sse\n認証: ヘッダーに Authorization: Bearer <トークン>",
         "maxRead": {
           "name": "Read 最大文字数",
           "desc": "ファイル読み取り時の最大返却文字数 (デフォルト: 20000)"

@@ -144,7 +144,7 @@
           "desc": "외부 클라이언트가 접속할 때 필요한 토큰입니다. 외부에 노출하지 마세요.",
           "regenerate": "재발급"
         },
-        "guide": "SSE: http://localhost:{{port}}/sse\n인증: Header에 Authorization: Bearer <토큰> 추가 ",
+        "guide": "http://localhost:{{port}}/sse\n인증: Header에 Authorization: Bearer <토큰> 추가 ",
         "maxRead": {
           "name": "읽기(Read) 최대 글자 수",
           "desc": "파일 읽기 시 한 번에 반환할 최대 글자 수 (기본값: 20000)"

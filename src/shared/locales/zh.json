@@ -131,7 +131,7 @@
           "desc": "外部客户端连接时所需的令牌。请勿公开分享此令牌。",
           "regenerate": "重新生成"
         },
-        "guide": "SSE: http://localhost:{{port}}/sse\n认证: 请求头添加 \"Authorization: Bearer <token>\" ",
+        "guide": "http://localhost:{{port}}/sse\n认证: 请求头添加 \"Authorization: Bearer <token>\" ",
         "maxRead": {
           "name": "Read 最大字符数",
           "desc": "单次读取文件返回的最大字符数 (默认: 20000)"

@@ -131,7 +131,7 @@
           "desc": "外部用戶端連線時所需的權杖。請勿公開分享此權杖。",
           "regenerate": "重新產生"
         },
-        "guide": "SSE: http://localhost:{{port}}/sse\n認證: 請求頭加入 \"Authorization: Bearer <token>\" ",
+        "guide": "http://localhost:{{port}}/sse\n認證: 請求頭加入 \"Authorization: Bearer <token>\" ",
         "maxRead": {
           "name": "Read 最大字元數",
           "desc": "單次讀取檔案回傳的最大字元數 (預設: 20000)"

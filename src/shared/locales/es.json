@@ -131,7 +131,7 @@
           "desc": "Token necesario para que los clientes externos se conecten. Mantén este valor en privado.",
           "regenerate": "Regenerar"
         },
-        "guide": "SSE: http://localhost:{{port}}/sse\nAuth: Header \"Authorization: Bearer <token>\" ",
+        "guide": "http://localhost:{{port}}/sse\nAuth: Header \"Authorization: Bearer <token>\" ",
         "maxRead": {
           "name": "Read - Máx. de caracteres",
           "desc": "Máx. de caracteres devueltos por lectura de archivo (Predeterminado: 20000)"
