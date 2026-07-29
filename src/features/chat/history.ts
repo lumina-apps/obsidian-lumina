@@ -84,7 +84,7 @@ interface HistoryFrontmatter {
 
 /** frontmatter 블록(파일 첫 번째 --- ... ---) 내에서만 키를 찾는다. */
 function parseFrontmatterBlock(text: string, key: string): string | undefined {
-	const fmMatch = text.match(/^---\n([\s\S]*?)\n---/m);
+	const fmMatch = text.match(/^---\r?\n([\s\S]*?)\r?\n---/m);
 	if (!fmMatch) return undefined;
 	const fmText = fmMatch[1];
 	const match = fmText.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'));

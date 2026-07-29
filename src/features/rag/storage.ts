@@ -28,7 +28,8 @@ export function getPluginDir(app: App): string {
 	const base = getBasePath(app);
 	const configDir = app.vault.configDir;
 	if (Platform.isDesktop && nodePath) {
-		return nodePath.join(base, configDir, 'plugins', PLUGIN_ID);
+		// path.join은 Windows에서 백슬래시 반환 → 슬래시로 일괄 변환
+		return nodePath.join(base, configDir, 'plugins', PLUGIN_ID).replace(/\\/g, '/');
 	}
 	return `${base}/${configDir}/plugins/${PLUGIN_ID}`;
 }
