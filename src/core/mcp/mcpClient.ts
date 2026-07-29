@@ -1,6 +1,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { requestUrl } from 'obsidian';
 import { debugLogger } from '../../shared/debugLogger';
 import type { McpServerConfig } from '../../shared/types/settings.types';
 import { SafeJsonSchemaValidator } from './safeValidator';
@@ -62,13 +63,11 @@ export class LuminaMcpClient {
 	}
 
 	/**
-	 * Connect via SSE transport using the raw fetch API.
+	 * Connect via SSE transport using Obsidian's requestUrl API.
 	 * 
 	 * MCP SSE protocol:
-	 * 1. GET to SSE endpoint → server streams `event: endpoint` / `data: <session_url>`
+	 * 1. GET to SSE endpoint → server responds with `event: endpoint` / `data: <session_url>`
 	 * 2. All subsequent POSTs go to <base_url> + <session_url>
-	 * 
-	 * We use AbortController to cancel the SSE stream after we receive the endpoint.
 	 */
 	private async _connectSse(urlObj: URL): Promise<void> {
 		const authHeaders: Record<string, string> = {};
@@ -76,25 +75,22 @@ export class LuminaMcpClient {
 			authHeaders['Authorization'] = `Bearer ${this.config.authToken}`;
 		}
 
-		// Step 1: GET to SSE endpoint with streaming response
-		// eslint-disable-next-line @typescript-eslint/no-require-imports, no-restricted-globals
-		const response = await fetch(urlObj.href, {
+		// Step 1: GET to SSE endpoint using Obsidian's requestUrl
+		const response = await requestUrl({
+			url: urlObj.href,
+			method: 'GET',
 			headers: {
 				'Accept': 'text/event-stream',
 				...authHeaders,
 			},
 		});
 
-		if (!response.ok) {
-			throw new Error(`SSE connection failed: ${response.status} ${response.statusText}`);
+		if (response.status < 200 || response.status >= 300) {
+			throw new Error(`SSE connection failed: ${response.status}`);
 		}
 
-		if (!response.body) {
-			throw new Error('SSE connection failed: no response body (ReadableStream not supported)');
-		}
-
-		// Step 2: Parse SSE stream to get the session endpoint URL
-		const sessionUrl = await this._parseSseEndpoint(response.body, urlObj);
+		// Step 2: Parse SSE text to get the session endpoint URL
+		const sessionUrl = this._parseSseEndpoint(response.text, urlObj);
 
 		// Step 3: Pass session URL directly to SSEClientTransport.
 		// SSEClientTransport will POST to this URL for all messages.
@@ -108,56 +104,33 @@ export class LuminaMcpClient {
 	}
 
 	/**
-	 * Parse SSE stream to extract `event: endpoint` / `data: <url>`.
+	 * Parse SSE text to extract `event: endpoint` / `data: <url>`.
 	 * Returns the resolved session URL.
 	 */
-	private async _parseSseEndpoint(
-		body: ReadableStream<Uint8Array>,
-		baseUrl: URL
-	): Promise<URL> {
-		const reader = body.getReader();
-		const decoder = new TextDecoder();
-		let buffer = '';
+	private _parseSseEndpoint(body: string, baseUrl: URL): URL {
+		// Split by double newlines (SSE event boundary)
+		const events = body.split('\n\n');
 
-		try {
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) break;
-
-				buffer += decoder.decode(value, { stream: true });
-				
-				// Split by double newlines (SSE event boundary)
-				const events = buffer.split('\n\n');
-				// Keep the last (potentially incomplete) chunk in buffer
-				buffer = events.pop() || '';
-
-				for (const event of events) {
-					const eventType = this._parseSseField(event, 'event');
-					const data = this._parseSseField(event, 'data');
-					
-					if (eventType === 'endpoint' && data) {
-						try {
-							const endpointUrl = new URL(data.trim(), baseUrl.origin);
-							void reader.cancel(); // Stop reading SSE stream
-							return endpointUrl;
-						} catch {
-							// Try as absolute URL
-							try {
-								const endpointUrl = new URL(data.trim());
-								void reader.cancel();
-								return endpointUrl;
-							} catch {
-								// Ignore malformed URLs
-							}
-						}
+		for (const event of events) {
+			const eventType = this._parseSseField(event, 'event');
+			const data = this._parseSseField(event, 'data');
+			
+			if (eventType === 'endpoint' && data) {
+				// Try as relative URL first
+				try {
+					return new URL(data.trim(), baseUrl.origin);
+				} catch {
+					// Try as absolute URL
+					try {
+						return new URL(data.trim());
+					} catch {
+						// Ignore malformed URLs
 					}
 				}
 			}
-		} finally {
-			reader.releaseLock();
 		}
 
-		throw new Error('SSE stream ended without receiving an endpoint event');
+		throw new Error('SSE response ended without receiving an endpoint event');
 	}
 
 	/**
