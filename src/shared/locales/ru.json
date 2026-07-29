@@ -157,7 +157,7 @@
         "sectionTitle": "Внешние MCP-серверы (Клиентские подключения)",
         "desc": "Подключите внешние серверы Model Context Protocol (MCP), чтобы использовать дополнительные инструменты в чате.",
         "sseUrl": {
-          "name": "SSE URL",
+          "name": "Server URL",
           "desc": "например, http://localhost:8080/sse"
         },
         "token": {

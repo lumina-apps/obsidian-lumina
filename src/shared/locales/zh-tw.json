@@ -157,7 +157,7 @@
         "sectionTitle": "外部 MCP 伺服器 (用戶端連線)",
         "desc": "連接外部 Model Context Protocol (MCP) 伺服器以在對話中使用其他工具。",
         "sseUrl": {
-          "name": "SSE URL",
+          "name": "Server URL",
           "desc": "例如 http://localhost:8080/sse"
         },
         "token": {

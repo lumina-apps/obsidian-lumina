@@ -23,24 +23,7 @@ export function renderMcpServerCard(tab: LuminaSettingTab, el: HTMLElement, serv
 	nameSetting.settingEl.addClass('mcp-server-card__name');
 	nameSetting.settingEl.setCssStyles({ gridColumn: '1', gridRow: '1' });
 
-	// 전송 방식 선택
-	const transportSetting = new Setting(card)
-		.setName(t('settings.mcp.transport'))
-		.setDesc(t('settings.mcp.transportDesc'));
-	transportSetting.addDropdown(dropdown => {
-		dropdown.addOption('sse', t('settings.mcp.transportSse'));
-		dropdown.addOption('streamable-http', t('settings.mcp.transportStreamableHttp'));
-		dropdown.setValue(server.transport);
-		dropdown.onChange(async (val) => {
-			server.transport = val as 'sse' | 'streamable-http';
-			await tab.saveAndSync();
-			tab.refreshDisplay();
-		});
-	});
-	transportSetting.settingEl.addClass('mcp-server-card__transport');
-	transportSetting.settingEl.setCssStyles({ gridColumn: '2', gridRow: '1' });
-
-	// sse URL
+	// Server URL (Streamable HTTP → SSE 자동 폴백)
 	const urlSetting = new Setting(card)
 		.setName(t('settings.mcp.externalServer.sseUrl.name'))
 		.setDesc(t('settings.mcp.externalServer.sseUrl.desc'));

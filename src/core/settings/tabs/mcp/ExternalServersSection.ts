@@ -25,7 +25,7 @@ export function renderExternalServersSection(tab: LuminaSettingTab, el: HTMLElem
 					const newServer: McpServerConfig = {
 						id: crypto.randomUUID(),
 						name: 'New Server',
-						transport: 'sse',
+						transport: 'streamable-http',
 						url: '',
 						enabled: false,
 						status: 'disconnected',

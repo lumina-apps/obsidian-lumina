@@ -157,7 +157,7 @@
         "sectionTitle": "外部MCPサーバー（クライアント接続）",
         "desc": "Model Context Protocol (MCP) を通じて外部ツールを接続し、チャットで追加のツールを使用できるように設定します。",
         "sseUrl": {
-          "name": "SSE URL",
+          "name": "Server URL",
           "desc": "例: http://localhost:8080/sse"
         },
         "token": {

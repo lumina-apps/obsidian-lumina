@@ -39,22 +39,26 @@ export class LuminaMcpClient {
 		if (!url) throw new Error(`URL is required for transport (Server: ${this.config.name})`);
 		const urlObj = new URL(url);
 		
-		if (this.config.transport === 'sse') {
-			// Direct SSE handshake using fetch API (avoids eventsource library header issues)
+		// 1. Streamable HTTP 먼저 시도 (대부분의 최신 MCP 서버)
+		try {
+			await this._connectStreamableHttp(urlObj);
+		} catch {
+			// 2. 실패 시 SSE로 폴백 (레거시 SSE-only 서버 대응)
 			await this._connectSse(urlObj);
-		} else {
-			// StreamableHTTP: POST directly (standard for most servers)
-			const opts: import('@modelcontextprotocol/sdk/client/streamableHttp.js').StreamableHTTPClientTransportOptions = {};
-			if (this.config.authToken) {
-				opts.requestInit = {
-					headers: { Authorization: `Bearer ${this.config.authToken}` }
-				};
-			}
-			this.transport = new StreamableHTTPClientTransport(urlObj, opts);
-			await this.client.connect(this.transport);
 		}
 
 		await this.refreshTools();
+	}
+
+	private async _connectStreamableHttp(urlObj: URL): Promise<void> {
+		const opts: import('@modelcontextprotocol/sdk/client/streamableHttp.js').StreamableHTTPClientTransportOptions = {};
+		if (this.config.authToken) {
+			opts.requestInit = {
+				headers: { Authorization: `Bearer ${this.config.authToken}` }
+			};
+		}
+		this.transport = new StreamableHTTPClientTransport(urlObj, opts);
+		await this.client.connect(this.transport);
 	}
 
 	/**

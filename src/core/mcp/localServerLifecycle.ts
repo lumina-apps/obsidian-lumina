@@ -65,7 +65,7 @@ export class LocalServerLifecycle {
 
 		const localSSEUrl = `http://localhost:${mcpSettings.serverPort}/sse`;
 		const userHasLocalConfig = configs.some(
-			(c) => c.enabled && c.transport === 'sse' && c.url === localSSEUrl,
+			(c) => c.enabled && c.url === localSSEUrl,
 		);
 
 		if (!this.server || !mcpSettings.clientToolsEnabled || userHasLocalConfig) {

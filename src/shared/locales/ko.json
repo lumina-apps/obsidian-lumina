@@ -170,7 +170,7 @@
         "sectionTitle": "외부 MCP 서버 (클라이언트 연결)",
         "desc": "Model Context Protocol (MCP)을 통해 외부 도구를 연결하여 대화 시 사용할 수 있도록 설정합니다.",
         "sseUrl": {
-          "name": "SSE URL",
+          "name": "Server URL",
           "desc": "예: http://localhost:8080/sse"
         },
         "token": {

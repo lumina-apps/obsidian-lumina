@@ -170,7 +170,7 @@
         "sectionTitle": "External MCP Servers (Client Connection)",
         "desc": "Connect external Model Context Protocol (MCP) servers to use additional tools in chat.",
         "sseUrl": {
-          "name": "SSE URL",
+          "name": "Server URL",
           "desc": "e.g. http://localhost:8080/sse"
         },
         "token": {
