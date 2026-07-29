@@ -77,7 +77,7 @@ export class LocalServerLifecycle {
 		const localConfig: McpServerConfig = {
 			id: LOCAL_MCP_CLIENT_ID,
 			name: 'Lumina Built-in',
-			transport: 'sse',
+			transport: 'streamable-http',
 			url: localSSEUrl,
 			authToken: mcpSettings.serverAuthToken,
 			enabled: true,

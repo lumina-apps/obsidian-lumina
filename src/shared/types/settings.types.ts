@@ -117,7 +117,7 @@ export type PluginLanguage = 'en' | 'ko' | 'ja' | 'zh' | 'zh-tw' | 'es' | 'pt' |
 
 // ─── MCP ──────────────────────────────────────────
 
-export type McpTransportType = 'sse';
+export type McpTransportType = 'sse' | 'streamable-http';
 
 export interface McpSettings {
 	servers: McpServerConfig[];

@@ -1,5 +1,6 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { debugLogger } from '../../shared/debugLogger';
 import type { McpServerConfig } from '../../shared/types/settings.types';
 import { SafeJsonSchemaValidator } from './safeValidator';
@@ -18,7 +19,7 @@ export interface McpTool {
 
 export class LuminaMcpClient {
 	private client: Client;
-	private transport: StreamableHTTPClientTransport | null = null;
+	private transport: StreamableHTTPClientTransport | SSEClientTransport | null = null;
 	public config: McpServerConfig;
 	public availableTools: McpTool[] = [];
 
@@ -35,21 +36,140 @@ export class LuminaMcpClient {
 
 	async connect(): Promise<void> {
 		let url = this.config.url;
-		if (!url) throw new Error(`URL is required for SSE transport (Server: ${this.config.name})`);
+		if (!url) throw new Error(`URL is required for transport (Server: ${this.config.name})`);
 		const urlObj = new URL(url);
-		let opts: import('@modelcontextprotocol/sdk/client/streamableHttp.js').StreamableHTTPClientTransportOptions = {};
 		
-		if (this.config.authToken) {
-			const headers = { Authorization: `Bearer ${this.config.authToken}` };
-			opts = {
-				requestInit: { headers }
-			};
+		if (this.config.transport === 'sse') {
+			// Direct SSE handshake using fetch API (avoids eventsource library header issues)
+			await this._connectSse(urlObj);
+		} else {
+			// StreamableHTTP: POST directly (standard for most servers)
+			const opts: import('@modelcontextprotocol/sdk/client/streamableHttp.js').StreamableHTTPClientTransportOptions = {};
+			if (this.config.authToken) {
+				opts.requestInit = {
+					headers: { Authorization: `Bearer ${this.config.authToken}` }
+				};
+			}
+			this.transport = new StreamableHTTPClientTransport(urlObj, opts);
+			await this.client.connect(this.transport);
 		}
-		
-		this.transport = new StreamableHTTPClientTransport(urlObj, opts);
 
-		await this.client.connect(this.transport);
 		await this.refreshTools();
+	}
+
+	/**
+	 * Connect via SSE transport using the raw fetch API.
+	 * 
+	 * MCP SSE protocol:
+	 * 1. GET to SSE endpoint → server streams `event: endpoint` / `data: <session_url>`
+	 * 2. All subsequent POSTs go to <base_url> + <session_url>
+	 * 
+	 * We use AbortController to cancel the SSE stream after we receive the endpoint.
+	 */
+	private async _connectSse(urlObj: URL): Promise<void> {
+		const authHeaders: Record<string, string> = {};
+		if (this.config.authToken) {
+			authHeaders['Authorization'] = `Bearer ${this.config.authToken}`;
+		}
+
+		// Step 1: GET to SSE endpoint with streaming response
+		const response = await fetch(urlObj.href, {
+			headers: {
+				'Accept': 'text/event-stream',
+				...authHeaders,
+			},
+		});
+
+		if (!response.ok) {
+			throw new Error(`SSE connection failed: ${response.status} ${response.statusText}`);
+		}
+
+		if (!response.body) {
+			throw new Error('SSE connection failed: no response body (ReadableStream not supported)');
+		}
+
+		// Step 2: Parse SSE stream to get the session endpoint URL
+		const sessionUrl = await this._parseSseEndpoint(response.body, urlObj);
+
+		// Step 3: Pass session URL directly to SSEClientTransport.
+		// SSEClientTransport will POST to this URL for all messages.
+		const opts: import('@modelcontextprotocol/sdk/client/sse.js').SSEClientTransportOptions = {
+			requestInit: {
+				headers: authHeaders,
+			},
+		};
+		this.transport = new SSEClientTransport(sessionUrl, opts);
+		await this.client.connect(this.transport);
+	}
+
+	/**
+	 * Parse SSE stream to extract `event: endpoint` / `data: <url>`.
+	 * Returns the resolved session URL.
+	 */
+	private async _parseSseEndpoint(
+		body: ReadableStream<Uint8Array>,
+		baseUrl: URL
+	): Promise<URL> {
+		const reader = body.getReader();
+		const decoder = new TextDecoder();
+		let buffer = '';
+
+		try {
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+
+				buffer += decoder.decode(value, { stream: true });
+				
+				// Split by double newlines (SSE event boundary)
+				const events = buffer.split('\n\n');
+				// Keep the last (potentially incomplete) chunk in buffer
+				buffer = events.pop() || '';
+
+				for (const event of events) {
+					const eventType = this._parseSseField(event, 'event');
+					const data = this._parseSseField(event, 'data');
+					
+					if (eventType === 'endpoint' && data) {
+						try {
+							const endpointUrl = new URL(data.trim(), baseUrl.origin);
+							reader.cancel(); // Stop reading SSE stream
+							return endpointUrl;
+						} catch {
+							// Try as absolute URL
+							try {
+								const endpointUrl = new URL(data.trim());
+								reader.cancel();
+								return endpointUrl;
+							} catch {
+								// Ignore malformed URLs
+							}
+						}
+					}
+				}
+			}
+		} finally {
+			reader.releaseLock();
+		}
+
+		throw new Error('SSE stream ended without receiving an endpoint event');
+	}
+
+	/**
+	 * Parse a single field line from an SSE event.
+	 * SSE format: "field:value" or "field: value"
+	 */
+	private _parseSseField(eventText: string, field: string): string | null {
+		const lines = eventText.split('\n');
+		for (const line of lines) {
+			if (line.startsWith(`${field}:`)) {
+				return line.slice(field.length + 1).trim();
+			}
+			if (line.startsWith(`${field}: `)) {
+				return line.slice(field.length + 2).trim();
+			}
+		}
+		return null;
 	}
 
 	async refreshTools(): Promise<void> {

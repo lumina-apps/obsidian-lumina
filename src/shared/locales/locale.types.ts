@@ -228,6 +228,9 @@ export interface TranslationSettingsMcp {
   addServer: string;
   serverName: string;
   transport: string;
+  transportDesc: string;
+  transportSse: string;
+  transportStreamableHttp: string;
   enableDesc: string;
   deleteServer: string;
   emptyServers: string;
