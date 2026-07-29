@@ -1,4 +1,5 @@
 import { normalizePath, type App, TFolder, TFile } from 'obsidian';
+import { t } from '../../shared/locales/helpers';
 import type { ChatSession, UIChatMessage } from '../../shared/types/chat.types';
 import type { LLMProviderConfig } from '../../shared/types/settings.types';
 /** 특정 디렉토리 내 .md 파일만 가져온다 (vault 전체 스캔 방지) */
@@ -105,7 +106,7 @@ export async function loadSessionsList(app: App, basePath: string): Promise<Chat
 					const modelMatch = content.match(/^model:\s*(.+)$/m);
 					const providerMatch = content.match(/^provider:\s*(.+)$/m);
 					
-					let parsedTitle = '새 대화';
+					let parsedTitle = t('chat.newChat');
 					if (titleMatch) {
 						try { parsedTitle = JSON.parse(titleMatch[1]) as string; } catch { parsedTitle = titleMatch[1].trim(); }
 					}
@@ -125,7 +126,7 @@ export async function loadSessionsList(app: App, basePath: string): Promise<Chat
 		if (fm && fm.id) {
 			sessions.push({
 				id: fm.id,
-				title: fm.title || '새 대화',
+				title: fm.title || t('chat.newChat'),
 				createdAt: new Date(fm.created || '').getTime(),
 				updatedAt: new Date(fm.updated || '').getTime(),
 				providerId: fm.provider || '',
@@ -290,7 +291,7 @@ export async function exportSessionToMarkdown(app: App, session: ChatSession): P
 
 export function generateTitle(messages: UIChatMessage[]): string {
 	const first = messages.find(m => m.role === 'user');
-	if (!first) return '새 대화';
+	if (!first) return t('chat.newChat');
 	return first.content.slice(0, 40) + (first.content.length > 40 ? '…' : '');
 }
 
@@ -301,29 +302,35 @@ export async function generateTitleWithLLM(
 	_settings: import('../../core/settings/settings.types').LuminaSettings
 ): Promise<string> {
 	const first = messages.find(m => m.role === 'user');
-	if (!first || !first.content.trim()) return '새 대화';
+	if (!first || !first.content.trim()) return t('chat.newChat');
 
 	// Prompt Injection 방지: 입력을 200자로 제한하고 큰따옴표 이스케이프
 	const safeContent = first.content
 		.slice(0, 200)
 		.replace(/"/g, '\\"');
-	const prompt = `다음 사용자의 메시지를 바탕으로 대화의 주제를 3~5단어 이내의 매우 짧은 제목으로 요약해줘. 따옴표나 부연 설명 없이 오직 제목 텍스트만 출력해야 해.\n\n사용자 메시지: "${safeContent}"`;
+	const prompt = `Summarize the following user message into a very short title in 3-5 words. Output only the title text, no quotes, no explanations.\n\nUser message: "${safeContent}"`;
 
 	try {
 		const { createProvider } = await import('../../core/llm-providers/index');
 		const provider = createProvider(providerConfig);
 		const response = await provider.chat(
 			[
-				{ role: 'system', content: 'You are an AI that summarizes conversation titles.' },
+				{ role: 'system', content: 'You are a title generator. Reply with ONLY the title in 3-5 words, in the same language as the user\'s message. No explanations, no thinking tags, no markdown. Just the title text.' },
 				{ role: 'user', content: prompt }
 			],
 			{
 				model: modelId,
-				temperature: 0.3,
-				maxOutputTokens: 20
+				temperature: 0,
+				maxOutputTokens: 2000
 			}
 		);
-		const title = sanitizeDisplayContent(response.content).replace(/["']/g, '').trim();
+		// reasoning 모델 대응: </think> 이후 텍스트만 추출
+		let rawContent = response.content;
+		const thinkEndIdx = rawContent.lastIndexOf('</think>');
+		if (thinkEndIdx !== -1) {
+			rawContent = rawContent.substring(thinkEndIdx + 8).trim();
+		}
+		const title = sanitizeDisplayContent(rawContent).replace(/["']/g, '').trim();
 		return title || generateTitle(messages);
 	} catch (e) {
 		console.warn('Lumina: Failed to generate title with LLM, falling back to text extraction.', e);

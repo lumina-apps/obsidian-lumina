@@ -34,6 +34,7 @@ export class ChatController {
 	private lastProviderId: string = '';
 	private lastModelId: string = '';
 	private _unsubMessages: (() => void) | null = null;
+	private _isSaving = false;
 
 	constructor(plugin: LuminaPlugin) {
 		this.app = plugin.app;
@@ -52,7 +53,7 @@ export class ChatController {
 					window.clearTimeout(this.autoSaveTimeout);
 				}
 				this.autoSaveTimeout = window.setTimeout(() => {
-					this.history.saveHistory(this.lastProviderId, this.lastModelId).catch((e: unknown) => {
+					this.saveHistory(this.lastProviderId, this.lastModelId).catch((e: unknown) => {
 						debugLogger.logError('history', e instanceof Error ? e : new Error(String(e)));
 					});
 				}, 3000);
@@ -252,7 +253,13 @@ export class ChatController {
 	// ─── History Methods (Delegated to ChatHistoryController) ─────────────
 
 	async saveHistory(providerId: string, modelId: string): Promise<void> {
-		return this.history.saveHistory(providerId, modelId);
+		if (this._isSaving) return;
+		this._isSaving = true;
+		try {
+			await this.history.saveHistory(providerId, modelId);
+		} finally {
+			this._isSaving = false;
+		}
 	}
 
 	async fetchSessions(): Promise<ChatSession[]> {

@@ -68,14 +68,28 @@ export class ChatHistoryController {
 			if (taskProviderId && taskModelId) {
 				const providerConfig = providers.find(p => p.id === taskProviderId);
 				if (providerConfig) {
-					title = await generateTitleWithLLM(msgs, providerConfig, taskModelId, this.plugin.settings);
-					currentSessionTitle.set(title);
-				} else {
+					try {
+						title = await generateTitleWithLLM(msgs, providerConfig, taskModelId, this.plugin.settings);
+					} catch {
+						// task LLM 실패 시 폴백 시도
+					}
+				}
+			}
+			// task 모델이 없거나 task 모델 생성에 실패한 경우 메인 LLM으로 시도
+			if (!title) {
+				const mainProviderConfig = providers.find(p => p.id === providerId);
+				if (mainProviderConfig) {
+					try {
+						title = await generateTitleWithLLM(msgs, mainProviderConfig, modelId, this.plugin.settings);
+					} catch {
+						// 메인 LLM 실패 시 텍스트 폴백
+					}
+				}
+				if (!title) {
 					title = generateTitle(msgs);
 				}
-			} else {
-				title = generateTitle(msgs);
 			}
+			currentSessionTitle.set(title);
 		}
 
 		// 히스토리 저장 전 assistant 메시지에서 생각 과정(<think> 태그)을 제거
