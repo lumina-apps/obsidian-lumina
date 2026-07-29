@@ -77,6 +77,7 @@ export class LuminaMcpClient {
 		}
 
 		// Step 1: GET to SSE endpoint with streaming response
+		// eslint-disable-next-line @typescript-eslint/no-require-imports, no-restricted-globals
 		const response = await fetch(urlObj.href, {
 			headers: {
 				'Accept': 'text/event-stream',
@@ -137,13 +138,13 @@ export class LuminaMcpClient {
 					if (eventType === 'endpoint' && data) {
 						try {
 							const endpointUrl = new URL(data.trim(), baseUrl.origin);
-							reader.cancel(); // Stop reading SSE stream
+							void reader.cancel(); // Stop reading SSE stream
 							return endpointUrl;
 						} catch {
 							// Try as absolute URL
 							try {
 								const endpointUrl = new URL(data.trim());
-								reader.cancel();
+								void reader.cancel();
 								return endpointUrl;
 							} catch {
 								// Ignore malformed URLs
