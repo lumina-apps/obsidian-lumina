@@ -46,13 +46,13 @@ export async function saveSession(app: App, session: ChatSession, basePath: stri
 		return cache?.frontmatter?.id === session.id;
 	});
 
-	// 캐시 미동기 대비 텍스트 폴백
+	// 캐시 미동기 대비 텍스트 폴백 (frontmatter 블록 내에서만 id 검색)
 	if (!existingFile) {
 		for (const f of files) {
 			try {
 				const text = await app.vault.cachedRead(f);
-				const idMatch = text.match(/^id:\s*(.+)$/m);
-				if (idMatch && idMatch[1].trim() === session.id) {
+				const idVal = parseFrontmatterBlock(text, 'id');
+				if (idVal === session.id) {
 					existingFile = f;
 					break;
 				}
@@ -73,6 +73,79 @@ export async function saveSession(app: App, session: ChatSession, basePath: stri
 // ─── Load & Delete ─────────────────────────────────────────────────────────────
 
 /** 히스토리 폴더의 모든 .md 파일에서 세션 메타데이터 목록 반환 */
+interface HistoryFrontmatter {
+	id?: string;
+	title?: string;
+	created?: string | number;
+	updated?: string | number;
+	provider?: string;
+	model?: string;
+}
+
+/** frontmatter 블록(파일 첫 번째 --- ... ---) 내에서만 키를 찾는다. */
+function parseFrontmatterBlock(text: string, key: string): string | undefined {
+	const fmMatch = text.match(/^---\n([\s\S]*?)\n---/m);
+	if (!fmMatch) return undefined;
+	const fmText = fmMatch[1];
+	const match = fmText.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'));
+	return match?.[1]?.trim();
+}
+
+/**
+ * 파일 내용에서 frontmatter 블록(첫 번째 --- ... ---)만 추출하여 파싱한다.
+ * frontmatter 블록이 없거나 파싱해도 id를 찾지 못한 경우 null 반환.
+ */
+function parseFrontmatterFromContent(content: string, file: TFile): HistoryFrontmatter | null {
+	const idVal = parseFrontmatterBlock(content, 'id');
+	if (!idVal) return null;
+
+	const titleVal = parseFrontmatterBlock(content, 'title');
+	const createdVal = parseFrontmatterBlock(content, 'created');
+	const updatedVal = parseFrontmatterBlock(content, 'updated');
+	const modelVal = parseFrontmatterBlock(content, 'model');
+	const providerVal = parseFrontmatterBlock(content, 'provider');
+
+	let parsedTitle = t('chat.newChat');
+	if (titleVal) {
+		try { parsedTitle = JSON.parse(titleVal) as string; } catch { parsedTitle = titleVal; }
+	}
+
+	return {
+		id: idVal,
+		title: parsedTitle,
+		created: createdVal ?? file.stat.ctime,
+		updated: updatedVal ?? file.stat.mtime,
+		model: modelVal ?? '',
+		provider: providerVal ?? '',
+	};
+}
+
+/** 주어진 값에서 유효한 timestamp를 반환한다. 없으면 fallback 값 사용 */
+function parseTimestamp(value: string | number | undefined, fallback: number): number {
+	if (value == null) return fallback;
+	if (typeof value === 'number') return value;
+	const parsed = new Date(value).getTime();
+	return isNaN(parsed) ? fallback : parsed;
+}
+
+/**
+ * 파일명에서 YYMMDD_HHMM - title.md 패턴을 파싱하여 timestamp를 추출한다.
+ * 실패하면 null 반환.
+ */
+function parseTimestampFromFilename(filename: string): number | null {
+	const match = filename.match(/^(\d{2})(\d{2})(\d{2})_(\d{2})(\d{2})\s*-\s*.+\.md$/);
+	if (!match) return null;
+	const [, yy, mm, dd, hh, min] = match;
+	const date = new Date(
+		Number(`20${yy}`),
+		Number(mm) - 1,
+		Number(dd),
+		Number(hh),
+		Number(min),
+	);
+	return isNaN(date.getTime()) ? null : date.getTime();
+}
+
 export async function loadSessionsList(app: App, basePath: string): Promise<ChatSession[]> {
 	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
 	const folderExists = await app.vault.adapter.exists(normalBase);
@@ -81,54 +154,37 @@ export async function loadSessionsList(app: App, basePath: string): Promise<Chat
 	const files = getHistoryFiles(app, normalBase);
 	const sessions: ChatSession[] = [];
 
-	interface HistoryFrontmatter {
-		id?: string;
-		title?: string;
-		created?: string | number;
-		updated?: string | number;
-		provider?: string;
-		model?: string;
-	}
-
 	for (const file of files) {
 		const cache = app.metadataCache.getFileCache(file);
-		let fm = cache?.frontmatter as HistoryFrontmatter | undefined;
+		const cacheFm = cache?.frontmatter as HistoryFrontmatter | undefined;
 
-		// 캐시 미동기 시 텍스트 파싱 폴백
+		// 1차: metadataCache의 frontmatter 사용 (id가 있을 때만 유효)
+		let fm: HistoryFrontmatter | undefined | null = (cacheFm && cacheFm.id) ? cacheFm : null;
+
+		// 2차: frontmatter가 없거나 id가 누락된 경우 → 직접 파일 읽어서 frontmatter 블록만 파싱
 		if (!fm) {
 			try {
 				const content = await app.vault.cachedRead(file);
-				const idMatch = content.match(/^id:\s*(.+)$/m);
-				if (idMatch) {
-					const titleMatch = content.match(/^title:\s*(.+)$/m);
-					const createdMatch = content.match(/^created:\s*(.+)$/m);
-					const updatedMatch = content.match(/^updated:\s*(.+)$/m);
-					const modelMatch = content.match(/^model:\s*(.+)$/m);
-					const providerMatch = content.match(/^provider:\s*(.+)$/m);
-					
-					let parsedTitle = t('chat.newChat');
-					if (titleMatch) {
-						try { parsedTitle = JSON.parse(titleMatch[1]) as string; } catch { parsedTitle = titleMatch[1].trim(); }
-					}
-
-					fm = {
-						id: idMatch[1].trim(),
-						title: parsedTitle,
-						created: createdMatch ? createdMatch[1].trim() : file.stat.ctime,
-						updated: updatedMatch ? updatedMatch[1].trim() : file.stat.mtime,
-						model: modelMatch ? modelMatch[1].trim() : '',
-						provider: providerMatch ? providerMatch[1].trim() : ''
-					};
-				}
+				fm = parseFrontmatterFromContent(content, file);
 			} catch { /* 읽기 실패 시 무시 */ }
 		}
 
 		if (fm && fm.id) {
+			// 유효한 날짜가 없으면 파일 stat 또는 파일명에서 fallback
+			const fileCreated = parseTimestamp(fm.created, file.stat.ctime);
+			const fileUpdated = parseTimestamp(fm.updated, file.stat.mtime);
+
+			// stat도 신뢰할 수 없으면 파일명에서 추출 시도
+			const createdAt = fileCreated > 0 ? fileCreated
+				: (parseTimestampFromFilename(file.name) ?? file.stat.ctime);
+			const updatedAt = fileUpdated > 0 ? fileUpdated
+				: (parseTimestampFromFilename(file.name) ?? file.stat.mtime);
+
 			sessions.push({
 				id: fm.id,
 				title: fm.title || t('chat.newChat'),
-				createdAt: new Date(fm.created || '').getTime(),
-				updatedAt: new Date(fm.updated || '').getTime(),
+				createdAt,
+				updatedAt,
 				providerId: fm.provider || '',
 				modelId: fm.model || '',
 				messages: [], // 목록에서는 메시지 본문을 로드하지 않음 (최적화)
@@ -136,8 +192,37 @@ export async function loadSessionsList(app: App, basePath: string): Promise<Chat
 		}
 	}
 
-	// 최신순 정렬
-	return sessions.sort((a, b) => b.updatedAt - a.updatedAt);
+	// 최신순 정렬 (NaN 방어)
+	return sessions.sort((a, b) => {
+		const diff = b.updatedAt - a.updatedAt;
+		return isNaN(diff) ? 0 : diff;
+	});
+}
+
+/**
+ * 파일 목록에서 sessionId와 일치하는 파일을 찾는다.
+ * 1차: metadataCache의 frontmatter id
+ * 2차: 직접 파일 읽어서 frontmatter 블록 내 id 검색
+ */
+async function findSessionFile(app: App, files: TFile[], sessionId: string): Promise<TFile | null> {
+	// 1차: metadataCache
+	const cached = files.find(f => {
+		const cache = app.metadataCache.getFileCache(f);
+		return cache?.frontmatter?.id === sessionId;
+	});
+	if (cached) return cached;
+
+	// 2차: frontmatter 블록 내 id 검색 (캐시 미동기/부분 파싱 대응)
+	for (const f of files) {
+		try {
+			const text = await app.vault.cachedRead(f);
+			if (parseFrontmatterBlock(text, 'id') === sessionId) {
+				return f;
+			}
+		} catch { /* ignore */ }
+	}
+
+	return null;
 }
 
 /** 세션 파일에서 숨김 JSON을 파싱해 ChatSession(메시지 포함) 복원 */
@@ -145,11 +230,7 @@ export async function loadSession(app: App, sessionId: string, basePath: string)
 	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
 	const files = getHistoryFiles(app, normalBase);
 	
-	const file = files.find(f => {
-		const cache = app.metadataCache.getFileCache(f);
-		return cache?.frontmatter?.id === sessionId;
-	});
-
+	const file = await findSessionFile(app, files, sessionId);
 	if (!file) return null;
 
 	const content = await app.vault.read(file);
@@ -173,11 +254,7 @@ export async function deleteSession(app: App, sessionId: string, basePath: strin
 	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
 	const files = getHistoryFiles(app, normalBase);
 	
-	const file = files.find(f => {
-		const cache = app.metadataCache.getFileCache(f);
-		return cache?.frontmatter?.id === sessionId;
-	});
-
+	const file = await findSessionFile(app, files, sessionId);
 	if (file) {
 		await app.fileManager.trashFile(file);
 		return true;
