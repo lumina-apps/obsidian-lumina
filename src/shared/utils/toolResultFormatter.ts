@@ -4,7 +4,7 @@ import { t } from '../locales/helpers';
 import { stripMaskTokens } from './llmTextSanitizer';
 import { debugLogger } from '../debugLogger';
 
-export const MAX_TOOL_RESULT_CHARS = 4000;
+export const MAX_TOOL_RESULT_CHARS = 1_000_000;
 
 /** MCP tool call 결과에서 텍스트 추출 */
 export function extractToolResultText(toolResult: unknown): string {

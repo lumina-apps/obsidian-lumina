@@ -804,7 +804,7 @@
       "summary": "Risultati della ricerca RAG ({{count}} frammenti trovati, similarità >= {{minSim}}):\\n\\n{{context}}"
     },
     "common": {
-      "truncated": "\\n\\n... (Contenuto troncato a causa del limite di lunghezza di {{limit}} caratteri)",
+      "truncated": "\\n\\n... (Contenuto troncato a causa del limite di lunghezza di {{limit}} caratteri. Il contenuto essenziale è stato fornito — NON richiamare questo strumento per recuperare la parte restante.)",
       "unknownTool": "Strumento sconosciuto.",
       "executionError": "Si è verificato un errore durante l'esecuzione dello strumento: {{error}}",
       "pathExcluded": "L'accesso a questo percorso è limitato dalle impostazioni di esclusione/inclusione RAG: {{path}}"

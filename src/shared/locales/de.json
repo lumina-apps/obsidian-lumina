@@ -812,7 +812,7 @@
       "summary": "RAG-Suchergebnisse ({{count}} Fragmente gefunden, Ähnlichkeit >= {{minSim}}):\\n\\n{{context}}"
     },
     "common": {
-      "truncated": "\\n\\n... (Inhalt aufgrund des Längenlimits von {{limit}} Zeichen abgeschnitten)",
+      "truncated": "\\n\\n... (Inhalt aufgrund des Längenlimits von {{limit}} Zeichen abgeschnitten. Der wesentliche Inhalt wurde bereitgestellt — rufen Sie dieses Tool NICHT erneut auf, um den restlichen Teil abzurufen.)",
       "unknownTool": "Unbekanntes Tool.",
       "executionError": "Beim Ausführen des Tools ist ein Fehler aufgetreten: {{error}}",
       "pathExcluded": "pathExcluded"

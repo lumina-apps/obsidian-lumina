@@ -804,7 +804,7 @@
       "summary": "RAG 搜尋結果（找到 {{count}} 個文字區塊，相似度 >= {{minSim}}）：\n\n{{context}}"
     },
     "common": {
-      "truncated": "\n\n...（由於 {{limit}} 個字元的長度限制，內容被截斷）",
+      "truncated": "\n\n...（由於 {{limit}} 個字元的長度限制，內容被截斷。已提供必要的主要内容 — 請勿再次呼叫此工具來取得剩餘部分。）",
       "unknownTool": "未知工具。",
       "executionError": "工具執行期間出錯：{{error}}",
       "pathExcluded": "RAG 排除/包含設定已限制對此路徑的存取：{{path}}"

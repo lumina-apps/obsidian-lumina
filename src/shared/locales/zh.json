@@ -804,7 +804,7 @@
       "summary": "RAG 搜索结果（找到 {{count}} 个文本块，相似度 >= {{minSim}}）：\n\n{{context}}"
     },
     "common": {
-      "truncated": "\n\n...（由于 {{limit}} 个字符的长度限制，内容被截断）",
+      "truncated": "\n\n...（由于 {{limit}} 个字符的长度限制，内容被截断。已提供必要的主要内容 — 请勿再次调用此工具来获取剩余部分。）",
       "unknownTool": "未知工具。",
       "executionError": "工具执行期间出错：{{error}}",
       "pathExcluded": "RAG 排除/包含设置已限制对此路径的访问：{{path}}"

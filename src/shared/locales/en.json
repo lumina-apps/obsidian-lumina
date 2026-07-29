@@ -804,7 +804,7 @@
       "summary": "RAG Search Results ({{count}} chunks found, similarity >= {{minSim}}):\n\n{{context}}"
     },
     "common": {
-      "truncated": "\\n\\n... (Content truncated due to length limit of {{limit}} characters)",
+      "truncated": "\\n\\n... (Content truncated due to length limit of {{limit}} characters. The essential content has been provided — do NOT call this tool again to retrieve the remaining part.)",
       "unknownTool": "Unknown tool.",
       "executionError": "Error occurred during tool execution: {{error}}",
       "pathExcluded": "Access to this path is restricted by RAG exclusion/inclusion settings: {{path}}"
