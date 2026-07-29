@@ -96,12 +96,16 @@ export class ChatHistoryController {
 			summaryUpToMessageId: get(summaryUpToMessageId),
 		};
 
+		// 저장 시도 전에 sessionId를 먼저 설정한다.
+		// - 첫 저장(sessionId 없음)이면 새 ID를 store에 등록한다
+		// - 저장 자체가 실패해도 이후 subscribe에서 같은 sessionId로 재시도 가능하다
+		if (!currentId) {
+			currentSessionId.set(newId);
+		}
+
 		const historyPath = this.resolveHistoryPath();
 		try {
 			await saveSession(this.app, session, historyPath);
-			if (!currentId) {
-				currentSessionId.set(newId);
-			}
 		} catch (e) {
 			new Notice(t('settings.chat.history.saveFail', { error: (e as Error).message }));
 		}

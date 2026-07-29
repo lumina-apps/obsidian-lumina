@@ -41,11 +41,12 @@ export class ChatController {
 		this.history = new ChatHistoryController(plugin);
 
 		this._unsubMessages = messages.subscribe(() => {
-			const sid = get(currentSessionId);
-			if (sid && this.lastProviderId && this.lastModelId) {
+			if (this.lastProviderId && this.lastModelId) {
 				// 스트리밍 중일 때는 저장을 지연시킴
 				const msgs = get(messages);
 				if (msgs.some(m => m.isStreaming)) return;
+				// user + assistant 메시지가 모두 있어야 저장 (최소 2개)
+				if (msgs.length < 2) return;
 
 				if (this.autoSaveTimeout) {
 					window.clearTimeout(this.autoSaveTimeout);
