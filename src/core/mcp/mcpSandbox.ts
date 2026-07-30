@@ -67,10 +67,18 @@ export class McpSandbox {
                 worker = new Worker(workerUrl);
             } catch (err) {
                 URL.revokeObjectURL(workerUrl);
-                return resolve({
-                    success: false,
-                    error: `Failed to create Web Worker: ${err instanceof Error ? err.message : String(err)}`
-                });
+                // CSP 차단 등 Blob URL Worker 실패 시 인라인 Worker 생성 시도
+                try {
+                    // data: URI를 통해 인라인 Worker 생성 (일부 CSP 정책에서 blob:보다 허용될 가능성 있음)
+                    const encodedScript = encodeURIComponent(workerScript);
+                    const dataWorkerUrl = 'data:application/javascript,' + encodedScript;
+                    worker = new Worker(dataWorkerUrl);
+                } catch (dataErr) {
+                    return resolve({
+                        success: false,
+                        error: `Failed to create Web Worker (blob and data: URI both failed): ${err instanceof Error ? err.message : String(err)}. Data URI fallback error: ${dataErr instanceof Error ? dataErr.message : String(dataErr)}`
+                    });
+                }
             }
 
             // 2. Setup timeout and cleanup mechanism (Safety Net)

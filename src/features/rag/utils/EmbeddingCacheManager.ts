@@ -81,9 +81,8 @@ export class EmbeddingCacheManager {
 		if (!this.cacheFilePath) return;
 		let nodeFS: NodeFS;
 		try {
-			const win = window as unknown as Record<string, unknown>;
 			// eslint-disable-next-line @typescript-eslint/no-require-imports -- Obsidian 데스크탑 환경의 Node.js require 사용
-			const requireFn = (typeof win.require === 'function' ? win.require : require) as (id: string) => unknown;
+			const requireFn = (typeof require !== 'undefined' ? require : (_id: string) => { throw new Error('require not available'); }) as (id: string) => unknown;
 			nodeFS = requireFn('fs') as NodeFS;
 		} catch {
 			return;
@@ -120,9 +119,8 @@ export class EmbeddingCacheManager {
 		let nodeFS: NodeFS;
 		let nodePath: NodePath;
 		try {
-			const win = window as unknown as Record<string, unknown>;
 			// eslint-disable-next-line @typescript-eslint/no-require-imports -- Obsidian 데스크탑 환경의 Node.js require 사용
-			const requireFn = (typeof win.require === 'function' ? win.require : require) as (id: string) => unknown;
+			const requireFn = (typeof require !== 'undefined' ? require : (_id: string) => { throw new Error('require not available'); }) as (id: string) => unknown;
 			nodeFS = requireFn('fs') as NodeFS;
 			nodePath = requireFn('path') as NodePath;
 		} catch {

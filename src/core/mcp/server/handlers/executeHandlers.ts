@@ -98,6 +98,13 @@ export const runShellCommandHandler = async (
 		{ pattern: new RegExp('>\\s*/dev/(sda|hda|nvme)', 'i'),                 reason: 'Writing directly to block devices is not allowed.' },
 		{ pattern: new RegExp('chmod\\s+[0-9]*7[0-9]*\\s+/', 'i'),              reason: 'Changing permissions on root directory is not allowed.' },
 		{ pattern: new RegExp('mkfs\\.', 'i'),                                  reason: 'Formatting file systems is not allowed.' },
+		// Windows 위험 명령어 차단 패턴
+		{ pattern: new RegExp('(del|erase)\\s+(/\\w+\\s+)*[a-zA-Z]:', 'i'),     reason: 'File deletion via del/erase is not allowed.' },
+		{ pattern: new RegExp('rmdir\\s+/[a-z]*s[a-z]*', 'i'),                  reason: 'Recursive directory deletion (rmdir /s) is not allowed.' },
+		{ pattern: new RegExp('format\\s+[a-zA-Z]:', 'i'),                      reason: 'Formatting drives is not allowed.' },
+		{ pattern: new RegExp('icacls\\s+[a-zA-Z]:', 'i'),                      reason: 'Modifying file permissions via icacls is not allowed.' },
+		{ pattern: new RegExp('takeown\\s+/[a-z]*f', 'i'),                      reason: 'Taking ownership of files is not allowed.' },
+		{ pattern: new RegExp('diskpart', 'i'),                                 reason: 'Disk partition operations are not allowed.' },
 	];
 
 	for (const { pattern, reason } of BLOCKED_PATTERNS) {
@@ -124,22 +131,17 @@ export const runShellCommandHandler = async (
 				callback: (error: Error | null, stdout: unknown, stderr: unknown) => void
 			): unknown;
 		}
-		interface WindowWithRequire extends Window {
-			require?: (id: string) => ChildProcess;
-		}
 
-		let cp: ChildProcess | undefined;
-		const win = window as unknown as WindowWithRequire;
-		if (typeof window !== 'undefined' && typeof win.require === 'function') {
-			cp = win.require(moduleName);
-		} else {
-			// eslint-disable-next-line @typescript-eslint/no-require-imports -- Require child_process dynamically at runtime to avoid static bundling issues in browser configurations.
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call -- require is implicitly any here, we safely cast it.
-			cp = typeof require !== 'undefined' ? (require as (id: string) => ChildProcess)(moduleName) : undefined;
-		}
+		// Use the string-concatenated module name to prevent esbuild post-process
+		// from replacing require('child_process') with undefined (see esbuild.config.mjs postProcessMainBundle).
+		// eslint-disable-next-line @typescript-eslint/no-require-imports -- Required dynamically at runtime.
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call -- require is implicitly any here, we safely cast it.
+		const cp: ChildProcess | undefined = typeof require !== 'undefined'
+			? (require as (id: string) => ChildProcess)(moduleName)
+			: undefined;
 
 		if (!cp || typeof cp.exec !== 'function') {
-			throw new Error(`child_process module is unavailable (cp=${typeof cp}, window.require=${typeof win.require})`);
+			throw new Error(`child_process module is unavailable (cp=${typeof cp}). Note: Shell execution is only supported on Desktop.`);
 		}
 
 		const cpModule = cp;
@@ -152,11 +154,24 @@ export const runShellCommandHandler = async (
 			});
 		};
 
-		// 윈도우 환경에서는 PowerShell 우선 시도
-		let result = await runExec({ cwd: finalCwd, shell: Platform.isWin ? 'powershell.exe' : undefined });
-
-		// PowerShell을 찾을 수 없거나 실행 불가능한 경우 (fallback to default cmd.exe)
-		if (Platform.isWin && result.error && result.error.message.toLowerCase().includes('powershell')) {
+		// Windows: try pwsh.exe (PowerShell Core) first, then powershell.exe, then fallback to COMSPEC/cmd.exe
+		// COMSPEC is the Windows environment variable pointing to the default command shell (usually cmd.exe).
+		let result: { error: Error | null; stdout: unknown; stderr: unknown };
+		if (Platform.isWin) {
+			const comspec = typeof process !== 'undefined' && process.env?.COMSPEC ? process.env.COMSPEC : 'cmd.exe';
+			const winShells = ['pwsh.exe', 'powershell.exe', comspec];
+			// Initialize with the last shell (COMSPEC) result to ensure it's always assigned
+			result = await runExec({ cwd: finalCwd, shell: comspec });
+			for (const shell of winShells.slice(0, -1)) {
+				const shellResult = await runExec({ cwd: finalCwd, shell });
+				if (!shellResult.error
+					|| (!shellResult.error.message.toLowerCase().includes('cannot find')
+						&& !shellResult.error.message.toLowerCase().includes('not recognized'))) {
+					result = shellResult;
+					break;
+				}
+			}
+		} else {
 			result = await runExec({ cwd: finalCwd });
 		}
 
