@@ -230,18 +230,21 @@
 
 	async function executeStreamOperation(op: (signal: AbortSignal) => Promise<void>): Promise<void> {
 		abortController = new AbortController();
-		let wasCancelled = false;
 		try {
 			await op(abortController.signal);
 		} catch (err: unknown) {
-			if (err instanceof Error && err.name === "AbortError") {
-				wasCancelled = true;
+			// AbortError가 아닌 에러(토큰 한도, 컨텍스트 오버플로우, 네트워크 에러 등)도
+			// 안전하게 처리 - UI는 chatController.sendMessage에서 setMessageError로 이미 처리됨
+			if (!(err instanceof Error && err.name === "AbortError")) {
+				// Non-AbortError: UI에 이미 에러 메시지가 표시되었으므로 조용히 처리
+				console.error("[Lumina] Stream operation error (handled):", err);
 			}
 		} finally {
 			abortController = null;
-			if (!wasCancelled) {
-				await ctrl!.saveHistory(selectedProviderId, selectedModelId);
-			}
+			// 에러 발생 시에도 history 저장 시도 (final 상태로 저장)
+			await ctrl!.saveHistory(selectedProviderId, selectedModelId).catch((e: unknown) => {
+				console.error("[Lumina] Failed to save history after error:", e);
+			});
 		}
 		autoScroll.resetUserScrolledUp();
 		await tick();

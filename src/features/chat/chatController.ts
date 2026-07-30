@@ -127,7 +127,6 @@ export class ChatController {
 				setMessageError(assistantId, friendlyMsg);
 				debugLogger.logError('llm', err instanceof Error ? err : new Error(String(err)));
 			}
-			throw err;
 		} finally {
 			isLoading.set(false);
 			// 안전망: 예기치 못한 종료 시 스트리밍 상태 확실히 해제

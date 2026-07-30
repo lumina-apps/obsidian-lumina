@@ -110,18 +110,32 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 	let tokenUsage: TokenUsage | undefined;
 	let hasTokenLimitBeenHit = false;
 
-	while (toolRound < maxRounds) {
+		while (toolRound < maxRounds) {
 		if (signal?.aborted) break;
 		toolRound++;
 
 		debugLogger.logMcp('Loop Round', `🔄 툴 루프 라운드 ${toolRound}/${maxRounds} 시작`);
 
 		// ── LLM 호출 ──────────────────────────────────────────────────────────
-		const rawResponse = await provider.chat(messagesForLLM, chatOptions, (chunk) => {
-			if (chatSettings.streaming) {
-				appendChunk(assistantId, chunk);
+		let rawResponse: import('../../shared/types/llm.types').ChatResponse;
+		try {
+			rawResponse = await provider.chat(messagesForLLM, chatOptions, (chunk) => {
+				if (chatSettings.streaming) {
+					appendChunk(assistantId, chunk);
+				}
+			});
+		} catch (err: unknown) {
+			// 스트리밍 중 에러 발생 (컨텍스트 오버플로우, 토큰 한도, 네트워크 에러 등)
+			// 누적된 텍스트를 반환하고 루프 종료
+			const finalContent = accumulatedText || '';
+			debugLogger.logMcp('Loop Error', `⚠️ 툴 루프 라운드 ${toolRound} 중 에러 발생`, err);
+			// 에러가 AbortError면 누적 텍스트만 반환하고 종료
+			if (err instanceof Error && err.name === 'AbortError') {
+				return { fullResponse: finalContent, tokenUsage, hasTokenLimitBeenHit };
 			}
-		});
+			// 그 외 에러는 throw하여 상위에서 처리하도록 전파
+			throw err;
+		}
 
 		// ── 토큰 한도 체크 ────────────────────────────────────────────────────
 		if (isTokenLimitReached(rawResponse.finishReason)) {
