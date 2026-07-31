@@ -82,7 +82,7 @@ export const diffDecorationField = StateField.define<DecorationSet>({
 				// Add banner widget at the very top of the document
 				if (doc.length > 0) {
 					builder.add(0, 0, Decoration.widget({
-						widget: new DiffBannerWidget(request.filePath),
+						widget: new DiffBannerWidget(request.id),
 						block: true,
 						side: -10
 					}));

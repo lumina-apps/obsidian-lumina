@@ -99,12 +99,23 @@ export const runShellCommandHandler = async (
 		{ pattern: new RegExp('chmod\\s+[0-9]*7[0-9]*\\s+/', 'i'),              reason: 'Changing permissions on root directory is not allowed.' },
 		{ pattern: new RegExp('mkfs\\.', 'i'),                                  reason: 'Formatting file systems is not allowed.' },
 		// Windows 위험 명령어 차단 패턴
-		{ pattern: new RegExp('(del|erase)\\s+(/\\w+\\s+)*[a-zA-Z]:', 'i'),     reason: 'File deletion via del/erase is not allowed.' },
+		// 1) 슬래시 또는 백슬래시 경로 모두 매칭
+		{ pattern: new RegExp('(del|erase)\\s+(/\\w+\\s+)*[a-zA-Z]:[\\\\/]', 'i'), reason: 'File deletion via del/erase is not allowed.' },
 		{ pattern: new RegExp('rmdir\\s+/[a-z]*s[a-z]*', 'i'),                  reason: 'Recursive directory deletion (rmdir /s) is not allowed.' },
-		{ pattern: new RegExp('format\\s+[a-zA-Z]:', 'i'),                      reason: 'Formatting drives is not allowed.' },
-		{ pattern: new RegExp('icacls\\s+[a-zA-Z]:', 'i'),                      reason: 'Modifying file permissions via icacls is not allowed.' },
-		{ pattern: new RegExp('takeown\\s+/[a-z]*f', 'i'),                      reason: 'Taking ownership of files is not allowed.' },
+		{ pattern: new RegExp('rd\\s+/[a-z]*s[a-z]*', 'i'),                     reason: 'Recursive directory deletion (rd /s) is not allowed.' },
+		{ pattern: new RegExp('format\\s+[a-zA-Z]:[\\\\/]', 'i'),               reason: 'Formatting drives is not allowed.' },
+		{ pattern: new RegExp('icacls\\s+[a-zA-Z]:[\\\\/]', 'i'),               reason: 'Modifying file permissions via icacls is not allowed.' },
+		{ pattern: new RegExp('takeown\\s+(/\\w+\\s+)*[a-zA-Z]:[\\\\/]', 'i'),  reason: 'Taking ownership of files is not allowed.' },
 		{ pattern: new RegExp('diskpart', 'i'),                                 reason: 'Disk partition operations are not allowed.' },
+		// 2) PowerShell / 대체 명령어 우회 차단
+		{ pattern: new RegExp('remove-item\\b', 'i'),                           reason: 'PowerShell Remove-Item is not allowed.' },
+		{ pattern: new RegExp('invoke-expression\\b|\\biex\\s+', 'i'),          reason: 'PowerShell code execution via Invoke-Expression is not allowed.' },
+		{ pattern: new RegExp('powershell(\\.exe)?\\s+.*-enc(odedcommand)?\\b', 'i'), reason: 'Encoded PowerShell commands are not allowed.' },
+		{ pattern: new RegExp('Start-Process\\s+.*-Verb\\s+RunAs', 'i'),        reason: 'Elevated process execution (Start-Process -Verb RunAs) is not allowed.' },
+		{ pattern: new RegExp('reg\\s+(add|delete|copy)\\s+HK', 'i'),           reason: 'Modifying Windows registry is not allowed.' },
+		// 3) 간접 실행 / 스크립트 파일 차단
+		{ pattern: new RegExp('(wscript|cscript|mshta|rundll32)\\b', 'i'),      reason: 'Indirect script execution (wscript/cscript/mshta/rundll32) is not allowed.' },
+		{ pattern: new RegExp('certutil\\s+.*-decode', 'i'),                    reason: 'Decoding payloads via certutil is not allowed.' },
 	];
 
 	for (const { pattern, reason } of BLOCKED_PATTERNS) {
@@ -124,12 +135,22 @@ export const runShellCommandHandler = async (
 
 	try {
 		const moduleName = 'child' + '_' + 'process';
+		interface SpawnChild {
+			stdout: { on(event: 'data', cb: (chunk: Buffer) => void): void };
+			stderr: { on(event: 'data', cb: (chunk: Buffer) => void): void };
+			on(event: 'error' | 'close', cb: (arg: Error | number | null) => void): void;
+		}
 		interface ChildProcess {
 			exec(
 				command: string,
-				options: { cwd?: string },
+				options: { cwd?: string; shell?: string },
 				callback: (error: Error | null, stdout: unknown, stderr: unknown) => void
 			): unknown;
+			spawn(
+				command: string,
+				args: string[],
+				options: { cwd?: string }
+			): SpawnChild;
 		}
 
 		// Use the string-concatenated module name to prevent esbuild post-process
@@ -156,20 +177,69 @@ export const runShellCommandHandler = async (
 
 		// Windows: try pwsh.exe (PowerShell Core) first, then powershell.exe, then fallback to COMSPEC/cmd.exe
 		// COMSPEC is the Windows environment variable pointing to the default command shell (usually cmd.exe).
+		// Note: child_process.exec() internally runs `shell /c command`, which PowerShell does NOT support
+		// (PowerShell expects -Command). So when using PowerShell, we must spawn with -Command flag instead.
 		let result: { error: Error | null; stdout: unknown; stderr: unknown };
 		if (Platform.isWin) {
 			const comspec = typeof process !== 'undefined' && process.env?.COMSPEC ? process.env.COMSPEC : 'cmd.exe';
-			const winShells = ['pwsh.exe', 'powershell.exe', comspec];
-			// Initialize with the last shell (COMSPEC) result to ensure it's always assigned
-			result = await runExec({ cwd: finalCwd, shell: comspec });
-			for (const shell of winShells.slice(0, -1)) {
-				const shellResult = await runExec({ cwd: finalCwd, shell });
-				if (!shellResult.error
-					|| (!shellResult.error.message.toLowerCase().includes('cannot find')
-						&& !shellResult.error.message.toLowerCase().includes('not recognized'))) {
-					result = shellResult;
-					break;
-				}
+
+			// Check whether a shell executable exists in PATH via `where`
+			const isShellAvailable = (exe: string): Promise<boolean> => {
+				return new Promise((resolveCheck) => {
+					cpModule.exec(`where ${exe}`, { cwd: finalCwd }, (err: Error | null) => {
+						resolveCheck(!err);
+					});
+				});
+			};
+
+			// Run a command via PowerShell with -Command flag (spawn, not exec)
+			const runPwsh = (shellPath: string): Promise<{ error: Error | null; stdout: unknown; stderr: unknown }> => {
+				return new Promise((resolveExec) => {
+					try {
+						const child = cpModule.spawn(
+							shellPath,
+							['-NoProfile', '-NonInteractive', '-Command', command],
+							{ cwd: finalCwd }
+						);
+						let stdout = '';
+						let stderr = '';
+						child.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
+						child.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
+						child.on('error', (err: Error | number | null) => {
+							resolveExec({
+								error: err instanceof Error ? err : new Error(String(err)),
+								stdout,
+								stderr,
+							});
+						});
+						child.on('close', (code: Error | number | null) => {
+							if (code === 0) {
+								resolveExec({ error: null, stdout, stderr });
+							} else {
+								resolveExec({
+									error: new Error(`Command exited with code ${String(code)}`),
+									stdout,
+									stderr,
+								});
+							}
+						});
+					} catch (e) {
+						resolveExec({ error: e instanceof Error ? e : new Error(String(e)), stdout: '', stderr: '' });
+					}
+				});
+			};
+
+			// 1) Try pwsh.exe (PowerShell Core)
+			if (await isShellAvailable('pwsh.exe')) {
+				result = await runPwsh('pwsh.exe');
+			}
+			// 2) Try powershell.exe (Windows PowerShell)
+			else if (await isShellAvailable('powershell.exe')) {
+				result = await runPwsh('powershell.exe');
+			}
+			// 3) Fallback to cmd.exe (COMSPEC)
+			else {
+				result = await runExec({ cwd: finalCwd, shell: comspec });
 			}
 		} else {
 			result = await runExec({ cwd: finalCwd });
