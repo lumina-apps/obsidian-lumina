@@ -80,6 +80,10 @@ export const safeModifyFile = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard
 ): Promise<ToolResult> => {
+	// Open and focus the target file before asking for approval,
+	// so the diff decorations are visible in the editor.
+	await openFileInWorkspace(ctx.plugin.app, path);
+
 	const result = await approvalManager.requestApproval(path, currentContent, proposedContent);
 	if (!result.approved) {
 		return getRejectionResult(DEFAULT_REJECTION_MESSAGE);

@@ -4,6 +4,7 @@ import type { DecorationSet } from '@codemirror/view';
 import { editorInfoField } from 'obsidian';
 import { approvalStore, approvalManager, type ApprovalRequest, type ApprovalState } from '../chat/utils/approvalManager';
 import { get } from 'svelte/store';
+import { t } from '../../shared/locales/helpers';
 
 export const setDiffs = StateEffect.define<ApprovalRequest | null>();
 
@@ -23,16 +24,38 @@ class DiffAddedWidget extends WidgetType {
 	}
 }
 
+/**
+ * Per-chunk Accept/Reject buttons shown inline in the editor,
+ * so users can review diffs and decide without switching to chat.
+ */
 class DiffActionWidget extends WidgetType {
 	constructor(public requestId: string, public chunkId: string) { super(); }
 	toDOM() {
 		const div = createDiv({ cls: 'lumina-diff-action-widget' });
 		
+		const rejectBtn = div.createEl('button', { cls: 'lumina-diff-btn reject', text: '✕ Reject' });
+		rejectBtn.onclick = () => approvalManager.rejectChunk(this.requestId, this.chunkId);
+		
 		const acceptBtn = div.createEl('button', { cls: 'lumina-diff-btn accept', text: '✓ Accept' });
 		acceptBtn.onclick = () => approvalManager.acceptChunk(this.requestId, this.chunkId);
 		
-		const rejectBtn = div.createEl('button', { cls: 'lumina-diff-btn reject', text: '✗ Reject' });
-		rejectBtn.onclick = () => approvalManager.rejectChunk(this.requestId, this.chunkId);
+		return div;
+	}
+}
+
+/**
+ * Action bar at the top of the editor with Accept All / Reject All buttons.
+ */
+class DiffBannerWidget extends WidgetType {
+	constructor(public requestId: string) { super(); }
+	toDOM() {
+		const div = createDiv({ cls: 'lumina-diff-banner' });
+		
+		const rejectBtn = div.createEl('button', { cls: 'lumina-diff-banner-btn reject', text: `${(t as any)('uiMessages.actionApproval.rejectAll') || 'Reject All'}` });
+		rejectBtn.onclick = () => approvalManager.rejectAll(this.requestId);
+		
+		const acceptBtn = div.createEl('button', { cls: 'lumina-diff-banner-btn accept', text: `${(t as any)('uiMessages.actionApproval.acceptAll') || 'Accept All'}` });
+		acceptBtn.onclick = () => approvalManager.acceptAll(this.requestId);
 		
 		return div;
 	}
@@ -56,6 +79,15 @@ export const diffDecorationField = StateField.define<DecorationSet>({
 				let docLine = 1;
 				const processedChunks = new Set<string>();
 
+				// Add banner widget at the very top of the document
+				if (doc.length > 0) {
+					builder.add(0, 0, Decoration.widget({
+						widget: new DiffBannerWidget(request.filePath),
+						block: true,
+						side: -10
+					}));
+				}
+
 				for (const change of request.allChanges) {
 					const lines = change.value.split('\n');
 					const numLines = change.value.endsWith('\n') ? lines.length - 1 : lines.length;
@@ -70,15 +102,19 @@ export const diffDecorationField = StateField.define<DecorationSet>({
 								block: true,
 								side: -2
 							}));
-							processedChunks.add(change.chunkId);
 						}
+						processedChunks.add(change.chunkId);
 					}
 
 					if (change.removed) {
-						for (let i = 0; i < numLines; i++) {
-							if (docLine + i <= doc.lines) {
-								const lineObj = doc.line(docLine + i);
-								builder.add(lineObj.from, lineObj.from, removedLineDeco);
+						const chunk = change.chunkId ? request.chunks.find(c => c.id === change.chunkId) : null;
+						const shouldShow = !chunk || chunk.status === 'pending';
+						if (shouldShow) {
+							for (let i = 0; i < numLines; i++) {
+								if (docLine + i <= doc.lines) {
+									const lineObj = doc.line(docLine + i);
+									builder.add(lineObj.from, lineObj.from, removedLineDeco);
+								}
 							}
 						}
 						docLine += numLines;
@@ -125,7 +161,6 @@ export const diffStorePlugin = ViewPlugin.fromClass(class {
 	}
 
 	update(update: ViewUpdate) {
-		// editorInfoField가 변경되어 파일 정보가 뒤늦게 들어올 때를 대비함
 		const oldInfo = update.startState.field(editorInfoField, false) as { file?: { path: string } } | null | undefined;
 		const newInfo = update.state.field(editorInfoField, false) as { file?: { path: string } } | null | undefined;
 		if (oldInfo?.file?.path !== newInfo?.file?.path) {

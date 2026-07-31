@@ -1693,43 +1693,6 @@ div.lumina-diff-added-widget {
 	line-height: var(--line-height-normal);
 }
 
-.lumina-diff-action-widget {
-	display: flex;
-	gap: 6px;
-	padding: 4px;
-	background: var(--background-secondary);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 4px;
-	margin-bottom: 4px;
-	font-size: 0.85em;
-	width: max-content;
-}
-
-.lumina-diff-btn {
-	cursor: pointer;
-	padding: 2px 8px;
-	border-radius: 4px;
-	border: 1px solid transparent;
-	background: transparent;
-	font-weight: bold;
-}
-
-.lumina-diff-btn.accept {
-	color: var(--text-success, #10b981);
-	background: rgba(16, 185, 129, 0.1);
-}
-.lumina-diff-btn.accept:hover {
-	background: rgba(16, 185, 129, 0.2);
-}
-
-.lumina-diff-btn.reject {
-	color: var(--text-error, #ef4444);
-	background: rgba(220, 38, 38, 0.1);
-}
-.lumina-diff-btn.reject:hover {
-	background: rgba(220, 38, 38, 0.2);
-}
-
 /* Shared styles for popup selectors (Context, Slash Command, Model, etc.) */
 
 .lumina-popup-selector {
@@ -2133,5 +2096,113 @@ div.lumina-diff-added-widget {
 	z-index: 10;
 	margin-bottom: 0;
 	padding-bottom: 20px;
+}
+
+/* ── Diff Extension Styles ── */
+
+/* Per-chunk Accept/Reject buttons — inline row with comfortable spacing */
+.lumina-diff-action-widget {
+	display: flex;
+	gap: 8px;
+	padding: 4px 0;
+	background: transparent;
+}
+
+.lumina-diff-btn {
+	cursor: pointer;
+	padding: 4px 12px;
+	border-radius: 4px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	font-weight: 500;
+	font-size: 11px;
+	line-height: 1.5;
+	transition: background 0.12s, color 0.12s, border-color 0.12s;
+	box-shadow: none;
+}
+
+.lumina-diff-btn.accept {
+	color: var(--text-success, #10b981);
+	border-color: rgba(16, 185, 129, 0.35);
+	background: rgba(16, 185, 129, 0.06);
+}
+
+.lumina-diff-btn.accept:hover {
+	background: rgba(16, 185, 129, 0.15);
+	border-color: var(--text-success, #10b981);
+	color: var(--text-success, #10b981);
+}
+
+.lumina-diff-btn.reject {
+	color: var(--text-error, #ef4444);
+	border-color: rgba(239, 68, 68, 0.3);
+	background: rgba(239, 68, 68, 0.04);
+}
+
+.lumina-diff-btn.reject:hover {
+	background: rgba(239, 68, 68, 0.12);
+	border-color: var(--text-error, #ef4444);
+	color: var(--text-error, #ef4444);
+}
+
+/* Top action bar — row with two buttons side by side */
+.lumina-diff-banner {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 4px 0;
+	margin: 4px 0;
+}
+
+.lumina-diff-banner-btn {
+	padding: 4px 14px;
+	font-size: 11px;
+	border-radius: 4px;
+	cursor: pointer;
+	border: 1px solid var(--background-modifier-border);
+	font-weight: 600;
+	line-height: 1.5;
+	transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.lumina-diff-banner-btn.accept {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+.lumina-diff-banner-btn.accept:hover {
+	opacity: 0.85;
+}
+
+.lumina-diff-banner-btn.reject {
+	background: var(--background-modifier-hover);
+	color: var(--text-muted);
+	border-color: var(--background-modifier-border);
+}
+
+.lumina-diff-banner-btn.reject:hover {
+	background: var(--background-modifier-border);
+	color: var(--text-normal);
+}
+
+.lumina-diff-added-widget {
+	background: rgba(0, 150, 0, 0.06);
+	border-left: 3px solid var(--interactive-success);
+	padding: 2px 0;
+	margin: 2px 0;
+}
+
+.lumina-diff-added-line {
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-small);
+	color: var(--text-success);
+	padding: 1px 8px;
+	white-space: pre-wrap;
+	word-break: break-all;
+}
+
+.lumina-diff-removed-line {
+	background: rgba(200, 0, 0, 0.08);
 }
 

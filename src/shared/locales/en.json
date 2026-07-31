@@ -618,6 +618,8 @@
     "actionApproval": {
       "title": "Approval Required: {{action}}",
       "targetFile": "Target File: {{path}}",
+      "editNote": "Edit Note",
+      "editNoteDesc": "Review the diff below and accept or reject changes.",
       "createNote": "📄 Do you want to CREATE a new note?",
       "deleteNote": "⚠️ Do you want to DELETE this note?",
       "renameNote": "✏️ Do you want to MOVE/RENAME this note to:",
@@ -626,7 +628,16 @@
       "executeCode": "⚡ Do you want to EXECUTE this code?",
       "shellCommand": "💻 Do you want to EXECUTE this shell command on the desktop OS?",
       "accept": "Accept",
-      "reject": "Reject"
+      "reject": "Reject",
+      "acceptAll": "Accept All",
+      "rejectAll": "Reject All",
+      "chunkAccepted": "Chunk accepted",
+      "chunkAcceptedShort": "Accepted",
+      "chunkAcceptedDesc": "This change will be applied when all chunks are decided.",
+      "chunkRejected": "Chunk rejected",
+      "chunkRejectedShort": "Rejected",
+      "chunkRejectedDesc": "This change will be skipped.",
+      "pendingChangesBanner": "Pending changes — review in Lumina chat"
     },
     "emptyResponseTokenLimit": "⚠️ The model returned an empty response. Generation was stopped because the Max Output Tokens limit was reached. Please increase the \"Max Output Tokens\" limit in settings.",
     "tokenLimitHitWarning": "\n\n⚠️ (Generation was interrupted because the Max Output Tokens limit was reached. Please increase the \"Max Output Tokens\" value in settings.)",

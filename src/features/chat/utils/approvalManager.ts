@@ -113,10 +113,10 @@ export const approvalManager = {
 				resolve
 			};
 
-			approvalStore.update((state) => {
-				state.queue.push(request);
-				return state;
-			});
+			approvalStore.update((state) => ({
+				queue: [...state.queue, request],
+				undoStack: state.undoStack
+			}));
 		});
 	},
 
@@ -141,56 +141,64 @@ export const approvalManager = {
 				resolve: (result) => resolve(result.approved)
 			};
 
-			approvalStore.update((state) => {
-				state.queue.push(request);
-				return state;
-			});
+			approvalStore.update((state) => ({
+				queue: [...state.queue, request],
+				undoStack: state.undoStack
+			}));
 		});
 	},
 
 	acceptChunk(requestId: string, chunkId: string) {
 		approvalStore.update((state) => {
-			const req = state.queue.find((r) => r.id === requestId);
-			if (req) {
-				const chunk = req.chunks.find((c) => c.id === chunkId);
-				if (chunk && chunk.status === 'pending') {
-					chunk.status = 'accepted';
-					state.undoStack.push({ requestId, chunkId, action: 'accept' });
-				}
-			}
-			return state;
+			const queue = state.queue.map((req) => {
+				if (req.id !== requestId) return req;
+				return {
+					...req,
+					chunks: req.chunks.map((c) => 
+						c.id === chunkId && c.status === 'pending'
+							? { ...c, status: 'accepted' as const }
+							: c
+					)
+				};
+			});
+			return {
+				queue,
+				undoStack: [...state.undoStack, { requestId, chunkId, action: 'accept' as const }]
+			};
 		});
 		this.checkCompletion(requestId);
 	},
 
 	rejectChunk(requestId: string, chunkId: string) {
 		approvalStore.update((state) => {
-			const req = state.queue.find((r) => r.id === requestId);
-			if (req) {
-				const chunk = req.chunks.find((c) => c.id === chunkId);
-				if (chunk && chunk.status === 'pending') {
-					chunk.status = 'rejected';
-					state.undoStack.push({ requestId, chunkId, action: 'reject' });
-				}
-			}
-			return state;
+			const queue = state.queue.map((req) => {
+				if (req.id !== requestId) return req;
+				return {
+					...req,
+					chunks: req.chunks.map((c) =>
+						c.id === chunkId && c.status === 'pending'
+							? { ...c, status: 'rejected' as const }
+							: c
+					)
+				};
+			});
+			return {
+				queue,
+				undoStack: [...state.undoStack, { requestId, chunkId, action: 'reject' as const }]
+			};
 		});
 		this.checkCompletion(requestId);
 	},
 
 	acceptAll(requestId: string) {
-		approvalStore.update((state) => {
-			const req = state.queue.find((r) => r.id === requestId);
-			if (req) {
-				req.chunks.forEach((chunk) => {
-					if (chunk.status === 'pending') {
-						chunk.status = 'accepted';
-					}
-				});
-				state.undoStack.push({ requestId, action: 'accept' });
-			}
-			return state;
-		});
+		approvalStore.update((state) => ({
+			queue: state.queue.map((req) =>
+				req.id === requestId
+					? { ...req, chunks: req.chunks.map((c) => c.status === 'pending' ? { ...c, status: 'accepted' as const } : c) }
+					: req
+			),
+			undoStack: [...state.undoStack, { requestId, action: 'accept' as const }]
+		}));
 		this.checkCompletion(requestId);
 	},
 
@@ -200,9 +208,11 @@ export const approvalManager = {
 			const req = state.queue.find((r) => r.id === requestId);
 			if (req) {
 				resolveFn = req.resolve;
-				state.queue = state.queue.filter((r) => r.id !== requestId);
 			}
-			return state;
+			return {
+				queue: state.queue.filter((r) => r.id !== requestId),
+				undoStack: state.undoStack
+			};
 		});
 		
 		if (resolveFn) {
@@ -212,25 +222,34 @@ export const approvalManager = {
 
 	undo() {
 		approvalStore.update((state) => {
-			const lastAction = state.undoStack.pop();
+			const lastAction = state.undoStack[state.undoStack.length - 1];
 			if (!lastAction) return state;
-
-			const req = state.queue.find((r) => r.id === lastAction.requestId);
-			if (!req) return state;
+			const newUndoStack = state.undoStack.slice(0, -1);
 
 			if (lastAction.chunkId) {
-				const chunk = req.chunks.find((c) => c.id === lastAction.chunkId);
-				if (chunk) {
-					chunk.status = 'pending';
-				}
+				return {
+					queue: state.queue.map((req) =>
+						req.id === lastAction.requestId
+							? {
+									...req,
+									chunks: req.chunks.map((c) =>
+										c.id === lastAction.chunkId ? { ...c, status: 'pending' as const } : c
+									)
+							  }
+							: req
+					),
+					undoStack: newUndoStack
+				};
 			} else {
-				// Undo full accept
-				req.chunks.forEach((chunk) => {
-					chunk.status = 'pending';
-				});
+				return {
+					queue: state.queue.map((req) =>
+						req.id === lastAction.requestId
+							? { ...req, chunks: req.chunks.map((c) => ({ ...c, status: 'pending' as const })) }
+							: req
+					),
+					undoStack: newUndoStack
+				};
 			}
-
-			return state;
 		});
 	},
 
@@ -255,9 +274,13 @@ export const approvalManager = {
 					actionType = req.actionType;
 					
 					// Remove from queue
-					state.queue.splice(reqIndex, 1);
+					return {
+						queue: state.queue.filter((r) => r.id !== requestId),
+						undoStack: state.undoStack
+					};
 				}
 			}
+			// Return same reference if not complete — Svelte will skip update
 			return state;
 		});
 

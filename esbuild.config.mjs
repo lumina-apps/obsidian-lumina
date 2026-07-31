@@ -9,9 +9,25 @@ import sveltePreprocess from "svelte-preprocess";
 import { join } from "path";
 import { copyFileSync, writeFileSync, mkdirSync, existsSync, readFileSync } from "fs";
 
+// Load .env manually before anything else so process.env.OUTDIR is available
+// (process.loadEnvFile() requires Node 20.6+ and may fail in some environments)
 if (existsSync(".env")) {
 	try {
-		process.loadEnvFile();
+		const envContent = readFileSync(".env", "utf8");
+		for (const line of envContent.split("\n")) {
+			const trimmed = line.trim();
+			if (!trimmed || trimmed.startsWith("#")) continue;
+			const eqIndex = trimmed.indexOf("=");
+			if (eqIndex === -1) continue;
+			const key = trimmed.slice(0, eqIndex).trim();
+			let value = trimmed.slice(eqIndex + 1).trim();
+			if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+				value = value.slice(1, -1);
+			}
+			if (!process.env[key]) {
+				process.env[key] = value;
+			}
+		}
 	} catch (e) {
 		console.warn("Failed to load .env file:", e);
 	}
@@ -24,14 +40,17 @@ if you want to view the source, please visit the github repository of this plugi
 `;
 
 const prod = process.argv[2] === "production";
-const dir = prod ? "./" : process.env.OUTDIR;
+
+// Use OUTDIR env var if set (e.g., to a vault plugin dir), otherwise use project root
+const dir = process.env.OUTDIR || "./";
 const outfile = join(dir, "main.js");
 const workerOutfile = join(dir, "embedding.worker.js");
 
+mkdirSync(dir, { recursive: true });
+copyFileSync("./manifest.json", join(dir, "manifest.json"));
+copyFileSync("./styles.css", join(dir, "styles.css"));
+
 if (!prod) {
-	mkdirSync(dir, { recursive: true });
-	copyFileSync("./manifest.json", join(dir, "manifest.json"));
-	copyFileSync("./styles.css", join(dir, "styles.css"));
 	writeFileSync(
 		join(dir, ".hotreload"),
 		"This file is used to enable hot reloading using the Hot Reload plugin. See https://github.com/pjeby/hot-reload for more information."
@@ -56,6 +75,7 @@ async function postProcessMainBundle() {
 	if (text !== original) {
 		writeFileSync(outPath, text);
 	}
+
 }
 
 async function postProcessWorkerBundle() {

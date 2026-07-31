@@ -618,6 +618,8 @@
     "actionApproval": {
       "title": "승인 필요: {{action}}",
       "targetFile": "대상 파일: {{path}}",
+      "editNote": "노트 수정",
+      "editNoteDesc": "아래 diff를 검토하고 변경사항을 승인 또는 거절하세요.",
       "createNote": "📄 새 노트를 생성하시겠습니까?",
       "deleteNote": "⚠️ 이 노트를 삭제하시겠습니까?",
       "renameNote": "✏️ 이 노트를 다음 경로로 이동/이름 변경하시겠습니까:",
@@ -626,7 +628,16 @@
       "executeCode": "⚡ 이 코드를 실행하시겠습니까?",
       "shellCommand": "💻 데스크탑 터미널 명령어를 실행하시겠습니까?",
       "accept": "승인",
-      "reject": "거절"
+      "reject": "거절",
+      "acceptAll": "모두 승인",
+      "rejectAll": "모두 거절",
+      "chunkAccepted": "청크 승인됨",
+      "chunkAcceptedShort": "승인됨",
+      "chunkAcceptedDesc": "모든 청크가 결정되면 이 변경사항이 적용됩니다.",
+      "chunkRejected": "청크 거절됨",
+      "chunkRejectedShort": "거절됨",
+      "chunkRejectedDesc": "이 변경사항은 건너뜁니다.",
+      "pendingChangesBanner": "수정 대기 중 — Lumina 채팅에서 검토하세요"
     },
     "emptyResponseTokenLimit": "⚠️ 모델이 빈 응답을 반환했습니다. 최대 출력 토큰(Max Output Tokens) 제한에 도달하여 생성이 중단되었습니다. 설정의 [최대 출력 토큰] 제한을 늘려주세요.",
     "tokenLimitHitWarning": "\n\n⚠️ (최대 출력 토큰 제한에 도달하여 답변이 도중에 끊겼습니다. 설정의 [최대 출력 토큰] 값을 늘려주세요.)",
