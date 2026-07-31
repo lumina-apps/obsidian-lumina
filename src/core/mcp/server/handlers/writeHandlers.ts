@@ -14,6 +14,9 @@ import {
 } from './utils/writeHandlerUtils';
 import { approvalManager } from '../../../../features/chat/utils/approvalManager';
 
+/** 첨부 파일 승인 대기 최대 시간 (5분) */
+const APPROVAL_TIMEOUT_MS = 5 * 60 * 1000;
+
 export const createNoteHandler = async (
 	args: ToolArguments,
 	ctx: ToolHandlerContext,
@@ -279,7 +282,7 @@ export const saveAttachmentHandler = async (
 	const binaryString = window.atob(base64Data);
 	const sizeBytes = binaryString.length;
 
-	const approved = await approvalManager.requestActionApproval('attachment', path, { sizeBytes });
+	const approved = await approvalManager.requestActionApproval('attachment', path, { sizeBytes }, { timeoutMs: APPROVAL_TIMEOUT_MS });
 	if (!approved) {
 		return getRejectionResult('User explicitly rejected attachment saving. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.');
 	}

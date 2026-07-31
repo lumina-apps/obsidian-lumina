@@ -22,6 +22,13 @@ export interface ApprovalRequest {
 	resolve: (result: { approved: boolean; content: string }) => void;
 }
 
+export interface ApprovalOptions {
+	/** 승인 대기 최대 시간(ms). 0 또는 미지정 시 타임아웃 없음 */
+	timeoutMs?: number;
+	/** 중단 신호. abort 시 자동 거절 처리 */
+	signal?: AbortSignal;
+}
+
 export interface EnrichedChange extends Change {
 	chunkId?: string;
 }
@@ -70,66 +77,123 @@ function parseIntoChunks(changes: Change[]): EnrichedChange[] {
 	return enriched;
 }
 
-export const approvalManager = {
-	/**
-	 * Submits a new modification proposal. Returns a promise that resolves when the user approves/rejects.
-	 */
-	requestApproval(filePath: string, baseContent: string, proposedContent: string): Promise<{ approved: boolean; content: string }> {
-		return new Promise((resolve) => {
-			const changes = diffLines(baseContent, proposedContent);
-			const allChanges = parseIntoChunks(changes);
-			
-			// Extract just the chunks for easy UI iteration
-			const chunkMap = new Map<string, Change[]>();
-			for (const change of allChanges) {
-				if (change.chunkId) {
-					if (!chunkMap.has(change.chunkId)) {
-						chunkMap.set(change.chunkId, []);
-					}
-					chunkMap.get(change.chunkId)!.push(change);
-				}
+function createRequestWithAutoResolve<T>(
+	build: (resolve: (value: T) => void) => ApprovalRequest | null,
+	resolveValue: T,
+	options?: ApprovalOptions,
+): Promise<T> {
+	return new Promise<T>((resolve) => {
+		let settled = false;
+		let timer: number | null = null;
+
+		const settle = (value: T) => {
+			if (settled) return;
+			settled = true;
+			if (timer !== null) window.clearTimeout(timer);
+			if (options?.signal) {
+				options.signal.removeEventListener('abort', onAbort);
 			}
+			resolve(value);
+		};
 
-			const chunks: DiffChunk[] = Array.from(chunkMap.entries()).map(([id, changes]) => ({
-				id,
-				changes,
-				status: 'pending'
-			}));
+		const onAbort = () => {
+			// 사용자가 중단한 경우 자동 거절 처리
+			settle(resolveValue);
+		};
 
-			// If there are no actual differences, just auto-resolve
-			if (chunks.length === 0) {
-				resolve({ approved: true, content: baseContent });
+		if (options?.signal) {
+			if (options.signal.aborted) {
+				settle(resolveValue);
 				return;
 			}
+			options.signal.addEventListener('abort', onAbort);
+		}
 
-			const request: ApprovalRequest = {
-				id: generateId(),
-				filePath,
-				baseContent,
-				proposedContent,
-				chunks,
-				allChanges,
-				actionType: 'edit',
-				resolve
-			};
+		if (options?.timeoutMs && options.timeoutMs > 0) {
+			timer = window.setTimeout(() => {
+				settle(resolveValue);
+			}, options.timeoutMs);
+		}
 
+		const request = build((value) => settle(value));
+		// build() 내부에서 이미 resolve된 경우(예: diff 없음) 큐에 추가하지 않는다.
+		if (request && !settled) {
 			approvalStore.update((state) => ({
 				queue: [...state.queue, request],
 				undoStack: state.undoStack
 			}));
-		});
+		}
+	});
+}
+
+export const approvalManager = {
+	/**
+	 * Submits a new modification proposal. Returns a promise that resolves when the user approves/rejects.
+	 * options.timeoutMs 또는 options.signal이 주어지면 해당 조건에서 자동 거절 처리된다.
+	 */
+	requestApproval(
+		filePath: string,
+		baseContent: string,
+		proposedContent: string,
+		options?: ApprovalOptions,
+	): Promise<{ approved: boolean; content: string }> {
+		const REJECTED: { approved: boolean; content: string } = { approved: false, content: '' };
+
+		return createRequestWithAutoResolve(
+			(resolve) => {
+				const changes = diffLines(baseContent, proposedContent);
+				const allChanges = parseIntoChunks(changes);
+
+				// Extract just the chunks for easy UI iteration
+				const chunkMap = new Map<string, Change[]>();
+				for (const change of allChanges) {
+					if (change.chunkId) {
+						if (!chunkMap.has(change.chunkId)) {
+							chunkMap.set(change.chunkId, []);
+						}
+						chunkMap.get(change.chunkId)!.push(change);
+					}
+				}
+
+				const chunks: DiffChunk[] = Array.from(chunkMap.entries()).map(([id, changes]) => ({
+					id,
+					changes,
+					status: 'pending'
+				}));
+
+				// If there are no actual differences, just auto-resolve
+				if (chunks.length === 0) {
+					resolve({ approved: true, content: baseContent });
+				}
+
+				return {
+					id: generateId(),
+					filePath,
+					baseContent,
+					proposedContent,
+					chunks,
+					allChanges,
+					actionType: 'edit',
+					resolve: (result) => resolve(result)
+				};
+			},
+			REJECTED,
+			options,
+		);
 	},
 
 	/**
 	 * Submits a new action proposal (delete, rename, execute, etc). Returns a promise that resolves when approved/rejected.
+	 * options.timeoutMs 또는 options.signal이 주어지면 해당 조건에서 자동 거절 처리된다.
 	 */
 	requestActionApproval(
 		actionType: Exclude<ActionType, 'edit'>,
 		filePath: string,
-		metadata: Record<string, unknown> = {}
+		metadata: Record<string, unknown> = {},
+		options?: ApprovalOptions,
 	): Promise<boolean> {
-		return new Promise((resolve) => {
-			const request: ApprovalRequest = {
+		return createRequestWithAutoResolve(
+			(resolve) => ({
 				id: generateId(),
 				filePath,
 				baseContent: '',
@@ -139,13 +203,10 @@ export const approvalManager = {
 				actionType,
 				metadata,
 				resolve: (result) => resolve(result.approved)
-			};
-
-			approvalStore.update((state) => ({
-				queue: [...state.queue, request],
-				undoStack: state.undoStack
-			}));
-		});
+			}),
+			false,
+			options,
+		);
 	},
 
 	acceptChunk(requestId: string, chunkId: string) {

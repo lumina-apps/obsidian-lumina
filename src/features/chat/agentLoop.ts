@@ -254,8 +254,13 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 		// ── 각 tool call 실행 후 결과 메시지 추가 ───────────────────────────
 		for (const tc of resolvedToolCalls) {
 			addExecutingTool(assistantId, { id: tc.id, name: tc.name });
-			messagesForLLM.push(await executeToolCall(tc, mcpManager, toolServerMap, useTextTools, opts.webSearchSettings));
-			removeExecutingTool(assistantId, tc.id);
+			try {
+				// signal 전달 → 사용자 Stop 시 MCP/승인 대기 중단
+				messagesForLLM.push(await executeToolCall(tc, mcpManager, toolServerMap, useTextTools, opts.webSearchSettings, signal));
+			} finally {
+				// 예외 발생 시에도 실행 중 툴 표시가 남지 않도록 보장
+				removeExecutingTool(assistantId, tc.id);
+			}
 		}
 	}
 

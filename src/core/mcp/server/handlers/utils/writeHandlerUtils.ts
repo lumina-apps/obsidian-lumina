@@ -10,6 +10,9 @@ import type { ActionType } from '../../../../../features/chat/utils/approvalMana
 
 export const DEFAULT_REJECTION_MESSAGE = 'User explicitly rejected the change. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.';
 
+/** 에디트/액션 승인 대기 최대 시간 (5분) */
+const APPROVAL_TIMEOUT_MS = 5 * 60 * 1000;
+
 export const getRejectionResult = (message: string): ToolResult => ({
 	isError: true,
 	content: [{ type: 'text', text: message }]
@@ -84,7 +87,7 @@ export const safeModifyFile = async (
 	// so the diff decorations are visible in the editor.
 	await openFileInWorkspace(ctx.plugin.app, path);
 
-	const result = await approvalManager.requestApproval(path, currentContent, proposedContent);
+	const result = await approvalManager.requestApproval(path, currentContent, proposedContent, { timeoutMs: APPROVAL_TIMEOUT_MS });
 	if (!result.approved) {
 		return getRejectionResult(DEFAULT_REJECTION_MESSAGE);
 	}
@@ -108,7 +111,7 @@ export const safeCreateFile = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard
 ): Promise<ToolResult> => {
-	const approved = await approvalManager.requestActionApproval('create_note', path, { content });
+	const approved = await approvalManager.requestActionApproval('create_note', path, { content }, { timeoutMs: APPROVAL_TIMEOUT_MS });
 	if (!approved) {
 		return getRejectionResult('User explicitly rejected the file creation. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.');
 	}
@@ -147,7 +150,7 @@ export const safeActionFile = async (
 	pathGuard: PathGuard,
 	rejectionMessage: string = DEFAULT_REJECTION_MESSAGE
 ): Promise<ToolResult> => {
-	const approved = await approvalManager.requestActionApproval(actionName, path, actionParams);
+	const approved = await approvalManager.requestActionApproval(actionName, path, actionParams, { timeoutMs: APPROVAL_TIMEOUT_MS });
 	if (!approved) {
 		return getRejectionResult(rejectionMessage);
 	}

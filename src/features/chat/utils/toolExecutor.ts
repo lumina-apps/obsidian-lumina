@@ -17,6 +17,7 @@ export async function executeToolCall(
 	toolServerMap: Record<string, string>,
 	useTextTools: boolean,
 	webSearchSettings?: WebSearchSettings,
+	signal?: AbortSignal,
 ): Promise<ChatMessage> {
 	const toolMsgRole = useTextTools ? 'user' : 'tool';
 
@@ -38,7 +39,7 @@ export async function executeToolCall(
 			const resStr = await executeWebSearch(cleanArgs, webSearchSettings);
 			toolResult = { content: [{ type: 'text', text: resStr }] };
 		} else if (resolvedServerId && mcpManager) {
-			toolResult = await mcpManager.callTool(resolvedServerId, tc.name, cleanArgs);
+			toolResult = await mcpManager.callTool(resolvedServerId, tc.name, cleanArgs, signal);
 		} else {
 			toolResult = {
 				isError: true,

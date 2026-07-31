@@ -14,6 +14,9 @@ import { approvalManager } from '../../features/chat/utils/approvalManager';
 
 const LOCAL_MCP_CLIENT_ID = '__lumina_local__';
 
+/** 위험 툴 승인 대기 최대 시간 (기본 5분) */
+const MCP_APPROVAL_TIMEOUT_MS = 5 * 60 * 1000;
+
 export class McpManager {
 	private plugin: LuminaPlugin;
 	public clients: Map<string, LuminaMcpClient> = new Map();
@@ -81,7 +84,12 @@ export class McpManager {
 		return Array.from(toolsMap.values());
 	}
 
-	async callTool(serverId: string, toolName: string, args: Record<string, unknown>): Promise<unknown> {
+	async callTool(
+		serverId: string,
+		toolName: string,
+		args: Record<string, unknown>,
+		signal?: AbortSignal,
+	): Promise<unknown> {
 		const client = this.clients.get(serverId);
 		if (!client) throw new Error(`MCP server ${serverId} is not connected.`);
 
@@ -96,7 +104,13 @@ export class McpManager {
 			}
 
 			if (serverId !== LOCAL_MCP_CLIENT_ID) {
-				const approved = await approvalManager.requestActionApproval('mcp_tool', client.config.name, { toolName, args });
+				// 사용자가 Stop을 누르거나 타임아웃이 지나면 자동 거절 처리되어 블로킹 방지
+				const approved = await approvalManager.requestActionApproval(
+					'mcp_tool',
+					client.config.name,
+					{ toolName, args },
+					{ signal, timeoutMs: MCP_APPROVAL_TIMEOUT_MS },
+				);
 				if (!approved) {
 					return {
 						isError: true,
@@ -107,7 +121,7 @@ export class McpManager {
 		}
 
 		try {
-			return await client.callTool(toolName, args);
+			return await client.callTool(toolName, args, signal);
 		} catch (e: unknown) {
 			const errorMsg = formatMcpError(e, `Failed to execute tool ${toolName} on server ${client.config.name}`);
 			debugLogger.logError('mcp', errorMsg);

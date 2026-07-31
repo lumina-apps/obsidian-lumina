@@ -160,11 +160,16 @@ export class LuminaMcpClient {
 		}
 	}
 
-	async callTool(name: string, args: Record<string, unknown>): Promise<unknown> {
+	async callTool(name: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<unknown> {
 		return await this.client.callTool(
 			{ name, arguments: args ?? {} },
 			undefined,
-			{ timeout: 3600000 } // 1 hour timeout for user approval
+			{
+				// MCP 툴 실행 타임아웃: 5분 (1시간 → 5분으로 축소)
+				// abort signal이 주어지면 취소 시 즉시 AbortError 발생
+				timeout: 5 * 60 * 1000,
+				...(signal ? { signal } : {}),
+			}
 		);
 	}
 

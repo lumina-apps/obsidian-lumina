@@ -1,6 +1,10 @@
 import type { ToolDefinition } from '../../shared/types/llm.types';
 import type { WebSearchSettings } from '../../core/settings/settings.types';
 import { createWebSearchProvider } from './webSearchService';
+import { withTimeout } from '../../shared/utils/asyncUtils';
+
+/** 웹 검색 최대 대기 시간 (30초) */
+const WEB_SEARCH_TIMEOUT_MS = 30_000;
 
 export const WEB_SEARCH_TOOL_NAME = 'lumina_web_search';
 
@@ -53,7 +57,18 @@ export async function executeWebSearch(
 	if (requestedMax < 1) requestedMax = 1;
 	if (requestedMax > 10) requestedMax = 10;
 
-	const results = await provider.search(query, requestedMax);
+	// 검색 API가 응답하지 않아 영원히 대기하지 않도록 타임아웃 적용
+	let results;
+	try {
+		results = await withTimeout(
+			provider.search(query, requestedMax),
+			WEB_SEARCH_TIMEOUT_MS,
+			`Web search timed out after ${WEB_SEARCH_TIMEOUT_MS}ms.`,
+		);
+	} catch (err) {
+		const errorMsg = err instanceof Error ? err.message : String(err);
+		throw new Error(`Web search failed: ${errorMsg}`);
+	}
 
 	if (results.length === 0) {
 		return `No search results found for query: "${query}"`;

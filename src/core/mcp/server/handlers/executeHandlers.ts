@@ -6,6 +6,9 @@ import type { PathGuard } from '../pathGuard';
 import { approvalManager } from '../../../../features/chat/utils/approvalManager';
 import { McpSandbox } from '../../mcpSandbox';
 
+/** 실행/셸 승인 대기 최대 시간 (5분) */
+const APPROVAL_TIMEOUT_MS = 5 * 60 * 1000;
+
 export const executeCodeHandler = async (
 	args: ToolArguments,
 	_ctx: ToolHandlerContext,
@@ -13,7 +16,7 @@ export const executeCodeHandler = async (
 ): Promise<ToolResult> => {
 	const code = getStringArg(args, 'code');
 
-	const approved = await approvalManager.requestActionApproval('execute', 'Code Sandbox', { code });
+	const approved = await approvalManager.requestActionApproval('execute', 'Code Sandbox', { code }, { timeoutMs: APPROVAL_TIMEOUT_MS });
 	if (!approved) {
 		return { isError: true, content: [{ type: 'text', text: 'User explicitly rejected code execution. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.' }] };
 	}
@@ -58,7 +61,7 @@ export const runNoteCodeBlockHandler = async (
 
 	const code = matches[blockIndex][1];
 
-	const approved = await approvalManager.requestActionApproval('execute', `Code Block [${blockIndex}] in ${path}`, { code });
+	const approved = await approvalManager.requestActionApproval('execute', `Code Block [${blockIndex}] in ${path}`, { code }, { timeoutMs: APPROVAL_TIMEOUT_MS });
 	if (!approved) {
 		return { isError: true, content: [{ type: 'text', text: 'User explicitly rejected code block execution. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.' }] };
 	}
@@ -128,7 +131,7 @@ export const runShellCommandHandler = async (
 	}
 	// ── 위험 패턴 차단 끝 ──────────────────────────────────────────────
 
-	const approved = await approvalManager.requestActionApproval('shell', 'Terminal Command', { code: command });
+	const approved = await approvalManager.requestActionApproval('shell', 'Terminal Command', { code: command }, { timeoutMs: APPROVAL_TIMEOUT_MS });
 	if (!approved) {
 		return { isError: true, content: [{ type: 'text', text: 'User explicitly rejected the shell command execution. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.' }] };
 	}
