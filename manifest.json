@@ -1,7 +1,7 @@
 {
 	"id": "lumina",
 	"name": "Lumina",
-	"version": "1.3.8",
+	"version": "1.3.9",
 	"minAppVersion": "1.11.4",
 	"description": "Language-Agnostic RAG & MCP Agent powered by Multilingual Embeddings for local AI semantic search.",
 	"author": "Lumina",
