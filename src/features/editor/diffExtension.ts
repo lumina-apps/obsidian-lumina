@@ -51,10 +51,10 @@ class DiffBannerWidget extends WidgetType {
 	toDOM() {
 		const div = createDiv({ cls: 'lumina-diff-banner' });
 		
-		const rejectBtn = div.createEl('button', { cls: 'lumina-diff-banner-btn reject', text: `${(t as any)('uiMessages.actionApproval.rejectAll') || 'Reject All'}` });
+		const rejectBtn = div.createEl('button', { cls: 'lumina-diff-banner-btn reject', text: t('uiMessages.actionApproval.rejectAll') });
 		rejectBtn.onclick = () => approvalManager.rejectAll(this.requestId);
 		
-		const acceptBtn = div.createEl('button', { cls: 'lumina-diff-banner-btn accept', text: `${(t as any)('uiMessages.actionApproval.acceptAll') || 'Accept All'}` });
+		const acceptBtn = div.createEl('button', { cls: 'lumina-diff-banner-btn accept', text: t('uiMessages.actionApproval.acceptAll') });
 		acceptBtn.onclick = () => approvalManager.acceptAll(this.requestId);
 		
 		return div;

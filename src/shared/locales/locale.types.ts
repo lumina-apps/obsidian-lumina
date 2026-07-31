@@ -759,6 +759,8 @@ export interface TranslationUiMessages {
     shellCommand: string;
     accept: string;
     reject: string;
+    acceptAll: string;
+    rejectAll: string;
   };
   errorLoadingSettings: string;
   emptyResponseTokenLimit: string;
