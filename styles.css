@@ -7,6 +7,13 @@
 	container-type: inline-size;
 }
 
+/* Obsidian 1.13+ narrow settings window: reduce side padding so content keeps breathing room */
+@container (max-width: 900px) {
+	.vertical-tab-content-container .vertical-tab-content.lumina-settings {
+		padding: 20px 24px 40px;
+	}
+}
+
 /* Center all top-level layout components */
 .lumina-settings .lumina-settings__nav,
 .lumina-settings .lumina-settings__body,
@@ -363,6 +370,12 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 	padding: 6px 10px;
 }
 
+/* Select: keep right padding so the custom arrow icon doesn't overlap the text */
+.lumina-settings select {
+	padding-right: 30px;
+	text-overflow: ellipsis;
+}
+
 .lumina-settings input[type="text"]:focus,
 .lumina-settings input[type="password"]:focus,
 .lumina-settings textarea:focus,
@@ -405,8 +418,9 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 .vertical-tab-content-container .lumina-settings .setting-item-control input[type="text"],
 .vertical-tab-content-container .lumina-settings .setting-item-control input[type="password"],
 .vertical-tab-content-container .lumina-settings .setting-item-control select {
-	width: 320px;
-	max-width: 100%;
+	width: 100%;
+	max-width: 320px;
+	min-width: 0;
 	box-sizing: border-box;
 }
 
@@ -465,6 +479,12 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 	border-radius: 6px;
 	border: 1px solid var(--background-modifier-border);
 	background-color: var(--background-primary);
+}
+
+/* Select inside cards: reserve right space for the arrow icon */
+.vertical-tab-content-container .lumina-settings .lumina-provider-card select {
+	padding-right: 26px;
+	text-overflow: ellipsis;
 }
 
 .vertical-tab-content-container .lumina-settings .lumina-provider-card button {
@@ -919,6 +939,12 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 	height: 32px;
 	padding: 4px 10px;
 	font-size: 0.9em;
+}
+
+/* Select inside MCP server cards: keep arrow space */
+.vertical-tab-content-container .lumina-settings .lumina-provider-card.mcp-server-card .setting-item-control select {
+	padding-right: 26px;
+	text-overflow: ellipsis;
 }
 
 /* 액션 영역 컨트롤 */
