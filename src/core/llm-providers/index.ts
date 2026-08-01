@@ -57,7 +57,9 @@ export function createProvider(config: LLMProviderConfig): ILLMProvider {
 		case 'deepseek':
 		case 'groq':
 		case 'openrouter':
-		case 'togetherai': {
+		case 'togetherai':
+		case 'kimi':
+		case 'mistral': {
 			const url = PROVIDER_BASE_URLS[type]!;
 			return new OpenAICompatProvider(id, type, url, credential);
 		}

@@ -9,6 +9,8 @@ export type ProviderType =
 	| 'groq'
 	| 'openrouter'
 	| 'togetherai'
+	| 'kimi'
+	| 'mistral'
 	| 'ollama'
 	| 'lmstudio'
 	| 'vllm'
@@ -24,6 +26,8 @@ export const PROVIDER_LABELS: Record<ProviderType, string> = {
 	groq: 'Groq',
 	openrouter: 'OpenRouter',
 	togetherai: 'Together AI',
+	kimi: 'Kimi (Moonshot)',
+	mistral: 'Mistral',
 	ollama: 'Ollama',
 	lmstudio: 'LM Studio',
 	vllm: 'vLLM',
@@ -42,6 +46,8 @@ export const PROVIDER_CATEGORIES: Record<ProviderType, ProviderCategory> = {
 	groq: 'cloud',
 	openrouter: 'aggregator',
 	togetherai: 'aggregator',
+	kimi: 'cloud',
+	mistral: 'cloud',
 	ollama: 'local',
 	lmstudio: 'local',
 	vllm: 'local',
@@ -61,6 +67,8 @@ export const PROVIDER_BASE_URLS: Partial<Record<ProviderType, string>> = {
 	groq: 'https://api.groq.com/openai',
 	openrouter: 'https://openrouter.ai/api',
 	togetherai: 'https://api.together.xyz',
+	kimi: 'https://api.moonshot.ai',
+	mistral: 'https://api.mistral.ai',
 	ollama: 'http://localhost:11434',
 	lmstudio: 'http://localhost:1234',
 	vllm: 'http://localhost:8000',
