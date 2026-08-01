@@ -2,6 +2,7 @@ import { normalizePath, type App, TFolder, TFile } from 'obsidian';
 import { t } from '../../shared/locales/helpers';
 import type { ChatSession, UIChatMessage } from '../../shared/types/chat.types';
 import type { LLMProviderConfig } from '../../shared/types/settings.types';
+import { debugLogger } from '../../shared/debugLogger';
 /** 특정 디렉토리 내 .md 파일만 가져온다 (vault 전체 스캔 방지) */
 function getHistoryFiles(app: App, basePath: string): TFile[] {
 	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
@@ -20,6 +21,7 @@ function getHistoryFiles(app: App, basePath: string): TFile[] {
 // ─── Save ─────────────────────────────────────────────────────────────────────
 
 export async function saveSession(app: App, session: ChatSession, basePath: string): Promise<void> {
+	debugLogger.logSystem('history', `saveSession started (sessionId=${session.id}, title="${session.title}", basePath=${basePath})`);
 	// 파일명: YYMMDD_HHMM - [title]
 	const dateObj = new Date(session.createdAt);
 	const yy = String(dateObj.getFullYear()).slice(2);
@@ -65,8 +67,10 @@ export async function saveSession(app: App, session: ChatSession, basePath: stri
 			await app.vault.rename(existingFile, filePath);
 		}
 		await app.vault.modify(existingFile, content);
+		debugLogger.logSystem('history', `saveSession: updated existing session file (${existingFile.path})`);
 	} else {
 		await app.vault.create(filePath, content);
+		debugLogger.logSystem('history', `saveSession: created new session file (${filePath})`);
 	}
 }
 
@@ -147,9 +151,13 @@ function parseTimestampFromFilename(filename: string): number | null {
 }
 
 export async function loadSessionsList(app: App, basePath: string): Promise<ChatSession[]> {
+	debugLogger.logSystem('history', `loadSessionsList started (basePath=${basePath})`);
 	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
 	const folderExists = await app.vault.adapter.exists(normalBase);
-	if (!folderExists) return [];
+	if (!folderExists) {
+		debugLogger.logSystem('history', `loadSessionsList: folder does not exist (${normalBase}), returning empty.`);
+		return [];
+	}
 
 	const files = getHistoryFiles(app, normalBase);
 	const sessions: ChatSession[] = [];
@@ -193,10 +201,12 @@ export async function loadSessionsList(app: App, basePath: string): Promise<Chat
 	}
 
 	// 최신순 정렬 (NaN 방어)
-	return sessions.sort((a, b) => {
+	const sorted = sessions.sort((a, b) => {
 		const diff = b.updatedAt - a.updatedAt;
 		return isNaN(diff) ? 0 : diff;
 	});
+	debugLogger.logSystem('history', `loadSessionsList completed (sessions=${sorted.length})`);
+	return sorted;
 }
 
 /**
@@ -227,11 +237,15 @@ async function findSessionFile(app: App, files: TFile[], sessionId: string): Pro
 
 /** 세션 파일에서 숨김 JSON을 파싱해 ChatSession(메시지 포함) 복원 */
 export async function loadSession(app: App, sessionId: string, basePath: string): Promise<ChatSession | null> {
+	debugLogger.logSystem('history', `loadSession started (sessionId=${sessionId}, basePath=${basePath})`);
 	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
 	const files = getHistoryFiles(app, normalBase);
 	
 	const file = await findSessionFile(app, files, sessionId);
-	if (!file) return null;
+	if (!file) {
+		debugLogger.logSystem('history', `loadSession: session file not found (sessionId=${sessionId})`);
+		return null;
+	}
 
 	const content = await app.vault.read(file);
 	
@@ -242,6 +256,7 @@ export async function loadSession(app: App, sessionId: string, basePath: string)
 			const parsed = JSON.parse(match[1]) as ChatSession;
 			return parsed;
 		} catch (e) {
+			debugLogger.logError('history', e instanceof Error ? e : new Error(`Failed to parse history JSON data: ${e}`));
 			console.error('Lumina: Failed to parse history JSON data', e);
 		}
 	}
@@ -256,9 +271,12 @@ export async function deleteSession(app: App, sessionId: string, basePath: strin
 	
 	const file = await findSessionFile(app, files, sessionId);
 	if (file) {
+		debugLogger.logSystem('history', `deleteSession: deleting session file (${file.path})`);
 		await app.fileManager.trashFile(file);
+		debugLogger.logSystem('history', `deleteSession: deleted (sessionId=${sessionId})`);
 		return true;
 	}
+	debugLogger.logSystem('history', `deleteSession: session file not found (sessionId=${sessionId})`);
 	return false;
 }
 
@@ -323,6 +341,7 @@ function serializeSession(session: ChatSession): string {
 // ─── Export ───────────────────────────────────────────────────────────────────
 
 export async function exportSessionToMarkdown(app: App, session: ChatSession): Promise<void> {
+	debugLogger.logSystem('history', `exportSessionToMarkdown started (sessionId=${session.id}, title="${session.title}")`);
 	const dateObj = new Date(session.createdAt);
 	const yy = String(dateObj.getFullYear()).slice(2);
 	const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -362,6 +381,7 @@ export async function exportSessionToMarkdown(app: App, session: ChatSession): P
 	}
 
 	await app.workspace.getLeaf('tab').openFile(file);
+	debugLogger.logSystem('history', `exportSessionToMarkdown completed (file=${filePath})`);
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

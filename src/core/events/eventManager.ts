@@ -7,6 +7,7 @@ import { updateDiscoveryState } from '../store/discoveryStore';
 import { Notice, Menu, MenuItem, TFile, TFolder } from 'obsidian';
 import { generateCanvasForFile, generateCanvasForFolder } from '../../features/canvas/canvasGenerator';
 import type { CanvasBuildOptions } from '../../features/canvas/canvasTypes';
+import { debugLogger } from '../../shared/debugLogger';
 
 export class EventManager {
 	private plugin: LuminaPlugin;
@@ -26,6 +27,8 @@ export class EventManager {
 				if (!this.plugin.settings.misc.contextMenuEnabled) return;
 				const selection = editor.getSelection();
 				const activeFile = view?.file ?? this.plugin.app.workspace.getActiveFile();
+
+				debugLogger.logSystem('events', `context-menu opened (hasSelection=${selection.trim().length > 0}, activeFile=${activeFile?.path ?? 'null'}, contextMenuEnabled=${this.plugin.settings.misc.contextMenuEnabled})`);
 				
 				menu.addItem((item) => {
 					item.setTitle('✨ Lumina').setIcon('bot');
@@ -39,15 +42,16 @@ export class EventManager {
 							subItem
 								.setTitle(t('uiMessages.cmdCtxMenu'))
 								.setIcon('message-circle')
-								.onClick(async () => {
-									await activateView(this.plugin.app.workspace, CHAT_VIEW_TYPE);
-									addPendingAttachment({
-										type: 'selection',
-										path: `selection-${Date.now()}`,
-										name: t('uiMessages.qaSelectedText'),
-										content: selection,
-									});
+							.onClick(async () => {
+								debugLogger.logSystem('events', 'context-menu: "Ask with selection" triggered');
+								await activateView(this.plugin.app.workspace, CHAT_VIEW_TYPE);
+								addPendingAttachment({
+									type: 'selection',
+									path: `selection-${Date.now()}`,
+									name: t('uiMessages.qaSelectedText'),
+									content: selection,
 								});
+							});
 						});
 					}
 
@@ -57,6 +61,7 @@ export class EventManager {
 								.setTitle(t('uiMessages.cmdAutoLinkNote'))
 								.setIcon('link')
 								.onClick(async () => {
+									debugLogger.logSystem('events', `context-menu: auto-link triggered (file=${activeFile?.path ?? 'null'})`);
 									const { processAutoLink } = await import('../mcp/server/handlers/utils/autoLinker');
 									const res = await processAutoLink(this.plugin.app, activeFile, editor);
 									new Notice(res.message);
@@ -69,6 +74,7 @@ export class EventManager {
 								.setIcon('map')
 								.setSection('action')
 								.onClick(async () => {
+									debugLogger.logSystem('events', `context-menu: canvas generate triggered (file=${activeFile?.path ?? 'null'})`);
 									const opts = this.getCanvasOptions();
 									await generateCanvasForFile(
 										this.plugin.app,
@@ -110,6 +116,7 @@ export class EventManager {
 						.setIcon('map')
 						.setSection('action')
 						.onClick(async () => {
+							debugLogger.logSystem('events', `file-menu: canvas generate triggered (file=${abstractFile.path})`);
 							const opts = this.getCanvasOptions();
 							await generateCanvasForFile(
 								this.plugin.app,
@@ -134,6 +141,7 @@ export class EventManager {
 						.setIcon('map')
 						.setSection('action')
 						.onClick(async () => {
+							debugLogger.logSystem('events', `file-menu: folder canvas generate triggered (folder=${abstractFile.path})`);
 							const opts = this.getCanvasOptions();
 							await generateCanvasForFolder(
 								this.plugin.app,
@@ -150,6 +158,7 @@ export class EventManager {
 		// ── 활성 문서 감지 (스마트 탐색용) ──────────────────────────────
 		this.plugin.registerEvent(
 			this.plugin.app.workspace.on('file-open', (file) => {
+				debugLogger.logSystem('events', `file-open event (file=${file?.path ?? 'null'})`);
 				if (file && file.extension === 'md') {
 					updateDiscoveryState({ activeFile: file });
 				} else {

@@ -1,4 +1,5 @@
 import { App, TFile, TFolder, normalizePath } from 'obsidian';
+import { debugLogger } from '../../shared/debugLogger';
 
 const BACKUP_FOLDER = 'backups';
 const MAX_BACKUPS_PER_FILE = 10;
@@ -16,12 +17,14 @@ function sanitizeFileName(name: string): string {
  * Follows a retention policy to keep only the last MAX_BACKUPS_PER_FILE backups per file.
  */
 export async function createBackup(app: App, targetPath: string): Promise<void> {
+	debugLogger.logSystem('backup', `createBackup started (target=${targetPath})`);
 	try {
 		const vault = app.vault;
 		
 		// 1. Check if the file exists
 		const file = vault.getAbstractFileByPath(normalizePath(targetPath));
 		if (!(file instanceof TFile)) {
+			debugLogger.logSystem('backup', `createBackup: file not found (${targetPath}), skipping.`);
 			return; // File doesn't exist, nothing to backup
 		}
 
@@ -58,10 +61,13 @@ export async function createBackup(app: App, targetPath: string): Promise<void> 
 		// 5. Save the backup
 		await vault.create(backupFilePath, content);
 
+		debugLogger.logSystem('backup', `createBackup completed (target=${targetPath}, backup=${backupFilePath})`);
+
 		// 6. Enforce Retention Policy
 		await enforceRetentionPolicy(app, flatOriginalPath);
 
 	} catch (error) {
+		debugLogger.logError('backup', error instanceof Error ? error : new Error(`Failed to create backup for ${targetPath}: ${error}`));
 		console.error(`[Backup] Failed to create backup for ${targetPath}:`, error);
 	}
 }
@@ -80,6 +86,7 @@ async function enforceRetentionPolicy(app: App, flatOriginalPath: string): Promi
 	if (backupFiles.length <= MAX_BACKUPS_PER_FILE) {
 		return;
 	}
+	debugLogger.logSystem('backup', `enforceRetentionPolicy: ${backupFiles.length} backups found for ${flatOriginalPath} (max=${MAX_BACKUPS_PER_FILE}). Cleaning up...`);
 
 	// Sort backups by timestamp (which is at the beginning of the file name)
 	// Example: 20260620_114220_folder_note.md
@@ -92,7 +99,9 @@ async function enforceRetentionPolicy(app: App, flatOriginalPath: string): Promi
 	for (const file of filesToDelete) {
 		try {
 			await app.fileManager.trashFile(file); // Use system trash
+			debugLogger.logSystem('backup', `enforceRetentionPolicy: deleted old backup ${file.path}`);
 		} catch (e) {
+			debugLogger.logError('backup', e instanceof Error ? e : new Error(`Failed to delete old backup ${file.path}`));
 			console.error(`[Backup] Failed to delete old backup ${file.path}:`, e);
 		}
 	}

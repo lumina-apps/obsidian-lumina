@@ -2,6 +2,7 @@ import type { ToolDefinition } from '../../shared/types/llm.types';
 import type { WebSearchSettings } from '../../core/settings/settings.types';
 import { createWebSearchProvider } from './webSearchService';
 import { withTimeout } from '../../shared/utils/asyncUtils';
+import { debugLogger } from '../../shared/debugLogger';
 
 /** 웹 검색 최대 대기 시간 (30초) */
 const WEB_SEARCH_TIMEOUT_MS = 30_000;
@@ -33,21 +34,30 @@ export async function executeWebSearch(
 	args: Record<string, unknown>,
 	settings: WebSearchSettings,
 ): Promise<string> {
+	debugLogger.logSystem(
+		'web_search',
+		`Web search started (provider=${settings.activeProviderId}, enabled=${settings.enabled}, maxResults=${settings.maxResults})`,
+	);
+
 	if (!settings.enabled) {
+		debugLogger.logSystem('web_search', 'Web search is disabled in settings.');
 		throw new Error('Web search is currently disabled in settings.');
 	}
 
 	const MAX_QUERY_LENGTH = 500;
 	const query = typeof args.query === 'string' ? args.query : '';
 	if (!query) {
+		debugLogger.logSystem('web_search', 'Search query is empty.');
 		throw new Error('Search query is empty.');
 	}
 	if (query.length > MAX_QUERY_LENGTH) {
+		debugLogger.logSystem('web_search', `Search query too long (${query.length} chars, max ${MAX_QUERY_LENGTH}).`);
 		throw new Error(`Search query is too long (max ${MAX_QUERY_LENGTH} characters). Please shorten the query.`);
 	}
 
 	const config = settings.providers.find((p) => p.type === settings.activeProviderId);
 	if (!config) {
+		debugLogger.logError('web_search', `Configuration for provider ${settings.activeProviderId} not found.`);
 		throw new Error(`Configuration for provider ${settings.activeProviderId} not found.`);
 	}
 
@@ -56,6 +66,8 @@ export async function executeWebSearch(
 	let requestedMax = typeof args.max_results === 'number' ? args.max_results : settings.maxResults;
 	if (requestedMax < 1) requestedMax = 1;
 	if (requestedMax > 10) requestedMax = 10;
+
+	const startedAt = Date.now();
 
 	// 검색 API가 응답하지 않아 영원히 대기하지 않도록 타임아웃 적용
 	let results;
@@ -67,8 +79,15 @@ export async function executeWebSearch(
 		);
 	} catch (err) {
 		const errorMsg = err instanceof Error ? err.message : String(err);
+		debugLogger.logError('web_search', `Web search failed (provider=${config.type}): ${errorMsg}`);
 		throw new Error(`Web search failed: ${errorMsg}`);
 	}
+
+	const durationMs = Date.now() - startedAt;
+	debugLogger.logSystem(
+		'web_search',
+		`Web search completed (provider=${config.type}, results=${results.length}, duration=${durationMs}ms)`,
+	);
 
 	if (results.length === 0) {
 		return `No search results found for query: "${query}"`;

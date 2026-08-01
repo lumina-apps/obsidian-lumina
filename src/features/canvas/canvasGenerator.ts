@@ -12,6 +12,7 @@ import { buildRagGraphCanvasData } from './ragGraphCanvasExporter';
 import type { RagGraphCanvasOptions } from './ragGraphCanvasExporter';
 import type { GraphData } from '../graph/graphDataBuilder';
 import { t } from '../../shared/locales/helpers';
+import { debugLogger } from '../../shared/debugLogger';
 
 // ─── 파일명 생성 ──────────────────────────────────────────────────────────────
 
@@ -54,9 +55,14 @@ export async function generateCanvasForFile(
 	outputFolder: string,
 	showGroups: boolean = false,
 ): Promise<void> {
+	debugLogger.logSystem(
+		'canvas',
+		`generateCanvasForFile started (file=${file.path}, outputFolder=${outputFolder}, depth=${opts.depth}, maxNodes=${opts.maxNodes}, bidirectional=${opts.bidirectional})`,
+	);
 	try {
 		const roots = [file];
 		const collected = collectGraph(app, roots, opts);
+		const nodeCount = collected.nodeMap.size;
 
 		const truncated = collected.nodeMap.size >= opts.maxNodes;
 
@@ -72,6 +78,11 @@ export async function generateCanvasForFile(
 
 		await app.vault.create(outputPath, json);
 
+		debugLogger.logSystem(
+			'canvas',
+			`generateCanvasForFile completed (file=${file.path}, output=${outputPath}, nodes=${nodeCount}, truncated=${truncated})`,
+		);
+
 		if (truncated) {
 			new Notice(t('canvas.noticeTruncated', { max: opts.maxNodes }), 5000);
 		}
@@ -84,6 +95,7 @@ export async function generateCanvasForFile(
 
 		new Notice(t('canvas.noticeCreated', { name: file.basename }), 3000);
 	} catch (e) {
+		debugLogger.logError('canvas', new Error(`Canvas 생성 실패 (file=${file.path}): ${e instanceof Error ? e.message : String(e)}`));
 		console.error('[Lumina Canvas] 생성 실패:', e);
 		new Notice(t('canvas.noticeError'), 5000);
 	}
@@ -114,15 +126,21 @@ export async function generateCanvasForFolder(
 	outputFolder: string,
 	showGroups: boolean = false,
 ): Promise<void> {
+	debugLogger.logSystem(
+		'canvas',
+		`generateCanvasForFolder started (folder=${folder.path}, outputFolder=${outputFolder}, folderDepth=${opts.folderDepth}, maxNodes=${opts.maxNodes})`,
+	);
 	try {
 		const allFiles = getFilesRecursively(folder, opts.folderDepth);
 
 		if (allFiles.length === 0) {
+			debugLogger.logSystem('canvas', `generateCanvasForFolder: no files found in ${folder.path}`);
 			new Notice(t('canvas.noticeNoFiles'), 3000);
 			return;
 		}
 
 		const collected = collectGraph(app, allFiles, opts);
+		const nodeCount = collected.nodeMap.size;
 		const truncated = collected.nodeMap.size >= opts.maxNodes;
 
 		let canvasData = buildCanvasData(collected, allFiles, opts);
@@ -135,6 +153,11 @@ export async function generateCanvasForFolder(
 		const outputPath = await resolveOutputPath(app, baseName, outputFolder);
 		await app.vault.create(outputPath, json);
 
+		debugLogger.logSystem(
+			'canvas',
+			`generateCanvasForFolder completed (folder=${folder.path}, files=${allFiles.length}, nodes=${nodeCount}, output=${outputPath}, truncated=${truncated})`,
+		);
+
 		if (truncated) {
 			new Notice(t('canvas.noticeTruncated', { max: opts.maxNodes }), 5000);
 		} else {
@@ -146,6 +169,7 @@ export async function generateCanvasForFolder(
 			await app.workspace.getLeaf(false).openFile(canvasFile);
 		}
 	} catch (e) {
+		debugLogger.logError('canvas', new Error(`폴더 캔버스 생성 실패 (folder=${folder.path}): ${e instanceof Error ? e.message : String(e)}`));
 		console.error('[Lumina Canvas] 폴더 캔버스 생성 실패:', e);
 		new Notice(t('canvas.noticeError'), 5000);
 	}
@@ -162,6 +186,10 @@ export async function generateCanvasForRagGraph(
 	opts: RagGraphCanvasOptions,
 	outputFolder: string,
 ): Promise<void> {
+	debugLogger.logSystem(
+		'canvas',
+		`generateCanvasForRagGraph started (nodes=${graphData.nodes.length}, links=${graphData.links.length}, outputFolder=${outputFolder})`,
+	);
 	try {
 		const canvasData = buildRagGraphCanvasData(graphData, opts);
 
@@ -171,6 +199,8 @@ export async function generateCanvasForRagGraph(
 
 		await app.vault.create(outputPath, json);
 
+		debugLogger.logSystem('canvas', `generateCanvasForRagGraph completed (output=${outputPath}, nodes=${graphData.nodes.length}, links=${graphData.links.length})`);
+
 		const canvasFile = app.vault.getFileByPath(outputPath);
 		if (canvasFile) {
 			await app.workspace.getLeaf(false).openFile(canvasFile);
@@ -178,6 +208,7 @@ export async function generateCanvasForRagGraph(
 
 		new Notice(t('graph.exportSuccess'), 3000);
 	} catch (e) {
+		debugLogger.logError('canvas', new Error(`RAG 그래프 캔버스 생성 실패: ${e instanceof Error ? e.message : String(e)}`));
 		console.error('[Lumina Canvas] RAG 그래프 캔버스 생성 실패:', e);
 		new Notice(t('graph.exportError'), 5000);
 	}

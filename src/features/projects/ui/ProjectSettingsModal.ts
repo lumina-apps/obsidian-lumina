@@ -54,6 +54,7 @@ export class ProjectSettingsModal extends Modal {
 
 	onOpen() {
 		const { contentEl } = this;
+		this.containerEl.addClass('lumina-settings-modal-container');
 		contentEl.empty();
 		contentEl.addClass('lumina-settings-modal');
 

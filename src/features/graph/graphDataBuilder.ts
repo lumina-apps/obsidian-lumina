@@ -1,6 +1,7 @@
 import type { ChildChunk, ParentChunk } from '../../shared/types/rag.types';
 import { updateGraphState } from './graphStore';
 import { t } from '../../shared/locales/helpers';
+import { debugLogger } from '../../shared/debugLogger';
 
 export interface GraphNode {
 	id: string; // path
@@ -100,24 +101,36 @@ export async function buildGraphData(
 	focusPath: string | null = null,
 	localDepth: number = 2
 ): Promise<GraphData> {
+	debugLogger.logSystem(
+		'graph',
+		`buildGraphData started (parentChunks=${parentChunks.length}, childChunks=${childChunks.length}, minSimilarity=${minSimilarity}, maxK=${maxK}, mode=${mode}, focusPath=${focusPath ?? 'null'})`,
+	);
+
 	// If chunks changed, we must rebuild the cache
 	if (lastChunkCount !== parentChunks.length || edgeCache === null) {
 		updateGraphState({ isCalculating: true, errorMessage: null });
+		debugLogger.logSystem('graph', `buildGraphData: cache miss (lastChunkCount=${lastChunkCount}, newChunkCount=${parentChunks.length}). Recalculating edges...`);
 		
 		try {
 			edgeCache = await calculateEdgesInWorker(childChunks, 0.4); // Calculate down to 0.4 for caching
 			lastChunkCount = parentChunks.length;
+			debugLogger.logSystem('graph', `buildGraphData: edge calculation completed (edges=${edgeCache.length})`);
 		} catch (e) {
+			debugLogger.logError('graph', new Error(`워커 엣지 계산 실패: ${e instanceof Error ? e.message : String(e)}`));
 			console.error('[Lumina Graph] Worker calculation failed:', e);
 			updateGraphState({ isCalculating: false, errorMessage: t('graph.calcError') });
 			return { nodes: [], links: [] };
 		}
+	} else {
+		debugLogger.logSystem('graph', `buildGraphData: cache hit (edges=${edgeCache.length})`);
 	}
 
 	updateGraphState({ isCalculating: false });
 
 	// 1. Filter edges by similarity
 	let filteredEdges = edgeCache.filter(e => e.weight >= minSimilarity);
+
+	debugLogger.logSystem('graph', `buildGraphData: filtered edges (>=${minSimilarity}) = ${filteredEdges.length}`);
 
 	// 2. Filter edges by maxK (keep top K edges per node)
 	const edgeMap = new Map<string, GraphEdge[]>();
@@ -177,6 +190,8 @@ export async function buildGraphData(
 	// 5. Final edges filtered by valid nodes (in case of local mode)
 	const actualLinks = finalEdges.filter(e => validNodePaths.has(e.source) && validNodePaths.has(e.target));
 
+	debugLogger.logSystem('graph', `buildGraphData completed (nodes=${nodes.length}, links=${actualLinks.length})`);
+
 	return { nodes, links: actualLinks };
 }
 
@@ -196,6 +211,7 @@ function calculateEdgesInWorker(childChunks: ChildChunk[], baseMinSimilarity: nu
 		}));
 
 		if (chunksData.length === 0) {
+			debugLogger.logSystem('graph', 'calculateEdgesInWorker: no chunks with embeddings, skipping worker.');
 			resolve([]);
 			return;
 		}
