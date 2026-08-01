@@ -2125,8 +2125,8 @@ div.lumina-diff-added-widget {
 }
 
 /* 17. Project Settings Modal — ensure it renders above the sticky settings nav (z-index: 99) */
-body .modal-container.lumina-settings-modal-container {
-	z-index: 9999 !important;
+html body .modal-container.lumina-settings-modal-container {
+	z-index: 9999;
 }
 
 /* ── Diff Extension Styles ── */
