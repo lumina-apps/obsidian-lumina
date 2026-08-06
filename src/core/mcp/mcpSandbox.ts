@@ -1,3 +1,7 @@
+/**
+ * mcpSandbox.ts
+ * Web Worker 기반 코드 샌드박스 - 실행 시 보안 감사용 로깅 포함
+ */
 export interface SandboxOptions {
     timeoutMs?: number;
 }
@@ -37,7 +41,10 @@ export class McpSandbox {
                             get: () => { throw new Error('Network access is disabled in sandbox'); },
                             configurable: false
                         });
-                    } catch(e) {}
+                    } catch (e) {
+                        // Log sandbox setup failure for security auditing and debugging
+                        console.warn('[Lumina Sandbox] Failed to secure global: ' + g);
+                    }
                 });
 
                 // --- Execution Logic ---
