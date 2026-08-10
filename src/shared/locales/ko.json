@@ -567,6 +567,14 @@
         "name": "MCP 서버 목록",
         "desc": "MCP 서버 목록 팝업을 엽니다."
       },
+      "model": {
+        "name": "모델 선택",
+        "desc": "사용할 채팅 모델을 선택합니다."
+      },
+      "prompt": {
+        "name": "프롬프트 선택",
+        "desc": "사용할 시스템 프롬프트를 선택합니다."
+      },
       "settings": {
         "name": "설정",
         "desc": "Lumina 설정 화면을 엽니다."
@@ -663,6 +671,7 @@
     "modalProceed": "진행",
     "modelPlaceholder": "검색할 모델명을 입력하세요... (e.g., claude, gpt-4)",
     "searchModelShort": "모델 검색...",
+    "searchPromptShort": "프롬프트 검색...",
     "noSearchResults": "검색 결과가 없습니다.",
     "unsupportedFileType": "지원하지 않는 파일 형식입니다: {{ext}}",
     "attachFileFailed": "파일 첨부 실패: {{file}}",

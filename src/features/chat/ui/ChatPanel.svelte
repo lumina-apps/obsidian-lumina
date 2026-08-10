@@ -414,12 +414,19 @@
 			{includeActiveNote}
 			{agentEnabled}
 			{agentExecutionMode}
+			providers={$verifiedProviders}
+			{selectedProviderId}
+			{selectedModelId}
 			{tStore}
 			bind:inputText
 			bind:attachments
 			bind:textareaEl
 			onToggleActiveNote={toggleActiveNote}
 			onToggleAgentExecutionMode={toggleAgentExecutionMode}
+			onSelectModel={(providerId, modelId) => {
+				selectedProviderId = providerId;
+				selectedModelId = modelId;
+			}}
 			onSendMessage={sendMessage}
 			onCancelStream={cancelStream}
 			onClearChat={clearChat}

@@ -564,6 +564,14 @@
         "name": "MCP 伺服器",
         "desc": "開啟 MCP 伺服器列表快顯視窗。"
       },
+      "model": {
+        "name": "選擇模型",
+        "desc": "選擇要使用的聊天模型。"
+      },
+      "prompt": {
+        "name": "選擇提示詞",
+        "desc": "選擇要使用的系統提示詞。"
+      },
       "settings": {
         "name": "設定",
         "desc": "開啟 Lumina 設定畫面。"
@@ -697,6 +705,7 @@
     "mcpDisconnectedDuringExecution": "執行工具時 MCP 伺服器 \"{{name}}\" 連線中斷，已停用該伺服器。",
     "mcpToolExecutionFailed": "在 MCP 伺服器 \"{{name}}\" 上執行工具失敗。該伺服器已被停用。請檢查您的設定。",
     "searchModelShort": "搜尋模型...",
+    "searchPromptShort": "搜尋提示詞...",
     "noSearchResults": "沒有搜尋結果。",
     "unsupportedFileType": "不支援的檔案類型：{{ext}}",
     "attachFileFailed": "附加檔案失敗：{{file}}",

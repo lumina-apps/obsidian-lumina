@@ -5,12 +5,17 @@
 	import type { Readable } from "svelte/store";
 	import type { TranslationKeys } from "../../../shared/locales/locale.types";
 	import type { ContextAttachment } from "../../../shared/types/chat.types";
+	import type { LLMProviderConfig } from "../../../shared/types/settings.types";
 	import ContextSelector from "./ContextSelector.svelte";
 	import SlashCommandSelector from "./SlashCommandSelector.svelte";
 	import McpQuickPopup from "./McpQuickPopup.svelte";
+	import ModelPickerPopup from "./ModelPickerPopup.svelte";
+	import PromptPickerPopup from "./PromptPickerPopup.svelte";
 	import { getAttachmentIcon } from "../utils/fileAttachmentUtils";
 	import { resizeTextarea } from "../utils/textareaUtils";
 	import { buildSlashCommands } from "../utils/slashCommandUtils";
+	import { activeProject } from "../../../core/store/projectStore";
+	import { settingsStore } from "../../../core/store/settingsStore";
 	import {
 		createKeydownHandler,
 		createInputHandler,
@@ -41,12 +46,16 @@
 		includeActiveNote,
 		agentEnabled = false,
 		agentExecutionMode = "read",
+		providers = [],
+		selectedProviderId = "",
+		selectedModelId = "",
 		tStore,
 		inputText = $bindable(""),
 		attachments = $bindable<ContextAttachment[]>([]),
 		textareaEl = $bindable<HTMLTextAreaElement | null>(null),
 		onToggleActiveNote,
 		onToggleAgentExecutionMode,
+		onSelectModel,
 		onSendMessage,
 		onCancelStream,
 		onClearChat,
@@ -61,12 +70,16 @@
 		includeActiveNote: boolean;
 		agentEnabled: boolean;
 		agentExecutionMode: "read" | "edit";
+		providers: LLMProviderConfig[];
+		selectedProviderId: string;
+		selectedModelId: string;
 		tStore: TStore;
 		inputText: string;
 		attachments: ContextAttachment[];
 		textareaEl: HTMLTextAreaElement | null;
 		onToggleActiveNote: () => void;
 		onToggleAgentExecutionMode: () => void;
+		onSelectModel: (providerId: string, modelId: string) => void;
 		onSendMessage: () => void;
 		onCancelStream: () => void;
 		onClearChat: () => void;
@@ -84,7 +97,23 @@
 	let slashStartIndex = $state(-1);
 
 	let showMcpPopup = $state(false);
+	let showModelPicker = $state(false);
+	let showPromptPicker = $state(false);
 	let fileInputEl: HTMLInputElement | null = $state(null);
+
+	// ── 시스템 프롬프트 파생 값 ──────────────────────────────────────────────
+	const systemPrompts = $derived($settingsStore?.chat.systemPrompts ?? []);
+	const activePromptId = $derived($activeProject?.systemPromptId || "default");
+
+	async function handlePromptSelect(promptId: string): Promise<void> {
+		const project = $activeProject;
+		if (!project) return;
+		const pIndex = plugin.settings.projects.list.findIndex((p) => p.id === project.id);
+		if (pIndex !== -1) {
+			plugin.settings.projects.list[pIndex].systemPromptId = promptId;
+			await plugin.saveSettings();
+		}
+	}
 
 	// ── 공통 리사이즈 래퍼 ─────────────────────────────────────────────────
 	function onResize() {
@@ -228,6 +257,12 @@
 			onOpenSettings,
 			(v) => {
 				showMcpPopup = v;
+			},
+			(v) => {
+				showModelPicker = v;
+			},
+			(v) => {
+				showPromptPicker = v;
 			},
 		),
 	);
@@ -399,6 +434,31 @@
 					onOpenSettings={() => {
 						showMcpPopup = false;
 						onOpenSettings();
+					}}
+				/>
+			{/if}
+
+			{#if showModelPicker}
+				<ModelPickerPopup
+					{providers}
+					{selectedProviderId}
+					{selectedModelId}
+					onSelect={onSelectModel}
+					onClose={(focusTextarea) => {
+						showModelPicker = false;
+						if (focusTextarea) textareaEl?.focus();
+					}}
+				/>
+			{/if}
+
+			{#if showPromptPicker}
+				<PromptPickerPopup
+					prompts={systemPrompts}
+					{activePromptId}
+					onSelect={(promptId) => void handlePromptSelect(promptId)}
+					onClose={(focusTextarea) => {
+						showPromptPicker = false;
+						if (focusTextarea) textareaEl?.focus();
 					}}
 				/>
 			{/if}

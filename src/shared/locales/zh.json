@@ -564,6 +564,14 @@
         "name": "MCP 服务器",
         "desc": "打开 MCP 服务器列表弹出窗口。"
       },
+      "model": {
+        "name": "选择模型",
+        "desc": "选择要使用的聊天模型。"
+      },
+      "prompt": {
+        "name": "选择提示词",
+        "desc": "选择要使用的系统提示词。"
+      },
       "settings": {
         "name": "设置",
         "desc": "打开 Lumina 设置界面。"
@@ -697,6 +705,7 @@
     "mcpDisconnectedDuringExecution": "在执行工具时 MCP 服务器 \"{{name}}\" 连接断开，已禁用该服务器。",
     "mcpToolExecutionFailed": "在 MCP 服务器 \"{{name}}\" 上执行工具失败。该服务器已被禁用。请检查您的设置。",
     "searchModelShort": "搜索模型...",
+    "searchPromptShort": "搜索提示词...",
     "noSearchResults": "没有搜索结果。",
     "unsupportedFileType": "不支持的文件类型：{{ext}}",
     "attachFileFailed": "附加文件失败：{{file}}",

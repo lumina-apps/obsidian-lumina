@@ -567,6 +567,14 @@
         "name": "MCP Servers",
         "desc": "Open the MCP servers list popup."
       },
+      "model": {
+        "name": "Select Model",
+        "desc": "Choose the chat model to use."
+      },
+      "prompt": {
+        "name": "Select Prompt",
+        "desc": "Choose the system prompt to use."
+      },
       "settings": {
         "name": "Settings",
         "desc": "Open the Lumina settings screen."
@@ -663,6 +671,7 @@
     "modalProceed": "Proceed",
     "modelPlaceholder": "Enter model name... (e.g., claude, gpt-4)",
     "searchModelShort": "Search models...",
+    "searchPromptShort": "Search prompts...",
     "noSearchResults": "No search results.",
     "unsupportedFileType": "Unsupported file type: {{ext}}",
     "attachFileFailed": "Failed to attach file: {{file}}",

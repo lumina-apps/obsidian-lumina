@@ -566,6 +566,14 @@
         "name": "MCP-Server",
         "desc": "Öffnet das Popup der MCP-Server-Liste."
       },
+      "model": {
+        "name": "Modell auswählen",
+        "desc": "Wählt das zu verwendende Chat-Modell aus."
+      },
+      "prompt": {
+        "name": "Prompt auswählen",
+        "desc": "Wählt den zu verwendenden System-Prompt aus."
+      },
       "settings": {
         "name": "Einstellungen",
         "desc": "Öffnet den Einstellungsbildschirm von Lumina."
@@ -705,6 +713,7 @@
     "mcpDisconnectedDuringExecution": "MCP-Server \"{{name}}\" während der Tool-Ausführung getrennt und deaktiviert.",
     "mcpToolExecutionFailed": "Tool-Ausführung auf MCP-Server \"{{name}}\" fehlgeschlagen. Server wurde deaktiviert. Bitte überprüfen Sie Ihre Einstellungen.",
     "searchModelShort": "Modelle suchen...",
+    "searchPromptShort": "Prompts suchen...",
     "noSearchResults": "Keine Suchergebnisse.",
     "unsupportedFileType": "Nicht unterstützter Dateityp: {{ext}}",
     "attachFileFailed": "Datei konnte nicht angehängt werden: {{file}}",

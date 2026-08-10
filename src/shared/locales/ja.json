@@ -564,6 +564,14 @@
         "name": "MCP サーバー",
         "desc": "MCPサーバーの一覧ポップアップを開きます。"
       },
+      "model": {
+        "name": "モデルを選択",
+        "desc": "使用するチャットモデルを選択します。"
+      },
+      "prompt": {
+        "name": "プロンプトを選択",
+        "desc": "使用するシステムプロンプトを選択します。"
+      },
       "settings": {
         "name": "設定",
         "desc": "Luminaの設定画面を開きます。"
@@ -697,6 +705,7 @@
     "mcpDisconnectedDuringExecution": "ツール実行中にMCPサーバー「{{name}}」との接続が切断されたため、無効化されました。",
     "mcpToolExecutionFailed": "MCPサーバー「{{name}}」でツールの実行に失敗しました。サーバーが無効化されました。設定を確認してください。",
     "searchModelShort": "モデルを検索...",
+    "searchPromptShort": "プロンプトを検索...",
     "noSearchResults": "検索結果がありません。",
     "unsupportedFileType": "サポートされていないファイル形式です: {{ext}}",
     "attachFileFailed": "ファイルの添付に失敗しました: {{file}}",

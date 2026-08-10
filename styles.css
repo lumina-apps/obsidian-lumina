@@ -86,7 +86,10 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 	margin-bottom: 12px;
 	position: sticky;
 	top: -20px;
-	z-index: 99;
+	/* Obsidian 1.13+: 설정이 팝아웃 모달로 열리면 이 nav는 body 직계 자식(stacking context 없음)이 되어
+	   z-index가 루트 컨텍스트로 새어 나감. 기존 99는 --layer-notice(60)보다 높아 Notice가 nav 뒤에
+	   가려지므로, --layer-modal 직하로 낮춰 Notice·메뉴·툴팁·2차 모달이 항상 nav 위에 그려지게 한다. */
+	z-index: calc(var(--layer-modal, 50) - 1);
 	box-shadow: 0 8px 16px -8px rgba(0, 0, 0, 0.3);
 }
 
@@ -1797,7 +1800,8 @@ div.lumina-diff-added-widget {
 }
 
 .lumina-popup-selector__item.is-active {
-	background-color: var(--background-modifier-hover);
+	background-color: rgba(var(--color-accent-rgb, 139, 92, 246), 0.14);
+	box-shadow: inset 3px 0 0 var(--interactive-accent);
 }
 
 .lumina-popup-selector__item-icon {
@@ -2124,7 +2128,8 @@ div.lumina-diff-added-widget {
 	padding-bottom: 20px;
 }
 
-/* 17. Project Settings Modal — ensure it renders above the sticky settings nav (z-index: 99) */
+/* 17. Project Settings Modal — ensure it renders above the sticky settings nav
+   (nav z-index는 이제 --layer-modal 직하로 낮아졌으므로 9999 오버라이드는 방어적으로만 유지) */
 html body .modal-container.lumina-settings-modal-container {
 	z-index: 9999;
 }

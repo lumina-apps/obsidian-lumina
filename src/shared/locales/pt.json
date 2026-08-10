@@ -564,6 +564,14 @@
         "name": "Servidores MCP",
         "desc": "Abre o pop-up da lista de servidores MCP."
       },
+      "model": {
+        "name": "Selecionar modelo",
+        "desc": "Escolha o modelo de chat a ser usado."
+      },
+      "prompt": {
+        "name": "Selecionar prompt",
+        "desc": "Escolha o prompt de sistema a ser usado."
+      },
       "settings": {
         "name": "Configurações",
         "desc": "Abre a tela de configurações do Lumina."
@@ -697,6 +705,7 @@
     "mcpDisconnectedDuringExecution": "O Servidor MCP \"{{name}}\" se desconectou durante a execução da ferramenta e foi desativado.",
     "mcpToolExecutionFailed": "Falha ao executar ferramenta no Servidor MCP \"{{name}}\". O servidor foi desativado. Verifique suas configurações.",
     "searchModelShort": "Buscar modelos...",
+    "searchPromptShort": "Buscar prompts...",
     "noSearchResults": "Nenhum resultado encontrado.",
     "unsupportedFileType": "Tipo de arquivo não suportado: {{ext}}",
     "attachFileFailed": "Falha ao anexar arquivo: {{file}}",

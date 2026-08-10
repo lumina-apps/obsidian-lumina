@@ -673,6 +673,8 @@ export interface TranslationChatSlashCommands {
   clear: TranslationChatSlashCommand;
   rag: TranslationChatSlashCommand;
   mcp: TranslationChatSlashCommand;
+  model: TranslationChatSlashCommand;
+  prompt: TranslationChatSlashCommand;
   settings: TranslationChatSlashCommand;
 }
 
@@ -787,6 +789,7 @@ export interface TranslationUiMessages {
   modalProceed: string;
   modelPlaceholder: string;
   searchModelShort: string;
+  searchPromptShort: string;
   noSearchResults: string;
   unsupportedFileType: string;
   attachFileFailed: string;

@@ -8,6 +8,8 @@ export function buildSlashCommands(
 	onToggleRagMode: () => void,
 	onOpenSettings: () => void,
 	setShowMcpPopup: (v: boolean) => void,
+	setShowModelPicker: (v: boolean) => void,
+	setShowPromptPicker: (v: boolean) => void,
 ): SlashCommand[] {
 	const cmds: SlashCommand[] = [
 		{
@@ -31,6 +33,24 @@ export function buildSlashCommands(
 			icon: "lumina-server",
 			action: () => {
 				setShowMcpPopup(true);
+			},
+		},
+		{
+			id: "model",
+			name: t("chat.slashCommands.model.name"),
+			description: t("chat.slashCommands.model.desc"),
+			icon: "cpu",
+			action: () => {
+				setShowModelPicker(true);
+			},
+		},
+		{
+			id: "prompt",
+			name: t("chat.slashCommands.prompt.name"),
+			description: t("chat.slashCommands.prompt.desc"),
+			icon: "book-open",
+			action: () => {
+				setShowPromptPicker(true);
 			},
 		},
 		{
