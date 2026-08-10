@@ -1,7 +1,7 @@
 {
 	"id": "lumina",
 	"name": "Lumina",
-	"version": "1.3.11",
+	"version": "1.3.12",
 	"minAppVersion": "1.11.4",
 	"description": "Multilingual AI Assistant & Copilot: Chat with Notes using Any Local LLMs or Cloud APIs. Features RAG, Smart Semantic Vector Search, Auto Embeddings & Autonomous MCP Agent.",
 	"author": "Lumina",
