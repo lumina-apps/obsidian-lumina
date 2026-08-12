@@ -323,7 +323,7 @@ ${contentWithoutFm.substring(0, 3000)}`;
 				// 태그 정규화는 캐시가 아닌 실제 파싱된 프론트매터 기준으로 수행한다.
 				if (!isUpdate && !cachedData) {
 					if (typeof fm.tags === 'string') {
-						fm.tags = (fm.tags as string)
+						fm.tags = fm.tags
 							.split(',')
 							.map((t: string) => t.trim())
 							.filter((t: string) => t.length > 0);
