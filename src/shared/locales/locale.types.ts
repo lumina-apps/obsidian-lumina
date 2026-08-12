@@ -823,6 +823,13 @@ export interface TranslationUiMessages {
   cmdLogTitle: string;
   cmdReindex: string;
   cmdClearIdx: string;
+  cmdStripMetadata: string;
+  stripMetadataTitle: string;
+  stripMetadataBody: string;
+  stripMetadataHint: string;
+  stripMetadataNone: string;
+  stripMetadataProgress: string;
+  stripMetadataDone: string;
   ribbonTitle: string;
   noticeMobileRag: string;
   noticeLargeVault: string;

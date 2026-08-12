@@ -160,6 +160,51 @@ export class FrontmatterManager {
 		this.clearEvents();
 	}
 
+	/** lumina* 키가 하나라도 있는 마크다운 파일 수 (메타데이터 캐시 기반, 동기) */
+	countLuminaStampedFiles(): number {
+		let count = 0;
+		for (const file of this.app.vault.getMarkdownFiles()) {
+			const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+			if (fm && ('luminaCreated' in fm || 'luminaModified' in fm || 'luminaVersion' in fm)) {
+				count++;
+			}
+		}
+		return count;
+	}
+
+	/** 볼트 전체 마크다운 파일에서 luminaCreated/luminaModified/luminaVersion 키를 제거한다. */
+	async stripLuminaMetadata(
+		onProgress?: (done: number, total: number) => void,
+		isCancelled?: () => boolean,
+	): Promise<number> {
+		const files = this.app.vault.getMarkdownFiles();
+		const total = files.length;
+		let stripped = 0;
+		let done = 0;
+
+		for (const file of files) {
+			if (isCancelled && isCancelled()) break;
+			try {
+				const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+				if (fm && ('luminaCreated' in fm || 'luminaModified' in fm || 'luminaVersion' in fm)) {
+					await this.app.fileManager.processFrontMatter(file, (fmObj) => {
+						const r = fmObj as Record<string, unknown>;
+						delete r.luminaCreated;
+						delete r.luminaModified;
+						delete r.luminaVersion;
+					});
+					stripped++;
+				}
+			} catch {
+				// 개별 파일의 프론트매터 파싱 오류 등은 무시하고 계속 진행
+			}
+			done++;
+			if (onProgress && (done % 10 === 0 || done === total)) onProgress(done, total);
+		}
+
+		return stripped;
+	}
+
 	// ── Private helpers ────────────────────────────────────────────────────
 	
 	/** Task 모델을 호출해 프론트매터 데이터 생성 후 캐시에 저장 */

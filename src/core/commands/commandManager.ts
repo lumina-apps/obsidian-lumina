@@ -7,6 +7,7 @@ import { CHAT_VIEW_TYPE } from '../../features/chat/chatView';
 import { DEBUG_VIEW_TYPE } from '../../features/debug/debugView';
 import { GRAPH_VIEW_TYPE } from '../../features/graph/graphView';
 import { debugLogger } from '../../shared/debugLogger';
+import { StripFrontmatterModal } from '../../features/frontmatter/stripFrontmatterModal';
 
 interface ObsidianAppWithCommands extends App {
 	commands: {
@@ -88,6 +89,33 @@ export class CommandManager {
 				await this.plugin.indexer.resetIndex();
 				debugLogger.logSystem('commands', 'clear-index: completed successfully');
 				new Notice(t('settings.rag.reset.resetSuccess'), 3000);
+			},
+		});
+
+		// lumina 메타데이터 정리 커맨드 (autoFrontmatter로 생성된 잔재 제거)
+		this.plugin.addCommand({
+			id: 'strip-lumina-metadata',
+			name: t('uiMessages.cmdStripMetadata'),
+			callback: async () => {
+				debugLogger.logSystem('commands', 'Command executed: strip-lumina-metadata');
+				const fm = this.plugin.frontmatterManager;
+				const count = fm.countLuminaStampedFiles();
+				if (count === 0) {
+					new Notice(t('uiMessages.stripMetadataNone'));
+					return;
+				}
+
+				new StripFrontmatterModal(this.plugin.app, count, async () => {
+					const progressNotice = new Notice(`${t('uiMessages.stripMetadataProgress')} 0/0`, 0);
+					const stripped = await fm.stripLuminaMetadata(
+						(done, total) => progressNotice.noticeEl.setText(
+							`${t('uiMessages.stripMetadataProgress')} ${done}/${total}`
+						),
+					);
+					progressNotice.hide();
+					debugLogger.logSystem('commands', `strip-lumina-metadata completed (stripped=${stripped})`);
+					new Notice(t('uiMessages.stripMetadataDone', { count: stripped }), 4000);
+				}).open();
 			},
 		});
 
