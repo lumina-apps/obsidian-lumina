@@ -560,6 +560,22 @@
         "name": "Alternar RAG",
         "desc": "Habilitar o deshabilitar el uso del contexto RAG."
       },
+      "websearch": {
+        "name": "Alternar búsqueda web",
+        "desc": "Habilitar o deshabilitar la búsqueda web."
+      },
+      "export": {
+        "name": "Exportar chat",
+        "desc": "Exporta el chat actual a un archivo Markdown."
+      },
+      "regenerate": {
+        "name": "Regenerar",
+        "desc": "Regenerar la última respuesta del asistente."
+      },
+      "compress": {
+        "name": "Comprimir contexto",
+        "desc": "Resumir mensajes anteriores para liberar espacio de contexto."
+      },
       "mcp": {
         "name": "Servidores MCP",
         "desc": "Abrir la ventana emergente de la lista de servidores MCP."
@@ -725,6 +741,15 @@
     "agentModeLocalServerConnecting": "🚀 Agente habilitado: conectando con el servidor MCP local...",
     "agentModeEnabled": "🤖 Modo agente activado.",
     "agentModeDisabled": "🤖 Modo agente desactivado.",
+    "webSearchEnabled": "✅ Búsqueda web habilitada.",
+    "webSearchDisabled": "🛑 Búsqueda web deshabilitada.",
+    "noMessagesToExport": "No hay mensajes para exportar.",
+    "noMessagesToRegenerate": "No hay respuesta del asistente para regenerar.",
+    "contextCompressed": "📋 Contexto comprimido: {{messages}} mensajes → 1 resumen (~{{tokens}} tokens liberados).",
+    "contextCompressedStats": "{{messages}} mensajes → 1 resumen · ~{{tokens}} tokens liberados",
+    "tooShortToCompress": "No hay suficiente conversación para comprimir.",
+    "compressFailed": "⚠️ No se pudo comprimir el contexto.",
+    "compressedContextBlock": "📋 [Conversación anterior comprimida]",
     "agentModeLocalServerStoppedDisabled": "⚠️ El modo agente también se ha desactivado porque el servidor MCP integrado se ha detenido.",
     "agentModeLocalServerStoppedDisabledShort": "⚠️ Función de agente desactivada porque el servidor local se ha detenido.",
     "mcpLocalServerTokenInputFromLocal": "Se ha ingresado el token del servidor local.",

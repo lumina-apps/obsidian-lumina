@@ -13,6 +13,8 @@
 
 	let sessions: ChatSession[] = $state([]);
 	let loading: boolean = $state(true);
+	/** 마지막으로 목록을 불러온 프로젝트 ID (무한 effect 루프 방지 가드) */
+	let lastLoadedProjectId: string | null = null;
 
 	async function loadSessions() {
 		loading = true;
@@ -48,9 +50,14 @@
 	}
 
 	$effect(() => {
-		// activeProjectId가 변경될 때마다(또는 초기 마운트 시) 세션 목록 새로고침
-		$activeProjectId;
-		loadSessions();
+		// activeProjectId가 실제로 변경될 때만 목록을 새로고침.
+		// lastLoadedProjectId는 비반응형(plain let)이므로,
+		// effect가 어떤 이유로 재실행되어도 같은 프로젝트에선 loadSessions가 재호출되지 않아
+		// 무한 effect 루프 / loadSessionsList 무한 로그를 방지한다.
+		const pid = $activeProjectId;
+		if (pid === lastLoadedProjectId) return;
+		lastLoadedProjectId = pid;
+		void loadSessions();
 	});
 </script>
 

@@ -562,6 +562,22 @@
         "name": "RAG umschalten",
         "desc": "Aktiviert oder deaktiviert die Nutzung des RAG-Kontexts."
       },
+      "websearch": {
+        "name": "Websuche umschalten",
+        "desc": "Aktiviert oder deaktiviert die Websuche."
+      },
+      "export": {
+        "name": "Chat exportieren",
+        "desc": "Exportiert den aktuellen Chat als Markdown-Datei."
+      },
+      "regenerate": {
+        "name": "Neu generieren",
+        "desc": "Die letzte Antwort neu generieren."
+      },
+      "compress": {
+        "name": "Kontext komprimieren",
+        "desc": "Frühere Nachrichten zusammenfassen, um Kontextplatz freizugeben."
+      },
       "mcp": {
         "name": "MCP-Server",
         "desc": "Öffnet das Popup der MCP-Server-Liste."
@@ -733,6 +749,15 @@
     "agentModeLocalServerConnecting": "🚀 Agent aktiviert: Verbindung zum lokalen MCP-Server wird hergestellt...",
     "agentModeEnabled": "🤖 Agenten-Modus aktiviert.",
     "agentModeDisabled": "🤖 Agenten-Modus deaktiviert.",
+    "webSearchEnabled": "✅ Websuche aktiviert.",
+    "webSearchDisabled": "🛑 Websuche deaktiviert.",
+    "noMessagesToExport": "Keine Nachrichten zum Exportieren vorhanden.",
+    "noMessagesToRegenerate": "Keine Antwort zum Neu generieren vorhanden.",
+    "contextCompressed": "📋 Kontext komprimiert: {{messages}} Nachrichten → 1 Zusammenfassung (~{{tokens}} Tokens freigegeben).",
+    "contextCompressedStats": "{{messages}} Nachrichten → 1 Zusammenfassung · ~{{tokens}} Tokens freigegeben",
+    "tooShortToCompress": "Nicht genug Konversation zum Komprimieren.",
+    "compressFailed": "⚠️ Kontext komprimieren fehlgeschlagen.",
+    "compressedContextBlock": "📋 [Frühere Konversation komprimiert]",
     "agentModeLocalServerStoppedDisabled": "⚠️ Der Agenten-Modus wurde deaktiviert, da der integrierte MCP-Server gestoppt wurde.",
     "agentModeLocalServerStoppedDisabledShort": "⚠️ Agentenfunktion deaktiviert, da der lokale Server gestoppt wurde.",
     "mcpLocalServerTokenInputFromLocal": "Token für den lokalen Server wurde eingegeben.",

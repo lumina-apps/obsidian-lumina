@@ -560,6 +560,22 @@
         "name": "Attiva/Disattiva RAG",
         "desc": "Abilita o disabilita l'uso del contesto RAG."
       },
+      "websearch": {
+        "name": "Attiva/Disattiva ricerca web",
+        "desc": "Abilita o disabilita la ricerca web."
+      },
+      "export": {
+        "name": "Esporta chat",
+        "desc": "Esporta la chat corrente in un file Markdown."
+      },
+      "regenerate": {
+        "name": "Rigenera",
+        "desc": "Rigenera l'ultima risposta dell'assistente."
+      },
+      "compress": {
+        "name": "Comprimi contesto",
+        "desc": "Riassumi i messaggi precedenti per liberare spazio nel contesto."
+      },
       "mcp": {
         "name": "Server MCP",
         "desc": "Apri il popup dell'elenco dei server MCP."
@@ -725,6 +741,15 @@
     "agentModeLocalServerConnecting": "🚀 Agente abilitato: Connessione al server MCP locale in corso...",
     "agentModeEnabled": "🤖 Modalità agente attivata.",
     "agentModeDisabled": "🤖 Modalità agente disattivata.",
+    "webSearchEnabled": "✅ Ricerca web attivata.",
+    "webSearchDisabled": "🛑 Ricerca web disattivata.",
+    "noMessagesToExport": "Nessun messaggio da esportare.",
+    "noMessagesToRegenerate": "Nessuna risposta da rigenerare.",
+    "contextCompressed": "📋 Contesto compresso: {{messages}} messaggi → 1 riepilogo (~{{tokens}} token liberati).",
+    "contextCompressedStats": "{{messages}} messaggi → 1 riepilogo · ~{{tokens}} token liberati",
+    "tooShortToCompress": "Conversazione non sufficiente per comprimere.",
+    "compressFailed": "⚠️ Impossibile comprimere il contesto.",
+    "compressedContextBlock": "📋 [Conversazione precedente compressa]",
     "agentModeLocalServerStoppedDisabled": "⚠️ La modalità agente è stata disattivata perché il server MCP integrato è stato interrotto.",
     "agentModeLocalServerStoppedDisabledShort": "⚠️ Funzione agente disabilitata perché il server locale è stato interrotto.",
     "mcpLocalServerTokenInputFromLocal": "Il token del server locale è stato inserito.",

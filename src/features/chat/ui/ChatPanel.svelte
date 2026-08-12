@@ -307,6 +307,26 @@
 		await handleEditMessage(userMsg.id, userMsg.content);
 	}
 
+	async function regenerateLastAnswer(): Promise<void> {
+		if ($isLoading || !hasProvider || !ctrl) return;
+		const msgs = $messages;
+		let lastAssistantId: string | null = null;
+		for (let i = msgs.length - 1; i >= 0; i--) {
+			if (msgs[i].role === "assistant") {
+				lastAssistantId = msgs[i].id;
+				break;
+			}
+		}
+		if (!lastAssistantId) {
+			new Notice(
+				$tStore("uiMessages.noMessagesToRegenerate") ||
+					"No assistant response to regenerate.",
+			);
+			return;
+		}
+		await handleRegenerate(lastAssistantId);
+	}
+
 	function cancelStream(): void {
 		abortController?.abort();
 		abortController = null;
@@ -344,6 +364,44 @@
 		plugin.settings.chat.agentExecutionMode = agentExecutionMode === "read" ? "edit" : "read";
 		await plugin.saveSettings();
 		settingsStore.set(plugin.settings);
+	}
+
+	async function toggleWebSearch(): Promise<void> {
+		plugin.settings.webSearch.enabled = !plugin.settings.webSearch.enabled;
+		await plugin.saveSettings();
+		new Notice(
+			plugin.settings.webSearch.enabled
+				? $tStore("uiMessages.webSearchEnabled") || "✅ Web search enabled."
+				: $tStore("uiMessages.webSearchDisabled") || "🛑 Web search disabled.",
+		);
+	}
+
+	async function exportChat(): Promise<void> {
+		if (!ctrl) return;
+		await ctrl.history.exportCurrentSession(selectedProviderId, selectedModelId);
+	}
+
+	async function compressContext(): Promise<void> {
+		if ($isLoading || !ctrl || !hasProvider) return;
+		const result = await ctrl.compressContext(selectedProviderId, selectedModelId);
+		if (result.status === "ok") {
+			new Notice(
+				$tStore("uiMessages.contextCompressed", {
+					messages: result.messages.toLocaleString(),
+					tokens: result.tokens.toLocaleString(),
+				}) ||
+					`📋 Context compressed: ${result.messages} messages → 1 summary (~${result.tokens} tokens freed).`,
+			);
+		} else if (result.status === "too-short") {
+			new Notice(
+				$tStore("uiMessages.tooShortToCompress") ||
+					"Not enough conversation to compress.",
+			);
+		} else {
+			new Notice(
+				$tStore("uiMessages.compressFailed") || "⚠️ Failed to compress context.",
+			);
+		}
 	}
 
 	function resetTextareaHeight(): void {
@@ -432,6 +490,10 @@
 			onClearChat={clearChat}
 			onToggleRagMode={toggleRagMode}
 			onOpenSettings={() => openSettingsTab(plugin.app, "lumina")}
+			onToggleWebSearch={toggleWebSearch}
+			onExportChat={exportChat}
+			onRegenerateLast={regenerateLastAnswer}
+			onCompressContext={compressContext}
 		/>
 	{/if}
 </div>

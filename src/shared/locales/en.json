@@ -563,6 +563,22 @@
         "name": "Toggle RAG",
         "desc": "Enable or disable the use of RAG context."
       },
+      "websearch": {
+        "name": "Toggle Web Search",
+        "desc": "Enable or disable the use of the web search tool."
+      },
+      "export": {
+        "name": "Export Chat",
+        "desc": "Export the current chat to a Markdown file."
+      },
+      "regenerate": {
+        "name": "Regenerate",
+        "desc": "Regenerate the last assistant response."
+      },
+      "compress": {
+        "name": "Compress Context",
+        "desc": "Summarize earlier messages to free up context space."
+      },
       "mcp": {
         "name": "MCP Servers",
         "desc": "Open the MCP servers list popup."
@@ -728,6 +744,15 @@
     "agentModeLocalServerConnecting": "🚀 Agent enabled: Connecting to local MCP server...",
     "agentModeEnabled": "🤖 Agent mode enabled.",
     "agentModeDisabled": "🤖 Agent mode disabled.",
+    "webSearchEnabled": "✅ Web search enabled.",
+    "webSearchDisabled": "🛑 Web search disabled.",
+    "noMessagesToExport": "No messages to export.",
+    "noMessagesToRegenerate": "No assistant response to regenerate.",
+    "contextCompressed": "📋 Context compressed: {{messages}} messages → 1 summary (~{{tokens}} tokens freed).",
+    "contextCompressedStats": "{{messages}} messages → 1 summary · ~{{tokens}} tokens freed",
+    "tooShortToCompress": "Not enough conversation to compress.",
+    "compressFailed": "⚠️ Failed to compress context.",
+    "compressedContextBlock": "📋 [Previous conversation compressed]",
     "agentModeLocalServerStoppedDisabled": "⚠️ Agent mode disabled because the built-in MCP server was stopped.",
     "agentModeLocalServerStoppedDisabledShort": "⚠️ Agent mode disabled because the local server was stopped.",
     "mcpLocalServerTokenInputFromLocal": "Local server token has been entered.",

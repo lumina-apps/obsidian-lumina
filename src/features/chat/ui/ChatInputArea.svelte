@@ -61,6 +61,10 @@
 		onClearChat,
 		onToggleRagMode,
 		onOpenSettings,
+		onToggleWebSearch,
+		onExportChat,
+		onRegenerateLast,
+		onCompressContext,
 	} = $props<{
 		plugin: LuminaPlugin;
 		isLoading: boolean;
@@ -85,6 +89,10 @@
 		onClearChat: () => void;
 		onToggleRagMode: () => void;
 		onOpenSettings: () => void;
+		onToggleWebSearch: () => void;
+		onExportChat: () => void;
+		onRegenerateLast: () => void;
+		onCompressContext: () => void;
 	}>();
 
 	// ── UI state (컴포넌트 내에 유지) ──────────────────────────────────────
@@ -264,6 +272,10 @@
 			(v) => {
 				showPromptPicker = v;
 			},
+			onToggleWebSearch,
+			onExportChat,
+			onRegenerateLast,
+			onCompressContext,
 		),
 	);
 

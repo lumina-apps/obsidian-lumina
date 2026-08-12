@@ -560,6 +560,22 @@
         "name": "Переключить RAG",
         "desc": "Включить или отключить использование контекста RAG."
       },
+      "websearch": {
+        "name": "Переключить веб-поиск",
+        "desc": "Включить или отключить использование веб-поиска."
+      },
+      "export": {
+        "name": "Экспорт чата",
+        "desc": "Экспортировать текущий чат в файл Markdown."
+      },
+      "regenerate": {
+        "name": "Перегенерировать",
+        "desc": "Перегенерировать последний ответ ассистента."
+      },
+      "compress": {
+        "name": "Сжать контекст",
+        "desc": "Сжать более ранние сообщения, чтобы освободить место в контексте."
+      },
       "mcp": {
         "name": "Серверы MCP",
         "desc": "Открыть всплывающее окно списка серверов MCP."
@@ -725,6 +741,15 @@
     "agentModeLocalServerConnecting": "🚀 Агент включен: подключение к локальному серверу MCP...",
     "agentModeEnabled": "🤖 Режим агента включен.",
     "agentModeDisabled": "🤖 Режим агента отключен.",
+    "webSearchEnabled": "✅ Веб-поиск включен.",
+    "webSearchDisabled": "🛑 Веб-поиск отключен.",
+    "noMessagesToExport": "Нет сообщений для экспорта.",
+    "noMessagesToRegenerate": "Нет ответа для перегенерации.",
+    "contextCompressed": "📋 Контекст сжат: сообщений {{messages}} → 1 сводка (~{{tokens}} токенов освобождено).",
+    "contextCompressedStats": "сообщений {{messages}} → 1 сводка · ~{{tokens}} токенов освобождено",
+    "tooShortToCompress": "Недостаточно разговора для сжатия.",
+    "compressFailed": "⚠️ Не удалось сжать контекст.",
+    "compressedContextBlock": "📋 [Предыдущий разговор сжат]",
     "agentModeLocalServerStoppedDisabled": "⚠️ Режим агента отключен, так как встроенный сервер MCP остановлен.",
     "agentModeLocalServerStoppedDisabledShort": "⚠️ Функция агента отключена, так как локальный сервер остановлен.",
     "mcpLocalServerTokenInputFromLocal": "Токен локального сервера был введен.",

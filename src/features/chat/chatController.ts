@@ -272,6 +272,14 @@ export class ChatController {
 		return this.history.removeSession(sessionId);
 	}
 
+	/** 수동 컨텍스트 압축 (모든 메모리 모드에서 동작). */
+	async compressContext(providerId: string, modelId: string): Promise<import('./utils/summarizationHelper').SummarizeResult> {
+		const providerConfig = this.plugin.settings.connections.providers.find(p => p.id === providerId);
+		if (!providerConfig) return { status: 'error' };
+		const { summarizeConversation } = await import('./utils/summarizationHelper');
+		return summarizeConversation(this.plugin, providerConfig, modelId);
+	}
+
 	/** 구독 해제 및 타이머 정리. ChatView가 unload될 때 호출할 것. */
 	destroy(): void {
 		this._unsubMessages?.();

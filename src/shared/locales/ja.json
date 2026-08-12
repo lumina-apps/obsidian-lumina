@@ -560,6 +560,22 @@
         "name": "RAG の切り替え",
         "desc": "RAGコンテキストの使用を有効または無効にします。"
       },
+      "websearch": {
+        "name": "Web検索の切り替え",
+        "desc": "Web検索の使用を有効または無効にします。"
+      },
+      "export": {
+        "name": "チャットをエクスポート",
+        "desc": "現在のチャットをMarkdownファイルにエクスポートします。"
+      },
+      "regenerate": {
+        "name": "再生成",
+        "desc": "最後の回答を再生成します。"
+      },
+      "compress": {
+        "name": "コンテキスト圧縮",
+        "desc": "以前のメッセージを要約してコンテキスト領域を確保します。"
+      },
       "mcp": {
         "name": "MCP サーバー",
         "desc": "MCPサーバーの一覧ポップアップを開きます。"
@@ -725,6 +741,15 @@
     "agentModeLocalServerConnecting": "🚀 エージェント有効化: ローカルMCPサーバーに接続しています...",
     "agentModeEnabled": "🤖 エージェントモードが有効になりました。",
     "agentModeDisabled": "🤖 エージェントモードが無効になりました。",
+    "webSearchEnabled": "✅ Web検索が有効になりました。",
+    "webSearchDisabled": "🛑 Web検索が無効になりました。",
+    "noMessagesToExport": "エクスポートするメッセージがありません。",
+    "noMessagesToRegenerate": "再生成する回答がありません。",
+    "contextCompressed": "📋 コンテキスト圧縮完了: メッセージ{{messages}}件 → 要約1件 (約{{tokens}}トークン確保)。",
+    "contextCompressedStats": "メッセージ{{messages}}件 → 要約1件 · 約{{tokens}}トークン確保",
+    "tooShortToCompress": "圧縮する会話がまだ足りません。",
+    "compressFailed": "⚠️ コンテキストの圧縮に失敗しました。",
+    "compressedContextBlock": "📋 [以前の会話が圧縮されました]",
     "agentModeLocalServerStoppedDisabled": "⚠️ 内蔵MCPサーバーが停止したため、エージェントモードも無効になりました。",
     "agentModeLocalServerStoppedDisabledShort": "⚠️ ローカルサーバーが停止したため、エージェント機能が無効になりました。",
     "mcpLocalServerTokenInputFromLocal": "ローカルサーバーのトークンが入力されました。",

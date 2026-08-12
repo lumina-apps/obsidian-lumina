@@ -560,6 +560,22 @@
         "name": "Basculer RAG",
         "desc": "Activer ou désactiver l'utilisation du contexte RAG."
       },
+      "websearch": {
+        "name": "Basculer la recherche web",
+        "desc": "Activer ou désactiver la recherche web."
+      },
+      "export": {
+        "name": "Exporter le chat",
+        "desc": "Exporter la conversation actuelle dans un fichier Markdown."
+      },
+      "regenerate": {
+        "name": "Régénérer",
+        "desc": "Régénérer la dernière réponse de l'assistant."
+      },
+      "compress": {
+        "name": "Compresser le contexte",
+        "desc": "Résumer les messages précédents pour libérer de l'espace de contexte."
+      },
       "mcp": {
         "name": "Serveurs MCP",
         "desc": "Ouvrir la fenêtre contextuelle de la liste des serveurs MCP."
@@ -725,6 +741,15 @@
     "agentModeLocalServerConnecting": "🚀 Agent activé : Connexion au serveur MCP local...",
     "agentModeEnabled": "🤖 Mode agent activé.",
     "agentModeDisabled": "🤖 Mode agent désactivé.",
+    "webSearchEnabled": "✅ Recherche web activée.",
+    "webSearchDisabled": "🛑 Recherche web désactivée.",
+    "noMessagesToExport": "Aucun message à exporter.",
+    "noMessagesToRegenerate": "Aucune réponse à régénérer.",
+    "contextCompressed": "📋 Contexte compressé : {{messages}} messages → 1 résumé (~{{tokens}} jetons libérés).",
+    "contextCompressedStats": "{{messages}} messages → 1 résumé · ~{{tokens}} jetons libérés",
+    "tooShortToCompress": "Pas assez de conversation à compresser.",
+    "compressFailed": "⚠️ Échec de la compression du contexte.",
+    "compressedContextBlock": "📋 [Conversation précédente compressée]",
     "agentModeLocalServerStoppedDisabled": "⚠️ Le mode agent a été désactivé car le serveur MCP intégré a été arrêté.",
     "agentModeLocalServerStoppedDisabledShort": "⚠️ Fonctionnalité d'agent désactivée car le serveur local a été arrêté.",
     "mcpLocalServerTokenInputFromLocal": "Le jeton du serveur local a été saisi.",

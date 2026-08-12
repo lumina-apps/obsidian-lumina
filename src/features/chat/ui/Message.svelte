@@ -65,14 +65,29 @@
 <div
 	class="lumina-message lumina-message--{message.role}"
 	class:is-streaming={message.isStreaming}
+	class:lumina-message--context-summary={message.isContextSummary}
 >
 	<div class="lumina-message__header">
-		{#if message.role === "user"}
+		{#if message.isContextSummary}
+			<span class="lumina-message__role lumina-message__role--summary"
+				>{t("uiMessages.compressedContextBlock") ||
+					"📋 [Previous conversation compressed]"}</span
+			>
+		{:else if message.role === "user"}
 			<span class="lumina-message__role">👤 You</span>
 		{:else}
 			<span class="lumina-message__role"
 				>✦ Lumina{message.model ? ` · ${message.model}` : ""}</span
 			>
+		{/if}
+		{#if message.isContextSummary && message.contextSummaryMeta}
+			<span class="lumina-message__summary-stats">
+				{t("uiMessages.contextCompressedStats", {
+					messages: message.contextSummaryMeta.messages.toLocaleString(),
+					tokens: message.contextSummaryMeta.tokens.toLocaleString(),
+				}) ||
+					`${message.contextSummaryMeta.messages} messages → 1 summary (~${message.contextSummaryMeta.tokens} tokens freed)`}
+			</span>
 		{/if}
 		<span class="lumina-message__time">{formatTime(message.timestamp, getLanguage())}</span>
 	</div>
@@ -117,7 +132,7 @@
 		{/if}
 	</div>
 
-	{#if !message.isStreaming}
+	{#if !message.isStreaming && !message.isContextSummary}
 		{#if message.role === "assistant" && message.ragSources && message.ragSources.length > 0}
 			<RagSources sources={message.ragSources} {app} />
 		{/if}
@@ -166,6 +181,27 @@
 		border: 1px solid rgba(var(--mono-rgb-100), 0.04);
 		border-left: 3px solid var(--interactive-accent);
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.01);
+	}
+
+	.lumina-message--context-summary {
+		background: color-mix(in srgb, var(--interactive-accent) 6%, var(--background-secondary));
+		border: 1px dashed var(--interactive-accent);
+		border-radius: 10px;
+		margin-left: 28px;
+	}
+
+	.lumina-message__role--summary {
+		color: var(--interactive-accent);
+		text-transform: none;
+	}
+
+	.lumina-message__summary-stats {
+		font-size: var(--font-ui-smaller);
+		color: var(--text-muted);
+		background: var(--background-modifier-border);
+		padding: 1px 8px;
+		border-radius: 999px;
+		white-space: nowrap;
 	}
 
 	.lumina-message__executing-tools {

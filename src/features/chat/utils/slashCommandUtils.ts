@@ -10,6 +10,10 @@ export function buildSlashCommands(
 	setShowMcpPopup: (v: boolean) => void,
 	setShowModelPicker: (v: boolean) => void,
 	setShowPromptPicker: (v: boolean) => void,
+	onToggleWebSearch: () => void,
+	onExportChat: () => void,
+	onRegenerateLast: () => void,
+	onCompressContext: () => void,
 ): SlashCommand[] {
 	const cmds: SlashCommand[] = [
 		{
@@ -25,6 +29,34 @@ export function buildSlashCommands(
 			description: t("chat.slashCommands.rag.desc"),
 			icon: "database",
 			action: () => onToggleRagMode(),
+		},
+		{
+			id: "websearch",
+			name: t("chat.slashCommands.websearch.name"),
+			description: t("chat.slashCommands.websearch.desc"),
+			icon: "globe",
+			action: () => onToggleWebSearch(),
+		},
+		{
+			id: "export",
+			name: t("chat.slashCommands.export.name"),
+			description: t("chat.slashCommands.export.desc"),
+			icon: "download",
+			action: () => onExportChat(),
+		},
+		{
+			id: "regenerate",
+			name: t("chat.slashCommands.regenerate.name"),
+			description: t("chat.slashCommands.regenerate.desc"),
+			icon: "refresh-cw",
+			action: () => onRegenerateLast(),
+		},
+		{
+			id: "compress",
+			name: t("chat.slashCommands.compress.name"),
+			description: t("chat.slashCommands.compress.desc"),
+			icon: "shrink",
+			action: () => onCompressContext(),
 		},
 		{
 			id: "mcp",

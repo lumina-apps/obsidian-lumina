@@ -563,6 +563,22 @@
         "name": "RAG 토글",
         "desc": "RAG 컨텍스트 사용을 켜거나 끕니다."
       },
+      "websearch": {
+        "name": "웹검색 토글",
+        "desc": "웹 검색 사용을 켜거나 끕니다."
+      },
+      "export": {
+        "name": "채팅 내보내기",
+        "desc": "현재 채팅을 마크다운 파일로 내보냅니다."
+      },
+      "regenerate": {
+        "name": "마지막 답변 재생성",
+        "desc": "마지막 AI 답변을 다시 생성합니다."
+      },
+      "compress": {
+        "name": "컨텍스트 압축",
+        "desc": "이전 대화를 요약해 컨텍스트 공간을 확보합니다."
+      },
       "mcp": {
         "name": "MCP 서버 목록",
         "desc": "MCP 서버 목록 팝업을 엽니다."
@@ -728,6 +744,15 @@
     "agentModeLocalServerConnecting": "🚀 에이전트 활성화: 로컬 MCP 서버 연결 중...",
     "agentModeEnabled": "🤖 에이전트 모드가 켜졌습니다.",
     "agentModeDisabled": "🤖 에이전트 모드가 꺼졌습니다.",
+    "webSearchEnabled": "✅ 웹 검색이 켜졌습니다.",
+    "webSearchDisabled": "🛑 웹 검색이 꺼졌습니다.",
+    "noMessagesToExport": "내보낼 메시지가 없습니다.",
+    "noMessagesToRegenerate": "재생성할 AI 답변이 없습니다.",
+    "contextCompressed": "📋 컨텍스트 압축 완료: 메시지 {{messages}}개 → 요약 1개 (약 {{tokens}} 토큰 확보).",
+    "contextCompressedStats": "메시지 {{messages}}개 → 요약 1개 · 약 {{tokens}} 토큰 확보",
+    "tooShortToCompress": "압축할 대화가 아직 부족합니다.",
+    "compressFailed": "⚠️ 컨텍스트 압축에 실패했습니다.",
+    "compressedContextBlock": "📋 [이전 대화가 압축되었습니다]",
     "agentModeLocalServerStoppedDisabled": "⚠️ 내장 MCP 서버가 꺼져서 에이전트 모드도 함께 비활성화되었습니다.",
     "agentModeLocalServerStoppedDisabledShort": "⚠️ 로컬 서버가 종료되어 에이전트 기능이 해제되었습니다.",
     "mcpLocalServerTokenInputFromLocal": "내부 서버 토큰이 입력되었습니다.",

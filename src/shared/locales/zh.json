@@ -560,6 +560,22 @@
         "name": "切换 RAG",
         "desc": "启用或禁用 RAG 上下文的使用。"
       },
+      "websearch": {
+        "name": "切换网络搜索",
+        "desc": "启用或禁用网络搜索的使用。"
+      },
+      "export": {
+        "name": "导出聊天",
+        "desc": "将当前聊天导出为 Markdown 文件。"
+      },
+      "regenerate": {
+        "name": "重新生成",
+        "desc": "重新生成最后一条助手回复。"
+      },
+      "compress": {
+        "name": "压缩上下文",
+        "desc": "总结较早的消息以释放上下文空间。"
+      },
       "mcp": {
         "name": "MCP 服务器",
         "desc": "打开 MCP 服务器列表弹出窗口。"
@@ -725,6 +741,15 @@
     "agentModeLocalServerConnecting": "🚀 代理已启用：正在连接本地 MCP 服务器...",
     "agentModeEnabled": "🤖 代理模式已启用。",
     "agentModeDisabled": "🤖 代理模式已禁用。",
+    "webSearchEnabled": "✅ 网络搜索已启用。",
+    "webSearchDisabled": "🛑 网络搜索已禁用。",
+    "noMessagesToExport": "没有可导出的消息。",
+    "noMessagesToRegenerate": "没有可重新生成的回复。",
+    "contextCompressed": "📋 上下文已压缩：{{messages}} 条消息 → 1 条摘要（约释放 {{tokens}} tokens）。",
+    "contextCompressedStats": "{{messages}} 条消息 → 1 条摘要 · 约释放 {{tokens}} tokens",
+    "tooShortToCompress": "可压缩的对话不足。",
+    "compressFailed": "⚠️ 压缩上下文失败。",
+    "compressedContextBlock": "📋 [之前的对话已压缩]",
     "agentModeLocalServerStoppedDisabled": "⚠️ 由于内置 MCP 服务器已停止，代理模式也被禁用。",
     "agentModeLocalServerStoppedDisabledShort": "⚠️ 由于本地服务器已停止，代理功能已禁用。",
     "mcpLocalServerTokenInputFromLocal": "已输入本地服务器令牌。",

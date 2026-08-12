@@ -174,4 +174,45 @@ export class ChatHistoryController {
 			return false;
 		}
 	}
+
+	/** 현재 대화(store에 있는 메시지)를 마크다운 파일로 내보냅니다. */
+	async exportCurrentSession(providerId: string, modelId: string): Promise<boolean> {
+		const msgs = getMessages();
+		if (msgs.length === 0) {
+			new Notice(t('uiMessages.noMessagesToExport') || 'No messages to export.');
+			return false;
+		}
+
+		// 저장된 제목이 없으면 첫 사용자 메시지에서 자동 생성
+		const title = get(currentSessionTitle) || generateTitle(msgs);
+
+		// 내보내기 전 assistant 메시지에서 생각 과정(<think>) 제거 (saveHistory와 동일)
+		const sanitizedMsgs = msgs.map(m => ({
+			...m,
+			content: m.role === 'assistant' ? sanitizeDisplayContent(m.content) : m.content,
+		}));
+
+		const session: ChatSession = {
+			id: get(currentSessionId) || crypto.randomUUID(),
+			title,
+			messages: sanitizedMsgs,
+			createdAt: msgs[0].timestamp,
+			updatedAt: Date.now(),
+			providerId,
+			modelId,
+			sessionSummary: get(sessionSummary),
+			summaryUpToMessageId: get(summaryUpToMessageId),
+		};
+
+		try {
+			const { exportSessionToMarkdown } = await import('./history');
+			await exportSessionToMarkdown(this.app, session);
+			new Notice(t('settings.chat.history.exportSuccess') || 'Exported to Lumina Exports folder successfully.');
+			return true;
+		} catch (e) {
+			debugLogger.logError('history', e instanceof Error ? e : new Error(String(e)));
+			new Notice(t('settings.chat.history.exportFail') || 'Failed to export session.');
+			return false;
+		}
+	}
 }

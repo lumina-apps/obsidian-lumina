@@ -23,6 +23,10 @@ export interface UIChatMessage {
 	ragPipelineStep?: RagPipelineStep;
 	/** 현재 백그라운드에서 실행 중인 도구 목록 */
 	executingTools?: { id: string; name: string }[];
+	/** 수동 컨텍스트 압축으로 생성된 합성 요약 메시지 여부 */
+	isContextSummary?: boolean;
+	/** 압축 통계 (배너/Notice 표시용) */
+	contextSummaryMeta?: { messages: number; tokens: number };
 	isStreaming: boolean;
 	timestamp: number;
 	model?: string;

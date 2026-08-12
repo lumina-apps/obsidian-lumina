@@ -672,6 +672,10 @@ export interface TranslationChatSlashCommand {
 export interface TranslationChatSlashCommands {
   clear: TranslationChatSlashCommand;
   rag: TranslationChatSlashCommand;
+  websearch: TranslationChatSlashCommand;
+  export: TranslationChatSlashCommand;
+  regenerate: TranslationChatSlashCommand;
+  compress: TranslationChatSlashCommand;
   mcp: TranslationChatSlashCommand;
   model: TranslationChatSlashCommand;
   prompt: TranslationChatSlashCommand;
@@ -846,6 +850,15 @@ export interface TranslationUiMessages {
   agentModeLocalServerConnecting: string;
   agentModeEnabled: string;
   agentModeDisabled: string;
+  webSearchEnabled: string;
+  webSearchDisabled: string;
+  noMessagesToExport: string;
+  noMessagesToRegenerate: string;
+  contextCompressed: string;
+  contextCompressedStats: string;
+  tooShortToCompress: string;
+  compressFailed: string;
+  compressedContextBlock: string;
   agentModeLocalServerStoppedDisabled: string;
   agentModeLocalServerStoppedDisabledShort: string;
   mcpLocalServerTokenInputFromLocal: string;

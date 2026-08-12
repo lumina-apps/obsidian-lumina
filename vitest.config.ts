@@ -5,6 +5,7 @@ import { resolve } from 'path';
 export default defineConfig({
 	plugins: [svelte()],
 	resolve: {
+		conditions: ['browser', 'development', 'import'],
 		alias: {
 			bluebird: resolve(__dirname, 'src/core/mocks/bluebird.js'),
 			'bluebird/js/release/promise': resolve(__dirname, 'src/core/mocks/bluebird.js'),
