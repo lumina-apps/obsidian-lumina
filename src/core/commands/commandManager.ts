@@ -94,10 +94,10 @@ export class CommandManager {
 
 		// lumina 메타데이터 정리 커맨드 (autoFrontmatter로 생성된 잔재 제거)
 		this.plugin.addCommand({
-			id: 'strip-lumina-metadata',
+			id: 'strip-frontmatter-metadata',
 			name: t('uiMessages.cmdStripMetadata'),
 			callback: async () => {
-				debugLogger.logSystem('commands', 'Command executed: strip-lumina-metadata');
+				debugLogger.logSystem('commands', 'Command executed: strip-frontmatter-metadata');
 				const fm = this.plugin.frontmatterManager;
 				const count = fm.countLuminaStampedFiles();
 				if (count === 0) {
@@ -108,12 +108,12 @@ export class CommandManager {
 				new StripFrontmatterModal(this.plugin.app, count, async () => {
 					const progressNotice = new Notice(`${t('uiMessages.stripMetadataProgress')} 0/0`, 0);
 					const stripped = await fm.stripLuminaMetadata(
-						(done, total) => progressNotice.noticeEl.setText(
+						(done, total) => progressNotice.messageEl.setText(
 							`${t('uiMessages.stripMetadataProgress')} ${done}/${total}`
 						),
 					);
 					progressNotice.hide();
-					debugLogger.logSystem('commands', `strip-lumina-metadata completed (stripped=${stripped})`);
+					debugLogger.logSystem('commands', `strip-frontmatter-metadata completed (stripped=${stripped})`);
 					new Notice(t('uiMessages.stripMetadataDone', { count: stripped }), 4000);
 				}).open();
 			},

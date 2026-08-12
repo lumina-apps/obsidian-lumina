@@ -142,7 +142,7 @@ async function enforceLuminaMetadata(path: string, ctx: ToolHandlerContext) {
 
 		// 이미 현재 버전으로 스탬핑되어 있으면 건너뛴다 (중복 재기록 방지).
 		const cache = ctx.plugin.app.metadataCache.getFileCache(file);
-		const fm = cache?.frontmatter as Record<string, unknown> | undefined;
+		const fm = cache?.frontmatter;
 		if (
 			fm &&
 			typeof fm.luminaCreated === 'string' &&

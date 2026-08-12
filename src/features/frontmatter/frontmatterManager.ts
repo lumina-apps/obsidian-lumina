@@ -284,9 +284,9 @@ ${contentWithoutFm.substring(0, 3000)}`;
 			const targetFm: Record<string, unknown> = { ...currentFm };
 
 			if (!isUpdate) {
-				targetFm.luminaCreated = (targetFm.luminaCreated as string | undefined) || now;
+				targetFm.luminaCreated = targetFm.luminaCreated || now;
 				if (typeof targetFm.tags === 'string') {
-					targetFm.tags = (targetFm.tags as string)
+					targetFm.tags = targetFm.tags
 						.split(',')
 						.map((t: string) => t.trim())
 						.filter((t: string) => t.length > 0);
@@ -304,7 +304,7 @@ ${contentWithoutFm.substring(0, 3000)}`;
 				if (Array.isArray(targetFm.tags)) {
 					existingTags = targetFm.tags as string[];
 				} else if (typeof targetFm.tags === 'string') {
-					existingTags = (targetFm.tags as string).split(',').map(t => t.trim()).filter(t => t.length > 0);
+					existingTags = targetFm.tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
 				}
 				targetFm.tags = Array.from(new Set([...existingTags, ...cachedData.tags]));
 
