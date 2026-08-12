@@ -15,6 +15,22 @@ interface LuminaFrontmatter {
 	description?: string;
 }
 
+/** 두 값이 깊은 동등인지 비교 (프론트매터의 원시값/배열/객체 비교용) */
+function deepEqual(a: unknown, b: unknown): boolean {
+	if (a === b) return true;
+	if (Array.isArray(a) && Array.isArray(b)) {
+		if (a.length !== b.length) return false;
+		return a.every((v, i) => deepEqual(v, b[i]));
+	}
+	if (a !== null && b !== null && typeof a === 'object' && typeof b === 'object') {
+		const keysA = Object.keys(a);
+		const keysB = Object.keys(b);
+		if (keysA.length !== keysB.length) return false;
+		return keysA.every(k => deepEqual((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]));
+	}
+	return false;
+}
+
 /** 프론트매터 자동생성 상태와 이벤트 등록/해제를 캡슐화 */
 export class FrontmatterManager {
 	private plugin: LuminaPlugin;
@@ -76,23 +92,23 @@ export class FrontmatterManager {
 			const lastUpdate = this.lastUpdateMap.get(file.path) || 0;
 			if (Date.now() - lastUpdate < 1500) return;
 
-			if (this.activeFilePath === file.path) {
-				// 현재 보고 있는 파일이면 업데이트를 대기열에 넣음 (자동 병합 알림 방지)
-				this.pendingUpdates.add(file.path);
-				
-				// LLM 자동생성 디바운스 설정 (8초)
-				if (this.llmDebounceTimers.has(file.path)) {
-					window.clearTimeout(this.llmDebounceTimers.get(file.path));
-				}
-				const timer = window.setTimeout(() => {
-					this.llmDebounceTimers.delete(file.path);
-					this.generateFrontmatterData(file).catch(console.error);
-				}, 8000);
-				this.llmDebounceTimers.set(file.path, timer);
-			} else {
-				// 현재 보고 있지 않은 파일이면 즉시 업데이트
-				this.autoGenerate(file, true).catch(console.error);
+			// 자동 프론트매터는 사용자가 직접 보고 편집 중인 파일에만 적용한다.
+			// 볼트 전체 modify 이벤트에 반응하면 다른 플러그인/동기화가 건드린
+			// 노트까지 재작성되어 mtime·Syncthing 충돌·백그라운드 재인덱싱을 유발한다.
+			if (this.activeFilePath !== file.path) return;
+
+			// 현재 보고 있는 파일이면 업데이트를 대기열에 넣음 (자동 병합 알림 방지)
+			this.pendingUpdates.add(file.path);
+
+			// LLM 자동생성 디바운스 설정 (8초)
+			if (this.llmDebounceTimers.has(file.path)) {
+				window.clearTimeout(this.llmDebounceTimers.get(file.path));
 			}
+			const timer = window.setTimeout(() => {
+				this.llmDebounceTimers.delete(file.path);
+				this.generateFrontmatterData(file).catch(console.error);
+			}, 8000);
+			this.llmDebounceTimers.set(file.path, timer);
 		});
 		this.plugin.registerEvent(refModify);
 		this.eventRefs.push(refModify);
@@ -206,7 +222,7 @@ ${contentWithoutFm.substring(0, 3000)}`;
 		}
 	}
 
-	/** processFrontMatter로 파일별 프론트매터 생성/갱신 */
+	/** processFrontMatter로 파일별 프론트매터 생성/갱신 (의미 있는 변경이 있을 때만 재기록) */
 	private async autoGenerate(file: TFile, isUpdate: boolean): Promise<void> {
 		if (!this.plugin.settings.misc.autoFrontmatter) return;
 
@@ -214,42 +230,63 @@ ${contentWithoutFm.substring(0, 3000)}`;
 		this.generatingFiles.add(file.path);
 
 		try {
-			await this.app.fileManager.processFrontMatter(file, (fmObj) => {
-				const fm = fmObj as LuminaFrontmatter;
-				const now = new Date().toISOString();
+			const cache = this.app.metadataCache.getFileCache(file);
+			const currentFm = (cache?.frontmatter ?? {}) as Record<string, unknown>;
+			const now = new Date().toISOString();
+			const version = this.plugin.manifest.version;
 
-				if (!isUpdate) {
-					fm.luminaCreated = fm.luminaCreated || now;
-					if (typeof fm.tags === 'string') {
-						fm.tags = fm.tags
-							.split(',')
-							.map((t: string) => t.trim())
-							.filter((t: string) => t.length > 0);
-					} else if (!fm.tags || !Array.isArray(fm.tags)) {
-						fm.tags = [];
-					}
+			// 적용할 프론트매터를 먼저 계산한다 (실제로 변경된 경우에만 재기록).
+			const targetFm: Record<string, unknown> = { ...currentFm };
+
+			if (!isUpdate) {
+				targetFm.luminaCreated = (targetFm.luminaCreated as string | undefined) || now;
+				if (typeof targetFm.tags === 'string') {
+					targetFm.tags = (targetFm.tags as string)
+						.split(',')
+						.map((t: string) => t.trim())
+						.filter((t: string) => t.length > 0);
+				} else if (!Array.isArray(targetFm.tags)) {
+					targetFm.tags = [];
 				}
+			}
 
-				fm.luminaModified = now;
-				fm.luminaVersion = this.plugin.manifest.version;
+			// LLM 캐시가 있다면 적용
+			const cachedData = this.llmGeneratedCache.get(file.path);
+			if (cachedData) {
+				targetFm.description = cachedData.description;
 
-				// LLM 캐시가 있다면 적용
-				const cachedData = this.llmGeneratedCache.get(file.path);
-				if (cachedData) {
-					fm.description = cachedData.description;
-					
-					// 기존 태그와 병합
-					let existingTags: string[] = [];
-					if (Array.isArray(fm.tags)) {
-						existingTags = fm.tags;
-					} else if (typeof fm.tags === 'string') {
-						existingTags = fm.tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+				let existingTags: string[] = [];
+				if (Array.isArray(targetFm.tags)) {
+					existingTags = targetFm.tags as string[];
+				} else if (typeof targetFm.tags === 'string') {
+					existingTags = (targetFm.tags as string).split(',').map(t => t.trim()).filter(t => t.length > 0);
+				}
+				targetFm.tags = Array.from(new Set([...existingTags, ...cachedData.tags]));
+
+				this.llmGeneratedCache.delete(file.path);
+			}
+
+			targetFm.luminaVersion = version;
+
+			// luminaModified 단순 타임스탬프 갱신만으로는 재기록하지 않는다 (mtime 보존).
+			// luminaCreated/luminaVersion/tags/description 중 실제 변경이 있을 때만 쓴다.
+			const managed: (keyof LuminaFrontmatter)[] = ['luminaCreated', 'luminaModified', 'luminaVersion', 'tags', 'description'];
+			const hasMeaningfulChange = managed.some(k => !deepEqual(currentFm[k], targetFm[k]));
+			if (!hasMeaningfulChange) {
+				this.lastUpdateMap.set(file.path, Date.now());
+				return; // 변경 없음 → 파일을 건드리지 않음
+			}
+
+			targetFm.luminaModified = now;
+
+			await this.app.fileManager.processFrontMatter(file, (fmObj) => {
+				const fm = fmObj as Record<string, unknown>;
+				for (const k of managed) {
+					if (k in targetFm) {
+						fm[k] = targetFm[k];
+					} else {
+						delete fm[k];
 					}
-					
-					const mergedTags = new Set([...existingTags, ...cachedData.tags]);
-					fm.tags = Array.from(mergedTags);
-					
-					this.llmGeneratedCache.delete(file.path);
 				}
 			});
 
