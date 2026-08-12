@@ -285,14 +285,6 @@ ${contentWithoutFm.substring(0, 3000)}`;
 
 			if (!isUpdate) {
 				targetFm.luminaCreated = targetFm.luminaCreated || now;
-				if (typeof targetFm.tags === 'string') {
-					targetFm.tags = targetFm.tags
-						.split(',')
-						.map((t: string) => t.trim())
-						.filter((t: string) => t.length > 0);
-				} else if (!Array.isArray(targetFm.tags)) {
-					targetFm.tags = [];
-				}
 			}
 
 			// LLM 캐시가 있다면 적용
@@ -326,12 +318,28 @@ ${contentWithoutFm.substring(0, 3000)}`;
 
 			await this.app.fileManager.processFrontMatter(file, (fmObj) => {
 				const fm = fmObj as Record<string, unknown>;
+
+				// 생성 시: metadataCache는 파일 생성 직후 스테일일 수 있으므로,
+				// 태그 정규화는 캐시가 아닌 실제 파싱된 프론트매터 기준으로 수행한다.
+				if (!isUpdate && !cachedData) {
+					if (typeof fm.tags === 'string') {
+						fm.tags = (fm.tags as string)
+							.split(',')
+							.map((t: string) => t.trim())
+							.filter((t: string) => t.length > 0);
+					} else if (fm.tags === undefined || fm.tags === null) {
+						fm.tags = [];
+					}
+				}
+
 				for (const k of managed) {
+					// 태그는 LLM 캐시(병합 결과)가 있을 때만 덮어쓴다.
+					// 그 외에는 실제 값(위에서 정규화한 값)을 보존한다.
+					if (k === 'tags' && !cachedData) continue;
 					if (k in targetFm) {
 						fm[k] = targetFm[k];
-					} else {
-						delete fm[k];
 					}
+					// (기존 delete 분기는 제거: 스테일 캐시로 사용자 데이터를 지우지 않도록)
 				}
 			});
 
