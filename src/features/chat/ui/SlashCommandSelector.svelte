@@ -101,7 +101,7 @@
 						<span class="lumina-popup-selector__item-name">{cmd.name}</span>
 						<span class="lumina-slash-selector__item-desc">{cmd.description}</span>
 					</div>
-					<span class="lumina-popup-selector__item-badge">/{cmd.id}</span>
+					<span class="lumina-popup-selector__item-badge lumina-slash-selector__item-badge">/{cmd.id}</span>
 				</button>
 			{/each}
 		{/if}
@@ -114,6 +114,15 @@
 		color: var(--text-muted);
 		overflow: hidden;
 		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	/* 배지(/{cmd.id}) 길이가 항목마다 달라도 텍스트 영역 폭이 일정하도록 고정 폭 + 중앙 정렬 */
+	.lumina-slash-selector__item-badge {
+		min-width: 72px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
 		white-space: nowrap;
 	}
 </style>
