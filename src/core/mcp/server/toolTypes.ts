@@ -33,7 +33,8 @@ export type ToolName =
 	| 'generate_moc'
 	| 'auto_link_note'
 	| 'run_shell_command'
-	| 'query_metadata';
+	| 'query_metadata'
+	| 'show_notice';
 
 export interface RunShellCommandArguments extends ToolArguments {
 	command: string;

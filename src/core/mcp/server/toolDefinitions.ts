@@ -392,6 +392,18 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 					limit: { type: 'number', description: 'Max results to return (default: 50)' }
 				}
 			}
+		},
+		{
+			name: 'show_notice',
+			description: t('mcpServerTools.show_notice.desc'),
+			inputSchema: {
+				type: 'object',
+				properties: {
+					message: { type: 'string', description: t('mcpServerTools.show_notice.argMessage') },
+					duration: { type: 'number', description: t('mcpServerTools.show_notice.argDuration') },
+				},
+				required: ['message'],
+			},
 		}
 	];
 

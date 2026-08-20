@@ -925,6 +925,11 @@
     },
     "query_metadata": {
       "desc": "Query and filter vault notes by their frontmatter properties, tags, or folders. Returns a markdown table of the results. Use this tool when the user asks to list or aggregate notes based on their metadata (e.g. status, author, rating, dates)."
+    },
+    "show_notice": {
+      "desc": "Shows a notification message to the user.",
+      "argMessage": "The message to display in the notification.",
+      "argDuration": "Optional. The duration in milliseconds for the notice to be visible. (Default: 5000)"
     }
   },
   "graph": {

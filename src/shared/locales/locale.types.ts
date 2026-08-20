@@ -1002,6 +1002,11 @@ export interface TranslationMcpServerTools {
   generate_moc: { desc: string };
   auto_link_note: { desc: string };
   query_metadata: { desc: string };
+  show_notice: {
+    desc: string;
+    argMessage: string;
+    argDuration: string;
+  };
 }
 
 export interface TranslationProjectsSettings {

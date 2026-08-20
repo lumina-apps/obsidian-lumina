@@ -10,6 +10,7 @@ import { createCanvasHandler } from './handlers/canvasHandlers';
 import { generateMocHandler } from './handlers/mocHandlers';
 import { autoLinkNoteHandler } from './handlers/autoLinkHandlers';
 import { queryMetadataHandler } from './handlers/metadataHandlers';
+import { showNoticeHandler } from './handlers/uiHandlers';
 
 export type ToolHandlerImpl = (
 	args: ToolArguments,
@@ -44,6 +45,7 @@ const handlerMap: Record<ToolName, ToolHandlerImpl> = {
 	auto_link_note: autoLinkNoteHandler,
 	run_shell_command: runShellCommandHandler,
 	query_metadata: queryMetadataHandler,
+	show_notice: showNoticeHandler,
 };
 
 /**
