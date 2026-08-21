@@ -2242,3 +2242,40 @@ html body .modal-container.lumina-settings-modal-container {
 	background: rgba(200, 0, 0, 0.08);
 }
 
+/* ─── Lumina Folder Tree Checkbox Styles ────────────────────────────────────────── */
+.lumina-folder-tree-container input[type="checkbox"] {
+	appearance: auto;
+	-webkit-appearance: checkbox;
+	accent-color: var(--interactive-accent);
+	cursor: pointer;
+	margin: 0 4px 0 0;
+	vertical-align: middle;
+}
+
+.lumina-folder-tree-container input[type="checkbox"]:indeterminate,
+.lumina-folder-tree-container input[type="checkbox"].is-indeterminate {
+	appearance: auto;
+	-webkit-appearance: checkbox;
+	accent-color: var(--interactive-accent);
+	opacity: 0.9;
+}
+
+.lumina-tag-remove-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	margin-left: 6px;
+	border-radius: 50%;
+	cursor: pointer;
+	color: var(--text-error);
+	font-size: 0.85em;
+	transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.lumina-tag-remove-btn:hover {
+	background-color: var(--text-error);
+	color: #ffffff;
+}
+

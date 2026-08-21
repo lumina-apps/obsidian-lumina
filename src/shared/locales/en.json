@@ -1042,7 +1042,13 @@
       "duplicateName": "A project with this name already exists.",
       "defaultProjectName": "Default",
       "modalTitleActive": "Project Settings (Current: {{projectName}})",
-      "activeProjectModelDesc": "Sets the default chat model for the active project (<strong>{{projectName}}</strong>). You can also change this in Project Settings (RAG tab)."
+      "activeProjectModelDesc": "Sets the default chat model for the active project (<strong>{{projectName}}</strong>). You can also change this in Project Settings (RAG tab).",
+      "chatHistoryRootPlaceholder": "(Default) Use chatHistory root",
+      "chatHistoryAutoPlaceholder": "Auto-assigned",
+      "chatHistoryPreview": "Save path: {{path}}",
+      "historyMoved": "Chat history moved to \"{{path}}\"",
+      "historyTargetExists": "Failed to move chat history: Target folder \"{{path}}\" already exists.",
+      "historyMoveError": "Error moving chat history folder: {{error}}"
     },
     "selector": {
       "label": "Select Project",

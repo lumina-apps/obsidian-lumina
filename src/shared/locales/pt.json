@@ -986,7 +986,13 @@
       "deletedModel": "[Excluído] Modelo",
       "deletedPrompt": "[Excluído] Prompt",
       "modalTitleActive": "Configurações do projeto (Atual: {{projectName}})",
-      "activeProjectModelDesc": "Define o modelo de chat padrão para o projeto ativo (<strong>{{projectName}}</strong>). Você também pode alterar isso nas Configurações do Projeto (Guia RAG)."
+      "activeProjectModelDesc": "Define o modelo de chat padrão para o projeto ativo (<strong>{{projectName}}</strong>). Você também pode alterar isso nas Configurações do Projeto (Guia RAG).",
+      "chatHistoryRootPlaceholder": "(Padrão) Usar raiz chatHistory",
+      "chatHistoryAutoPlaceholder": "Atribuído automaticamente",
+      "chatHistoryPreview": "Caminho de salvamento: {{path}}",
+      "historyMoved": "Histórico de chat movido para \"{{path}}\"",
+      "historyTargetExists": "Falha ao mover o histórico do chat: a pasta de destino \"{{path}}\" já existe.",
+      "historyMoveError": "Erro ao mover a pasta de histórico de chat: {{error}}"
     },
     "selector": {
       "label": "Selecionar Projeto",

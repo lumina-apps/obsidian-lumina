@@ -986,7 +986,13 @@
       "deletedModel": "[Supprimé] Modèle",
       "deletedPrompt": "[Supprimé] Prompt",
       "modalTitleActive": "Paramètres du projet (Actuel : {{projectName}})",
-      "activeProjectModelDesc": "Définit le modèle de chat par défaut pour le projet actif (<strong>{{projectName}}</strong>). Vous pouvez également modifier ceci dans les paramètres du projet (Onglet RAG)."
+      "activeProjectModelDesc": "Définit le modèle de chat par défaut pour le projet actif (<strong>{{projectName}}</strong>). Vous pouvez également modifier ceci dans les paramètres du projet (Onglet RAG).",
+      "chatHistoryRootPlaceholder": "(Par défaut) Utiliser la racine chatHistory",
+      "chatHistoryAutoPlaceholder": "Attribué automatiquement",
+      "chatHistoryPreview": "Chemin d'enregistrement: {{path}}",
+      "historyMoved": "Historique de discussion déplacé vers \"{{path}}\"",
+      "historyTargetExists": "Échec du déplacement de l'historique : le dossier cible \"{{path}}\" existe déjà.",
+      "historyMoveError": "Erreur lors du déplacement du dossier d'historique de discussion : {{error}}"
     },
     "selector": {
       "label": "Sélectionner un projet",

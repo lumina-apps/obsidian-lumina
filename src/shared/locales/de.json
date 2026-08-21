@@ -994,7 +994,13 @@
       "deletedModel": "[Gelöscht] Modell",
       "deletedPrompt": "[Gelöscht] Prompt",
       "modalTitleActive": "Projekteinstellungen (Aktuell: {{projectName}})",
-      "activeProjectModelDesc": "Legt das Standard-Chatmodell für das aktive Projekt (<strong>{{projectName}}</strong>) fest. Sie können dies auch in den Projekteinstellungen (RAG-Tab) ändern."
+      "activeProjectModelDesc": "Legt das Standard-Chatmodell für das aktive Projekt (<strong>{{projectName}}</strong>) fest. Sie können dies auch in den Projekteinstellungen (RAG-Tab) ändern.",
+      "chatHistoryRootPlaceholder": "(Standard) chatHistory-Stammverzeichnis verwenden",
+      "chatHistoryAutoPlaceholder": "Automatisch zugewiesen",
+      "chatHistoryPreview": "Speicherpfad: {{path}}",
+      "historyMoved": "Chat-Verlauf nach \"{{path}}\" verschoben",
+      "historyTargetExists": "Fehler beim Verschieben des Chat-Verlaufs: Zielordner \"{{path}}\" existiert bereits.",
+      "historyMoveError": "Fehler beim Verschieben des Chat-Verlaufsordners: {{error}}"
     },
     "selector": {
       "label": "Projekt auswählen",

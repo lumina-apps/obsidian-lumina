@@ -986,7 +986,13 @@
       "deletedModel": "[Удалено] Модель",
       "deletedPrompt": "[Удалено] Промпт",
       "modalTitleActive": "Настройки проекта (Текущий: {{projectName}})",
-      "activeProjectModelDesc": "Устанавливает модель чата по умолчанию для активного проекта (<strong>{{projectName}}</strong>). Вы также можете изменить это в Настройках проекта (Вкладка RAG)."
+      "activeProjectModelDesc": "Устанавливает модель чата по умолчанию для активного проекта (<strong>{{projectName}}</strong>). Вы также можете изменить это в Настройках проекта (Вкладка RAG).",
+      "chatHistoryRootPlaceholder": "(По умолчанию) Использовать корень chatHistory",
+      "chatHistoryAutoPlaceholder": "Автоматически",
+      "chatHistoryPreview": "Путь сохранения: {{path}}",
+      "historyMoved": "История чата перемещена в \"{{path}}\"",
+      "historyTargetExists": "Не удалось переместить историю чата: целевая папка \"{{path}}\" уже существует.",
+      "historyMoveError": "Ошибка при перемещении папки истории чата: {{error}}"
     },
     "selector": {
       "label": "Выбрать проект",

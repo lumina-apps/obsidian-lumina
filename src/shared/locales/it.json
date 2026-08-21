@@ -986,7 +986,13 @@
       "deletedModel": "[Eliminato] Modello",
       "deletedPrompt": "[Eliminato] Prompt",
       "modalTitleActive": "Impostazioni progetto (Attuale: {{projectName}})",
-      "activeProjectModelDesc": "Imposta il modello di chat predefinito per il progetto attivo (<strong>{{projectName}}</strong>). Puoi modificare questa impostazione anche nelle Impostazioni Progetto (Scheda RAG)."
+      "activeProjectModelDesc": "Imposta il modello di chat predefinito per il progetto attivo (<strong>{{projectName}}</strong>). Puoi modificare questa impostazione anche nelle Impostazioni Progetto (Scheda RAG).",
+      "chatHistoryRootPlaceholder": "(Predefinito) Usa radice chatHistory",
+      "chatHistoryAutoPlaceholder": "Assegnato automaticamente",
+      "chatHistoryPreview": "Percorso di salvataggio: {{path}}",
+      "historyMoved": "Cronologia chat spostata in \"{{path}}\"",
+      "historyTargetExists": "Impossibile spostare la cronologia chat: la cartella di destinazione \"{{path}}\" esiste già.",
+      "historyMoveError": "Errore durante lo spostamento della cartella della cronologia chat: {{error}}"
     },
     "selector": {
       "label": "Seleziona Progetto",

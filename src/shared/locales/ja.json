@@ -986,7 +986,13 @@
       "duplicateName": "この名前のプロジェクトは既に存在します。",
       "defaultProjectName": "デフォルト",
       "modalTitleActive": "プロジェクト設定 (現在: {{projectName}})",
-      "activeProjectModelDesc": "現在アクティブなプロジェクト (<strong>{{projectName}}</strong>) のデフォルトチャットモデルを設定します。プロジェクト設定 (RAGタブ) からも変更できます。"
+      "activeProjectModelDesc": "現在アクティブなプロジェクト (<strong>{{projectName}}</strong>) のデフォルトチャットモデルを設定します。プロジェクト設定 (RAGタブ) からも変更できます。",
+      "chatHistoryRootPlaceholder": "(デフォルト) chatHistory ルートを使用",
+      "chatHistoryAutoPlaceholder": "自動指定",
+      "chatHistoryPreview": "保存パス: {{path}}",
+      "historyMoved": "チャット履歴が \"{{path}}\" に移動されました。",
+      "historyTargetExists": "チャット履歴の移動に失敗しました: 対象フォルダー \"{{path}}\" は既に存在します。",
+      "historyMoveError": "チャット履歴フォルダーの移動中にエラーが発生しました: {{error}}"
     },
     "selector": {
       "label": "プロジェクトを選択",

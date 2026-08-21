@@ -1,6 +1,6 @@
 import { t } from "../../../shared/locales/helpers";
 
-import { Modal, Setting, TFolder, TextComponent } from 'obsidian';
+import { Modal, Setting, TFolder, TextComponent, normalizePath, Notice, TAbstractFile } from 'obsidian';
 import type LuminaPlugin from '../../../main';
 import type { ProjectConfig } from '../../../shared/types/project.types';
 import { getActiveProject, syncProjectStore } from '../../../core/store/projectStore';
@@ -15,6 +15,7 @@ export class ProjectSettingsModal extends Modal {
 
 	// Local state
 	private projectName: string = '';
+	private historySubfolder: string = '';
 	private includedPaths: Set<string> = new Set();
 	private excludedPaths: Set<string> = new Set();
 	private defaultProviderId: string = '';
@@ -31,6 +32,8 @@ export class ProjectSettingsModal extends Modal {
 			this.project = project;
 			this.projectName = (project.id === 'default' && project.name === 'Default') ? (t('projects.settings.defaultProjectName') || 'Default Project') : project.name;
 
+			const sanitizeName = (n: string) => n.trim().replace(/[\\/:*?"<>|]/g, '_');
+			this.historySubfolder = project.historySubfolder !== undefined ? project.historySubfolder : (project.id === 'default' ? '' : sanitizeName(project.name));
 			this.includedPaths = new Set(project.ragIncludedPaths);
 			this.excludedPaths = new Set(project.ragExcludedPaths);
 			this.defaultProviderId = project.defaultProviderId || '';
@@ -39,6 +42,7 @@ export class ProjectSettingsModal extends Modal {
 		} else {
 			this.project = null;
 			this.projectName = '';
+			this.historySubfolder = '';
 			this.includedPaths = new Set();
 			this.defaultProviderId = '';
 			this.defaultModelId = '';
@@ -62,6 +66,8 @@ export class ProjectSettingsModal extends Modal {
 
 		contentEl.createEl('h2', { text: this.isNewProject ? t('projects.settings.newProjectTitle') || '새 프로젝트 생성' : t('projects.settings.modalTitle') || '프로젝트 설정' });
 
+		const sanitizeName = (n: string) => n.trim().replace(/[\\/:*?"<>|]/g, '_');
+
 		new Setting(contentEl)
 			.setName(t('projects.settings.projectName') || '프로젝트 이름')
 			.setDesc(t('projects.settings.projectNameDesc') || '프로젝트의 이름을 지정합니다.')
@@ -69,19 +75,39 @@ export class ProjectSettingsModal extends Modal {
 				text.setValue(this.projectName)
 					.onChange(val => {
 						this.projectName = val;
-						historyPathInput?.setValue(this.getHistoryDisplayPath());
+						if (historyPathInput && !this.historySubfolder) {
+							const isDefault = this.project?.id === 'default';
+							const placeholder = isDefault 
+								? (t('projects.settings.chatHistoryRootPlaceholder') || '(기본) chatHistory 루트 사용') 
+								: (sanitizeName(val) || (t('projects.settings.chatHistoryAutoPlaceholder') || '자동 지정'));
+							historyPathInput.setPlaceholder(placeholder);
+						}
+						previewEl.setText(t('projects.settings.chatHistoryPreview', { path: this.getHistoryDisplayPath() }) || `저장 경로: ${this.getHistoryDisplayPath()}`);
 					});
 			});
 
-		// Auto history path display
+		// Auto / Custom history path display
 		let historyPathInput: TextComponent | null = null;
-		new Setting(contentEl)
+		const isDefault = this.project?.id === 'default';
+		const defaultPlaceholder = isDefault 
+			? (t('projects.settings.chatHistoryRootPlaceholder') || '(기본) chatHistory 루트 사용') 
+			: (sanitizeName(this.projectName) || (t('projects.settings.chatHistoryAutoPlaceholder') || '자동 지정'));
+
+		const historySetting = new Setting(contentEl)
 			.setName(t('projects.settings.chatHistoryPath') || '채팅 히스토리 저장 경로')
-			.setDesc(t('projects.settings.chatHistoryPathDesc') || '이 프로젝트의 채팅 기록이 저장될 경로입니다. (자동 지정)')
+			.setDesc(t('projects.settings.chatHistoryPathDesc') || '이 프로젝트의 대화가 저장될 하위 폴더명입니다. (비워둘 경우 프로젝트 이름 사용)')
 			.addText(text => {
 				historyPathInput = text;
-				text.setValue(this.getHistoryDisplayPath()).setDisabled(true);
+				text.setPlaceholder(defaultPlaceholder)
+					.setValue(this.historySubfolder)
+					.onChange(val => {
+						this.historySubfolder = val.trim();
+						previewEl.setText(t('projects.settings.chatHistoryPreview', { path: this.getHistoryDisplayPath() }) || `저장 경로: ${this.getHistoryDisplayPath()}`);
+					});
 			});
+
+		const previewEl = historySetting.descEl.createDiv({ cls: 'lumina-settings__desc-guide' });
+		previewEl.setText(t('projects.settings.chatHistoryPreview', { path: this.getHistoryDisplayPath() }) || `저장 경로: ${this.getHistoryDisplayPath()}`);
 
 		// --- Default Chat Model Selector ---
 		const chatModelOptions = buildChatModelOptions(this.plugin.settings.connections.providers);
@@ -150,8 +176,40 @@ export class ProjectSettingsModal extends Modal {
 				dropdown.selectEl.setCssStyles({ maxWidth: '230px', textOverflow: 'ellipsis' });
 			});
 
-		const folders = this.app.vault.getAllLoadedFiles().filter(f => f instanceof TFolder).map(f => f.path);
-		folders.sort((a, b) => a.localeCompare(b));
+		const getDescendantPaths = (folder: TFolder): string[] => {
+			const paths: string[] = [];
+			const subFolders = folder.children.filter((c): c is TFolder => c instanceof TFolder);
+			for (const sub of subFolders) {
+				paths.push(sub.path);
+				paths.push(...getDescendantPaths(sub));
+			}
+			return paths;
+		};
+
+		const updateCheckboxState = (cb: HTMLInputElement, folder: TFolder, selectedPaths: Set<string>) => {
+			const folderPath = folder.path === '/' ? '/' : folder.path;
+			const descendants = getDescendantPaths(folder);
+			const isChecked = selectedPaths.has(folderPath);
+			const hasSelectedDescendant = descendants.some(p => selectedPaths.has(p));
+
+			const isIndeterminate = !isChecked && hasSelectedDescendant;
+			cb.checked = isChecked;
+			cb.indeterminate = isIndeterminate;
+			cb.classList.toggle('is-indeterminate', isIndeterminate);
+		};
+
+		const updateAllCheckboxes = (container: HTMLElement, selectedPaths: Set<string>) => {
+			container.findAll('input[type="checkbox"]').forEach(cb => {
+				if (cb instanceof HTMLInputElement) {
+					const path = cb.dataset.path;
+					if (!path) return;
+					const folder = this.app.vault.getAbstractFileByPath(path);
+					if (folder instanceof TFolder) {
+						updateCheckboxState(cb, folder, selectedPaths);
+					}
+				}
+			});
+		};
 
 		const renderFolderTree = (
 			container: HTMLElement,
@@ -174,10 +232,10 @@ export class ProjectSettingsModal extends Modal {
 			toggleEl.setCssStyles({ width: '16px', display: 'inline-block', cursor: hasChildren ? 'pointer' : 'default' });
 			
 			const childrenContainer = itemEl.createDiv({ cls: 'lumina-tree-children' });
-			childrenContainer.setCssStyles({ display: 'none' }); // collapsed by default
+			childrenContainer.setCssStyles({ display: 'none' });
 
 			if (hasChildren) {
-				toggleEl.setText('▶'); // Collapsed state
+				toggleEl.setText('▶');
 				toggleEl.setCssStyles({ fontSize: '0.8em' });
 				toggleEl.onclick = () => {
 					const isCollapsed = childrenContainer.style.display === 'none';
@@ -188,14 +246,16 @@ export class ProjectSettingsModal extends Modal {
 
 			const cb = rowEl.createEl('input', { type: 'checkbox' });
 			const folderPath = isRoot ? '/' : folder.path;
+			cb.dataset.path = folderPath;
 			
 			if (isRoot) {
-				cb.setCssStyles({ display: 'none' }); // Hide root checkbox to prevent confusion
+				cb.setCssStyles({ display: 'none' });
 			} else {
-				cb.checked = selectedPaths.has(folderPath);
+				updateCheckboxState(cb, folder, selectedPaths);
 				cb.onchange = () => {
 					if (cb.checked) {
 						selectedPaths.add(folderPath);
+						getDescendantPaths(folder).forEach(p => selectedPaths.delete(p));
 					} else {
 						selectedPaths.delete(folderPath);
 					}
@@ -232,6 +292,7 @@ export class ProjectSettingsModal extends Modal {
 			descEl.setCssStyles({ marginTop: '8px', marginBottom: '12px' });
 
 			const treeContainer = details.createDiv();
+			treeContainer.addClass('lumina-folder-tree-container');
 			treeContainer.setCssStyles({ maxHeight: '180px', overflowY: 'auto', border: '1px solid var(--background-modifier-border)', padding: '10px', borderRadius: '6px', marginBottom: '10px', background: 'var(--background-secondary)' });
 
 			const tagsContainer = details.createDiv();
@@ -251,18 +312,22 @@ export class ProjectSettingsModal extends Modal {
 
 					tag.createSpan({ text: path });
 
-					const removeBtn = tag.createSpan({ text: '✕' });
-					removeBtn.setCssStyles({ marginLeft: '8px', cursor: 'pointer', color: 'var(--text-error)' });
-					removeBtn.onclick = () => {
+					const removeBtn = tag.createSpan({ text: '✕', cls: 'lumina-tag-remove-btn' });
+					removeBtn.addEventListener('click', (e: MouseEvent) => {
+						e.preventDefault();
+						e.stopPropagation();
 						selectedPaths.delete(path);
-						treeContainer.empty();
-						renderFolderTree(treeContainer, this.app.vault.getRoot(), selectedPaths, renderTags, true);
+						updateAllCheckboxes(treeContainer, selectedPaths);
 						renderTags();
-					};
+					});
 				});
 			};
 
-			renderFolderTree(treeContainer, this.app.vault.getRoot(), selectedPaths, renderTags, true);
+			const rootFolder = this.app.vault.getRoot();
+			renderFolderTree(treeContainer, rootFolder, selectedPaths, () => {
+				renderTags();
+				updateAllCheckboxes(treeContainer, selectedPaths);
+			}, true);
 			renderTags();
 		};
 
@@ -299,11 +364,53 @@ export class ProjectSettingsModal extends Modal {
 	}
 
 	private getHistoryDisplayPath(): string {
-		const isDefault = this.project?.id === 'default';
+		const sanitizeSubfolder = (sub: string) => {
+			const converted = sub.trim().replace(/\\/g, '/');
+			const cleaned = converted.replace(/[:*?"<>|]/g, '_').replace(/^\/+|\/+$/g, '');
+			return normalizePath(cleaned);
+		};
 		const sanitizeName = (name: string) => name.trim().replace(/[\\/:*?"<>|]/g, '_');
-		const historySubfolder = isDefault ? '' : (this.project?.historySubfolder || sanitizeName(this.projectName));
-		const basePath = this.plugin.settings.chat.historyPath || 'Chat History';
-		return historySubfolder ? `${basePath}/${historySubfolder}` : basePath;
+
+		let subfolder = '';
+		if (this.historySubfolder.trim()) {
+			subfolder = sanitizeSubfolder(this.historySubfolder);
+		} else if (this.project?.id !== 'default' && this.projectName.trim()) {
+			subfolder = sanitizeName(this.projectName);
+		}
+
+		const basePath = normalizePath(this.plugin.settings.chat.historyPath || 'chatHistory');
+		return subfolder ? normalizePath(`${basePath}/${subfolder}`) : basePath;
+	}
+
+	private async moveHistoryFolder(oldSubfolder: string, newSubfolder: string) {
+		const historyBasePath = this.plugin.settings.chat.historyPath || 'chatHistory';
+
+		if (!oldSubfolder || !newSubfolder || oldSubfolder === newSubfolder) return;
+
+		const oldPath = normalizePath(`${historyBasePath}/${oldSubfolder}`);
+		const newPath = normalizePath(`${historyBasePath}/${newSubfolder}`);
+
+		try {
+			const oldFolder = this.app.vault.getAbstractFileByPath(oldPath);
+			if (!(oldFolder instanceof TFolder)) {
+				debugLogger.logSystem('projects', `moveHistoryFolder: Old path "${oldPath}" is not a folder or does not exist. Skipping move.`);
+				return;
+			}
+
+			const newFolderExists = this.app.vault.getAbstractFileByPath(newPath);
+			if (newFolderExists) {
+				new Notice(t('projects.settings.historyTargetExists', { path: newPath }) || `Failed to move chat history: Target folder "${newPath}" already exists.`);
+				return;
+			}
+
+			await this.app.fileManager.renameFile(oldFolder, newPath);
+			new Notice(t('projects.settings.historyMoved', { path: newPath }) || `Chat history moved to "${newPath}"`);
+			debugLogger.logSystem('projects', `Successfully moved chat history from "${oldPath}" to "${newPath}"`);
+		} catch (error: unknown) {
+			const msg = error instanceof Error ? error.message : String(error);
+			new Notice(t('projects.settings.historyMoveError', { error: msg }) || `Error moving chat history folder: ${msg}`);
+			debugLogger.logError('projects', error instanceof Error ? error : new Error(msg));
+		}
 	}
 
 	async saveProject() {
@@ -315,13 +422,24 @@ export class ProjectSettingsModal extends Modal {
 			finalName = 'Default';
 		}
 
+		const sanitizeSubfolder = (sub: string) => {
+			const converted = sub.trim().replace(/\\/g, '/');
+			const cleaned = converted.replace(/[:*?"<>|]/g, '_').replace(/^\/+|\/+$/g, '');
+			return normalizePath(cleaned);
+		};
 		const sanitizeName = (n: string) => n.trim().replace(/[\\/:*?"<>|]/g, '_');
-		const historySubfolder = this.project?.id === 'default' ? '' : sanitizeName(finalName);
+
+		let historySubfolder = '';
+		if (this.historySubfolder.trim()) {
+			historySubfolder = sanitizeSubfolder(this.historySubfolder);
+		} else if (this.project?.id !== 'default' && finalName) {
+			historySubfolder = sanitizeName(finalName);
+		}
 
 		const ragIncludedPaths = Array.from(this.includedPaths);
 		const ragExcludedPaths = Array.from(this.excludedPaths);
 
-		debugLogger.logSystem('projects', `ProjectSettingsModal.saveProject: isNewProject=${this.isNewProject}, targetId=${this.project?.id}, finalName=${finalName}, included=${JSON.stringify(ragIncludedPaths)}, excluded=${JSON.stringify(ragExcludedPaths)}`);
+		debugLogger.logSystem('projects', `ProjectSettingsModal.saveProject: isNewProject=${this.isNewProject}, targetId=${this.project?.id}, finalName=${finalName}, historySubfolder=${historySubfolder}, included=${JSON.stringify(ragIncludedPaths)}, excluded=${JSON.stringify(ragExcludedPaths)}`);
 
 		if (this.isNewProject) {
 			const newProject: ProjectConfig = {
@@ -337,13 +455,19 @@ export class ProjectSettingsModal extends Modal {
 			};
 			this.plugin.settings.projects.list.push(newProject);
 		} else if (this.project) {
+			const oldHistorySubfolder = this.project.historySubfolder;
+
 			this.project.name = finalName;
 			this.project.ragIncludedPaths = ragIncludedPaths;
 			this.project.ragExcludedPaths = ragExcludedPaths;
 			this.project.defaultProviderId = this.defaultProviderId;
 			this.project.defaultModelId = this.defaultModelId;
 			this.project.systemPromptId = this.systemPromptId;
-			// Keep existing historySubfolder when renaming
+			this.project.historySubfolder = historySubfolder;
+
+			if (oldHistorySubfolder && oldHistorySubfolder !== historySubfolder) {
+				await this.moveHistoryFolder(oldHistorySubfolder, historySubfolder);
+			}
 		}
 
 		await this.plugin.saveSettings();
@@ -379,3 +503,4 @@ export class ProjectSettingsModal extends Modal {
 		contentEl.empty();
 	}
 }
+

@@ -1037,7 +1037,13 @@
       "duplicateName": "해당 이름의 프로젝트가 이미 존재합니다.",
       "defaultProjectName": "기본",
       "modalTitleActive": "프로젝트 설정 (현재: {{projectName}})",
-      "activeProjectModelDesc": "현재 활성화된 프로젝트 (<strong>{{projectName}}</strong>) 의 기본 채팅 모델을 설정합니다. 프로젝트 관리(RAG 탭)에서도 변경할 수 있습니다."
+      "activeProjectModelDesc": "현재 활성화된 프로젝트 (<strong>{{projectName}}</strong>) 의 기본 채팅 모델을 설정합니다. 프로젝트 관리(RAG 탭)에서도 변경할 수 있습니다.",
+      "chatHistoryRootPlaceholder": "(기본) chatHistory 루트 사용",
+      "chatHistoryAutoPlaceholder": "자동 지정",
+      "chatHistoryPreview": "저장 경로: {{path}}",
+      "historyMoved": "채팅 기록이 \"{{path}}\"(으)로 이동되었습니다.",
+      "historyTargetExists": "채팅 기록 이동 실패: 대상 폴더 \"{{path}}\"이(가) 이미 존재합니다.",
+      "historyMoveError": "채팅 기록 폴더 이동 중 오류: {{error}}"
     },
     "selector": {
       "label": "프로젝트 선택",

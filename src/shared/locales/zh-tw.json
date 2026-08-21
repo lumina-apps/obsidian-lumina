@@ -986,7 +986,13 @@
       "deletedModel": "[已刪除] 模型",
       "deletedPrompt": "[已刪除] 提示詞",
       "modalTitleActive": "專案設定 (目前: {{projectName}})",
-      "activeProjectModelDesc": "設定目前活動專案 (<strong>{{projectName}}</strong>) 的預設聊天模型。您也可以在專案設定（RAG標籤）中更改此設定。"
+      "activeProjectModelDesc": "設定目前活動專案 (<strong>{{projectName}}</strong>) 的預設聊天模型。您也可以在專案設定（RAG標籤）中更改此設定。",
+      "chatHistoryRootPlaceholder": "(預設) 使用 chatHistory 根目錄",
+      "chatHistoryAutoPlaceholder": "自動指定",
+      "chatHistoryPreview": "儲存路徑: {{path}}",
+      "historyMoved": "聊天記錄已移動至 \"{{path}}\"",
+      "historyTargetExists": "移動聊天記錄失敗: 目標資料夾 \"{{path}}\" 已存在。",
+      "historyMoveError": "移動聊天記錄資料夾時發生錯誤: {{error}}"
     },
     "selector": {
       "label": "選擇專案",
