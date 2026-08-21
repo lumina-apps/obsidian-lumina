@@ -1,6 +1,6 @@
 import { t } from "../../../shared/locales/helpers";
 
-import { Modal, Setting, TFolder, TextComponent, normalizePath, Notice, TAbstractFile } from 'obsidian';
+import { Modal, Setting, TFolder, TextComponent, normalizePath, Notice } from 'obsidian';
 import type LuminaPlugin from '../../../main';
 import type { ProjectConfig } from '../../../shared/types/project.types';
 import { getActiveProject, syncProjectStore } from '../../../core/store/projectStore';
@@ -30,7 +30,7 @@ export class ProjectSettingsModal extends Modal {
 
 		if (project) {
 			this.project = project;
-			this.projectName = (project.id === 'default' && project.name === 'Default') ? (t('projects.settings.defaultProjectName') || 'Default Project') : project.name;
+			this.projectName = (project.id === 'default' && project.name === 'Default') ? t('projects.settings.defaultProjectName') : project.name;
 
 			const sanitizeName = (n: string) => n.trim().replace(/[\\/:*?"<>|]/g, '_');
 			this.historySubfolder = project.historySubfolder !== undefined ? project.historySubfolder : (project.id === 'default' ? '' : sanitizeName(project.name));
@@ -64,50 +64,46 @@ export class ProjectSettingsModal extends Modal {
 
 		debugLogger.logSystem('projects', `ProjectSettingsModal.onOpen: project=${this.project?.id}, initialIncluded=${JSON.stringify(Array.from(this.includedPaths))}, initialExcluded=${JSON.stringify(Array.from(this.excludedPaths))}`);
 
-		contentEl.createEl('h2', { text: this.isNewProject ? t('projects.settings.newProjectTitle') || '새 프로젝트 생성' : t('projects.settings.modalTitle') || '프로젝트 설정' });
+		contentEl.createEl('h2', { text: this.isNewProject ? t('projects.settings.newProjectTitle') : t('projects.settings.modalTitle') });
 
 		const sanitizeName = (n: string) => n.trim().replace(/[\\/:*?"<>|]/g, '_');
 
 		new Setting(contentEl)
-			.setName(t('projects.settings.projectName') || '프로젝트 이름')
-			.setDesc(t('projects.settings.projectNameDesc') || '프로젝트의 이름을 지정합니다.')
+			.setName(t('projects.settings.projectName'))
+			.setDesc(t('projects.settings.projectNameDesc'))
 			.addText(text => {
 				text.setValue(this.projectName)
 					.onChange(val => {
 						this.projectName = val;
 						if (historyPathInput && !this.historySubfolder) {
 							const isDefault = this.project?.id === 'default';
-							const placeholder = isDefault 
-								? (t('projects.settings.chatHistoryRootPlaceholder') || '(기본) chatHistory 루트 사용') 
-								: (sanitizeName(val) || (t('projects.settings.chatHistoryAutoPlaceholder') || '자동 지정'));
+							const placeholder = isDefault ? t('projects.settings.chatHistoryRootPlaceholder') : (sanitizeName(val) || t('projects.settings.chatHistoryAutoPlaceholder'));
 							historyPathInput.setPlaceholder(placeholder);
 						}
-						previewEl.setText(t('projects.settings.chatHistoryPreview', { path: this.getHistoryDisplayPath() }) || `저장 경로: ${this.getHistoryDisplayPath()}`);
+						previewEl.setText(t('projects.settings.chatHistoryPreview', { path: this.getHistoryDisplayPath() }));
 					});
 			});
 
 		// Auto / Custom history path display
 		let historyPathInput: TextComponent | null = null;
 		const isDefault = this.project?.id === 'default';
-		const defaultPlaceholder = isDefault 
-			? (t('projects.settings.chatHistoryRootPlaceholder') || '(기본) chatHistory 루트 사용') 
-			: (sanitizeName(this.projectName) || (t('projects.settings.chatHistoryAutoPlaceholder') || '자동 지정'));
+		const defaultPlaceholder = isDefault ? t('projects.settings.chatHistoryRootPlaceholder') : (sanitizeName(this.projectName) || t('projects.settings.chatHistoryAutoPlaceholder'));
 
 		const historySetting = new Setting(contentEl)
-			.setName(t('projects.settings.chatHistoryPath') || '채팅 히스토리 저장 경로')
-			.setDesc(t('projects.settings.chatHistoryPathDesc') || '이 프로젝트의 대화가 저장될 하위 폴더명입니다. (비워둘 경우 프로젝트 이름 사용)')
+			.setName(t('projects.settings.chatHistoryPath'))
+			.setDesc(t('projects.settings.chatHistoryPathDesc'))
 			.addText(text => {
 				historyPathInput = text;
 				text.setPlaceholder(defaultPlaceholder)
 					.setValue(this.historySubfolder)
 					.onChange(val => {
 						this.historySubfolder = val.trim();
-						previewEl.setText(t('projects.settings.chatHistoryPreview', { path: this.getHistoryDisplayPath() }) || `저장 경로: ${this.getHistoryDisplayPath()}`);
+						previewEl.setText(t('projects.settings.chatHistoryPreview', { path: this.getHistoryDisplayPath() }));
 					});
 			});
 
 		const previewEl = historySetting.descEl.createDiv({ cls: 'lumina-settings__desc-guide' });
-		previewEl.setText(t('projects.settings.chatHistoryPreview', { path: this.getHistoryDisplayPath() }) || `저장 경로: ${this.getHistoryDisplayPath()}`);
+		previewEl.setText(t('projects.settings.chatHistoryPreview', { path: this.getHistoryDisplayPath() }));
 
 		// --- Default Chat Model Selector ---
 		const chatModelOptions = buildChatModelOptions(this.plugin.settings.connections.providers);
@@ -118,13 +114,13 @@ export class ProjectSettingsModal extends Modal {
 		let isModelMissing = currentModelValue !== '' && !chatModelOptions.some(opt => opt.value === currentModelValue);
 
 		new Setting(contentEl)
-			.setName(t('projects.settings.defaultModel') || '기본 채팅 모델')
-			.setDesc(t('projects.settings.defaultModelDesc') || '이 프로젝트에서 새 채팅을 시작할 때 사용할 기본 모델입니다.')
+			.setName(t('projects.settings.defaultModel'))
+			.setDesc(t('projects.settings.defaultModelDesc'))
 			.addDropdown(dropdown => {
-				dropdown.addOption('', t('projects.settings.defaultModelAuto') || '자동 선택 (첫 번째 사용 가능한 모델)');
+				dropdown.addOption('', t('projects.settings.defaultModelAuto'));
 				
 				if (isModelMissing) {
-					dropdown.addOption(currentModelValue, `${t('projects.settings.deletedModel') || '[삭제됨] 모델'} (${this.defaultModelId})`);
+					dropdown.addOption(currentModelValue, `${t('projects.settings.deletedModel')} (${this.defaultModelId})`);
 				}
 				
 				chatModelOptions.forEach(opt => {
@@ -154,13 +150,13 @@ export class ProjectSettingsModal extends Modal {
 		let isPromptMissing = this.systemPromptId !== '' && !systemPrompts.some(p => p.id === this.systemPromptId);
 		
 		new Setting(contentEl)
-			.setName(t('projects.settings.systemPrompt') || '기본 시스템 프롬프트')
-			.setDesc(t('projects.settings.systemPromptDesc') || '이 프로젝트에서 새 채팅을 시작할 때 사용할 시스템 프롬프트입니다.')
+			.setName(t('projects.settings.systemPrompt'))
+			.setDesc(t('projects.settings.systemPromptDesc'))
 			.addDropdown(dropdown => {
-				dropdown.addOption('', t('projects.settings.systemPromptAuto') || '자동 선택 (첫 번째 시스템 프롬프트)');
+				dropdown.addOption('', t('projects.settings.systemPromptAuto'));
 				
 				if (isPromptMissing) {
-					dropdown.addOption(this.systemPromptId, t('projects.settings.deletedPrompt') || '[삭제됨] 프롬프트');
+					dropdown.addOption(this.systemPromptId, t('projects.settings.deletedPrompt'));
 				}
 
 				systemPrompts.forEach(p => {
@@ -200,7 +196,7 @@ export class ProjectSettingsModal extends Modal {
 
 		const updateAllCheckboxes = (container: HTMLElement, selectedPaths: Set<string>) => {
 			container.findAll('input[type="checkbox"]').forEach(cb => {
-				if (cb instanceof HTMLInputElement) {
+				if (cb.instanceOf(HTMLInputElement)) {
 					const path = cb.dataset.path;
 					if (!path) return;
 					const folder = this.app.vault.getAbstractFileByPath(path);
@@ -263,7 +259,7 @@ export class ProjectSettingsModal extends Modal {
 				};
 			}
 
-			const nameEl = rowEl.createSpan({ text: isRoot ? t('projects.settings.vaultRoot') || '전체 볼트 (/)' : folder.name });
+			const nameEl = rowEl.createSpan({ text: isRoot ? t('projects.settings.vaultRoot') : folder.name });
 			nameEl.setCssStyles({ cursor: hasChildren ? 'pointer' : 'default' });
 			nameEl.onclick = () => {
 				if (hasChildren) toggleEl.click();
@@ -335,24 +331,24 @@ export class ProjectSettingsModal extends Modal {
 
 		// RAG Target Folders
 		buildTreeSelect(
-			t('projects.settings.ragTargetFolder') || 'RAG 대상 폴더',
-			t('projects.settings.ragTargetFolderDesc') || '인덱싱할 폴더를 트리에서 체크하세요. 하위 폴더를 열어 특정 폴더만 선택할 수 있습니다.',
+			t('projects.settings.ragTargetFolder'),
+			t('projects.settings.ragTargetFolderDesc'),
 			this.includedPaths,
-			t('projects.settings.ragTargetFolderEmpty') || '선택된 대상 폴더가 없습니다. (전체 볼트 대상)'
+			t('projects.settings.ragTargetFolderEmpty')
 		);
 
 		// RAG Exclude Folders
 		buildTreeSelect(
-			t('projects.settings.ragExcludedFolders') || 'RAG 제외 폴더',
-			t('projects.settings.ragExcludedFoldersDesc') || '인덱싱에서 제외할 폴더를 체크하세요.',
+			t('projects.settings.ragExcludedFolders'),
+			t('projects.settings.ragExcludedFoldersDesc'),
 			this.excludedPaths,
-			t('projects.settings.ragExcludedFoldersEmpty') || '제외된 폴더가 없습니다.'
+			t('projects.settings.ragExcludedFoldersEmpty')
 		);
 
 		// Save Button
 		const saveSetting = new Setting(contentEl)
 			.addButton(btn => btn
-				.setButtonText(t('projects.settings.save') || '저장')
+				.setButtonText(t('projects.settings.save'))
 				.setCta()
 				.onClick(async () => {
 					await this.saveProject();
@@ -399,16 +395,16 @@ export class ProjectSettingsModal extends Modal {
 
 			const newFolderExists = this.app.vault.getAbstractFileByPath(newPath);
 			if (newFolderExists) {
-				new Notice(t('projects.settings.historyTargetExists', { path: newPath }) || `Failed to move chat history: Target folder "${newPath}" already exists.`);
+				new Notice(t('projects.settings.historyTargetExists', { path: newPath }));
 				return;
 			}
 
 			await this.app.fileManager.renameFile(oldFolder, newPath);
-			new Notice(t('projects.settings.historyMoved', { path: newPath }) || `Chat history moved to "${newPath}"`);
+			new Notice(t('projects.settings.historyMoved', { path: newPath }));
 			debugLogger.logSystem('projects', `Successfully moved chat history from "${oldPath}" to "${newPath}"`);
 		} catch (error: unknown) {
 			const msg = error instanceof Error ? error.message : String(error);
-			new Notice(t('projects.settings.historyMoveError', { error: msg }) || `Error moving chat history folder: ${msg}`);
+			new Notice(t('projects.settings.historyMoveError', { error: msg }));
 			debugLogger.logError('projects', error instanceof Error ? error : new Error(msg));
 		}
 	}
@@ -418,7 +414,7 @@ export class ProjectSettingsModal extends Modal {
 		if (!name) return;
 		
 		let finalName = name;
-		if (this.project?.id === 'default' && name === (t('projects.settings.defaultProjectName') || 'Default Project')) {
+		if (this.project?.id === 'default' && (name === t('projects.settings.defaultProjectName') || name === 'Default')) {
 			finalName = 'Default';
 		}
 

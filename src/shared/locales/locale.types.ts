@@ -1029,12 +1029,6 @@ export interface TranslationProjectsSettings {
   projectNameDesc: string;
   chatHistoryPath: string;
   chatHistoryPathDesc: string;
-  chatHistoryRootPlaceholder: string;
-  chatHistoryAutoPlaceholder: string;
-  chatHistoryPreview: string;
-  historyMoved: string;
-  historyTargetExists: string;
-  historyMoveError: string;
   vaultRoot: string;
   ragTargetFolder: string;
   ragTargetFolderDesc: string;
@@ -1054,10 +1048,16 @@ export interface TranslationProjectsSettings {
   saveSuccess: string;
   nameRequired: string;
   nameExists: string;
-  namePlaceholder?: string;
-  subfolderPlaceholder?: string;
-  add?: string;
-  duplicateName?: string;
+  namePlaceholder: string;
+  subfolderPlaceholder: string;
+  add: string;
+  duplicateName: string;
+  chatHistoryRootPlaceholder: string;
+  chatHistoryAutoPlaceholder: string;
+  chatHistoryPreview: string;
+  historyMoved: string;
+  historyTargetExists: string;
+  historyMoveError: string;
 }
 
 
