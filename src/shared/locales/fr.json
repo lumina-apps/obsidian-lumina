@@ -594,8 +594,7 @@
       }
     },
     "sessionUsage": "Utilisation cumulée de la session actuelle",
-    "sessionTokens": "Total: {{tokens}} jetons",
-    "sessionCost": "(env. ${{cost}})"
+    "sessionTokens": "Total: {{tokens}} jetons"
   },
   "common": {
     "save": "Enregistrer",

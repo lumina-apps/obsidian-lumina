@@ -594,8 +594,7 @@
       }
     },
     "sessionUsage": "Текущее использование сессии",
-    "sessionTokens": "Всего: {{tokens}} токенов",
-    "sessionCost": "(прим. ${{cost}})"
+    "sessionTokens": "Всего: {{tokens}} токенов"
   },
   "common": {
     "save": "Сохранить",

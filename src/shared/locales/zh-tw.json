@@ -594,8 +594,7 @@
       }
     },
     "sessionUsage": "目前會話累計用量",
-    "sessionTokens": "累計: {{tokens}} tokens",
-    "sessionCost": "(約 ${{cost}})"
+    "sessionTokens": "累計: {{tokens}} tokens"
   },
   "common": {
     "save": "儲存",

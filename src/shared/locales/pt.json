@@ -594,8 +594,7 @@
       }
     },
     "sessionUsage": "Uso acumulado da sessão atual",
-    "sessionTokens": "Total: {{tokens}} tokens",
-    "sessionCost": "(aprox. ${{cost}})"
+    "sessionTokens": "Total: {{tokens}} tokens"
   },
   "common": {
     "save": "Salvar",

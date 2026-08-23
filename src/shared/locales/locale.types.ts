@@ -692,7 +692,6 @@ export interface TranslationChat {
   slashCommands: TranslationChatSlashCommands;
   sessionUsage: string;
   sessionTokens: string;
-  sessionCost: string;
 }
 
 // common

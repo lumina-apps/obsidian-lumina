@@ -594,8 +594,7 @@
       }
     },
     "sessionUsage": "現在のセッションの累積使用量",
-    "sessionTokens": "累積: {{tokens}} トークン",
-    "sessionCost": "(約 ${{cost}})"
+    "sessionTokens": "累積: {{tokens}} トークン"
   },
   "common": {
     "save": "保存",

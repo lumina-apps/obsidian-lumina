@@ -597,7 +597,6 @@
     },
     "sessionUsage": "Kumulierte Nutzung der aktuellen Sitzung",
     "sessionTokens": "Gesamt: {{tokens}} Tokens",
-    "sessionCost": "(ca. ${{cost}})",
     "timeout": {
       "ttftLabel": "Time-To-First-Token Timeout (ms)",
       "ttftDesc": "Wait time for the very first token to arrive. Set to 0 to disable.. (Standard: 0)",

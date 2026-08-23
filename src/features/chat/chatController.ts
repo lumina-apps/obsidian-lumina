@@ -189,7 +189,7 @@ export class ChatController {
 			);
 
 		// ── 7. 응답 후처리 ──────────────────────────────────────────────────
-		handleLlmResponse(assistantId, fullResponse, tokenUsage, hasTokenLimitBeenHit, resolvedModelId);
+		handleLlmResponse(assistantId, fullResponse, tokenUsage, hasTokenLimitBeenHit);
 
 		// ── 7.5. 자동 요약 (백그라운드) ───────────────────────────────────────────
 		if (chat.memoryMethod === 'auto_summary') {

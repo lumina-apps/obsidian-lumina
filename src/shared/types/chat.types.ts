@@ -12,6 +12,8 @@ export interface ChatRagSource {
 
 export type RagPipelineStep = 'searching' | 'reranking' | 'compressing' | 'generating' | null;
 
+import type { TokenUsage } from './llm.types';
+
 export interface UIChatMessage {
 	id: string;
 	role: 'user' | 'assistant' | 'system';
@@ -30,13 +32,8 @@ export interface UIChatMessage {
 	isStreaming: boolean;
 	timestamp: number;
 	model?: string;
-	/** 토큰 사용량 및 예상 비용 ($) */
-	tokenUsage?: {
-		inputTokens: number;
-		outputTokens: number;
-		totalTokens: number;
-		estimatedCost?: number;
-	};
+	/** 토큰 사용량 */
+	tokenUsage?: TokenUsage;
 }
 
 export interface ChatSession {

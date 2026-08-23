@@ -1,6 +1,5 @@
 import { sanitizeDisplayContent } from "../../../shared/utils/llmTextSanitizer";
 
-import { calculateEstimatedCost } from '../../../shared/pricing';
 import {
 	setMessageTokenUsage,
 	syncMessageContent,
@@ -18,19 +17,10 @@ export function handleLlmResponse(
 	fullResponse: string,
 	tokenUsage: TokenUsage | undefined,
 	hasTokenLimitBeenHit: boolean,
-	resolvedModelId: string,
 ): void {
 	// 토큰 사용량 기록
 	if (tokenUsage) {
-		const estimatedCost = calculateEstimatedCost(
-			resolvedModelId,
-			tokenUsage.inputTokens,
-			tokenUsage.outputTokens,
-		);
-		setMessageTokenUsage(assistantId, {
-			...tokenUsage,
-			...(estimatedCost !== undefined ? { estimatedCost } : {}),
-		});
+		setMessageTokenUsage(assistantId, tokenUsage);
 	}
 
 	// 특수 태그(<think>, <tool_call>, <|mask_start|> 등) 제거

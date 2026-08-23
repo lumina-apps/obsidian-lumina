@@ -70,7 +70,7 @@
 		isLoading: boolean;
 		hasProvider: boolean;
 		sendHint: string;
-		sessionTokenStats: { totalTokens: number; estimatedCost: number };
+		sessionTokenStats: { totalTokens: number };
 		includeActiveNote: boolean;
 		agentEnabled: boolean;
 		agentExecutionMode: "read" | "edit";
@@ -349,11 +349,6 @@
 					{$tStore("chat.sessionTokens", {
 						tokens: sessionTokenStats.totalTokens.toLocaleString(),
 					})}
-					{#if sessionTokenStats.estimatedCost > 0}
-						{$tStore("chat.sessionCost", {
-							cost: sessionTokenStats.estimatedCost.toFixed(4),
-						})}
-					{/if}
 				</span>
 			{/if}
 			<span class="lumina-chat__hint-inline">{sendHint}</span>

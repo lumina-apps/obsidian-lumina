@@ -597,8 +597,7 @@
       }
     },
     "sessionUsage": "현재 세션 누적 사용량",
-    "sessionTokens": "누적: {{tokens}} 토큰",
-    "sessionCost": "(약 ${{cost}})"
+    "sessionTokens": "누적: {{tokens}} 토큰"
   },
   "common": {
     "save": "저장",

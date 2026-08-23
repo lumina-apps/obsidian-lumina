@@ -105,16 +105,12 @@
 
 	const sessionTokenStats = $derived.by(() => {
 		let totalTokens = 0;
-		let estimatedCost = 0;
 		for (const msg of $messages) {
 			if (msg.tokenUsage) {
 				totalTokens += msg.tokenUsage.totalTokens;
-				if (msg.tokenUsage.estimatedCost) {
-					estimatedCost += msg.tokenUsage.estimatedCost;
-				}
 			}
 		}
-		return { totalTokens, estimatedCost };
+		return { totalTokens };
 	});
 
 	// ── Initialization ────────────────────────────────────────────────────
