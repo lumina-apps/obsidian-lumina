@@ -357,9 +357,24 @@
 	}
 
 	async function toggleAgentExecutionMode(): Promise<void> {
-		plugin.settings.chat.agentExecutionMode = agentExecutionMode === "read" ? "edit" : "read";
+		if (!agentEnabled) {
+			new Notice(
+				$tStore("errors.agentDisabledGlobally") ||
+					"Agent feature is disabled. Please enable it in Settings first.",
+			);
+			return;
+		}
+		const newMode = agentExecutionMode === "read" ? "edit" : "read";
+		plugin.settings.chat.agentExecutionMode = newMode;
 		await plugin.saveSettings();
 		settingsStore.set(plugin.settings);
+		new Notice(
+			newMode === "edit"
+				? $tStore("uiMessages.agentModeSwitchedToEdit") ||
+						"✏️ Agent switched to Edit Mode. (Can create & edit notes)"
+				: $tStore("uiMessages.agentModeSwitchedToRead") ||
+						"👁️ Agent switched to Read Mode. (Read-only)",
+		);
 	}
 
 	async function toggleWebSearch(): Promise<void> {

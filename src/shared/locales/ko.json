@@ -537,6 +537,7 @@
     "send": "전송",
     "underDevelopment": "개발 중인 기능입니다.",
     "ragDisabledGlobally": "전역 RAG 엔진이 사용 중지되었습니다. 설정에서 먼저 활성화해 주세요.",
+    "agentDisabledGlobally": "에이전트 기능이 비활성화되어 있습니다. 설정에서 먼저 활성화해 주세요.",
     "llm": {
       "rateLimit": "⚠️ API 호출 한도(Quota) 또는 요청 속도 제한(Rate Limit)을 초과했습니다. 잠시 후 다시 시도해 주세요. 무료 티어의 경우 분당/일일 한도 제한이거나 계정의 결제 카드/크레딧 정보를 확인해 주십시오.",
       "unauthorized": "⚠️ API 키가 올바르지 않거나 만료되었습니다. 플러그인 설정의 [연결 및 모델 설정]에서 API 키를 확인해 주세요.",
@@ -590,6 +591,10 @@
       "prompt": {
         "name": "프롬프트 선택",
         "desc": "사용할 시스템 프롬프트를 선택합니다."
+      },
+      "mode": {
+        "name": "에이전트 모드 토글",
+        "desc": "에이전트의 읽기/수정 권한 모드를 전환합니다."
       },
       "settings": {
         "name": "설정",
@@ -750,6 +755,8 @@
     "agentModeLocalServerConnecting": "🚀 에이전트 활성화: 로컬 MCP 서버 연결 중...",
     "agentModeEnabled": "🤖 에이전트 모드가 켜졌습니다.",
     "agentModeDisabled": "🤖 에이전트 모드가 꺼졌습니다.",
+    "agentModeSwitchedToRead": "👁️ 에이전트 읽기 모드로 전환되었습니다. (읽기 전용)",
+    "agentModeSwitchedToEdit": "✏️ 에이전트 수정 모드로 전환되었습니다. (노트 생성 및 수정 가능)",
     "webSearchEnabled": "✅ 웹 검색이 켜졌습니다.",
     "webSearchDisabled": "🛑 웹 검색이 꺼졌습니다.",
     "noMessagesToExport": "내보낼 메시지가 없습니다.",

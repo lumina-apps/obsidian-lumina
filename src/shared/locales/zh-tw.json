@@ -534,6 +534,7 @@
     "send": "發送",
     "underDevelopment": "此功能正在開發中。",
     "ragDisabledGlobally": "全域 RAG 引擎已關閉。請先在設定中啟用。",
+    "agentDisabledGlobally": "代理功能已停用。請先在設定中啟用。",
     "llm": {
       "rateLimit": "⚠️ 超出 API 配額或請求頻率限制。請稍後再試。若為免費套餐，請檢查分鐘/日度額度或帳戶帳單狀態。",
       "unauthorized": "⚠️ API 金鑰無效或已過期。請在「連接與模型」設定中檢查您的 API 金鑰。",
@@ -587,6 +588,10 @@
       "prompt": {
         "name": "選擇提示詞",
         "desc": "選擇要使用的系統提示詞。"
+      },
+      "mode": {
+        "name": "切換代理模式",
+        "desc": "在代理唯讀模式與編輯模式之間切換。"
       },
       "settings": {
         "name": "設定",
@@ -747,6 +752,8 @@
     "agentModeLocalServerConnecting": "🚀 代理已啟用：正在連接本機 MCP 伺服器...",
     "agentModeEnabled": "🤖 代理模式已啟用。",
     "agentModeDisabled": "🤖 代理模式已停用。",
+    "agentModeSwitchedToRead": "👁️ 代理已切換為唯讀模式。（唯讀）",
+    "agentModeSwitchedToEdit": "✏️ 代理已切換為編輯模式。（可建立與編輯筆記）",
     "webSearchEnabled": "✅ 網路搜尋已啟用。",
     "webSearchDisabled": "🛑 網路搜尋已停用。",
     "noMessagesToExport": "沒有可匯出的訊息。",

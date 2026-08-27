@@ -536,6 +536,7 @@
     "send": "Senden",
     "underDevelopment": "Diese Funktion befindet sich in der Entwicklung.",
     "ragDisabledGlobally": "Die globale RAG-Engine ist deaktiviert. Aktivieren Sie sie in den Einstellungen.",
+    "agentDisabledGlobally": "Agent-Funktion ist deaktiviert. Bitte zuerst in den Einstellungen aktivieren.",
     "llm": {
       "rateLimit": "⚠️ API-Quota oder Ratenbegrenzung überschritten. Bitte versuchen Sie es gleich noch einmal. Überprüfen Sie bei kostenlosen Konten Ihre Limits oder Ihren Abrechnungsstatus.",
       "unauthorized": "⚠️ API-Schlüssel ist ungültig oder abgelaufen. Bitte überprüfen Sie Ihren API-Schlüssel in den Einstellungen unter \"Verbindungen & Modelle\".",
@@ -589,6 +590,10 @@
       "prompt": {
         "name": "Prompt auswählen",
         "desc": "Wählt den zu verwendenden System-Prompt aus."
+      },
+      "mode": {
+        "name": "Agent-Modus umschalten",
+        "desc": "Wechselt zwischen Lese- und Bearbeitungsmodus des Agenten."
       },
       "settings": {
         "name": "Einstellungen",
@@ -755,6 +760,8 @@
     "agentModeLocalServerConnecting": "🚀 Agent aktiviert: Verbindung zum lokalen MCP-Server wird hergestellt...",
     "agentModeEnabled": "🤖 Agenten-Modus aktiviert.",
     "agentModeDisabled": "🤖 Agenten-Modus deaktiviert.",
+    "agentModeSwitchedToRead": "👁️ Agent in den Lesemodus gewechselt. (Nur Leserechte)",
+    "agentModeSwitchedToEdit": "✏️ Agent in den Bearbeitungsmodus gewechselt. (Notizen erstellen und bearbeiten erlaubt)",
     "webSearchEnabled": "✅ Websuche aktiviert.",
     "webSearchDisabled": "🛑 Websuche deaktiviert.",
     "noMessagesToExport": "Keine Nachrichten zum Exportieren vorhanden.",

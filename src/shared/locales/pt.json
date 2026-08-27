@@ -534,6 +534,7 @@
     "send": "Enviar",
     "underDevelopment": "Este recurso está em desenvolvimento.",
     "ragDisabledGlobally": "O motor RAG global está desativado. Ative-o nas Configurações.",
+    "agentDisabledGlobally": "O recurso de agente está desativado. Ative-o primeiro nas configurações.",
     "llm": {
       "rateLimit": "⚠️ Cota ou limite de taxa da API excedido. Tente novamente em um momento. Para contas de nível gratuito, verifique seus limites diários/minutos ou o status de cobrança.",
       "unauthorized": "⚠️ A chave da API é inválida ou expirou. Verifique sua chave de API nas configurações em \"Conexões e Modelos\".",
@@ -587,6 +588,10 @@
       "prompt": {
         "name": "Selecionar prompt",
         "desc": "Escolha o prompt de sistema a ser usado."
+      },
+      "mode": {
+        "name": "Alternar modo de agente",
+        "desc": "Alterna entre os modos somente leitura e edição do agente."
       },
       "settings": {
         "name": "Configurações",
@@ -747,6 +752,8 @@
     "agentModeLocalServerConnecting": "🚀 Agente ativado: Conectando ao servidor MCP local...",
     "agentModeEnabled": "🤖 Modo agente ativado.",
     "agentModeDisabled": "🤖 Modo agente desativado.",
+    "agentModeSwitchedToRead": "👁️ Agente alternado para Modo de Leitura. (Somente leitura)",
+    "agentModeSwitchedToEdit": "✏️ Agente alternado para Modo de Edição. (Criação e edição de notas permitidas)",
     "webSearchEnabled": "✅ Pesquisa web habilitada.",
     "webSearchDisabled": "🛑 Pesquisa web desabilitada.",
     "noMessagesToExport": "Nenhuma mensagem para exportar.",

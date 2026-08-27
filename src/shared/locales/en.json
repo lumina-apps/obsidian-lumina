@@ -537,6 +537,7 @@
     "send": "Send",
     "underDevelopment": "This feature is under development.",
     "ragDisabledGlobally": "Global RAG engine is disabled. Turn it on in Settings.",
+    "agentDisabledGlobally": "Agent feature is disabled. Please enable it in Settings first.",
     "llm": {
       "rateLimit": "⚠️ API quota or rate limit exceeded. Please try again in a moment. For free tier accounts, check your daily/minutely limits or verify your credit card/billing status.",
       "unauthorized": "⚠️ API key is invalid or has expired. Please check your API key in settings under \"Connections & Models\".",
@@ -590,6 +591,10 @@
       "prompt": {
         "name": "Select Prompt",
         "desc": "Choose the system prompt to use."
+      },
+      "mode": {
+        "name": "Toggle Agent Mode",
+        "desc": "Toggle between Agent Read-only and Edit modes."
       },
       "settings": {
         "name": "Settings",
@@ -750,6 +755,8 @@
     "agentModeLocalServerConnecting": "🚀 Agent enabled: Connecting to local MCP server...",
     "agentModeEnabled": "🤖 Agent mode enabled.",
     "agentModeDisabled": "🤖 Agent mode disabled.",
+    "agentModeSwitchedToRead": "👁️ Agent switched to Read Mode. (Read-only)",
+    "agentModeSwitchedToEdit": "✏️ Agent switched to Edit Mode. (Can create & edit notes)",
     "webSearchEnabled": "✅ Web search enabled.",
     "webSearchDisabled": "🛑 Web search disabled.",
     "noMessagesToExport": "No messages to export.",

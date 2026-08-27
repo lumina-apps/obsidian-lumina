@@ -14,6 +14,7 @@ export function buildSlashCommands(
 	onExportChat: () => void,
 	onRegenerateLast: () => void,
 	onCompressContext: () => void,
+	onToggleAgentExecutionMode: () => void,
 ): SlashCommand[] {
 	const cmds: SlashCommand[] = [
 		{
@@ -36,6 +37,13 @@ export function buildSlashCommands(
 			description: t("chat.slashCommands.websearch.desc"),
 			icon: "globe",
 			action: () => onToggleWebSearch(),
+		},
+		{
+			id: "mode",
+			name: t("chat.slashCommands.mode.name"),
+			description: t("chat.slashCommands.mode.desc"),
+			icon: "edit-2",
+			action: () => onToggleAgentExecutionMode(),
 		},
 		{
 			id: "export",

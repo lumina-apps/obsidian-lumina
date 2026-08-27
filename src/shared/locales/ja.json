@@ -534,6 +534,7 @@
     "send": "送信",
     "underDevelopment": "この機能は開発中です。",
     "ragDisabledGlobally": "グローバルRAGエンジンが無効になっています。設定で有効にしてください。",
+    "agentDisabledGlobally": "エージェント機能が無効になっています。まず設定で有効にしてください。",
     "llm": {
       "rateLimit": "⚠️ API呼び出し制限（Quota）またはリクエスト速度制限（Rate Limit）を超過しました。しばらく経ってから再度お試しください。無料ティアの場合は分/日制限、またはアカウントの支払いカード/クレジット情報をご確認ください。",
       "unauthorized": "⚠️ APIキーが正しくないか、有効期限が切れています。プラグイン設定の「接続とモデル」でAPIキーを確認してください。",
@@ -587,6 +588,10 @@
       "prompt": {
         "name": "プロンプトを選択",
         "desc": "使用するシステムプロンプトを選択します。"
+      },
+      "mode": {
+        "name": "エージェントモード切替",
+        "desc": "エージェントの読み取り/編集モードを切り替えます。"
       },
       "settings": {
         "name": "設定",
@@ -747,6 +752,8 @@
     "agentModeLocalServerConnecting": "🚀 エージェント有効化: ローカルMCPサーバーに接続しています...",
     "agentModeEnabled": "🤖 エージェントモードが有効になりました。",
     "agentModeDisabled": "🤖 エージェントモードが無効になりました。",
+    "agentModeSwitchedToRead": "👁️ エージェントが読み取りモードに切り替わりました。（読み取り専用）",
+    "agentModeSwitchedToEdit": "✏️ エージェントが編集モードに切り替わりました。（ノートの作成・編集可能）",
     "webSearchEnabled": "✅ Web検索が有効になりました。",
     "webSearchDisabled": "🛑 Web検索が無効になりました。",
     "noMessagesToExport": "エクスポートするメッセージがありません。",

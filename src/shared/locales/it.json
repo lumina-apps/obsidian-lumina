@@ -534,6 +534,7 @@
     "send": "Invia",
     "underDevelopment": "Questa funzionalità è in sviluppo.",
     "ragDisabledGlobally": "Motore RAG globale disabilitato. Attivalo nelle Impostazioni.",
+    "agentDisabledGlobally": "La funzione agente è disabilitata. Si prega di abilitarla prima nelle Impostazioni.",
     "llm": {
       "rateLimit": "⚠️ Quota API o limite di frequenza superato. Riprova tra un momento. Per gli account gratuiti, verifica i tuoi limiti giornalieri/minutali o lo stato della fatturazione.",
       "unauthorized": "⚠️ La chiave API non è valida o è scaduta. Controlla la tua chiave API nelle impostazioni sotto \"Connessioni e modelli\".",
@@ -587,6 +588,10 @@
       "prompt": {
         "name": "Seleziona prompt",
         "desc": "Scegli il prompt di sistema da utilizzare."
+      },
+      "mode": {
+        "name": "Attiva/disattiva modalità agente",
+        "desc": "Alterna tra le modalità di sola lettura e modifica dell'agente."
       },
       "settings": {
         "name": "Impostazioni",
@@ -747,6 +752,8 @@
     "agentModeLocalServerConnecting": "🚀 Agente abilitato: Connessione al server MCP locale in corso...",
     "agentModeEnabled": "🤖 Modalità agente attivata.",
     "agentModeDisabled": "🤖 Modalità agente disattivata.",
+    "agentModeSwitchedToRead": "👁️ Agente passato alla Modalità Lettura. (Sola lettura)",
+    "agentModeSwitchedToEdit": "✏️ Agente passato alla Modalità Modifica. (Creazione e modifica delle note consentite)",
     "webSearchEnabled": "✅ Ricerca web attivata.",
     "webSearchDisabled": "🛑 Ricerca web disattivata.",
     "noMessagesToExport": "Nessun messaggio da esportare.",

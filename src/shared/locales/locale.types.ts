@@ -660,6 +660,7 @@ export interface TranslationErrors {
   send: string;
   underDevelopment: string;
   ragDisabledGlobally: string;
+  agentDisabledGlobally: string;
   llm: TranslationErrorsLlm;
 }
 
@@ -679,6 +680,7 @@ export interface TranslationChatSlashCommands {
   mcp: TranslationChatSlashCommand;
   model: TranslationChatSlashCommand;
   prompt: TranslationChatSlashCommand;
+  mode: TranslationChatSlashCommand;
   settings: TranslationChatSlashCommand;
 }
 
@@ -856,6 +858,8 @@ export interface TranslationUiMessages {
   agentModeLocalServerConnecting: string;
   agentModeEnabled: string;
   agentModeDisabled: string;
+  agentModeSwitchedToRead: string;
+  agentModeSwitchedToEdit: string;
   webSearchEnabled: string;
   webSearchDisabled: string;
   noMessagesToExport: string;

@@ -276,6 +276,7 @@
 			onExportChat,
 			onRegenerateLast,
 			onCompressContext,
+			onToggleAgentExecutionMode,
 		),
 	);
 
