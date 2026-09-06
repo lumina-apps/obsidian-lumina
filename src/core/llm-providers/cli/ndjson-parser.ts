@@ -1,4 +1,4 @@
-import type { AutopilotEvent } from '../../../shared/types/autopilot.types';
+import type { CliEvent } from '../../../shared/types/cliAgent.types';
 
 /**
  * ANSI Escape 코드를 안전하게 제거합니다.
@@ -76,7 +76,7 @@ export function extractTextFromUnknown(val: unknown): string {
 /**
  * 일반 텍스트 라인에서 에이전트의 사고(Thinking), 파일 읽기, 편집, 명령어 실행을 자동 구조화합니다.
  */
-export function parseRawCliLine(line: string, raw: unknown): AutopilotEvent | null {
+export function parseRawCliLine(line: string, raw: unknown): CliEvent | null {
 	const text = stripAnsiCodes(line).trim();
 	if (!text) return null;
 

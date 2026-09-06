@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { App } from 'obsidian';
-	import type { AutopilotFileEditLog } from '../../../../shared/types/autopilot.types';
+	import type { CliFileEditLog } from '../../../../shared/types/cliAgent.types';
 	import { iconAction } from '../../../../shared/utils/domUtils';
 	import { CliDiffModal } from './CliDiffModal';
 	import { tStore } from '../../../../shared/locales/index';
@@ -10,12 +10,12 @@
 		app,
 		onOpen,
 	}: {
-		fileEdit: AutopilotFileEditLog;
+		fileEdit: CliFileEditLog;
 		app: App;
 		onOpen?: (path: string) => void;
 	} = $props();
 
-	function getActionIcon(action: AutopilotFileEditLog['action']): string {
+	function getActionIcon(action: CliFileEditLog['action']): string {
 		switch (action) {
 			case 'create':
 				return 'file-plus';
@@ -33,11 +33,11 @@
 	}
 </script>
 
-<div class="lumina-autopilot-file-edit">
-	<span class="lumina-autopilot-file-edit__icon" use:iconAction={getActionIcon(fileEdit.action)}></span>
-	<span class="lumina-autopilot-file-edit__action">{fileEdit.action}</span>
+<div class="lumina-cli-file-edit">
+	<span class="lumina-cli-file-edit__icon" use:iconAction={getActionIcon(fileEdit.action)}></span>
+	<span class="lumina-cli-file-edit__action">{fileEdit.action}</span>
 	<button
-		class="lumina-autopilot-file-edit__path"
+		class="lumina-cli-file-edit__path"
 		onclick={() => onOpen?.(fileEdit.path)}
 		type="button"
 		title={fileEdit.path}
@@ -45,7 +45,7 @@
 		{fileEdit.path}
 	</button>
 	<button
-		class="lumina-autopilot-file-edit__diff-btn"
+		class="lumina-cli-file-edit__diff-btn"
 		onclick={handleOpenDiff}
 		type="button"
 		title={$tStore('settings.cli.viewDiff') || 'View Diff'}
@@ -56,7 +56,7 @@
 </div>
 
 <style>
-	.lumina-autopilot-file-edit {
+	.lumina-cli-file-edit {
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
@@ -68,13 +68,13 @@
 		margin: 2px 4px 2px 0;
 	}
 
-	.lumina-autopilot-file-edit__icon {
+	.lumina-cli-file-edit__icon {
 		display: flex;
 		align-items: center;
 		color: var(--text-muted);
 	}
 
-	.lumina-autopilot-file-edit__action {
+	.lumina-cli-file-edit__action {
 		text-transform: uppercase;
 		font-size: 9px;
 		font-weight: 700;
@@ -84,7 +84,7 @@
 		border-radius: 2px;
 	}
 
-	.lumina-autopilot-file-edit__path {
+	.lumina-cli-file-edit__path {
 		background: none;
 		border: none;
 		padding: 0;
@@ -99,11 +99,11 @@
 		white-space: nowrap;
 	}
 
-	.lumina-autopilot-file-edit__path:hover {
+	.lumina-cli-file-edit__path:hover {
 		color: var(--text-accent);
 	}
 
-	.lumina-autopilot-file-edit__diff-btn {
+	.lumina-cli-file-edit__diff-btn {
 		display: inline-flex;
 		align-items: center;
 		gap: 3px;
@@ -116,7 +116,7 @@
 		cursor: pointer;
 	}
 
-	.lumina-autopilot-file-edit__diff-btn:hover {
+	.lumina-cli-file-edit__diff-btn:hover {
 		background: var(--interactive-accent);
 		color: var(--text-on-accent);
 	}

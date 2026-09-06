@@ -1,15 +1,13 @@
 import type {
-	AutopilotType,
-	AutopilotExecuteOptions,
-	AutopilotEvent,
-} from '../../../../shared/types/autopilot.types';
+	CliExecuteOptions,
+	CliEvent,
+} from '../../../../shared/types/cliAgent.types';
 import { BaseCliAgent, type CliAgentConfig } from '../base-cli-agent';
 import { ProcessManager, getDefaultCwd } from '../process-manager';
 import { extractTextFromUnknown, stripAnsiCodes, parseRawCliLine } from '../ndjson-parser';
 import { debugLogger } from '../../../../shared/debugLogger';
 
 export class OpenCodeProvider extends BaseCliAgent {
-	readonly autopilotType: AutopilotType = 'opencode';
 	readonly displayName = 'OpenCode';
 
 	constructor(config: CliAgentConfig) {
@@ -135,7 +133,7 @@ export class OpenCodeProvider extends BaseCliAgent {
 		return models;
 	}
 
-	public buildCommandArgs(prompt: string, options: AutopilotExecuteOptions): string[] {
+	public buildCommandArgs(prompt: string, options: CliExecuteOptions): string[] {
 		let effectivePrompt = prompt;
 		const isAgentEnabled = options.agentEnabled ?? true;
 		const isReadOnly = options.agentExecutionMode === 'read';
@@ -167,7 +165,7 @@ export class OpenCodeProvider extends BaseCliAgent {
 		return args;
 	}
 
-	protected mapEvent(raw: unknown): AutopilotEvent | AutopilotEvent[] | null {
+	protected mapEvent(raw: unknown): CliEvent | CliEvent[] | null {
 		if (!raw) return null;
 
 		if (typeof raw === 'string') {
@@ -243,7 +241,7 @@ export class OpenCodeProvider extends BaseCliAgent {
 			);
 			const status = (state?.status || obj.status) as string | undefined;
 
-			const events: AutopilotEvent[] = [];
+			const events: CliEvent[] = [];
 
 			events.push({
 				type: 'tool_call',

@@ -2330,30 +2330,30 @@ html body .modal-container.lumina-settings-modal-container {
 	color: #ffffff;
 }
 
-/* ─── Autopilot Diff Modal ─────────────────────────────────────────────────── */
-.lumina-autopilot-diff-modal {
+/* ─── CLI Diff Modal ───────────────────────────────────────────────────────── */
+.lumina-cli-diff-modal {
 	padding: 16px 20px;
 }
 
-.lumina-autopilot-diff-modal__header {
+.lumina-cli-diff-modal__header {
 	margin-bottom: 12px;
 	border-bottom: 1px solid var(--background-modifier-border);
 	padding-bottom: 8px;
 }
 
-.lumina-autopilot-diff-modal__header h3 {
+.lumina-cli-diff-modal__header h3 {
 	margin: 0 0 6px 0;
 	font-size: 16px;
 }
 
-.lumina-autopilot-diff-modal__meta {
+.lumina-cli-diff-modal__meta {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 	font-size: 12px;
 }
 
-.lumina-autopilot-diff-modal__badge {
+.lumina-cli-diff-modal__badge {
 	font-size: 10px;
 	font-weight: 700;
 	padding: 2px 6px;
@@ -2361,27 +2361,27 @@ html body .modal-container.lumina-settings-modal-container {
 	text-transform: uppercase;
 }
 
-.lumina-autopilot-diff-modal__badge.is-create {
+.lumina-cli-diff-modal__badge.is-create {
 	background: rgba(var(--color-green-rgb, 46, 160, 67), 0.15);
 	color: var(--text-success);
 }
 
-.lumina-autopilot-diff-modal__badge.is-modify {
+.lumina-cli-diff-modal__badge.is-modify {
 	background: rgba(var(--color-accent-rgb, 139, 92, 246), 0.15);
 	color: var(--interactive-accent);
 }
 
-.lumina-autopilot-diff-modal__badge.is-delete {
+.lumina-cli-diff-modal__badge.is-delete {
 	background: rgba(var(--color-red-rgb, 235, 87, 87), 0.15);
 	color: var(--text-error);
 }
 
-.lumina-autopilot-diff-modal__path {
+.lumina-cli-diff-modal__path {
 	font-family: var(--font-monospace);
 	color: var(--text-muted);
 }
 
-.lumina-autopilot-diff-modal__stats {
+.lumina-cli-diff-modal__stats {
 	display: flex;
 	gap: 12px;
 	font-size: 12px;
@@ -2389,15 +2389,15 @@ html body .modal-container.lumina-settings-modal-container {
 	margin-bottom: 10px;
 }
 
-.lumina-autopilot-diff-modal__stat-add {
+.lumina-cli-diff-modal__stat-add {
 	color: var(--text-success);
 }
 
-.lumina-autopilot-diff-modal__stat-rem {
+.lumina-cli-diff-modal__stat-rem {
 	color: var(--text-error);
 }
 
-.lumina-autopilot-diff-container {
+.lumina-cli-diff-container {
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 6px;
 	overflow: hidden;
@@ -2405,7 +2405,7 @@ html body .modal-container.lumina-settings-modal-container {
 	margin-bottom: 16px;
 }
 
-.lumina-autopilot-diff-lines {
+.lumina-cli-diff-lines {
 	font-family: var(--font-monospace);
 	font-size: 12px;
 	line-height: 1.5;
@@ -2413,43 +2413,43 @@ html body .modal-container.lumina-settings-modal-container {
 	overflow-y: auto;
 }
 
-.lumina-autopilot-diff-line {
+.lumina-cli-diff-line {
 	display: flex;
 	padding: 1px 8px;
 	white-space: pre-wrap;
 	word-break: break-all;
 }
 
-.lumina-autopilot-diff-line.is-added {
+.lumina-cli-diff-line.is-added {
 	background-color: rgba(46, 160, 67, 0.12);
 }
 
-.lumina-autopilot-diff-line.is-removed {
+.lumina-cli-diff-line.is-removed {
 	background-color: rgba(235, 87, 87, 0.12);
 }
 
-.lumina-autopilot-diff-marker {
+.lumina-cli-diff-marker {
 	width: 18px;
 	flex-shrink: 0;
 	color: var(--text-muted);
 	user-select: none;
 }
 
-.lumina-autopilot-diff-line.is-added .lumina-autopilot-diff-marker {
+.lumina-cli-diff-line.is-added .lumina-cli-diff-marker {
 	color: var(--text-success);
 	font-weight: bold;
 }
 
-.lumina-autopilot-diff-line.is-removed .lumina-autopilot-diff-marker {
+.lumina-cli-diff-line.is-removed .lumina-cli-diff-marker {
 	color: var(--text-error);
 	font-weight: bold;
 }
 
-.lumina-autopilot-diff-text {
+.lumina-cli-diff-text {
 	flex-grow: 1;
 }
 
-.lumina-autopilot-diff-empty {
+.lumina-cli-diff-empty {
 	padding: 24px;
 	text-align: center;
 	color: var(--text-muted);

@@ -1,15 +1,13 @@
 import type {
-	AutopilotType,
-	AutopilotExecuteOptions,
-	AutopilotEvent,
-} from '../../../../shared/types/autopilot.types';
+	CliExecuteOptions,
+	CliEvent,
+} from '../../../../shared/types/cliAgent.types';
 import { BaseCliAgent, type CliAgentConfig } from '../base-cli-agent';
 import { ProcessManager, getDefaultCwd } from '../process-manager';
 import { extractTextFromUnknown, stripAnsiCodes, parseRawCliLine } from '../ndjson-parser';
 import { debugLogger } from '../../../../shared/debugLogger';
 
 export class AntigravityProvider extends BaseCliAgent {
-	readonly autopilotType: AutopilotType = 'antigravity';
 	readonly displayName = 'Antigravity (Google)';
 
 	constructor(config: CliAgentConfig) {
@@ -138,7 +136,7 @@ export class AntigravityProvider extends BaseCliAgent {
 		return models;
 	}
 
-	public buildCommandArgs(prompt: string, options: AutopilotExecuteOptions): string[] {
+	public buildCommandArgs(prompt: string, options: CliExecuteOptions): string[] {
 		let effectivePrompt = prompt;
 		const isAgentEnabled = options.agentEnabled ?? true;
 		const isReadOnly = options.agentExecutionMode === 'read';
@@ -174,7 +172,7 @@ export class AntigravityProvider extends BaseCliAgent {
 		return args;
 	}
 
-	protected mapEvent(raw: unknown): AutopilotEvent | AutopilotEvent[] | null {
+	protected mapEvent(raw: unknown): CliEvent | CliEvent[] | null {
 		if (!raw) return null;
 
 		if (typeof raw === 'string') {
@@ -193,7 +191,7 @@ export class AntigravityProvider extends BaseCliAgent {
 		// 1. Antigravity step_update 이벤트 (한 번에 여러 속성이 올 수 있으므로 모두 수집)
 		if (eventType === 'step_update' && obj.step_update && typeof obj.step_update === 'object') {
 			const step = obj.step_update as Record<string, unknown>;
-			const events: AutopilotEvent[] = [];
+			const events: CliEvent[] = [];
 
 			// 사고 과정 (Thinking)
 			const stepThinking = extractTextFromUnknown(step.thinking_delta || step.thinking || step.thought);

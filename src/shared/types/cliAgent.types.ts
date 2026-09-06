@@ -1,6 +1,6 @@
-export type AutopilotType = 'claude-code' | 'codex' | 'opencode' | 'antigravity';
+export type CliAgentType = 'claude-code' | 'codex' | 'opencode' | 'antigravity';
 
-export type AutopilotEventType =
+export type CliEventType =
 	| 'text'
 	| 'thinking'
 	| 'tool_call'
@@ -12,39 +12,39 @@ export type AutopilotEventType =
 	| 'activity_status'
 	| 'usage';
 
-export interface AutopilotToolCall {
+export interface CliToolCall {
 	name: string;
 	arguments?: Record<string, unknown>;
 }
 
-export interface AutopilotToolResult {
+export interface CliToolResult {
 	name: string;
 	output?: string;
 	error?: string;
 }
 
-export interface AutopilotFileEdit {
+export interface CliFileEdit {
 	path: string;
 	action: 'create' | 'modify' | 'delete';
 }
 
-export interface AutopilotUsage {
+export interface CliUsage {
 	inputTokens?: number;
 	outputTokens?: number;
 	totalTokens?: number;
 }
 
-export interface AutopilotEvent {
-	type: AutopilotEventType;
+export interface CliEvent {
+	type: CliEventType;
 	content?: string;
-	toolCall?: AutopilotToolCall;
-	toolResult?: AutopilotToolResult;
-	fileEdit?: AutopilotFileEdit;
-	usage?: AutopilotUsage;
+	toolCall?: CliToolCall;
+	toolResult?: CliToolResult;
+	fileEdit?: CliFileEdit;
+	usage?: CliUsage;
 	raw?: unknown;
 }
 
-export interface AutopilotExecuteOptions {
+export interface CliExecuteOptions {
 	cwd: string;
 	model?: string;
 	autoApprove?: boolean;
@@ -57,14 +57,14 @@ export interface AutopilotExecuteOptions {
 	agentExecutionMode?: 'read' | 'edit';
 }
 
-export interface AutopilotExecution {
-	events: AsyncIterable<AutopilotEvent>;
+export interface CliExecution {
+	events: AsyncIterable<CliEvent>;
 	waitForExit(): Promise<{ exitCode: number; signal?: string }>;
 	writeStdin?(data: string): void;
 	kill(): void;
 }
 
-export interface AutopilotToolCallLog {
+export interface CliToolCallLog {
 	id: string;
 	name: string;
 	arguments?: Record<string, unknown>;
@@ -74,7 +74,7 @@ export interface AutopilotToolCallLog {
 	status: 'pending_approval' | 'running' | 'completed' | 'failed' | 'rejected';
 }
 
-export interface AutopilotFileEditLog {
+export interface CliFileEditLog {
 	id: string;
 	path: string;
 	action: 'create' | 'modify' | 'delete';
@@ -83,4 +83,3 @@ export interface AutopilotFileEditLog {
 	afterContent?: string;
 	diff?: string;
 }
-

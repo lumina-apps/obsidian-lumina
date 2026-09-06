@@ -13,7 +13,7 @@ export interface ChatRagSource {
 export type RagPipelineStep = 'searching' | 'reranking' | 'compressing' | 'generating' | null;
 
 import type { TokenUsage } from './llm.types';
-import type { AutopilotToolCallLog, AutopilotFileEditLog, AutopilotUsage, AutopilotType } from './autopilot.types';
+import type { CliToolCallLog, CliFileEditLog, CliUsage, CliAgentType } from './cliAgent.types';
 
 export interface UIChatMessage {
 	id: string;
@@ -42,13 +42,13 @@ export interface UIChatMessage {
 	/** CLI 에이전트 원시 로그 */
 	rawLogs?: string[];
 	/** CLI 에이전트 도구 호출 내역 */
-	cliToolCalls?: AutopilotToolCallLog[];
+	cliToolCalls?: CliToolCallLog[];
 	/** CLI 에이전트 파일 수정 내역 */
-	cliFileEdits?: AutopilotFileEditLog[];
+	cliFileEdits?: CliFileEditLog[];
 	/** CLI 에이전트 토큰 사용량 */
-	cliUsage?: AutopilotUsage;
+	cliUsage?: CliUsage;
 	/** CLI 에이전트 타입 (UI 표시용) */
-	cliAgentType?: AutopilotType;
+	cliAgentType?: CliAgentType;
 }
 
 export interface ChatSession {

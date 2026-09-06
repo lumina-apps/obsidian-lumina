@@ -2,10 +2,10 @@ import { createProvider } from '../../../core/llm-providers/index';
 import { isCliProvider, type LLMProviderConfig } from '../../../shared/types/settings.types';
 import type { ChatOptions, TokenUsage } from '../../../shared/types/llm.types';
 import type {
-	AutopilotToolCallLog,
-	AutopilotFileEditLog,
-	AutopilotUsage,
-} from '../../../shared/types/autopilot.types';
+	CliToolCallLog,
+	CliFileEditLog,
+	CliUsage,
+} from '../../../shared/types/cliAgent.types';
 import { CliAgentProvider, formatMessagesToPrompt } from '../../../core/llm-providers/cli/cli-agent.provider';
 import { stripAnsiCodes, extractTextFromUnknown } from '../../../core/llm-providers/cli/ndjson-parser';
 import { runAgentLoop, isTokenLimitReached } from '../agentLoop';
@@ -239,7 +239,7 @@ export async function executeCliAgentCall(
 
 						const toolLogId = `tc-${Date.now()}-${++toolCallCounter}`;
 
-						const toolLog: AutopilotToolCallLog = {
+						const toolLog: CliToolCallLog = {
 							id: toolLogId,
 							name: event.toolCall.name,
 							arguments: event.toolCall.arguments,
@@ -307,7 +307,7 @@ export async function executeCliAgentCall(
 							afterContent = (await getFileContentSafely(plugin, relPath)) ?? '';
 						}
 
-						const fileLog: AutopilotFileEditLog = {
+						const fileLog: CliFileEditLog = {
 							id: `fe-${Date.now()}`,
 							path: relPath || rawPath,
 							action,

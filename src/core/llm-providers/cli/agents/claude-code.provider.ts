@@ -1,14 +1,12 @@
 import type {
-	AutopilotType,
-	AutopilotExecuteOptions,
-	AutopilotEvent,
-} from '../../../../shared/types/autopilot.types';
+	CliExecuteOptions,
+	CliEvent,
+} from '../../../../shared/types/cliAgent.types';
 import { BaseCliAgent, type CliAgentConfig } from '../base-cli-agent';
 import { ProcessManager } from '../process-manager';
 import { extractTextFromUnknown, stripAnsiCodes, parseRawCliLine } from '../ndjson-parser';
 
 export class ClaudeCodeProvider extends BaseCliAgent {
-	readonly autopilotType: AutopilotType = 'claude-code';
 	readonly displayName = 'Claude Code';
 
 	constructor(config: CliAgentConfig) {
@@ -66,7 +64,7 @@ export class ClaudeCodeProvider extends BaseCliAgent {
 		return models;
 	}
 
-	public buildCommandArgs(prompt: string, options: AutopilotExecuteOptions): string[] {
+	public buildCommandArgs(prompt: string, options: CliExecuteOptions): string[] {
 		let effectivePrompt = prompt;
 		const isAgentEnabled = options.agentEnabled ?? true;
 		const isReadOnly = options.agentExecutionMode === 'read';
@@ -105,7 +103,7 @@ export class ClaudeCodeProvider extends BaseCliAgent {
 		return args;
 	}
 
-	protected mapEvent(raw: unknown): AutopilotEvent | AutopilotEvent[] | null {
+	protected mapEvent(raw: unknown): CliEvent | CliEvent[] | null {
 		if (!raw) return null;
 
 		if (typeof raw === 'string') {
@@ -157,7 +155,7 @@ export class ClaudeCodeProvider extends BaseCliAgent {
 		// 3. 중첩된 message / content 배열 처리 (assistant 또는 user 이벤트)
 		const msgObj = (effectiveObj.message && typeof effectiveObj.message === 'object' ? effectiveObj.message : (obj.message && typeof obj.message === 'object' ? obj.message : effectiveObj)) as Record<string, unknown>;
 		if (Array.isArray(msgObj.content)) {
-			const events: AutopilotEvent[] = [];
+			const events: CliEvent[] = [];
 			for (const block of msgObj.content) {
 				if (!block || typeof block !== 'object') continue;
 				const b = block as Record<string, unknown>;
@@ -227,7 +225,7 @@ export class ClaudeCodeProvider extends BaseCliAgent {
 		if (eventType === 'tool_use' || eventType === 'tool_call') {
 			const name = (effectiveObj.name || (effectiveObj.tool as Record<string, unknown>)?.name || obj.name || (obj.tool as Record<string, unknown>)?.name || 'tool') as string;
 			const args = (effectiveObj.input || effectiveObj.arguments || obj.input || obj.arguments || {}) as Record<string, unknown>;
-			const events: AutopilotEvent[] = [
+			const events: CliEvent[] = [
 				{
 					type: 'tool_call',
 					toolCall: { name, arguments: args },
@@ -286,7 +284,7 @@ export class ClaudeCodeProvider extends BaseCliAgent {
 			eventType === 'message_delta' ||
 			eventType === 'message_start'
 		) {
-			const events: AutopilotEvent[] = [];
+			const events: CliEvent[] = [];
 			const usageObj = (effectiveObj.usage ||
 				obj.usage ||
 				(effectiveObj.message as Record<string, unknown> | undefined)?.usage ||

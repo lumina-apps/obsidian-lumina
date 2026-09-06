@@ -6,7 +6,7 @@ import { CodexProvider } from './agents/codex.provider';
 import { ClaudeCodeProvider } from './agents/claude-code.provider';
 import type { LLMProviderConfig } from '../../../shared/types/settings.types';
 import type { ChatMessage } from '../../../shared/types/llm.types';
-import type { AutopilotExecuteOptions } from '../../../shared/types/autopilot.types';
+import type { CliExecuteOptions } from '../../../shared/types/cliAgent.types';
 import { stripAnsiCodes } from './ndjson-parser';
 import { toVaultRelativePath } from '../../../shared/utils/fileUtils';
 import type LuminaPlugin from '../../../main';
@@ -896,10 +896,10 @@ claude-3-5-haiku
 					autoApprove: true,
 				};
 				const provider = new CliAgentProvider(config);
-				let capturedOptions: AutopilotExecuteOptions | undefined;
+				let capturedOptions: CliExecuteOptions | undefined;
 				// Mock the agent.execute
-				(provider as unknown as { agent: { execute: (prompt: string, opts: AutopilotExecuteOptions) => unknown } }).agent = {
-					execute: (_prompt: string, opts: AutopilotExecuteOptions) => {
+				(provider as unknown as { agent: { execute: (prompt: string, opts: CliExecuteOptions) => unknown } }).agent = {
+					execute: (_prompt: string, opts: CliExecuteOptions) => {
 						capturedOptions = opts;
 						return {
 							events: (async function* () {

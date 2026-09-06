@@ -1,15 +1,15 @@
 import type {
-	AutopilotType,
-	AutopilotExecuteOptions,
-	AutopilotExecution,
-	AutopilotEvent,
-} from '../../../shared/types/autopilot.types';
+	CliAgentType,
+	CliExecuteOptions,
+	CliExecution,
+	CliEvent,
+} from '../../../shared/types/cliAgent.types';
 import { ProcessManager, getDefaultCwd, type ProcessStreams } from './process-manager';
 import { NdjsonParser } from './ndjson-parser';
 
 export interface CliAgentConfig {
 	id: string;
-	type: AutopilotType;
+	type: CliAgentType;
 	binaryPath: string;
 	defaultModel?: string;
 	autoApprove: boolean;
@@ -69,7 +69,6 @@ class AsyncEventQueue<T> {
  * CLI Agent 기본 추상 클래스 (Template Method 패턴)
  */
 export abstract class BaseCliAgent {
-	abstract readonly autopilotType: AutopilotType;
 	abstract readonly displayName: string;
 
 	protected config: CliAgentConfig;
@@ -82,12 +81,12 @@ export abstract class BaseCliAgent {
 	/**
 	 * 각 에이전트 CLI별 실행 인자(args)를 조립합니다.
 	 */
-	public abstract buildCommandArgs(prompt: string, options: AutopilotExecuteOptions): string[];
+	public abstract buildCommandArgs(prompt: string, options: CliExecuteOptions): string[];
 
 	/**
-	 * 각 에이전트 CLI가 출력하는 NDJSON 오브젝트를 통합 AutopilotEvent로 변환합니다.
+	 * 각 에이전트 CLI가 출력하는 NDJSON 오브젝트를 통합 CliEvent로 변환합니다.
 	 */
-	protected abstract mapEvent(raw: unknown): AutopilotEvent | AutopilotEvent[] | null;
+	protected abstract mapEvent(raw: unknown): CliEvent | CliEvent[] | null;
 
 	/**
 	 * 버전 체크 명령어 인자 (기본: ['--version'])
@@ -148,7 +147,7 @@ export abstract class BaseCliAgent {
 	/**
 	 * 에이전트 실행
 	 */
-	public execute(prompt: string, options: AutopilotExecuteOptions): AutopilotExecution {
+	public execute(prompt: string, options: CliExecuteOptions): CliExecution {
 		const binary = this.config.binaryPath || this.getDefaultBinary();
 		const args = this.buildCommandArgs(prompt, options);
 
@@ -156,7 +155,7 @@ export abstract class BaseCliAgent {
 			args.push(...this.config.extraArgs);
 		}
 
-		const eventQueue = new AsyncEventQueue<AutopilotEvent>();
+		const eventQueue = new AsyncEventQueue<CliEvent>();
 		const parser = new NdjsonParser();
 
 		const proc = ProcessManager.spawn({

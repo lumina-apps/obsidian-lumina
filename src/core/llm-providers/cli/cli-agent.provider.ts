@@ -1,6 +1,6 @@
 import type { ILLMProvider, ChatMessage, ChatOptions, ChatResponse, TokenUsage } from '../../../shared/types/llm.types';
 import type { LLMProviderConfig, ProviderType } from '../../../shared/types/settings.types';
-import type { AutopilotEvent, AutopilotExecution, AutopilotExecuteOptions } from '../../../shared/types/autopilot.types';
+import type { CliEvent, CliExecution, CliExecuteOptions } from '../../../shared/types/cliAgent.types';
 import { DEFAULT_CLI_BINARIES } from '../../../shared/types/settings.types';
 import { ClaudeCodeProvider } from './agents/claude-code.provider';
 import { CodexProvider } from './agents/codex.provider';
@@ -49,7 +49,7 @@ export class CliAgentProvider implements ILLMProvider {
     }
 
     private createAgent(): BaseCliAgent {
-        // Build an autopilot-style config from LLMProviderConfig
+        // Build CLI agent config from LLMProviderConfig
         const agentConfig = {
             id: this.config.id,
             type: this.getAgentType(),
@@ -126,7 +126,7 @@ export class CliAgentProvider implements ILLMProvider {
         const prompt = formatMessagesToPrompt(messages);
 
         // Build execution options (순수 텍스트 LLM 어댑터로 동작)
-        const execOptions: AutopilotExecuteOptions = {
+        const execOptions: CliExecuteOptions = {
             cwd: options.cwd || getDefaultCwd(),
             model: options.model,
             autoApprove: false,
@@ -199,7 +199,7 @@ export class CliAgentProvider implements ILLMProvider {
      * CLI 에이전트 실행을 위한 확장 메서드.
      * chatController에서 직접 이벤트 스트림을 소비할 때 사용.
      */
-    public executeRaw(prompt: string, options: AutopilotExecuteOptions): AutopilotExecution {
+    public executeRaw(prompt: string, options: CliExecuteOptions): CliExecution {
         return this.agent.execute(prompt, options);
     }
 

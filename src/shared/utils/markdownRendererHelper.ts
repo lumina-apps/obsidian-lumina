@@ -6,7 +6,7 @@ interface SearchView {
 
 /**
  * 마크다운 렌더링 헬퍼.
- * Message.svelte 및 AutopilotMessage.svelte의 think/본문 렌더링에서 사용됩니다.
+ * Message.svelte 등의 think/본문 렌더링에서 사용됩니다.
  *
  * 동작:
  * - streaming 중이면 plaintext로 표시 (comp 언로드)

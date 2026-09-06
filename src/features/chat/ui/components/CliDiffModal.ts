@@ -1,14 +1,14 @@
 import { App, Modal, TFile } from 'obsidian';
 import { diffLines, type Change } from 'diff';
-import type { AutopilotFileEditLog } from '../../../../shared/types/autopilot.types';
+import type { CliFileEditLog } from '../../../../shared/types/cliAgent.types';
 import { toVaultRelativePath } from '../../../../shared/utils/fileUtils';
 import { t } from '../../../../shared/locales/helpers';
 import { debugLogger } from '../../../../shared/debugLogger';
 
 export class CliDiffModal extends Modal {
-	private fileEdit: AutopilotFileEditLog;
+	private fileEdit: CliFileEditLog;
 
-	constructor(app: App, fileEdit: AutopilotFileEditLog) {
+	constructor(app: App, fileEdit: CliFileEditLog) {
 		super(app);
 		this.fileEdit = fileEdit;
 	}
@@ -16,21 +16,21 @@ export class CliDiffModal extends Modal {
 	async onOpen(): Promise<void> {
 		const { contentEl } = this;
 		contentEl.empty();
-		contentEl.addClass('lumina-autopilot-diff-modal');
+		contentEl.addClass('lumina-cli-diff-modal');
 
 		const relPath = toVaultRelativePath(this.app, this.fileEdit.path);
 
 		// 1. 헤더 영역
-		const headerEl = contentEl.createDiv({ cls: 'lumina-autopilot-diff-modal__header' });
+		const headerEl = contentEl.createDiv({ cls: 'lumina-cli-diff-modal__header' });
 		headerEl.createEl('h3', { text: t('settings.cli.diffModalTitle') || 'File Changes (Diff)' });
 
-		const metaEl = headerEl.createDiv({ cls: 'lumina-autopilot-diff-modal__meta' });
+		const metaEl = headerEl.createDiv({ cls: 'lumina-cli-diff-modal__meta' });
 		metaEl.createSpan({
-			cls: `lumina-autopilot-diff-modal__badge is-${this.fileEdit.action}`,
+			cls: `lumina-cli-diff-modal__badge is-${this.fileEdit.action}`,
 			text: this.fileEdit.action.toUpperCase(),
 		});
 		metaEl.createSpan({
-			cls: 'lumina-autopilot-diff-modal__path',
+			cls: 'lumina-cli-diff-modal__path',
 			text: relPath || this.fileEdit.path,
 		});
 
@@ -63,41 +63,41 @@ export class CliDiffModal extends Modal {
 			if (ch.removed) removedCount += ch.count ?? 1;
 		}
 
-		const statsEl = headerEl.createDiv({ cls: 'lumina-autopilot-diff-modal__stats' });
+		const statsEl = headerEl.createDiv({ cls: 'lumina-cli-diff-modal__stats' });
 		if (addedCount > 0) {
-			statsEl.createSpan({ cls: 'lumina-autopilot-diff-modal__stat-add', text: `+${addedCount}` });
+			statsEl.createSpan({ cls: 'lumina-cli-diff-modal__stat-add', text: `+${addedCount}` });
 		}
 		if (removedCount > 0) {
-			statsEl.createSpan({ cls: 'lumina-autopilot-diff-modal__stat-rem', text: `-${removedCount}` });
+			statsEl.createSpan({ cls: 'lumina-cli-diff-modal__stat-rem', text: `-${removedCount}` });
 		}
 
 		// 3. Diff 본문 렌더링
-		const containerEl = contentEl.createDiv({ cls: 'lumina-autopilot-diff-container' });
+		const containerEl = contentEl.createDiv({ cls: 'lumina-cli-diff-container' });
 
 		if (changes.length === 0 || (changes.length === 1 && !changes[0].added && !changes[0].removed && !changes[0].value.trim())) {
 			containerEl.createDiv({
-				cls: 'lumina-autopilot-diff-empty',
+				cls: 'lumina-cli-diff-empty',
 				text: 'No differences detected or file is empty.',
 			});
 			return;
 		}
 
-		const linesEl = containerEl.createDiv({ cls: 'lumina-autopilot-diff-lines' });
+		const linesEl = containerEl.createDiv({ cls: 'lumina-cli-diff-lines' });
 
 		for (const ch of changes) {
 			const lineClass = ch.added
-				? 'lumina-autopilot-diff-line is-added'
+				? 'lumina-cli-diff-line is-added'
 				: ch.removed
-					? 'lumina-autopilot-diff-line is-removed'
-					: 'lumina-autopilot-diff-line';
+					? 'lumina-cli-diff-line is-removed'
+					: 'lumina-cli-diff-line';
 			const marker = ch.added ? '+' : ch.removed ? '-' : ' ';
 			const lines = ch.value.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
 
 			for (let i = 0; i < lines.length; i++) {
 				if (i === lines.length - 1 && lines[i] === '') continue;
 				const lineEl = linesEl.createDiv({ cls: lineClass });
-				lineEl.createSpan({ cls: 'lumina-autopilot-diff-marker', text: marker });
-				lineEl.createSpan({ cls: 'lumina-autopilot-diff-text', text: lines[i] });
+				lineEl.createSpan({ cls: 'lumina-cli-diff-marker', text: marker });
+				lineEl.createSpan({ cls: 'lumina-cli-diff-text', text: lines[i] });
 			}
 		}
 	}

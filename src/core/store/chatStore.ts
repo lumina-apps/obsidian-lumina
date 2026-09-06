@@ -3,11 +3,11 @@
 import { writable, get } from 'svelte/store';
 import type { UIChatMessage, ContextAttachment, ChatRagSource, RagPipelineStep } from '../../shared/types/chat.types';
 import type {
-	AutopilotToolCallLog,
-	AutopilotFileEditLog,
-	AutopilotUsage,
-	AutopilotExecution,
-} from '../../shared/types/autopilot.types';
+	CliToolCallLog,
+	CliFileEditLog,
+	CliUsage,
+	CliExecution,
+} from '../../shared/types/cliAgent.types';
 import { t } from '../../shared/locales/helpers';
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -21,7 +21,7 @@ export const summaryUpToMessageId = writable<string | undefined>(undefined);
 
 export const pendingAttachments = writable<ContextAttachment[]>([]);
 export const activeSidebarTab = writable<'chat' | 'discovery'>('chat');
-export const activeCliExecution = writable<AutopilotExecution | null>(null);
+export const activeCliExecution = writable<CliExecution | null>(null);
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
 
@@ -193,7 +193,7 @@ export function appendRawLog(messageId: string, logLine: string): void {
 }
 
 /** CLI 에이전트 도구 호출 추가 */
-export function addCliToolCall(messageId: string, toolCall: AutopilotToolCallLog): void {
+export function addCliToolCall(messageId: string, toolCall: CliToolCallLog): void {
 	messages.update(ms =>
 		ms.map(m => {
 			if (m.id !== messageId) return m;
@@ -207,7 +207,7 @@ export function addCliToolCall(messageId: string, toolCall: AutopilotToolCallLog
 export function updateCliToolCall(
 	messageId: string,
 	toolCallId: string,
-	updates: Partial<AutopilotToolCallLog>,
+	updates: Partial<CliToolCallLog>,
 ): void {
 	messages.update(ms =>
 		ms.map(m => {
@@ -224,7 +224,7 @@ export function updateCliToolCall(
 }
 
 /** CLI 에이전트 파일 수정 내역 추가 */
-export function addCliFileEdit(messageId: string, fileEdit: AutopilotFileEditLog): void {
+export function addCliFileEdit(messageId: string, fileEdit: CliFileEditLog): void {
 	messages.update(ms =>
 		ms.map(m => {
 			if (m.id !== messageId) return m;
@@ -238,7 +238,7 @@ export function addCliFileEdit(messageId: string, fileEdit: AutopilotFileEditLog
 export function updateCliFileEdit(
 	messageId: string,
 	fileEditId: string,
-	updates: Partial<AutopilotFileEditLog>,
+	updates: Partial<CliFileEditLog>,
 ): void {
 	messages.update(ms =>
 		ms.map(m => {
@@ -255,9 +255,8 @@ export function updateCliFileEdit(
 }
 
 /** CLI 에이전트 토큰 사용량 기록 */
-export function setCliUsage(messageId: string, usage: AutopilotUsage): void {
+export function setCliUsage(messageId: string, usage: CliUsage): void {
 	messages.update(ms =>
 		ms.map(m => (m.id === messageId ? { ...m, cliUsage: usage } : m)),
 	);
 }
-
