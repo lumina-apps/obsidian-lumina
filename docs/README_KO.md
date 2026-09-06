@@ -1,6 +1,6 @@
-# Lumina: 올인원 AI 어시스턴트 (RAG + MCP + Agent)
+# Lumina: 올인원 AI 어시스턴트 (RAG + MCP + CLI 에이전트)
 
-**`Lumina`는 다중 LLM, 제로 컨피그 RAG, 양방향 MCP 연동, 그리고 자율 AI 에이전트를 하나로 결합하여 내 지식 베이스를 완벽한 AI 허브로 만들어주는 옵시디언용 강력한 올인원 어시스턴트 플러그인입니다.**
+**`Lumina`는 멀티 LLM(클라우드 및 로컬) 지원, 터미널 CLI 에이전트 연동(Claude Code, Antigravity, OpenCode, Codex), 무설정 RAG, 양방향 MCP 연동, 그리고 자율형 AI 에이전트를 결합하여 내 지식 베이스를 완성형 AI 작업 공간으로 탈바꿈시키는 옵시디언용 올인원 어시스턴트 플러그인입니다.**
 
 <p align="center">
   <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/README.md">English</a> | <b>한국어</b> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_JA.md">日本語</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ZH.md">简体中文</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ZH_TW.md">繁體中文</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ES.md">Español</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_DE.md">Deutsch</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_FR.md">Français</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_PT.md">Português</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_RU.md">Русский</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_IT.md">Italiano</a>
@@ -17,6 +17,7 @@
 | 기능 | 설명 |
 | :--- | :--- |
 | **멀티 LLM 채팅 뷰** | 내 노트의 문맥을 이해하는 전용 사이드 패널. 강력한 클라우드 모델부터 프라이버시를 위한 로컬 LLM까지 모두 지원합니다. |
+| **터미널 CLI 에이전트 연동** | Claude Code, Antigravity, OpenCode, Codex 등의 터미널 AI 에이전트를 옵시디언 사이드 패널에서 직접 실행하여 실시간 사고 과정을 확인하며 노트를 탐색하고 정리합니다. |
 | **제로 컨피그 RAG** | 데이터 유출 없는 100% 오프라인 로컬 임베딩을 지원하며, 복잡한 설정 없이 실시간으로 자동 인덱싱됩니다. |
 | **스마트 탐색 (Smart Discovery)** | 현재 작성 중인 노트와 관련성이 높은 문서를 시맨틱 검색으로 즉시 찾아주고, 중복 가능성이 있는 문서를 감지 및 경고하며, 추천 태그와 연관 링크를 원클릭으로 본문에 삽입합니다. |
 | **인라인 AI 퀵 액션** | 글쓰기 흐름을 끊지 않고, 에디터 안에서 텍스트를 드래그해 즉시 요약·번역·교정을 실행합니다. |
@@ -58,6 +59,20 @@ Lumina는 여러분의 숙련도에 맞춰 두 가지 모드를 제공합니다.
 </details>
 
 <details>
+<summary><b>터미널 CLI 에이전트 연동 (Claude Code, Antigravity, OpenCode, Codex)</b></summary>
+
+- **기능 설명:** 터미널 기반 AI 에이전트들을 옵시디언 사이드 패널에서 직접 실행하여, 노트를 탐색하고 문서를 분석 및 정리할 수 있습니다.
+- **지원 에이전트:** Anthropic **Claude Code**, Google **Antigravity**, **OpenCode**, OpenAI **Codex**.
+- **주요 기능:**
+  - **읽기 전용 / 수정 모드 전환:** 채팅창 툴바에서 원클릭으로 👁️ **읽기 모드**(노트 수정을 차단하고 안전하게 분석/조회)와 ✏️ **수정 모드**를 전환할 수 있습니다.
+  - **실시간 사고 과정(Thinking):** CLI 에이전트의 내부 추론 과정을 접이식 실시간 블록으로 시각화합니다.
+  - **실시간 작업 상태 및 수정 파일 안내:** 현재 실행 중인 도구 상태를 실시간으로 보여주고, 에이전트가 수정한 파일들을 바로 열어볼 수 있도록 링크 뱃지를 제공합니다.
+  - **활성 노트 및 첨부 파일 자동 전달:** 현재 열려 있는 활성 노트와 첨부 이미지/파일들이 에이전트 프롬프트로 자동 전달되어 현재 문서 기반 대화가 가능합니다.
+  - **외부 터미널용 MCP 설정 연동 (선택):** 외부 터미널에서 CLI를 직접 띄워 작업할 때도 Lumina의 볼트 도구를 호출할 수 있도록 설정 파일(`.claude/mcp.json`, `opencode.json`, `codex.json`)을 볼트에 자동 생성합니다.
+- **사용 방법:** Lumina 설정 > 연결(Connections) 탭에서 원하는 CLI 프로바이더를 선택하고 바이너리 경로를 지정한 뒤, 사이드 패널에서 바로 대화하세요.
+</details>
+
+<details>
 <summary><b>RAG 기반 대화 & 로컬 임베딩 (완벽한 프라이버시)</b></summary>
 
 - **기능 설명:** AI가 내 지식 베이스를 꿰뚫어 봅니다. 대화 중 관련 노트를 스스로 찾아보고, 사이드 패널에 현재 문맥에 맞는 유사 문서와 추천 태그를 띄워 스마트한 연결 고리를 만들어 줍니다.
@@ -89,7 +104,7 @@ Lumina는 여러분의 숙련도에 맞춰 두 가지 모드를 제공합니다.
 
 - **기능 설명:** 활성화 시 LLM이 다양한 MCP 도구들을 자율적으로 판단하고 조합하여 작업을 수행합니다. 노트 검색, 읽기, RAG 검색부터 작성, 수정, 파일 관리(삭제/이동), 샌드박스 내 코드 실행, 데일리 노트 연동 등 복잡한 다단계 작업을 스스로 완수할 수 있습니다.
 - **로컬 LLM 지원:** 고성능 클라우드 모델뿐만 아니라, 로컬 LLM 환경에서도 텍스트 기반 툴 프롬프팅을 지원하여 로컬 모델에서도 에이전트가 원활히 작동하도록 전용 파서가 구현되어 있습니다.
-- **강력한 보안 및 사용자 제어권 (Human-in-the-Loop):** 내용 수정이나 파일 삭제, 코드 실행과 같은 파괴적 동작은 에이전트가 단독으로 처리할 수 없으며, 사용자에게 UI(Diff 뷰어 및 작업 경고 모달)를 띄워 최종 승인(Accept)을 받은 경우에만 덮어쓰기 방지 백업과 함께 안전하게 실행됩니다.
+- **강력한 보안 및 사용자 통제 (Human-in-the-Loop):** 파일 수정이나 삭제, 코드 실행 같은 파괴적인 작업은 에이전트 단독으로 처리할 수 없습니다. 파일 수정 시 에디터 내 **인라인 Diff 검토**를 통해 청크별 수락/거절을 선택할 수 있으며, 파일 생성·삭제·코드 실행 등 민감한 작업은 채팅창의 **인라인 승인 카드**를 통해 사용자가 최종 승인(Accept)해야만 안전하게 실행됩니다. (덮어쓰기 방지 자동 백업 기본 지원)
 - **과소비 방지 및 제한 장치:** AI의 오작동이나 무한 루프를 막기 위해 도구 사용 횟수 및 추가(Append) 글자 수 제한이 기본 적용되어 있습니다. (이 제한은 고급 설정에서 언제든 유저가 조절할 수 있습니다.)
 - **사용 방법:** 채팅창에서 `/mcp` 명령어를 입력하거나 상단 아이콘을 통해 퀵 팝업을 열고 '에이전트 모드'를 활성화하세요. (도구 실행을 위해 Lumina 내장 서버가 필요에 따라 자동으로 함께 켜집니다.)
 </details>
@@ -104,13 +119,14 @@ Lumina는 여러분의 숙련도에 맞춰 두 가지 모드를 제공합니다.
 - **서버 모드 (외부 AI가 주도):**
   - 외부 AI(Claude, Cursor 등) 또는 에이전트모드의 AI가 내 볼트와 인터넷에 직접 접근할 수 있도록 다양한 도구 제공
   - **웹 검색:** \`lumina_web_search\` (Tavily, Exa, Google 등 다양한 검색 엔진을 활용해 실시간 인터넷 정보 검색, 스마트 자르기 지원)
-  - **조회 및 검색:** `read_active_note`, `read_note`, `search_notes`(태그 필터 지원), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags`, `query_metadata` 등 방대한 문맥을 AI에게 제공
+  - **조회 및 검색:** `read_active_note`, `read_note`(라인 범위 `startLine`/`endLine` 지정 읽기 지원), `search_notes`(태그 필터 지원), `grep_search`(볼트 전체 정규식/텍스트 라인 검색), `glob_files`(와일드카드 파일 경로 탐색, 예: `**/*.md`), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags`, `query_metadata` 등 방대한 문맥을 AI에게 제공
   - **작성 및 수정:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (노트/캔버스 생성 및 수정, MOC 허브 노트 생성, 자동 백링크 연결, 바이너리 파일 저장)
-  - **관리 및 실행:** `delete_note`, `move_note`(이동/이름 변경), `execute_code`, `run_note_code_block`(샌드박스 내 코드 실행), `run_shell_command`(데스크톱 OS 터미널 쉘 명령어 실행)
+  - **관리 및 실행:** `open_note`(에디터 탭으로 파일/노트 즉시 열기), `delete_note`, `move_note`(이동/이름 변경), `execute_code`, `run_note_code_block`(샌드박스 내 코드 실행), `run_shell_command`(데스크톱 OS 터미널 쉘 명령어 실행), `show_notice`(옵시디언 알림 표시)
   - **데일리 노트:** `read_daily_note`, `append_to_daily_note` (오늘 날짜 노트 연동)
-  - **강력한 보안 및 사용자 제어권:** 내용 수정이나 파일 삭제, 코드 실행과 같은 민감한 동작은 에이전트가 단독으로 처리할 수 없으며, 사용자에게 UI(Diff 뷰어 및 작업 경고 모달)를 띄워 최종 승인(Accept)을 받은 경우에만 덮어쓰기 방지 백업과 함께 안전하게 실행됩니다.
+  - **외부 터미널용 CLI MCP 설정 연동:** 외부 터미널 CLI에서도 Lumina의 볼트 도구를 활용할 수 있도록 설정 파일(`.claude/mcp.json`, `opencode.json`, `codex.json`)을 선택적으로 동기화하여 일관된 작업 환경 제공
+  - **볼트 보호 및 사용자 제어 (Human-in-the-Loop):** 민감한 작업에 대한 인라인 승인 카드, 파일 수정 시 에디터 인라인 Diff 검토, 덮어쓰기 방지 자동 백업 및 샌드박스 격리 코드 실행을 제공합니다.
 - **사용 방법:** 플러그인 설정 메뉴에서 MCP 기능을 켜고, 클라이언트/서버 전송 방식(SSE)을 구성하세요.
-- **주의 사항:** *Lumina는 샌드박스 코드 실행, 실시간 Diff 뷰어 기반의 사용자 최종 승인(Human-in-the-Loop), 파일 수정 시 자동 백업(덮어쓰기 방지), 그리고 API 오작동 및 무한 루프를 방지하는 다중 안전장치가 기본 적용되어 있어 안심하고 사용하실 수 있습니다. 다만, 에이전트와 외부 AI가 내 볼트에 직접 접근하는 만큼 처음에는 가벼운 작업 위주로 동작을 확인하며 사용하시는 것을 권장합니다.*
+- **주의 사항:** *Lumina는 샌드박스 코드 실행, 실시간 인라인 Diff 검토 및 작업 승인(Human-in-the-Loop), 파일 수정 시 자동 백업(덮어쓰기 방지), 그리고 API 오작동 및 무한 루프를 방지하는 도구 호출 제한 장치가 기본 적용되어 있어 안심하고 사용하실 수 있습니다. 다만, 에이전트와 외부 AI가 내 볼트에 직접 접근하는 만큼 처음에는 가벼운 작업 위주로 동작을 확인하며 사용하시는 것을 권장합니다.*
 </details>
 
 ---

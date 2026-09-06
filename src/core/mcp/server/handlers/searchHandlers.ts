@@ -108,3 +108,122 @@ export const listTagsHandler = async (
 
 	return { content: [{ type: 'text', text: `Tags in vault:\n${tagsList.join('\n')}` }] };
 };
+
+const BINARY_EXTENSIONS = new Set([
+	'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'svg', 'pdf',
+	'mp3', 'mp4', 'wav', 'ogg', 'zip', 'tar', 'gz', 'wasm', 'ico'
+]);
+
+function globToRegex(pattern: string): RegExp {
+	let escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+	escaped = escaped.replace(/\*\*/g, '.*');
+	escaped = escaped.replace(/(?<!\.)\*/g, '[^/]*');
+	escaped = escaped.replace(/\?/g, '[^/]');
+	return new RegExp(`^${escaped}$`, 'i');
+}
+
+export const grepSearchHandler = async (
+	args: ToolArguments,
+	ctx: ToolHandlerContext,
+	pathGuard: PathGuard,
+): Promise<ToolResult> => {
+	const rawQuery = getStringArg(args, 'query');
+	if (!rawQuery) {
+		return { isError: true, content: [{ type: 'text', text: 'query parameter is required.' }] };
+	}
+
+	const isRegex = Boolean(args.isRegex);
+	const caseInsensitive = args.caseInsensitive !== false;
+	const folderScope = getStringOptArg(args, 'path');
+	const maxResults = typeof args.maxResults === 'number' && args.maxResults > 0 ? Math.min(args.maxResults, 200) : 50;
+
+	let matcher: RegExp;
+	try {
+		if (isRegex) {
+			matcher = new RegExp(rawQuery, caseInsensitive ? 'i' : '');
+		} else {
+			const escaped = rawQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			matcher = new RegExp(escaped, caseInsensitive ? 'i' : '');
+		}
+	} catch (err) {
+		return { isError: true, content: [{ type: 'text', text: `Invalid regex pattern: ${err instanceof Error ? err.message : String(err)}` }] };
+	}
+
+	const allFiles = ctx.plugin.app.vault.getFiles();
+	let targetFiles = allFiles;
+	if (folderScope) {
+		const normalized = normalizePath(folderScope);
+		targetFiles = allFiles.filter((f) => f.path === normalized || f.path.startsWith(normalized + '/'));
+	}
+
+	targetFiles = targetFiles.filter((f) => pathGuard.isAgentPathAllowed(f.path, ctx.plugin));
+
+	const matches: string[] = [];
+	for (const file of targetFiles) {
+		const ext = file.extension.toLowerCase();
+		if (BINARY_EXTENSIONS.has(ext)) continue;
+
+		try {
+			const content = await ctx.plugin.app.vault.read(file);
+			const lines = content.split('\n');
+			for (let i = 0; i < lines.length; i++) {
+				if (matcher.test(lines[i])) {
+					matches.push(`${file.path}:${i + 1}: ${lines[i].trimEnd()}`);
+					if (matches.length >= maxResults) break;
+				}
+			}
+		} catch {
+			// 읽기 불가 파일 무시
+		}
+		if (matches.length >= maxResults) break;
+	}
+
+	if (matches.length === 0) {
+		return { content: [{ type: 'text', text: `No matches found for query: "${rawQuery}"` }] };
+	}
+
+	const resultText = `Found ${matches.length} matches (capped at ${maxResults}):\n\n` + matches.join('\n');
+	return { content: [{ type: 'text', text: applyReadLimit(resultText, ctx.limitRead) }] };
+};
+
+export const globFilesHandler = async (
+	args: ToolArguments,
+	ctx: ToolHandlerContext,
+	pathGuard: PathGuard,
+): Promise<ToolResult> => {
+	const pattern = getStringArg(args, 'pattern');
+	if (!pattern) {
+		return { isError: true, content: [{ type: 'text', text: 'pattern parameter is required.' }] };
+	}
+
+	const folderScope = getStringOptArg(args, 'path');
+	const maxResults = typeof args.maxResults === 'number' && args.maxResults > 0 ? Math.min(args.maxResults, 500) : 100;
+
+	const allFiles = ctx.plugin.app.vault.getFiles();
+	let targetFiles = allFiles;
+	if (folderScope) {
+		const normalized = normalizePath(folderScope);
+		targetFiles = allFiles.filter((f) => f.path === normalized || f.path.startsWith(normalized + '/'));
+	}
+
+	targetFiles = targetFiles.filter((f) => pathGuard.isAgentPathAllowed(f.path, ctx.plugin));
+
+	const regex = globToRegex(pattern);
+	const matchedFiles: string[] = [];
+
+	for (const file of targetFiles) {
+		if (regex.test(file.path) || (folderScope && regex.test(file.path.replace(normalizePath(folderScope) + '/', '')))) {
+			matchedFiles.push(file.path);
+			if (matchedFiles.length >= maxResults) break;
+		}
+	}
+
+	matchedFiles.sort();
+
+	if (matchedFiles.length === 0) {
+		return { content: [{ type: 'text', text: `No files found matching pattern: "${pattern}"` }] };
+	}
+
+	const resultText = `Found ${matchedFiles.length} files matching "${pattern}" (max: ${maxResults}):\n\n` + matchedFiles.join('\n');
+	return { content: [{ type: 'text', text: applyReadLimit(resultText, ctx.limitRead) }] };
+};

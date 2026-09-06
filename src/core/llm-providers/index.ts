@@ -15,12 +15,17 @@ import { OpenAIProvider } from './cloud/openai.provider';
 import { AnthropicProvider } from './cloud/anthropic.provider';
 import { GoogleProvider } from './cloud/google.provider';
 import { OpenAICompatProvider } from './local/openaiCompat.provider';
+import { CliAgentProvider } from './cli/cli-agent.provider';
 import { t } from '../../shared/locales/helpers';
+import { Platform } from 'obsidian';
 
 /** 로컬/커스텀 LLM 여부 */
 export function isLocalProvider(type: ProviderType): boolean {
 	return PROVIDER_CATEGORIES[type] === 'local' || type === 'custom';
 }
+
+import { isCliProvider } from '../../shared/types/settings.types';
+export { isCliProvider };
 
 /**
  * LLMProviderConfig 에서 ILLMProvider 인스턴스를 생성합니다.
@@ -37,20 +42,29 @@ export function createProvider(config: LLMProviderConfig): ILLMProvider {
 		if (!baseUrl?.trim()) {
 			throw new Error(t('settings.providerErrors.missingUrl'));
 		}
-	} else {
-		// 클라우드/애그리게이터의 경우 API Key가 필수
+	} else if (category !== 'cli') {
+		// 클라우드/애그리게이터의 경우 API Key가 필수 (CLI 제외)
 		if (!credential?.trim()) {
 			throw new Error(t('settings.providerErrors.missingKey'));
 		}
 	}
 
 	switch (type) {
+		case 'cli-claude-code':
+		case 'cli-codex':
+		case 'cli-opencode':
+		case 'cli-antigravity':
+			if (Platform.isMobile) {
+				throw new Error(t('settings.providerErrors.cliDesktopOnly'));
+			}
+			return new CliAgentProvider(config);
+
 		case 'openai':
-			return new OpenAIProvider(id, credential);
+			return new OpenAIProvider(id, credential!);
 		case 'anthropic':
-			return new AnthropicProvider(id, credential);
+			return new AnthropicProvider(id, credential!);
 		case 'google':
-			return new GoogleProvider(id, credential);
+			return new GoogleProvider(id, credential!);
 
 		// OpenAI 호환 고정 URL 클라우드 서비스
 		case 'xai':
@@ -61,7 +75,7 @@ export function createProvider(config: LLMProviderConfig): ILLMProvider {
 		case 'kimi':
 		case 'mistral': {
 			const url = PROVIDER_BASE_URLS[type]!;
-			return new OpenAICompatProvider(id, type, url, credential);
+			return new OpenAICompatProvider(id, type, url, credential!);
 		}
 
 		// 로컬 및 커스텀

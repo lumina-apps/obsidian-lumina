@@ -2,7 +2,7 @@
 	import { Component, MarkdownRenderer, type App } from "obsidian";
 	import { onMount, onDestroy } from "svelte";
 	import { t } from "../../../shared/locales/helpers";
-	import { renderMessageContent } from "./utils/markdownRendererHelper";
+	import { renderMessageContent } from "../../../shared/utils/markdownRendererHelper";
 
 	let {
 		thinkContent,

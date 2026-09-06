@@ -15,7 +15,11 @@ export type ProviderType =
 	| 'lmstudio'
 	| 'vllm'
 	| 'llamacpp'
-	| 'custom';
+	| 'custom'
+	| 'cli-claude-code'
+	| 'cli-codex'
+	| 'cli-opencode'
+	| 'cli-antigravity';
 
 export const PROVIDER_LABELS: Record<ProviderType, string> = {
 	openai: 'OpenAI (GPT)',
@@ -33,9 +37,13 @@ export const PROVIDER_LABELS: Record<ProviderType, string> = {
 	vllm: 'vLLM',
 	llamacpp: 'llama.cpp',
 	custom: 'Custom (OpenAI Compatible)',
+	'cli-claude-code': 'Claude Code (CLI)',
+	'cli-codex': 'Codex (CLI)',
+	'cli-opencode': 'OpenCode (CLI)',
+	'cli-antigravity': 'Antigravity (CLI)',
 };
 
-export type ProviderCategory = 'cloud' | 'aggregator' | 'local' | 'custom';
+export type ProviderCategory = 'cloud' | 'aggregator' | 'local' | 'custom' | 'cli';
 
 export const PROVIDER_CATEGORIES: Record<ProviderType, ProviderCategory> = {
 	openai: 'cloud',
@@ -53,6 +61,10 @@ export const PROVIDER_CATEGORIES: Record<ProviderType, ProviderCategory> = {
 	vllm: 'local',
 	llamacpp: 'local',
 	custom: 'custom',
+	'cli-claude-code': 'cli',
+	'cli-codex': 'cli',
+	'cli-opencode': 'cli',
+	'cli-antigravity': 'cli',
 };
 
 /** vision/image_url 미지원 provider 목록 */
@@ -82,6 +94,16 @@ export interface LLMProviderConfig {
 	baseUrl?: string;
 	availableModels: string[];
 	isVerified: boolean;
+	/** CLI 에이전트 전용: 실행 파일 경로 */
+	binaryPath?: string;
+	/** CLI 에이전트 전용: 도구 자동 승인 */
+	autoApprove?: boolean;
+	/** CLI 에이전트 전용: 추가 CLI 인자 */
+	extraArgs?: string[];
+	/** CLI 에이전트 전용: 환경변수 */
+	env?: Record<string, string>;
+	/** CLI 에이전트 전용: 타임아웃 (초) */
+	timeoutSeconds?: number;
 }
 
 // ─── Embedding ────────────────────────────────────
@@ -139,6 +161,7 @@ export interface McpSettings {
 	clientToolsEnabled: boolean;
 	serverEnableShellCommands: boolean;
 	agentRespectRagExclusions: boolean;
+	syncCliMcp?: boolean;
 }
 
 export interface McpServerConfig {
@@ -170,4 +193,16 @@ export interface WebSearchProviderConfig {
 	baseUrl?: string;
 	googleSearchEngineId?: string; // Only for Google Custom Search (CX)
 }
+
+/** CLI 에이전트 프로바이더 여부를 판별합니다. */
+export function isCliProvider(type: ProviderType): boolean {
+	return PROVIDER_CATEGORIES[type] === 'cli';
+}
+
+export const DEFAULT_CLI_BINARIES: Partial<Record<ProviderType, string>> = {
+	'cli-claude-code': 'claude',
+	'cli-codex': 'codex',
+	'cli-opencode': 'opencode',
+	'cli-antigravity': 'agy',
+};
 

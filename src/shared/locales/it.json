@@ -151,6 +151,15 @@
         "enableShellCommands": {
           "name": "Abilita strumento comando Terminale/Shell",
           "desc": "Consente al LLM di eseguire comandi della shell sul sistema operativo desktop. Disabilitato per impostazione predefinita per motivi di sicurezza."
+        },
+        "syncCliMcp": {
+          "name": "Genera configurazione MCP per CLI da terminale esterno (Claude Code, OpenCode, etc.)",
+          "desc": "Genera automaticamente i file di configurazione (.claude/mcp.json, ecc.) nel vault affinché le CLI eseguite in un terminale esterno possano usare gli strumenti MCP di Lumina (RAG, note). (Nota: non influisce sulla chat interna di Lumina; potrebbe causare errori di connessione nel terminale quando Obsidian è chiuso)."
+        },
+        "cleanupCliMcp": {
+          "name": "Pulisci configurazioni CLI da terminale esterno",
+          "desc": "Rimuove completamente i file di configurazione CLI (.claude/mcp.json, ecc.) nel vault e cancella le impostazioni di sistema registrate.",
+          "button": "Pulisci configurazioni CLI"
         }
       },
       "externalServer": {
@@ -506,7 +515,8 @@
       "anthropicNoEmbed": "Anthropic non supporta l'API embedding.",
       "visionNotSupported": "⚠️ Il provider selezionato ({{provider}}) non supporta l'analisi delle immagini. Si prega di utilizzare OpenAI, Anthropic o Google con un modello compatibile con la visione.",
       "timeoutTTFT": "Tempo scaduto: La risposta del primo token ha ritardato. ({{fallback}})",
-      "timeoutInterToken": "Tempo scaduto: La comunicazione si è interrotta o ha ritardato durante lo streaming. ({{fallback}})"
+      "timeoutInterToken": "Tempo scaduto: La comunicazione si è interrotta o ha ritardato durante lo streaming. ({{fallback}})",
+      "cliDesktopOnly": "I provider di agenti CLI sono supportati solo su Obsidian Desktop."
     },
     "translation": {
       "confirmTitle": "Traduzione Lingua di Sistema",
@@ -521,6 +531,22 @@
       "cacheDeleted": "✅ Cache traduzione lingua di sistema eliminata.",
       "cacheDeleteFail": "❌ Eliminazione cache fallita: ",
       "noCache": "⚠️ Nessuna cache di traduzione da eliminare."
+    },
+    "cli": {
+      "binaryPathName": "Percorso del binario",
+      "binaryPathDesc": "Percorso dell'eseguibile CLI (es. claude, codex, agy)",
+      "autoApproveName": "Approvazione automatica degli strumenti",
+      "autoApproveDesc": "Approva automaticamente l'esecuzione degli strumenti senza chiedere",
+      "waitingApprovalPrefix": "🛡️ Approvazione richiesta:",
+      "runningToolPrefix": "⚡ In esecuzione:",
+      "toolRejectedPrefix": "❌ Rifiutato:",
+      "toolRejectedByUser": "Rifiutato dall'utente",
+      "waitingApprovalBadge": "Approvazione richiesta",
+      "approvalPrompt": "L'agente vuole eseguire questo strumento. Vuoi approvarlo?",
+      "approveBtn": "Approva",
+      "rejectBtn": "Rifiuta",
+      "diffModalTitle": "Modifiche al file (Diff)",
+      "viewDiff": "Diff"
     }
   },
   "errors": {
@@ -598,8 +624,19 @@
         "desc": "Apri la schermata delle impostazioni di Lumina."
       }
     },
-    "sessionUsage": "Uso accumulato della sessione attuale",
-    "sessionTokens": "Totale: {{tokens}} token"
+    "sessionUsage": "Utilizzo sessione corrente",
+    "sessionTokens": "Totale: {{tokens}} token",
+    "cliMode": {
+      "cliAgent": "Agente CLI",
+      "pluginAgent": "Agente plugin",
+      "cliAgentTooltip": "Modalità Agente CLI: La CLI esegue autonomamente strumenti e comandi.",
+      "pluginAgentTooltip": "Modalità Agente plugin: Usa la CLI come motore LLM per gli strumenti Lumina.",
+      "disabledHintForCliAgent": "Gestito nativamente dall'Agente CLI in questa modalità",
+      "readModeTooltip": "Modalità lettura: L'agente CLI ispeziona e analizza senza modificare le note.",
+      "editModeTooltip": "Modalità modifica: L'agente CLI può creare e modificare le note direttamente.",
+      "readModeNotice": "👁️ Agente CLI: Modalità lettura (Modifica note bloccata)",
+      "editModeNotice": "✏️ Agente CLI: Modalità modifica (Creazione e modifica note consentita)"
+    }
   },
   "common": {
     "save": "Salva",
@@ -741,6 +778,7 @@
     "mcpLocalServerRestarted": "✅ Server MCP integrato riavviato (Porta: {{port}})",
     "mcpLocalServerStarted": "✅ Server MCP integrato avviato (Porta: {{port}})",
     "mcpLocalServerStopped": "🛑 Server MCP integrato interrotto (Porta: {{port}})",
+    "mcpCliCleanupSuccess": "✅ Le configurazioni CLI esterne sono state rimosse con successo.",
     "mcpLocalServerDisconnectAgentDisabled": "⚠️ La modalità agente è stata disabilitata a causa di un errore di connessione con il server integrato.",
     "mcpClientDisconnected": "🔌 Server MCP \"{{name}}\" disconnesso.",
     "mcpClientConnected": "✅ Server MCP \"{{name}}\" connesso con successo.",
@@ -756,6 +794,7 @@
     "agentModeSwitchedToEdit": "✏️ Agente passato alla Modalità Modifica. (Creazione e modifica delle note consentite)",
     "webSearchEnabled": "✅ Ricerca web attivata.",
     "webSearchDisabled": "🛑 Ricerca web disattivata.",
+    "webSearchNotNeededForCli": "ℹ️ Gli agenti CLI utilizzano i propri strumenti di ricerca web integrati.",
     "noMessagesToExport": "Nessun messaggio da esportare.",
     "noMessagesToRegenerate": "Nessuna risposta da rigenerare.",
     "contextCompressed": "📋 Contesto compresso: {{messages}} messaggi → 1 riepilogo (~{{tokens}} token liberati).",

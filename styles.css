@@ -496,6 +496,32 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 	font-size: 0.85em;
 	white-space: nowrap;
 	border-radius: 6px;
+	border: 1px solid var(--background-modifier-border);
+	background-color: var(--background-secondary);
+	color: var(--text-normal);
+}
+
+.vertical-tab-content-container .lumina-settings .lumina-provider-card button:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-btn-test-connection {
+	background-color: var(--interactive-accent) !important;
+	color: var(--text-on-accent) !important;
+	font-weight: 600;
+	border: 1px solid var(--interactive-accent) !important;
+	cursor: pointer;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-btn-test-connection:hover {
+	opacity: 0.9;
+	background-color: var(--interactive-accent) !important;
+}
+
+.vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-btn-test-connection:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
 }
 
 .vertical-tab-content-container .lumina-settings .lumina-provider-card .clickable-icon {
@@ -528,12 +554,27 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 
 .vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-provider-card__setting-actions {
 	grid-column: 1 / -1;
-	justify-self: flex-end;
+	width: 100%;
+	justify-self: stretch;
 	padding-bottom: 2px;
 }
 
 .vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-provider-card__setting-actions .setting-item-info {
 	display: none;
+}
+
+.vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-provider-card__setting-actions .setting-item-control {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	width: 100%;
+	gap: 8px;
+}
+
+.vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-provider-card__actions-right {
+	display: flex;
+	align-items: center;
+	gap: 6px;
 }
 
 .lumina-settings .setting-item-name {
@@ -1001,7 +1042,6 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 
 .vertical-tab-content-container .lumina-settings .lumina-provider-card.mcp-server-card--connected::before {
 	background: linear-gradient(180deg, #10b981 0%, #059669 100%);
-	box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
 	opacity: 1;
 }
 
@@ -1375,6 +1415,17 @@ body .lumina-model-suggest-modal .suggestion-item.is-selected-default::after {
 	background: rgba(var(--color-accent-rgb, 139, 92, 246), 0.12);
 	color: var(--interactive-accent);
 	border-color: var(--interactive-accent);
+}
+
+.lumina-chat__context-badge.is-disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+	pointer-events: auto;
+}
+
+.lumina-chat__context-badge.is-disabled:hover {
+	background: rgba(var(--mono-rgb-100), 0.05);
+	color: var(--text-muted);
 }
 
 /* RAG badge / banner */
@@ -2278,4 +2329,131 @@ html body .modal-container.lumina-settings-modal-container {
 	background-color: var(--text-error);
 	color: #ffffff;
 }
+
+/* ─── Autopilot Diff Modal ─────────────────────────────────────────────────── */
+.lumina-autopilot-diff-modal {
+	padding: 16px 20px;
+}
+
+.lumina-autopilot-diff-modal__header {
+	margin-bottom: 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	padding-bottom: 8px;
+}
+
+.lumina-autopilot-diff-modal__header h3 {
+	margin: 0 0 6px 0;
+	font-size: 16px;
+}
+
+.lumina-autopilot-diff-modal__meta {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 12px;
+}
+
+.lumina-autopilot-diff-modal__badge {
+	font-size: 10px;
+	font-weight: 700;
+	padding: 2px 6px;
+	border-radius: 4px;
+	text-transform: uppercase;
+}
+
+.lumina-autopilot-diff-modal__badge.is-create {
+	background: rgba(var(--color-green-rgb, 46, 160, 67), 0.15);
+	color: var(--text-success);
+}
+
+.lumina-autopilot-diff-modal__badge.is-modify {
+	background: rgba(var(--color-accent-rgb, 139, 92, 246), 0.15);
+	color: var(--interactive-accent);
+}
+
+.lumina-autopilot-diff-modal__badge.is-delete {
+	background: rgba(var(--color-red-rgb, 235, 87, 87), 0.15);
+	color: var(--text-error);
+}
+
+.lumina-autopilot-diff-modal__path {
+	font-family: var(--font-monospace);
+	color: var(--text-muted);
+}
+
+.lumina-autopilot-diff-modal__stats {
+	display: flex;
+	gap: 12px;
+	font-size: 12px;
+	font-weight: 600;
+	margin-bottom: 10px;
+}
+
+.lumina-autopilot-diff-modal__stat-add {
+	color: var(--text-success);
+}
+
+.lumina-autopilot-diff-modal__stat-rem {
+	color: var(--text-error);
+}
+
+.lumina-autopilot-diff-container {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	overflow: hidden;
+	background: var(--background-primary);
+	margin-bottom: 16px;
+}
+
+.lumina-autopilot-diff-lines {
+	font-family: var(--font-monospace);
+	font-size: 12px;
+	line-height: 1.5;
+	max-height: 380px;
+	overflow-y: auto;
+}
+
+.lumina-autopilot-diff-line {
+	display: flex;
+	padding: 1px 8px;
+	white-space: pre-wrap;
+	word-break: break-all;
+}
+
+.lumina-autopilot-diff-line.is-added {
+	background-color: rgba(46, 160, 67, 0.12);
+}
+
+.lumina-autopilot-diff-line.is-removed {
+	background-color: rgba(235, 87, 87, 0.12);
+}
+
+.lumina-autopilot-diff-marker {
+	width: 18px;
+	flex-shrink: 0;
+	color: var(--text-muted);
+	user-select: none;
+}
+
+.lumina-autopilot-diff-line.is-added .lumina-autopilot-diff-marker {
+	color: var(--text-success);
+	font-weight: bold;
+}
+
+.lumina-autopilot-diff-line.is-removed .lumina-autopilot-diff-marker {
+	color: var(--text-error);
+	font-weight: bold;
+}
+
+.lumina-autopilot-diff-text {
+	flex-grow: 1;
+}
+
+.lumina-autopilot-diff-empty {
+	padding: 24px;
+	text-align: center;
+	color: var(--text-muted);
+	font-size: 12px;
+}
+
 

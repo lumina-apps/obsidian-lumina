@@ -60,7 +60,8 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 		setMessageRagStep(assistantId, 'searching');
 		
 		const useReranker = !!(connections.rerankerProviderId && connections.rerankerModelId);
-		const useCompressor = !!(connections.taskProviderId && connections.taskModelId);
+		// 과도한 레이턴시 및 청크별 다중 LLM 호출 방지를 위해 RAG 청크 자동 압축은 비활성화
+		const useCompressor = false;
 		
 		// 리랭커 사용 시에는 K * 2 개 추출
 		const initialTopK = useReranker ? rag.topK * 2 : rag.topK;

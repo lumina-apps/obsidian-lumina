@@ -35,6 +35,11 @@ export class McpManager {
 		return this.localLifecycle.server;
 	}
 
+	/** 외부 CLI MCP 연동 설정(.claude/mcp.json, opencode.json 등)을 일괄 정리합니다. */
+	async cleanupCliMcp(): Promise<void> {
+		await this.localLifecycle.cliMcpSync.cleanup();
+	}
+
 	async syncServers(): Promise<void> {
 		if (this.isSyncing) return;
 		if (!Platform.isDesktop) {

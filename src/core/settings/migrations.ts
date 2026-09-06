@@ -282,6 +282,64 @@ export function migrateProjects(plugin: LuminaPlugin): boolean {
 	return needsSave;
 }
 
+export function migrateAutopilotSettings(plugin: LuminaPlugin): boolean {
+	let changed = false;
+	const rawSettings = plugin.settings as unknown as {
+		autopilot?: {
+			enabled?: boolean;
+			providers?: Array<{
+				id: string;
+				type: string;
+				binaryPath?: string;
+				defaultModel?: string;
+				autoApprove?: boolean;
+				allowedTools?: string[];
+				extraArgs?: string[];
+				env?: Record<string, string>;
+				timeoutSeconds?: number;
+				isVerified?: boolean;
+			}>;
+			activeProviderId?: string;
+		};
+	};
+
+	if (rawSettings.autopilot) {
+		const oldProviders = rawSettings.autopilot.providers;
+		if (Array.isArray(oldProviders) && oldProviders.length > 0) {
+			for (const op of oldProviders) {
+				const cliType = (op.type.startsWith('cli-') ? op.type : `cli-${op.type}`) as import('../../shared/types/settings.types').ProviderType;
+				// 이미 동일 id의 프로바이더가 없는 경우에만 추가
+				if (!plugin.settings.connections.providers.some(p => p.id === op.id)) {
+					plugin.settings.connections.providers.push({
+						id: op.id,
+						type: cliType,
+						credential: '',
+						availableModels: op.defaultModel ? [op.defaultModel] : [],
+						isVerified: op.isVerified ?? false,
+						binaryPath: op.binaryPath,
+						autoApprove: op.autoApprove ?? true,
+						extraArgs: op.extraArgs || [],
+						env: op.env || {},
+						timeoutSeconds: op.timeoutSeconds || 300,
+					});
+					changed = true;
+				}
+			}
+		}
+		delete rawSettings.autopilot;
+		changed = true;
+	}
+	return changed;
+}
+
+export function migrateCliOperationMode(plugin: LuminaPlugin): boolean {
+	if (plugin.settings.chat && !plugin.settings.chat.cliOperationMode) {
+		plugin.settings.chat.cliOperationMode = 'cli-agent';
+		return true;
+	}
+	return false;
+}
+
 /**
  * 모든 마이그레이션을 순차 실행하고 변경이 있으면 저장합니다.
  * @returns 저장이 필요하면 true
@@ -298,5 +356,7 @@ export function runMigrations(plugin: LuminaPlugin): boolean {
 	if (migrateContextWindowTurns(plugin)) needsSave = true;
 	if (migrateWebSearch(plugin)) needsSave = true;
 	if (migrateCanvasSettings(plugin)) needsSave = true;
+	if (migrateAutopilotSettings(plugin)) needsSave = true;
+	if (migrateCliOperationMode(plugin)) needsSave = true;
 	return needsSave;
 }

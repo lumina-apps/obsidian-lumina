@@ -70,7 +70,6 @@ async function postProcessMainBundle() {
 	// Eliminate direct filesystem/shell execution warnings by replacing unused imports with undefined
 	text = text.replace(/require\(['"](node:)?fs['"]\)/g, 'undefined');
 	text = text.replace(/require\(['"](node:)?fs\/promises['"]\)/g, 'undefined');
-	text = text.replace(/require\(['"](node:)?child_process['"]\)/g, 'undefined');
 
 	if (text !== original) {
 		writeFileSync(outPath, text);

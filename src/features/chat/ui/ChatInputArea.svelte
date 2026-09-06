@@ -12,7 +12,7 @@
 	import ModelPickerPopup from "./ModelPickerPopup.svelte";
 	import PromptPickerPopup from "./PromptPickerPopup.svelte";
 	import { getAttachmentIcon } from "../utils/fileAttachmentUtils";
-	import { resizeTextarea } from "../utils/textareaUtils";
+	import { resizeTextarea } from "../../../shared/utils/textareaUtils";
 	import { buildSlashCommands } from "../utils/slashCommandUtils";
 	import { activeProject } from "../../../core/store/projectStore";
 	import { settingsStore } from "../../../core/store/settingsStore";
@@ -46,6 +46,7 @@
 		includeActiveNote,
 		agentEnabled = false,
 		agentExecutionMode = "read",
+		isCliSelected = false,
 		providers = [],
 		selectedProviderId = "",
 		selectedModelId = "",
@@ -74,6 +75,7 @@
 		includeActiveNote: boolean;
 		agentEnabled: boolean;
 		agentExecutionMode: "read" | "edit";
+		isCliSelected?: boolean;
 		providers: LLMProviderConfig[];
 		selectedProviderId: string;
 		selectedModelId: string;
@@ -323,14 +325,17 @@
 				onclick={triggerFileInput}
 				type="button"
 			></button>
-			<button
-				class="lumina-chat__toolbar-btn"
-				class:is-agent-active={agentEnabled}
-				aria-label="Agent & MCP Tools"
-				use:icon={"bot"}
-				onclick={toggleMcpPopup}
-				type="button"
-			></button>
+			{#if !isCliSelected}
+				<button
+					class="lumina-chat__toolbar-btn"
+					class:is-agent-active={agentEnabled}
+					aria-label="Agent & MCP Tools"
+					title="Agent & MCP Tools"
+					use:icon={"bot"}
+					onclick={toggleMcpPopup}
+					type="button"
+				></button>
+			{/if}
 		</div>
 
 		<input
@@ -353,21 +358,29 @@
 				</span>
 			{/if}
 			<span class="lumina-chat__hint-inline">{sendHint}</span>
-			{#if agentEnabled}
+			{#if agentEnabled || isCliSelected}
 				<button
 					class="lumina-chat__context-badge"
 					class:is-active={agentExecutionMode === "edit"}
 					onclick={onToggleAgentExecutionMode}
-					aria-label={$tStore("settings.mcp.agentMode.editMode") ||
-						"Toggle Agent Mode (Read/Edit)"}
+					aria-label={isCliSelected
+						? (agentExecutionMode === "edit"
+							? ($tStore("chat.cliMode.editModeTooltip") || "Edit Mode: CLI agent can create and edit notes")
+							: ($tStore("chat.cliMode.readModeTooltip") || "Read Mode: CLI agent is read-only and cannot modify notes"))
+						: (agentExecutionMode === "edit"
+							? ($tStore("settings.mcp.agentMode.editMode") || "Toggle Agent Mode (Read/Edit)")
+							: ($tStore("settings.mcp.agentMode.readMode") || "Toggle Agent Mode (Read/Edit)"))}
+					title={isCliSelected
+						? (agentExecutionMode === "edit"
+							? ($tStore("chat.cliMode.editModeTooltip") || "Edit Mode: CLI agent can create and edit notes")
+							: ($tStore("chat.cliMode.readModeTooltip") || "Read Mode: CLI agent is read-only and cannot modify notes"))
+						: undefined}
+					type="button"
 				>
-					<span use:icon={agentExecutionMode === "edit" ? "edit-2" : "eye"}
-					></span>
-					<span
-						>{agentExecutionMode === "edit"
+					<span use:icon={agentExecutionMode === "edit" ? "edit-2" : "eye"}></span>
+					<span>{agentExecutionMode === "edit"
 							? $tStore("settings.mcp.agentMode.editMode") || "Edit Mode"
-							: $tStore("settings.mcp.agentMode.readMode") || "Read Mode"}</span
-					>
+							: $tStore("settings.mcp.agentMode.readMode") || "Read Mode"}</span>
 				</button>
 			{/if}
 			<button

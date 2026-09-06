@@ -1,6 +1,6 @@
-# Lumina: All-in-One KI-Assistent (RAG + MCP + Agent)
+# Lumina: All-in-One KI-Assistent (RAG + MCP + CLI-Agenten)
 
-**`Lumina` ist ein leistungsstarkes All-in-One-Assistent-Plugin für Obsidian, das deine Wissensbasis in einen vollständigen KI-Hub verwandelt, indem es Multi-LLM-Unterstützung, Zero-Config-RAG, bidirektionale MCP-Integration und autonome KI-Agenten kombiniert.**
+**`Lumina` ist ein leistungsstarkes All-in-One-Assistent-Plugin für Obsidian, das deine Wissensbasis in einen vollständigen KI-Hub verwandelt, indem es Multi-LLM-Unterstützung (Cloud & Lokal), Terminal-CLI-Agenten (Claude Code, Antigravity, OpenCode, Codex), Zero-Config-RAG, bidirektionale MCP-Integration und autonome KI-Agenten kombiniert.**
 
 <p align="center">
   <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/README.md">English</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_KO.md">한국어</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_JA.md">日本語</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ZH.md">简体中文</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ZH_TW.md">繁體中文</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ES.md">Español</a> | <b>Deutsch</b> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_FR.md">Français</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_PT.md">Português</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_RU.md">Русский</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_IT.md">Italiano</a>
@@ -17,6 +17,7 @@
 | Funktion | Beschreibung |
 | :--- | :--- |
 | **Multi-LLM-Chat-Ansicht** | Ein dediziertes Seitenpanel, das den Kontext deiner Notizen versteht. Unterstützt alles von leistungsstarken Cloud-Modellen bis hin zu lokalen LLMs für maximale Privatsphäre. |
+| **Terminal-CLI-Agenten-Integration** | Führe offizielle Terminal-KI-Agenten (Claude Code, Antigravity, OpenCode, Codex) direkt im Obsidian-Seitenpanel mit Echtzeit-Denkströmen und Lese-/Bearbeitungs-Sicherheitsmodi aus. |
 | **Zero-Config-RAG** | Bietet 100% Offline-Lokale-Embeddings, um Datenlecks zu verhindern. Indiziert deinen Vault automatisch in Echtzeit ohne komplexe Konfigurationen. |
 | **Smart Discovery** | Findet semantisch relevante Dokumente zur aktuellen Notiz, warnt vor Duplikaten und fügt empfohlene Tags sowie Links mit einem Klick ein. |
 | **Inline-KI-Schnellaktionen** | Markiere Text im Editor, um ihn sofort zusammenzufassen, zu übersetzen oder Korrektur zu lesen, ohne deinen Schreibfluss zu unterbrechen. |
@@ -57,6 +58,20 @@ Lumina bietet zwei auf dein Können zugeschnittene Modi. Wähle die Methode, die
 </details>
 
 <details>
+<summary><b>Terminal-CLI-Agenten-Integration (Claude Code, Antigravity, OpenCode, Codex)</b></summary>
+
+- **Beschreibung:** Führe Terminal-KI-Agenten direkt im Seitenpanel von Obsidian aus, um deine Vault-Notizen zu erkunden, zu analysieren und zu organisieren.
+- **Unterstützte Agenten:** Anthropic **Claude Code**, Google **Antigravity**, **OpenCode**, OpenAI **Codex**.
+- **Hauptfunktionen:**
+  - **Sicherheitsumschaltung Nur-Lesen / Bearbeiten:** Wechsle mit einem Klick in der Chat-Symbolleiste zwischen 👁️ **Nur-Lesen-Modus** (Notizen sicher durchsuchen und analysieren, ohne Dateien zu ändern) und ✏️ **Bearbeitungsmodus**.
+  - **Visuelles Denken (Thinking):** Streamt und visualisiert den internen Denkprozess des CLI-Agenten in einklappbaren Echtzeit-Denkblöcken.
+  - **Echtzeit-Status & Geänderte Dateien:** Zeigt den Ausführungsstatus von Tools in Echtzeit an und bietet klickbare Badges, um vom Agenten geänderte Dateien sofort zu öffnen.
+  - **Aktive Notiz & Medienkontext:** Übergibt automatisch die aktuell geöffnete Notiz und angehängte Bilder/Dateien an den CLI-Prompt für nahtlose kontextbezogene Unterhaltungen.
+  - **Externe Terminal-MCP-Synchronisierung (Optional):** Erstellt Konfigurationsdateien (`.claude/mcp.json`, `opencode.json`, `codex.json`) in deinem Vault, damit CLI-Sitzungen im Systemterminal ebenfalls auf Luminas MCP-Tools zugreifen können.
+- **Verwendung:** Wähle in den Lumina-Einstellungen > Verbindungen (Connections) deinen bevorzugten CLI-Provider, konfiguriere den Binärpfad und starte das Gespräch im Seitenpanel.
+</details>
+
+<details>
 <summary><b>RAG-basierter Chat & Lokale Embeddings (Absolute Privatsphäre)</b></summary>
 
 - **Beschreibung:** Die KI erhält tiefe Einblicke in deine Wissensbasis. Sie sucht während Unterhaltungen autonom nach relevanten Notizen und zeigt ähnliche Dokumente und empfohlene Tags im Seitenpanel an, wodurch smarte kontextuelle Verknüpfungen entstehen.
@@ -67,30 +82,30 @@ Lumina bietet zwei auf dein Können zugeschnittene Modi. Wähle die Methode, die
 <details>
 <summary><b>Smart Discovery</b></summary>
 
-- **Beschreibung:** Basierend auf der RAG-Engine visualisiert die Funktion Informationen, die für die aktuell geschriebene Notiz hochgradig relevant sind, direkt auf der Registerkarte "Smart Discovery" in der Seitenleiste.
+- **Beschreibung:** Bietet basierend auf der RAG-Engine visuell gebündelte Informationen zur aktuellen Notiz im Tab "Smart Discovery" des Seitenpanels.
 - **Hauptfunktionen:**
-  - **Semantische Suche:** Geht über den einfachen Keyword-Abgleich hinaus und analysiert den Kontext und die Bedeutung des eingegebenen Satzes, um nach ähnlichen Notizen zu suchen.
-  - **Duplikaterkennung:** Zeigt eine Warnung an, wenn ein Dokument mit sehr ähnlichem Inhalt bereits in Ihrem Vault vorhanden ist, um Informationsfragmentierung und doppeltes Schreiben zu verhindern.
-  - **Empfohlene Tags & Ähnliche Notizen:** Analysiert den Kontext der aktuellen Notiz, um passende Tags zu empfehlen und ähnliche Notizen in Echtzeit vorzuschlagen.
-  - **Ein-Klick-Verbindung & Chat:** Fügen Sie empfohlene Tags oder ähnliche Notizen mit einem einzigen Klick als Tags oder Markdown-Links (`[[Notizname]]`) in Ihr Dokument ein oder stellen Sie ausgewählte Notizen im Staging-Bereich bereit, um sofort einen KI-Chat zu starten.
-  - **Verwendung:** Klicken Sie auf das Chat-Symbol in der linken Leiste, um die Seitenleiste zu öffnen, und wechseln Sie oben auf die Registerkarte Smart Discovery.
+  - **Semantische Suche:** Geht über einfache Schlüsselwortabgleiche hinaus und sucht ähnliche Notizen basierend auf Bedeutung und Kontext.
+  - **Duplikaterkennung:** Warnt vor bereits existierenden, sehr ähnlichen Dokumenten im Vault.
+  - **Empfohlene Tags & verwandte Notizen:** Schlägt in Echtzeit passende Tags und Verknüpfungen vor.
+  - **Ein-Klick-Integration:** Fügt empfohlene Tags oder Links (`[[Notizname]]`) mit einem Klick ein oder startet direkt eine KI-Konversation.
+- **Verwendung:** Klicke auf das Chat-Symbol im linken Ribbon und wechsle oben zum Tab Smart Discovery.
 </details>
 
 <details>
-<summary><b>Inline-Editor-KI (Schnellaktionen)</b></summary>
+<summary><b>Inline-KI-Schnellaktionen</b></summary>
 
-- **Beschreibung:** Transformiere Text sofort im Markdown-Editor, ohne deinen Schreibfluss zu unterbrechen. Handhabe problemlos Übersetzungen, Zusammenfassungen, Grammatikkorrekturen und detaillierte Erklärungen für markierten Text.
-- **Verwendung:** Markiere den Text und führe Schnellaktionen über das Inline-Popup-Menü oder die Befehlspalette aus. *(Tipp: Weise in den Obsidian-Einstellungen Hotkeys für blitzschnellen Zugriff zu!)*
+- **Beschreibung:** Transformiere Text direkt im Markdown-Editor (Übersetzen, Zusammenfassen, Korrekturlesen).
+- **Verwendung:** Markiere Text und führe Schnellaktionen über das Inline-Menü oder die Befehlspalette aus.
 </details>
 
 <details>
 <summary><b>Smart-Agent-Modus</b></summary>
 
-- **Beschreibung:** Nach der Aktivierung bestimmt und orchestriert das LLM autonom various integrierte MCP-Tools, um Aufgaben auszuführen. Es kann komplexe, mehrstufige Vorgänge ausführen, indem es das Suchen, Lesen und Schreiben von Notizen, das Abrufen von RAG-Daten, die Ausführung von Code in einer Sandbox und die Integration täglicher Notizen kombiniert.
-- **Lokale LLM-Unterstützung:** Implementiert einen dedizierten Parser, der textbasiertes Tool-Prompting unterstützt, sodass der Agent auch in lokalen LLM-Umgebungen reibungslos funktioniert und nicht nur mit leistungsstarken Cloud-Modellen.
-- **Robuste Sicherheit & Benutzerkontrolle (Human-in-the-Loop):** Destruktive Vorgänge wie Inhaltsänderungen, Dateilöschungen oder Codeausführungen können vom Agenten nicht allein verarbeitet werden. Sie werden erst nach einer Abfrage des Benutzers über eine Benutzeroberfläche (Diff-Viewer und Aufgabenwarnungs-Modal) und Erhalt der endgültigen Genehmigung (Akzeptieren) sicher mit Backups zum Schutz vor Überschreiben ausgeführt.
-- **Kostenvermeidung & Limits:** Standardbegrenzungen für die Häufigkeit der Toolnutzung und die Länge der angehängten Zeichen werden angewendet, um KI-Fehlfunktionen oder Endlosschleifen zu verhindern. (Diese Limits können in den erweiterten Einstellungen frei angepasst werden.)
-- **Verwendung:** Geben Sie den Befehl `/mcp` im Chat ein oder klicken Sie auf das obere Symbol, um das Schnell-Popup zu öffnen und den "Agenten-Modus" zu aktivieren. (Der interne Lumina-Server startet bei Bedarf automatisch, um Tools auszuführen.)
+- **Beschreibung:** Ermöglicht der KI, Aufgaben autonom mit integrierten MCP-Tools (Suchen, Lesen, Schreiben, RAG, Sandbox-Code, Tagesnotizen) auszuführen.
+- **Lokaler LLM-Support:** Textbasierter Tool-Parser für reibungslose Funktion auch mit lokalen LLMs.
+- **Robuste Sicherheit & Benutzerkontrolle (Human-in-the-Loop):** Destruktive Vorgänge wie Dateiänderungen, Löschungen oder Codeausführung können vom Agenten nicht eigenständig verarbeitet werden. Dateiänderungen erfordern eine **Inline-Diff-Prüfung** im Editor mit abschnittsweiser Annahme/Ablehnung, während sensible Aktionen wie Dateierstellung, Löschung oder Codeausführung eine ausdrückliche Bestätigung über **Inline-Genehmigungskarten** im Chat-Panel erfordern. (Automatischer Überschreibschutz durch Backups inklusive)
+- **Kosten- und Schleifenschutz:** Integrierte Limits für Tool-Nutzung und Zeichenlänge.
+- **Verwendung:** Gib `/mcp` im Chat ein oder aktiviere den Agentenmodus über das Symbol oben.
 </details>
 
 <details>
@@ -103,13 +118,14 @@ Lumina bietet zwei auf dein Können zugeschnittene Modi. Wähle die Methode, die
 - **Server-Modus (Externe KI-gesteuert):**
   - Stellt verschiedene Tools zur Verfügung, die externen KI-Assistenten (Claude, Cursor usw.) oder der Agentenmodus-KI direkten Zugriff auf deinen Vault gewähren.
   - **Websuche:** `lumina_web_search` (Echtzeit-Internetinformationssuche über verschiedene Suchmaschinen wie Tavily, Exa, Google mit intelligenter Kürzungsunterstützung)
-  - **Lesen & Suchen:** `read_active_note`, `read_note`, `search_notes` (unterstützt Tag-Filter), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags`, `query_metadata` um der KI umfangreichen Kontext bereitzustellen.
+  - **Lesen & Suchen:** `read_active_note`, `read_note` (unterstützt Zeilenbereich `startLine`/`endLine`), `search_notes` (unterstützt Tag-Filter), `grep_search` (Regex/Text-Zeilensuche im gesamten Vault), `glob_files` (Wildcard-Dateipfadabgleich, z. B. `**/*.md`), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags`, `query_metadata` um der KI umfangreichen Kontext bereitzustellen.
   - **Schreiben & Ändern:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (Notizen/Canvas-Dateien erstellen/ändern, Map of Content (MOC)-Notizen generieren und Binärdateien speichern).
-  - **Verwalten & Ausführen:** `delete_note`, `move_note` (verschieben/umbenennen), `execute_code`, `run_note_code_block` (Code in einer Sandbox ausführen, `run_shell_command` (Terminal-Shell-Befehle auf dem Desktop-OS ausführen).
+  - **Verwalten & Ausführen:** `open_note` (Notiz/Datei sofort im Editor-Tab öffnen), `delete_note`, `move_note` (verschieben/umbenennen), `execute_code`, `run_note_code_block` (Code in einer Sandbox ausführen), `run_shell_command` (Terminal-Shell-Befehle auf dem Desktop-OS ausführen), `show_notice` (Obsidian-Benachrichtigungen anzeigen).
   - **Tagesnotizen:** `read_daily_note`, `append_to_daily_note` (Lese-/Schreibintegration für die heutige Tagesnotiz).
-  - **Robuste Sicherheit & Benutzerkontrolle:** Destruktive Vorgänge wie Inhaltsänderungen, Dateilöschungen oder Codeausführung können vom Agenten nicht allein verarbeitet werden. Sie werden sicher mit Überschreibschutz-Backups ausgeführt, jedoch erst, nachdem dem Benutzer eine Benutzeroberfläche (Diff-Viewer und Warnungs-Modal) angezeigt und die endgültige Genehmigung (Accept) erteilt wurde.
+  - **MCP-Synchronisierung für externe Terminal-CLIs:** Synchronisiert optional Konfigurationsdateien (`.claude/mcp.json`, `opencode.json`, `codex.json`), damit externe Terminal-CLIs Luminas Vault-Tools nutzen können.
+  - **Vault-Sicherheit & Benutzerkontrolle (Human-in-the-Loop):** Inline-Genehmigungskarten für sensible Aktionen, Inline-Diff-Prüfung im Editor bei Dateiänderungen, automatische Backups zum Schutz vor Überschreiben und isolierte Codeausführung in einer Sandbox.
 - **Verwendung:** Aktiviere MCP-Funktionen in den Plugin-Einstellungen und konfiguriere die Client/Server-Transportmethode (SSE).
-- **Hinweis:** *Lumina verfügt über mehrschichtige Sicherheitsmechanismen, darunter Sandbox-Codeausführung, Benutzergenehmigungen über einen Echtzeit-Diff-Viewer (Human-in-the-Loop), automatische Backups bei Dateiänderungen (Überschreibschutz) und Begrenzungen zur Vermeidung von Endlosschleifen. Da der Agent und externe AIs jedoch direkt auf Ihren Vault zugreifen, empfehlen wir, die Vorgänge anfangs genau zu überwachen.*
+- **Hinweis:** *Lumina verfügt über mehrschichtige Sicherheitsmechanismen wie Sandbox-Codeausführung, Inline-Diff-Prüfung und Benutzergenehmigungen (Human-in-the-Loop), automatische Backups bei Dateiänderungen (Überschreibschutz) und Limits zur Vermeidung von Endlosschleifen und unkontrollierten Tool-Aufrufen. Da der Agent und externe KIs jedoch direkt auf deinen Vault zugreifen, empfehlen wir, die Vorgänge anfangs aufmerksam zu beobachten.*
 </details>
 
 ---

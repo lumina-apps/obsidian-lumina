@@ -5,34 +5,45 @@
 	import { getLanguage, t } from "../../../shared/locales/helpers";
 	import { formatTime } from "../../../shared/utils/dateUtils";
 	import { extractThinkBlocks, sanitizeDisplayContent } from "../../../shared/utils/llmTextSanitizer";
-	import { renderMessageContent } from "./utils/markdownRendererHelper";
+	import { renderMessageContent } from "../../../shared/utils/markdownRendererHelper";
 	import AttachmentChips from "./AttachmentChips.svelte";
 	import ThinkBlock from "./ThinkBlock.svelte";
 	import RagSources from "./RagSources.svelte";
 	import RagProgressIndicator from "./RagProgressIndicator.svelte";
 	import MessageActions from "./MessageActions.svelte";
 	import MessageEditArea from "./MessageEditArea.svelte";
+	import ToolCallBlock from "./components/ToolCallBlock.svelte";
+	import FileEditBadge from "./components/FileEditBadge.svelte";
 
 	let {
 		message,
 		app,
 		onEdit,
 		onRegenerate,
+		onApproveTool,
+		onRejectTool,
+		onOpenFile,
 	}: {
 		message: UIChatMessage;
 		app: App;
 		onEdit?: (id: string, content: string) => void;
 		onRegenerate?: (id: string) => void;
+		onApproveTool?: (id: string) => void;
+		onRejectTool?: (id: string) => void;
+		onOpenFile?: (path: string) => void;
 	} = $props();
 
 	let isEditing = $state(false);
 
 	let rawContent = $derived(message.content || "");
 	let thinkBlocks = $derived(extractThinkBlocks(rawContent));
-	let thinkContent = $derived(thinkBlocks.join('\n\n---\n\n'));
+	let textThinking = $derived(thinkBlocks.join('\n\n---\n\n'));
+	let thinkContent = $derived(
+		[message.thinking, textThinking].filter(Boolean).join('\n\n---\n\n'),
+	);
 	let displayContent = $derived(sanitizeDisplayContent(rawContent));
 	let isThinking = $derived(
-		message.isStreaming && rawContent.toLowerCase().includes('<think>') && !rawContent.toLowerCase().includes('</think>')
+		message.isStreaming && Boolean(thinkContent)
 	);
 
 	let contentEl: HTMLElement | null = $state(null);
@@ -115,8 +126,32 @@
 					role={message.role}
 				/>
 			{/if}
+			{#if message.isStreaming && message.activityStatus}
+				<div class="lumina-message__activity">
+					<span class="lumina-message__activity-pulse"></span>
+					<span class="lumina-message__activity-text">{message.activityStatus}</span>
+				</div>
+			{/if}
+			{#if message.cliToolCalls && message.cliToolCalls.length > 0}
+				<div class="lumina-message__cli-tool-calls">
+					{#each message.cliToolCalls as tc (tc.id)}
+						<ToolCallBlock
+							toolCall={tc}
+							onApprove={onApproveTool}
+							onReject={onRejectTool}
+						/>
+					{/each}
+				</div>
+			{/if}
+			{#if message.cliFileEdits && message.cliFileEdits.length > 0}
+				<div class="lumina-message__cli-file-edits">
+					{#each message.cliFileEdits as fe (fe.id)}
+						<FileEditBadge fileEdit={fe} {app} onOpen={onOpenFile} />
+					{/each}
+				</div>
+			{/if}
 			<div class="lumina-message__content" bind:this={contentEl}></div>
-			{#if message.isStreaming && !isThinking && (!message.executingTools || message.executingTools.length === 0)}
+			{#if message.isStreaming && !isThinking && (!message.executingTools || message.executingTools.length === 0) && !message.activityStatus}
 				<span class="lumina-message__cursor">▋</span>
 			{/if}
 
@@ -209,6 +244,49 @@
 		flex-direction: column;
 		gap: 4px;
 		margin-top: 8px;
+	}
+
+	.lumina-message__cli-tool-calls {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		margin: 6px 0;
+	}
+
+	.lumina-message__cli-file-edits {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		margin: 6px 0;
+	}
+
+	.lumina-message__activity {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 4px 10px;
+		background: color-mix(in srgb, var(--interactive-accent) 8%, var(--background-secondary));
+		border: 1px solid color-mix(in srgb, var(--interactive-accent) 25%, transparent);
+		border-radius: 6px;
+		font-size: 12px;
+		color: var(--text-accent);
+		margin: 4px 0;
+		width: fit-content;
+	}
+
+	.lumina-message__activity-pulse {
+		display: inline-block;
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--interactive-accent);
+		animation: pulse 1.5s infinite;
+	}
+
+	@keyframes pulse {
+		0% { transform: scale(0.95); opacity: 0.7; }
+		50% { transform: scale(1.2); opacity: 1; }
+		100% { transform: scale(0.95); opacity: 0.7; }
 	}
 
 	.lumina-tool-indicator {

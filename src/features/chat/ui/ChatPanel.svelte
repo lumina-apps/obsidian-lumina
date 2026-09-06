@@ -12,7 +12,7 @@
 	import { approvalStore } from "../utils/approvalManager";
 	import type { ContextAttachment } from "../../../shared/types/chat.types";
 	import { splitProviderModel } from "../utils/inputUtils";
-	import { resizeTextarea } from "../utils/textareaUtils";
+	import { resizeTextarea } from "../../../shared/utils/textareaUtils";
 	import { useAutoScroll } from "./utils/useAutoScroll.svelte.ts";
 	import { openSettingsTab } from "../../../shared/utils/openSettingsTab";
 
@@ -21,7 +21,11 @@
 		isLoading,
 		resetChat,
 		pendingAttachments,
+		activeCliExecution,
 	} from "../../../core/store/chatStore";
+	import { get } from "svelte/store";
+	import { TFile } from "obsidian";
+	import { toVaultRelativePath } from "../utils/llmExecutor";
 	import {
 		indexingState,
 		indexingProgress,
@@ -39,7 +43,7 @@
 		setActiveProject,
 		getActiveProject,
 	} from "../../../core/store/projectStore";
-	import { PROVIDER_LABELS } from "../../../shared/types/settings.types";
+	import { PROVIDER_LABELS, isCliProvider } from "../../../shared/types/settings.types";
 	import { tStore } from "../../../shared/locales/index";
 
 	let { plugin }: { plugin: LuminaPlugin } = $props();
@@ -102,6 +106,8 @@
 
 	const agentEnabled = $derived($settingsStore?.chat.agentEnabled ?? false);
 	const agentExecutionMode = $derived($settingsStore?.chat.agentExecutionMode ?? "read");
+	const selectedProvider = $derived($verifiedProviders.find((p) => p.id === selectedProviderId));
+	const isCliSelected = $derived(isCliProvider(selectedProvider?.type ?? ""));
 
 	const sessionTokenStats = $derived.by(() => {
 		let totalTokens = 0;
@@ -326,6 +332,20 @@
 	function cancelStream(): void {
 		abortController?.abort();
 		abortController = null;
+		const cliExec = get(activeCliExecution);
+		if (cliExec) {
+			cliExec.kill();
+		}
+	}
+
+	function handleOpenFile(path: string): void {
+		const relPath = toVaultRelativePath(plugin, path);
+		const file = plugin.app.vault.getAbstractFileByPath(relPath);
+		if (file instanceof TFile) {
+			void plugin.app.workspace.getLeaf(false).openFile(file);
+		} else {
+			new Notice(`File not found: ${path}`);
+		}
 	}
 
 	function clearChat(): void {
@@ -357,7 +377,7 @@
 	}
 
 	async function toggleAgentExecutionMode(): Promise<void> {
-		if (!agentEnabled) {
+		if (!agentEnabled && !isCliSelected) {
 			new Notice(
 				$tStore("errors.agentDisabledGlobally") ||
 					"Agent feature is disabled. Please enable it in Settings first.",
@@ -370,14 +390,24 @@
 		settingsStore.set(plugin.settings);
 		new Notice(
 			newMode === "edit"
-				? $tStore("uiMessages.agentModeSwitchedToEdit") ||
-						"✏️ Agent switched to Edit Mode. (Can create & edit notes)"
-				: $tStore("uiMessages.agentModeSwitchedToRead") ||
-						"👁️ Agent switched to Read Mode. (Read-only)",
+				? (isCliSelected
+					? ($tStore("chat.cliMode.editModeNotice") || "✏️ CLI Agent: Edit Mode (Allowed to create and edit notes)")
+					: ($tStore("uiMessages.agentModeSwitchedToEdit") || "✏️ Agent switched to Edit Mode. (Can create & edit notes)"))
+				: (isCliSelected
+					? ($tStore("chat.cliMode.readModeNotice") || "👁️ CLI Agent: Read Mode (Read-only, file modifications blocked)")
+					: ($tStore("uiMessages.agentModeSwitchedToRead") || "👁️ Agent switched to Read Mode. (Read-only)"))
 		);
 	}
 
 	async function toggleWebSearch(): Promise<void> {
+		const currentProvider = $verifiedProviders.find((p) => p.id === selectedProviderId);
+		if (currentProvider && isCliProvider(currentProvider.type)) {
+			new Notice(
+				$tStore("uiMessages.webSearchNotNeededForCli") ||
+					"ℹ️ CLI agents use their own built-in web search tools.",
+			);
+			return;
+		}
 		plugin.settings.webSearch.enabled = !plugin.settings.webSearch.enabled;
 		await plugin.saveSettings();
 		new Notice(
@@ -468,6 +498,9 @@
 			{handleEditMessage}
 			{handleRegenerate}
 			openSettingsToTab={() => openSettingsTab(plugin.app, "lumina")}
+			onApproveTool={(id) => ctrl?.respondToolApproval(id, true)}
+			onRejectTool={(id) => ctrl?.respondToolApproval(id, false)}
+			onOpenFile={handleOpenFile}
 		/>
 
 		{#if $approvalStore.queue.length > 0}
@@ -483,6 +516,7 @@
 			{includeActiveNote}
 			{agentEnabled}
 			{agentExecutionMode}
+			{isCliSelected}
 			providers={$verifiedProviders}
 			{selectedProviderId}
 			{selectedModelId}

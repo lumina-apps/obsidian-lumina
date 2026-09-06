@@ -1,4 +1,59 @@
-import { TFile, normalizePath, App } from 'obsidian';
+import { TFile, normalizePath, App, FileSystemAdapter } from 'obsidian';
+
+/**
+ * 볼트 파일 시스템의 로컬 절대 경로를 반환합니다.
+ */
+export function getVaultBasePath(appOrPlugin: App | { app?: App; vault?: { adapter: unknown } }): string {
+	const app = 'app' in appOrPlugin && appOrPlugin.app ? appOrPlugin.app : (appOrPlugin as App);
+	const adapter = app?.vault?.adapter;
+	if (typeof (adapter as unknown as { getBasePath?: () => string })?.getBasePath === 'function') {
+		return (adapter as unknown as { getBasePath: () => string }).getBasePath();
+	}
+	try {
+		if (typeof FileSystemAdapter !== 'undefined' && FileSystemAdapter && adapter instanceof FileSystemAdapter) {
+			return adapter.getBasePath();
+		}
+	} catch {
+		// Ignore environments where FileSystemAdapter is unavailable
+	}
+	return typeof process !== 'undefined' && typeof process.cwd === 'function' ? process.cwd() : '';
+}
+
+/**
+ * 입력된 파일 경로(절대 경로 또는 상대 경로)를 볼트 루트 기준 상대 경로로 정규화합니다.
+ * Windows 및 macOS/Linux의 경로 구분자(/ vs \), 드라이브 문자 대소문자(c: vs C:)를 완전하게 처리합니다.
+ */
+export function toVaultRelativePath(
+	appOrBasePath: App | { app?: App; vault?: { adapter: unknown } } | string,
+	inputPath: string,
+): string {
+	if (!inputPath) return '';
+
+	const vaultBase = typeof appOrBasePath === 'string'
+		? appOrBasePath
+		: getVaultBasePath(appOrBasePath);
+
+	// 경로 구분자를 모두 / 로 통일
+	const normalizedInput = inputPath.replace(/\\/g, '/');
+	const normalizedBase = vaultBase.replace(/\\/g, '/').replace(/\/+$/, '');
+
+	if (normalizedBase) {
+		// Windows 환경(드라이브 문자 포함) 고려하여 대소문자 무시 비교
+		const isWin = process.platform === 'win32' || /^[a-zA-Z]:\//.test(normalizedBase);
+		const inputToCompare = isWin ? normalizedInput.toLowerCase() : normalizedInput;
+		const baseToCompare = isWin ? normalizedBase.toLowerCase() : normalizedBase;
+
+		if (inputToCompare.startsWith(baseToCompare)) {
+			let rel = normalizedInput.slice(normalizedBase.length);
+			if (rel.startsWith('/')) {
+				rel = rel.slice(1);
+			}
+			return normalizePath(rel);
+		}
+	}
+
+	return normalizePath(normalizedInput);
+}
 
 /** 경로의 부모 폴더가 존재하지 않으면 재귀적으로 생성 */
 export async function ensureFolderExists(app: App, filePath: string): Promise<void> {

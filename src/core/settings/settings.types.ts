@@ -74,6 +74,8 @@ export interface ChatSettings {
 	agentEnabled: boolean;
 	/** 에이전트 실행 모드 (읽기/수정) */
 	agentExecutionMode: 'read' | 'edit';
+	/** CLI 프로바이더 동작 모드 (CLI 자체 에이전트 / 플러그인 에이전트 LLM 브릿지) */
+	cliOperationMode: 'cli-agent' | 'plugin-agent';
 	/** 에이전트 최대 실행 스텝 수 (무한 루프 방지) */
 	agentMaxSteps: number;
 
@@ -161,6 +163,9 @@ export interface McpSettings {
 
 	/** RAG 제외/포함 경로 설정을 에이전트 MCP 툴에도 적용할지 여부 (기본: true) */
 	agentRespectRagExclusions: boolean;
+
+	/** 외부 CLI 에이전트(Claude Code, OpenCode 등) 연동 설정 자동 생성 여부 (기본: false) */
+	syncCliMcp?: boolean;
 }
 
 // ─── Section 6: Web Search ──────────────────────────────────────────────────

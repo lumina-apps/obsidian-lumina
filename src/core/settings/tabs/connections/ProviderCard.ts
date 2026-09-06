@@ -1,18 +1,24 @@
-/** LLM 프로바이더 카드 렌더링 + 연결 테스트 */
-
 import { Notice, Platform, Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
 import type { LLMProviderConfig, ProviderType } from '../../../../shared/types/settings.types';
-import { PROVIDER_LABELS, PROVIDER_CATEGORIES, PROVIDER_BASE_URLS } from '../../../../shared/types/settings.types';
+import {
+	PROVIDER_LABELS,
+	PROVIDER_CATEGORIES,
+	PROVIDER_BASE_URLS,
+	DEFAULT_CLI_BINARIES,
+	isCliProvider,
+} from '../../../../shared/types/settings.types';
 import { createProvider } from '../../../llm-providers/index';
+import { CliAgentProvider } from '../../../llm-providers/cli/cli-agent.provider';
 import { AgentBetaModal } from '../../../../shared/utils/modal';
 import { t } from '../../../../shared/locales/helpers';
 import { normalizeError } from '../../../../shared/utils/settingHelpers';
 
 export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provider: LLMProviderConfig): void {
 	const category = PROVIDER_CATEGORIES[provider.type];
-	const requiresBaseUrl = category === 'local' || provider.type === 'custom';
-	const requiresApiKey = category !== 'local';
+	const isCli = category === 'cli';
+	const requiresBaseUrl = !isCli && (category === 'local' || provider.type === 'custom');
+	const requiresApiKey = !isCli && category !== 'local';
 
 	const card = el.createDiv({ cls: `lumina-provider-card${provider.isVerified ? ' is-verified' : ''}` });
 
@@ -21,7 +27,7 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 		.setDesc(provider.isVerified ? `✅ ${t('settings.connections.apiKey.connected')}` : t('settings.connections.apiKey.notConnected'))
 		.addDropdown(drop => {
 			for (const [val, label] of Object.entries(PROVIDER_LABELS)) {
-				if (Platform.isMobile && PROVIDER_CATEGORIES[val as ProviderType] === 'local') continue;
+				if (Platform.isMobile && (PROVIDER_CATEGORIES[val as ProviderType] === 'local' || PROVIDER_CATEGORIES[val as ProviderType] === 'cli')) continue;
 				drop.addOption(val, label);
 			}
 			drop.setValue(provider.type).onChange(async (val) => {
@@ -34,6 +40,10 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 					provider.baseUrl = undefined;
 				}
 
+				if (isCliProvider(provider.type)) {
+					provider.binaryPath = DEFAULT_CLI_BINARIES[provider.type] || '';
+				}
+
 				provider.isVerified = false;
 				provider.availableModels = [];
 				await tab.saveAndSync();
@@ -41,6 +51,25 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 			});
 		});
 	typeSetting.settingEl.addClass('lumina-provider-card__setting-type');
+
+	if (isCli) {
+		// CLI 바이너리 경로
+		const binarySetting = new Setting(card)
+			.setName(t('settings.cli.binaryPathName') || 'Binary Path')
+			.setDesc(t('settings.cli.binaryPathDesc') || 'Path to CLI binary (e.g. claude, codex)')
+			.addText(text => {
+				text
+					.setPlaceholder(DEFAULT_CLI_BINARIES[provider.type] || '')
+					.setValue(provider.binaryPath || '')
+					.onChange(async (val) => {
+						provider.binaryPath = val.trim();
+						provider.isVerified = false;
+						provider.availableModels = [];
+						await tab.saveAndSync();
+					});
+			});
+		binarySetting.settingEl.addClass('lumina-provider-card__setting-binary');
+	}
 
 	if (requiresBaseUrl) {
 		const urlSetting = new Setting(card)
@@ -101,8 +130,14 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 		credentialSetting.settingEl.addClass('lumina-provider-card__setting-credential');
 	}
 
-	const actionsSetting = new Setting(card)
+	const actionsSetting = new Setting(card);
+	actionsSetting.settingEl.addClass('lumina-provider-card__setting-actions');
+
+	const rightGroup = actionsSetting.controlEl.createDiv({ cls: 'lumina-provider-card__actions-right' });
+
+	actionsSetting
 		.addButton(btn => {
+			rightGroup.appendChild(btn.buttonEl);
 			btn.setButtonText(t('settings.connections.apiKey.testConnection')).onClick(async () => {
 				btn.setButtonText(t('settings.connections.apiKey.testing')).setDisabled(true);
 				const wasVerified = provider.isVerified;
@@ -110,7 +145,7 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 				await tab.saveAndSync();
 				tab.refreshDisplay();
 				// LLM 연결 성공 & 이전에 미연결 상태였고 & 아직 에이전트가 꺼져있으면 → 에이전트 베타 팝업
-				if (provider.isVerified && !wasVerified && !tab.plugin.settings.chat.agentEnabled) {
+				if (provider.isVerified && !wasVerified && !tab.plugin.settings.chat.agentEnabled && !isCli) {
 					window.setTimeout(() => {
 						new AgentBetaModal(
 							tab.app,
@@ -120,7 +155,6 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 							t('uiMessages.agentBetaActivateSkip'),
 							(enabled) => {
 								if (!enabled) return;
-								// 에이전트 활성화 + 내장 서버 자동 켜기
 								tab.plugin.settings.chat.agentEnabled = true;
 								if (!tab.plugin.settings.mcp.serverEnabled) {
 									tab.plugin.settings.mcp.serverEnabled = true;
@@ -142,6 +176,7 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 			});
 		})
 		.addExtraButton(btn => {
+			rightGroup.appendChild(btn.extraSettingsEl);
 			btn.setIcon('trash').setTooltip(t('settings.connections.apiKey.deleteConnection')).onClick(async () => {
 				tab.plugin.settings.connections.providers =
 					tab.plugin.settings.connections.providers.filter(p => p.id !== provider.id);
@@ -149,12 +184,23 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 				tab.refreshDisplay();
 			});
 		});
-	actionsSetting.settingEl.addClass('lumina-provider-card__setting-actions');
 }
 
 export async function testProvider(provider: LLMProviderConfig): Promise<void> {
 	try {
 		const p = createProvider(provider);
+		if (p instanceof CliAgentProvider) {
+			const check = await p.checkAvailability();
+			if (!check.available) {
+				throw new Error(check.error || 'Binary not found or unavailable');
+			}
+			const models = await p.listModels();
+			provider.isVerified = true;
+			provider.availableModels = models.length > 0 ? models : ['default'];
+			new Notice(`✅ ${PROVIDER_LABELS[provider.type]}: ${check.version || 'Connected'} (${provider.availableModels.length} models)`);
+			return;
+		}
+
 		const models = await p.listModels();
 		if (models.length === 0) throw new Error(t('settings.connections.apiKey.noModels'));
 		provider.isVerified = true;

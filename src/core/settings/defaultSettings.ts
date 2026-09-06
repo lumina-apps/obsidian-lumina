@@ -52,6 +52,7 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		responseLanguage: 'auto',
 		agentEnabled: false,
 		agentExecutionMode: 'read',
+		cliOperationMode: 'cli-agent',
 		agentMaxSteps: 15,
 		// 기본 타임아웃 활성화: LLM/네트워크가 응답하지 않을 때 무한 대기 방지
 		ttftTimeoutMs: 60000,
@@ -100,6 +101,7 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		clientToolsEnabled: true,
 		serverEnableShellCommands: false,
 		agentRespectRagExclusions: true,
+		syncCliMcp: false,
 	},
 
 	// ── Section 6: Web Search ────────────────────────────────────────────────

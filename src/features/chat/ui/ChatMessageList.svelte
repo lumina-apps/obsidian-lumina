@@ -18,6 +18,9 @@
 		handleEditMessage,
 		handleRegenerate,
 		openSettingsToTab,
+		onApproveTool,
+		onRejectTool,
+		onOpenFile,
 	} = $props<{
 		plugin: LuminaPlugin;
 		isRagEnabled: boolean;
@@ -34,6 +37,9 @@
 		handleEditMessage: (messageId: string, newContent: string) => Promise<void>;
 		handleRegenerate: (assistantMessageId: string) => Promise<void>;
 		openSettingsToTab: () => void;
+		onApproveTool?: (id: string) => void;
+		onRejectTool?: (id: string) => void;
+		onOpenFile?: (path: string) => void;
 	}>();
 </script>
 
@@ -105,6 +111,9 @@
 					app={plugin.app}
 					onEdit={handleEditMessage}
 					onRegenerate={handleRegenerate}
+					{onApproveTool}
+					{onRejectTool}
+					{onOpenFile}
 				/>
 			{/each}
 		</div>

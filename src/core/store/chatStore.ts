@@ -2,6 +2,12 @@
 
 import { writable, get } from 'svelte/store';
 import type { UIChatMessage, ContextAttachment, ChatRagSource, RagPipelineStep } from '../../shared/types/chat.types';
+import type {
+	AutopilotToolCallLog,
+	AutopilotFileEditLog,
+	AutopilotUsage,
+	AutopilotExecution,
+} from '../../shared/types/autopilot.types';
 import { t } from '../../shared/locales/helpers';
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -15,6 +21,7 @@ export const summaryUpToMessageId = writable<string | undefined>(undefined);
 
 export const pendingAttachments = writable<ContextAttachment[]>([]);
 export const activeSidebarTab = writable<'chat' | 'discovery'>('chat');
+export const activeCliExecution = writable<AutopilotExecution | null>(null);
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
 
@@ -150,3 +157,107 @@ export function syncMessageContent(messageId: string, content: string): void {
 export function addPendingAttachment(attachment: ContextAttachment): void {
 	pendingAttachments.update(arr => [...arr, attachment]);
 }
+
+// ─── CLI Agent Specific Actions ───────────────────────────────────────────────
+
+/** CLI 에이전트 생각 과정 누적 */
+export function appendThinking(messageId: string, delta: string): boolean {
+	let found = false;
+	messages.update(ms =>
+		ms.map(m => {
+			if (m.id !== messageId) return m;
+			found = true;
+			const currentThinking = m.thinking || '';
+			return { ...m, thinking: currentThinking + delta };
+		}),
+	);
+	return found;
+}
+
+/** CLI 에이전트 실시간 활동 상태 설정 */
+export function setActivityStatus(messageId: string, status?: string): void {
+	messages.update(ms =>
+		ms.map(m => (m.id === messageId ? { ...m, activityStatus: status } : m)),
+	);
+}
+
+/** CLI 에이전트 원시 로그 누적 */
+export function appendRawLog(messageId: string, logLine: string): void {
+	messages.update(ms =>
+		ms.map(m => {
+			if (m.id !== messageId) return m;
+			const logs = m.rawLogs || [];
+			return { ...m, rawLogs: [...logs, logLine] };
+		}),
+	);
+}
+
+/** CLI 에이전트 도구 호출 추가 */
+export function addCliToolCall(messageId: string, toolCall: AutopilotToolCallLog): void {
+	messages.update(ms =>
+		ms.map(m => {
+			if (m.id !== messageId) return m;
+			const existing = m.cliToolCalls || [];
+			return { ...m, cliToolCalls: [...existing, toolCall] };
+		}),
+	);
+}
+
+/** CLI 에이전트 도구 호출 상태 업데이트 */
+export function updateCliToolCall(
+	messageId: string,
+	toolCallId: string,
+	updates: Partial<AutopilotToolCallLog>,
+): void {
+	messages.update(ms =>
+		ms.map(m => {
+			if (m.id !== messageId) return m;
+			const currentCalls = m.cliToolCalls || [];
+			return {
+				...m,
+				cliToolCalls: currentCalls.map(tc =>
+					tc.id === toolCallId ? { ...tc, ...updates } : tc,
+				),
+			};
+		}),
+	);
+}
+
+/** CLI 에이전트 파일 수정 내역 추가 */
+export function addCliFileEdit(messageId: string, fileEdit: AutopilotFileEditLog): void {
+	messages.update(ms =>
+		ms.map(m => {
+			if (m.id !== messageId) return m;
+			const existing = m.cliFileEdits || [];
+			return { ...m, cliFileEdits: [...existing, fileEdit] };
+		}),
+	);
+}
+
+/** CLI 에이전트 파일 수정 내역 업데이트 */
+export function updateCliFileEdit(
+	messageId: string,
+	fileEditId: string,
+	updates: Partial<AutopilotFileEditLog>,
+): void {
+	messages.update(ms =>
+		ms.map(m => {
+			if (m.id !== messageId) return m;
+			const currentEdits = m.cliFileEdits || [];
+			return {
+				...m,
+				cliFileEdits: currentEdits.map(fe =>
+					fe.id === fileEditId ? { ...fe, ...updates } : fe,
+				),
+			};
+		}),
+	);
+}
+
+/** CLI 에이전트 토큰 사용량 기록 */
+export function setCliUsage(messageId: string, usage: AutopilotUsage): void {
+	messages.update(ms =>
+		ms.map(m => (m.id === messageId ? { ...m, cliUsage: usage } : m)),
+	);
+}
+

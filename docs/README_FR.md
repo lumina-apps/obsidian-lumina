@@ -1,6 +1,6 @@
-# Lumina : Assistant IA Tout-en-Un (RAG + MCP + Agent)
+# Lumina : Assistant IA Tout-en-Un (RAG + MCP + Agents CLI)
 
-**`Lumina` est un puissant plugin assistant tout-en-un pour Obsidian qui transforme votre base de connaissances en un véritable hub IA, combinant la prise en charge multi-LLM, un RAG sans configuration, une intégration MCP bidirectionnelle et des agents IA autonomes.**
+**`Lumina` est un puissant plugin assistant tout-en-un pour Obsidian qui transforme votre base de connaissances en un véritable hub IA, combinant la prise en charge multi-LLM (cloud et locale), l'intégration d'agents CLI de terminal (Claude Code, Antigravity, OpenCode, Codex), un RAG sans configuration, une intégration MCP bidirectionnelle et des agents IA autonomes.**
 
 <p align="center">
   <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/README.md">English</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_KO.md">한국어</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_JA.md">日本語</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ZH.md">简体中文</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ZH_TW.md">繁體中文</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ES.md">Español</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_DE.md">Deutsch</a> | <b>Français</b> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_PT.md">Português</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_RU.md">Русский</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_IT.md">Italiano</a>
@@ -17,6 +17,7 @@
 | Fonctionnalité | Description |
 | :--- | :--- |
 | **Vue de Chat Multi-LLM** | Un panneau latéral dédié qui comprend le contexte de vos notes. Prend en charge des modèles cloud puissants jusqu'aux LLM locaux pour un maximum de confidentialité. |
+| **Intégration d'Agents CLI de Terminal** | Exécutez les agents IA de terminal officiels (Claude Code, Antigravity, OpenCode, Codex) directement dans le panneau latéral d'Obsidian pour explorer et organiser vos notes avec flux de pensée en temps réel et modes de sécurité. |
 | **RAG Sans Configuration** | Propose des intégrations locales (embeddings) 100% hors ligne pour éviter les fuites de données. Indexe automatiquement votre coffre-fort en temps réel sans configurations complexes. |
 | **Smart Discovery** | Trouve instantanément des documents hautement pertinents pour la note en cours de rédaction grâce à la recherche sémantique, détecte et signale les doublons potentiels, et insère des tags recommandés et des liens associés en un clic. |
 | **Actions Rapides IA en Ligne** | Surlignez du texte dans l'éditeur pour résumer, traduire ou corriger instantanément, sans interrompre votre flux de rédaction. |
@@ -57,40 +58,54 @@ Lumina propose deux modes adaptés à votre niveau. Choisissez celui qui vous co
 </details>
 
 <details>
+<summary><b>Intégration d'Agents CLI de Terminal (Claude Code, Antigravity, OpenCode, Codex)</b></summary>
+
+- **Description :** Exécutez et orchestrez des agents IA de terminal directement dans le panneau latéral d'Obsidian pour explorer, analyser et organiser les notes de votre coffre.
+- **Agents Pris en Charge :** Anthropic **Claude Code**, Google **Antigravity**, **OpenCode**, OpenAI **Codex**.
+- **Fonctionnalités Clés :**
+  - **Basculement de Sécurité Lecture Seule / Édition :** Basculez en un clic sur la barre d'outils du chat entre le mode 👁️ **Lecture Seule** (consultez et analysez les notes en toute sécurité sans modifier les fichiers) et le mode ✏️ **Édition**.
+  - **Pensée Visuelle (Thinking) :** Visualisez le raisonnement interne de l'agent CLI dans des blocs de pensée repliables en temps réel.
+  - **Statut en Temps Réel & Fichiers Modifiés :** Affiche le statut d'exécution des outils en temps réel et fournit des badges cliquables pour ouvrir instantanément les fichiers modifiés par l'agent.
+  - **Contexte Automatique de la Note Active et des Fichiers :** Transmet automatiquement la note active et les images/fichiers joints au prompt CLI pour des conversations contextuelles fluides.
+  - **Synchronisation MCP pour Terminal Externe (Optionnel) :** Génère des fichiers de configuration (`.claude/mcp.json`, `opencode.json`, `codex.json`) dans votre coffre afin que les sessions CLI exécutées dans le terminal système puissent également utiliser les outils MCP de Lumina.
+- **Comment utiliser :** Dans Paramètres de Lumina > Connexions (Connections), sélectionnez votre fournisseur CLI préféré, configurez le chemin du binaire et commencez à discuter dans le panneau latéral.
+</details>
+
+<details>
 <summary><b>Chat Basé sur RAG & Intégrations Locales (Confidentialité Absolue)</b></summary>
 
-- **Description :** L'IA obtient une vision approfondie de votre base de connaissances. Elle recherche de manière autonome les notes pertinentes pendant les conversations et affiche les documents similaires ainsi que les balises recommandées dans le panneau latéral, créant des liens contextuels intelligents.
-- **Sécurité Hors Ligne :** Prend en charge nativement les intégrations (embeddings) locales (`ibm-granite`). À moins qu'un modèle cloud ne soit sélectionné, vos précieuses données de notes ne quitteront jamais votre appareil.
-- **Entièrement Automatisé :** Aucune configuration requise ! L'indexation en arrière-plan démarre discrètement dès que le plugin est activé, et se synchronise automatiquement en temps réel (mode `watch`) chaque fois que les notes sont modifiées.
+- **Description :** L'IA acquiert une vision approfondie de votre base de connaissances. Elle recherche de manière autonome les notes pertinentes pendant les conversations et affiche des documents similaires et des tags recommandés dans le panneau latéral, créant des liens contextuels intelligents.
+- **Sécurité Hors Ligne :** Prend en charge nativement les intégrations locales (`ibm-granite`). À moins qu'un modèle cloud ne soit sélectionné, les données précieuses de vos notes ne quitteront jamais votre appareil.
+- **Entièrement Automatisé :** Aucune configuration requise ! L'indexation en arrière-plan commence silencieusement dès l'activation du plugin et se synchronise automatiquement en temps réel (mode `watch`) dès que les notes sont modifiées.
 </details>
 
 <details>
-<summary><b>Smart Discovery</b></summary>
+<summary><b>Découverte Intelligente (Smart Discovery)</b></summary>
 
-- **Description:** Basé sur le moteur RAG, il visualise les informations hautement pertinentes pour la note en cours de rédaction directement dans l'onglet « Smart Discovery » du panneau latéral.
-- **Caractéristiques principales:**
-  - **Recherche sémantique:** Au-delà d'une simple correspondance de mots-clés, il analyse le contexte et le sens de la phrase saisie pour rechercher des notes similaires.
-  - **Détection de doublons:** Affiche un avertissement si un document au contenu très similaire existe déjà dans votre coffre pour éviter la fragmentation et la duplication d'informations.
-  - **Tags recommandés et notes associées:** Analyse le contexte de la note en cours pour recommander des tags appropriés et suggérer des notes associées en temps réel.
-  - **Intégration et chat en un clic:** Insérez des tags recommandés ou des notes associées dans votre document sous forme de tags ou de liens markdown (`[[Nom de la note]]`) en un seul clic, ou préparez les notes sélectionnées dans la zone de préparation pour démarrer immédiatement un chat IA.
-- **Utilisation:** Cliquez sur l'icône de chat dans le ruban de gauche pour ouvrir le panneau latéral, puis passez à l'onglet Smart Discovery en haut.
+- **Description :** Basé sur le moteur RAG, il visualise les informations hautement pertinentes pour la note en cours de rédaction dans l'onglet « Smart Discovery » du panneau latéral.
+- **Fonctionnalités Clés :**
+  - **Recherche Sémantique :** Analyse le contexte et le sens au-delà des simples mots-clés pour rechercher des notes similaires.
+  - **Détection des Doublons :** Avertit si un document très similaire existe déjà dans votre coffre pour éviter la fragmentation de l'information.
+  - **Tags Recommandés & Notes Liées :** Propose des tags pertinents et des notes associées en temps réel.
+  - **Intégration en Un Clic :** Insérez des tags ou des liens (`[[Nom de la note]]`) en un seul clic ou lancez une conversation IA.
+- **Comment utiliser :** Cliquez sur l'icône de chat sur le ruban gauche et passez à l'onglet Smart Discovery en haut.
 </details>
 
 <details>
-<summary><b>IA Éditeur en Ligne (Actions Rapides)</b></summary>
+<summary><b>Actions Rapides IA dans l'Éditeur</b></summary>
 
-- **Description :** Transformez instantanément du texte dans l'éditeur markdown sans interrompre votre flux de rédaction. Gérez facilement la traduction, la synthèse, la correction grammaticale et les explications détaillées pour le texte sélectionné.
-- **Comment utiliser :** Surlignez le texte et exécutez les Actions Rapides via le menu contextuel en ligne ou la palette de commandes. *(Astuce : Attribuez des raccourcis clavier dans les paramètres d'Obsidian pour un accès ultra-rapide !)*
+- **Description :** Transformez instantanément le texte dans l'éditeur Markdown (traduire, résumer, corriger la grammaire).
+- **Comment utiliser :** Surlignez du texte et exécutez des Actions Rapides depuis le menu contextuel ou la palette de commandes.
 </details>
 
 <details>
 <summary><b>Mode Agent Intelligent</b></summary>
 
-- **Description:** Une fois activé, le LLM détermine et orchestre de manière autonome divers outils MCP intégrés pour effectuer des tâches. Il peut réaliser des opérations complexes en plusieurs étapes en combinant la recherche, la lecture et l'écriture de notes, la récupération RAG, l'exécution de code dans un bac à sable et l'intégration de notes quotidiennes.
-- **Support LLM local:** Implémente un analyseur dédié qui prend en charge le prompt d'outils textuels, permettant à l'agent de fonctionner de manière fluide même dans des environnements LLM locaux, et pas seulement avec des modèles cloud haute performance.
-- **Sécurité robuste et contrôle de l'utilisateur (Human-in-the-Loop):** Les opérations destructrices telles que la modification de contenu, la suppression de fichiers ou l'exécution de code ne peuvent pas être traitées par l'agent seul. Elles sont exécutées en toute sécurité avec des sauvegardes de protection contre l'écriture uniquement après avoir invité l'utilisateur avec une interface graphique (visualiseur de différences et fenêtre d'avertissement de tâche) et reçu l'approbation finale (Accepter).
-- **Prévention des coûts et limites:** Des limites par défaut sur le nombre d'utilisations des outils et la longueur des caractères ajoutés sont appliquées pour éviter les dysfonctionnements de l'IA ou les boucles infinies. (Ces limites peuvent être ajustées librement dans les paramètres avancés).
-- **Utilisation:** Saisissez la commande `/mcp` dans le chat ou cliquez sur l'icône supérieure pour ouvrir le pop-up rapide et activer le « Mode Agent ». (Le serveur interne de Lumina démarrera automatiquement si nécessaire pour exécuter les outils).
+- **Description :** Le LLM détermine et orchestre de manière autonome divers outils MCP intégrés (recherche, lecture, écriture, RAG, code en sandbox, notes quotidiennes).
+- **Prise en Charge LLM Local :** Analyseur dédié pour les invites d'outils textuelles avec des modèles locaux.
+- **Sécurité Robuste et Contrôle Utilisateur (Human-in-the-Loop) :** Les opérations destructives telles que la modification de contenu, la suppression de fichiers ou l'exécution de code ne peuvent pas être traitées par l'agent seul. Les modifications de fichiers nécessitent un **examen Diff en ligne** dans l'éditeur avec acceptation/rejet par bloc, tandis que les actions sensibles comme la création, la suppression de fichiers ou l'exécution de code nécessitent une approbation explicite via des **cartes d'approbation en ligne** dans le panneau de discussion. (Sauvegardes automatiques avec protection contre l'écrasement incluses)
+- **Limites d'Utilisation :** Limites par défaut pour éviter les boucles infinies.
+- **Comment utiliser :** Tapez `/mcp` dans le chat ou activez le Mode Agent depuis l'icône en haut.
 </details>
 
 <details>
@@ -103,13 +118,14 @@ Lumina propose deux modes adaptés à votre niveau. Choisissez celui qui vous co
 - **Mode Serveur (Dirigé par une IA Externe) :**
   - Fournit divers outils permettant à des assistants IA externes (Claude, Cursor, etc.) ou à l'IA en Mode Agent d'accéder directement à votre coffre-fort.
   - **Recherche Web:** `lumina_web_search` (Recherche d'informations sur Internet en temps réel à l'aide de divers moteurs de recherche tels que Tavily, Exa, Google, avec prise en charge de la troncature intelligente)
-  - **Lecture & Recherche :** `read_active_note`, `read_note`, `search_notes` (prend en charge le filtrage par tags), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags`, `query_metadata` pour fournir un contexte étendu à l'IA.
+  - **Lecture & Recherche :** `read_active_note`, `read_note` (prend en charge les plages de lignes `startLine`/`endLine`), `search_notes` (prend en charge le filtrage par tags), `grep_search` (recherche de lignes par texte/regex dans tout le coffre), `glob_files` (correspondance de chemins avec jokers, ex: `**/*.md`), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags`, `query_metadata` pour fournir un contexte étendu à l'IA.
   - **Écriture & Modification :** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (créer/modifier des notes/canevas (canvas), générer des notes MOC (Map of Content) et sauvegarder des fichiers binaires).
-  - **Gestion & Exécution :** `delete_note`, `move_note` (déplacer/renommer), `execute_code`, `run_note_code_block` (exécuter du code dans un bac à sable, `run_shell_command` (exécuter des commandes shell de terminal sur le système d'exploitation de bureau).
-- **Remarque:** *Lumina intègre des mécanismes de sécurité multicouches, notamment l'exécution de code en bac à sable, des approbations utilisateur basées sur un visualiseur de différences en temps réel (Human-in-the-Loop), des sauvegardes automatiques lors des modifications de fichiers (protection contre l'écriture) et des limites pour éviter les boucles infinies. Cependant, comme l'agent et les IA externes accèdent directement à votre coffre, nous vous recommandons de surveiller de près les opérations au début.*
-  - **Sécurité Robuste & Contrôle Utilisateur :** Les opérations destructives telles que la modification de contenu, la suppression de fichiers ou l'exécution de code ne peuvent pas être traitées par l'agent seul. Elles sont exécutées en toute sécurité avec des sauvegardes de protection contre l'écrasement uniquement après avoir invité l'utilisateur via une interface (Visualiseur de Différences et Fenêtre Modale d'Avertissement de Tâche) et avoir reçu l'approbation finale (Accept).
+  - **Gestion & Exécution :** `open_note` (ouvrir instantanément une note/fichier dans un onglet d'éditeur), `delete_note`, `move_note` (déplacer/renommer), `execute_code`, `run_note_code_block` (exécuter du code dans un bac à sable), `run_shell_command` (exécuter des commandes shell de terminal sur le système d'exploitation de bureau), `show_notice` (afficher des notifications Obsidian).
+  - **Notes Quotidiennes :** `read_daily_note`, `append_to_daily_note` (lecture/écriture pour la note quotidienne d'aujourd'hui).
+  - **Synchronisation MCP pour CLI en Terminal Externe :** Synchronise facultativement les fichiers de configuration (`.claude/mcp.json`, `opencode.json`, `codex.json`) pour que les outils de coffre de Lumina soient accessibles depuis un terminal externe.
+  - **Sécurité du Coffre et Contrôle Utilisateur (Human-in-the-Loop) :** Cartes d'approbation en ligne pour les actions sensibles, examen Diff en ligne dans l'éditeur lors de la modification de fichiers, sauvegardes automatiques avec protection contre l'écrasement et exécution de code isolée en bac à sable.
 - **Comment utiliser :** Activez les fonctionnalités MCP dans les paramètres du plugin et configurez la méthode de transport client/serveur (SSE).
-- **Remarque:** *Lumina intègre des mécanismes de sécurité multicouches, notamment l'exécution de code en bac à sable, des approbations utilisateur basées sur un visualiseur de différences en temps réel (Human-in-the-Loop), des sauvegardes automatiques lors des modifications de fichiers (protection contre l'écriture) et des limites pour éviter les boucles infinies. Cependant, comme l'agent et les IA externes accèdent directement à votre coffre, nous vous recommandons de surveiller de près les opérations au début.*
+- **Remarque :** *Lumina intègre des mécanismes de sécurité multicouches, notamment l'exécution de code en bac à sable, l'examen Diff en ligne et l'approbation de l'utilisateur (Human-in-the-Loop), des sauvegardes automatiques lors des modifications de fichiers (protection contre l'écrasement) et des limites pour éviter les boucles infinies ou les appels d'outils incontrôlés. Cependant, comme l'agent et les IA externes accèdent directement à votre coffre, nous vous recommandons de surveiller de près les opérations au début.*
 </details>
 
 ---

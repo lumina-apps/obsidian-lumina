@@ -9,7 +9,7 @@ import { Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
 import { t } from '../../../../shared/locales/helpers';
 import {
-	buildChatModelOptions,
+	buildDedicatedModelOptions,
 	parseProviderModelValue,
 	toProviderModelValue,
 } from '../../../../shared/utils/settingHelpers';
@@ -20,7 +20,7 @@ export function renderQuickActionModelSection(tab: LuminaSettingTab, el: HTMLEle
 	tab.sectionHeading(el, t('settings.connections.quickActionProvider.name'));
 	tab.infoBox(el, t('settings.connections.quickActionProvider.desc'), 'warning');
 
-	const chatModelOptions = buildChatModelOptions(s.providers);
+	const chatModelOptions = buildDedicatedModelOptions(s.providers);
 
 	const qaModelSetting = new Setting(el)
 		.setName(t('settings.connections.quickActionModel.name'))

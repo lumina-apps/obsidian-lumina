@@ -34,7 +34,10 @@ export type ToolName =
 	| 'auto_link_note'
 	| 'run_shell_command'
 	| 'query_metadata'
-	| 'show_notice';
+	| 'show_notice'
+	| 'open_note'
+	| 'grep_search'
+	| 'glob_files';
 
 export interface RunShellCommandArguments extends ToolArguments {
 	command: string;

@@ -2,7 +2,7 @@ import type LuminaPlugin from '../../../main';
 import { get } from 'svelte/store';
 import { messages, sessionSummary, summaryUpToMessageId, currentSessionId, currentSessionTitle } from '../../../core/store/chatStore';
 import { createProvider } from '../../../core/llm-providers';
-import type { LLMProviderConfig } from '../../../shared/types/settings.types';
+import { isCliProvider, type LLMProviderConfig } from '../../../shared/types/settings.types';
 import type { ChatMessage, ChatOptions } from '../../../shared/types/llm.types';
 
 import { debugLogger } from '../../../shared/debugLogger';
@@ -122,6 +122,11 @@ export async function triggerAutoSummarization(
 	modelId: string,
 	contextWindowTurns: number
 ): Promise<void> {
+	// CLI 프로바이더는 대용량 컨텍스트를 지원하며, 백그라운드 프로세스 중복 spawn 방지를 위해 자동 요약을 건너뜁니다.
+	if (isCliProvider(providerConfig.type)) {
+		return;
+	}
+
 	const msgs = get(messages);
 	const currentSummary = get(sessionSummary);
 	const upToId = get(summaryUpToMessageId);

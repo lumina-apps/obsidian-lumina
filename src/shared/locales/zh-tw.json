@@ -151,6 +151,15 @@
         "enableShellCommands": {
           "name": "啟用終端機/Shell 指令工具",
           "desc": "允許 LLM 在桌面作業系統上執行 Shell 指令。基於安全考量，預設為停用。"
+        },
+        "syncCliMcp": {
+          "name": "自動生成外部終端機 CLI 的 MCP 設定 (Claude Code, OpenCode 等)",
+          "desc": "在 Obsidian 外部終端機直接執行 Claude Code 等 CLI 時，為了能夠呼叫 Lumina 的內建工具（RAG 檢索、筆記操作等），在儲存庫中自動生成設定檔案（.claude/mcp.json 等）。（※ 不影響 Lumina 插件應用程式內聊天的工具調用；在 Obsidian 關閉時於終端機執行 CLI 可能會出現連線錯誤。）"
+        },
+        "cleanupCliMcp": {
+          "name": "一鍵清理外部終端機 CLI 連動設定",
+          "desc": "徹底刪除儲存庫中生成的 CLI 設定檔案（.claude/mcp.json 等）以及系統上註冊的設定。",
+          "button": "清理 CLI 設定"
         }
       },
       "externalServer": {
@@ -506,7 +515,8 @@
       "anthropicNoEmbed": "Anthropic 不支援嵌入 API。",
       "visionNotSupported": "⚠️ 所選的提供商（{{provider}}）不支援圖像分析。如需使用圖片，請選擇 OpenAI、Anthropic 或 Google（支援視覺的模型）。",
       "timeoutTTFT": "超時：第一個Token回應延遲。 ({{fallback}})",
-      "timeoutInterToken": "超時：流式傳輸期間通信中斷或延遲。 ({{fallback}})"
+      "timeoutInterToken": "超時：流式傳輸期間通信中斷或延遲。 ({{fallback}})",
+      "cliDesktopOnly": "CLI 代理提供者僅在桌面版 Obsidian 上受支援。"
     },
     "translation": {
       "confirmTitle": "系統語言翻譯",
@@ -521,6 +531,22 @@
       "cacheDeleted": "✅ 系統語言翻譯快取已刪除。",
       "cacheDeleteFail": "❌ 快取刪除失敗：",
       "noCache": "⚠️ 沒有要刪除的翻譯快取。"
+    },
+    "cli": {
+      "binaryPathName": "執行檔路徑",
+      "binaryPathDesc": "CLI 執行檔路徑（例如 claude, codex, agy）",
+      "autoApproveName": "自動批准工具",
+      "autoApproveDesc": "無需提示即可自動批准工具執行與檔案修改",
+      "waitingApprovalPrefix": "🛡️ 等待批准：",
+      "runningToolPrefix": "⚡ 執行中：",
+      "toolRejectedPrefix": "❌ 已拒絕：",
+      "toolRejectedByUser": "已被使用者拒絕",
+      "waitingApprovalBadge": "需要批准",
+      "approvalPrompt": "代理請求執行此工具。是否批准？",
+      "approveBtn": "批准",
+      "rejectBtn": "拒絕",
+      "diffModalTitle": "檔案變更對比 (Diff)",
+      "viewDiff": "Diff"
     }
   },
   "errors": {
@@ -598,8 +624,19 @@
         "desc": "開啟 Lumina 設定畫面。"
       }
     },
-    "sessionUsage": "目前會話累計用量",
-    "sessionTokens": "累計: {{tokens}} tokens"
+    "sessionUsage": "目前工作階段用量",
+    "sessionTokens": "累計: {{tokens}} tokens",
+    "cliMode": {
+      "cliAgent": "CLI 代理",
+      "pluginAgent": "外掛代理",
+      "cliAgentTooltip": "CLI 代理模式：CLI 直接執行自主工具（Bash、檔案修改等）。",
+      "pluginAgentTooltip": "外掛代理模式：將 CLI 作為純 LLM 推理機，使用 Lumina 的工具（MCP、RAG、筆記）。",
+      "disabledHintForCliAgent": "CLI 代理模式下由 CLI 自行管理工具。",
+      "readModeTooltip": "唯讀模式：CLI 代理僅進行檢視和分析，不會修改筆記。",
+      "editModeTooltip": "編輯模式：允許 CLI 代理直接在保險庫中建立和修改筆記。",
+      "readModeNotice": "👁️ CLI 代理：唯讀模式（禁止修改筆記）",
+      "editModeNotice": "✏️ CLI 代理：編輯模式（允許建立和修改筆記）"
+    }
   },
   "common": {
     "save": "儲存",
@@ -741,6 +778,7 @@
     "mcpLocalServerRestarted": "✅ 內建 MCP 伺服器已重新啟動（連接埠：{{port}}）",
     "mcpLocalServerStarted": "✅ 內建 MCP 伺服器已啟動（連接埠：{{port}}）",
     "mcpLocalServerStopped": "🛑 內建 MCP 伺服器已停止（連接埠：{{port}}）",
+    "mcpCliCleanupSuccess": "✅ 外部 CLI 連動設定已清理完成。",
     "mcpLocalServerDisconnectAgentDisabled": "⚠️ 由於內建伺服器連線錯誤，代理模式已被停用。",
     "mcpClientDisconnected": "🔌 MCP 伺服器「{{name}}」已斷線。",
     "mcpClientConnected": "✅ MCP 伺服器「{{name}}」已成功連線。",
@@ -756,6 +794,7 @@
     "agentModeSwitchedToEdit": "✏️ 代理已切換為編輯模式。（可建立與編輯筆記）",
     "webSearchEnabled": "✅ 網路搜尋已啟用。",
     "webSearchDisabled": "🛑 網路搜尋已停用。",
+    "webSearchNotNeededForCli": "ℹ️ CLI 代理使用其自帶的內建網頁搜尋工具。",
     "noMessagesToExport": "沒有可匯出的訊息。",
     "noMessagesToRegenerate": "沒有可重新生成的回覆。",
     "contextCompressed": "📋 上下文已壓縮：{{messages}} 條訊息 → 1 條摘要（約釋放 {{tokens}} tokens）。",

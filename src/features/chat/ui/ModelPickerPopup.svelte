@@ -162,7 +162,7 @@
 		position: absolute;
 		bottom: 100%;
 		left: 0;
-		width: 320px;
+		width: 360px;
 		max-width: calc(100vw - 32px);
 		margin-bottom: 8px;
 		background: var(--background-primary);

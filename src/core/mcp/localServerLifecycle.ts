@@ -12,12 +12,16 @@ const LOCAL_MCP_CLIENT_ID = '__lumina_local__';
  * 내장 MCP 서버의 시작/중지 생명주기와 내장 클라이언트 자동 연결을 관리합니다.
  * mcpManager.ts에서 추출된 책임입니다.
  */
+import { CliMcpSync } from './cliMcpSync';
+
 export class LocalServerLifecycle {
 	private plugin: LuminaPlugin;
 	public server: LuminaMcpServer | null = null;
+	public cliMcpSync: CliMcpSync;
 
 	constructor(plugin: LuminaPlugin) {
 		this.plugin = plugin;
+		this.cliMcpSync = new CliMcpSync(plugin.app);
 	}
 
 	/**
@@ -44,6 +48,15 @@ export class LocalServerLifecycle {
 			if (this.server.port !== mcpSettings.serverPort || this.server.authToken !== mcpSettings.serverAuthToken) {
 				await this.stopServer();
 				await this.tryStartServer(ServerCtor, mcpSettings);
+			} else {
+				if (mcpSettings.syncCliMcp) {
+					void this.cliMcpSync.sync({
+						port: mcpSettings.serverPort,
+						authToken: mcpSettings.serverAuthToken,
+					});
+				} else {
+					void this.cliMcpSync.cleanup();
+				}
 			}
 			return;
 		}
@@ -152,6 +165,7 @@ export class LocalServerLifecycle {
 			const oldPort = this.server.port;
 			await this.server.stop().catch(console.error);
 			this.server = null;
+			void this.cliMcpSync.cleanup();
 			new Notice(t('uiMessages.mcpLocalServerStopped', { port: oldPort }));
 		}
 	}
@@ -170,6 +184,14 @@ export class LocalServerLifecycle {
 			if (mcpSettings.serverPort !== this.server.port) {
 				mcpSettings.serverPort = this.server.port;
 				await this.plugin.saveSettings();
+			}
+			if (mcpSettings.syncCliMcp) {
+				void this.cliMcpSync.sync({
+					port: mcpSettings.serverPort,
+					authToken: mcpSettings.serverAuthToken,
+				});
+			} else {
+				void this.cliMcpSync.cleanup();
 			}
 			new Notice(t('uiMessages.mcpLocalServerStarted', { port: mcpSettings.serverPort }));
 		} catch (e: unknown) {

@@ -1,6 +1,6 @@
-# Lumina: All-in-One AI 助手 (RAG + MCP + Agent)
+# Lumina: All-in-One AI 助手 (RAG + MCP + CLI 智能体)
 
-**`Lumina` 是一款强大的 Obsidian 全能助手插件，它将多 LLM 支持、零配置 RAG、双向 MCP 集成和自主 AI 代理结合在一起，把您的知识库变成一个完整的 AI 枢纽。**
+**`Lumina` 是一款强大的 Obsidian 全能助手插件，它将多 LLM 支持（云端与本地）、终端 CLI 智能体联动（Claude Code、Antigravity、OpenCode、Codex）、零配置 RAG、双向 MCP 集成和自主 AI 代理结合在一起，把您的知识库变成一个完整的 AI 工作空间。**
 
 <p align="center">
   <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/README.md">English</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_KO.md">한국어</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_JA.md">日本語</a> | <b>简体中文</b> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ZH_TW.md">繁體中文</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ES.md">Español</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_DE.md">Deutsch</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_FR.md">Français</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_PT.md">Português</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_RU.md">Русский</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_IT.md">Italiano</a>
@@ -17,6 +17,7 @@
 | 功能 | 描述 |
 | :--- | :--- |
 | **多 LLM 聊天视图** | 专属的侧边栏，能够理解您笔记的上下文。支持从强大的云端模型到注重隐私的本地 LLM 的各种模型。 |
+| **终端 CLI 智能体集成** | 在 Obsidian 侧边栏面板中直接运行官方终端 AI 智能体（Claude Code、Antigravity、OpenCode、Codex），实时查看思考过程，轻松探索与整理笔记。 |
 | **零配置 RAG** | 提供 100% 离线的本地嵌入，防止数据泄露。无需复杂配置，即可实时自动对您的库进行索引。 |
 | **智能探索 (Smart Discovery)** | 利用语义搜索立即找到与当前正在撰写的笔记高度相关的文档，检测并警告潜在的重复内容，并支持一键向正文插入推荐标签和关联链接。 |
 | **内联 AI 快速操作** | 在编辑器中高亮选中文本，即可立即进行总结、翻译或校对，不会打断您的写作流程。 |
@@ -57,6 +58,20 @@ Lumina 根据您的熟练程度提供两种模式。选择适合您的方式！
 </details>
 
 <details>
+<summary><b>终端 CLI 智能体集成（Claude Code、Antigravity、OpenCode、Codex）</b></summary>
+
+- **功能说明:** 直接在 Obsidian 侧边栏面板中运行终端 AI 智能体，以探索、分析和整理您的库笔记。
+- **支持的智能体:** Anthropic **Claude Code**、Google **Antigravity**、**OpenCode**、OpenAI **Codex**。
+- **主要功能:**
+  - **只读 / 编辑模式切换:** 在聊天工具栏中一键切换 👁️ **只读模式**（阻止修改笔记，安全浏览与分析）与 ✏️ **编辑模式**。
+  - **实时思考过程 (Thinking):** 将 CLI 智能体的内部推理过程以可折叠的实时思考块形式呈现。
+  - **实时运行状态与修改文件指示:** 实时显示当前正在执行的工具状态，并提供链接徽标以便直接打开智能体修改的文件。
+  - **活动笔记与附件自动传递:** 自动将当前打开的活动笔记和附加的图片/文件传递给智能体提示词，实现无缝上下文对话。
+  - **外部终端 MCP 配置同步 (可选):** 在您的库中自动生成配置文件（`.claude/mcp.json`、`opencode.json`、`codex.json`），以便在系统终端中直接运行 CLI 时也能调用 Lumina 的 MCP 工具。
+- **如何使用:** 在 Lumina 设置 > 连接 (Connections) 选项卡中选择您偏好的 CLI 提供商，配置可执行文件路径，即可在侧边面板直接开始对话。
+</details>
+
+<details>
 <summary><b>基于 RAG 的聊天与本地嵌入 (绝对隐私)</b></summary>
 
 - **描述:** AI 深入洞察您的知识库。它在对话期间自主搜索相关笔记，并在侧边栏显示相似文档和推荐标签，建立智能的上下文链接。
@@ -88,7 +103,7 @@ Lumina 根据您的熟练程度提供两种模式。选择适合您的方式！
 
 - **描述:** 启用后，LLM 会自主判断并协调多种内置 MCP 工具来执行任务。它可以通过结合笔记搜索、读取、写入、RAG 检索、沙盒代码执行以及每日笔记集成来完成复杂的多步操作。
 - **本地 LLM 支持:** 实现了一个专门的解析器，支持基于文本的工具提示，使代理即使在本地 LLM 环境下也能顺利运行，而不仅仅依赖高性能的云端模型。
-- **强大的安全与用户控制 (Human-in-the-Loop):** 内容修改、文件删除或代码执行等破坏性操作不能由代理单独处理。它们只有在通过 UI（差异查看器和任务警告模态框）提示用户并获得最终批准 (Accept) 后，才会在提供覆盖保护备份的情况下安全执行。
+- **强大的安全性与用户控制 (Human-in-the-Loop):** 文件修改、删除或代码执行等破坏性操作无法由代理单独执行。修改文件时需在编辑器内通过**内联 Diff 审查**选择逐块接受/拒绝，而创建、删除文件或执行代码等敏感操作则需通过聊天面板中的**内联审批卡片**由用户最终批准 (Accept) 后方可安全执行。（默认支持防覆盖自动备份）
 - **成本预防与限制:** 默认应用了工具使用次数和追加字符数限制，以防止 AI 故障或无限循环。（用户可随时在高级设置中调整这些限制。）
 - **如何使用:** 在聊天中输入 `/mcp` 命令，或使用顶部图标打开快捷弹出窗口并启用"代理模式"。(内部 Lumina 服务器将在需要时自动启动以执行工具。)
 </details>
@@ -103,13 +118,14 @@ Lumina 根据您的熟练程度提供两种模式。选择适合您的方式！
 - **服务端模式 (外部 AI 主导):**
   - 提供多个工具，允许外部 AI 助手（Claude、Cursor 等）或代理模式的 AI 直接访问您的库。
   - **网页搜索:** `lumina_web_search` (使用Tavily、Exa、Google等各种搜索引擎进行实时互联网信息搜索，支持智能截断)
-  - **读取与搜索:** `read_active_note`, `read_note`, `search_notes` (支持标签过滤), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags`, `query_metadata` 为 AI 提供广泛的上下文。
+  - **读取与搜索:** `read_active_note`, `read_note` (支持行范围 `startLine`/`endLine` 读取), `search_notes` (支持标签过滤), `grep_search` (全库文件正则/文本行搜索), `glob_files` (通配符文件路径匹配，如 `**/*.md`), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags`, `query_metadata` 为 AI 提供广泛的上下文。
   - **编写与修改:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (创建/修改笔记和画布文件、生成 MOC 核心笔记以及保存二进制文件)。
-  - **管理与执行:** `delete_note`, `move_note` (移动/重命名), `execute_code`, `run_note_code_block` (在沙盒内执行代码, `run_shell_command` (在桌面操作系统上执行终端 shell 命令)。
+  - **管理与执行:** `open_note` (在编辑器选项卡中即时打开文件/笔记), `delete_note`, `move_note` (移动/重命名), `execute_code`, `run_note_code_block` (在沙盒内执行代码), `run_shell_command` (在桌面操作系统上执行终端 shell 命令), `show_notice` (显示 Obsidian 通知)。
   - **每日笔记:** `read_daily_note`, `append_to_daily_note` (针对今天每日笔记的读写集成)。
-  - **强大的安全与用户控制:** 内容修改、文件删除或代码执行等破坏性操作不能由代理单独处理。它们只有在通过 UI（差异查看器和任务警告模态框）提示用户并获得最终批准 (Accept) 后，才会在提供覆盖保护备份的情况下安全执行。
+  - **外部终端 CLI MCP 配置同步:** 在库中选择性同步配置文件（`.claude/mcp.json`、`opencode.json`、`codex.json`），使外部终端 CLI 也能调用 Lumina 的库工具，提供一致的工作体验。
+  - **库安全与用户控制 (Human-in-the-Loop):** 针对敏感操作提供内联审批卡片，文件修改时提供编辑器内联 Diff 审查，并提供防覆盖自动备份和沙盒隔离代码执行。
 - **如何使用:** 在插件设置中启用 MCP 功能，并配置客户端/服务端传输方法 (SSE)。
-- **注意:** *Lumina 配备了多层安全机制，包括沙盒代码执行、基于实时差异查看器的用户批准 (Human-in-the-Loop)、文件修改期间的自动备份（覆盖保护）以及防止无限循环的限制。然而，由于代理和外部 AI 会直接访问您的库，我们建议最初密切监控操作。*
+- **注意:** *Lumina 配备了沙盒代码执行、实时内联 Diff 审查与用户审批 (Human-in-the-Loop)、文件修改自动备份（防覆盖保护）以及防止无限循环和失控工具调用的限制等多层安全机制。不过，由于智能体和外部 AI 会直接访问您的库，建议初期先密切关注相关操作。*
 </details>
 
 ---

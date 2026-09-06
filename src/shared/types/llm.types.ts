@@ -43,6 +43,7 @@ export interface ChatOptions {
 	stop?: string[];
 	ttftTimeoutMs?: number;
 	interTokenTimeoutMs?: number;
+	cwd?: string;
 }
 
 // ─── Provider Interface ─────────────────────────

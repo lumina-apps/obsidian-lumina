@@ -164,6 +164,15 @@
         "enableShellCommands": {
           "name": "터미널 명령어 실행 툴 활성화",
           "desc": "LLM이 데스크탑 운영 체제에서 쉘(터미널) 명령어를 실행할 수 있도록 허용합니다. 보안상 기본적으로 꺼져 있습니다."
+        },
+        "syncCliMcp": {
+          "name": "외부 터미널 CLI용 MCP 설정 자동 생성 (Claude Code, OpenCode 등)",
+          "desc": "옵시디언 외부 터미널에서 Claude Code 등의 CLI를 직접 실행할 때 Lumina의 내장 도구(RAG 검색, 노트 제어 등)를 호출할 수 있도록 볼트에 설정 파일(.claude/mcp.json 등)을 자동 생성합니다. (※ Lumina 내부 채팅창 도구 사용에는 영향이 없으며, 옵시디언이 꺼진 상태에서 터미널 CLI를 실행하면 연결 오류가 발생할 수 있습니다.)"
+        },
+        "cleanupCliMcp": {
+          "name": "외부 터미널 CLI 연동 설정 일괄 정리",
+          "desc": "볼트 내에 생성된 CLI 연동 설정 파일(.claude/mcp.json 등)과 시스템에 등록된 설정을 완전히 제거하고 정리합니다.",
+          "button": "CLI 설정 정리"
         }
       },
       "externalServer": {
@@ -509,7 +518,8 @@
       "anthropicNoEmbed": "Anthropic은 임베딩 API를 지원하지 않습니다.",
       "visionNotSupported": "⚠️ 선택한 프로바이더({{provider}})는 이미지 분석을 지원하지 않습니다. 이미지 첨부를 사용하려면 OpenAI, Anthropic 또는 Google(비전 모델)을 선택해 주세요.",
       "timeoutTTFT": "타임아웃: 첫 번째 토큰 응답이 지연되었습니다. ({{fallback}})",
-      "timeoutInterToken": "타임아웃: 스트리밍 도중 통신이 끊겼거나 지연되었습니다. ({{fallback}})"
+      "timeoutInterToken": "타임아웃: 스트리밍 도중 통신이 끊겼거나 지연되었습니다. ({{fallback}})",
+      "cliDesktopOnly": "CLI 에이전트 제공자는 데스크톱 Obsidian에서만 지원됩니다."
     },
     "translation": {
       "confirmTitle": "시스템 언어 번역",
@@ -524,6 +534,22 @@
       "cacheDeleted": "✅ 시스템 언어 번역 캐시가 삭제되었습니다.",
       "cacheDeleteFail": "❌ 캐시 삭제 실패: ",
       "noCache": "⚠️ 삭제할 번역 캐시가 없습니다."
+    },
+    "cli": {
+      "binaryPathName": "바이너리 경로",
+      "binaryPathDesc": "CLI 실행 파일 경로 (예: claude, codex, agy)",
+      "autoApproveName": "도구 자동 승인",
+      "autoApproveDesc": "도구 실행 및 파일 수정을 확인 없이 자동으로 승인합니다.",
+      "waitingApprovalPrefix": "🛡️ 승인 대기 중:",
+      "runningToolPrefix": "⚡ 실행 중:",
+      "toolRejectedPrefix": "❌ 거부됨:",
+      "toolRejectedByUser": "사용자에 의해 거부됨",
+      "waitingApprovalBadge": "승인 필요",
+      "approvalPrompt": "에이전트가 위 도구를 실행하려고 합니다. 승인하시겠습니까?",
+      "approveBtn": "승인",
+      "rejectBtn": "거부",
+      "diffModalTitle": "파일 변경 사항 (Diff)",
+      "viewDiff": "Diff"
     }
   },
   "errors": {
@@ -602,7 +628,18 @@
       }
     },
     "sessionUsage": "현재 세션 누적 사용량",
-    "sessionTokens": "누적: {{tokens}} 토큰"
+    "sessionTokens": "누적: {{tokens}} 토큰",
+    "cliMode": {
+      "cliAgent": "CLI 에이전트",
+      "pluginAgent": "플러그인 에이전트",
+      "cliAgentTooltip": "CLI 에이전트 모드: CLI가 자체 도구(Bash, 파일 수정 등)를 직접 실행합니다.",
+      "pluginAgentTooltip": "플러그인 에이전트 모드: CLI를 순수 LLM 추론기로 사용하여 Lumina의 도구(MCP, RAG, 노트)를 실행합니다.",
+      "disabledHintForCliAgent": "CLI 에이전트 모드에서는 CLI가 자체 도구를 실행하므로 비활성화됩니다.",
+      "readModeTooltip": "읽기 모드: CLI 에이전트가 노트를 수정하지 않고 조회/분석만 수행합니다.",
+      "editModeTooltip": "수정 모드: CLI 에이전트가 볼트 내 노트를 직접 생성 및 수정할 수 있습니다.",
+      "readModeNotice": "👁️ CLI 에이전트: 읽기 모드 (노트 수정 차단)",
+      "editModeNotice": "✏️ CLI 에이전트: 수정 모드 (노트 생성 및 수정 허용)"
+    }
   },
   "common": {
     "save": "저장",
@@ -744,6 +781,7 @@
     "mcpLocalServerRestarted": "✅ 내장 MCP 서버가 재시작되었습니다 (포트: {{port}})",
     "mcpLocalServerStarted": "✅ 내장 MCP 서버가 시작되었습니다 (포트: {{port}})",
     "mcpLocalServerStopped": "🛑 내장 MCP 서버가 중지되었습니다 (포트: {{port}})",
+    "mcpCliCleanupSuccess": "✅ 외부 CLI 연동 설정이 깨끗하게 정리되었습니다.",
     "mcpLocalServerDisconnectAgentDisabled": "⚠️ 내장 서버 연결 오류로 에이전트 기능이 해제되었습니다.",
     "mcpClientDisconnected": "🔌 MCP Server \"{{name}}\" 연결이 해제되었습니다.",
     "mcpClientConnected": "✅ MCP Server \"{{name}}\" 연결에 성공했습니다.",
@@ -759,6 +797,7 @@
     "agentModeSwitchedToEdit": "✏️ 에이전트 수정 모드로 전환되었습니다. (노트 생성 및 수정 가능)",
     "webSearchEnabled": "✅ 웹 검색이 켜졌습니다.",
     "webSearchDisabled": "🛑 웹 검색이 꺼졌습니다.",
+    "webSearchNotNeededForCli": "ℹ️ CLI 프로바이더는 자체 내장 웹 검색 도구를 사용합니다.",
     "noMessagesToExport": "내보낼 메시지가 없습니다.",
     "noMessagesToRegenerate": "재생성할 AI 답변이 없습니다.",
     "contextCompressed": "📋 컨텍스트 압축 완료: 메시지 {{messages}}개 → 요약 1개 (약 {{tokens}} 토큰 확보).",

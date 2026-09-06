@@ -1,4 +1,4 @@
-import { Component, MarkdownRenderer, type App, type WorkspaceLeaf } from "obsidian";
+import { Component, MarkdownRenderer, type App, type WorkspaceLeaf } from 'obsidian';
 
 interface SearchView {
 	setQuery?: (query: string) => void;
@@ -6,7 +6,7 @@ interface SearchView {
 
 /**
  * 마크다운 렌더링 헬퍼.
- * Message.svelte의 think/본문 렌더링에서 중복되는 패턴을 통합한다.
+ * Message.svelte 및 AutopilotMessage.svelte의 think/본문 렌더링에서 사용됩니다.
  *
  * 동작:
  * - streaming 중이면 plaintext로 표시 (comp 언로드)
@@ -22,11 +22,11 @@ function openTagSearch(app: App, query: string): void {
 	const workspace = app.workspace;
 
 	// 기존 search leaf가 있으면 재사용, 없으면 새로 생성
-	let searchLeaf: WorkspaceLeaf | undefined = workspace.getLeavesOfType("search")[0];
+	let searchLeaf: WorkspaceLeaf | undefined = workspace.getLeavesOfType('search')[0];
 	if (!searchLeaf) {
-		searchLeaf = workspace.getLeaf("tab");
+		searchLeaf = workspace.getLeaf('tab');
 		if (searchLeaf) {
-			void searchLeaf.setViewState({ type: "search" });
+			void searchLeaf.setViewState({ type: 'search' });
 		}
 	}
 
@@ -34,7 +34,7 @@ function openTagSearch(app: App, query: string): void {
 
 	// SearchView의 setQuery로 쿼리 설정
 	const view = searchLeaf.view as unknown as SearchView;
-	if (typeof view.setQuery === "function") {
+	if (typeof view.setQuery === 'function') {
 		view.setQuery(query);
 	}
 
@@ -47,20 +47,20 @@ function openTagSearch(app: App, query: string): void {
  * 클릭 시 옵시디언 내부 검색을 열고 `tag:#태그명` 쿼리를 실행한다.
  */
 function bindTagClickEvents(el: HTMLElement, app: App): void {
-	const tagLinks = el.querySelectorAll("a.tag");
+	const tagLinks = el.querySelectorAll('a.tag');
 	tagLinks.forEach((link) => {
 		const anchor = link as HTMLAnchorElement;
 		// 이미 바인딩된 경우 건너뛰기
-		if (anchor.dataset.luminaTagBound === "true") return;
-		anchor.dataset.luminaTagBound = "true";
+		if (anchor.dataset.luminaTagBound === 'true') return;
+		anchor.dataset.luminaTagBound = 'true';
 
-		anchor.addEventListener("click", (e) => {
+		anchor.addEventListener('click', (e) => {
 			e.preventDefault();
 			e.stopPropagation();
 
 			// href에서 태그명 추출 (예: "#태그명" → "태그명")
-			const href = anchor.getAttribute("href") ?? "";
-			const tagName = href.replace(/^#+/, "").trim();
+			const href = anchor.getAttribute('href') ?? '';
+			const tagName = href.replace(/^#+/, '').trim();
 			if (!tagName) return;
 
 			const searchQuery = `tag:#${tagName}`;
@@ -84,13 +84,13 @@ export function renderMessageContent(
 		}
 		el.textContent = content;
 	} else {
-		if (role === "assistant" && content) {
+		if (role === 'assistant' && content) {
 			compRef.current?.unload();
 			const comp = new Component();
 			comp.load();
 			compRef.current = comp;
 			el.empty();
-			void MarkdownRenderer.render(app, content, el, "", comp).then(() => {
+			void MarkdownRenderer.render(app, content, el, '', comp).then(() => {
 				bindTagClickEvents(el, app);
 			});
 		} else {
@@ -102,3 +102,4 @@ export function renderMessageContent(
 		}
 	}
 }
+

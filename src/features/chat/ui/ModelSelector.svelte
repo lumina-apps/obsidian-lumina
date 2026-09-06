@@ -244,7 +244,8 @@
 		bottom: auto;
 		right: 0;
 		left: auto;
-		width: 280px;
+		width: 360px;
+		max-width: calc(100vw - 32px);
 		padding: 0;
 		z-index: 100;
 	}

@@ -45,6 +45,9 @@ vi.mock('obsidian', () => {
 	return {
 		normalizePath: (p: string) => p,
 		Notice: vi.fn(),
+		FileSystemAdapter: class FileSystemAdapter {
+			getBasePath(): string { return ''; }
+		},
 	};
 });
 

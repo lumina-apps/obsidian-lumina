@@ -1,6 +1,6 @@
-# Lumina: オールインワン AI アシスタント (RAG + MCP + Agent)
+# Lumina: オールインワン AI アシスタント (RAG + MCP + CLI エージェント)
 
-**`Lumina` は、マルチLLMサポート、ゼロコンフィグRAG、双方向MCP連携、自律型AIエージェントを組み合わせ、あなたのナレッジベースを完全なAIハブへと変えるObsidian用の強力なオールインワンアシスタントプラグインです。**
+**`Lumina` は、マルチLLM（クラウド＆ローカル）サポート、ターミナルCLIエージェント連携（Claude Code、Antigravity、OpenCode、Codex）、ゼロコンフィグRAG、双方向MCP連携、自律型AIエージェントを組み合わせ、あなたのナレッジベースを完全なAI作業空間へと変えるObsidian用の強力なオールインワンアシスタントプラグインです。**
 
 <p align="center">
   <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/README.md">English</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_KO.md">한국어</a> | <b>日本語</b> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ZH.md">简体中文</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ZH_TW.md">繁體中文</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ES.md">Español</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_DE.md">Deutsch</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_FR.md">Français</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_PT.md">Português</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_RU.md">Русский</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_IT.md">Italiano</a>
@@ -17,6 +17,7 @@
 | 機能 | 説明 |
 | :--- | :--- |
 | **マルチLLMチャットビュー** | ノートの文脈を理解する専用サイドパネル。強力なクラウドモデルから、プライバシー重視のローカルLLMまで幅広く対応します。 |
+| **ターミナルCLIエージェント連携** | Claude Code、Antigravity、OpenCode、CodexなどのターミナルAIエージェントをObsidianサイドパネルで直接実行し、リアルタイムな思考プロセスを確認しながらノートを探索・整理します。 |
 | **ゼロコンフィグ RAG** | データ漏洩を防ぐ完全オフラインのローカルエンベディングを搭載。複雑な設定なしにリアルタイムでボルトを自動インデックス化します。 |
 | **スマート検索 (Smart Discovery)** | セマンティック検索を使用して、現在作成中のノートと関連性の高いドキュメントを即座に見つけ、重複の可能性を検出して警告し、推奨タグや関連リンクをワンクリックで本文に挿入します。 |
 | **インライン AI クイックアクション** | エディタ内のテキストをハイライトするだけで、執筆のフローを妨げることなく即座に要約、翻訳、校正を実行できます。 |
@@ -57,6 +58,20 @@ Luminaは、あなたのスキルレベルに合わせた2つのトラックを�
 </details>
 
 <details>
+<summary><b>ターミナルCLIエージェント連携（Claude Code、Antigravity、OpenCode、Codex）</b></summary>
+
+- **機能説明:** ターミナルベースのAIエージェントをObsidianのサイドパネルから直接実行し、ノートの探索、分析、整理を行えます。
+- **サポート対象エージェント:** Anthropic **Claude Code**、Google **Antigravity**、**OpenCode**、OpenAI **Codex**。
+- **主な機能:**
+  - **閲覧専用 / 編集モードの切り替え:** チャットツールバーからワンクリックで👁️ **閲覧モード**（ノート修正を遮断し安全に分析/照会）と✏️ **編集モード**を切り替えられます。
+  - **リアルタイムな思考プロセス (Thinking):** CLIエージェントの内部推論プロセスを折りたたみ可能なリアルタイム思考ブロックとして可視化します。
+  - **リアルタイムな作業状態および修正ファイル案内:** 現在実行中のツール状態をリアルタイムで表示し、エージェントが修正したファイルをすぐに開けるリンクバッジを提供します。
+  - **アクティブノート・添付ファイルの自動伝達:** 現在開いているアクティブノートや添付画像・ファイルがエージェントプロンプトに自動で引き渡され、現在のドキュメントに基づいた対話が可能です。
+  - **外部ターミナル用MCP設定連携（オプション）:** システムのターミナルでCLIを直接実行する際もLuminaのボルトツールを呼び出せるよう、設定ファイル（`.claude/mcp.json`、`opencode.json`、`codex.json`）をボルト内に自動生成します。
+- **使い方:** Lumina設定 > 接続(Connections)タブでお好みのCLIプロバイダーを選択し、バイナリパスを設定してサイドパネルから直接会話を開始します。
+</details>
+
+<details>
 <summary><b>RAG搭載チャット＆ローカルエンベディング（絶対的なプライバシー）</b></summary>
 
 - **説明:** AIがあなたのナレッジベースを深く理解します。会話中に関連するノートを自律的に検索し、類似したドキュメントや推奨されるタグをサイドパネルに表示し、スマートなコンテキストリンクを作成します。
@@ -88,7 +103,7 @@ Luminaは、あなたのスキルレベルに合わせた2つのトラックを�
 
 - **機能説明:** 有効にすると、LLMがさまざまな内蔵MCPツールを自律的に判断して組み合わせてタスクを実行します。ノートの検索、読み取り、RAG検索から書き込み、修正、ファイル管理(削除/移動)、サンドボックス内でのコード実行、デイリーノート連携など、複雑で多段階の操作を自律的に完了できます。
 - **ローカルLLMサポート:** 高性能なクラウドモデルだけでなく、ローカルLLM環境でもテキストベースのツールプロンプトをサポートする専用パーサーを実装し、ローカルモデルでもエージェントがスムーズに機能するようにします。
-- **堅牢なセキュリティとユーザーコントロール (Human-in-the-Loop):** コンテンツの変更、ファイルの削除、コードの実行などの破壊的な操作は、エージェント単独では処理できません。ユーザーにUI（差分ビューアや警告モーダル）を提示し、最終承認（Accept）を受けた場合にのみ、上書き保護のバックアップとともに安全に実行されます。
+- **堅牢なセキュリティとユーザー制御 (Human-in-the-Loop):** ファイルの修正や削除、コード実行などの破壊的な操作は、エージェント単独では実行できません。ファイル修正時にはエディタ内の**インラインDiffレビュー**でチャンクごとの承認/拒否を選択でき、ファイルの作成・削除・コード実行などの機密操作はチャットパネルの**インライン承認カード**を通じてユーザーが最終承認（Accept）して初めて安全に実行されます。（上書き防止の自動バックアップを標準搭載）
 - **過剰使用防止と制限:** AIの誤動作や無限ループを防ぐため、ツール使用回数および追加(Append)文字数制限がデフォルトで適用されています。（これらの制限は詳細設定でいつでもユーザーが調整できます。）
 - **使い方:** チャットで `/mcp` コマンドを入力するか、上部のアイコンを使用してクイックポップアップを開き、「エージェントモード」を有効にします。（ツールを実行するために、内部のLuminaサーバーが自動的に起動します。）
 </details>
@@ -103,13 +118,14 @@ Luminaは、あなたのスキルレベルに合わせた2つのトラックを�
 - **サーバーモード（外部AI主導）:**
   - 外部のAIアシスタント（Claude、Cursorなど）またはエージェントモードのAIがあなたのボルトに直接アクセスできる多数のツールを提供します。
   - **ウェブ検索:** `lumina_web_search` (Tavily、Exa、Googleなどのさまざまな検索エンジンを活用したリアルタイムのインターネット情報検索、スマート切り詰めサポート)
-  - **読み取りと検索:** `read_active_note`, `read_note`, `search_notes` (タグフィルター対応), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags`, `query_metadata` を提供し、広範な文脈をAIに提供します。
+  - **読み取りと検索:** `read_active_note`, `read_note`（行範囲 `startLine`/`endLine` 指定対応）, `search_notes` (タグフィルター対応), `grep_search`（ボルト全体の正規表現/テキスト行検索）, `glob_files`（ワイルドカードファイルパス検索、例: `**/*.md`）, `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags`, `query_metadata` を提供し、広範な文脈をAIに提供します。
   - **作成と修正:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` （ノートおよびキャンバスの作成・修正、MOCノートの生成、バイナリファイルの保存）。
-  - **管理と実行:** `delete_note`, `move_note`（移動・名前変更）, `execute_code`, `run_note_code_block` （サンドボックス内でのコード実行）, `run_shell_command` (デスクトップOSのターミナルシェルコマンドの実行)。
+  - **管理と実行:** `open_note`（エディタタブでファイル/ノートを即座に開く）, `delete_note`, `move_note`（移動・名前変更）, `execute_code`, `run_note_code_block` （サンドボックス内でのコード実行）, `run_shell_command` (デスクトップOSのターミナルシェルコマンドの実行), `show_notice`（Obsidian通知の表示）。
   - **デイリーノート:** `read_daily_note`, `append_to_daily_note` （今日のノートへの読み書き統合）。
-  - **堅牢なセキュリティとユーザーコントロール:** コンテンツの変更、ファイルの削除、コードの実行などの破壊的な操作は、エージェント単独では処理できません。ユーザーにUI（差分ビューアや警告モーダル）を提示し、最終承認（Accept）を受けた場合にのみ、上書き保護のバックアップとともに安全に実行されます。
+  - **外部ターミナル用CLI MCP設定連携:** 外部ターミナルのCLIからもLuminaのボルトツールを利用できるよう、設定ファイル（`.claude/mcp.json`、`opencode.json`、`codex.json`）を選択的に同期します。
+  - **ボルト保護とユーザー制御 (Human-in-the-Loop):** 機密操作に対するインライン承認カード、ファイル修正時のエディタインラインDiffレビュー、上書き防止自動バックアップ、およびサンドボックス隔離でのコード実行を提供します。
 - **使い方:** プラグイン設定でMCP機能を有効にし、クライアント/サーバーの転送方法（SSE）を設定します。
-- **Note:** *Luminaには、サンドボックスでのコード実行、リアルタイム差分ビューアによるユーザー承認（Human-in-the-Loop）、ファイル変更時の自動バックアップ（上書き保護）、無限ループ防止の制限など、多層的な安全機能が標準で搭載されているため、安心してお使いいただけます。ただし、エージェントや外部AIが直接ボルトにアクセスするため、最初は動作を注意深く確認しながら使用することをお勧めします。*
+- **注意点:** *Luminaには、サンドボックスでのコード実行、リアルタイムなインラインDiffレビューとユーザー承認（Human-in-the-Loop）、ファイル変更時の自動バックアップ（上書き保護）、API誤動作や無限ループを防止するツール呼び出し制限装置が標準で適用されているため、安心してお使いいただけます。ただし、エージェントや外部AIがボルトに直接アクセスするため、最初は動作を確認しながら使用することをお勧めします。*
 </details>
 
 ---

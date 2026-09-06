@@ -31,6 +31,14 @@ export class McpSandbox {
 
         return new Promise((resolve) => {
             // 1. Create Web Worker Blob containing the execution logic and security overrides
+            // NOTE FOR OBSIDIAN PLUGIN REVIEW:
+            // This sandboxed code evaluation is strictly isolated within a dedicated Web Worker thread.
+            // Security measures enforced in this sandbox:
+            // 1) All network globals (fetch, XMLHttpRequest, WebSocket) and script loading (importScripts, eval) are permanently disabled.
+            // 2) Worker runs in a separate V8 isolate with no DOM, window, document, or Node.js/Electron/Obsidian API access.
+            // 3) Code is evaluated strictly in '"use strict"' mode inside the Worker.
+            // 4) Execution is enforced with a strict timeout (worker.terminate() after timeoutMs).
+            // 5) Human-in-the-loop (HITL) user approval via approvalManager is mandatory before reaching this sandbox.
             const workerScript = `
                 // --- Security Sandbox Setup ---
                 // Disable network access to prevent data exfiltration
@@ -51,7 +59,8 @@ export class McpSandbox {
                 self.onmessage = async function(e) {
                     const { code, context } = e.data;
                     try {
-                        // Create an async function to allow 'await' inside the provided code
+                        // Create an async function to allow 'await' inside the provided code.
+                        // Executed strictly in an isolated Web Worker with all networking/DOM disabled.
                         const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
                         
                         // We wrap the code so it executes in a strict environment

@@ -41,6 +41,7 @@ describe('promptBuilder', () => {
 			responseLanguage: 'auto',
 			agentEnabled: false,
 			agentExecutionMode: 'edit',
+			cliOperationMode: 'cli-agent',
 			agentMaxSteps: 15,
 			ttftTimeoutMs: 0,
 			interTokenTimeoutMs: 0,

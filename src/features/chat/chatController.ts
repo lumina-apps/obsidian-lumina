@@ -34,6 +34,7 @@ export class ChatController {
 	private lastModelId: string = '';
 	private _unsubMessages: (() => void) | null = null;
 	private _isSaving = false;
+	private pendingApprovals = new Map<string, (approved: boolean) => void>();
 
 	constructor(plugin: LuminaPlugin) {
 		this.app = plugin.app;
@@ -185,7 +186,8 @@ export class ChatController {
 				resolvedModelId,
 				chat,
 				signal,
-				assistantId
+				assistantId,
+				this.pendingApprovals,
 			);
 
 		// ── 7. 응답 후처리 ──────────────────────────────────────────────────
@@ -272,6 +274,15 @@ export class ChatController {
 		return this.history.removeSession(sessionId);
 	}
 
+	/** 대기 중인 CLI 도구 실행에 대한 승인/거부 결정 전달 */
+	public respondToolApproval(toolCallId: string, approved: boolean): void {
+		const resolver = this.pendingApprovals.get(toolCallId);
+		if (resolver) {
+			resolver(approved);
+			this.pendingApprovals.delete(toolCallId);
+		}
+	}
+
 	/** 수동 컨텍스트 압축 (모든 메모리 모드에서 동작). */
 	async compressContext(providerId: string, modelId: string): Promise<import('./utils/summarizationHelper').SummarizeResult> {
 		const providerConfig = this.plugin.settings.connections.providers.find(p => p.id === providerId);
@@ -282,6 +293,10 @@ export class ChatController {
 
 	/** 구독 해제 및 타이머 정리. ChatView가 unload될 때 호출할 것. */
 	destroy(): void {
+		for (const resolver of this.pendingApprovals.values()) {
+			resolver(false);
+		}
+		this.pendingApprovals.clear();
 		this._unsubMessages?.();
 		this._unsubMessages = null;
 		if (this.autoSaveTimeout) {

@@ -32,6 +32,8 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 				type: 'object',
 				properties: {
 					path: { type: 'string', description: t('mcpServerTools.read_note.argPath') },
+					startLine: { type: 'number', description: 'Optional 1-indexed start line number to read from (inclusive).' },
+					endLine: { type: 'number', description: 'Optional 1-indexed end line number to read up to (inclusive).' },
 				},
 				required: ['path'],
 			},
@@ -403,6 +405,46 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 					duration: { type: 'number', description: t('mcpServerTools.show_notice.argDuration') },
 				},
 				required: ['message'],
+			},
+		},
+		{
+			name: 'open_note',
+			description: 'Opens a note or file in the Obsidian editor workspace.',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					path: { type: 'string', description: 'Path to the file to open in editor.' },
+					newTab: { type: 'boolean', description: 'Whether to open in a new tab. If false, opens in the active/current leaf. (default: false)' },
+				},
+				required: ['path'],
+			},
+		},
+		{
+			name: 'grep_search',
+			description: 'Searches for exact text or regex patterns across files in the vault. Returns matching lines with line numbers.',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					query: { type: 'string', description: 'Text or regex pattern to search for across files.' },
+					isRegex: { type: 'boolean', description: 'Whether query should be treated as a regular expression. (default: false)' },
+					caseInsensitive: { type: 'boolean', description: 'Whether the search is case-insensitive. (default: true)' },
+					path: { type: 'string', description: 'Optional directory path to restrict the search to.' },
+					maxResults: { type: 'number', description: 'Maximum number of matching lines to return. (default: 50)' },
+				},
+				required: ['query'],
+			},
+		},
+		{
+			name: 'glob_files',
+			description: 'Finds files across the vault matching a glob pattern (e.g. "**/*.md", "Daily/*", "*.canvas").',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					pattern: { type: 'string', description: 'Glob pattern to match file paths against (e.g. "**/*.md", "Projects/**/*.ts").' },
+					path: { type: 'string', description: 'Optional base folder to restrict search scope.' },
+					maxResults: { type: 'number', description: 'Maximum number of file paths to return. (default: 100)' },
+				},
+				required: ['pattern'],
 			},
 		}
 	];

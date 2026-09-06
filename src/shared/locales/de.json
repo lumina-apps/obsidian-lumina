@@ -151,6 +151,15 @@
         "enableShellCommands": {
           "name": "Terminal-/Shell-Befehls-Tool aktivieren",
           "desc": "Erlaubt dem LLM, Shell-Befehle auf dem Desktop-Betriebssystem auszuführen. Aus Sicherheitsgründen standardmäßig deaktiviert."
+        },
+        "syncCliMcp": {
+          "name": "MCP-Konfigurationen für externe Terminal-CLI automatisch generieren (Claude Code, OpenCode usw.)",
+          "desc": "Erstellt automatisch Konfigurationsdateien (.claude/mcp.json usw.) in Ihrem Vault, damit im externen Terminal ausgeführte CLI-Tools auf Luminas MCP-Tools (RAG, Notizen) zugreifen können. (Hinweis: Hat keinen Einfluss auf den internen Lumina-Chat; kann zu Verbindungsfehlern im Terminal führen, wenn Obsidian geschlossen ist)."
+        },
+        "cleanupCliMcp": {
+          "name": "Konfigurationen für externe Terminal-CLI bereinigen",
+          "desc": "Entfernt CLI-Konfigurationsdateien (.claude/mcp.json usw.) im Vault vollständig und bereinigt registrierte Systemeinstellungen.",
+          "button": "CLI-Konfigurationen bereinigen"
         }
       },
       "externalServer": {
@@ -508,7 +517,8 @@
       "anthropicNoEmbed": "Anthropic unterstützt die Embedding-API nicht.",
       "visionNotSupported": "⚠️ Der ausgewählte Anbieter ({{provider}}) unterstützt keine Bildanalyse. Bitte verwenden Sie OpenAI, Anthropic oder Google mit einem visionsfähigen Modell.",
       "timeoutTTFT": "Zeitüberschreitung: Die Antwort des ersten Tokens hat sich verzögert. ({{fallback}})",
-      "timeoutInterToken": "Zeitüberschreitung: Die Kommunikation wurde während des Streamings unterbrochen oder verzögert. ({{fallback}})"
+      "timeoutInterToken": "Zeitüberschreitung: Die Kommunikation wurde während des Streamings unterbrochen oder verzögert. ({{fallback}})",
+      "cliDesktopOnly": "CLI-Agent-Anbieter werden nur auf Obsidian Desktop unterstützt."
     },
     "translation": {
       "confirmTitle": "Systemsprache-Übersetzung",
@@ -523,6 +533,22 @@
       "cacheDeleted": "✅ Cache für die Systemübersetzung gelöscht.",
       "cacheDeleteFail": "❌ Fehler beim Löschen des Caches: ",
       "noCache": "⚠️ Kein Übersetzungs-Cache zum Löschen vorhanden."
+    },
+    "cli": {
+      "binaryPathName": "Binärpfad",
+      "binaryPathDesc": "Pfad zur CLI-Binärdatei (z. B. claude, codex, agy)",
+      "autoApproveName": "Tools automatisch genehmigen",
+      "autoApproveDesc": "Tool-Ausführungen und Dateiänderungen automatisch ohne Nachfrage genehmigen",
+      "waitingApprovalPrefix": "🛡️ Genehmigung erforderlich:",
+      "runningToolPrefix": "⚡ Wird ausgeführt:",
+      "toolRejectedPrefix": "❌ Abgelehnt:",
+      "toolRejectedByUser": "Vom Benutzer abgelehnt",
+      "waitingApprovalBadge": "Genehmigung erforderlich",
+      "approvalPrompt": "Der Agent möchte dieses Tool ausführen. Genehmigen?",
+      "approveBtn": "Genehmigen",
+      "rejectBtn": "Ablehnen",
+      "diffModalTitle": "Dateiänderungen (Diff)",
+      "viewDiff": "Diff"
     }
   },
   "errors": {
@@ -600,8 +626,19 @@
         "desc": "Öffnet den Einstellungsbildschirm von Lumina."
       }
     },
-    "sessionUsage": "Kumulierte Nutzung der aktuellen Sitzung",
+    "sessionUsage": "Nutzung der aktuellen Sitzung",
     "sessionTokens": "Gesamt: {{tokens}} Tokens",
+    "cliMode": {
+      "cliAgent": "CLI-Agent",
+      "pluginAgent": "Plugin-Agent",
+      "cliAgentTooltip": "CLI-Agentenmodus: Die CLI führt autonome Tools und Befehle direkt aus.",
+      "pluginAgentTooltip": "Plugin-Agentenmodus: Nutzt die CLI als reines LLM für Lumina-Tools und RAG.",
+      "disabledHintForCliAgent": "Wird in diesem Modus nativ vom CLI-Agenten verwaltet",
+      "readModeTooltip": "Lesemodus: Der CLI-Agent liest und analysiert, ohne Notizen zu ändern.",
+      "editModeTooltip": "Bearbeitungsmodus: Der CLI-Agent darf Notizen direkt erstellen und bearbeiten.",
+      "readModeNotice": "👁️ CLI-Agent: Lesemodus (Notizänderungen blockiert)",
+      "editModeNotice": "✏️ CLI-Agent: Bearbeitungsmodus (Notizen erstellen und bearbeiten erlaubt)"
+    },
     "timeout": {
       "ttftLabel": "Time-To-First-Token Timeout (ms)",
       "ttftDesc": "Wait time for the very first token to arrive. Set to 0 to disable.. (Standard: 0)",
@@ -749,6 +786,7 @@
     "mcpLocalServerRestarted": "✅ Integrierter MCP-Server neu gestartet (Port: {{port}})",
     "mcpLocalServerStarted": "✅ Integrierter MCP-Server gestartet (Port: {{port}})",
     "mcpLocalServerStopped": "🛑 Integrierter MCP-Server gestoppt (Port: {{port}})",
+    "mcpCliCleanupSuccess": "✅ Externe CLI-MCP-Konfigurationen wurden erfolgreich bereinigt.",
     "mcpLocalServerDisconnectAgentDisabled": "⚠️ Der Agenten-Modus wurde aufgrund eines Verbindungsfehlers zum integrierten Server deaktiviert.",
     "mcpClientDisconnected": "🔌 MCP-Server \"{{name}}\" getrennt.",
     "mcpClientConnected": "✅ MCP-Server \"{{name}}\" erfolgreich verbunden.",
@@ -764,6 +802,7 @@
     "agentModeSwitchedToEdit": "✏️ Agent in den Bearbeitungsmodus gewechselt. (Notizen erstellen und bearbeiten erlaubt)",
     "webSearchEnabled": "✅ Websuche aktiviert.",
     "webSearchDisabled": "🛑 Websuche deaktiviert.",
+    "webSearchNotNeededForCli": "ℹ️ CLI-Agenten verwenden ihre eigenen integrierten Websuch-Tools.",
     "noMessagesToExport": "Keine Nachrichten zum Exportieren vorhanden.",
     "noMessagesToRegenerate": "Keine Antwort zum Neu generieren vorhanden.",
     "contextCompressed": "📋 Kontext komprimiert: {{messages}} Nachrichten → 1 Zusammenfassung (~{{tokens}} Tokens freigegeben).",

@@ -164,6 +164,15 @@
         "enableShellCommands": {
           "name": "Enable Terminal/Shell Command Tool",
           "desc": "Allows the LLM to execute shell commands on the desktop OS. Disabled by default for security."
+        },
+        "syncCliMcp": {
+          "name": "Auto-Generate MCP Configs for External Terminal CLI (Claude Code, OpenCode, etc.)",
+          "desc": "Automatically generates config files (.claude/mcp.json, etc.) in your vault so CLI tools run in an external terminal can use Lumina's MCP tools (RAG, note tools). (Note: This does not affect Lumina's in-app chat, and may cause connection errors in your terminal when Obsidian is not running.)"
+        },
+        "cleanupCliMcp": {
+          "name": "Clean Up External Terminal CLI Configs",
+          "desc": "Completely removes CLI MCP config files (.claude/mcp.json, etc.) in the vault and clears any registered system settings.",
+          "button": "Clean Up CLI Configs"
         }
       },
       "externalServer": {
@@ -509,7 +518,8 @@
       "anthropicNoEmbed": "Anthropic does not support the embedding API.",
       "visionNotSupported": "⚠️ The selected provider ({{provider}}) does not support image analysis. Please use OpenAI, Anthropic, or Google with a vision-capable model.",
       "timeoutTTFT": "Timeout: First token response took too long. ({{fallback}})",
-      "timeoutInterToken": "Timeout: Stream interrupted or hung. ({{fallback}})"
+      "timeoutInterToken": "Timeout: Stream interrupted or hung. ({{fallback}})",
+      "cliDesktopOnly": "CLI agent providers are only supported on Desktop Obsidian."
     },
     "translation": {
       "confirmTitle": "System Language Translation",
@@ -524,6 +534,22 @@
       "cacheDeleted": "✅ System language translation cache deleted.",
       "cacheDeleteFail": "❌ Cache deletion failed: ",
       "noCache": "⚠️ No translation cache to delete."
+    },
+    "cli": {
+      "binaryPathName": "Binary Path",
+      "binaryPathDesc": "Path to CLI binary (e.g. claude, codex, agy)",
+      "autoApproveName": "Auto Approve Tools",
+      "autoApproveDesc": "Automatically approve tool execution without asking",
+      "waitingApprovalPrefix": "🛡️ Approval required:",
+      "runningToolPrefix": "⚡ Running:",
+      "toolRejectedPrefix": "❌ Rejected:",
+      "toolRejectedByUser": "Rejected by user",
+      "waitingApprovalBadge": "Approval Required",
+      "approvalPrompt": "The agent wants to execute this tool. Do you want to approve?",
+      "approveBtn": "Approve",
+      "rejectBtn": "Reject",
+      "diffModalTitle": "File Changes (Diff)",
+      "viewDiff": "Diff"
     }
   },
   "errors": {
@@ -601,8 +627,19 @@
         "desc": "Open the Lumina settings screen."
       }
     },
-    "sessionUsage": "Current Session Usage",
-    "sessionTokens": "Total: {{tokens}} tokens"
+    "sessionUsage": "Current session usage",
+    "sessionTokens": "Total: {{tokens}} tokens",
+    "cliMode": {
+      "cliAgent": "CLI Agent",
+      "pluginAgent": "Plugin Agent",
+      "cliAgentTooltip": "CLI Agent Mode: CLI runs autonomous tools and project commands.",
+      "pluginAgentTooltip": "Plugin Agent Mode: Uses CLI purely as an LLM brain for Lumina tools, RAG, and notes.",
+      "disabledHintForCliAgent": "Managed natively by CLI Agent in this mode",
+      "readModeTooltip": "Read Mode: CLI agent inspects and analyzes without modifying notes.",
+      "editModeTooltip": "Edit Mode: CLI agent is allowed to create and modify notes directly.",
+      "readModeNotice": "👁️ CLI Agent: Read Mode (Note modifications blocked)",
+      "editModeNotice": "✏️ CLI Agent: Edit Mode (Allowed to create and edit notes)"
+    }
   },
   "common": {
     "save": "Save",
@@ -744,6 +781,7 @@
     "mcpLocalServerRestarted": "✅ Built-in MCP server restarted (Port: {{port}})",
     "mcpLocalServerStarted": "✅ Built-in MCP server started (Port: {{port}})",
     "mcpLocalServerStopped": "🛑 Built-in MCP server stopped (Port: {{port}})",
+    "mcpCliCleanupSuccess": "✅ External CLI MCP configs have been cleanly removed.",
     "mcpLocalServerDisconnectAgentDisabled": "⚠️ Agent mode disabled due to built-in server connection error.",
     "mcpClientDisconnected": "🔌 MCP Server \"{{name}}\" disconnected.",
     "mcpClientConnected": "Connected to server: {{name}}.",
@@ -759,6 +797,7 @@
     "agentModeSwitchedToEdit": "✏️ Agent switched to Edit Mode. (Can create & edit notes)",
     "webSearchEnabled": "✅ Web search enabled.",
     "webSearchDisabled": "🛑 Web search disabled.",
+    "webSearchNotNeededForCli": "ℹ️ CLI agents use their own built-in web search tools.",
     "noMessagesToExport": "No messages to export.",
     "noMessagesToRegenerate": "No assistant response to regenerate.",
     "contextCompressed": "📋 Context compressed: {{messages}} messages → 1 summary (~{{tokens}} tokens freed).",

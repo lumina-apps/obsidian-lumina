@@ -151,6 +151,15 @@
         "enableShellCommands": {
           "name": "ターミナル/シェルコマンドツールの有効化",
           "desc": "LLMがデスクトップOSでシェルコマンドを実行できるようにします。セキュリティのため、デフォルトでは無効になっています。"
+        },
+        "syncCliMcp": {
+          "name": "外部ターミナルCLI用MCP設定の自動生成 (Claude Code, OpenCodeなど)",
+          "desc": "Obsidian外部のターミナルでClaude CodeなどのCLIを直接実行する際、Luminaの内蔵ツール(RAG検索、ノート制御など)を呼び出せるよう、保管庫内に設定ファイル(.claude/mcp.jsonなど)を自動生成します。(※Luminaアプリ内チャットでのツール使用には影響せず、Obsidianが終了している状態でターミナルCLIを実行すると接続エラーが発生する可能性があります。)"
+        },
+        "cleanupCliMcp": {
+          "name": "外部ターミナルCLI連携設定の一括削除",
+          "desc": "保管庫内に生成されたCLI設定ファイル(.claude/mcp.jsonなど)およびシステム登録設定を完全に削除して整理します。",
+          "button": "CLI設定を削除"
         }
       },
       "externalServer": {
@@ -506,7 +515,8 @@
       "anthropicNoEmbed": "Anthropicは埋め込みAPIをサポートしていません。",
       "visionNotSupported": "⚠️ 選択したプロバイダー({{provider}})は画像分析をサポートしていません。画像を使用するには、OpenAI、Anthropic、またはGoogle（ビジョン対応モデル）を選択してください。",
       "timeoutTTFT": "タイムアウト: 最初のトークンの応答が遅延しました。 ({{fallback}})",
-      "timeoutInterToken": "タイムアウト: ストリーミング中に通信が途切れたか、遅延しました。 ({{fallback}})"
+      "timeoutInterToken": "タイムアウト: ストリーミング中に通信が途切れたか、遅延しました。 ({{fallback}})",
+      "cliDesktopOnly": "CLIエージェントプロバイダーはデスクトップ版Obsidianでのみサポートされています。"
     },
     "translation": {
       "confirmTitle": "システム言語への翻訳",
@@ -521,6 +531,22 @@
       "cacheDeleted": "✅ システム言語の翻訳キャッシュが削除されました。",
       "cacheDeleteFail": "❌ キャッシュ削除に失敗しました: ",
       "noCache": "⚠️ 削除する翻訳キャッシュがありません。"
+    },
+    "cli": {
+      "binaryPathName": "バイナリパス",
+      "binaryPathDesc": "CLI実行ファイルのパス (例: claude, codex, agy)",
+      "autoApproveName": "ツールの自動承認",
+      "autoApproveDesc": "ツールの実行およびファイル変更を確認なしで自動的に承認します。",
+      "waitingApprovalPrefix": "🛡️ 承認待ち:",
+      "runningToolPrefix": "⚡ 実行中:",
+      "toolRejectedPrefix": "❌ 拒否されました:",
+      "toolRejectedByUser": "ユーザーによって拒否されました",
+      "waitingApprovalBadge": "承認が必要",
+      "approvalPrompt": "エージェントがこのツールを実行しようとしています。承認しますか？",
+      "approveBtn": "承認",
+      "rejectBtn": "拒否",
+      "diffModalTitle": "ファイルの変更 (Diff)",
+      "viewDiff": "Diff"
     }
   },
   "errors": {
@@ -598,8 +624,19 @@
         "desc": "Luminaの設定画面を開きます。"
       }
     },
-    "sessionUsage": "現在のセッションの累積使用量",
-    "sessionTokens": "累積: {{tokens}} トークン"
+    "sessionUsage": "現在のセッション使用量",
+    "sessionTokens": "累積: {{tokens}} トークン",
+    "cliMode": {
+      "cliAgent": "CLIエージェント",
+      "pluginAgent": "プラグインエージェント",
+      "cliAgentTooltip": "CLIエージェントモード: CLIが自律ツール(Bash、ファイル編集など)を直接実行します。",
+      "pluginAgentTooltip": "プラグインエージェントモード: CLIを純粋なLLM推論として使用し、Luminaツール(MCP、RAG、ノート)を実行します。",
+      "disabledHintForCliAgent": "CLIエージェントモードではCLIがツールをネイティブ管理します。",
+      "readModeTooltip": "読み取りモード: CLIエージェントはノートを変更せず、調査・分析のみを行います。",
+      "editModeTooltip": "編集モード: CLIエージェントが保管庫内のノートを作成・編集できます。",
+      "readModeNotice": "👁️ CLIエージェント: 読み取りモード (ノート変更無効)",
+      "editModeNotice": "✏️ CLIエージェント: 編集モード (ノート作成・編集許可)"
+    }
   },
   "common": {
     "save": "保存",
@@ -741,6 +778,7 @@
     "mcpLocalServerRestarted": "✅ 内蔵MCPサーバーが再起動しました (ポート: {{port}})",
     "mcpLocalServerStarted": "✅ 内蔵MCPサーバーが起動しました (ポート: {{port}})",
     "mcpLocalServerStopped": "🛑 内蔵MCPサーバーが停止しました (ポート: {{port}})",
+    "mcpCliCleanupSuccess": "✅ 外部CLI連携設定が正常にクリーンアップされました。",
     "mcpLocalServerDisconnectAgentDisabled": "⚠️ 内蔵サーバーの接続エラーにより、エージェントモードが無効になりました。",
     "mcpClientDisconnected": "🔌 MCPサーバー「{{name}}」が切断されました。",
     "mcpClientConnected": "✅ MCPサーバー「{{name}}」が正常に接続されました。",
@@ -756,6 +794,7 @@
     "agentModeSwitchedToEdit": "✏️ エージェントが編集モードに切り替わりました。（ノートの作成・編集可能）",
     "webSearchEnabled": "✅ Web検索が有効になりました。",
     "webSearchDisabled": "🛑 Web検索が無効になりました。",
+    "webSearchNotNeededForCli": "ℹ️ CLIプロバイダーは独自の内蔵Web検索ツールを使用します。",
     "noMessagesToExport": "エクスポートするメッセージがありません。",
     "noMessagesToRegenerate": "再生成する回答がありません。",
     "contextCompressed": "📋 コンテキスト圧縮完了: メッセージ{{messages}}件 → 要約1件 (約{{tokens}}トークン確保)。",

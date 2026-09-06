@@ -1,6 +1,6 @@
-# Lumina: All-in-One AI Assistant (RAG + MCP + Agent)
+# Lumina: All-in-One AI Assistant (RAG + MCP + CLI Agents)
 
-**`Lumina` is a powerful all-in-one assistant plugin for Obsidian that transforms your knowledge base into a complete AI hub by combining multi-LLM support, zero-config RAG, bidirectional MCP integration, and autonomous AI agents.**
+**`Lumina` is a powerful all-in-one assistant plugin for Obsidian that transforms your knowledge base into a complete AI hub by combining multi-LLM support (Cloud & Local), terminal CLI agents (Claude Code, Antigravity, OpenCode, Codex), zero-config RAG, bidirectional MCP integration, and autonomous AI agents.**
 
 <p align="center">
   <b>English</b> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_KO.md">한국어</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_JA.md">日本語</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ZH.md">简体中文</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ZH_TW.md">繁體中文</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ES.md">Español</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_DE.md">Deutsch</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_FR.md">Français</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_PT.md">Português</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_RU.md">Русский</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_IT.md">Italiano</a>
@@ -17,6 +17,7 @@
 | Feature | Description |
 | :--- | :--- |
 | **Multi-LLM Chat View** | A dedicated side panel that understands the context of your notes. Supports everything from powerful cloud models to local LLMs for maximum privacy. |
+| **Terminal CLI Agents Integration** | Run official terminal AI agents (Claude Code, Antigravity, OpenCode, Codex) inside Obsidian's side panel with real-time thinking streams and read/edit safety modes. |
 | **Zero-Config RAG** | Features 100% offline local embeddings to prevent data leaks. Automatically indexes your vault in real-time without complex configurations. |
 | **Smart Discovery** | Instantly finds documents highly relevant to the note currently being written using semantic search, detects and warns about potential duplicates, and inserts recommended tags and related links with a single click. |
 | **Inline AI Quick Actions** | Highlight text in the editor to instantly summarize, translate, or proofread without interrupting your writing flow. |
@@ -58,6 +59,20 @@ Lumina offers two tracks tailored to your skill level. Choose the one that suits
 </details>
 
 <details>
+<summary><b>Terminal CLI Agents Integration (Claude Code, Antigravity, OpenCode, Codex)</b></summary>
+
+- **Description:** Run and orchestrate terminal AI agents directly inside Obsidian's side panel to explore, analyze, and manage your vault notes.
+- **Supported Agents:** Anthropic **Claude Code**, Google **Antigravity**, **OpenCode**, and OpenAI **Codex**.
+- **Key Features:**
+  - **Read-Only & Edit Safety Toggle:** Switch between 👁️ **Read-Only mode** (safely inspect and analyze notes without modifying files) and ✏️ **Edit mode** with a single click in the chat toolbar.
+  - **Visual Thinking:** Streams and displays the agent's internal reasoning process in collapsible real-time thinking blocks.
+  - **Real-Time Status & Modified Files:** Shows tool execution status in real time and provides clickable badges to instantly open files modified by the agent.
+  - **Active Note & Media Context:** Automatically feeds the active note and attached images/files into the CLI prompt for seamless contextual conversations.
+  - **External Terminal MCP Sync (Optional):** Generates configuration files (`.claude/mcp.json`, `opencode.json`, `codex.json`) in your vault so CLI sessions run in your system terminal can also access Lumina's MCP tools.
+- **How to use:** In Lumina Settings > Connections, select your preferred CLI provider, configure the binary path, and start chatting in the side panel.
+</details>
+
+<details>
 <summary><b>RAG-Powered Chat & Local Embeddings (Absolute Privacy)</b></summary>
 
 - **Description:** AI gains deep insight into your knowledge base. It autonomously searches relevant notes during conversations and displays similar documents and recommended tags in the side panel, creating smart contextual links.
@@ -89,7 +104,7 @@ Lumina offers two tracks tailored to your skill level. Choose the one that suits
 
 - **Description:** When activated, the LLM autonomously determines and orchestrates various built-in MCP tools to perform tasks. It can complete complex, multi-step operations by combining note searching, reading, writing, RAG retrieval, sandbox code execution, and daily notes integration.
 - **Local LLM Support:** Implements a dedicated parser that supports text-based tool prompting, allowing the agent to function smoothly even in Local LLM environments, not just with high-performance cloud models.
-- **Robust Security & User Control (Human-in-the-Loop):** Destructive operations such as content modification, file deletion, or code execution cannot be processed by the agent alone. They are executed safely with overwrite-protection backups only after prompting the user with a UI (Diff Viewer and Task Warning Modal) and receiving final approval (Accept).
+- **Robust Security & User Control (Human-in-the-Loop):** Destructive operations such as content modification, file deletion, or code execution cannot be processed by the agent alone. File modifications require **inline Diff review** in the editor with chunk-by-chunk accept/reject, while sensitive actions like file creation, deletion, or code execution require explicit approval via **inline approval cards** in the chat panel. (Automatic overwrite-protection backups included)
 - **Cost Prevention & Limits:** Default limits on tool usage count and append character length are applied to prevent AI malfunctions or infinite loops. (These limits can be freely adjusted by the user in advanced settings.)
 - **How to use:** Type the `/mcp` command in the chat or use the top icon to open the quick popup and enable 'Agent Mode'. (The internal Lumina server will automatically start as needed to execute tools.)
 </details>
@@ -104,13 +119,14 @@ Lumina offers two tracks tailored to your skill level. Choose the one that suits
 - **Server Mode (External AI-led):**
   - Provides various tools allowing external AI assistants (Claude, Cursor, etc.) or the Agent Mode AI to directly access your vault and the internet.
   - **Web Search:** \`lumina_web_search\` (Search the web using various providers like Tavily, Exa, Google with smart truncation to save API costs).
-  - **Read & Search:** `read_active_note`, `read_note`, `search_notes` (supports tag filtering), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags`, `query_metadata` to provide extensive context to the AI.
+  - **Read & Search:** `read_active_note`, `read_note` (supports line ranges `startLine`/`endLine`), `search_notes` (supports tag filtering), `grep_search` (regex/text search with line numbers across vault files), `glob_files` (wildcard file pattern matching, e.g. `**/*.md`), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags`, `query_metadata` to provide extensive context to the AI.
   - **Write & Modify:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (create/modify notes/canvases, generate Map of Content notes, auto-link mentions, and save binary files).
-  - **Manage & Execute:** `delete_note`, `move_note` (move/rename), `execute_code`, `run_note_code_block` (execute code within a sandbox, `run_shell_command` (execute terminal shell commands on desktop OS).
+  - **Manage & Execute:** `open_note` (instantly open note/file in Obsidian editor tab), `delete_note`, `move_note` (move/rename), `execute_code`, `run_note_code_block` (execute code within a sandbox), `run_shell_command` (execute terminal shell commands on desktop OS), `show_notice` (display Obsidian UI notifications).
   - **Daily Notes:** `read_daily_note`, `append_to_daily_note` (read/write integration for today's daily note).
-  - **Robust Security & User Control:** Destructive operations such as content modification, file deletion, or code execution cannot be processed by the agent alone. They are executed safely with overwrite-protection backups only after prompting the user with a UI (Diff Viewer and Task Warning Modal) and receiving final approval (Accept).
+  - **External Terminal CLI MCP Sync:** Optionally generates local MCP server configs (`.claude/mcp.json`, `opencode.json`, `codex.json`) so CLI tools in external terminals can access Lumina's vault tools.
+  - **Vault Safety & User Control (Human-in-the-Loop):** Sensitive actions require explicit confirmation via inline approval cards, file edits feature editor inline Diff review, automatic backups are created during file modifications, and code execution is isolated within a secure sandbox environment.
 - **How to use:** Enable MCP features in the plugin settings and configure the client/server transport method (SSE).
-- **Note:** *Lumina comes with multi-layered safety mechanisms including sandbox code execution, real-time Diff viewer user approvals (Human-in-the-Loop), automatic backups during file modifications (overwrite protection), and limits to prevent infinite loops. However, since the agent and external AI directly access your vault, we recommend initially monitoring operations closely.*
+- **Note:** *Lumina comes with multi-layered safety mechanisms including sandbox code execution, inline Diff review and user approval cards (Human-in-the-Loop), automatic backups during file modifications (overwrite protection), and limits to prevent infinite loops and runaway tool calls. However, since the agent and external AI directly access your vault, we recommend initially monitoring operations closely.*
 </details>
 
 ---

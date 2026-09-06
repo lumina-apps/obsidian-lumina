@@ -92,6 +92,35 @@ export function renderLocalServerSection(tab: LuminaSettingTab, el: HTMLElement,
 			});
 		});
 
+	// ─── External CLI MCP Sync Toggle ───
+	new Setting(serverCard)
+		.setName(t('settings.mcp.localServer.syncCliMcp.name'))
+		.setDesc(t('settings.mcp.localServer.syncCliMcp.desc'))
+		.addToggle(toggle => {
+			toggle.setValue(s.syncCliMcp ?? false).onChange(async (val) => {
+				s.syncCliMcp = val;
+				await tab.saveAndSync(true);
+				tab.refreshDisplay();
+			});
+		});
+
+	// ─── Clean up CLI Configs Button ───
+	new Setting(serverCard)
+		.setName(t('settings.mcp.localServer.cleanupCliMcp.name'))
+		.setDesc(t('settings.mcp.localServer.cleanupCliMcp.desc'))
+		.addButton(btn => {
+			btn.setButtonText(t('settings.mcp.localServer.cleanupCliMcp.button'))
+				.onClick(async () => {
+					s.syncCliMcp = false;
+					if (tab.plugin.mcpManager) {
+						await tab.plugin.mcpManager.cleanupCliMcp();
+					}
+					await tab.saveAndSync();
+					tab.refreshDisplay();
+					new Notice(t('uiMessages.mcpCliCleanupSuccess'));
+				});
+		});
+
 	tab.infoBox(serverCard, t('settings.mcp.localServer.guide', { port: s.serverPort }), 'info');
 
 	if (tab.showAdvanced) {

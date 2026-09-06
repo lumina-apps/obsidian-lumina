@@ -1,5 +1,17 @@
 import { describe, it, expect, vi } from 'vitest';
-import { migrateQuickActions, migrateExcludedPaths, migrateProjects } from './migrations';
+import {
+	migrateQuickActions,
+	migrateExcludedPaths,
+	migrateProjects,
+	migrateAutopilotSettings,
+	migrateMinSimilarity,
+	migrateMemoryMethod,
+	migrateContextWindowTurns,
+	migrateWebSearch,
+	migrateCanvasSettings,
+	migrateCliOperationMode,
+	runMigrations,
+} from './migrations';
 import { addDynamicLocale, setLanguage } from '../../shared/locales/helpers';
 import type LuminaPlugin from '../../main';
 
@@ -135,8 +147,6 @@ describe('migrateExcludedPaths', () => {
 	});
 });
 
-import { migrateMinSimilarity, migrateMemoryMethod, migrateContextWindowTurns, runMigrations, migrateWebSearch, migrateCanvasSettings } from './migrations';
-
 describe('migrateWebSearch', () => {
 	it('initializes webSearch if missing', () => {
 		const mockPlugin = { settings: {} } as any;
@@ -236,7 +246,7 @@ describe('runMigrations', () => {
 			settings: {
 				misc: { hasMigratedChatHistory: true },
 				rag: { minSimilarity: 0.5 },
-				chat: { quickActions: [], memoryMethod: 'tokens', contextWindowTurns: 10 },
+				chat: { quickActions: [], memoryMethod: 'tokens', contextWindowTurns: 10, cliOperationMode: 'cli-agent' },
 				webSearch: { enabled: false, providers: [], activeProviderId: 'tavily', maxResults: 5, maxContentLength: 3000 },
 				canvas: { depth: 1, layout: 'radial', bidirectional: true, includeAttachments: false, maxNodes: 200, folderDepth: 0, outputPath: 'canvasVisualize', showFolderGroups: false },
 				projects: { list: [{ id: 'default', name: 'Default', ragIncludedPaths: [], ragExcludedPaths: ['.obsidian', 'chatHistory', 'backups'], historySubfolder: '', createdAt: 0, defaultProviderId: '', defaultModelId: '', systemPromptId: 'default' }], activeProjectId: 'default' },
@@ -318,4 +328,87 @@ describe('migrateProjects', () => {
 		expect(mockPlugin.settings.chat.activeSystemPromptId).toBeUndefined();
 	});
 });
+
+describe('migrateAutopilotSettings', () => {
+	it('기존 autopilot 프로바이더를 connections.providers로 마이그레이션하고 autopilot 설정을 삭제한다', () => {
+		const mockPlugin = {
+			settings: {
+				connections: {
+					providers: [],
+				},
+				autopilot: {
+					enabled: true,
+					providers: [
+						{
+							id: 'auto-1',
+							type: 'claude-code',
+							binaryPath: 'claude',
+							defaultModel: 'claude-3-7-sonnet',
+							autoApprove: true,
+							isVerified: true,
+						},
+					],
+					activeProviderId: 'auto-1',
+				},
+			},
+		} as unknown as LuminaPlugin;
+
+		const result = migrateAutopilotSettings(mockPlugin);
+
+		expect(result).toBe(true);
+		expect(mockPlugin.settings.connections.providers).toHaveLength(1);
+		expect(mockPlugin.settings.connections.providers[0]).toMatchObject({
+			id: 'auto-1',
+			type: 'cli-claude-code',
+			binaryPath: 'claude',
+			availableModels: ['claude-3-7-sonnet'],
+			isVerified: true,
+			autoApprove: true,
+		});
+		expect((mockPlugin.settings as unknown as { autopilot?: unknown }).autopilot).toBeUndefined();
+	});
+
+	it('autopilot 설정이 없을 때 변경하지 않는다', () => {
+		const mockPlugin = {
+			settings: {
+				connections: {
+					providers: [],
+				},
+			},
+		} as unknown as LuminaPlugin;
+
+		const result = migrateAutopilotSettings(mockPlugin);
+
+		expect(result).toBe(false);
+	});
+});
+
+describe('migrateCliOperationMode', () => {
+	it('cliOperationMode가 없을 때 cli-agent로 초기화하고 true를 반환한다', () => {
+		const mockPlugin = {
+			settings: {
+				chat: {} as unknown as LuminaPlugin['settings']['chat'],
+			},
+		} as unknown as LuminaPlugin;
+
+		const result = migrateCliOperationMode(mockPlugin);
+		expect(result).toBe(true);
+		expect(mockPlugin.settings.chat.cliOperationMode).toBe('cli-agent');
+	});
+
+	it('cliOperationMode가 이미 있으면 변경하지 않고 false를 반환한다', () => {
+		const mockPlugin = {
+			settings: {
+				chat: {
+					cliOperationMode: 'plugin-agent',
+				} as unknown as LuminaPlugin['settings']['chat'],
+			},
+		} as unknown as LuminaPlugin;
+
+		const result = migrateCliOperationMode(mockPlugin);
+		expect(result).toBe(false);
+		expect(mockPlugin.settings.chat.cliOperationMode).toBe('plugin-agent');
+	});
+});
+
 

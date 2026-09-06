@@ -6,7 +6,7 @@ import type LuminaPlugin from '../../../main';
 import type { LLMProviderConfig } from '../../../shared/types/settings.types';
 import type { ChatMessage, ToolDefinition } from '../../../shared/types/llm.types';
 import type { RagChunkMeta } from '../../../shared/types/debug.types';
-import { VISION_UNSUPPORTED_PROVIDERS, PROVIDER_LABELS } from '../../../shared/types/settings.types';
+import { VISION_UNSUPPORTED_PROVIDERS, PROVIDER_LABELS, isCliProvider } from '../../../shared/types/settings.types';
 import { isLocalProvider } from '../../../core/llm-providers/index';
 import { indexingState } from '../../../core/store/ragStore';
 import { sessionSummary, summaryUpToMessageId } from '../../../core/store/chatStore';
@@ -23,6 +23,7 @@ export interface ResolvedContext {
 	useTextTools: boolean;
 	mcpTools: ToolDefinition[];
 	toolServerMap: Record<string, string>;
+	attachments?: ContextAttachment[];
 }
 
 /**
@@ -113,9 +114,11 @@ export async function buildLlmContext(
 
 	// 프롬프트 빌드
 	const useLocal = isLocalProvider(providerConfig.type ?? 'custom');
+	const isCli = isCliProvider(providerConfig.type ?? 'custom');
+	const isCliAgent = isCli;
 	const modelName = resolvedModelId.toLowerCase();
 	const isReasoningModel = modelName.includes('reasoner') || modelName.includes('r1');
-	const useTextTools = useLocal || isReasoningModel;
+	const useTextTools = !isCliAgent && (useLocal || isReasoningModel);
 
 	const webSearchTool = collectWebSearchTool({
 		webSearch: plugin.settings.webSearch,
@@ -139,8 +142,10 @@ export async function buildLlmContext(
 		activeFileTitle
 	});
 
-	// 툴 사용 지침 주입
-	llmMessages = injectToolPrompts(llmMessages, mcpTools, useTextTools);
+	// 툴 사용 지침 주입 (CLI 에이전트는 자체 네이티브/설정 도구를 사용하므로 Lumina 텍스트 툴 프롬프트 주입 생략)
+	if (!isCliAgent) {
+		llmMessages = injectToolPrompts(llmMessages, mcpTools, useTextTools);
+	}
 
 	// 멀티모달 이미지 주입
 	if (multimodalImages.length > 0) {
@@ -151,5 +156,5 @@ export async function buildLlmContext(
 		llmMessages = injectMultimodalImages(llmMessages, multimodalImages);
 	}
 
-	return { llmMessages, ragChunksForLog, useTextTools, mcpTools, toolServerMap };
+	return { llmMessages, ragChunksForLog, useTextTools, mcpTools, toolServerMap, attachments: updatedAttachments };
 }

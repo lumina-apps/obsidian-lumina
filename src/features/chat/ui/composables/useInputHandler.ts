@@ -3,7 +3,7 @@ import type LuminaPlugin from "../../../../main";
 import type { ContextAttachment } from "../../../../shared/types/chat.types";
 import type { SlashCommand } from "../../types/slashCommand.types";
 import { detectMention, detectSlashCommand } from "../../utils/inputUtils";
-import { resizeTextarea } from "../../utils/textareaUtils";
+import { resizeTextarea } from "../../../../shared/utils/textareaUtils";
 
 /**
  * 키 입력 시 전송 처리 및 슬래시/컨텍스트 셀렉터 키 중재를 담당합니다.
@@ -32,24 +32,18 @@ export function createKeydownHandler(ctx: KeydownContext): (e: KeyboardEvent) =>
 		}
 
 		const sendKey = plugin.settings.chat.sendKey;
-		const isComposing = e.isComposing;
+		const isComposing = e.isComposing || e.keyCode === 229;
 
 		if (sendKey === "enter" && e.key === "Enter" && !e.shiftKey) {
-			if (isLoading) return; // Allow default newline
+			if (isLoading) return;
+			if (isComposing) return; // IME 조합 중 Enter는 조합 완료용이므로 전송 방지
 			e.preventDefault();
-			if (isComposing) {
-				window.setTimeout(() => onSendMessage(), 50);
-			} else {
-				onSendMessage();
-			}
+			onSendMessage();
 		} else if (sendKey === "ctrl_enter" && e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-			if (isLoading) return; // Allow default newline
+			if (isLoading) return;
+			if (isComposing) return; // IME 조합 중 Enter는 조합 완료용이므로 전송 방지
 			e.preventDefault();
-			if (isComposing) {
-				window.setTimeout(() => onSendMessage(), 50);
-			} else {
-				onSendMessage();
-			}
+			onSendMessage();
 		}
 	};
 }

@@ -8,7 +8,7 @@ import { Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
 import { t } from '../../../../shared/locales/helpers';
 import {
-	buildChatModelOptions,
+	buildDedicatedModelOptions,
 	parseProviderModelValue,
 	toProviderModelValue,
 } from '../../../../shared/utils/settingHelpers';
@@ -20,7 +20,7 @@ export function renderTaskModelSection(tab: LuminaSettingTab, el: HTMLElement): 
 		.setName(t('settings.connections.taskModel.name'))
 		.setDesc(t('settings.connections.taskModel.desc'));
 
-	const chatModelOptions = buildChatModelOptions(s.providers);
+	const chatModelOptions = buildDedicatedModelOptions(s.providers);
 
 	const currentTaskValue = s.taskProviderId && s.taskModelId
 		? toProviderModelValue(s.taskProviderId, s.taskModelId)

@@ -75,10 +75,46 @@ export class LuminaSettingTab extends PluginSettingTab {
 		];
 	}
 
+	// ── Scroll container detection & preservation ─────────────────────────
+
+	private getScrollContainer(): HTMLElement {
+		if (this.containerEl && this.containerEl.scrollTop > 0) {
+			return this.containerEl;
+		}
+		let parent = this.containerEl?.parentElement;
+		while (parent && parent !== document.body) {
+			if (parent.scrollTop > 0) {
+				return parent;
+			}
+			parent = parent.parentElement;
+		}
+		let el: HTMLElement | null = this.containerEl;
+		while (el && el !== document.body) {
+			try {
+				const style = window.getComputedStyle(el);
+				if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+					return el;
+				}
+			} catch {
+				// jsdom or detached element fallback
+			}
+			el = el.parentElement;
+		}
+		return this.containerEl;
+	}
+
 	// ── Display lifecycle ──────────────────────────────────────────────────
 
-	refreshDisplay(): void {
+	/**
+	 * 설정 탭 화면을 갱신합니다.
+	 * @param preserveScroll - true면 현재 스크롤 위치를 유지합니다 (기본값: true).
+	 *                         탭 네비게이션으로 다른 탭으로 이동할 때만 false로 설정합니다.
+	 */
+	refreshDisplay(preserveScroll: boolean = true): void {
 		const { containerEl } = this;
+		const scrollContainer = preserveScroll ? this.getScrollContainer() : null;
+		const savedScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
+
 		containerEl.empty();
 		containerEl.addClass('lumina-settings');
 
@@ -88,6 +124,20 @@ export class LuminaSettingTab extends PluginSettingTab {
 		this.renderTab(body);
 
 		this.renderDonationFooter(body);
+
+		if (preserveScroll && scrollContainer && savedScrollTop > 0) {
+			scrollContainer.scrollTop = savedScrollTop;
+			if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+				window.requestAnimationFrame(() => {
+					scrollContainer.scrollTop = savedScrollTop;
+				});
+			}
+		} else if (!preserveScroll) {
+			const activeScrollContainer = this.getScrollContainer();
+			if (activeScrollContainer) {
+				activeScrollContainer.scrollTop = 0;
+			}
+		}
 	}
 
 	display(): void {
@@ -120,14 +170,8 @@ export class LuminaSettingTab extends PluginSettingTab {
 			);
 		}
 		if (needsRefresh) {
-			const scrollContainer = this.containerEl.querySelector('.lumina-settings__body') || this.containerEl;
-			const scrollTop = scrollContainer.scrollTop;
 			window.setTimeout(() => {
-				this.refreshDisplay();
-				window.requestAnimationFrame(() => {
-					const newContainer = this.containerEl.querySelector('.lumina-settings__body') || this.containerEl;
-					newContainer.scrollTop = scrollTop;
-				});
+				this.refreshDisplay(true);
 			}, MCP_REFRESH_DELAY);
 		}
 	}
@@ -155,7 +199,7 @@ export class LuminaSettingTab extends PluginSettingTab {
 
 			btn.addEventListener('click', () => {
 				this.activeTab = tab.id;
-				this.refreshDisplay();
+				this.refreshDisplay(false);
 			});
 		}
 
@@ -172,7 +216,7 @@ export class LuminaSettingTab extends PluginSettingTab {
 
 		advBtn.addEventListener('click', () => {
 			this.showAdvanced = !this.showAdvanced;
-			this.refreshDisplay();
+			this.refreshDisplay(true);
 		});
 	}
 

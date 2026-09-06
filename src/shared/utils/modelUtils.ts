@@ -1,7 +1,7 @@
 /** LLM 모델 옵션 빌드, 파싱, 임베딩 판별 유틸리티 */
 
 import { Notice } from 'obsidian';
-import { PROVIDER_LABELS, PROVIDER_CATEGORIES } from '../types/settings.types';
+import { PROVIDER_LABELS, PROVIDER_CATEGORIES, isCliProvider } from '../types/settings.types';
 import type { LLMProviderConfig, ProviderType } from '../types/settings.types';
 import { t } from '../locales/helpers';
 
@@ -83,12 +83,23 @@ export function buildChatModelOptions(providers: LLMProviderConfig[]): ModelOpti
 	});
 }
 
-/** 임베딩용 모델 옵션 생성 */
+/** 임베딩용 모델 옵션 생성 (CLI 프로바이더 제외) */
 export function buildEmbeddingModelOptions(providers: LLMProviderConfig[]): ModelOption[] {
 	return buildProviderModelOptions(providers, (type, modelId) => {
+		if (isCliProvider(type)) return false;
 		if (PROVIDER_CATEGORIES[type] === 'local' || type === 'custom') return true;
 		if (type === 'anthropic') return false;
 		return isEmbeddingModel(type, modelId);
+	});
+}
+
+/** 퀵액션, 태스크, 리랭커 등 보조 태스크용 경량 모델 옵션 생성 (CLI 에이전트 및 임베딩 모델 제외) */
+export function buildDedicatedModelOptions(providers: LLMProviderConfig[]): ModelOption[] {
+	return buildProviderModelOptions(providers, (type, modelId) => {
+		if (isCliProvider(type)) return false;
+		const isLocal = PROVIDER_CATEGORIES[type] === 'local' || type === 'custom';
+		if (isLocal) return true;
+		return !isEmbeddingModel(type, modelId);
 	});
 }
 

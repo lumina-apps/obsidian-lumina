@@ -6,7 +6,9 @@ import {
 	sanitizeFilename,
 	enforceMarkdownExt,
 	sanitizeFilePath,
-	extractFileName
+	extractFileName,
+	getVaultBasePath,
+	toVaultRelativePath,
 } from './fileUtils';
 import { TFile, App } from 'obsidian';
 
@@ -141,6 +143,48 @@ describe('fileUtils', () => {
 
 		it('.md 확장자가 없는 경우 파일명 전체를 반환한다', () => {
 			expect(extractFileName('folder/my-file.txt')).toBe('my-file.txt');
+		});
+	});
+
+	describe('toVaultRelativePath & getVaultBasePath', () => {
+		it('getVaultBasePath는 adapter.getBasePath()를 반환한다', () => {
+			const app = {
+				vault: {
+					adapter: {
+						getBasePath: () => '/path/to/vault',
+					},
+				},
+			} as unknown as App;
+			expect(getVaultBasePath(app)).toBe('/path/to/vault');
+		});
+
+		it('Windows 경로(역슬래시, 드라이브 문자 대소문자, 슬래시 혼용)를 올바르게 정규화한다', () => {
+			const winApp = {
+				vault: {
+					adapter: {
+						getBasePath: () => 'D:\\MyVault\\Project',
+					},
+				},
+			} as unknown as App;
+
+			// 1. 역슬래시 절대 경로
+			expect(toVaultRelativePath(winApp, 'D:\\MyVault\\Project\\sub\\doc.md')).toBe('sub/doc.md');
+
+			// 2. 슬래시 절대 경로
+			expect(toVaultRelativePath(winApp, 'D:/MyVault/Project/sub/doc.md')).toBe('sub/doc.md');
+
+			// 3. 소문자 드라이브 문자 (d:)
+			expect(toVaultRelativePath(winApp, 'd:/myvault/project/sub/doc.md')).toBe('sub/doc.md');
+
+			// 4. 역슬래시 상대 경로
+			expect(toVaultRelativePath(winApp, 'sub\\doc.md')).toBe('sub/doc.md');
+
+			// 5. 문자열 직접 인자 전달
+			expect(toVaultRelativePath('D:\\MyVault\\Project', 'D:/MyVault/Project/sub/doc.md')).toBe('sub/doc.md');
+		});
+
+		it('빈 문자열을 안전하게 처리한다', () => {
+			expect(toVaultRelativePath('D:\\MyVault', '')).toBe('');
 		});
 	});
 });

@@ -182,6 +182,17 @@ export interface TranslationSettingsMcpLocalServerEnableShellCommands {
   desc: string;
 }
 
+export interface TranslationSettingsMcpLocalServerSyncCliMcp {
+  name: string;
+  desc: string;
+}
+
+export interface TranslationSettingsMcpLocalServerCleanupCliMcp {
+  name: string;
+  desc: string;
+  button: string;
+}
+
 export interface TranslationSettingsMcpLocalServer {
   sectionTitle: string;
   desc: string;
@@ -194,6 +205,8 @@ export interface TranslationSettingsMcpLocalServer {
   searchMaxResults: TranslationSettingsMcpLocalServerSearchMaxResults;
   maxAppend: TranslationSettingsMcpLocalServerMaxAppend;
   enableShellCommands: TranslationSettingsMcpLocalServerEnableShellCommands;
+  syncCliMcp: TranslationSettingsMcpLocalServerSyncCliMcp;
+  cleanupCliMcp: TranslationSettingsMcpLocalServerCleanupCliMcp;
 }
 
 export interface TranslationSettingsMcpExternalServerSseUrl {
@@ -609,6 +622,7 @@ export interface TranslationSettingsProviderErrors {
   visionNotSupported: string;
   timeoutTTFT: string;
   timeoutInterToken: string;
+  cliDesktopOnly: string;
 }
 
 export interface TranslationSettingsTranslation {
@@ -626,6 +640,23 @@ export interface TranslationSettingsTranslation {
   noCache: string;
 }
 
+export interface TranslationSettingsCli {
+  binaryPathName: string;
+  binaryPathDesc: string;
+  autoApproveName: string;
+  autoApproveDesc: string;
+  waitingApprovalPrefix: string;
+  runningToolPrefix: string;
+  toolRejectedPrefix: string;
+  toolRejectedByUser: string;
+  waitingApprovalBadge: string;
+  approvalPrompt: string;
+  approveBtn: string;
+  rejectBtn: string;
+  diffModalTitle: string;
+  viewDiff: string;
+}
+
 export interface TranslationSettings {
   showAdvanced: string;
   connections: TranslationSettingsConnections;
@@ -636,6 +667,7 @@ export interface TranslationSettings {
   misc: TranslationSettingsMisc;
   providerErrors: TranslationSettingsProviderErrors;
   translation: TranslationSettingsTranslation;
+  cli?: TranslationSettingsCli;
 }
 
 // errors
@@ -684,6 +716,18 @@ export interface TranslationChatSlashCommands {
   settings: TranslationChatSlashCommand;
 }
 
+export interface TranslationChatCliMode {
+  cliAgent: string;
+  pluginAgent: string;
+  cliAgentTooltip: string;
+  pluginAgentTooltip: string;
+  disabledHintForCliAgent: string;
+  readModeTooltip: string;
+  editModeTooltip: string;
+  readModeNotice: string;
+  editModeNotice: string;
+}
+
 export interface TranslationChat {
   newChat: string;
   history: string;
@@ -694,6 +738,7 @@ export interface TranslationChat {
   slashCommands: TranslationChatSlashCommands;
   sessionUsage: string;
   sessionTokens: string;
+  cliMode: TranslationChatCliMode;
 }
 
 // common
@@ -847,6 +892,7 @@ export interface TranslationUiMessages {
   mcpLocalServerRestarted: string;
   mcpLocalServerStarted: string;
   mcpLocalServerStopped: string;
+  mcpCliCleanupSuccess: string;
   mcpLocalServerDisconnectAgentDisabled: string;
   mcpClientDisconnected: string;
   mcpClientConnected: string;
@@ -862,6 +908,7 @@ export interface TranslationUiMessages {
   agentModeSwitchedToEdit: string;
   webSearchEnabled: string;
   webSearchDisabled: string;
+  webSearchNotNeededForCli: string;
   noMessagesToExport: string;
   noMessagesToRegenerate: string;
   contextCompressed: string;

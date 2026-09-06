@@ -33,6 +33,25 @@ export const readNoteHandler = async (
 		return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.read_note.notFound', { path }) }] };
 	}
 	const content = await ctx.plugin.app.vault.read(file);
+
+	const startLine = typeof args.startLine === 'number' && args.startLine > 0 ? Math.floor(args.startLine) : undefined;
+	const endLine = typeof args.endLine === 'number' && args.endLine > 0 ? Math.floor(args.endLine) : undefined;
+
+	if (startLine !== undefined || endLine !== undefined) {
+		const lines = content.split('\n');
+		const totalLines = lines.length;
+		const start = startLine !== undefined ? Math.min(startLine, totalLines) : 1;
+		const end = endLine !== undefined ? Math.min(endLine, totalLines) : totalLines;
+
+		if (startLine !== undefined && startLine > totalLines) {
+			return { content: [{ type: 'text', text: `[${path} (Lines ${startLine}-${endLine ?? totalLines} of ${totalLines})]: (empty, startLine exceeds total lines)` }] };
+		}
+
+		const sliced = lines.slice(start - 1, Math.max(start, end)).join('\n');
+		const header = `[${path} (Lines ${start}-${end} of ${totalLines})]:\n`;
+		return { content: [{ type: 'text', text: header + applyReadLimit(sliced, ctx.limitRead) }] };
+	}
+
 	return { content: [{ type: 'text', text: applyReadLimit(content, ctx.limitRead) }] };
 };
 
