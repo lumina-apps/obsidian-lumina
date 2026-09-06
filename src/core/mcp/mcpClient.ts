@@ -1,6 +1,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { requestUrl } from 'obsidian';
 import { debugLogger } from '../../shared/debugLogger';
 import type { McpServerConfig } from '../../shared/types/settings.types';
@@ -20,8 +21,7 @@ export interface McpTool {
 
 export class LuminaMcpClient {
 	private client: Client;
-	// eslint-disable-next-line @typescript-eslint/no-deprecated -- SSEClientTransport is maintained for fallback compatibility with legacy MCP servers
-	private transport: StreamableHTTPClientTransport | SSEClientTransport | null = null;
+	private transport: Transport | null = null;
 	public config: McpServerConfig;
 	public availableTools: McpTool[] = [];
 
@@ -100,7 +100,7 @@ export class LuminaMcpClient {
 				headers: authHeaders,
 			},
 		};
-		// eslint-disable-next-line @typescript-eslint/no-deprecated -- Fallback to legacy SSE transport when server does not support Streamable HTTP
+		// Fallback to legacy SSE transport when server does not support Streamable HTTP
 		this.transport = new SSEClientTransport(sessionUrl, opts);
 		await this.client.connect(this.transport);
 	}

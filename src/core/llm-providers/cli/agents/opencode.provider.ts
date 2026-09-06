@@ -123,7 +123,7 @@ export class OpenCodeProvider extends BaseCliAgent {
 
 			// 첫 번째 토큰 (예: "anthropic/claude-3-5-sonnet", "openai/gpt-4o", "deepseek-r1" 등)
 			const firstToken = trimmed.split(/\s+/)[0];
-			if (/^[a-zA-Z0-9][a-zA-Z0-9._/\-]*$/.test(firstToken) && firstToken.length > 1) {
+			if (/^[a-zA-Z0-9][a-zA-Z0-9._/-]*$/.test(firstToken) && firstToken.length > 1) {
 				if (!models.includes(firstToken)) {
 					models.push(firstToken);
 				}

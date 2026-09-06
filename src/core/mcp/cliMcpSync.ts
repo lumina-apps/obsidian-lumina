@@ -76,7 +76,7 @@ export class CliMcpSync {
 					const raw = await this.app.vault.adapter.read(filePath);
 					const parsed: unknown = JSON.parse(raw);
 					if (parsed && typeof parsed === 'object') {
-						config = parsed as { mcpServers?: Record<string, unknown> };
+						config = parsed;
 					}
 				} catch {
 					config = {};
@@ -165,7 +165,7 @@ export class CliMcpSync {
 					const raw = await this.app.vault.adapter.read(filePath);
 					const parsed: unknown = JSON.parse(raw);
 					if (parsed && typeof parsed === 'object') {
-						config = parsed as { $schema?: string; mcp?: Record<string, unknown> };
+						config = parsed;
 					}
 				} catch {
 					config = {};
