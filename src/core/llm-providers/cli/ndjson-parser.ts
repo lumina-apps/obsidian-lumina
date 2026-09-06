@@ -5,7 +5,9 @@ import type { CliEvent } from '../../../shared/types/cliAgent.types';
  */
 export function stripAnsiCodes(str: string): string {
 	return str
+		// eslint-disable-next-line no-control-regex -- Stripping ANSI escape sequences requires matching ASCII ESC (0x1b)
 		.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '')
+		// eslint-disable-next-line no-control-regex -- Stripping OSC hyperlink escape sequences requires matching ASCII ESC (0x1b)
 		.replace(/\u001b\]8;;.*?\u001b\\/g, '')
 		.replace(/\r/g, '');
 }
@@ -153,14 +155,14 @@ export class NdjsonParser {
 
 			// 1. 단일 JSON 라인 파싱 시도
 			try {
-				const parsed = JSON.parse(trimmed);
+				const parsed: unknown = JSON.parse(trimmed);
 				results.push(parsed);
 				continue;
 			} catch {
 				const stripped = stripAnsiCodes(trimmed);
 				if (stripped !== trimmed) {
 					try {
-						const parsed = JSON.parse(stripped);
+						const parsed: unknown = JSON.parse(stripped);
 						results.push(parsed);
 						continue;
 					} catch {
@@ -225,7 +227,7 @@ export class NdjsonParser {
 			if (endIndex !== -1) {
 				const jsonCandidate = str.substring(startIndex, endIndex + 1);
 				try {
-					const parsed = JSON.parse(jsonCandidate);
+					const parsed: unknown = JSON.parse(jsonCandidate);
 					extracted.push(parsed);
 				} catch {
 					// ignore parsing failure

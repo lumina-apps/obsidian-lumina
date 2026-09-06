@@ -60,11 +60,11 @@ export function createProvider(config: LLMProviderConfig): ILLMProvider {
 			return new CliAgentProvider(config);
 
 		case 'openai':
-			return new OpenAIProvider(id, credential!);
+			return new OpenAIProvider(id, credential);
 		case 'anthropic':
-			return new AnthropicProvider(id, credential!);
+			return new AnthropicProvider(id, credential);
 		case 'google':
-			return new GoogleProvider(id, credential!);
+			return new GoogleProvider(id, credential);
 
 		// OpenAI 호환 고정 URL 클라우드 서비스
 		case 'xai':
@@ -75,7 +75,7 @@ export function createProvider(config: LLMProviderConfig): ILLMProvider {
 		case 'kimi':
 		case 'mistral': {
 			const url = PROVIDER_BASE_URLS[type]!;
-			return new OpenAICompatProvider(id, type, url, credential!);
+			return new OpenAICompatProvider(id, type, url, credential);
 		}
 
 		// 로컬 및 커스텀

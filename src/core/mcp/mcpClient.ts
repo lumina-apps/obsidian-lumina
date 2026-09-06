@@ -20,6 +20,7 @@ export interface McpTool {
 
 export class LuminaMcpClient {
 	private client: Client;
+	// eslint-disable-next-line @typescript-eslint/no-deprecated -- SSEClientTransport is maintained for fallback compatibility with legacy MCP servers
 	private transport: StreamableHTTPClientTransport | SSEClientTransport | null = null;
 	public config: McpServerConfig;
 	public availableTools: McpTool[] = [];
@@ -99,6 +100,7 @@ export class LuminaMcpClient {
 				headers: authHeaders,
 			},
 		};
+		// eslint-disable-next-line @typescript-eslint/no-deprecated -- Fallback to legacy SSE transport when server does not support Streamable HTTP
 		this.transport = new SSEClientTransport(sessionUrl, opts);
 		await this.client.connect(this.transport);
 	}

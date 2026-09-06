@@ -65,7 +65,7 @@ export class OpenCodeProvider extends BaseCliAgent {
 
 		// 1. JSON 포맷 파싱 시도
 		try {
-			const parsed = JSON.parse(clean);
+			const parsed: unknown = JSON.parse(clean);
 			const extracted: string[] = [];
 
 			const collectModelId = (item: unknown) => {
@@ -118,12 +118,12 @@ export class OpenCodeProvider extends BaseCliAgent {
 				continue;
 			}
 
-			const trimmed = line.replace(/^[\*\-\•\s]+/, '').trim();
+			const trimmed = line.replace(/^[*•\-\s]+/, '').trim();
 			if (!trimmed) continue;
 
 			// 첫 번째 토큰 (예: "anthropic/claude-3-5-sonnet", "openai/gpt-4o", "deepseek-r1" 등)
 			const firstToken = trimmed.split(/\s+/)[0];
-			if (/^[a-zA-Z0-9][a-zA-Z0-9._\/-]*$/.test(firstToken) && firstToken.length > 1) {
+			if (/^[a-zA-Z0-9][a-zA-Z0-9._/\-]*$/.test(firstToken) && firstToken.length > 1) {
 				if (!models.includes(firstToken)) {
 					models.push(firstToken);
 				}

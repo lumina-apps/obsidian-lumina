@@ -77,7 +77,7 @@ export class CodexProvider extends BaseCliAgent {
 				continue;
 			}
 
-			const trimmed = line.replace(/^[\*\-\•\s]+/, '').trim();
+			const trimmed = line.replace(/^[*•\-\s]+/, '').trim();
 			if (!trimmed) continue;
 
 			const firstToken = trimmed.split(/\s+/)[0];

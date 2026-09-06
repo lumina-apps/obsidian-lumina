@@ -74,7 +74,10 @@ export class CliMcpSync {
 			if (await this.app.vault.adapter.exists(filePath)) {
 				try {
 					const raw = await this.app.vault.adapter.read(filePath);
-					config = JSON.parse(raw);
+					const parsed: unknown = JSON.parse(raw);
+					if (parsed && typeof parsed === 'object') {
+						config = parsed as { mcpServers?: Record<string, unknown> };
+					}
 				} catch {
 					config = {};
 				}
@@ -160,7 +163,10 @@ export class CliMcpSync {
 			if (await this.app.vault.adapter.exists(filePath)) {
 				try {
 					const raw = await this.app.vault.adapter.read(filePath);
-					config = JSON.parse(raw);
+					const parsed: unknown = JSON.parse(raw);
+					if (parsed && typeof parsed === 'object') {
+						config = parsed as { $schema?: string; mcp?: Record<string, unknown> };
+					}
 				} catch {
 					config = {};
 				}

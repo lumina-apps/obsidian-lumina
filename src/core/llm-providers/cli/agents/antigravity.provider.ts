@@ -66,7 +66,7 @@ export class AntigravityProvider extends BaseCliAgent {
 
 		// 1. JSON 포맷 파싱 시도
 		try {
-			const parsed = JSON.parse(clean);
+			const parsed: unknown = JSON.parse(clean);
 			const extracted: string[] = [];
 
 			const collectModelId = (item: unknown) => {
@@ -120,7 +120,7 @@ export class AntigravityProvider extends BaseCliAgent {
 			}
 
 			// 불릿 기호(*, -, •) 제거
-			const trimmed = line.replace(/^[\*\-\•\s]+/, '').trim();
+			const trimmed = line.replace(/^[*•\-\s]+/, '').trim();
 			if (!trimmed) continue;
 
 			// 첫 번째 단어 (공백이나 탭 기준 분리)

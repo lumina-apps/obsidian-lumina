@@ -3,7 +3,6 @@ import type {
 	CliEvent,
 } from '../../../../shared/types/cliAgent.types';
 import { BaseCliAgent, type CliAgentConfig } from '../base-cli-agent';
-import { ProcessManager } from '../process-manager';
 import { extractTextFromUnknown, stripAnsiCodes, parseRawCliLine } from '../ndjson-parser';
 
 export class ClaudeCodeProvider extends BaseCliAgent {
@@ -50,7 +49,7 @@ export class ClaudeCodeProvider extends BaseCliAgent {
 				continue;
 			}
 
-			const trimmed = line.replace(/^[\*\-\•\s]+/, '').trim();
+			const trimmed = line.replace(/^[*•\-\s]+/, '').trim();
 			if (!trimmed) continue;
 
 			const firstToken = trimmed.split(/\s+/)[0];

@@ -43,8 +43,8 @@ export function getSpawnFunction(): ((command: string, args: string[], options: 
 			}
 		}
 		// 2. Node.js 표준 require 시도
-		// eslint-disable-next-line @typescript-eslint/no-require-imports
-		const cp = require('child_process');
+		// eslint-disable-next-line @typescript-eslint/no-require-imports -- Fallback to Node.js require when running in desktop/Node environment
+		const cp = (typeof require === 'function' ? require('child_process') : undefined) as unknown as { spawn?: (c: string, a: string[], o: NodeSpawnOptions) => ChildProcess } | undefined;
 		if (cp && typeof cp.spawn === 'function') {
 			return cp.spawn;
 		}
@@ -169,7 +169,8 @@ function getExistsSyncFunction(): ((path: string) => boolean) | null {
 				}
 			}
 		}
-		const nodeRequire = (globalThis as unknown as { require?: (mod: string) => { existsSync?: (p: string) => boolean } }).require;
+		// eslint-disable-next-line @typescript-eslint/no-require-imports -- Fallback to Node.js require in desktop runtime
+		const nodeRequire = typeof require === 'function' ? (require as unknown as (mod: string) => { existsSync?: (p: string) => boolean }) : undefined;
 		if (typeof nodeRequire === 'function') {
 			const fsMod = nodeRequire(fsModuleName);
 			if (fsMod && typeof fsMod.existsSync === 'function') {
@@ -301,10 +302,10 @@ export class ProcessManager {
 			}
 		}
 
-		let timeoutTimer: ReturnType<typeof setTimeout> | null = null;
+		let timeoutTimer: number | null = null;
 
 		if (timeoutMs && timeoutMs > 0) {
-			timeoutTimer = setTimeout(() => {
+			timeoutTimer = window.setTimeout(() => {
 				debugLogger.logWarn('cli-agent', `Process timeout (${timeoutMs}ms) exceeded for: ${resolvedCommand}`);
 				ProcessManager.killProcess(child);
 			}, timeoutMs);
@@ -319,8 +320,8 @@ export class ProcessManager {
 
 		const exitPromise = new Promise<{ exitCode: number; signal?: string }>((resolve) => {
 			child.on('close', (code, sig) => {
-				if (timeoutTimer) {
-					clearTimeout(timeoutTimer);
+				if (timeoutTimer !== null) {
+					window.clearTimeout(timeoutTimer);
 					timeoutTimer = null;
 				}
 				debugLogger.logDebug('cli-agent', `Process closed: ${resolvedCommand} (code: ${code}, signal: ${sig})`);
@@ -328,8 +329,8 @@ export class ProcessManager {
 			});
 
 			child.on('error', (err) => {
-				if (timeoutTimer) {
-					clearTimeout(timeoutTimer);
+				if (timeoutTimer !== null) {
+					window.clearTimeout(timeoutTimer);
 					timeoutTimer = null;
 				}
 				debugLogger.logError('cli-agent', `Process error for ${resolvedCommand}: ${err.message}`);
@@ -390,7 +391,7 @@ export class ProcessManager {
 					debugLogger.logDebug('cli-agent', `Terminating process PID ${child.pid} via SIGTERM`);
 					child.kill('SIGTERM');
 					// 3초 후 강제 SIGKILL 백업
-					setTimeout(() => {
+					window.setTimeout(() => {
 						try {
 							if (!child.killed) {
 								debugLogger.logDebug('cli-agent', `Process PID ${child.pid} still alive after 3s, sending SIGKILL`);

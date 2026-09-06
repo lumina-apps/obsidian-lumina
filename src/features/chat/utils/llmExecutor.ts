@@ -4,7 +4,6 @@ import type { ChatOptions, TokenUsage } from '../../../shared/types/llm.types';
 import type {
 	CliToolCallLog,
 	CliFileEditLog,
-	CliUsage,
 } from '../../../shared/types/cliAgent.types';
 import { CliAgentProvider, formatMessagesToPrompt } from '../../../core/llm-providers/cli/cli-agent.provider';
 import { stripAnsiCodes, extractTextFromUnknown } from '../../../core/llm-providers/cli/ndjson-parser';
@@ -390,7 +389,7 @@ export async function executeCliAgentCall(
 					if (!trimmed) continue;
 					if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
 						try {
-							const parsed = JSON.parse(trimmed);
+							const parsed: unknown = JSON.parse(trimmed);
 							const extracted = extractTextFromUnknown(parsed);
 							if (extracted) candidateTexts.push(extracted);
 						} catch {

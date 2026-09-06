@@ -43,7 +43,7 @@ class AsyncEventQueue<T> {
 		this.isDone = true;
 		while (this.resolvers.length > 0) {
 			const resolve = this.resolvers.shift()!;
-			resolve({ value: undefined as unknown as T, done: true });
+			resolve({ value: undefined, done: true });
 		}
 	}
 
@@ -55,7 +55,7 @@ class AsyncEventQueue<T> {
 					return Promise.resolve({ value, done: false });
 				}
 				if (this.isDone) {
-					return Promise.resolve({ value: undefined as unknown as T, done: true });
+					return Promise.resolve({ value: undefined, done: true });
 				}
 				return new Promise<IteratorResult<T>>((resolve) => {
 					this.resolvers.push(resolve);

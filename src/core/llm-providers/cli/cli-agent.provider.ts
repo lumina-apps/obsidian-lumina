@@ -1,6 +1,6 @@
 import type { ILLMProvider, ChatMessage, ChatOptions, ChatResponse, TokenUsage } from '../../../shared/types/llm.types';
-import type { LLMProviderConfig, ProviderType } from '../../../shared/types/settings.types';
-import type { CliEvent, CliExecution, CliExecuteOptions } from '../../../shared/types/cliAgent.types';
+import type { LLMProviderConfig } from '../../../shared/types/settings.types';
+import type { CliExecution, CliExecuteOptions } from '../../../shared/types/cliAgent.types';
 import { DEFAULT_CLI_BINARIES } from '../../../shared/types/settings.types';
 import { ClaudeCodeProvider } from './agents/claude-code.provider';
 import { CodexProvider } from './agents/codex.provider';

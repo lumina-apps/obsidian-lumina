@@ -32,7 +32,7 @@ export function createKeydownHandler(ctx: KeydownContext): (e: KeyboardEvent) =>
 		}
 
 		const sendKey = plugin.settings.chat.sendKey;
-		const isComposing = e.isComposing || e.keyCode === 229;
+		const isComposing = e.isComposing;
 
 		if (sendKey === "enter" && e.key === "Enter" && !e.shiftKey) {
 			if (isLoading) return;
