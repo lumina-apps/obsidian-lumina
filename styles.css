@@ -505,21 +505,21 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 	background-color: var(--background-modifier-hover);
 }
 
-.vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-btn-test-connection {
-	background-color: var(--interactive-accent) !important;
-	color: var(--text-on-accent) !important;
+.vertical-tab-content-container .lumina-settings .lumina-provider-card button.lumina-btn-test-connection {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
 	font-weight: 600;
-	border: 1px solid var(--interactive-accent) !important;
+	border: 1px solid var(--interactive-accent);
 	cursor: pointer;
 	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-btn-test-connection:hover {
+.vertical-tab-content-container .lumina-settings .lumina-provider-card button.lumina-btn-test-connection:hover {
 	opacity: 0.9;
-	background-color: var(--interactive-accent) !important;
+	background-color: var(--interactive-accent);
 }
 
-.vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-btn-test-connection:disabled {
+.vertical-tab-content-container .lumina-settings .lumina-provider-card button.lumina-btn-test-connection:disabled {
 	opacity: 0.6;
 	cursor: not-allowed;
 }
