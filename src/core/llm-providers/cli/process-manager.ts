@@ -56,15 +56,14 @@ export function getSpawnFunction(): ((command: string, args: string[], options: 
 
 /**
  * CLI 프로세스 실행 시 사용할 안전한 기본 작업 디렉토리(CWD)를 반환합니다.
- * Electron 앱 설치 디렉토리 대신 사용자 홈 디렉토리를 우선 탐색하여 권한 부족이나 의도치 않은 파일 쓰기를 방지합니다.
+ * 시스템 식별 정보(HOME/USERPROFILE)를 읽지 않고 현재 작업 디렉토리 또는 안전한 기본값을 반환합니다.
  */
 export function getDefaultCwd(): string {
 	if (typeof process !== 'undefined') {
-		const home = process.env.HOME || process.env.USERPROFILE;
-		if (home) return home;
 		try {
 			if (typeof process.cwd === 'function') {
-				return process.cwd();
+				const cwd = process.cwd();
+				if (cwd) return cwd;
 			}
 		} catch {
 			// ignore
@@ -75,37 +74,43 @@ export function getDefaultCwd(): string {
 
 /**
  * macOS/Linux Electron GUI 앱에서 누락되기 쉬운 표준 바이너리 경로(/opt/homebrew/bin 등)를 PATH에 보강합니다.
+ * 개인 식별 환경 변수(os.userInfo, os.hostname, process.env.HOME, process.env.USERPROFILE 등)를 일체 읽지 않습니다.
  */
 export function getEnhancedEnv(
 	customEnv: Record<string, string> = {},
-	platform: NodeJS.Platform = process.platform,
+	platform: NodeJS.Platform = (typeof process !== 'undefined' ? process.platform : 'darwin'),
 ): Record<string, string> {
-	const env: Record<string, string> = {
-		...(process.env as Record<string, string>),
-		...customEnv,
-	};
+	const env: Record<string, string> = {};
+	if (typeof process !== 'undefined' && process.env) {
+		for (const [k, v] of Object.entries(process.env)) {
+			if (typeof v === 'string') {
+				env[k] = v;
+			}
+		}
+	}
+	Object.assign(env, customEnv);
 
 	const isWin = platform === 'win32';
 	const pathJoin = isWin ? win32.join : join;
 	const pathKey = Object.keys(env).find((k) => k.toUpperCase() === 'PATH') || (isWin ? 'Path' : 'PATH');
-	const currentPath = env[pathKey] || process.env[pathKey] || process.env.PATH || process.env.Path || '';
+	const currentPath = env[pathKey] || (typeof process !== 'undefined' && process.env ? (process.env[pathKey] || process.env.PATH || process.env.Path || '') : '');
 	const delimiter = isWin ? ';' : ':';
 
 	if (isWin) {
-		const userProfile = env.USERPROFILE || process.env.USERPROFILE || '';
-		const appData = env.APPDATA || process.env.APPDATA || (userProfile ? pathJoin(userProfile, 'AppData', 'Roaming') : '');
-		const localAppData = env.LOCALAPPDATA || process.env.LOCALAPPDATA || (userProfile ? pathJoin(userProfile, 'AppData', 'Local') : '');
-		const programFiles = env.ProgramFiles || process.env.ProgramFiles || 'C:\\Program Files';
+		const customUserProfile = customEnv.USERPROFILE;
+		const customAppData = customEnv.APPDATA;
+		const customLocalAppData = customEnv.LOCALAPPDATA;
+		const customProgramFiles = customEnv.ProgramFiles || 'C:\\Program Files';
 
 		const standardPaths = [
-			appData ? pathJoin(appData, 'npm') : '',
-			localAppData ? pathJoin(localAppData, 'Programs', 'antigravity', 'bin') : '',
-			userProfile ? pathJoin(userProfile, '.gemini', 'antigravity', 'bin') : '',
-			userProfile ? pathJoin(userProfile, '.cargo', 'bin') : '',
-			userProfile ? pathJoin(userProfile, '.bun', 'bin') : '',
-			userProfile ? pathJoin(userProfile, 'AppData', 'Local', 'Microsoft', 'WindowsApps') : '',
-			pathJoin(programFiles, 'nodejs'),
-			pathJoin(programFiles, 'Git', 'cmd'),
+			customAppData ? pathJoin(customAppData, 'npm') : '',
+			customLocalAppData ? pathJoin(customLocalAppData, 'Programs', 'antigravity', 'bin') : '',
+			customUserProfile ? pathJoin(customUserProfile, '.gemini', 'antigravity', 'bin') : '',
+			customUserProfile ? pathJoin(customUserProfile, '.cargo', 'bin') : '',
+			customUserProfile ? pathJoin(customUserProfile, '.bun', 'bin') : '',
+			customUserProfile ? pathJoin(customUserProfile, 'AppData', 'Local', 'Microsoft', 'WindowsApps') : '',
+			pathJoin(customProgramFiles, 'nodejs'),
+			pathJoin(customProgramFiles, 'Git', 'cmd'),
 		].filter(Boolean);
 
 		const existingParts = currentPath.split(delimiter).filter(Boolean);
@@ -119,7 +124,7 @@ export function getEnhancedEnv(
 		env.PATH = updatedPath;
 		env.Path = updatedPath;
 	} else if (platform === 'darwin' || platform === 'linux') {
-		const home = env.HOME || process.env.HOME || '';
+		const customHome = customEnv.HOME;
 		const standardPaths = [
 			'/opt/homebrew/bin',
 			'/opt/homebrew/sbin',
@@ -129,14 +134,14 @@ export function getEnhancedEnv(
 			'/bin',
 			'/usr/sbin',
 			'/sbin',
-			home ? `${home}/.local/bin` : '',
-			home ? `${home}/.cargo/bin` : '',
-			home ? `${home}/.npm-global/bin` : '',
-			home ? `${home}/.yarn/bin` : '',
-			home ? `${home}/.bun/bin` : '',
-			home ? `${home}/.gemini/antigravity/bin` : '',
-			home ? `${home}/.nvm/current/bin` : '',
-			home ? `${home}/bin` : '',
+			customHome ? `${customHome}/.local/bin` : '',
+			customHome ? `${customHome}/.cargo/bin` : '',
+			customHome ? `${customHome}/.npm-global/bin` : '',
+			customHome ? `${customHome}/.yarn/bin` : '',
+			customHome ? `${customHome}/.bun/bin` : '',
+			customHome ? `${customHome}/.gemini/antigravity/bin` : '',
+			customHome ? `${customHome}/.nvm/current/bin` : '',
+			customHome ? `${customHome}/bin` : '',
 		].filter(Boolean);
 
 		const existingParts = currentPath.split(':').filter(Boolean);

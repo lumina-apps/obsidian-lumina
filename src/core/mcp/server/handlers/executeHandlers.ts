@@ -184,7 +184,7 @@ export const runShellCommandHandler = async (
 		// (PowerShell expects -Command). So when using PowerShell, we must spawn with -Command flag instead.
 		let result: { error: Error | null; stdout: unknown; stderr: unknown };
 		if (Platform.isWin) {
-			const comspec = typeof process !== 'undefined' && process.env?.COMSPEC ? process.env.COMSPEC : 'cmd.exe';
+			const comspec = 'cmd.exe';
 
 			// Check whether a shell executable exists in PATH via `where`
 			const isShellAvailable = (exe: string): Promise<boolean> => {

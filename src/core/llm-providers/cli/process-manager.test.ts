@@ -90,27 +90,19 @@ describe('ProcessManager Unit Tests', () => {
 	});
 
 	describe('getDefaultCwd - Safe Working Directory Fallback', () => {
-		const origEnv = { ...process.env };
-
-		afterEach(() => {
-			process.env = { ...origEnv };
-		});
-
-		it('HOME 환경변수가 있으면 우선 반환한다', () => {
-			process.env.HOME = '/Users/testuser';
-			expect(getDefaultCwd()).toBe('/Users/testuser');
-		});
-
-		it('HOME이 없고 USERPROFILE(Windows)이 있으면 USERPROFILE을 반환한다', () => {
-			delete process.env.HOME;
-			process.env.USERPROFILE = 'C:\\Users\\testuser';
-			expect(getDefaultCwd()).toBe('C:\\Users\\testuser');
-		});
-
-		it('둘 다 없으면 process.cwd()로 폴백한다', () => {
-			delete process.env.HOME;
-			delete process.env.USERPROFILE;
+		it('process.cwd()가 있으면 현재 작업 디렉토리를 반환한다', () => {
 			expect(getDefaultCwd()).toBe(process.cwd());
+		});
+
+		it('process.cwd 예외 또는 부재 시 "."으로 안전하게 폴백한다', () => {
+			const origCwd = process.cwd;
+			try {
+				// @ts-expect-error simulate missing cwd
+				process.cwd = undefined;
+				expect(getDefaultCwd()).toBe('.');
+			} finally {
+				process.cwd = origCwd;
+			}
 		});
 	});
 
