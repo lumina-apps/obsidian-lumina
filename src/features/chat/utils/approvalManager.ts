@@ -141,7 +141,15 @@ export const approvalManager = {
 
 		return createRequestWithAutoResolve(
 			(resolve) => {
-				const changes = diffLines(baseContent, proposedContent);
+				// 원본 파일과 제안된 내용의 줄바꿈 스타일(\r\n vs \n) 통일하여 Diff 왜곡 방지
+				let normalizedProposed = proposedContent;
+				if (baseContent.includes('\r\n') && !proposedContent.includes('\r\n')) {
+					normalizedProposed = proposedContent.replace(/\n/g, '\r\n');
+				} else if (!baseContent.includes('\r\n') && proposedContent.includes('\r\n')) {
+					normalizedProposed = proposedContent.replace(/\r\n/g, '\n');
+				}
+
+				const changes = diffLines(baseContent, normalizedProposed);
 				const allChanges = parseIntoChunks(changes);
 
 				// Extract just the chunks for easy UI iteration
@@ -170,7 +178,7 @@ export const approvalManager = {
 					id: generateId(),
 					filePath,
 					baseContent,
-					proposedContent,
+					proposedContent: normalizedProposed,
 					chunks,
 					allChanges,
 					actionType: 'edit',

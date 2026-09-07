@@ -64,4 +64,16 @@ describe('fileFilter', () => {
 		expect(deleted.has('b.md')).toBe(false); // Actually exists
 		expect(deleted.has('c.md')).toBe(true);  // Doesn't exist
 	});
+
+	it('detectDeletedPaths는 파일명의 대소문자만 변경된 경우 구버전 대소문자 경로를 삭제 대상으로 감지한다', async () => {
+		// readme.md 가 README.md 로 변경된 상황
+		const currentPaths = new Set(['README.md']);
+		const indexedPaths = ['readme.md'];
+
+		// adapter.exists는 Windows 환경처럼 대소문자 무시하고 true 반환하도록 설정
+		vi.mocked(mockApp.vault.adapter.exists).mockResolvedValue(true);
+
+		const deleted = await detectDeletedPaths(mockApp, currentPaths, indexedPaths);
+		expect(deleted.has('readme.md')).toBe(true);
+	});
 });

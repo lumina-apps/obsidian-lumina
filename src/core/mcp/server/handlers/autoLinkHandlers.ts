@@ -10,7 +10,7 @@ export async function autoLinkNoteHandler(
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard,
 ): Promise<ToolResult> {
-	const path = sanitizeFilePath(getStringArg(args, 'path'));
+	const path = sanitizeFilePath(getStringArg(args, 'path'), true, ctx.plugin.app);
 	if (!path) {
 		return {
 			isError: true,

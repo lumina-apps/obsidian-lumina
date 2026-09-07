@@ -25,7 +25,7 @@ export const generateMocHandler = async (
 	if (!rawOutputPath.endsWith('.md')) {
 		rawOutputPath += '.md';
 	}
-	const outputPath = sanitizeFilePath(normalizePath(rawOutputPath));
+	const outputPath = sanitizeFilePath(normalizePath(rawOutputPath), true, ctx.plugin.app);
 
 	const folderScope = getStringOptArg(args, 'folder');
 	const tagsRaw = Array.isArray(args.tags) ? (args.tags as string[]) : [];
@@ -61,7 +61,7 @@ export const generateMocHandler = async (
 	if (filesRaw.length > 0) {
 		// 명시적 파일 목록
 		for (const rawPath of filesRaw) {
-			const p = sanitizeFilePath(rawPath.endsWith('.md') ? rawPath : rawPath + '.md');
+			const p = sanitizeFilePath(rawPath.endsWith('.md') ? rawPath : rawPath + '.md', true, ctx.plugin.app);
 			const f = ctx.plugin.app.vault.getAbstractFileByPath(p);
 			if (f instanceof TFile) {
 				candidateFiles.push(f);

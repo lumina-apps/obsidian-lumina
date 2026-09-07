@@ -13,10 +13,10 @@ class DiffAddedWidget extends WidgetType {
 	toDOM() {
 		const div = createDiv({ cls: 'lumina-diff-added-widget' });
 		
-			// Remove trailing newline for visual neatness
-		const display = this.text.endsWith('\n') ? this.text.slice(0, -1) : this.text;
+		// Remove trailing newline for visual neatness
+		const display = this.text.replace(/\r?\n$/, '');
 		
-		const lines = display.split('\n');
+		const lines = display.split(/\r?\n/);
 		lines.forEach(line => {
 			div.createDiv({ cls: 'lumina-diff-added-line', text: '+ ' + line });
 		});

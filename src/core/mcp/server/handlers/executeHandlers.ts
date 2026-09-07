@@ -5,7 +5,7 @@ import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes
 import type { PathGuard } from '../pathGuard';
 import { approvalManager } from '../../../../features/chat/utils/approvalManager';
 import { McpSandbox } from '../../mcpSandbox';
-import { getSpawnFunction } from '../../../llm-providers/cli/process-manager';
+import { getSpawnFunction, getEnhancedEnv, ProcessManager } from '../../../llm-providers/cli/process-manager';
 
 /** 실행/셸 승인 대기 최대 시간 (5분) */
 const APPROVAL_TIMEOUT_MS = 5 * 60 * 1000;
@@ -114,7 +114,7 @@ export const runShellCommandHandler = async (
 		// 2) PowerShell / 대체 명령어 우회 차단
 		{ pattern: new RegExp('remove-item\\b', 'i'),                           reason: 'PowerShell Remove-Item is not allowed.' },
 		{ pattern: new RegExp('invoke-expression\\b|\\biex\\s+', 'i'),          reason: 'PowerShell code execution via Invoke-Expression is not allowed.' },
-		{ pattern: new RegExp('powershell(\\.exe)?\\s+.*-enc(odedcommand)?\\b', 'i'), reason: 'Encoded PowerShell commands are not allowed.' },
+		{ pattern: new RegExp('(powershell|pwsh)(\\.exe)?\\s+.*-enc(odedcommand)?\\b', 'i'), reason: 'Encoded PowerShell commands are not allowed.' },
 		{ pattern: new RegExp('Start-Process\\s+.*-Verb\\s+RunAs', 'i'),        reason: 'Elevated process execution (Start-Process -Verb RunAs) is not allowed.' },
 		{ pattern: new RegExp('reg\\s+(add|delete|copy)\\s+HK', 'i'),           reason: 'Modifying Windows registry is not allowed.' },
 		// 3) 간접 실행 / 스크립트 파일 차단
@@ -143,10 +143,15 @@ export const runShellCommandHandler = async (
 			throw new Error('child_process is unavailable. Note: Shell execution is only supported on Desktop.');
 		}
 
+		const SHELL_TIMEOUT_MS = 60 * 1000;
+		const mergedEnv = getEnhancedEnv();
+
 		const runSpawn = (exe: string, args: string[]): Promise<{ error: Error | null; stdout: string; stderr: string }> => {
 			return new Promise((resolveExec) => {
+				let settled = false;
+				let timer: number | null = null;
 				try {
-					const child = spawnFn(exe, args, { cwd: finalCwd, windowsHide: true });
+					const child = spawnFn(exe, args, { cwd: finalCwd || undefined, env: mergedEnv, windowsHide: true });
 					let stdout = '';
 					let stderr = '';
 					if (child.stdout) {
@@ -155,8 +160,28 @@ export const runShellCommandHandler = async (
 					if (child.stderr) {
 						child.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
 					}
+
+					const finish = (res: { error: Error | null; stdout: string; stderr: string }) => {
+						if (settled) return;
+						settled = true;
+						if (timer !== null) {
+							window.clearTimeout(timer);
+							timer = null;
+						}
+						resolveExec(res);
+					};
+
+					timer = window.setTimeout(() => {
+						ProcessManager.killProcess(child);
+						finish({
+							error: new Error(`Command timed out after ${SHELL_TIMEOUT_MS / 1000}s`),
+							stdout,
+							stderr,
+						});
+					}, SHELL_TIMEOUT_MS);
+
 					child.on('error', (err: Error | number | null) => {
-						resolveExec({
+						finish({
 							error: err instanceof Error ? err : new Error(String(err)),
 							stdout,
 							stderr,
@@ -164,9 +189,9 @@ export const runShellCommandHandler = async (
 					});
 					child.on('close', (code: Error | number | null) => {
 						if (code === 0) {
-							resolveExec({ error: null, stdout, stderr });
+							finish({ error: null, stdout, stderr });
 						} else {
-							resolveExec({
+							finish({
 								error: new Error(`Command exited with code ${String(code)}`),
 								stdout,
 								stderr,
@@ -187,9 +212,9 @@ export const runShellCommandHandler = async (
 			};
 
 			if (await isShellAvailable('pwsh.exe')) {
-				result = await runSpawn('pwsh.exe', ['-NoProfile', '-NonInteractive', '-Command', command]);
+				result = await runSpawn('pwsh.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', command]);
 			} else if (await isShellAvailable('powershell.exe')) {
-				result = await runSpawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', command]);
+				result = await runSpawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', command]);
 			} else {
 				result = await runSpawn('cmd.exe', ['/c', command]);
 			}

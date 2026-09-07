@@ -54,9 +54,16 @@ export async function detectDeletedPaths(
 	indexedPaths: string[],
 ): Promise<Set<string>> {
 	const pathsToDelete = new Set<string>();
+	const lowerCurrentPaths = new Set(Array.from(currentPaths).map(p => p.toLowerCase()));
 
 	for (const path of indexedPaths) {
 		if (!currentPaths.has(path)) {
+			// Windows/macOS 대소문자 변경(rename) 대응: 대소문자만 다른 파일이 존재하면 이전 대소문자 경로는 삭제 대상
+			if (lowerCurrentPaths.has(path.toLowerCase())) {
+				pathsToDelete.add(path);
+				continue;
+			}
+
 			const actuallyExists = await app.vault.adapter.exists(path);
 			if (!actuallyExists) {
 				pathsToDelete.add(path);

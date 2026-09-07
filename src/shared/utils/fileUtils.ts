@@ -43,7 +43,7 @@ export function toVaultRelativePath(
 		const inputToCompare = isWin ? normalizedInput.toLowerCase() : normalizedInput;
 		const baseToCompare = isWin ? normalizedBase.toLowerCase() : normalizedBase;
 
-		if (inputToCompare.startsWith(baseToCompare)) {
+		if (inputToCompare === baseToCompare || inputToCompare.startsWith(baseToCompare + '/')) {
 			let rel = normalizedInput.slice(normalizedBase.length);
 			if (rel.startsWith('/')) {
 				rel = rel.slice(1);
@@ -80,9 +80,19 @@ export function getFileExtension(fileName: string): string {
 	return fileName.split('.').pop()?.toLowerCase() ?? '';
 }
 
-/** 파일명 특수문자를 '_'로 치환 (경로 구분자 /는 보존) */
+/** Windows 예약 디바이스 이름 패턴 (대소문자 무시, 확장자 포함 가능) */
+const WINDOWS_RESERVED_NAMES = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\..*)?$/i;
+
+/** 파일명 특수문자를 '_'로 치환하고 Windows 예약어 및 후행 점/공백을 안전하게 처리 */
 export function sanitizeFilename(name: string): string {
-	return name.replace(/[\\/:*?"<>|]/g, '_');
+	let sanitized = name.replace(/[\\/:*?"<>|]/g, '_');
+	// Windows에서 오류를 유발하는 후행 점 및 공백 제거
+	sanitized = sanitized.replace(/[. ]+$/, '');
+	// Windows 예약 디바이스 이름 충돌 방어
+	if (WINDOWS_RESERVED_NAMES.test(sanitized)) {
+		sanitized = '_' + sanitized;
+	}
+	return sanitized;
 }
 
 /** .md 확장자가 없으면 추가 */
@@ -94,9 +104,13 @@ export function enforceMarkdownExt(path: string): string {
 	return norm;
 }
 
-/** 경로 전체 정제 (경로 순회 방지 + 파일명 특수문자 치환 + .md 확장자 보장) */
-export function sanitizeFilePath(rawPath: string, enforceMd: boolean = true): string {
-	let cleanedPath = rawPath.trim().replace(/\\/g, '/');
+/** 경로 전체 정제 (경로 순회 방지 + 폴더/파일명 특수문자 치환 + .md 확장자 보장) */
+export function sanitizeFilePath(rawPath: string, enforceMd: boolean = true, appOrBasePath?: App | { app?: App; vault?: { adapter: unknown } } | string): string {
+	let cleanedPath = rawPath.trim();
+	if (appOrBasePath) {
+		cleanedPath = toVaultRelativePath(appOrBasePath, cleanedPath);
+	}
+	cleanedPath = cleanedPath.replace(/\\/g, '/');
 	
 	// 1. 전체가 대괄호로 감싸진 경우 ([[path]] 또는 [path]) 제거
 	const wrapMatch = cleanedPath.match(/^\[+(.*?)\]+$/);
@@ -115,7 +129,7 @@ export function sanitizeFilePath(rawPath: string, enforceMd: boolean = true): st
 	const parts = cleanedPath.split('/');
 	const safeParts = parts
 		.filter((p) => p !== '..' && p !== '.')
-		.map((p, i, arr) => (i === arr.length - 1 ? sanitizeFilename(p) : p));
+		.map((p) => sanitizeFilename(p));
 		
 	const joined = safeParts.join('/');
 	return enforceMd ? enforceMarkdownExt(joined) : normalizePath(joined);

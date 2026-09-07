@@ -24,7 +24,7 @@ export const readNoteHandler = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
-	const path = sanitizeFilePath(getStringArg(args, 'path'));
+	const path = sanitizeFilePath(getStringArg(args, 'path'), true, ctx.plugin.app);
 	const blocked = blockIfPathNotAllowed(path, ctx, pathGuard);
 	if (blocked) return blocked;
 
@@ -76,7 +76,7 @@ export const getBacklinksHandler = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
-	const path = sanitizeFilePath(getStringArg(args, 'path'));
+	const path = sanitizeFilePath(getStringArg(args, 'path'), true, ctx.plugin.app);
 	const blocked = blockIfPathNotAllowed(path, ctx, pathGuard);
 	if (blocked) return blocked;
 
@@ -100,7 +100,7 @@ export const getNoteMetadataHandler = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
-	const path = sanitizeFilePath(getStringArg(args, 'path'));
+	const path = sanitizeFilePath(getStringArg(args, 'path'), true, ctx.plugin.app);
 	const blocked = blockIfPathNotAllowed(path, ctx, pathGuard);
 	if (blocked) return blocked;
 
@@ -134,7 +134,7 @@ export const listAttachmentsHandler = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
-	const path = args.path ? sanitizeFilePath(args.path as string) : undefined;
+	const path = args.path ? sanitizeFilePath(args.path as string, false, ctx.plugin.app) : undefined;
 	const allFiles = ctx.plugin.app.vault.getFiles();
 	
 	const isAttachment = (f: TFile) => !f.path.endsWith('.md') && !f.path.endsWith('.canvas');

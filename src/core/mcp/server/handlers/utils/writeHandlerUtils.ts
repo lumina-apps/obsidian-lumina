@@ -48,7 +48,7 @@ export const getValidatedPathAndFile = (
 	requireTFile: boolean = true,
 	enforceMd: boolean = true
 ): ValidatedFileResult => {
-	const path = sanitizeFilePath(getStringArg(args, argKey), enforceMd);
+	const path = sanitizeFilePath(getStringArg(args, argKey), enforceMd, ctx.plugin.app);
 
 	const blocked = blockIfPathNotAllowed(path, ctx, pathGuard);
 	if (blocked) return { path, errorResult: blocked };

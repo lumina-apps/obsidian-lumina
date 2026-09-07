@@ -90,8 +90,17 @@ describe('fileUtils', () => {
 			expect(sanitizeFilename('my<new>file|')).toBe('my_new_file_');
 		});
 
-		it('정상적인 파일명은 그대로 반환한다', () => {
-			expect(sanitizeFilename('my_file-name.md')).toBe('my_file-name.md');
+		it('Windows 예약어(CON, PRN, AUX, NUL, COM1, LPT1 등)에 선행 언더스코어를 부여한다', () => {
+			expect(sanitizeFilename('con.md')).toBe('_con.md');
+			expect(sanitizeFilename('CON.md')).toBe('_CON.md');
+			expect(sanitizeFilename('aux')).toBe('_aux');
+			expect(sanitizeFilename('nul.txt')).toBe('_nul.txt');
+			expect(sanitizeFilename('com1.json')).toBe('_com1.json');
+		});
+
+		it('Windows에서 금지되는 후행 점과 공백을 제거한다', () => {
+			expect(sanitizeFilename('test.')).toBe('test');
+			expect(sanitizeFilename('test   ')).toBe('test');
 		});
 	});
 
@@ -114,6 +123,15 @@ describe('fileUtils', () => {
 
 		it('파일명 특수문자를 치환한다', () => {
 			expect(sanitizeFilePath('folder/file*name?.md')).toBe('folder/file_name_.md');
+		});
+
+		it('디렉토리 경로의 특수문자도 치환한다', () => {
+			expect(sanitizeFilePath('folder:name/sub*dir/file.md')).toBe('folder_name/sub_dir/file.md');
+		});
+
+		it('appOrBasePath가 주어지면 볼트 절대 경로를 상대 경로로 자동 변환하여 정제한다', () => {
+			expect(sanitizeFilePath('D:/MyVault/docs/notes.md', true, 'D:/MyVault')).toBe('docs/notes.md');
+			expect(sanitizeFilePath('D:\\MyVault\\docs\\notes.md', true, 'D:/MyVault')).toBe('docs/notes.md');
 		});
 
 		it('enforceMd가 true이면 .md 확장자를 보장한다', () => {
@@ -181,6 +199,11 @@ describe('fileUtils', () => {
 
 			// 5. 문자열 직접 인자 전달
 			expect(toVaultRelativePath('D:\\MyVault\\Project', 'D:/MyVault/Project/sub/doc.md')).toBe('sub/doc.md');
+		});
+
+		it('볼트 이름과 앞부분이 유사하지만 다른 외부 폴더를 잘못 잘라내지 않는다', () => {
+			// D:/MyVault vs D:/MyVaultBackup/doc.md
+			expect(toVaultRelativePath('D:/MyVault', 'D:/MyVaultBackup/doc.md')).toBe('D:/MyVaultBackup/doc.md');
 		});
 
 		it('빈 문자열을 안전하게 처리한다', () => {

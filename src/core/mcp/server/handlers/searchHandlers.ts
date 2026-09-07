@@ -191,10 +191,11 @@ export const globFilesHandler = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
-	const pattern = getStringArg(args, 'pattern');
-	if (!pattern) {
+	const rawPattern = getStringArg(args, 'pattern');
+	if (!rawPattern) {
 		return { isError: true, content: [{ type: 'text', text: 'pattern parameter is required.' }] };
 	}
+	const pattern = rawPattern.replace(/\\/g, '/');
 
 	const folderScope = getStringOptArg(args, 'path');
 	const maxResults = typeof args.maxResults === 'number' && args.maxResults > 0 ? Math.min(args.maxResults, 500) : 100;

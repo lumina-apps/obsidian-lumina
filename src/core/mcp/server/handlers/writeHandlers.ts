@@ -163,14 +163,46 @@ export const patchNoteHandler = async (
 
 	// Apply patches sequentially to build the final proposed content
 	let proposedContent = currentContent;
+	const isCrlf = currentContent.includes('\r\n');
+
 	for (const patch of patches) {
-		if (!proposedContent.includes(patch.target)) {
+		let target = patch.target;
+		let replacement = patch.replacement;
+
+		// 개행 일치: 원본 파일이 CRLF인데 패치가 LF인 경우 (또는 그 반대)
+		if (isCrlf) {
+			if (!target.includes('\r\n')) {
+				target = target.replace(/\n/g, '\r\n');
+			}
+			if (!replacement.includes('\r\n')) {
+				replacement = replacement.replace(/\n/g, '\r\n');
+			}
+		} else {
+			if (target.includes('\r\n')) {
+				target = target.replace(/\r\n/g, '\n');
+			}
+			if (replacement.includes('\r\n')) {
+				replacement = replacement.replace(/\r\n/g, '\n');
+			}
+		}
+
+		if (!proposedContent.includes(target)) {
+			// 폴백: 양쪽 모두 \n으로 정규화하여 매칭 시도
+			const normProposed = proposedContent.replace(/\r\n/g, '\n');
+			const normTarget = patch.target.replace(/\r\n/g, '\n');
+			if (normProposed.includes(normTarget)) {
+				const normReplacement = patch.replacement.replace(/\r\n/g, '\n');
+				const replacedNorm = normProposed.replace(normTarget, normReplacement);
+				proposedContent = isCrlf ? replacedNorm.replace(/\n/g, '\r\n') : replacedNorm;
+				continue;
+			}
+
 			return {
 				isError: true,
 				content: [{ type: 'text', text: `Target text not found in ${path}: "${patch.target.substring(0, 80)}${patch.target.length > 80 ? '...' : ''}". Ensure whitespace matches exactly.` }]
 			};
 		}
-		proposedContent = proposedContent.replace(patch.target, patch.replacement);
+		proposedContent = proposedContent.replace(target, replacement);
 	}
 
 	return safeModifyFile(

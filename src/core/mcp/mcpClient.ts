@@ -110,8 +110,8 @@ export class LuminaMcpClient {
 	 * Returns the resolved session URL.
 	 */
 	private _parseSseEndpoint(body: string, baseUrl: URL): URL {
-		// Split by double newlines (SSE event boundary)
-		const events = body.split('\n\n');
+		// Split by double newlines (SSE event boundary), normalizing CRLF to LF
+		const events = body.replace(/\r\n/g, '\n').split('\n\n');
 
 		for (const event of events) {
 			const eventType = this._parseSseField(event, 'event');
