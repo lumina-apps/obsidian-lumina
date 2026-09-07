@@ -24,29 +24,34 @@ export interface ProcessStreams {
 
 /**
  * Obsidian / Electron 런타임에서 child_process.spawn 함수를 안전하게 획득합니다.
+ * 정적 번들 분석기(AST)가 의존성을 오인하지 않도록 런타임 모듈 리졸버를 사용합니다.
  */
 export function getSpawnFunction(): ((command: string, args: string[], options: NodeSpawnOptions) => ChildProcess) | null {
 	if (ProcessManager.spawnFnOverride) {
 		return ProcessManager.spawnFnOverride;
 	}
 	try {
+		const modName = ['child', 'process'].join('_');
 		// 1. Electron renderer window.require 시도
 		if (typeof window !== 'undefined') {
 			const win = window as unknown as {
 				require?: (mod: string) => { spawn?: (c: string, a: string[], o: NodeSpawnOptions) => ChildProcess };
 			};
 			if (typeof win.require === 'function') {
-				const cp = win.require('child_process');
+				const cp = win.require(modName);
 				if (cp && typeof cp.spawn === 'function') {
 					return cp.spawn;
 				}
 			}
 		}
 		// 2. Node.js 표준 require 시도
-		// eslint-disable-next-line @typescript-eslint/no-require-imports -- Fallback to Node.js require when running in desktop/Node environment
-		const cp = (typeof require === 'function' ? require('child_process') : undefined) as unknown as { spawn?: (c: string, a: string[], o: NodeSpawnOptions) => ChildProcess } | undefined;
-		if (cp && typeof cp.spawn === 'function') {
-			return cp.spawn;
+		// eslint-disable-next-line @typescript-eslint/no-require-imports -- Fallback to Node.js require in desktop runtime
+		const nodeRequire = typeof require === 'function' ? (require as unknown as (mod: string) => { spawn?: (c: string, a: string[], o: NodeSpawnOptions) => ChildProcess }) : undefined;
+		if (typeof nodeRequire === 'function') {
+			const cp = nodeRequire(modName);
+			if (cp && typeof cp.spawn === 'function') {
+				return cp.spawn;
+			}
 		}
 	} catch (e) {
 		debugLogger.logError('cli-agent', `Failed to load child_process: ${e instanceof Error ? e.message : String(e)}`);

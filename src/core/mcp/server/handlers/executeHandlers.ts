@@ -5,6 +5,7 @@ import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes
 import type { PathGuard } from '../pathGuard';
 import { approvalManager } from '../../../../features/chat/utils/approvalManager';
 import { McpSandbox } from '../../mcpSandbox';
+import { getSpawnFunction } from '../../../llm-providers/cli/process-manager';
 
 /** 실행/셸 승인 대기 최대 시간 (5분) */
 const APPROVAL_TIMEOUT_MS = 5 * 60 * 1000;
@@ -137,115 +138,63 @@ export const runShellCommandHandler = async (
 	}
 
 	try {
-		const moduleName = 'child' + '_' + 'process';
-		interface SpawnChild {
-			stdout: { on(event: 'data', cb: (chunk: Buffer) => void): void };
-			stderr: { on(event: 'data', cb: (chunk: Buffer) => void): void };
-			on(event: 'error' | 'close', cb: (arg: Error | number | null) => void): void;
-		}
-		interface ChildProcess {
-			exec(
-				command: string,
-				options: { cwd?: string; shell?: string },
-				callback: (error: Error | null, stdout: unknown, stderr: unknown) => void
-			): unknown;
-			spawn(
-				command: string,
-				args: string[],
-				options: { cwd?: string }
-			): SpawnChild;
+		const spawnFn = getSpawnFunction();
+		if (!spawnFn) {
+			throw new Error('child_process is unavailable. Note: Shell execution is only supported on Desktop.');
 		}
 
-		// Use the string-concatenated module name to prevent esbuild post-process
-		// from replacing require('child_process') with undefined (see esbuild.config.mjs postProcessMainBundle).
-		// eslint-disable-next-line @typescript-eslint/no-require-imports -- Required dynamically at runtime.
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call -- require is implicitly any here, we safely cast it.
-		const cp: ChildProcess | undefined = typeof require !== 'undefined'
-			? (require as (id: string) => ChildProcess)(moduleName)
-			: undefined;
-
-		if (!cp || typeof cp.exec !== 'function') {
-			throw new Error(`child_process module is unavailable (cp=${typeof cp}). Note: Shell execution is only supported on Desktop.`);
-		}
-
-		const cpModule = cp;
-
-		const runExec = (options: { cwd?: string; shell?: string }) => {
-			return new Promise<{ error: Error | null; stdout: unknown; stderr: unknown }>((resolveExec) => {
-				cpModule.exec(command, options, (error: Error | null, stdout: unknown, stderr: unknown) => {
-					resolveExec({ error, stdout, stderr });
-				});
-			});
-		};
-
-		// Windows: try pwsh.exe (PowerShell Core) first, then powershell.exe, then fallback to COMSPEC/cmd.exe
-		// COMSPEC is the Windows environment variable pointing to the default command shell (usually cmd.exe).
-		// Note: child_process.exec() internally runs `shell /c command`, which PowerShell does NOT support
-		// (PowerShell expects -Command). So when using PowerShell, we must spawn with -Command flag instead.
-		let result: { error: Error | null; stdout: unknown; stderr: unknown };
-		if (Platform.isWin) {
-			const comspec = 'cmd.exe';
-
-			// Check whether a shell executable exists in PATH via `where`
-			const isShellAvailable = (exe: string): Promise<boolean> => {
-				return new Promise((resolveCheck) => {
-					cpModule.exec(`where ${exe}`, { cwd: finalCwd }, (err: Error | null) => {
-						resolveCheck(!err);
-					});
-				});
-			};
-
-			// Run a command via PowerShell with -Command flag (spawn, not exec)
-			const runPwsh = (shellPath: string): Promise<{ error: Error | null; stdout: unknown; stderr: unknown }> => {
-				return new Promise((resolveExec) => {
-					try {
-						const child = cpModule.spawn(
-							shellPath,
-							['-NoProfile', '-NonInteractive', '-Command', command],
-							{ cwd: finalCwd }
-						);
-						let stdout = '';
-						let stderr = '';
+		const runSpawn = (exe: string, args: string[]): Promise<{ error: Error | null; stdout: string; stderr: string }> => {
+			return new Promise((resolveExec) => {
+				try {
+					const child = spawnFn(exe, args, { cwd: finalCwd, windowsHide: true });
+					let stdout = '';
+					let stderr = '';
+					if (child.stdout) {
 						child.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
+					}
+					if (child.stderr) {
 						child.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
-						child.on('error', (err: Error | number | null) => {
+					}
+					child.on('error', (err: Error | number | null) => {
+						resolveExec({
+							error: err instanceof Error ? err : new Error(String(err)),
+							stdout,
+							stderr,
+						});
+					});
+					child.on('close', (code: Error | number | null) => {
+						if (code === 0) {
+							resolveExec({ error: null, stdout, stderr });
+						} else {
 							resolveExec({
-								error: err instanceof Error ? err : new Error(String(err)),
+								error: new Error(`Command exited with code ${String(code)}`),
 								stdout,
 								stderr,
 							});
-						});
-						child.on('close', (code: Error | number | null) => {
-							if (code === 0) {
-								resolveExec({ error: null, stdout, stderr });
-							} else {
-								resolveExec({
-									error: new Error(`Command exited with code ${String(code)}`),
-									stdout,
-									stderr,
-								});
-							}
-						});
-					} catch (e) {
-						resolveExec({ error: e instanceof Error ? e : new Error(String(e)), stdout: '', stderr: '' });
-					}
-				});
+						}
+					});
+				} catch (e) {
+					resolveExec({ error: e instanceof Error ? e : new Error(String(e)), stdout: '', stderr: '' });
+				}
+			});
+		};
+
+		let result: { error: Error | null; stdout: string; stderr: string };
+		if (Platform.isWin) {
+			const isShellAvailable = async (exe: string): Promise<boolean> => {
+				const check = await runSpawn('where.exe', [exe]);
+				return !check.error && check.stdout.trim().length > 0;
 			};
 
-			// 1) Try pwsh.exe (PowerShell Core)
 			if (await isShellAvailable('pwsh.exe')) {
-				result = await runPwsh('pwsh.exe');
-			}
-			// 2) Try powershell.exe (Windows PowerShell)
-			else if (await isShellAvailable('powershell.exe')) {
-				result = await runPwsh('powershell.exe');
-			}
-			// 3) Fallback to cmd.exe (COMSPEC)
-			else {
-				result = await runExec({ cwd: finalCwd, shell: comspec });
+				result = await runSpawn('pwsh.exe', ['-NoProfile', '-NonInteractive', '-Command', command]);
+			} else if (await isShellAvailable('powershell.exe')) {
+				result = await runSpawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', command]);
+			} else {
+				result = await runSpawn('cmd.exe', ['/c', command]);
 			}
 		} else {
-			result = await runExec({ cwd: finalCwd });
+			result = await runSpawn('/bin/sh', ['-c', command]);
 		}
 
 		const MAX_LEN = 5000;
