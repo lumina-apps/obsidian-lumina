@@ -839,6 +839,10 @@ export interface TranslationUiMessages {
   modalProceed: string;
   modelPlaceholder: string;
   searchModelShort: string;
+  favorites: string;
+  allModels: string;
+  addToFavorites: string;
+  removeFromFavorites: string;
   searchPromptShort: string;
   noSearchResults: string;
   unsupportedFileType: string;

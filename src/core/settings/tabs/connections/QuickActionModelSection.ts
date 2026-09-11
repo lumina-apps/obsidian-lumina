@@ -12,6 +12,7 @@ import {
 	buildDedicatedModelOptions,
 	parseProviderModelValue,
 	toProviderModelValue,
+	sortModelOptionsWithFavorites,
 } from '../../../../shared/utils/settingHelpers';
 
 export function renderQuickActionModelSection(tab: LuminaSettingTab, el: HTMLElement): void {
@@ -20,7 +21,10 @@ export function renderQuickActionModelSection(tab: LuminaSettingTab, el: HTMLEle
 	tab.sectionHeading(el, t('settings.connections.quickActionProvider.name'));
 	tab.infoBox(el, t('settings.connections.quickActionProvider.desc'), 'warning');
 
-	const chatModelOptions = buildDedicatedModelOptions(s.providers);
+	const chatModelOptions = sortModelOptionsWithFavorites(
+		buildDedicatedModelOptions(s.providers),
+		s.favoriteModels,
+	);
 
 	const qaModelSetting = new Setting(el)
 		.setName(t('settings.connections.quickActionModel.name'))

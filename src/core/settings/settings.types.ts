@@ -1,5 +1,6 @@
 import type {
 	EmbeddingConfig,
+	FavoriteModel,
 	LLMProviderConfig,
 	PluginLanguage,
 	RAGSyncMode,
@@ -18,6 +19,8 @@ export interface ConnectionsSettings {
 	language: PluginLanguage;
 	/** 등록된 LLM 프로바이더 목록 */
 	providers: LLMProviderConfig[];
+	/** 즐겨찾기 모델 목록 */
+	favoriteModels: FavoriteModel[];
 	/** RAG 엔진 활성화 여부 (원클릭) */
 	ragEnabled: boolean;
 	/** 임베딩 모델 설정 */

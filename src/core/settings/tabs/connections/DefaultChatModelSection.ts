@@ -2,13 +2,21 @@ import { Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
 import { t } from '../../../../shared/locales/helpers';
 import { getActiveProject } from '../../../store/projectStore';
-import { buildChatModelOptions, toProviderModelValue, parseProviderModelValue } from '../../../../shared/utils/modelUtils';
+import {
+	buildChatModelOptions,
+	toProviderModelValue,
+	parseProviderModelValue,
+	sortModelOptionsWithFavorites,
+} from '../../../../shared/utils/modelUtils';
 
 export function renderDefaultChatModelSection(tab: LuminaSettingTab, el: HTMLElement): void {
 	const activeProject = getActiveProject();
 	
-	// Create options using utility
-	const chatModelOptions = buildChatModelOptions(tab.plugin.settings.connections.providers);
+	// Create options using utility with favorites sorted to top
+	const chatModelOptions = sortModelOptionsWithFavorites(
+		buildChatModelOptions(tab.plugin.settings.connections.providers),
+		tab.plugin.settings.connections.favoriteModels,
+	);
 
 	const currentModelValue = (activeProject.defaultProviderId && activeProject.defaultModelId)
 		? toProviderModelValue(activeProject.defaultProviderId, activeProject.defaultModelId)

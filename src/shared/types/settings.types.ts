@@ -106,6 +106,11 @@ export interface LLMProviderConfig {
 	timeoutSeconds?: number;
 }
 
+export interface FavoriteModel {
+	providerId: string;
+	modelId: string;
+}
+
 // ─── Embedding ────────────────────────────────────
 
 export type EmbeddingMode = 'auto' | 'custom';

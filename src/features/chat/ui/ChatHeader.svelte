@@ -5,10 +5,12 @@
 	import QuickSettings from "./QuickSettings.svelte";
 	import ProjectSelector from "./ProjectSelector.svelte";
 	import type { ProjectConfig } from "../../../shared/types/project.types";
+	import type { FavoriteModel } from "../../../shared/types/settings.types";
 
 	let {
 		plugin,
 		verifiedProviders,
+		favoriteModels = [],
 		isRagEnabled,
 		indexingState,
 		indexingProgress,
@@ -21,12 +23,14 @@
 		projectList,
 		activeProjectId,
 		onToggleRag,
+		onToggleFavorite,
 		onToggleHistory,
 		onNewChat,
 		onProjectSelect,
 	} = $props<{
 		plugin: LuminaPlugin;
 		verifiedProviders: any[];
+		favoriteModels?: FavoriteModel[];
 		isRagEnabled: boolean;
 		indexingState: any;
 		indexingProgress: number;
@@ -39,6 +43,7 @@
 		projectList: ProjectConfig[];
 		activeProjectId: string;
 		onToggleRag: () => void;
+		onToggleFavorite?: (providerId: string, modelId: string) => void;
 		onToggleHistory: () => void;
 		onNewChat: () => void;
 		onProjectSelect: (projectId: string) => void;
@@ -122,6 +127,8 @@
 		{#if verifiedProviders.length > 0}
 			<ModelSelector
 				providers={verifiedProviders}
+				{favoriteModels}
+				{onToggleFavorite}
 				bind:selectedProviderId
 				bind:selectedModelId
 			/>

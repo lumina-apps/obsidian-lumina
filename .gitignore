@@ -37,11 +37,6 @@ data.json
 ehthumbs.db
 Thumbs.db
 
-# SonarQube
-.sonarlint/
-.scannerwork/
-.problems/
-sonar-project.properties
 
 # Test coverage
 coverage/

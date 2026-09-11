@@ -11,6 +11,7 @@ import {
 	buildDedicatedModelOptions,
 	parseProviderModelValue,
 	toProviderModelValue,
+	sortModelOptionsWithFavorites,
 } from '../../../../shared/utils/settingHelpers';
 
 export function renderTaskModelSection(tab: LuminaSettingTab, el: HTMLElement): void {
@@ -20,7 +21,10 @@ export function renderTaskModelSection(tab: LuminaSettingTab, el: HTMLElement): 
 		.setName(t('settings.connections.taskModel.name'))
 		.setDesc(t('settings.connections.taskModel.desc'));
 
-	const chatModelOptions = buildDedicatedModelOptions(s.providers);
+	const chatModelOptions = sortModelOptionsWithFavorites(
+		buildDedicatedModelOptions(s.providers),
+		s.favoriteModels,
+	);
 
 	const currentTaskValue = s.taskProviderId && s.taskModelId
 		? toProviderModelValue(s.taskProviderId, s.taskModelId)

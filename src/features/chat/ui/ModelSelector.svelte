@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { tStore } from "../../../shared/locales/index";
-	import type { LLMProviderConfig } from "../../../shared/types/settings.types";
-	import { flattenProviderModels, stripProviderSuffix } from "../../../shared/utils/modelUtils";
+	import type { LLMProviderConfig, FavoriteModel } from "../../../shared/types/settings.types";
+	import {
+		flattenProviderModels,
+		stripProviderSuffix,
+		sortWithFavorites,
+	} from "../../../shared/utils/modelUtils";
 	import { clickOutside, iconAction } from "../../../shared/utils/domUtils";
 	import { useKeyboardListNav } from "./composables/useKeyboardListNav";
 	import type { FlattenedModel } from "../../../shared/utils/modelUtils";
@@ -11,14 +15,18 @@
 	// ═══════════════════════════════════════════════════════════════════════════
 	let {
 		providers,
+		favoriteModels = [],
 		selectedProviderId = $bindable(),
 		selectedModelId = $bindable(),
 		onSelect,
+		onToggleFavorite,
 	}: {
 		providers: LLMProviderConfig[];
+		favoriteModels?: FavoriteModel[];
 		selectedProviderId?: string;
 		selectedModelId?: string;
 		onSelect?: (providerId: string, modelId: string) => void;
+		onToggleFavorite?: (providerId: string, modelId: string) => void;
 	} = $props();
 
 	// ═══════════════════════════════════════════════════════════════════════════
@@ -33,7 +41,8 @@
 	// ═══════════════════════════════════════════════════════════════════════════
 	// Derived: flat model list (via modelUtils)
 	// ═══════════════════════════════════════════════════════════════════════════
-	const allModels = $derived(flattenProviderModels(providers));
+	const allModels = $derived(sortWithFavorites(flattenProviderModels(providers, favoriteModels)));
+	const hasFavorites = $derived(allModels.some((m) => m.isFavorite));
 
 	const selectedModel = $derived(
 		allModels.find(
@@ -163,15 +172,34 @@
 					<div class="lumina-popup-selector__empty">{$tStore('uiMessages.noSearchResults')}</div>
 				{:else}
 					{#each filteredModels as item, i}
-						<button
+						{#if !searchQuery && hasFavorites}
+							{#if i === 0 && item.isFavorite}
+								<div class="lumina-popup-selector__section-header">
+									<span class="lumina-popup-selector__section-icon" use:iconAction={"star"}></span>
+									{$tStore('uiMessages.favorites')}
+								</div>
+							{:else if !item.isFavorite && (i === 0 || filteredModels[i - 1].isFavorite)}
+								<div class="lumina-popup-selector__section-header lumina-popup-selector__section-divider">
+									{$tStore('uiMessages.allModels')}
+								</div>
+							{/if}
+						{/if}
+						<div
 							class="lumina-popup-selector__item"
 							class:is-selected={item.providerId === selectedProviderId && item.modelId === selectedModelId}
 							class:is-active={i === nav.activeIndex}
 							data-provider-id={item.providerId}
 							data-model-id={item.modelId}
+							role="button"
+							tabindex="0"
 							onclick={() => selectItem(item)}
+							onkeydown={(e) => {
+								if (e.key === 'Enter' || e.key === ' ') {
+									e.preventDefault();
+									selectItem(item);
+								}
+							}}
 							onmouseenter={() => nav.setActiveIndex(i)}
-							type="button"
 						>
 							<div class="lumina-popup-selector__item-info" style="flex-direction: row; align-items: center; gap: 8px;">
 								<span class="lumina-popup-selector__item-badge">
@@ -179,7 +207,22 @@
 								</span>
 								<span class="lumina-popup-selector__item-name">{item.modelId}</span>
 							</div>
-						</button>
+							<div class="lumina-model-selector__actions">
+								<button
+									type="button"
+									class="lumina-popup-selector__fav-btn"
+									class:is-favorite={item.isFavorite}
+									aria-label={item.isFavorite ? $tStore('uiMessages.removeFromFavorites') : $tStore('uiMessages.addToFavorites')}
+									title={item.isFavorite ? $tStore('uiMessages.removeFromFavorites') : $tStore('uiMessages.addToFavorites')}
+									onclick={(e) => {
+										e.stopPropagation();
+										onToggleFavorite?.(item.providerId, item.modelId);
+									}}
+								>
+									<span use:iconAction={"star"}></span>
+								</button>
+							</div>
+						</div>
 					{/each}
 				{/if}
 			</div>
@@ -270,6 +313,73 @@
 
 	.lumina-model-selector__search:focus {
 		border-color: var(--interactive-accent);
+	}
+
+	.lumina-model-selector__actions {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		margin-left: auto;
+		flex-shrink: 0;
+	}
+
+	.lumina-popup-selector__fav-btn {
+		all: unset;
+		box-sizing: border-box;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 4px;
+		border-radius: 4px;
+		color: var(--text-muted);
+		cursor: pointer;
+		opacity: 0.4;
+		transition: all 0.15s ease;
+	}
+
+	.lumina-popup-selector__fav-btn:hover {
+		opacity: 1;
+		color: var(--text-warning, #e5a00d);
+		background-color: var(--background-modifier-hover);
+	}
+
+	.lumina-popup-selector__fav-btn.is-favorite {
+		opacity: 1;
+		color: var(--text-warning, #e5a00d);
+	}
+
+	.lumina-popup-selector__fav-btn.is-favorite:hover {
+		color: var(--text-muted);
+	}
+
+	.lumina-popup-selector__fav-btn :global(svg) {
+		width: 14px;
+		height: 14px;
+	}
+
+	.lumina-popup-selector__section-header {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 12px 4px;
+		font-size: 11px;
+		font-weight: 600;
+		color: var(--text-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		user-select: none;
+	}
+
+	.lumina-popup-selector__section-icon :global(svg) {
+		width: 12px;
+		height: 12px;
+		color: var(--text-warning, #e5a00d);
+	}
+
+	.lumina-popup-selector__section-divider {
+		margin-top: 4px;
+		border-top: 1px solid var(--background-modifier-border);
+		padding-top: 8px;
 	}
 
 	.lumina-popup-selector__item.is-selected {

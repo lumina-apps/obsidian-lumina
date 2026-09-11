@@ -7,7 +7,7 @@ export { wrapAsync } from './asyncUtils';
 export { normalizeError } from './errorUtils';
 
 // Model
-export { isEmbeddingModel, buildProviderModelOptions, buildChatModelOptions, buildEmbeddingModelOptions, buildDedicatedModelOptions, parseProviderModelValue, toProviderModelValue } from './modelUtils';
+export { isEmbeddingModel, buildProviderModelOptions, buildChatModelOptions, buildEmbeddingModelOptions, buildDedicatedModelOptions, parseProviderModelValue, toProviderModelValue, sortModelOptionsWithFavorites } from './modelUtils';
 export type { ModelOption, ModelFilterFn, ParsedProviderModel } from './modelUtils';
 
 // IME

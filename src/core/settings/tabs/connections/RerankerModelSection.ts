@@ -11,6 +11,7 @@ import {
 	buildDedicatedModelOptions,
 	parseProviderModelValue,
 	toProviderModelValue,
+	sortModelOptionsWithFavorites,
 } from '../../../../shared/utils/settingHelpers';
 
 export function renderRerankerModelSection(tab: LuminaSettingTab, el: HTMLElement): void {
@@ -20,7 +21,10 @@ export function renderRerankerModelSection(tab: LuminaSettingTab, el: HTMLElemen
 		.setName(t('settings.connections.rerankerModel.name') || '리랭커 모델 (선택)')
 		.setDesc(t('settings.connections.rerankerModel.desc') || 'RAG 파이프라인에서 1차 검색 결과를 재정렬할 때 사용할 모델을 선택합니다. 선택 시 자동으로 리랭크 기능이 활성화됩니다.');
 
-	const chatModelOptions = buildDedicatedModelOptions(s.providers);
+	const chatModelOptions = sortModelOptionsWithFavorites(
+		buildDedicatedModelOptions(s.providers),
+		s.favoriteModels,
+	);
 
 	const currentRerankerValue = s.rerankerProviderId && s.rerankerModelId
 		? toProviderModelValue(s.rerankerProviderId, s.rerankerModelId)

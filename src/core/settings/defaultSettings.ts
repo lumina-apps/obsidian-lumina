@@ -7,6 +7,7 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 	connections: {
 		language: 'en', // This will be dynamically set in loadSettings() on first run
 		providers: [],
+		favoriteModels: [],
 		ragEnabled: true,
 		embedding: {
 			mode: 'auto',      // 기본값: 내장 transformers.js 모델 사용

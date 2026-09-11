@@ -5,7 +5,7 @@
 	import type { Readable } from "svelte/store";
 	import type { TranslationKeys } from "../../../shared/locales/locale.types";
 	import type { ContextAttachment } from "../../../shared/types/chat.types";
-	import type { LLMProviderConfig } from "../../../shared/types/settings.types";
+	import type { LLMProviderConfig, FavoriteModel } from "../../../shared/types/settings.types";
 	import ContextSelector from "./ContextSelector.svelte";
 	import SlashCommandSelector from "./SlashCommandSelector.svelte";
 	import McpQuickPopup from "./McpQuickPopup.svelte";
@@ -48,6 +48,7 @@
 		agentExecutionMode = "read",
 		isCliSelected = false,
 		providers = [],
+		favoriteModels = [],
 		selectedProviderId = "",
 		selectedModelId = "",
 		tStore,
@@ -57,6 +58,7 @@
 		onToggleActiveNote,
 		onToggleAgentExecutionMode,
 		onSelectModel,
+		onToggleFavorite,
 		onSendMessage,
 		onCancelStream,
 		onClearChat,
@@ -77,6 +79,7 @@
 		agentExecutionMode: "read" | "edit";
 		isCliSelected?: boolean;
 		providers: LLMProviderConfig[];
+		favoriteModels?: FavoriteModel[];
 		selectedProviderId: string;
 		selectedModelId: string;
 		tStore: TStore;
@@ -86,6 +89,7 @@
 		onToggleActiveNote: () => void;
 		onToggleAgentExecutionMode: () => void;
 		onSelectModel: (providerId: string, modelId: string) => void;
+		onToggleFavorite?: (providerId: string, modelId: string) => void;
 		onSendMessage: () => void;
 		onCancelStream: () => void;
 		onClearChat: () => void;
@@ -462,9 +466,11 @@
 			{#if showModelPicker}
 				<ModelPickerPopup
 					{providers}
+					favoriteModels={favoriteModels.length > 0 ? favoriteModels : ($settingsStore?.connections.favoriteModels ?? [])}
 					{selectedProviderId}
 					{selectedModelId}
 					onSelect={onSelectModel}
+					{onToggleFavorite}
 					onClose={(focusTextarea) => {
 						showModelPicker = false;
 						if (focusTextarea) textareaEl?.focus();

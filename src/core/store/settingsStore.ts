@@ -36,6 +36,12 @@ export const isRagEnabled = derived(
 	($s) => $s?.connections.ragEnabled ?? false,
 );
 
+/** 즐겨찾기 모델 목록 */
+export const favoriteModels = derived(
+	settingsStore,
+	($s) => $s?.connections.favoriteModels ?? [],
+);
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 /** 플러그인 로드 시 스토어 초기화 (한 번만 호출) */
@@ -58,7 +64,12 @@ export function initSettingsStore(settings: LuminaSettings): void {
  */
 export function syncSettingsStore(settings: LuminaSettings): void {
 	settingsStore.set({
-		connections: { ...settings.connections, providers: [...settings.connections.providers], embedding: { ...settings.connections.embedding } },
+		connections: {
+			...settings.connections,
+			providers: [...settings.connections.providers],
+			embedding: { ...settings.connections.embedding },
+			favoriteModels: [...(settings.connections.favoriteModels ?? [])],
+		},
 		chat: { ...settings.chat, quickActions: [...settings.chat.quickActions] },
 		rag: { ...settings.rag },
 		misc: { ...settings.misc },

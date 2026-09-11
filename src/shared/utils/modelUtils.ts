@@ -2,7 +2,7 @@
 
 import { Notice } from 'obsidian';
 import { PROVIDER_LABELS, PROVIDER_CATEGORIES, isCliProvider } from '../types/settings.types';
-import type { LLMProviderConfig, ProviderType } from '../types/settings.types';
+import type { LLMProviderConfig, ProviderType, FavoriteModel } from '../types/settings.types';
 import { t } from '../locales/helpers';
 
 export interface ModelOption {
@@ -24,6 +24,7 @@ export interface FlattenedModel {
 	modelId: string;
 	label: string;
 	value: string;
+	isFavorite?: boolean;
 }
 
 /** PROVIDER_LABELS에서 괄호 설명 제거 */
@@ -118,8 +119,35 @@ export function toProviderModelValue(providerId: string, modelId: string): strin
 	return `${providerId}::${modelId}`;
 }
 
+/** 모델이 즐겨찾기에 포함되어 있는지 확인 */
+export function isFavoriteModel(
+	favoriteModels: FavoriteModel[] | undefined,
+	providerId: string,
+	modelId: string,
+): boolean {
+	if (!favoriteModels || favoriteModels.length === 0) return false;
+	return favoriteModels.some(f => f.providerId === providerId && f.modelId === modelId);
+}
+
+/** 즐겨찾기 목록을 토글(추가/제거) 후 새 배열 반환 */
+export function toggleFavoriteModel(
+	favoriteModels: FavoriteModel[] | undefined,
+	providerId: string,
+	modelId: string,
+): FavoriteModel[] {
+	const list = favoriteModels ?? [];
+	const exists = list.some(f => f.providerId === providerId && f.modelId === modelId);
+	if (exists) {
+		return list.filter(f => !(f.providerId === providerId && f.modelId === modelId));
+	}
+	return [...list, { providerId, modelId }];
+}
+
 /** 프로바이더 배열을 평탄화된 모델 목록으로 변환 */
-export function flattenProviderModels(providers: LLMProviderConfig[]): FlattenedModel[] {
+export function flattenProviderModels(
+	providers: LLMProviderConfig[],
+	favoriteModels?: FavoriteModel[],
+): FlattenedModel[] {
 	return providers.flatMap((p) =>
 		p.availableModels.map((m) => ({
 			providerId: p.id,
@@ -128,8 +156,39 @@ export function flattenProviderModels(providers: LLMProviderConfig[]): Flattened
 			modelId: m,
 			label: m,
 			value: `${p.id}::${m}`,
+			isFavorite: isFavoriteModel(favoriteModels, p.id, m),
 		})),
 	);
+}
+
+/** 즐겨찾기 모델을 상단으로 정렬한 평탄화 모델 목록 반환 */
+export function sortWithFavorites(models: FlattenedModel[]): FlattenedModel[] {
+	return [...models].sort((a, b) => {
+		const aFav = a.isFavorite ? 1 : 0;
+		const bFav = b.isFavorite ? 1 : 0;
+		return bFav - aFav;
+	});
+}
+
+/** 즐겨찾기 모델을 상단으로 정렬하고 ★ 접두사를 붙인 ModelOption 목록 반환 (설정 탭 등에서 활용) */
+export function sortModelOptionsWithFavorites(
+	options: ModelOption[],
+	favoriteModels?: FavoriteModel[],
+): ModelOption[] {
+	if (!favoriteModels || favoriteModels.length === 0) return options;
+	const favSet = new Set(favoriteModels.map(f => `${f.providerId}::${f.modelId}`));
+	return [...options]
+		.sort((a, b) => {
+			const aFav = favSet.has(a.value) ? 1 : 0;
+			const bFav = favSet.has(b.value) ? 1 : 0;
+			return bFav - aFav;
+		})
+		.map(opt => {
+			if (favSet.has(opt.value) && !opt.label.startsWith('★ ')) {
+				return { ...opt, label: `★ ${opt.label}` };
+			}
+			return opt;
+		});
 }
 
 export const REASONING_MODEL_NOTICE_DURATION = 10000;

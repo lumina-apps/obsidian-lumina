@@ -5,8 +5,13 @@ import {
 	buildDedicatedModelOptions,
 	parseProviderModelValue,
 	toProviderModelValue,
+	flattenProviderModels,
+	isFavoriteModel,
+	toggleFavoriteModel,
+	sortWithFavorites,
+	sortModelOptionsWithFavorites,
 } from './modelUtils';
-import type { LLMProviderConfig } from '../types/settings.types';
+import type { LLMProviderConfig, FavoriteModel } from '../types/settings.types';
 
 describe('modelUtils', () => {
 	const mockProviders: LLMProviderConfig[] = [
@@ -98,6 +103,68 @@ describe('modelUtils', () => {
 
 		it('유효하지 않은 문자열은 null을 반환한다', () => {
 			expect(parseProviderModelValue('invalid-value')).toBeNull();
+		});
+	});
+
+	describe('favorite models utilities', () => {
+		const favorites: FavoriteModel[] = [
+			{ providerId: 'openai-1', modelId: 'gpt-4o' },
+			{ providerId: 'anthropic-1', modelId: 'claude-3-7-sonnet' },
+		];
+
+		it('isFavoriteModel이 올바르게 즐겨찾기 여부를 판정한다', () => {
+			expect(isFavoriteModel(favorites, 'openai-1', 'gpt-4o')).toBe(true);
+			expect(isFavoriteModel(favorites, 'openai-1', 'other-model')).toBe(false);
+			expect(isFavoriteModel(favorites, 'other-provider', 'gpt-4o')).toBe(false);
+			expect(isFavoriteModel(undefined, 'openai-1', 'gpt-4o')).toBe(false);
+			expect(isFavoriteModel([], 'openai-1', 'gpt-4o')).toBe(false);
+		});
+
+		it('toggleFavoriteModel이 즐겨찾기를 추가하거나 삭제한다', () => {
+			// 추가
+			const added = toggleFavoriteModel(favorites, 'ollama-1', 'llama3:latest');
+			expect(added).toHaveLength(3);
+			expect(added.some(f => f.providerId === 'ollama-1' && f.modelId === 'llama3:latest')).toBe(true);
+
+			// 삭제
+			const removed = toggleFavoriteModel(added, 'openai-1', 'gpt-4o');
+			expect(removed).toHaveLength(2);
+			expect(removed.some(f => f.providerId === 'openai-1' && f.modelId === 'gpt-4o')).toBe(false);
+
+			// undefined에서 시작
+			const fromEmpty = toggleFavoriteModel(undefined, 'openai-1', 'gpt-4o');
+			expect(fromEmpty).toEqual([{ providerId: 'openai-1', modelId: 'gpt-4o' }]);
+		});
+
+		it('flattenProviderModels가 favoriteModels를 받아 isFavorite를 올바르게 설정한다', () => {
+			const models = flattenProviderModels(mockProviders, favorites);
+			const gpt4o = models.find(m => m.providerId === 'openai-1' && m.modelId === 'gpt-4o');
+			const embedding = models.find(m => m.providerId === 'openai-1' && m.modelId === 'text-embedding-3-small');
+
+			expect(gpt4o?.isFavorite).toBe(true);
+			expect(embedding?.isFavorite).toBe(false);
+		});
+
+		it('sortWithFavorites가 즐겨찾기 모델을 맨 앞으로 정렬한다', () => {
+			const models = flattenProviderModels(mockProviders, favorites);
+			const sorted = sortWithFavorites(models);
+
+			// 상위 2개가 즐겨찾기 모델이어야 함
+			expect(sorted[0].isFavorite).toBe(true);
+			expect(sorted[1].isFavorite).toBe(true);
+			// 3번째부터는 일반 모델
+			expect(sorted[2].isFavorite).toBe(false);
+		});
+
+		it('sortModelOptionsWithFavorites가 ModelOption 목록에서 즐겨찾기를 상단으로 정렬하고 별 표시를 추가한다', () => {
+			const options = buildChatModelOptions(mockProviders);
+			const sorted = sortModelOptionsWithFavorites(options, favorites);
+
+			expect(sorted[0].value).toBe('openai-1::gpt-4o');
+			expect(sorted[0].label).toContain('★');
+			expect(sorted[1].value).toBe('anthropic-1::claude-3-7-sonnet');
+			expect(sorted[1].label).toContain('★');
+			expect(sorted[2].label).not.toContain('★');
 		});
 	});
 });

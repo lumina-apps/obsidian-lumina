@@ -36,7 +36,9 @@
 		verifiedProviders,
 		isRagEnabled,
 		settingsStore,
+		favoriteModels,
 	} from "../../../core/store/settingsStore";
+	import { toggleFavoriteModel } from "../../../shared/utils/modelUtils";
 	import {
 		projectList,
 		activeProjectId,
@@ -448,12 +450,20 @@
 	function resetTextareaHeight(): void {
 		resizeTextarea(textareaEl);
 	}
+
+	async function handleToggleFavorite(providerId: string, modelId: string): Promise<void> {
+		const current = plugin.settings.connections.favoriteModels ?? [];
+		const updated = toggleFavoriteModel(current, providerId, modelId);
+		plugin.settings.connections.favoriteModels = updated;
+		await plugin.settingsManager.saveSettings();
+	}
 </script>
 
 <div class="lumina-chat">
 	<ChatHeader
 		{plugin}
 		verifiedProviders={$verifiedProviders}
+		favoriteModels={$favoriteModels}
 		isRagEnabled={$isRagEnabled}
 		indexingState={$indexingState}
 		indexingProgress={$indexingProgress}
@@ -466,6 +476,7 @@
 		projectList={$projectList}
 		activeProjectId={$activeProjectId}
 		onToggleRag={toggleRagMode}
+		onToggleFavorite={handleToggleFavorite}
 		onToggleHistory={() => (showHistory = !showHistory)}
 		onNewChat={clearChat}
 		onProjectSelect={handleProjectSwitch}
@@ -518,6 +529,8 @@
 			{agentExecutionMode}
 			{isCliSelected}
 			providers={$verifiedProviders}
+			favoriteModels={$favoriteModels}
+			onToggleFavorite={handleToggleFavorite}
 			{selectedProviderId}
 			{selectedModelId}
 			{tStore}
