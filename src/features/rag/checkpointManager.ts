@@ -16,7 +16,9 @@ import { setIndexingStatus, setTotalFiles, resumedFromCheckpoint } from '../../c
 /** 체크포인트 저장 간격 (파일 수) */
 const CHECKPOINT_INTERVAL = 500;
 
-function getCheckpointInterval(_totalFiles: number): number {
+export function getCheckpointInterval(totalFiles: number): number {
+	if (totalFiles <= 50) return 10;
+	if (totalFiles <= 200) return 50;
 	return CHECKPOINT_INTERVAL;
 }
 
@@ -127,5 +129,3 @@ export async function saveCheckpointIfNeeded(
 
 	return newLastCheckpoint;
 }
-
-export { getCheckpointInterval };

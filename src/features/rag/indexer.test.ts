@@ -227,5 +227,26 @@ describe('VaultIndexer', () => {
 			expect(mockEmbeddingStore.clear).toHaveBeenCalled();
 			expect(indexPersistence.saveIndex).toHaveBeenCalled();
 		});
+
+		it('should wait for isIndexing to finish before clearing state', async () => {
+			await indexer.initOramaStore();
+			// simulate active indexing
+			(indexer as unknown as { isIndexing: boolean }).isIndexing = true;
+			let cleared = false;
+			mockOramaClear.mockImplementation(() => { cleared = true; });
+
+			const resetPromise = indexer.resetIndex();
+			// Advance timer while isIndexing is still true
+			vi.advanceTimersByTime(100);
+			expect(cleared).toBe(false);
+
+			// Release indexing lock
+			(indexer as unknown as { isIndexing: boolean }).isIndexing = false;
+			vi.advanceTimersByTime(100);
+			await resetPromise;
+
+			expect(cleared).toBe(true);
+			expect((indexer as unknown as { isIndexing: boolean }).isIndexing).toBe(false);
+		});
 	});
 });

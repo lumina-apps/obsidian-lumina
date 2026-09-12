@@ -62,7 +62,11 @@ export async function initEmbeddingWorker(
 			embedding.mode = 'auto';
 			embedding.providerId = '';
 			embedding.modelId = '';
-			void plugin.saveSettings();
+			try {
+				await plugin.saveSettings();
+			} catch (e) {
+				debugLogger.logError('rag', e instanceof Error ? e : new Error(`Failed to save settings during fallback: ${e}`));
+			}
 		}
 
 		if (providerConfig && embedding.modelId) {
@@ -222,8 +226,8 @@ export async function switchProjectIndex(
 	// 캐시 미스: 새 인덱서 생성
 	// embeddingWorker가 있으면 재사용, 없으면 전체 초기화
 	if (!plugin.embeddingWorker && plugin.settings.connections.embedding.mode !== 'custom') {
-		// auto 모드 & 워커 없음 → 전체 재초기화
-		await initEmbeddingWorker(plugin, false, true);
+		// auto 모드 & 워커 없음 → 전체 재초기화 (isFirstRun=false로 증분 업데이트 유지)
+		await initEmbeddingWorker(plugin, false, false);
 		return;
 	}
 
@@ -275,7 +279,7 @@ export async function switchProjectIndex(
 	});
 
 	plugin.indexer = newIndexer;
-	projectIndexCache.set(newProjectId, newIndexer);
+	projectIndexCache.set(newProjectId, newIndexer, newProjectId);
 
 	const { syncMode } = plugin.settings.rag;
 	new Notice(t('settings.rag.init.indexingVault'), 2000);

@@ -20,6 +20,8 @@ export class EmbeddingWorkerBridge {
 
 	private idleTimer: number | null = null;
 	private initArgs: { modelName: string; cacheDir: string; pluginDir?: string; onProgress?: EmbeddingProgressCallback } | null = null;
+	private workerCodeUrl: string | null = null;
+	private reinitPromise: Promise<void> | null = null;
 
 	constructor() {}
 
@@ -52,13 +54,17 @@ export class EmbeddingWorkerBridge {
 			: 4;
 		const workerCount = Math.max(1, Math.min(4, Math.floor(hwConcurrency / 2)));
 
+		if (this.workerCodeUrl) {
+			URL.revokeObjectURL(this.workerCodeUrl);
+			this.workerCodeUrl = null;
+		}
 		const blob = new Blob([workerCode], { type: 'application/javascript' });
-		const workerCodeUrl = URL.createObjectURL(blob);
+		this.workerCodeUrl = URL.createObjectURL(blob);
 
 		try {
 			await this.workerPool.init(
 				workerCount,
-				workerCodeUrl,
+				this.workerCodeUrl,
 				{ cacheDir, modelName, pluginDir },
 				onProgress,
 			);
@@ -81,6 +87,11 @@ export class EmbeddingWorkerBridge {
 		}
 		this.workerPool.terminate();
 		this.isReady = false;
+
+		if (this.workerCodeUrl) {
+			URL.revokeObjectURL(this.workerCodeUrl);
+			this.workerCodeUrl = null;
+		}
 
 		void this.cacheManager.persistCache().catch(() => {
 			// 종료 중 캐시 저장 실패는 무시
@@ -109,13 +120,18 @@ export class EmbeddingWorkerBridge {
 
 	private async ensureReady(): Promise<void> {
 		if (!this.ready && this.initArgs) {
-			debugLogger.logSystem('rag', '[EmbeddingWorkerBridge] Reviving workers from idle state...');
-			await this.init(
-				this.initArgs.modelName,
-				this.initArgs.cacheDir,
-				this.initArgs.pluginDir,
-				this.initArgs.onProgress
-			);
+			if (!this.reinitPromise) {
+				debugLogger.logSystem('rag', '[EmbeddingWorkerBridge] Reviving workers from idle state...');
+				this.reinitPromise = this.init(
+					this.initArgs.modelName,
+					this.initArgs.cacheDir,
+					this.initArgs.pluginDir,
+					this.initArgs.onProgress
+				).finally(() => {
+					this.reinitPromise = null;
+				});
+			}
+			await this.reinitPromise;
 		}
 	}
 

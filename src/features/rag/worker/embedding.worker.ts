@@ -188,8 +188,13 @@ async function initModel(modelName: string, cacheDir: string, _pluginDir?: strin
 		},
 	};
 
-	const pipe = await pipeline('feature-extraction', modelName, pipelineOptions);
-	extractor = pipe;
+	try {
+		const pipe = await pipeline('feature-extraction', modelName, pipelineOptions);
+		extractor = pipe;
+	} finally {
+		// 토크나이저 로드 완료 후 원본 JSON.parse 복원
+		JSON.parse = originalJSONParse;
+	}
 
 	send({ type: 'ready' });
 }

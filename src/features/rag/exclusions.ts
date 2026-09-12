@@ -11,22 +11,31 @@ export const DEFAULT_EXCLUDED_PATHS: readonly string[] = [
 	'backups',
 ];
 
+function matchesPrefix(filePath: string, prefix: string): boolean {
+	let normalized = prefix.trim().replace(/\\/g, '/');
+	if (normalized === '/' || normalized === '') return true;
+	if (normalized.endsWith('/')) {
+		normalized = normalized.slice(0, -1);
+	}
+	if (!normalized) return false;
+	return filePath === normalized || filePath.startsWith(normalized + '/');
+}
+
 /**
  * 파일 경로가 제외 대상인지 확인합니다.
  * @param filePath  볼트 내 상대 경로
  * @param userPaths 사용자 설정 제외 경로 목록
  */
 export function isExcluded(filePath: string, userPaths: string[]): boolean {
-	const allExclusions = [...DEFAULT_EXCLUDED_PATHS, ...userPaths];
-	return allExclusions.some(ex => {
-		let normalized = ex.trim().replace(/\\/g, '/');
-		if (normalized === '/' || normalized === '') return true;
-		if (normalized.endsWith('/')) {
-			normalized = normalized.slice(0, -1);
+	for (let i = 0; i < DEFAULT_EXCLUDED_PATHS.length; i++) {
+		if (matchesPrefix(filePath, DEFAULT_EXCLUDED_PATHS[i])) return true;
+	}
+	if (userPaths && userPaths.length > 0) {
+		for (let i = 0; i < userPaths.length; i++) {
+			if (matchesPrefix(filePath, userPaths[i])) return true;
 		}
-		if (!normalized) return false;
-		return filePath === normalized || filePath.startsWith(normalized + '/');
-	});
+	}
+	return false;
 }
 
 /**
@@ -40,13 +49,8 @@ export function isIncluded(filePath: string, includePaths: string[]): boolean {
 		return true; // 설정이 없으면 전체 포함
 	}
 
-	return includePaths.some(inc => {
-		let normalized = inc.trim().replace(/\\/g, '/');
-		if (normalized === '/' || normalized === '') return true;
-		if (normalized.endsWith('/')) {
-			normalized = normalized.slice(0, -1);
-		}
-		if (!normalized) return false;
-		return filePath === normalized || filePath.startsWith(normalized + '/');
-	});
+	for (let i = 0; i < includePaths.length; i++) {
+		if (matchesPrefix(filePath, includePaths[i])) return true;
+	}
+	return false;
 }

@@ -75,5 +75,37 @@ describe('search module', () => {
 			expect(results[0].vectorScore).toBeGreaterThan(0);
 			expect(results[0].bm25Score).toBeGreaterThan(0);
 		});
+
+		it('should filter out results whose rawVectorScore is below minSimilarity', async () => {
+			const parentChunks: ParentChunk[] = [
+				{ id: 'p1', path: 'file1.md', text: 'Some text', chunkIndex: 0 }
+			];
+
+			// Two child chunks matching to produce a bonus in vectorScore
+			const mockOramaStore = {
+				search: vi.fn().mockResolvedValue([
+					{ id: 'c1', score: 0.60, activeDocument: { parentId: 'p1', text: 'Some text 1' } },
+					{ id: 'c2', score: 0.58, activeDocument: { parentId: 'p1', text: 'Some text 2' } }
+				]),
+				searchFulltext: vi.fn().mockResolvedValue([])
+			} as unknown as OramaStore;
+
+			const embedFn = vi.fn().mockResolvedValue([[0.1, 0.2]]);
+
+			// rawVectorScore is maxScore = 0.60
+			// vectorScore with bonus = 0.60 + (2 - 1) * 0.05 = 0.65
+			// minSimilarity is 0.62 -> rawVectorScore (0.60) < 0.62, so it should be filtered out
+			const results = await searchVault(
+				'query',
+				parentChunks,
+				mockOramaStore,
+				embedFn,
+				5,
+				0.62, // minSimilarity
+				0.5
+			);
+
+			expect(results).toHaveLength(0);
+		});
 	});
 });

@@ -1,4 +1,5 @@
 import { TAbstractFile, TFile, Workspace } from 'obsidian';
+import { debugLogger } from '../../../shared/debugLogger';
 
 /**
  * 리프 선택 전략:
@@ -39,7 +40,7 @@ async function findTextLine(
 			return content.substring(0, index).split('\n').length - 1;
 		}
 	} catch (err) {
-		console.error('[Lumina] 스크롤 위치 탐색 실패', err);
+		debugLogger.logError('rag', err instanceof Error ? err : new Error(`스크롤 위치 탐색 실패: ${err}`));
 	}
 	return 0;
 }

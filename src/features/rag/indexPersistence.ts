@@ -70,7 +70,8 @@ export async function loadIndex(
 			fileHashes: data.fileHashes ?? {},
 			needsFullReindex: false,
 		};
-	} catch {
+	} catch (err) {
+		debugLogger.logWarn('rag', `loadIndex failed (fallback to empty): ${err}`);
 		return emptyResult;
 	}
 }
@@ -201,7 +202,7 @@ export async function deleteCheckpoint(app: App, projectId: string): Promise<voi
 		if (exists) {
 			await app.vault.adapter.remove(checkpointPath);
 		}
-	} catch {
-		// 삭제 실패는 무시
+	} catch (err) {
+		debugLogger.logWarn('rag', `deleteCheckpoint failed for ${checkpointPath}: ${err}`);
 	}
 }

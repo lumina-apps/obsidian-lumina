@@ -1,4 +1,5 @@
 import * as pdfjsLib from 'pdfjs-dist';
+import { debugLogger } from '../../../shared/debugLogger';
 
 // 모바일/브라우저 환경에서 워커를 CDN으로 로드
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -23,7 +24,7 @@ export class PdfParser {
 
 			return fullText;
 		} catch (error) {
-			console.error('[Lumina] PDF 파싱 오류:', error);
+			debugLogger.logError('rag', error instanceof Error ? error : new Error(`PDF 파싱 오류: ${error}`));
 			return '';
 		}
 	}

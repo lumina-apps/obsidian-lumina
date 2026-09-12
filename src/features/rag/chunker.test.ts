@@ -77,4 +77,13 @@ describe('chunkDocument', () => {
 		const allText = parentChunks.map(c => c.text).join(' ');
 		expect(allText).not.toContain('title:');
 	});
+
+	it('overlap >= chunkSize 설정 시 무한 루프 없이 정상 클램프되어 처리됨', () => {
+		const content = '0123456789'.repeat(10); // 100 chars
+		const doc: RawDocument = { path: '/pathological.md', content, mtime: Date.now() };
+		// overlap이 chunkSize보다 큼
+		const result = chunkDocument(doc, 20, 50, 10, 30);
+		expect(result.parentChunks.length).toBeGreaterThan(0);
+		expect(result.childChunks.length).toBeGreaterThan(0);
+	});
 });

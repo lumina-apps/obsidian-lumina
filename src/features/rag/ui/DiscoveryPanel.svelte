@@ -26,6 +26,7 @@
 	import { filterParentChunks } from '../utils/searchUtils';
 	import { insertLinkToActiveEditor } from '../../../shared/utils/editorUtils';
 	import { Notice, Keymap } from 'obsidian';
+	import { debugLogger } from '../../../shared/debugLogger';
 
 	let { plugin, isActive }: { plugin: LuminaPlugin; isActive: boolean } = $props();
 
@@ -79,7 +80,7 @@
 			const result = await buildContextFromActiveFile(plugin, file, filterQuery);
 			applyContextResult(result, file.path);
 		} catch (err) {
-			console.error('[Lumina] Context 업데이트 실패:', err);
+			debugLogger.logError('rag', err instanceof Error ? err : new Error(`Context 업데이트 실패: ${err}`));
 			updateDiscoveryState({ isSearching: false });
 		}
 	}
@@ -98,7 +99,7 @@
 				searchResults = await searchVault(searchQuery, chunks, plugin.indexer.oramaDb, texts => plugin.indexer!.embed(texts), 15, 0.60);
 			}
 		} catch (err) {
-			console.error('[Lumina] Semantic Search 실패:', err);
+			debugLogger.logError('rag', err instanceof Error ? err : new Error(`Semantic Search 실패: ${err}`));
 		} finally {
 			isSearching = false;
 		}

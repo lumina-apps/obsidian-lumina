@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { debugLogger } from '../../../shared/debugLogger';
 
 export class EpubParser {
 	/** EPUB ArrayBuffer에서 챕터 텍스트를 추출합니다. */
@@ -9,14 +10,14 @@ export class EpubParser {
 			// 1. META-INF/container.xml에서 OPF 파일 경로 확인
 			const containerFile = zip.files['META-INF/container.xml'];
 			if (!containerFile) {
-				console.warn('[Lumina] EPUB: META-INF/container.xml 없음');
+				debugLogger.logWarn('rag', 'EPUB: META-INF/container.xml 없음');
 				return '';
 			}
 
 			const containerXml = await containerFile.async('string');
 			const opfPathMatch = containerXml.match(/full-path="([^"]+\.opf)"/);
 			if (!opfPathMatch) {
-				console.warn('[Lumina] EPUB: OPF 파일 경로를 찾을 수 없음');
+				debugLogger.logWarn('rag', 'EPUB: OPF 파일 경로를 찾을 수 없음');
 				return '';
 			}
 
@@ -89,7 +90,7 @@ export class EpubParser {
 
 			return chapterTexts.join('\n\n');
 		} catch (error) {
-			console.error('[Lumina] EPUB 파싱 오류:', error);
+			debugLogger.logError('rag', error instanceof Error ? error : new Error(`EPUB 파싱 오류: ${error}`));
 			return '';
 		}
 	}

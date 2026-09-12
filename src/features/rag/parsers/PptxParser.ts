@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { debugLogger } from '../../../shared/debugLogger';
 
 export class PptxParser {
 	/** PPTX ArrayBuffer에서 슬라이드 텍스트를 추출합니다. */
@@ -36,7 +37,7 @@ export class PptxParser {
 
 			return slideTexts.join('\n\n');
 		} catch (error) {
-			console.error('[Lumina] PPTX 파싱 오류:', error);
+			debugLogger.logError('rag', error instanceof Error ? error : new Error(`PPTX 파싱 오류: ${error}`));
 			return '';
 		}
 	}

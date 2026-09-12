@@ -24,10 +24,10 @@ class ProjectIndexCache {
 		return undefined;
 	}
 
-	/** 인덱서를 캐시에 저장합니다. 상한 초과 시 가장 오래된 항목을 destroy합니다 */
-	set(projectId: string, indexer: VaultIndexer): void {
+	/** 인덱서를 캐시에 저장합니다. 상한 초과 시 가장 오래된 항목을 destroy합니다 (활성 프로젝트 보호) */
+	set(projectId: string, indexer: VaultIndexer, activeProjectId?: string): void {
 		this.cache.set(projectId, { indexer, lastAccessed: Date.now() });
-		this.evictIfNeeded();
+		this.evictIfNeeded(activeProjectId ?? projectId);
 	}
 
 	/** 특정 프로젝트의 캐시를 제거하고 인덱서를 destroy합니다 */
@@ -52,16 +52,16 @@ class ProjectIndexCache {
 		return this.cache.has(projectId);
 	}
 
-	private evictIfNeeded(): void {
+	private evictIfNeeded(activeProjectId?: string): void {
 		if (this.cache.size <= MAX_CACHED) return;
 
-		// lastAccessed 기준 오름차순 정렬 → 가장 오래된 것 제거
+		// lastAccessed 기준 오름차순 정렬 → 가장 오래된 것 중 활성 프로젝트가 아닌 것 우선 제거
 		const sorted = [...this.cache.entries()].sort(
 			(a, b) => a[1].lastAccessed - b[1].lastAccessed,
 		);
-		const [oldestId, oldestEntry] = sorted[0];
-		oldestEntry.indexer.destroy();
-		this.cache.delete(oldestId);
+		const victim = sorted.find(([id]) => id !== activeProjectId) ?? sorted[0];
+		victim[1].indexer.destroy();
+		this.cache.delete(victim[0]);
 	}
 }
 

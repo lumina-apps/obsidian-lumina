@@ -1,3 +1,5 @@
+import { debugLogger } from '../../../shared/debugLogger';
+
 export class TextParser {
 	/** 단순 텍스트 기반 파일의 내용을 파싱합니다. */
 	static async parse(content: string, extension: string): Promise<string> {
@@ -31,7 +33,7 @@ export class TextParser {
 			
 			return content;
 		} catch (error) {
-			console.error(`[Lumina] ${extension} 파싱 오류:`, error);
+			debugLogger.logError('rag', error instanceof Error ? error : new Error(`${extension} 파싱 오류: ${error}`));
 			return '';
 		}
 	}

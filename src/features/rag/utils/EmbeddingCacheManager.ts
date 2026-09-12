@@ -35,7 +35,7 @@ export class EmbeddingCacheManager {
 			const safeName = modelName.replace(/[^a-zA-Z0-9._-]/g, '_');
 			this.cacheFilePath = `${cacheDir.replace(/\\/g, '/')}/embed_cache_${safeName}.json`;
 			void this.loadEmbedCache().catch((err: unknown) => {
-				console.warn('[EmbeddingWorker] embed cache load failed:', err);
+				debugLogger.logWarn('rag', `[EmbeddingWorker] embed cache load failed: ${err}`);
 			});
 		} catch {
 			this.cacheFilePath = null;

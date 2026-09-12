@@ -82,6 +82,8 @@ export class VaultIndexer {
 	private indexingStartedAt = 0;
 	/** 인덱싱 진행 중 여부 (중복 호출 방지 잠금) */
 	private isIndexing = false;
+	/** OramaStore 동시 초기화 방지 Promise */
+	private oramaInitPromise: Promise<void> | null = null;
 
 	constructor(config: VaultIndexerConfig) {
 		this.app = config.app;
@@ -126,14 +128,24 @@ export class VaultIndexer {
 	}
 
 	public async initOramaStore(): Promise<void> {
-		if (!this.oramaStore) {
-			const dim = await this.getDimension();
-			this.oramaStore = new OramaStore(dim);
-			await this.oramaStore.init();
-			if (this.state.childChunks.length > 0) {
-				await this.oramaStore.insertChunks(this.state.childChunks);
-			}
+		if (this.oramaStore) return;
+		if (this.oramaInitPromise) {
+			return this.oramaInitPromise;
 		}
+		this.oramaInitPromise = (async () => {
+			if (!this.oramaStore) {
+				const dim = await this.getDimension();
+				const store = new OramaStore(dim);
+				await store.init();
+				if (this.state.childChunks.length > 0) {
+					await store.insertChunks(this.state.childChunks);
+				}
+				this.oramaStore = store;
+			}
+		})().finally(() => {
+			this.oramaInitPromise = null;
+		});
+		return this.oramaInitPromise;
 	}
 
 	async indexVault(): Promise<void> {
@@ -242,16 +254,22 @@ export class VaultIndexer {
 
 	async resetIndex(): Promise<void> {
 		this.currentProcessId++;
-		await new Promise<void>(resolve => window.setTimeout(resolve, 0));
-		this.state.clear();
-		if (this.oramaStore) {
-			await this.oramaStore.clear();
+		while (this.isIndexing) {
+			await new Promise<void>(resolve => window.setTimeout(resolve, 50));
 		}
-		resetIndexing();
-		await deleteCheckpoint(this.app, this.projectId);
-		await this.embeddingStore.clear();
-		await this.persist();
-		this.isIndexing = false;
+		this.isIndexing = true;
+		try {
+			this.state.clear();
+			if (this.oramaStore) {
+				await this.oramaStore.clear();
+			}
+			resetIndexing();
+			await deleteCheckpoint(this.app, this.projectId);
+			await this.embeddingStore.clear();
+			await this.persist();
+		} finally {
+			this.isIndexing = false;
+		}
 	}
 
 	private async removePaths(paths: Set<string>): Promise<void> {
@@ -260,15 +278,19 @@ export class VaultIndexer {
 		this.state.removePaths(paths);
 		
 		if (this.oramaStore && removedChildChunks.length > 0) {
-			void this.oramaStore.deleteByIds(removedChildChunks.map(c => c.id)).catch(err => {
+			try {
+				await this.oramaStore.deleteByIds(removedChildChunks.map(c => c.id));
+			} catch (err) {
 				debugLogger.logError('rag', err instanceof Error ? err : new Error(`Orama delete failed: ${err}`));
-			});
+			}
 		}
 		
 		if (removedChildChunks.length > 0) {
-			void this.embeddingStore.deleteEmbeddings(removedChildChunks.map(c => c.id)).catch(err => {
+			try {
+				await this.embeddingStore.deleteEmbeddings(removedChildChunks.map(c => c.id));
+			} catch (err) {
 				debugLogger.logError('rag', err instanceof Error ? err : new Error(`Embedding DB delete failed: ${err}`));
-			});
+			}
 		}
 	}
 
@@ -278,7 +300,7 @@ export class VaultIndexer {
 		alreadyProcessed: number = 0,
 		previousProcessedPaths: string[] = [],
 	): Promise<void> {
-		this.currentProcessId++;
+		const processId = ++this.currentProcessId;
 		if (alreadyProcessed === 0 && filesToProcess.length === totalFiles.length) {
 			setTotalFiles(totalFiles.length, 0, this.indexingStartedAt);
 		}
@@ -297,12 +319,16 @@ export class VaultIndexer {
 				totalFileCount: totalFiles.length,
 			}, this.indexingStartedAt, previousProcessedPaths);
 		} finally {
-			await this.persist();
+			if (this.currentProcessId === processId && !this.isDestroyed) {
+				await this.persist();
+			}
 		}
 
-		setIndexingStatus('ready', { totalFiles: totalFiles.length, processedFiles: totalFiles.length });
-		await deleteCheckpoint(this.app, this.projectId);
-		resumedFromCheckpoint.set(false);
+		if (this.currentProcessId === processId && !this.isDestroyed) {
+			setIndexingStatus('ready', { totalFiles: totalFiles.length, processedFiles: totalFiles.length });
+			await deleteCheckpoint(this.app, this.projectId);
+			resumedFromCheckpoint.set(false);
+		}
 	}
 
 	private async persist(): Promise<void> {

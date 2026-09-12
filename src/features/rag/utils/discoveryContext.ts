@@ -8,6 +8,7 @@ import { collectRecommendedTags } from '../tagExtractor';
 import { preprocessMarkdown } from '../../../shared/utils/markdownPreprocessor';
 import { rerankChunks } from '../reranker';
 import { filterParentChunks } from './searchUtils';
+import { debugLogger } from '../../../shared/debugLogger';
 
 export interface ContextUpdateResult {
 	similarNotes: SearchResult[];
@@ -73,7 +74,7 @@ export async function buildContextFromActiveFile(
 						8
 					);
 				} catch (e) {
-					console.error('[Lumina] Related notes reranking failed:', e);
+					debugLogger.logError('rag', e instanceof Error ? e : new Error(`Related notes reranking failed: ${e}`));
 					results = results.slice(0, 8);
 				}
 			} else {

@@ -179,9 +179,9 @@ export async function searchVault(
 		r.score = (alpha * vScore) + ((1 - alpha) * bScore);
 	}
 
-	// 벡터 점수 ≥ 임계값 또는 BM25 점수 > 0 인 결과만 필터링 후 정렬
+	// 벡터 점수(순수 코사인 유사도) ≥ 임계값 또는 BM25 점수 > 0 인 결과만 필터링 후 정렬
 	const finalResults = hybridResults
-		.filter(r => (r.vectorScore !== undefined && r.vectorScore >= minSimilarity) || (r.bm25Score !== undefined && r.bm25Score > 0))
+		.filter(r => (r.rawVectorScore !== undefined ? r.rawVectorScore >= minSimilarity : (r.vectorScore !== undefined && r.vectorScore >= minSimilarity)) || (r.bm25Score !== undefined && r.bm25Score > 0))
 		.sort((a, b) => b.score - a.score)
 		.slice(0, topK);
 		

@@ -28,12 +28,19 @@ export class EmbeddingStore {
 	private dbName: string = DB_NAME;
 	private projectId: string | undefined = undefined;
 
+	constructor(projectId?: string) {
+		this.projectId = projectId;
+		if (projectId) {
+			this.dbName = `${DB_NAME}-${projectId}`;
+		}
+	}
+
 	/** IndexedDB를 오픈하고 ObjectStore를 준비합니다. */
 	async init(modelName: string, projectId?: string): Promise<void> {
 		this.modelName = modelName;
 		// 프로젝트별 격리: 각 프로젝트의 임베딩 벡터를 독립된 IndexedDB에 저장
-		this.projectId = projectId;
-		this.dbName = projectId ? `${DB_NAME}-${projectId}` : DB_NAME;
+		this.projectId = projectId ?? this.projectId;
+		this.dbName = this.projectId ? `${DB_NAME}-${this.projectId}` : DB_NAME;
 
 		return new Promise((resolve, reject) => {
 			const request = indexedDB.open(this.dbName, DB_VERSION);
@@ -131,6 +138,7 @@ export class EmbeddingStore {
 
 				let remaining = batch.length;
 				let hasError = false;
+				let isResolved = false;
 
 				for (const chunk of batch) {
 					const req = store.get(chunk.id);
@@ -141,7 +149,10 @@ export class EmbeddingStore {
 							chunk.embedding = this.bufferToFloat32(record.embedding);
 						}
 						remaining--;
-						if (remaining === 0) resolve();
+						if (remaining === 0 && !isResolved) {
+							isResolved = true;
+							resolve();
+						}
 					};
 					req.onerror = () => {
 						if (hasError) return;
@@ -149,6 +160,18 @@ export class EmbeddingStore {
 						reject(new Error(`loadEmbedding failed for ${chunk.id}: ${req.error?.message ?? 'unknown'}`));
 					};
 				}
+
+				tx.oncomplete = () => {
+					if (!hasError && !isResolved) {
+						isResolved = true;
+						resolve();
+					}
+				};
+				tx.onerror = () => {
+					if (hasError) return;
+					hasError = true;
+					reject(new Error(`loadEmbeddings transaction failed: ${tx.error?.message ?? 'unknown'}`));
+				};
 			});
 		}
 	}

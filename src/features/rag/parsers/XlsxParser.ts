@@ -1,4 +1,5 @@
 import * as xlsx from 'xlsx-js-style';
+import { debugLogger } from '../../../shared/debugLogger';
 
 export class XlsxParser {
 	/** XLSX, XLS, CSV ArrayBuffer에서 텍스트를 추출합니다. */
@@ -17,7 +18,7 @@ export class XlsxParser {
 			
 			return text;
 		} catch (error) {
-			console.error('[Lumina] XLSX/CSV 파싱 오류:', error);
+			debugLogger.logError('rag', error instanceof Error ? error : new Error(`XLSX/CSV 파싱 오류: ${error}`));
 			return '';
 		}
 	}

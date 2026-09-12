@@ -110,6 +110,7 @@ async function processSequential(
 				try {
 					if (result.childChunks.length > 0) {
 						const embeddings = await ctx.embedFn(result.childChunks.map(c => c.text));
+						if (checkCancel()) return;
 						for (let j = 0; j < result.childChunks.length; j++) {
 							result.childChunks[j].embedding = new Float32Array(embeddings[j]);
 						}
@@ -216,6 +217,8 @@ async function processBatched(
 					}
 				}
 				
+				if (checkCancel()) return;
+
 				await ctx.oramaStore.insertChunks(toEmbedChildChunks);
 				
 				ctx.parentChunks.push(...toEmbedParentChunks);
@@ -253,6 +256,8 @@ async function processBatched(
 				processedPaths.push(file.path);
 			}
 		}
+
+		if (checkCancel()) return;
 
 		const filesDoneThisBatch = skipCount + toEmbedFiles.length;
 		incrementProcessedBy(filesDoneThisBatch);
