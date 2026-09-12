@@ -14,7 +14,7 @@ interface Sort {
 }
 
 function extractFrontmatterValue(cache: CachedMetadata | null, key: string): unknown {
-	const frontmatter = cache?.frontmatter as Record<string, unknown> | undefined;
+	const frontmatter = cache?.frontmatter;
 	if (key === 'tags' || key === 'tag') {
 		const fmTags: unknown = frontmatter?.[key];
 		const allTags = cache ? (getAllTags(cache) || []) : [];
@@ -111,7 +111,7 @@ export const queryMetadataHandler = async (
 		// 3. Tags check
 		if (tags.length > 0) {
 			const allTags = getAllTags(cache || {}) || [];
-			const frontmatter = cache?.frontmatter as Record<string, unknown> | undefined;
+			const frontmatter = cache?.frontmatter;
 			const fmTags: unknown = frontmatter?.tags ?? frontmatter?.tag;
 			const normalizedFm: string[] = fmTags
 				? (Array.isArray(fmTags) ? (fmTags as unknown[]) : [fmTags]).map(t => String(t).startsWith('#') ? String(t) : '#' + String(t))

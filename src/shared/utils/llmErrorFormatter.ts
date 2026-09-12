@@ -3,7 +3,7 @@ import { t } from '../locales/helpers';
 
 export function formatLlmError(err: unknown): string {
 	const rawMessage = err instanceof Error ? err.message : String(err);
-	const status = typeof err === 'object' && err !== null && 'status' in err ? Number((err as { status: unknown }).status) : null;
+	const status = typeof err === 'object' && err !== null && 'status' in err ? Number(err.status) : null;
 
 	const hasStatus = (code: number) =>
 		status === code ||

@@ -73,6 +73,7 @@ describe('handlerHelpers', () => {
 		beforeEach(() => {
 			mockApp = {
 				vault: {
+					configDir: '.obsidian',
 					adapter: {
 						exists: vi.fn(),
 						read: vi.fn(),
@@ -127,6 +128,13 @@ describe('handlerHelpers', () => {
 
 			const path = await getDailyNotePath(mockApp);
 			expect(path).toMatch(/^CustomDaily\/\d{4}-\d{2}-\d{2}\.md$/);
+		});
+
+		it('app.vault.configDir가 없으면 기본 경로로 폴백한다', async () => {
+			mockApp.vault.configDir = '';
+
+			const path = await getDailyNotePath(mockApp);
+			expect(path).toMatch(/^\d{4}-\d{2}-\d{2}\.md$/);
 		});
 	});
 

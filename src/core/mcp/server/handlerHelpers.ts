@@ -49,13 +49,15 @@ export async function getDailyNotePath(app: import('obsidian').App): Promise<str
 	let format = 'YYYY-MM-DD';
 
 	try {
-		const configDir = app.vault.configDir || '.obsidian';
-		const configPath = normalizePath(`${configDir}/daily-notes.json`);
-		if (await app.vault.adapter.exists(configPath)) {
-			const raw = await app.vault.adapter.read(configPath);
-			const config = JSON.parse(raw) as DailyNotesConfig;
-			if (config.folder) folder = config.folder;
-			if (config.format) format = config.format;
+		const configDir = app.vault.configDir;
+		if (configDir) {
+			const configPath = normalizePath(`${configDir}/daily-notes.json`);
+			if (await app.vault.adapter.exists(configPath)) {
+				const raw = await app.vault.adapter.read(configPath);
+				const config = JSON.parse(raw) as DailyNotesConfig;
+				if (config.folder) folder = config.folder;
+				if (config.format) format = config.format;
+			}
 		}
 	} catch {
 		// 설정 파일을 읽지 못하면 기본값 사용
