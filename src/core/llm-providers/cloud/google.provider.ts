@@ -1,7 +1,7 @@
 import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, TokenUsage, ToolCall } from '../../../shared/types/llm.types';
 import { requestUrl } from 'obsidian';
 import { GOOGLE_MODELS, mapUsageMetadata } from './google.types';
-import type { GeminiResponse, GeminiStreamChunk, GeminiToolCallInfo } from './google.types';
+import type { GeminiResponse } from './google.types';
 import { formatGeminiMessages, formatGeminiTools, getGeminiSystemInstruction } from './google-message-formatter';
 import { readGeminiStreamChunks } from './google-stream-parser';
 import { raiseApiError, requestUrlWithAbort, IdleTimeoutController } from '../provider-helpers';
@@ -41,37 +41,12 @@ export class GoogleProvider implements ILLMProvider {
 
 	async chat(messages: ChatMessage[], options: ChatOptions, onChunk?: (chunk: string) => void): Promise<ChatResponse> {
 		if (onChunk) {
-			const accumulatedToolCalls: GeminiToolCallInfo[] = [];
-
-			const { content, usage, finishReason } = await this.streamInternal(
+			const { content, toolCalls, usage, finishReason } = await this.streamInternal(
 				messages,
 				options,
-				(chunk, chunkData) => {
-					onChunk(chunk);
-					if (!chunkData) return;
-					const candidate = chunkData.candidates?.[0];
-					const parts = candidate?.content?.parts;
-					if (parts) {
-						for (const part of parts) {
-							if (part.functionCall) {
-								accumulatedToolCalls.push({
-									name: part.functionCall.name,
-									args: part.functionCall.args || {},
-									thoughtSignature: part.thoughtSignature,
-								});
-							}
-						}
-					}
-				},
+				onChunk,
 				true,
 			);
-
-			const toolCalls: ToolCall[] = accumulatedToolCalls.map(tc => ({
-				id: crypto.randomUUID(),
-				name: tc.name,
-				arguments: tc.args || {},
-				thoughtSignature: tc.thoughtSignature,
-			}));
 
 			return {
 				content,
@@ -184,30 +159,31 @@ export class GoogleProvider implements ILLMProvider {
 	private async streamInternal(
 		messages: ChatMessage[],
 		options: ChatOptions,
-		onChunk: (text: string, chunkData?: GeminiStreamChunk) => void,
-		includeTools: boolean,
-	): Promise<{ content: string; usage?: TokenUsage; finishReason?: string }> {
+		onChunk?: (text: string) => void,
+		includeTools = true,
+	): Promise<{ content: string; toolCalls: ToolCall[]; usage?: TokenUsage; finishReason?: string }> {
 		const { url, headers, payload } = this.buildRequest('streamGenerateContent', options, messages, includeTools);
 
 		let fullContent = '';
+		const accumulatedToolCalls: ToolCall[] = [];
 		let usage: TokenUsage | undefined;
 		let finishReason: string | undefined;
 
 		const timeoutCtrl = new IdleTimeoutController(options.signal, options.ttftTimeoutMs, options.interTokenTimeoutMs);
 
-		const response = await window.fetch(url, {
-			method: 'POST',
-			headers,
-			body: JSON.stringify(payload),
-			signal: timeoutCtrl.signal,
-		});
-
-		if (!response.ok) {
-			const errText = await response.text();
-			throw new Error(`Google Gemini Error (HTTP ${response.status}): ${errText}`);
-		}
-
 		return timeoutCtrl.run(async () => {
+			const response = await window.fetch(url, {
+				method: 'POST',
+				headers,
+				body: JSON.stringify(payload),
+				signal: timeoutCtrl.signal,
+			});
+
+			if (!response.ok) {
+				const errText = await response.text();
+				throw new Error(`Google Gemini Error (HTTP ${response.status}): ${errText}`);
+			}
+
 			await readGeminiStreamChunks(response, timeoutCtrl.signal, (chunk) => {
 				timeoutCtrl.onChunkReceived();
 				const candidate = chunk.candidates?.[0];
@@ -220,10 +196,16 @@ export class GoogleProvider implements ILLMProvider {
 						for (const part of parts) {
 							if (part.text) {
 								fullContent += part.text;
+								onChunk?.(part.text);
 							}
-							// 어떤 part든 원본 chunkData가 유실되지 않도록 콜백 호출
-							// (상위 chat 함수에서 functionCall 파싱을 위해 chunkData가 필요함)
-							onChunk(part.text || '', chunk);
+							if (part.functionCall) {
+								accumulatedToolCalls.push({
+									id: crypto.randomUUID(),
+									name: part.functionCall.name,
+									arguments: part.functionCall.args || {},
+									thoughtSignature: part.thoughtSignature,
+								});
+							}
 						}
 					}
 				}
@@ -232,7 +214,7 @@ export class GoogleProvider implements ILLMProvider {
 				}
 			});
 
-			return { content: fullContent, usage, finishReason };
+			return { content: fullContent, toolCalls: accumulatedToolCalls, usage, finishReason };
 		});
 	}
 }

@@ -8,6 +8,9 @@ import { describe, it, expect, vi } from 'vitest';
 vi.mock('../../shared/debugLogger', () => ({
 	debugLogger: {
 		logError: vi.fn(),
+		logWarn: vi.fn(),
+		logDebug: vi.fn(),
+		logInfo: vi.fn(),
 		log: vi.fn(),
 		warn: vi.fn(),
 		info: vi.fn(),

@@ -4,6 +4,7 @@
  */
 import type { TokenUsage, ToolCall } from '../../../shared/types/llm.types';
 import type { AnthropicBlock, AnthropicStreamChunk, AnthropicResponse } from './anthropic.types';
+import { debugLogger } from '../../../shared/debugLogger';
 
 // ─── Stream Accumulator ─────────────────────────────────────────────────────
 
@@ -17,6 +18,7 @@ export class AnthropicStreamAccumulator {
 	private usage: TokenUsage | undefined;
 	private finishReason: string | undefined;
 	private onChunk: ((text: string) => void) | undefined;
+	private isThinking = false;
 
 	constructor(onChunk?: (text: string) => void) {
 		this.onChunk = onChunk;
@@ -45,6 +47,12 @@ export class AnthropicStreamAccumulator {
 		usage?: TokenUsage;
 		finishReason?: string;
 	} {
+		if (this.isThinking) {
+			this.isThinking = false;
+			const closeTag = '\n</think>\n';
+			this.fullContent += closeTag;
+			this.onChunk?.(closeTag);
+		}
 		const toolCalls = this.extractToolCalls();
 		return {
 			fullContent: this.fullContent,
@@ -78,18 +86,45 @@ export class AnthropicStreamAccumulator {
 			const index = chunk.index ?? 0;
 			const block = this.accumulatedBlocks[index];
 			if (block) {
-				if (chunk.delta?.type === 'text_delta' && chunk.delta.text && block.type === 'text') {
+				if (chunk.delta?.type === 'thinking_delta' && chunk.delta.thinking) {
+					if (!this.isThinking) {
+						this.isThinking = true;
+						const openTag = '<think>\n';
+						this.fullContent += openTag;
+						this.onChunk?.(openTag);
+					}
+					this.fullContent += chunk.delta.thinking;
+					this.onChunk?.(chunk.delta.thinking);
+				}
+				else if (chunk.delta?.type === 'text_delta' && chunk.delta.text && block.type === 'text') {
+					if (this.isThinking) {
+						this.isThinking = false;
+						const closeTag = '\n</think>\n';
+						this.fullContent += closeTag;
+						this.onChunk?.(closeTag);
+					}
 					block.text = (block.text || '') + chunk.delta.text;
 					this.fullContent += chunk.delta.text;
 					this.onChunk?.(chunk.delta.text);
 				}
 				else if (chunk.delta?.type === 'input_json_delta' && chunk.delta.partial_json) {
+					if (this.isThinking) {
+						this.isThinking = false;
+						const closeTag = '\n</think>\n';
+						this.fullContent += closeTag;
+						this.onChunk?.(closeTag);
+					}
 					block.input = (block.input || '') + chunk.delta.partial_json;
 				}
-				// thinking_delta (extended thinking block) 는 의도적으로 무시 - fullContent에 포함하지 않음
 			}
 		}
 		else if (chunk.type === 'message_delta') {
+			if (this.isThinking) {
+				this.isThinking = false;
+				const closeTag = '\n</think>\n';
+				this.fullContent += closeTag;
+				this.onChunk?.(closeTag);
+			}
 			if (chunk.delta?.stop_reason) {
 				this.finishReason = chunk.delta.stop_reason;
 			}
@@ -111,7 +146,7 @@ export class AnthropicStreamAccumulator {
 						arguments: block.input ? JSON.parse(block.input) as Record<string, unknown> : {},
 					});
 				} catch {
-					console.warn('Failed to parse Anthropic tool arguments:', block.input);
+					debugLogger.logDebug('Anthropic Stream', `Failed to parse Anthropic tool arguments: ${block.input}`);
 				}
 			}
 		}

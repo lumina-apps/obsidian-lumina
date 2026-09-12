@@ -47,6 +47,13 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 
 				provider.isVerified = false;
 				provider.availableModels = [];
+
+				for (const project of tab.plugin.settings.projects.list) {
+					if (project.defaultProviderId === provider.id) {
+						project.defaultModelId = '';
+					}
+				}
+
 				await tab.saveAndSync();
 				tab.refreshDisplay();
 			});
@@ -95,7 +102,9 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 					provider.baseUrl = val;
 					provider.isVerified = false;
 					provider.availableModels = [];
-					tab.saveAndSync().catch(console.error);
+					tab.saveAndSync().catch((err: unknown) => {
+						debugLogger.logError('settings', err instanceof Error ? err : new Error(String(err)));
+					});
 				});
 			});
 		urlSetting.settingEl.addClass('lumina-provider-card__setting-url');
@@ -125,7 +134,9 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 					provider.credential = val;
 					provider.isVerified = false;
 					provider.availableModels = [];
-					tab.saveAndSync().catch(console.error);
+					tab.saveAndSync().catch((err: unknown) => {
+						debugLogger.logError('settings', err instanceof Error ? err : new Error(String(err)));
+					});
 				});
 			});
 		credentialSetting.settingEl.addClass('lumina-provider-card__setting-credential');
@@ -183,24 +194,40 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 		.addExtraButton(btn => {
 			rightGroup.appendChild(btn.extraSettingsEl);
 			btn.setIcon('trash').setTooltip(t('settings.connections.apiKey.deleteConnection')).onClick(async () => {
+				const deletedId = provider.id;
 				tab.plugin.settings.connections.providers =
-					tab.plugin.settings.connections.providers.filter(p => p.id !== provider.id);
+					tab.plugin.settings.connections.providers.filter(p => p.id !== deletedId);
+
+				// Secret Storage에서 API 키 제거
+				tab.app.secretStorage.setSecret(`lumina-provider-${deletedId}`, '');
 
 				// 삭제된 프로바이더를 참조하던 설정 정리
-				if (tab.plugin.settings.connections.embedding.providerId === provider.id) {
+				if (tab.plugin.settings.connections.embedding.providerId === deletedId) {
 					tab.plugin.settings.connections.embedding = { mode: 'auto', providerId: '', modelId: '' };
 				}
-				if (tab.plugin.settings.connections.quickActionProviderId === provider.id) {
+				if (tab.plugin.settings.connections.quickActionProviderId === deletedId) {
 					tab.plugin.settings.connections.quickActionProviderId = '';
 					tab.plugin.settings.connections.quickActionModelId = '';
 				}
-				if (tab.plugin.settings.connections.taskProviderId === provider.id) {
+				if (tab.plugin.settings.connections.taskProviderId === deletedId) {
 					tab.plugin.settings.connections.taskProviderId = '';
 					tab.plugin.settings.connections.taskModelId = '';
 				}
-				if (tab.plugin.settings.connections.rerankerProviderId === provider.id) {
+				if (tab.plugin.settings.connections.rerankerProviderId === deletedId) {
 					tab.plugin.settings.connections.rerankerProviderId = '';
 					tab.plugin.settings.connections.rerankerModelId = '';
+				}
+
+				// favoriteModels에서 삭제된 프로바이더 제거
+				tab.plugin.settings.connections.favoriteModels =
+					tab.plugin.settings.connections.favoriteModels.filter(f => f.providerId !== deletedId);
+
+				// 프로젝트 기본 설정에서 삭제된 프로바이더 참조 초기화
+				for (const project of tab.plugin.settings.projects.list) {
+					if (project.defaultProviderId === deletedId) {
+						project.defaultProviderId = '';
+						project.defaultModelId = '';
+					}
 				}
 
 				await tab.saveAndSync();

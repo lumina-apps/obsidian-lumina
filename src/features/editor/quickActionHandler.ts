@@ -244,7 +244,16 @@ export class QuickActionHandler {
 				return;
 			}
 
-			debugLogger.logError('llm', err as Error);
+			if (chat.streaming) {
+				if (action.actionType === 'replace') {
+					editor.undo();
+					editor.undo();
+				} else {
+					editor.undo();
+				}
+			}
+
+			debugLogger.logError('llm', err instanceof Error ? err : new Error(String(err)));
 			new Notice(t('uiMessages.qaError', { msg: formatLlmError(err) }));
 		}
 	}

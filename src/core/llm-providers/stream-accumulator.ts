@@ -77,7 +77,7 @@ export function convertOpenAIToolCalls(accumulated: OpenAIToolCallInfo[]): ToolC
 				arguments: tc.arguments ? (JSON.parse(tc.arguments) as Record<string, unknown>) : {},
 			});
 		} catch {
-			console.warn('Failed to parse tool call arguments:', tc.arguments);
+			debugLogger.logDebug('OpenAI Stream', `Failed to parse tool call arguments: ${tc.arguments}`);
 		}
 	}
 	return result;

@@ -36,7 +36,10 @@ export class AutocompleteHandler {
 			const response = await provider.chat([{ role: 'user', content: prompt }], {
 				model: taskModelId,
 				temperature: 0.2,
-				maxOutputTokens: 50
+				maxOutputTokens: 50,
+				signal: this.abortController.signal,
+				ttftTimeoutMs: 10000,
+				interTokenTimeoutMs: 5000,
 			});
 
 			const suggestion = response.content;

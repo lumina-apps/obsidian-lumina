@@ -10,6 +10,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
 	constructor(providerId: string, apiKey: string) {
 		super(apiKey);
 		this.providerId = providerId;
+		this.enableReasoning = true;
 	}
 
 	async listModels(): Promise<string[]> {

@@ -192,7 +192,7 @@ export async function readStreamLines(
 				onLine(line);
 			}
 		}
-		if (buffer) {
+		if (buffer && !signal?.aborted) {
 			onLine(buffer);
 		}
 	} finally {

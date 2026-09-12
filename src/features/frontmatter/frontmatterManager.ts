@@ -213,7 +213,7 @@ export class FrontmatterManager {
 		if (!taskProviderId || !taskModelId) return;
 
 		const providerConfig = providers.find(p => p.id === taskProviderId);
-		if (!providerConfig) return;
+		if (!providerConfig || !providerConfig.isVerified) return;
 
 		try {
 			// 본문만 읽기 (토큰 절약을 위해 프론트매터 제거)
@@ -235,7 +235,9 @@ ${contentWithoutFm.substring(0, 3000)}`;
 			const response = await provider.chat([{ role: 'user', content: prompt }], {
 				model: taskModelId,
 				temperature: 0.1,
-				maxOutputTokens: 150
+				maxOutputTokens: 150,
+				ttftTimeoutMs: 15000,
+				interTokenTimeoutMs: 10000,
 			});
 
 			const match = response.content.match(/\{[\s\S]*\}/);

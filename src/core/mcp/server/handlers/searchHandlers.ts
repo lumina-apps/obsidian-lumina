@@ -28,9 +28,10 @@ export const searchNotesHandler = async (
 		if (tags.length > 0) {
 			const cache = ctx.plugin.app.metadataCache.getFileCache(file);
 			const allTags = obsidian.getAllTags(cache || {}) || [];
-			const fmTags = cache?.frontmatter?.tags ?? cache?.frontmatter?.tag;
+			const frontmatter = cache?.frontmatter as Record<string, unknown> | undefined;
+			const fmTags: unknown = frontmatter?.tags ?? frontmatter?.tag;
 			const normalizedFm: string[] = fmTags
-				? (Array.isArray(fmTags) ? fmTags : [fmTags]).map(t => String(t).startsWith('#') ? String(t) : '#' + String(t))
+				? (Array.isArray(fmTags) ? (fmTags as unknown[]) : [fmTags]).map(t => String(t).startsWith('#') ? String(t) : '#' + String(t))
 				: [];
 			const fileTags = Array.from(new Set([...allTags, ...normalizedFm]));
 

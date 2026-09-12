@@ -49,7 +49,8 @@ export async function getDailyNotePath(app: import('obsidian').App): Promise<str
 	let format = 'YYYY-MM-DD';
 
 	try {
-		const configPath = normalizePath('.obsidian/daily-notes.json');
+		const configDir = app.vault.configDir || '.obsidian';
+		const configPath = normalizePath(`${configDir}/daily-notes.json`);
 		if (await app.vault.adapter.exists(configPath)) {
 			const raw = await app.vault.adapter.read(configPath);
 			const config = JSON.parse(raw) as DailyNotesConfig;

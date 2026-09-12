@@ -14,14 +14,15 @@ interface Sort {
 }
 
 function extractFrontmatterValue(cache: CachedMetadata | null, key: string): unknown {
+	const frontmatter = cache?.frontmatter as Record<string, unknown> | undefined;
 	if (key === 'tags' || key === 'tag') {
-		const fmTags = cache?.frontmatter?.[key];
+		const fmTags: unknown = frontmatter?.[key];
 		const allTags = cache ? (getAllTags(cache) || []) : [];
 		const normalizedAll = allTags.map(t => (t.startsWith('#') ? t.slice(1) : t));
 
 		if (fmTags !== undefined && fmTags !== null) {
 			const normalizedFm: string[] = Array.isArray(fmTags)
-				? fmTags.map(String)
+				? (fmTags as unknown[]).map(String)
 				: [String(fmTags)];
 			return Array.from(new Set([...normalizedFm, ...normalizedAll]));
 		}
@@ -31,8 +32,8 @@ function extractFrontmatterValue(cache: CachedMetadata | null, key: string): unk
 		return undefined;
 	}
 
-	if (!cache || !cache.frontmatter) return undefined;
-	return cache.frontmatter[key];
+	if (!frontmatter) return undefined;
+	return frontmatter[key];
 }
 
 function evaluateFilter(actualValue: unknown, filter: Filter): boolean {
@@ -110,9 +111,10 @@ export const queryMetadataHandler = async (
 		// 3. Tags check
 		if (tags.length > 0) {
 			const allTags = getAllTags(cache || {}) || [];
-			const fmTags = cache?.frontmatter?.tags ?? cache?.frontmatter?.tag;
+			const frontmatter = cache?.frontmatter as Record<string, unknown> | undefined;
+			const fmTags: unknown = frontmatter?.tags ?? frontmatter?.tag;
 			const normalizedFm: string[] = fmTags
-				? (Array.isArray(fmTags) ? fmTags : [fmTags]).map(t => String(t).startsWith('#') ? String(t) : '#' + String(t))
+				? (Array.isArray(fmTags) ? (fmTags as unknown[]) : [fmTags]).map(t => String(t).startsWith('#') ? String(t) : '#' + String(t))
 				: [];
 			const fileTags = Array.from(new Set([...allTags, ...normalizedFm]));
 

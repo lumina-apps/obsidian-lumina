@@ -11,7 +11,7 @@ vi.mock('obsidian', () => ({
 	requestUrl: (...args: unknown[]) => mockRequestUrl(...args),
 }));
 
-import { IdleTimeoutController, requestUrlWithAbort, raiseApiError } from './provider-helpers';
+import { IdleTimeoutController, requestUrlWithAbort, raiseApiError, readStreamLines } from './provider-helpers';
 
 beforeEach(() => {
 	mockRequestUrl.mockReset();
@@ -159,3 +159,47 @@ describe('raiseApiError', () => {
 			.toThrow(/Anthropic/);
 	});
 });
+
+describe('readStreamLines', () => {
+	it('should process lines and trailing buffer when not aborted', async () => {
+		const lines: string[] = [];
+		const encoder = new TextEncoder();
+		const stream = new ReadableStream({
+			start(controller) {
+				controller.enqueue(encoder.encode('line 1\nline 2\ntrailing'));
+				controller.close();
+			},
+		});
+		const response = new Response(stream);
+
+		await readStreamLines(response, undefined, (line) => lines.push(line));
+
+		expect(lines).toEqual(['line 1', 'line 2', 'trailing']);
+	});
+
+	it('should not process trailing buffer when signal is aborted', async () => {
+		const lines: string[] = [];
+		const encoder = new TextEncoder();
+		const controller = new AbortController();
+		let enqueueTrailing: (() => void) | null = null;
+		const stream = new ReadableStream({
+			start(ctrl) {
+				ctrl.enqueue(encoder.encode('line 1\n'));
+				enqueueTrailing = () => {
+					ctrl.enqueue(encoder.encode('trailing'));
+					ctrl.close();
+				};
+			},
+		});
+		const response = new Response(stream);
+
+		await readStreamLines(response, controller.signal, (line) => {
+			lines.push(line);
+			controller.abort();
+			enqueueTrailing?.();
+		});
+
+		expect(lines).toEqual(['line 1']);
+	});
+});
+

@@ -33,8 +33,12 @@ describe('OpenAIProvider', () => {
 		it('should have correct provider ID prefix', () => {
 			const p = new OpenAIProvider('custom-id', 'key');
 			expect(p.providerId).toBe('custom-id');
-				});
-			});
+		});
+
+		it('should enable reasoning mode for o-series models', () => {
+			expect((provider as unknown as { enableReasoning: boolean }).enableReasoning).toBe(true);
+		});
+	});
 
 	describe('listModels', () => {
 		it('should return GPT model IDs from API response', async () => {

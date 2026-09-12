@@ -115,6 +115,19 @@ describe('handlerHelpers', () => {
 			const path = await getDailyNotePath(mockApp);
 			expect(path).toMatch(/\.md$/);
 		});
+
+		it('app.vault.configDir가 설정되어 있으면 해당 설정을 읽는다', async () => {
+			mockApp.vault.configDir = '.custom-config';
+			vi.mocked(mockApp.vault.adapter.exists).mockImplementation((filePath: string) => {
+				return Promise.resolve(filePath === '.custom-config/daily-notes.json');
+			});
+			vi.mocked(mockApp.vault.adapter.read).mockResolvedValue(
+				JSON.stringify({ folder: 'CustomDaily' }),
+			);
+
+			const path = await getDailyNotePath(mockApp);
+			expect(path).toMatch(/^CustomDaily\/\d{4}-\d{2}-\d{2}\.md$/);
+		});
 	});
 
 	describe('blockIfPathNotAllowed', () => {

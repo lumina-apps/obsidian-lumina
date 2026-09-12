@@ -3,25 +3,31 @@ import { t } from '../locales/helpers';
 
 export function formatLlmError(err: unknown): string {
 	const rawMessage = err instanceof Error ? err.message : String(err);
+	const status = typeof err === 'object' && err !== null && 'status' in err ? Number((err as { status: unknown }).status) : null;
+
+	const hasStatus = (code: number) =>
+		status === code ||
+		rawMessage.includes(`HTTP ${code}`) ||
+		new RegExp(`status[:\\s]+${code}\\b`, 'i').test(rawMessage);
 
 	// HTTP 429: Rate Limit / Quota Exceeded
-	if (rawMessage.includes('HTTP 429')) {
+	if (hasStatus(429)) {
 		return t('errors.llm.rateLimit');
 	}
 	// HTTP 401: Unauthorized / API Key issue
-	if (rawMessage.includes('HTTP 401')) {
+	if (hasStatus(401)) {
 		return t('errors.llm.unauthorized');
 	}
 	// HTTP 403: Forbidden / Permission denied
-	if (rawMessage.includes('HTTP 403')) {
+	if (hasStatus(403)) {
 		return t('errors.llm.forbidden');
 	}
 	// HTTP 404: Model not found / Endpoint issue
-	if (rawMessage.includes('HTTP 404')) {
+	if (hasStatus(404)) {
 		return t('errors.llm.notFound');
 	}
 	// HTTP 503: Service Unavailable / High demand
-	if (rawMessage.includes('HTTP 503')) {
+	if (hasStatus(503)) {
 		return t('errors.llm.serviceUnavailable');
 	}
 	// Network Error

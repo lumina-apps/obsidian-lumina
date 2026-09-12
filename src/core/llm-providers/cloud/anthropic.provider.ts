@@ -144,21 +144,21 @@ export class AnthropicProvider implements ILLMProvider {
 
 		const timeoutCtrl = new IdleTimeoutController(options.signal, options.ttftTimeoutMs, options.interTokenTimeoutMs);
 
-		const response = await window.fetch(url, {
-			method: 'POST',
-			headers,
-			body: JSON.stringify(payload),
-			signal: timeoutCtrl.signal,
-		});
-
-		if (!response.ok) {
-			const errText = await response.text();
-			throw new Error(`Anthropic Error (HTTP ${response.status}): ${errText}`);
-		}
-
-		const accumulator = new AnthropicStreamAccumulator(onChunk);
-
 		return timeoutCtrl.run(async () => {
+			const response = await window.fetch(url, {
+				method: 'POST',
+				headers,
+				body: JSON.stringify(payload),
+				signal: timeoutCtrl.signal,
+			});
+
+			if (!response.ok) {
+				const errText = await response.text();
+				throw new Error(`Anthropic Error (HTTP ${response.status}): ${errText}`);
+			}
+
+			const accumulator = new AnthropicStreamAccumulator(onChunk);
+
 			await readStreamLines(response, timeoutCtrl.signal, (line) => {
 				timeoutCtrl.onChunkReceived();
 				accumulator.processLine(line);

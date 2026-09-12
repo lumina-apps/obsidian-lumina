@@ -23,6 +23,8 @@ describe('GoogleProvider', () => {
 		provider = new GoogleProvider(PROVIDER_ID, API_KEY);
 			// Mock window.fetch (Google stream 내부에서 사용)
 		vi.stubGlobal('window', {
+			get setTimeout() { return globalThis.setTimeout; },
+			get clearTimeout() { return globalThis.clearTimeout; },
 			fetch: vi.fn().mockResolvedValue({
 				ok: true,
 				text: vi.fn().mockResolvedValue(''),
@@ -127,6 +129,81 @@ describe('GoogleProvider', () => {
 			mockRequestUrl.mockRejectedValue(new Error('Network error'));
 
 			await expect(provider.listModels()).rejects.toThrow('Google');
+		});
+	});
+
+	describe('streaming', () => {
+		it('should handle TTFT timeout properly within timeoutCtrl.run', async () => {
+			vi.useFakeTimers();
+			const fetchMock = vi.fn().mockImplementation((_url: string, init: { signal: AbortSignal }) => {
+				return new Promise((_resolve, reject) => {
+					init.signal.addEventListener('abort', () => {
+						const err = new Error('Aborted');
+						err.name = 'AbortError';
+						reject(err);
+					});
+				});
+			});
+			window.fetch = fetchMock;
+
+			const promise = provider.chat(
+				[{ role: 'user', content: 'hello' }],
+				{ model: 'gemini-2.0-flash', ttftTimeoutMs: 5000 },
+				() => {},
+			);
+
+			const rejection = expect(promise).rejects.toThrow();
+			await vi.advanceTimersByTimeAsync(5100);
+			await rejection;
+			vi.useRealTimers();
+		});
+
+		it('should not duplicate tool calls when candidate has multiple parts', async () => {
+			const chunkPayload = JSON.stringify({
+				candidates: [
+					{
+						content: {
+							parts: [
+								{ text: 'Let me search for that.' },
+								{
+									functionCall: {
+										name: 'searchVault',
+										args: { query: 'test' },
+									},
+								},
+							],
+						},
+						finishReason: 'STOP',
+					},
+				],
+			});
+
+			const stream = new ReadableStream({
+				start(controller) {
+					controller.enqueue(new TextEncoder().encode(chunkPayload));
+					controller.close();
+				},
+			});
+
+			window.fetch = vi.fn().mockResolvedValue({
+				ok: true,
+				body: stream,
+			});
+
+			const chunksReceived: string[] = [];
+			const result = await provider.chat(
+				[{ role: 'user', content: 'find test' }],
+				{ model: 'gemini-2.0-flash' },
+				(chunk) => {
+					chunksReceived.push(chunk);
+				},
+			);
+
+			expect(chunksReceived).toContain('Let me search for that.');
+			expect(result.toolCalls).toBeDefined();
+			expect(result.toolCalls).toHaveLength(1);
+			expect(result.toolCalls![0].name).toBe('searchVault');
+			expect(result.toolCalls![0].arguments).toEqual({ query: 'test' });
 		});
 	});
 });

@@ -22,6 +22,8 @@
 		resetChat,
 		pendingAttachments,
 		activeCliExecution,
+		sessionProviderId,
+		sessionModelId,
 	} from "../../../core/store/chatStore";
 	import { get } from "svelte/store";
 	import { TFile } from "obsidian";
@@ -150,6 +152,35 @@
 		if (!$isRagEnabled) {
 			useRagContext = false;
 			includeActiveNote = false;
+		}
+	});
+
+	// ── Session provider/model sync from history restore ──────────────────
+	$effect(() => {
+		const sPid = $sessionProviderId;
+		const sMid = $sessionModelId;
+		if (sPid && sMid) {
+			const isVerified = $verifiedProviders.some((p) => p.id === sPid && p.availableModels.includes(sMid));
+			if (isVerified && (selectedProviderId !== sPid || selectedModelId !== sMid)) {
+				selectedProviderId = sPid;
+				selectedModelId = sMid;
+			}
+		}
+	});
+
+	// ── Stale provider fallback guard ─────────────────────────────────────
+	$effect(() => {
+		const verified = $verifiedProviders;
+		if (verified.length > 0) {
+			const currentProvider = verified.find((p) => p.id === selectedProviderId);
+			if (!currentProvider || !currentProvider.availableModels.includes(selectedModelId)) {
+				if (currentProvider && currentProvider.availableModels.length > 0) {
+					selectedModelId = currentProvider.availableModels[0];
+				} else if (verified[0].availableModels.length > 0) {
+					selectedProviderId = verified[0].id;
+					selectedModelId = verified[0].availableModels[0];
+				}
+			}
 		}
 	});
 

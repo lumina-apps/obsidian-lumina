@@ -108,7 +108,7 @@ export class CliMcpSync {
 				try {
 					const parsed: unknown = JSON.parse(raw);
 					if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-						config = parsed as { mcpServers?: Record<string, unknown> };
+						config = parsed;
 					}
 				} catch {
 					config = null;
@@ -145,7 +145,7 @@ export class CliMcpSync {
 				try {
 					const parsed: unknown = JSON.parse(raw);
 					if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-						config = parsed as { mcpServers?: Record<string, unknown> };
+						config = parsed;
 					}
 				} catch {
 					config = null;
@@ -218,7 +218,7 @@ export class CliMcpSync {
 				try {
 					const parsed: unknown = JSON.parse(raw);
 					if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-						config = parsed as { $schema?: string; mcp?: Record<string, unknown> };
+						config = parsed;
 					}
 				} catch {
 					config = null;
