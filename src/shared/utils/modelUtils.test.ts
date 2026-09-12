@@ -10,6 +10,8 @@ import {
 	toggleFavoriteModel,
 	sortWithFavorites,
 	sortModelOptionsWithFavorites,
+	isEmbeddingModel,
+	warnIfReasoningModel,
 } from './modelUtils';
 import type { LLMProviderConfig, FavoriteModel } from '../types/settings.types';
 
@@ -165,6 +167,22 @@ describe('modelUtils', () => {
 			expect(sorted[1].value).toBe('anthropic-1::claude-3-7-sonnet');
 			expect(sorted[1].label).toContain('★');
 			expect(sorted[2].label).not.toContain('★');
+		});
+	});
+
+	describe('isEmbeddingModel & warnIfReasoningModel undefined safety', () => {
+		it('isEmbeddingModel은 modelId가 undefined/빈값이어도 오류 없이 안전하게 판정한다', () => {
+			expect(isEmbeddingModel('openai', undefined)).toBe(false);
+			expect(isEmbeddingModel('openai', '')).toBe(false);
+			expect(isEmbeddingModel('custom', undefined)).toBe(true);
+			expect(isEmbeddingModel('ollama', undefined)).toBe(true);
+			expect(isEmbeddingModel('openai', 'text-embedding-3-large')).toBe(true);
+			expect(isEmbeddingModel('openai', 'gpt-4o')).toBe(false);
+		});
+
+		it('warnIfReasoningModel은 modelId가 undefined/빈값이어도 예외 없이 안전하게 동작한다', () => {
+			expect(() => warnIfReasoningModel(undefined)).not.toThrow();
+			expect(() => warnIfReasoningModel('')).not.toThrow();
 		});
 	});
 });

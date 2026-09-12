@@ -39,7 +39,7 @@ export async function readAndPrepareFile(
 	fileHashes: Record<string, number>,
 	indexedPaths: Set<string>,
 ): Promise<ReadAndPrepareResult> {
-	const ext = file.extension.toLowerCase();
+	const ext = file.extension?.toLowerCase() ?? '';
 	let content = '';
 
 	if (['pdf', 'docx', 'xlsx', 'xls', 'pptx', 'epub'].includes(ext)) {

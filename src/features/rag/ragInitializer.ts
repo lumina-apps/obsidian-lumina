@@ -54,11 +54,19 @@ export async function initEmbeddingWorker(
 		let embedFn: (texts: string[]) => Promise<number[][]>;
 		let modelName = DEFAULT_EMBEDDING_MODEL;
 
-		if (embedding.mode === 'custom' && embedding.providerId && embedding.modelId) {
-			modelName = embedding.modelId;
-			const providerConfig = providers.find(p => p.id === embedding.providerId);
-			if (!providerConfig) throw new Error('선택한 임베딩 프로바이더 설정을 찾을 수 없습니다.');
+		const hasCustom = embedding.mode === 'custom' && embedding.providerId && embedding.modelId;
+		const providerConfig = hasCustom ? providers.find(p => p.id === embedding.providerId) : undefined;
 
+		if (hasCustom && !providerConfig) {
+			debugLogger.logWarn('rag', `임베딩 프로바이더(${embedding.providerId})를 찾을 수 없어 auto 모드로 폴백합니다.`);
+			embedding.mode = 'auto';
+			embedding.providerId = '';
+			embedding.modelId = '';
+			void plugin.saveSettings();
+		}
+
+		if (providerConfig && embedding.modelId) {
+			modelName = embedding.modelId;
 			const provider = createProvider(providerConfig);
 			embedFn = (texts: string[]) => provider.embed(texts, { model: modelName });
 			progressNotice?.setMessage(t('settings.rag.init.cloudSuccess'));
@@ -117,7 +125,9 @@ export async function initEmbeddingWorker(
 		plugin.indexer = new VaultIndexer({
 			app: plugin.app,
 			embedFn,
-			parseBinaryFn: (buffer, ext) => plugin.embeddingWorker!.parse(buffer, ext),
+			parseBinaryFn: (buffer, ext) => plugin.embeddingWorker
+				? plugin.embeddingWorker.parse(buffer, ext)
+				: Promise.resolve(''),
 			settings: ragSettings,
 			includedPaths: activeProject.ragIncludedPaths,
 			excludedPaths: activeProject.ragExcludedPaths,
@@ -223,14 +233,17 @@ export async function switchProjectIndex(
 	let modelName = DEFAULT_EMBEDDING_MODEL;
 
 	if (embedding.mode === 'custom' && embedding.providerId && embedding.modelId) {
-		modelName = embedding.modelId;
 		const providerConfig = providers.find(p => p.id === embedding.providerId);
-		if (!providerConfig) {
-			debugLogger.logError('rag', new Error('switchProjectIndex: 임베딩 프로바이더를 찾을 수 없습니다.'));
-			return;
+		if (providerConfig) {
+			modelName = embedding.modelId;
+			const provider = createProvider(providerConfig);
+			embedFn = (texts: string[]) => provider.embed(texts, { model: modelName });
+		} else {
+			debugLogger.logWarn('rag', `switchProjectIndex: 임베딩 프로바이더(${embedding.providerId})를 찾을 수 없어 auto 워커로 폴백합니다.`);
+			const worker = plugin.embeddingWorker;
+			if (!worker) return;
+			embedFn = (texts: string[]) => worker.embed(texts);
 		}
-		const provider = createProvider(providerConfig);
-		embedFn = (texts: string[]) => provider.embed(texts, { model: modelName });
 	} else {
 		const worker = plugin.embeddingWorker;
 		if (!worker) return;

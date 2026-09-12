@@ -160,7 +160,7 @@ export const grepSearchHandler = async (
 
 	const matches: string[] = [];
 	for (const file of targetFiles) {
-		const ext = file.extension.toLowerCase();
+		const ext = file.extension?.toLowerCase() ?? '';
 		if (BINARY_EXTENSIONS.has(ext)) continue;
 
 		try {

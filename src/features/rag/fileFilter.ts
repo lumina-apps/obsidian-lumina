@@ -27,17 +27,18 @@ export function getTargetFiles(
 		finalExcludedPaths.push(chatHistoryPath);
 	}
 
-	const files = app.vault.getFiles().filter(f => {
-		return SUPPORTED_EXTENSIONS.has(f.extension.toLowerCase());
-	});
-
 	const maxSizeBytes = settings.maxFileSizeMB > 0 ? settings.maxFileSizeMB * 1024 * 1024 : 0;
 
-	return files.filter(f => {
+	return app.vault.getFiles().filter(f => {
+		if (!f || !f.path) return false;
 		if (f.path.startsWith('.') || f.path.includes('/.')) return false;
 		if (!isIncluded(f.path, includedPaths)) return false;
 		if (isExcluded(f.path, finalExcludedPaths)) return false;
-		if (maxSizeBytes > 0 && f.stat.size > maxSizeBytes) {
+		if (maxSizeBytes > 0 && f.stat && f.stat.size > maxSizeBytes) {
+			return false;
+		}
+		const ext = f.extension?.toLowerCase();
+		if (!ext || !SUPPORTED_EXTENSIONS.has(ext)) {
 			return false;
 		}
 		return true;
@@ -54,9 +55,14 @@ export async function detectDeletedPaths(
 	indexedPaths: string[],
 ): Promise<Set<string>> {
 	const pathsToDelete = new Set<string>();
-	const lowerCurrentPaths = new Set(Array.from(currentPaths).map(p => p.toLowerCase()));
+	const lowerCurrentPaths = new Set(
+		Array.from(currentPaths)
+			.filter((p): p is string => typeof p === 'string' && p.length > 0)
+			.map(p => p.toLowerCase()),
+	);
 
 	for (const path of indexedPaths) {
+		if (!path || typeof path !== 'string') continue;
 		if (!currentPaths.has(path)) {
 			// Windows/macOS 대소문자 변경(rename) 대응: 대소문자만 다른 파일이 존재하면 이전 대소문자 경로는 삭제 대상
 			if (lowerCurrentPaths.has(path.toLowerCase())) {

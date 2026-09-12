@@ -38,9 +38,10 @@ export function getShortProviderLabel(providerType: ProviderType): string {
 }
 
 /** 모델이 임베딩 전용인지 판별 */
-export function isEmbeddingModel(providerType: ProviderType, modelId: string): boolean {
+export function isEmbeddingModel(providerType: ProviderType, modelId?: string): boolean {
 	const category = PROVIDER_CATEGORIES[providerType];
 	if (category === 'local' || providerType === 'custom') return true;
+	if (!modelId) return false;
 
 	switch (providerType) {
 		case 'anthropic':
@@ -194,7 +195,8 @@ export function sortModelOptionsWithFavorites(
 export const REASONING_MODEL_NOTICE_DURATION = 10000;
 
 /** 추론형 모델 경고 */
-export function warnIfReasoningModel(modelId: string): void {
+export function warnIfReasoningModel(modelId?: string): void {
+	if (!modelId) return;
 	const lower = modelId.toLowerCase();
 	if (lower.includes('r1') || lower.includes('qwq') || lower.includes('reasoning') || lower.includes('thinking')) {
 		new Notice(t('settings.connections.quickActionModel.reasoningWarning'), REASONING_MODEL_NOTICE_DURATION);

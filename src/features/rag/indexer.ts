@@ -119,6 +119,9 @@ export class VaultIndexer {
 			return this.state.childChunks[0].embedding.length;
 		}
 		const testEmbed = await this.embedFn(["test"]);
+		if (!testEmbed || !testEmbed[0] || testEmbed[0].length === 0) {
+			throw new Error('임베딩 모델에서 유효한 벡터 차원을 가져올 수 없습니다.');
+		}
 		return testEmbed[0].length;
 	}
 

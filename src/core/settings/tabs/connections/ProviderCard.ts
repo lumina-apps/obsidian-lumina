@@ -180,6 +180,24 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 			btn.setIcon('trash').setTooltip(t('settings.connections.apiKey.deleteConnection')).onClick(async () => {
 				tab.plugin.settings.connections.providers =
 					tab.plugin.settings.connections.providers.filter(p => p.id !== provider.id);
+
+				// 삭제된 프로바이더를 참조하던 설정 정리
+				if (tab.plugin.settings.connections.embedding.providerId === provider.id) {
+					tab.plugin.settings.connections.embedding = { mode: 'auto', providerId: '', modelId: '' };
+				}
+				if (tab.plugin.settings.connections.quickActionProviderId === provider.id) {
+					tab.plugin.settings.connections.quickActionProviderId = '';
+					tab.plugin.settings.connections.quickActionModelId = '';
+				}
+				if (tab.plugin.settings.connections.taskProviderId === provider.id) {
+					tab.plugin.settings.connections.taskProviderId = '';
+					tab.plugin.settings.connections.taskModelId = '';
+				}
+				if (tab.plugin.settings.connections.rerankerProviderId === provider.id) {
+					tab.plugin.settings.connections.rerankerProviderId = '';
+					tab.plugin.settings.connections.rerankerModelId = '';
+				}
+
 				await tab.saveAndSync();
 				tab.refreshDisplay();
 			});

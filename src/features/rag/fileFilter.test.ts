@@ -76,4 +76,38 @@ describe('fileFilter', () => {
 		const deleted = await detectDeletedPaths(mockApp, currentPaths, indexedPaths);
 		expect(deleted.has('readme.md')).toBe(true);
 	});
+
+	it('getTargetFiles should handle files with undefined or missing extension without throwing toLowerCase error', () => {
+		const f1 = { path: 'a.md', extension: 'md', stat: { size: 100 } } as TFile;
+		const f2 = { path: 'LICENSE', extension: undefined, stat: { size: 100 } } as unknown as TFile;
+		const f3 = { path: 'Makefile', stat: { size: 100 } } as unknown as TFile;
+		const f4 = { path: '.gitignore', extension: null, stat: { size: 100 } } as unknown as TFile;
+
+		vi.mocked(mockApp.vault.getFiles).mockReturnValue([f1, f2, f3, f4]);
+
+		const result = getTargetFiles(mockApp, mockSettings, 'chatHistory.md', [], []);
+		expect(result).toEqual([f1]);
+	});
+
+	it('getTargetFiles should respect includedPaths even if vault has extensionless files', () => {
+		const f1 = { path: 'docs/a.md', extension: 'md', stat: { size: 100 } } as TFile;
+		const f2 = { path: 'other/b.md', extension: 'md', stat: { size: 100 } } as TFile;
+		const f3 = { path: 'LICENSE', extension: undefined, stat: { size: 100 } } as unknown as TFile;
+
+		vi.mocked(mockApp.vault.getFiles).mockReturnValue([f1, f2, f3]);
+
+		const result = getTargetFiles(mockApp, mockSettings, 'chatHistory.md', ['docs'], []);
+		expect(result).toEqual([f1]);
+	});
+
+	it('detectDeletedPaths should safely handle empty or malformed paths', async () => {
+		const currentPaths = new Set(['a.md', '']);
+		const indexedPaths = ['a.md', '', undefined as unknown as string, 'deleted.md'];
+
+		vi.mocked(mockApp.vault.adapter.exists).mockResolvedValue(false);
+
+		const deleted = await detectDeletedPaths(mockApp, currentPaths, indexedPaths);
+		expect(deleted.has('deleted.md')).toBe(true);
+		expect(deleted.has('a.md')).toBe(false);
+	});
 });

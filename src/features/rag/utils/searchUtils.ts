@@ -23,6 +23,6 @@ export function filterParentChunks(
 			const cleanQ = q.replace('#', '');
 			return tags.includes(q) || (fmTags !== undefined && fmTags.includes(cleanQ));
 		}
-		return c.path.toLowerCase().includes(q.toLowerCase());
+		return (c.path?.toLowerCase() ?? '').includes(q.toLowerCase());
 	});
 }

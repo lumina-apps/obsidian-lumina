@@ -73,7 +73,7 @@ export class ChatAttachmentHandler {
 		const file = app.vault.getAbstractFileByPath(att.path);
 		if (!(file instanceof TFile)) return null;
 
-		const ext = file.extension.toLowerCase();
+		const ext = file.extension?.toLowerCase() ?? '';
 
 		// 1. 이미지 파일 처리
 		if (IMAGE_EXTENSIONS.has(ext)) {

@@ -85,4 +85,15 @@ describe('fileProcessor', () => {
 		expect(result.parentChunks).toEqual([]);
 		expect(result.skip).toBe(false);
 	});
+
+	it('should handle undefined extension without throwing toLowerCase error', async () => {
+		const f = { path: 'LICENSE', extension: undefined, stat: { mtime: 100 } } as unknown as TFile;
+		vi.mocked(mockApp.vault.read).mockResolvedValue('MIT License');
+		vi.mocked(DocumentParserRouter.DocumentParserRouter.parseText).mockResolvedValue('MIT License');
+		vi.mocked(chunker.chunkDocument).mockReturnValue({ parentChunks: [], childChunks: [] });
+		vi.mocked(hashModule.hashString).mockReturnValue(999);
+
+		const result = await readAndPrepareFile(f, mockApp, parseBinaryFn, 100, 10, 50, 5, {}, new Set());
+		expect(result.skip).toBe(false);
+	});
 });
