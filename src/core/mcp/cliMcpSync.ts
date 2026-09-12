@@ -104,8 +104,17 @@ export class CliMcpSync {
 			const filePath = '.claude/mcp.json';
 			if (await this.app.vault.adapter.exists(filePath)) {
 				const raw = await this.app.vault.adapter.read(filePath);
-				const config = JSON.parse(raw) as { mcpServers?: Record<string, unknown> };
-				if (config.mcpServers && 'lumina' in config.mcpServers) {
+				let config: { mcpServers?: Record<string, unknown> } | null = null;
+				try {
+					const parsed: unknown = JSON.parse(raw);
+					if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+						config = parsed as { mcpServers?: Record<string, unknown> };
+					}
+				} catch {
+					config = null;
+				}
+
+				if (config && config.mcpServers && 'lumina' in config.mcpServers) {
 					delete config.mcpServers['lumina'];
 					
 					const remainingServers = Object.keys(config.mcpServers);
@@ -132,8 +141,17 @@ export class CliMcpSync {
 			const rootMcpPath = '.mcp.json';
 			if (await this.app.vault.adapter.exists(rootMcpPath)) {
 				const raw = await this.app.vault.adapter.read(rootMcpPath);
-				const config = JSON.parse(raw) as { mcpServers?: Record<string, unknown> };
-				if (config.mcpServers && 'lumina' in config.mcpServers) {
+				let config: { mcpServers?: Record<string, unknown> } | null = null;
+				try {
+					const parsed: unknown = JSON.parse(raw);
+					if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+						config = parsed as { mcpServers?: Record<string, unknown> };
+					}
+				} catch {
+					config = null;
+				}
+
+				if (config && config.mcpServers && 'lumina' in config.mcpServers) {
 					delete config.mcpServers['lumina'];
 					const remainingServers = Object.keys(config.mcpServers);
 					const remainingKeys = Object.keys(config).filter(k => k !== 'mcpServers');
@@ -196,8 +214,17 @@ export class CliMcpSync {
 			const filePath = 'opencode.json';
 			if (await this.app.vault.adapter.exists(filePath)) {
 				const raw = await this.app.vault.adapter.read(filePath);
-				const config = JSON.parse(raw) as { $schema?: string; mcp?: Record<string, unknown> };
-				if (config.mcp && 'lumina' in config.mcp) {
+				let config: { $schema?: string; mcp?: Record<string, unknown> } | null = null;
+				try {
+					const parsed: unknown = JSON.parse(raw);
+					if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+						config = parsed as { $schema?: string; mcp?: Record<string, unknown> };
+					}
+				} catch {
+					config = null;
+				}
+
+				if (config && config.mcp && 'lumina' in config.mcp) {
 					delete config.mcp['lumina'];
 
 					const remainingMcp = Object.keys(config.mcp);

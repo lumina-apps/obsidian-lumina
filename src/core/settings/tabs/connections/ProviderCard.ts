@@ -13,6 +13,7 @@ import { CliAgentProvider } from '../../../llm-providers/cli/cli-agent.provider'
 import { AgentBetaModal } from '../../../../shared/utils/modal';
 import { t } from '../../../../shared/locales/helpers';
 import { normalizeError } from '../../../../shared/utils/settingHelpers';
+import { debugLogger } from '../../../../shared/debugLogger';
 
 export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provider: LLMProviderConfig): void {
 	const category = PROVIDER_CATEGORIES[provider.type];
@@ -162,12 +163,16 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 										tab.plugin.settings.mcp.serverAuthToken = crypto.randomUUID();
 									}
 									if (tab.plugin.mcpManager) {
-										void tab.plugin.mcpManager.syncServers();
+										void tab.plugin.mcpManager.syncServers().catch((err: unknown) => {
+											debugLogger.logError('mcp', err instanceof Error ? err : new Error(`MCP sync failed: ${err}`));
+										});
 									}
 								}
 								void tab.saveAndSync().then(() => {
 									tab.refreshDisplay();
 									new Notice(t('uiMessages.agentBetaEnabled'));
+								}).catch((err: unknown) => {
+									debugLogger.logError('settings', err instanceof Error ? err : new Error(`Save failed: ${err}`));
 								});
 							},
 						).open();

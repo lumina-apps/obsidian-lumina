@@ -2,7 +2,7 @@ import { TFile } from 'obsidian';
 import { t } from '../../../../shared/locales/helpers';
 import { ensureFolderExists } from '../../../../shared/utils/fileUtils';
 import { MCP_MAX_FILE_LENGTH } from '../../../../shared/utils/mcpUtils';
-import { getStringArg } from '../handlerHelpers';
+import { getStringArg, getDailyNotePath } from '../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
 import type { PathGuard } from '../pathGuard';
 import {
@@ -73,8 +73,7 @@ export const appendToDailyNoteHandler = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
-	const today = new Date().toISOString().split('T')[0];
-	const path = `${today}.md`;
+	const path = await getDailyNotePath(ctx.plugin.app);
 	const newContent = getStringArg(args, 'content');
 
 	if (newContent.length > ctx.limitAppend) {

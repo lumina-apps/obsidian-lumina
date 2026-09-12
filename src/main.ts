@@ -94,6 +94,9 @@ export default class LuminaPlugin extends Plugin {
 	public frontmatterManager!: FrontmatterManager;
 	public quickActionHandler!: QuickActionHandler;
 
+	/** 플러그인 언로드 여부 — 비동기 초기화 중 언로드되면 MCP 생성을 건너뛰기 위한 플래그 */
+	private _unloaded = false;
+
 	// Managers
 	public settingsManager!: SettingsManager;
 	public commandManager!: CommandManager;
@@ -176,6 +179,9 @@ export default class LuminaPlugin extends Plugin {
 				])
 			]);
 
+			// ── 비동기 초기화 중 플러그인이 언로드되었으면 이후 작업 중단
+			if (this._unloaded) return;
+
 			// ── 설정 마이그레이션 ──────────────────────────────────────────
 			const needsSave = runMigrations(this);
 			if (needsSave) {
@@ -243,6 +249,7 @@ export default class LuminaPlugin extends Plugin {
 	}
 
 	onunload() {
+		this._unloaded = true;
 		this.embeddingWorker?.terminate();
 		this.watchManager?.clearWatchEvents();
 		this.frontmatterManager?.destroy();

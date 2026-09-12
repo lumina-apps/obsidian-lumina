@@ -1,7 +1,7 @@
 import { TFile } from 'obsidian';
 import { t } from '../../../../shared/locales/helpers';
 import { sanitizeFilePath } from '../../../../shared/utils/fileUtils';
-import { applyReadLimit, getStringArg, blockIfPathNotAllowed } from '../handlerHelpers';
+import { applyReadLimit, getStringArg, blockIfPathNotAllowed, getDailyNotePath } from '../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
 import type { PathGuard } from '../pathGuard';
 
@@ -60,8 +60,7 @@ export const readDailyNoteHandler = async (
 	ctx: ToolHandlerContext,
 	_pathGuard: PathGuard,
 ): Promise<ToolResult> => {
-	const today = new Date().toISOString().split('T')[0];
-	const path = `${today}.md`;
+	const path = await getDailyNotePath(ctx.plugin.app);
 	// 데일리 노트 읽기는 항상 허용
 	const file = ctx.plugin.app.vault.getAbstractFileByPath(path);
 	if (!(file instanceof TFile)) {

@@ -53,7 +53,8 @@ export const runNoteCodeBlockHandler = async (
 	const content = await ctx.plugin.app.vault.read(file);
 	
 	// 간단한 코드블록 추출 (``` 언어 ... ```)
-	const blockRegex = /```[a-zA-Z]*\r?\n([\s\S]*?)```/g;
+	// 들여쓰기, 숫자/하이픈 포함 언어명(es2024, c-sharp), 언어 뒤 속성 등을 허용
+	const blockRegex = /^[\t ]*```[a-zA-Z0-9_-]*[^\n]*\r?\n([\s\S]*?)^[\t ]*```/gm;
 	const matches = [...content.matchAll(blockRegex)];
 	
 	if (blockIndex < 0 || blockIndex >= matches.length) {

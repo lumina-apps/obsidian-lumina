@@ -177,8 +177,11 @@ export class LuminaMcpClient {
 
 	async disconnect(): Promise<void> {
 		if (this.transport) {
-			await this.transport.close();
-			this.transport = null;
+			try {
+				await this.transport.close();
+			} finally {
+				this.transport = null;
+			}
 		}
 	}
 }

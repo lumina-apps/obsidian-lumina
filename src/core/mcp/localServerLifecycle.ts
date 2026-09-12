@@ -163,7 +163,9 @@ export class LocalServerLifecycle {
 	async stopServer(): Promise<void> {
 		if (this.server) {
 			const oldPort = this.server.port;
-			await this.server.stop().catch(console.error);
+			await this.server.stop().catch((err: unknown) => {
+				debugLogger.logError('mcp', formatMcpError(err, 'Failed to stop local MCP server'));
+			});
 			this.server = null;
 			void this.cliMcpSync.cleanup();
 			new Notice(t('uiMessages.mcpLocalServerStopped', { port: oldPort }));

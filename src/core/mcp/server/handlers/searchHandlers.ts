@@ -15,6 +15,10 @@ export const searchNotesHandler = async (
 	const files = ctx.plugin.app.vault.getMarkdownFiles();
 	const results: string[] = [];
 
+	if (!query && tags.length === 0) {
+		return { isError: true, content: [{ type: 'text', text: 'Either query or tags must be provided.' }] };
+	}
+
 	for (const file of files) {
 		// 제외된 경로는 검색 대상에서 제외
 		if (!pathGuard.isAgentPathAllowed(file.path, ctx.plugin)) {
@@ -23,7 +27,13 @@ export const searchNotesHandler = async (
 
 		if (tags.length > 0) {
 			const cache = ctx.plugin.app.metadataCache.getFileCache(file);
-			const fileTags = obsidian.getAllTags(cache || {}) || [];
+			const allTags = obsidian.getAllTags(cache || {}) || [];
+			const fmTags = cache?.frontmatter?.tags ?? cache?.frontmatter?.tag;
+			const normalizedFm: string[] = fmTags
+				? (Array.isArray(fmTags) ? fmTags : [fmTags]).map(t => String(t).startsWith('#') ? String(t) : '#' + String(t))
+				: [];
+			const fileTags = Array.from(new Set([...allTags, ...normalizedFm]));
+
 			// check if all requested tags exist in fileTags
 			const hasAllTags = tags.every(tag => {
 				const searchTag = tag.startsWith('#') ? tag : '#' + tag;
@@ -31,17 +41,37 @@ export const searchNotesHandler = async (
 			});
 			if (!hasAllTags) continue;
 		}
+
 		const content = await ctx.plugin.app.vault.read(file);
 		const lowerContent = content.toLowerCase();
-		const index = lowerContent.indexOf(query);
-		if (index !== -1) {
-			const start = Math.max(0, index - ctx.snippetLen);
-			const end = Math.min(content.length, index + query.length + ctx.snippetLen);
-			let snippet = content.substring(start, end).replace(/\n/g, ' ');
-			if (start > 0) snippet = '...' + snippet;
-			if (end < content.length) snippet = snippet + '...';
 
-			results.push(`[${file.path}]\n${snippet}\n`);
+		const fileSnippets: string[] = [];
+		if (query) {
+			let pos = 0;
+			const maxSnippetsPerFile = 3;
+			while (pos < lowerContent.length && fileSnippets.length < maxSnippetsPerFile) {
+				const index = lowerContent.indexOf(query, pos);
+				if (index === -1) break;
+
+				const start = Math.max(0, index - ctx.snippetLen);
+				const end = Math.min(content.length, index + query.length + ctx.snippetLen);
+				let snippet = content.substring(start, end).replace(/\n/g, ' ');
+				if (start > 0) snippet = '...' + snippet;
+				if (end < content.length) snippet = snippet + '...';
+
+				fileSnippets.push(snippet);
+				pos = Math.max(index + query.length, end);
+			}
+		} else {
+			// query 없이 tags만 매칭된 경우 파일 서두 스니펫 제공
+			const previewLen = ctx.snippetLen * 2;
+			let snippet = content.substring(0, previewLen).replace(/\n/g, ' ');
+			if (content.length > previewLen) snippet += '...';
+			fileSnippets.push(snippet);
+		}
+
+		if (fileSnippets.length > 0) {
+			results.push(`[${file.path}]\n${fileSnippets.join('\n')}\n`);
 			if (results.length >= ctx.maxResults) break;
 		}
 	}
