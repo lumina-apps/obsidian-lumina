@@ -1,6 +1,8 @@
 import type LuminaPlugin from '../../../main';
+import { normalizePath } from 'obsidian';
 import { get } from 'svelte/store';
 import { messages, sessionSummary, summaryUpToMessageId, currentSessionId, currentSessionTitle } from '../../../core/store/chatStore';
+import { getActiveProject } from '../../../core/store/projectStore';
 import { createProvider } from '../../../core/llm-providers';
 import { isCliProvider, type LLMProviderConfig } from '../../../shared/types/settings.types';
 import type { ChatMessage, ChatOptions } from '../../../shared/types/llm.types';
@@ -106,7 +108,12 @@ function applySummaryToStoreAndHistory(
 				sessionSummary: newSummary,
 				summaryUpToMessageId: newUpToId,
 			};
-			saveSession(plugin.app, session, chat.historyPath).catch((e: unknown) => {
+			const project = getActiveProject();
+			const basePath = chat.historyPath;
+			const historyPath = project?.historySubfolder
+				? normalizePath(`${basePath}/${project.historySubfolder}`)
+				: basePath;
+			saveSession(plugin.app, session, historyPath).catch((e: unknown) => {
 				debugLogger.logError('AutoSummary', e instanceof Error ? e : new Error(String(e)));
 			});
 		}

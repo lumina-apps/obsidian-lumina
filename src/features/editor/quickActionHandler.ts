@@ -68,14 +68,18 @@ export class QuickActionHandler {
 		if (action.actionType === 'chat') {
 			await activateView(this.plugin.app.workspace, CHAT_VIEW_TYPE);
 			const controller = new ChatController(this.plugin);
-			// 채팅 전송 (채팅창 이력에 남김)
-			await controller.sendMessage(
-				action.prompt,
-				[{ type: 'selection', path: `selection-${Date.now()}`, name: t('uiMessages.qaSelectedText'), content: selection }],
-				providerId,
-				modelId,
-				{ useRagContext: false }
-			);
+			try {
+				// 채팅 전송 (채팅창 이력에 남김)
+				await controller.sendMessage(
+					action.prompt,
+					[{ type: 'selection', path: `selection-${Date.now()}`, name: t('uiMessages.qaSelectedText'), content: selection }],
+					providerId,
+					modelId,
+					{ useRagContext: false }
+				);
+			} finally {
+				controller.destroy();
+			}
 			return;
 		}
 

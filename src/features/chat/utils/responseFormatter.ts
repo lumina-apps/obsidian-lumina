@@ -1,10 +1,11 @@
-import { sanitizeDisplayContent } from "../../../shared/utils/llmTextSanitizer";
+import { sanitizeDisplayContent, extractThinkBlocks } from "../../../shared/utils/llmTextSanitizer";
 
 import {
 	setMessageTokenUsage,
 	syncMessageContent,
 	setMessageStreaming,
 	setMessageRagStep,
+	appendThinking,
 } from '../../../core/store/chatStore';
 import type { TokenUsage } from '../../../shared/types/llm.types';
 import { t } from '../../../shared/locales/helpers';
@@ -21,6 +22,12 @@ export function handleLlmResponse(
 	// 토큰 사용량 기록
 	if (tokenUsage) {
 		setMessageTokenUsage(assistantId, tokenUsage);
+	}
+
+	// <think> 블록을 추출하여 message.thinking에 보존 (스트리밍 종료 후에도 UI에 표시)
+	const thinkBlocks = extractThinkBlocks(fullResponse);
+	if (thinkBlocks.length > 0) {
+		appendThinking(assistantId, thinkBlocks.join('\n\n'));
 	}
 
 	// 특수 태그(<think>, <tool_call>, <|mask_start|> 등) 제거

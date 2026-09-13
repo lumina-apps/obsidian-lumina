@@ -125,7 +125,8 @@ export class GoogleProvider implements ILLMProvider {
 		messages: ChatMessage[],
 		includeTools: boolean,
 	): { url: string; headers: Record<string, string>; payload: Record<string, unknown> } {
-		const url = `https://generativelanguage.googleapis.com/v1beta/models/${options.model}:${method}?key=${this.apiKey}`;
+		const cleanModel = options.model.replace(/^models\//, '');
+		const url = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:${method}?key=${this.apiKey}`;
 
 		const headers: Record<string, string> = {
 			'Content-Type': 'application/json',
@@ -139,6 +140,7 @@ export class GoogleProvider implements ILLMProvider {
 			generationConfig: {
 				temperature: options.temperature ?? 0.7,
 				maxOutputTokens: options.maxOutputTokens,
+				...(options.stop?.length ? { stopSequences: options.stop } : {}),
 			}
 		};
 

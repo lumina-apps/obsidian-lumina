@@ -36,11 +36,14 @@ export function resetChat(): void {
 	summaryUpToMessageId.set(undefined);
 	sessionProviderId.set(null);
 	sessionModelId.set(null);
+	pendingAttachments.set([]);
+	activeCliExecution.set(null);
 }
 
 /** 특정 세션으로 대화 상태 덮어쓰기 (히스토리에서 불러오기) */
 export function setSession(session: import('../../shared/types/chat.types').ChatSession): void {
-	messages.set(session.messages);
+	// 비정상 종료로 저장된 isStreaming/ragPipelineStep 상태 정리
+	messages.set(session.messages.map(m => ({ ...m, isStreaming: false, ragPipelineStep: null })));
 	isLoading.set(false);
 	currentSessionId.set(session.id);
 	currentSessionTitle.set(session.title);

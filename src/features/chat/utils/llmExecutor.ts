@@ -102,11 +102,12 @@ export async function executeCliAgentCall(
 	// 첨부 파일 중 이미지 및 컨텍스트 파일 절대 경로 수집
 	const contextFiles: string[] = [];
 	const imageFiles: string[] = [];
+	const inlineContexts: string[] = [];
 	for (const att of ctx.attachments ?? []) {
 		const ext = att.name.split('.').pop()?.toLowerCase();
 		let absPath: string | null = null;
 		if (att.type === 'external_file') {
-			absPath = att.path;
+			absPath = att.path || null;
 		} else if (att.type === 'file' || att.type === 'active_note') {
 			absPath = path.join(cwd, att.path);
 		}
@@ -116,6 +117,8 @@ export async function executeCliAgentCall(
 			if (ext && IMAGE_EXTENSIONS.has(ext)) {
 				imageFiles.push(absPath);
 			}
+		} else if (att.content) {
+			inlineContexts.push(`[Attached Content: ${att.name}]\n${att.content}`);
 		}
 	}
 
@@ -130,6 +133,10 @@ export async function executeCliAgentCall(
 
 	// 전체 대화 맥락(시스템 프롬프트, 이전 대화 등)을 온전히 보존하여 CLI에 전달
 	let prompt = formatMessagesToPrompt(ctx.llmMessages);
+
+	if (inlineContexts.length > 0) {
+		prompt = `${inlineContexts.join('\n\n')}\n\n${prompt}`;
+	}
 
 	const nonImageFiles = contextFiles.filter((f) => !imageFiles.includes(f));
 	if (nonImageFiles.length > 0) {

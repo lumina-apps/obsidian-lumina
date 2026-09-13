@@ -1,6 +1,7 @@
 import type { ProviderType } from '../../../shared/types/settings.types';
 import type { ChatOptions } from '../../../shared/types/llm.types';
 import { t } from '../../../shared/locales/helpers';
+import { PROVIDER_CATEGORIES } from '../../../shared/types/settings.types';
 import { requestUrl } from 'obsidian';
 import { raiseApiError } from '../provider-helpers';
 import { BaseOpenAIProvider } from '../baseOpenAI.provider';
@@ -28,9 +29,12 @@ export class OpenAICompatProvider extends BaseOpenAIProvider {
 	}
 
 	protected getStopSequences(options: ChatOptions): string[] | undefined {
-		const stopSeq = options.stop ?? LOCAL_STOP_SEQUENCES;
-		if (stopSeq.length > 0) {
-			return stopSeq;
+		if (options.stop && options.stop.length > 0) {
+			return options.stop;
+		}
+		const category = PROVIDER_CATEGORIES[this.type];
+		if (category === 'local' || this.type === 'custom') {
+			return LOCAL_STOP_SEQUENCES;
 		}
 		return undefined;
 	}

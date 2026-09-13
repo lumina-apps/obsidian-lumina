@@ -253,6 +253,7 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 
 		// ── 각 tool call 실행 후 결과 메시지 추가 ───────────────────────────
 		for (const tc of resolvedToolCalls) {
+			if (signal?.aborted) break;
 			addExecutingTool(assistantId, { id: tc.id, name: tc.name });
 			try {
 				// signal 전달 → 사용자 Stop 시 MCP/승인 대기 중단
@@ -267,6 +268,10 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 	// ── 최대 라운드 도달 ──────────────────────────────────────────────────────
 	const fullResponse = accumulatedText || t('uiMessages.agentMaxStepsReached');
 	debugLogger.logMcp('Loop Error', '⚠️ 최대 툴 루프 라운드 도달');
-	appendChunk(assistantId, fullResponse);
+	if (!chatSettings.streaming) {
+		appendChunk(assistantId, fullResponse);
+	} else {
+		syncMessageContent(assistantId, fullResponse);
+	}
 	return { fullResponse, tokenUsage, hasTokenLimitBeenHit };
 }

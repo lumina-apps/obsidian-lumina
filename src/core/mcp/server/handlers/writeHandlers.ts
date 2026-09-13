@@ -298,7 +298,7 @@ export const saveAttachmentHandler = async (
 ): Promise<ToolResult> => {
 	const base64Data = getStringArg(args, 'base64Data');
 
-	const { path, file, errorResult } = getValidatedPathAndFile(args, ctx, pathGuard, 'path', false);
+	const { path, file, errorResult } = getValidatedPathAndFile(args, ctx, pathGuard, 'path', false, false);
 	if (errorResult) return errorResult;
 
 	if (file) {

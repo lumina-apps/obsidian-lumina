@@ -105,14 +105,23 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 		messages: ChatMessage[],
 		stream: boolean,
 	): Record<string, unknown> {
+		const isReasoning = /^(o1|o3|o4)(-|$)/i.test(options.model);
 		const payload: Record<string, unknown> = {
 			model: options.model,
 			messages: formatOpenAIMessages(messages),
-			temperature: options.temperature ?? 0.7,
-			max_tokens: options.maxOutputTokens,
 			tools: formatOpenAITools(options.tools),
 			stream,
 		};
+
+		// Reasoning 모델(o1/o3/o4)은 temperature를 지원하지 않으며 max_completion_tokens를 사용
+		if (!isReasoning) {
+			payload.temperature = options.temperature ?? 0.7;
+		}
+		payload[isReasoning ? 'max_completion_tokens' : 'max_tokens'] = options.maxOutputTokens;
+
+		if (stream) {
+			payload.stream_options = { include_usage: true };
+		}
 
 		const stopSeq = this.getStopSequences(options);
 		if (stopSeq) {
@@ -126,13 +135,19 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 		options: ChatOptions,
 		messages: ChatMessage[],
 	): Record<string, unknown> {
+		const isReasoning = /^(o1|o3|o4)(-|$)/i.test(options.model);
 		const payload: Record<string, unknown> = {
 			model: options.model,
 			messages: formatOpenAIMessages(messages),
-			temperature: options.temperature ?? 0.7,
-			max_tokens: options.maxOutputTokens,
 			stream: true,
+			stream_options: { include_usage: true },
 		};
+
+		// Reasoning 모델(o1/o3/o4)은 temperature를 지원하지 않으며 max_completion_tokens를 사용
+		if (!isReasoning) {
+			payload.temperature = options.temperature ?? 0.7;
+		}
+		payload[isReasoning ? 'max_completion_tokens' : 'max_tokens'] = options.maxOutputTokens;
 
 		const stopSeq = this.getStopSequences(options);
 		if (stopSeq) {

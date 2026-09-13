@@ -5,7 +5,9 @@
 	import QuickSettings from "./QuickSettings.svelte";
 	import ProjectSelector from "./ProjectSelector.svelte";
 	import type { ProjectConfig } from "../../../shared/types/project.types";
-	import type { FavoriteModel } from "../../../shared/types/settings.types";
+	import type { FavoriteModel, LLMProviderConfig } from "../../../shared/types/settings.types";
+	import type { IndexingState } from "../../../core/store/ragStore";
+	import type { tStore } from "../../../shared/locales/index";
 
 	let {
 		plugin,
@@ -29,15 +31,15 @@
 		onProjectSelect,
 	} = $props<{
 		plugin: LuminaPlugin;
-		verifiedProviders: any[];
+		verifiedProviders: LLMProviderConfig[];
 		favoriteModels?: FavoriteModel[];
 		isRagEnabled: boolean;
-		indexingState: any;
+		indexingState: IndexingState;
 		indexingProgress: number;
 		estimatedTimeRemaining: number | null;
 		useRagContext: boolean;
 		showHistory: boolean;
-		tStore: any;
+		tStore: typeof tStore;
 		selectedProviderId: string;
 		selectedModelId: string;
 		projectList: ProjectConfig[];

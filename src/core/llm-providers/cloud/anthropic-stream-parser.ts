@@ -65,6 +65,10 @@ export class AnthropicStreamAccumulator {
 	// ─── Private ──────────────────────────────────────────────────────────
 
 	private processChunk(chunk: AnthropicStreamChunk): void {
+		if (chunk.type === 'error') {
+			const errorMsg = chunk.error?.message || 'Unknown Anthropic stream error';
+			throw new Error(`Anthropic Stream Error: ${errorMsg}`);
+		}
 		if (chunk.type === 'message_start' && chunk.message?.usage) {
 			this.usage = {
 				inputTokens: chunk.message.usage.input_tokens || 0,

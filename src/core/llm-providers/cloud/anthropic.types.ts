@@ -40,6 +40,10 @@ export interface AnthropicStreamChunk {
 	usage?: {
 		output_tokens?: number;
 	};
+	error?: {
+		type?: string;
+		message?: string;
+	};
 }
 
 // ─── Non-Streaming Response ─────────────────────────────────────────────────

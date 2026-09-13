@@ -276,9 +276,10 @@ export class ChatAttachmentHandler {
 	private static arrayBufferToBase64(buffer: ArrayBuffer): string {
 		let binary = '';
 		const bytes = new Uint8Array(buffer);
-		const len = bytes.byteLength;
-		for (let i = 0; i < len; i++) {
-			binary += String.fromCharCode(bytes[i]);
+		const CHUNK_SIZE = 8192;
+		for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+			const chunk = bytes.subarray(i, Math.min(i + CHUNK_SIZE, bytes.length));
+			binary += String.fromCharCode(...chunk);
 		}
 		// 모바일 환경(Capacitor)과 데스크톱 모두에서 btoa 사용 가능
 		return btoa(binary);

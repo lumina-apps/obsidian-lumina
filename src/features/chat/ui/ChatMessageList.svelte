@@ -1,6 +1,9 @@
 <script lang="ts">
 	import Message from "./Message.svelte";
 	import type LuminaPlugin from "../../../main";
+	import type { UIChatMessage } from "../../../shared/types/chat.types";
+	import type { IndexingState } from "../../../core/store/ragStore";
+	import type { tStore } from "../../../shared/locales/index";
 
 	let {
 		plugin,
@@ -25,11 +28,11 @@
 		plugin: LuminaPlugin;
 		isRagEnabled: boolean;
 		showIndexingIndicator: boolean;
-		indexingState: any;
+		indexingState: IndexingState;
 		indexingProgress: number;
 		estimatedTimeRemaining: number | null;
-		tStore: any;
-		messages: any[];
+		tStore: typeof tStore;
+		messages: UIChatMessage[];
 		hasProvider: boolean;
 		sendHint: string;
 		messagesEl: HTMLElement | null;

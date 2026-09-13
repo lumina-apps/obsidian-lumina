@@ -249,7 +249,17 @@ export async function loadSession(app: App, sessionId: string, basePath: string)
 
 	const content = await app.vault.read(file);
 	
-	// 숨김 JSON 데이터 블록에서 복원
+	// V2 포맷 우선 시도 (base64 인코딩), V1 폴백 (하위 호환)
+	const matchV2 = content.match(/<!-- LUMINA_HISTORY_DATA_V2:\s*(\S+)\s*-->/);
+	if (matchV2?.[1]) {
+		try {
+			const parsed = JSON.parse(decodeURIComponent(escape(atob(matchV2[1])))) as ChatSession;
+			return parsed;
+		} catch (e) {
+			debugLogger.logError('history', e instanceof Error ? e : new Error(`Failed to parse V2 history data: ${e}`));
+		}
+	}
+
 	const match = content.match(/<!-- LUMINA_HISTORY_DATA:\s*([\s\S]*?)\s*-->/);
 	if (match && match[1]) {
 		try {
@@ -257,7 +267,6 @@ export async function loadSession(app: App, sessionId: string, basePath: string)
 			return parsed;
 		} catch (e) {
 			debugLogger.logError('history', e instanceof Error ? e : new Error(`Failed to parse history JSON data: ${e}`));
-			console.error('Lumina: Failed to parse history JSON data', e);
 		}
 	}
 
@@ -332,8 +341,10 @@ function serializeSession(session: ChatSession): string {
 		})
 		.join('\n---\n\n');
 
-	// 완벽한 복원을 위해 숨겨진 JSON 데이터를 맨 끝에 추가 (cleanSession 사용)
-	const rawDataBlock = `\n\n<!-- LUMINA_HISTORY_DATA: ${JSON.stringify(cleanSession)} -->\n`;
+	// V2: base64 인코딩으로 JSON 내부 --> 충돌 방지
+	const jsonStr = JSON.stringify(cleanSession);
+	const encoded = btoa(unescape(encodeURIComponent(jsonStr)));
+	const rawDataBlock = `\n\n<!-- LUMINA_HISTORY_DATA_V2: ${encoded} -->\n`;
 
 	return frontmatter + body + rawDataBlock;
 }

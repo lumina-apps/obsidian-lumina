@@ -30,6 +30,8 @@ export function isDangerousTool(toolName: string): boolean {
 		/\bcmd\b/i,
 		/\bbash\b/i,
 		/\beval\b/i,
+		/\blink\b/i,
+		/\bmoc\b/i,
 	];
 	return dangerousPatterns.some((pattern) => pattern.test(lower));
 }

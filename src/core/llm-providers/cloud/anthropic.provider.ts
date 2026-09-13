@@ -121,6 +121,10 @@ export class AnthropicProvider implements ILLMProvider {
 			stream,
 		};
 
+		if (options.stop && options.stop.length > 0) {
+			payload.stop_sequences = options.stop;
+		}
+
 		if (system) {
 			payload.system = system;
 		}

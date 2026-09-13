@@ -85,6 +85,7 @@ function createRequestWithAutoResolve<T>(
 	return new Promise<T>((resolve) => {
 		let settled = false;
 		let timer: number | null = null;
+		let requestId: string | null = null;
 
 		const settle = (value: T) => {
 			if (settled) return;
@@ -92,6 +93,12 @@ function createRequestWithAutoResolve<T>(
 			if (timer !== null) window.clearTimeout(timer);
 			if (options?.signal) {
 				options.signal.removeEventListener('abort', onAbort);
+			}
+			if (requestId) {
+				approvalStore.update((state) => ({
+					queue: state.queue.filter((r) => r.id !== requestId),
+					undoStack: state.undoStack,
+				}));
 			}
 			resolve(value);
 		};
@@ -118,6 +125,7 @@ function createRequestWithAutoResolve<T>(
 		const request = build((value) => settle(value));
 		// build() 내부에서 이미 resolve된 경우(예: diff 없음) 큐에 추가하지 않는다.
 		if (request && !settled) {
+			requestId = request.id;
 			approvalStore.update((state) => ({
 				queue: [...state.queue, request],
 				undoStack: state.undoStack

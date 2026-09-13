@@ -32,21 +32,23 @@ export async function autoLinkNoteHandler(
 	const activeView = ctx.plugin.app.workspace.getActiveViewOfType(MarkdownView);
 	const editor = activeView?.file?.path === file.path ? activeView.editor : undefined;
 
-	const result = await processAutoLink(ctx.plugin.app, file, editor);
+	return await pathGuard.lock(path, async () => {
+		const result = await processAutoLink(ctx.plugin.app, file, editor);
 
-	if (!result.success) {
+		if (!result.success) {
+			return {
+				isError: true,
+				content: [{ type: 'text', text: result.message }],
+			};
+		}
+
 		return {
-			isError: true,
-			content: [{ type: 'text', text: result.message }],
+			content: [
+				{
+					type: 'text',
+					text: result.message,
+				},
+			],
 		};
-	}
-
-	return {
-		content: [
-			{
-				type: 'text',
-				text: result.message,
-			},
-		],
-	};
+	});
 }

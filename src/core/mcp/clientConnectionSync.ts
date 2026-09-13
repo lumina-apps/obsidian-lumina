@@ -27,7 +27,9 @@ export class ClientConnectionSync {
 			if (id === LOCAL_MCP_CLIENT_ID) continue; // 내장 서버 클라이언트는 여기서 제거하지 않음
 			const config = configs.find((c) => c.id === id);
 			if (!config || !config.enabled) {
-				await client.disconnect().catch(console.error);
+				await client.disconnect().catch((err: unknown) => {
+					debugLogger.logError('mcp', err instanceof Error ? err : new Error(String(err)));
+				});
 				this.clients.delete(id);
 				if (config) {
 					config.status = 'disconnected';

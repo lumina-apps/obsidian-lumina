@@ -42,7 +42,7 @@ export class McpSandbox {
             const workerScript = `
                 // --- Security Sandbox Setup ---
                 // Disable network access to prevent data exfiltration
-                const globalsToHide = ['fetch', 'XMLHttpRequest', 'WebSocket', 'importScripts', 'eval'];
+                const globalsToHide = ['fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'importScripts', 'eval'];
                 globalsToHide.forEach(g => {
                     try {
                         Object.defineProperty(self, g, {

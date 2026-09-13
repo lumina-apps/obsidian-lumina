@@ -157,7 +157,16 @@ export function raiseApiError(error: unknown, providerName: string): never {
 export function extractSystemContent(messages: ChatMessage[]): string | undefined {
 	const systemMsgs = messages.filter(m => m.role === 'system');
 	if (systemMsgs.length === 0) return undefined;
-	return systemMsgs.map(m => m.content).join('\n');
+	return systemMsgs.map(m => {
+		if (typeof m.content === 'string') return m.content;
+		if (Array.isArray(m.content)) {
+			return m.content
+				.filter((c): c is { type: 'text'; text: string } => c.type === 'text')
+				.map(c => c.text)
+				.join('\n');
+		}
+		return '';
+	}).filter(Boolean).join('\n');
 }
 
 /**

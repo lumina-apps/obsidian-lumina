@@ -1,4 +1,5 @@
 import { App, TFile, Editor } from 'obsidian';
+import { debugLogger } from '../../../../../shared/debugLogger';
 
 function escapeRegExp(string: string) {
 	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -132,7 +133,7 @@ export async function processAutoLink(app: App, file: TFile, editor?: Editor): P
 		return { success: true, linksAdded, message: `총 ${linksAdded}개의 백링크가 생성되었습니다.` };
 
 	} catch (error) {
-		console.error('[Lumina] AutoLink Error:', error);
+		debugLogger.logError('mcp', error instanceof Error ? error : new Error(String(error)));
 		return { success: false, linksAdded: 0, message: `오류 발생: ${error}` };
 	}
 }

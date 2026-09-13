@@ -8,6 +8,7 @@ import { DEBUG_VIEW_TYPE } from '../../features/debug/debugView';
 import { GRAPH_VIEW_TYPE } from '../../features/graph/graphView';
 import { debugLogger } from '../../shared/debugLogger';
 import { StripFrontmatterModal } from '../../features/frontmatter/stripFrontmatterModal';
+import { activeSidebarTab } from '../store/chatStore';
 
 interface ObsidianAppWithCommands extends App {
 	commands: {
@@ -29,6 +30,7 @@ export class CommandManager {
 			name: t('uiMessages.cmdChatTitle'),
 			callback: () => {
 				debugLogger.logSystem('commands', 'Command executed: open-chat');
+				activeSidebarTab.set('chat');
 				void activateView(this.plugin.app.workspace, CHAT_VIEW_TYPE);
 			},
 		});

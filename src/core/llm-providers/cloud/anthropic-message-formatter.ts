@@ -13,7 +13,7 @@ import { isMockToolText } from '../openai-formatter';
  */
 export function formatAnthropicMessages(messages: ChatMessage[]) {
 	const filtered = messages.filter(m => m.role !== 'system');
-	return filtered.map((m) => {
+	const mapped = filtered.map((m) => {
 		if (m.role === 'user') {
 			return { role: 'user', content: m.content };
 		}
@@ -52,6 +52,23 @@ export function formatAnthropicMessages(messages: ChatMessage[]) {
 		}
 		return { role: 'user', content: String(m.content) };
 	});
+
+	// Anthropic API는 role이 반드시 교대해야 함 → 연속된 user(tool_result) 메시지 병합
+	const merged: typeof mapped = [];
+	for (const msg of mapped) {
+		const prev = merged[merged.length - 1];
+		if (
+			prev && prev.role === 'user' && msg.role === 'user'
+			&& Array.isArray(prev.content) && Array.isArray(msg.content)
+			&& (prev.content as { type: string }[]).every(c => c.type === 'tool_result')
+			&& (msg.content as { type: string }[]).every(c => c.type === 'tool_result')
+		) {
+			(prev.content as unknown[]).push(...(msg.content as unknown[]));
+		} else {
+			merged.push(msg);
+		}
+	}
+	return merged;
 }
 
 /**

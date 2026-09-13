@@ -2,7 +2,7 @@ import type LuminaPlugin from '../../main';
 import { t } from '../../shared/locales/helpers';
 import { activateView } from '../views/viewHelper';
 import { CHAT_VIEW_TYPE } from '../../features/chat/chatView';
-import { addPendingAttachment } from '../store/chatStore';
+import { addPendingAttachment, activeSidebarTab } from '../store/chatStore';
 import { updateDiscoveryState } from '../store/discoveryStore';
 import { Notice, Menu, MenuItem, TFile, TFolder } from 'obsidian';
 import { generateCanvasForFile, generateCanvasForFolder } from '../../features/canvas/canvasGenerator';
@@ -44,6 +44,7 @@ export class EventManager {
 								.setIcon('message-circle')
 							.onClick(async () => {
 								debugLogger.logSystem('events', 'context-menu: "Ask with selection" triggered');
+								activeSidebarTab.set('chat');
 								await activateView(this.plugin.app.workspace, CHAT_VIEW_TYPE);
 								addPendingAttachment({
 									type: 'selection',
