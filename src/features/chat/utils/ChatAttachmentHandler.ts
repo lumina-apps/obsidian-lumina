@@ -172,13 +172,13 @@ export class ChatAttachmentHandler {
 		const activeView = app.workspace.getActiveViewOfType(MarkdownView);
 		const selection = att.content ??
 			activeEditor?.getSelection() ??
-			(activeView?.editor as { getSelection?: () => string } | undefined)?.getSelection?.();
+			activeView?.editor?.getSelection();
 		if (!selection) return null;
 		return this.createTextPayload(`[${t('uiMessages.qaSelectedText')}]\n${selection}`);
 	}
 
 	private static async parseActiveNoteAttachment(app: App, att: ContextAttachment): Promise<ParsedAttachment | null> {
-		const file = (att.path ? app.vault.getAbstractFileByPath(att.path) : null) as TFile
+		const file = (att.path ? app.vault.getAbstractFileByPath(att.path) : null)
 			?? app.workspace.getActiveFile()
 			?? app.workspace.activeEditor?.file;
 		if (!(file instanceof TFile)) return null;

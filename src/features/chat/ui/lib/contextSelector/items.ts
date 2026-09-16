@@ -33,8 +33,8 @@ export function buildCategoryItems(
 		case "selection": {
 			const activeEditor = plugin.app.workspace.activeEditor?.editor;
 			const activeView = plugin.app.workspace.getActiveViewOfType(MarkdownView);
-			const editor = activeEditor ?? (activeView?.editor as { getSelection?: () => string } | undefined);
-			const sel = editor?.getSelection?.();
+			const editor = activeEditor ?? activeView?.editor;
+			const sel = editor?.getSelection();
 			if (sel && sel.trim().length > 0) {
 				items.push({
 					type: "selection",
