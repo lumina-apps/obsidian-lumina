@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TFile, TFolder, type App } from 'obsidian';
-import { saveSession, loadSession } from './history';
+import { saveSession, loadSession, utf8ToBase64, base64ToUtf8 } from './history';
 import type { ChatSession } from '../../shared/types/chat.types';
 
 describe('chat history persistence', () => {
@@ -154,4 +154,62 @@ Legacy question
 		expect(loaded?.title).toBe('Old V1 Session');
 		expect(loaded?.messages[0].content).toBe('Legacy question');
 	});
+
+	it('should encode and decode unicode strings (Korean, emoji, special symbols) correctly', () => {
+		const testString = '안녕하세요! ✦ Lumina AI 🚀 & <test> "quotes" \n\t newline & tab';
+		const encoded = utf8ToBase64(testString);
+		const decoded = base64ToUtf8(encoded);
+		expect(decoded).toBe(testString);
+	});
+
+	it('should correctly load legacy V2 session encoded with escape/unescape', async () => {
+		const legacyV2Session: ChatSession = {
+			id: 'session-v2-legacy',
+			title: '유니코드 세션 🚀',
+			createdAt: 1710000000000,
+			updatedAt: 1710000000000,
+			providerId: 'google',
+			modelId: 'gemini-1.5-pro',
+			messages: [
+				{
+					id: 'm1',
+					role: 'user',
+					content: '한글 질문 및 이모지 ✨',
+					timestamp: 1710000000000,
+					isStreaming: false,
+				},
+			],
+		};
+
+		// Simulate legacy encoding using Buffer/manual byte conversion equivalent to btoa(unescape(encodeURIComponent(...)))
+		const jsonStr = JSON.stringify(legacyV2Session);
+		const legacyEncoded = Buffer.from(jsonStr, 'utf-8').toString('base64');
+
+		const legacyFileContent = `---
+id: session-v2-legacy
+title: "유니코드 세션 🚀"
+---
+
+**👤 You** · 10:00:00 AM
+
+한글 질문 및 이모지 ✨
+
+<!-- LUMINA_HISTORY_DATA_V2: ${legacyEncoded} -->
+`;
+
+		const filePath = 'Lumina/History/240310_1000 - 유니코드 세션.md';
+		const file = new TFile();
+		file.path = filePath;
+		file.name = '240310_1000 - 유니코드 세션.md';
+		file.extension = 'md';
+		file.stat = { ctime: 1710000000000, mtime: 1710000000000, size: legacyFileContent.length };
+		virtualFiles.set(filePath, { content: legacyFileContent, file });
+
+		const loaded = await loadSession(mockApp, 'session-v2-legacy', 'Lumina/History');
+		expect(loaded).not.toBeNull();
+		expect(loaded?.id).toBe('session-v2-legacy');
+		expect(loaded?.title).toBe('유니코드 세션 🚀');
+		expect(loaded?.messages[0].content).toBe('한글 질문 및 이모지 ✨');
+	});
 });
+

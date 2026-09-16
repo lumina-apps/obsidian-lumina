@@ -235,6 +235,28 @@ async function findSessionFile(app: App, files: TFile[], sessionId: string): Pro
 	return null;
 }
 
+/** UTF-8 문자열을 Base64 문자열로 인코딩 (웹 표준 TextEncoder 사용) */
+export function utf8ToBase64(str: string): string {
+	const bytes = new TextEncoder().encode(str);
+	let binary = '';
+	const len = bytes.length;
+	const CHUNK_SIZE = 8192;
+	for (let i = 0; i < len; i += CHUNK_SIZE) {
+		binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + CHUNK_SIZE, len)));
+	}
+	return btoa(binary);
+}
+
+/** Base64 문자열을 UTF-8 문자열로 디코딩 (웹 표준 TextDecoder 사용) */
+export function base64ToUtf8(base64: string): string {
+	const binary = atob(base64);
+	const bytes = new Uint8Array(binary.length);
+	for (let i = 0; i < binary.length; i++) {
+		bytes[i] = binary.charCodeAt(i);
+	}
+	return new TextDecoder().decode(bytes);
+}
+
 /** 세션 파일에서 숨김 JSON을 파싱해 ChatSession(메시지 포함) 복원 */
 export async function loadSession(app: App, sessionId: string, basePath: string): Promise<ChatSession | null> {
 	debugLogger.logSystem('history', `loadSession started (sessionId=${sessionId}, basePath=${basePath})`);
@@ -253,7 +275,7 @@ export async function loadSession(app: App, sessionId: string, basePath: string)
 	const matchV2 = content.match(/<!-- LUMINA_HISTORY_DATA_V2:\s*(\S+)\s*-->/);
 	if (matchV2?.[1]) {
 		try {
-			const parsed = JSON.parse(decodeURIComponent(escape(atob(matchV2[1])))) as ChatSession;
+			const parsed = JSON.parse(base64ToUtf8(matchV2[1])) as ChatSession;
 			return parsed;
 		} catch (e) {
 			debugLogger.logError('history', e instanceof Error ? e : new Error(`Failed to parse V2 history data: ${e}`));
@@ -343,7 +365,7 @@ function serializeSession(session: ChatSession): string {
 
 	// V2: base64 인코딩으로 JSON 내부 --> 충돌 방지
 	const jsonStr = JSON.stringify(cleanSession);
-	const encoded = btoa(unescape(encodeURIComponent(jsonStr)));
+	const encoded = utf8ToBase64(jsonStr);
 	const rawDataBlock = `\n\n<!-- LUMINA_HISTORY_DATA_V2: ${encoded} -->\n`;
 
 	return frontmatter + body + rawDataBlock;
