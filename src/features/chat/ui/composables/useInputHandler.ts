@@ -159,19 +159,32 @@ export function createContextSelectHandler(
 			ctx.setAttachments([...ctx.attachments, attachment]);
 		}
 
+		let newCursor = ctx.mentionStartIndex;
 		if (ctx.mentionStartIndex !== -1) {
 			const el = ctx.getTextareaEl();
 			if (el) {
 				const val = ctx.getInputText();
 				const before = val.slice(0, ctx.mentionStartIndex);
-				const after = val.slice(el.selectionStart);
+				const endIndex = Math.max(ctx.mentionStartIndex, el.selectionStart ?? ctx.mentionStartIndex);
+				const after = val.slice(endIndex);
 				ctx.setInputText(before + after);
+				newCursor = before.length;
 			}
 		}
 
 		ctx.afterSelect?.();
 
-		void tick().then(() => ctx.getTextareaEl()?.focus());
+		void tick().then(() => {
+			const el = ctx.getTextareaEl();
+			if (el) {
+				resizeTextarea(el);
+				el.focus();
+				if (newCursor >= 0) {
+					el.selectionStart = newCursor;
+					el.selectionEnd = newCursor;
+				}
+			}
+		});
 	};
 }
 
@@ -190,20 +203,31 @@ export function createSlashSelectHandler(
 	ctx: SlashSelectContext,
 ): (cmd: SlashCommand) => void {
 	return (cmd: SlashCommand) => {
+		let newCursor = ctx.slashStartIndex;
 		if (ctx.slashStartIndex !== -1) {
 			const el = ctx.getTextareaEl();
 			if (el) {
 				const val = ctx.getInputText();
 				const before = val.slice(0, ctx.slashStartIndex);
-				const after = val.slice(el.selectionStart);
+				const endIndex = Math.max(ctx.slashStartIndex, el.selectionStart ?? ctx.slashStartIndex);
+				const after = val.slice(endIndex);
 				ctx.setInputText(before + after);
+				newCursor = before.length;
 			}
 		}
 
 		ctx.afterSelect?.();
 
 		void tick().then(() => {
-			ctx.getTextareaEl()?.focus();
+			const el = ctx.getTextareaEl();
+			if (el) {
+				resizeTextarea(el);
+				el.focus();
+				if (newCursor >= 0) {
+					el.selectionStart = newCursor;
+					el.selectionEnd = newCursor;
+				}
+			}
 			cmd.action();
 		});
 	};

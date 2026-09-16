@@ -2,6 +2,7 @@
 	import type { SlashCommand } from "../types/slashCommand.types";
 	import { clickOutside, iconAction } from "../../../shared/utils/domUtils";
 	import { useKeyboardListNav } from "./composables/useKeyboardListNav";
+	import { tStore } from "../../../shared/locales/index";
 
 	let {
 		commands = [],
@@ -55,7 +56,7 @@
 	// Global keydown capture (SlashCommandSelector는 capture phase로 등록)
 	function handleGlobalKeydown(e: KeyboardEvent) {
 		if (e.isComposing && e.key === "Enter") return; // Ignore IME composition Enter
-		if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === "Escape") {
+		if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === "Tab" || e.key === "Escape") {
 			e.stopPropagation();
 		}
 		nav.handleKeydown(e);
@@ -79,7 +80,7 @@
 <div class="lumina-popup-selector" bind:this={containerEl} use:clickOutside={() => onClose(false)}>
 	<div class="lumina-popup-selector__list lumina-scrollbar-thin" bind:this={listEl} role="listbox">
 		{#if filteredCommands.length === 0}
-			<div class="lumina-popup-selector__empty">명령어를 찾을 수 없습니다.</div>
+			<div class="lumina-popup-selector__empty">{$tStore('uiMessages.noSearchResults')}</div>
 		{:else}
 			{#each filteredCommands as cmd, i}
 				<button

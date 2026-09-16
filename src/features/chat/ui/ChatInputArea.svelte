@@ -134,6 +134,26 @@
 		resizeTextarea(textareaEl);
 	}
 
+	// ── 슬래시 명령어 가로채기 및 전송 핸들러 ─────────────────────────────
+	function handleSendMessage() {
+		const text = inputText.trim();
+		// 슬래시 명령어 직접 입력 감지 (/clear, /rag 등)
+		if (text.startsWith("/") && attachments.length === 0) {
+			const cmdId = text.slice(1).trim().toLowerCase();
+			const matched = slashCommands.find((c) => c.id.toLowerCase() === cmdId);
+			if (matched) {
+				inputText = "";
+				tick().then(() => {
+					onResize();
+					textareaEl?.focus();
+				});
+				matched.action();
+				return;
+			}
+		}
+		onSendMessage();
+	}
+
 	// ── 입력 핸들러들 (composable) ─────────────────────────────────────────
 	const handleKeydown = createKeydownHandler({
 		get plugin() {
@@ -149,7 +169,7 @@
 			return isLoading;
 		},
 		get onSendMessage() {
-			return onSendMessage;
+			return handleSendMessage;
 		},
 	});
 
@@ -318,10 +338,11 @@
 			<button
 				class="lumina-chat__toolbar-btn"
 				aria-label={$tStore("chat.addContext")}
+				title={$tStore("chat.addContext")}
 				use:icon={"lumina-at-sign"}
 				onclick={insertContextMention}
-				type="button">Add Context</button
-			>
+				type="button"
+			></button>
 			<button
 				class="lumina-chat__toolbar-btn"
 				aria-label={$tStore("chat.uploadFile")}
@@ -434,6 +455,7 @@
 						showContextSelector = false;
 						if (focusTextarea) textareaEl?.focus();
 					}}
+					onFocusTextarea={() => textareaEl?.focus()}
 				/>
 			{/if}
 
@@ -533,7 +555,7 @@
 						class="lumina-chat__send-btn"
 						class:is-active={inputText.trim().length > 0 ||
 							attachments.length > 0}
-						onclick={onSendMessage}
+						onclick={handleSendMessage}
 						disabled={(!inputText.trim() && attachments.length === 0) ||
 							!hasProvider}
 						aria-label={$tStore("errors.send")}

@@ -4,8 +4,8 @@
 	position: absolute;
 	bottom: 100%;
 	left: 0;
-	width: 340px;
-	max-width: calc(100vw - 32px);
+	width: min(340px, 100%);
+	max-width: 100%;
 	margin-bottom: 8px;
 	background: var(--background-primary);
 	border: 1px solid var(--background-modifier-border);

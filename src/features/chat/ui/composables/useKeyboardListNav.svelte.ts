@@ -72,7 +72,7 @@ export function useKeyboardListNav(options: KeyboardListNavOptions) {
 				setKeyboardNavFlag();
 				options.setActiveIndex((activeIndex - 1 + count) % count);
 			}
-		} else if (e.key === 'Enter') {
+		} else if (e.key === 'Enter' || e.key === 'Tab') {
 			e.preventDefault();
 			options.onSelect(activeIndex);
 		} else if (e.key === 'Escape') {

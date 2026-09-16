@@ -17,18 +17,21 @@
 		buildCategoryItems,
 		filterItems,
 	} from "./lib/contextSelector/items";
+	import { clickOutside } from "../../../shared/utils/domUtils";
 	import { useKeyboardNav } from "./lib/contextSelector/keyboardNav.svelte.ts";
 
 	let {
 		plugin,
 		searchQuery = "",
 		onSelect,
-		onClose
+		onClose,
+		onFocusTextarea,
 	} = $props<{
 		plugin: LuminaPlugin;
 		searchQuery: string;
 		onSelect: (attachment: ContextAttachment) => void;
 		onClose: (focusTextarea?: boolean) => void;
+		onFocusTextarea?: () => void;
 	}>();
 
 	let containerEl: HTMLDivElement | null = $state(null);
@@ -55,6 +58,28 @@
 		filterCategories(categories, searchQuery),
 	);
 
+	// ── Direct vault item search from initial categories view ────────────────
+	const directSearchItems = $derived.by(() => {
+		const q = searchQuery.toLowerCase().trim();
+		if (!q || view !== "categories") return [];
+		const fileItems = filterItems(
+			buildCategoryItems("file", files, tagsInfo, plugin, (key, vars) => $tStore(key, vars as Record<string, string>)),
+			q,
+			20,
+		);
+		const folderItems = filterItems(
+			buildCategoryItems("folder", files, tagsInfo, plugin, (key, vars) => $tStore(key, vars as Record<string, string>)),
+			q,
+			10,
+		);
+		const tagItems = filterItems(
+			buildCategoryItems("tag", files, tagsInfo, plugin, (key, vars) => $tStore(key, vars as Record<string, string>)),
+			q,
+			10,
+		);
+		return [...fileItems, ...folderItems, ...tagItems];
+	});
+
 	// ── Items for selected category ───────────────────────────────────────────
 	const categoryItems = $derived.by(() => {
 		if (!activeCategory) return [];
@@ -70,7 +95,9 @@
 
 	// Total selectable items count (categories or items depending on view)
 	const selectableCount = $derived(
-		view === "categories" ? filteredCategories.length : categoryItems.length,
+		view === "categories"
+			? filteredCategories.length + directSearchItems.length
+			: categoryItems.length,
 	);
 
 	// ── Actions ───────────────────────────────────────────────────────────────
@@ -103,12 +130,14 @@
 		view = "items";
 		activeCategory = cat.id;
 		nav.resetIndex();
+		onFocusTextarea?.();
 	}
 
 	function goBack() {
 		view = "categories";
 		activeCategory = null;
 		nav.resetIndex();
+		onFocusTextarea?.();
 	}
 
 	function selectItem(item: ContextAttachment) {
@@ -129,22 +158,25 @@
 		const trimmed = urlText.trim();
 		if (!trimmed) return;
 
-		if (!isValidUrl(trimmed)) {
+		let targetUrl = trimmed;
+		if (!isValidUrl(targetUrl)) {
 			// Try prepending https:// only if the text doesn't already look like a URL
-			if (!trimmed.includes("://")) {
-				const withHttps = `https://${trimmed}`;
+			if (!targetUrl.includes("://")) {
+				const withHttps = `https://${targetUrl}`;
 				if (isValidUrl(withHttps)) {
-					urlText = withHttps;
+					targetUrl = withHttps;
+				} else {
 					return;
 				}
+			} else {
+				return;
 			}
-			return;
 		}
 
 		selectItem({
 			type: "url",
-			path: trimmed,
-			name: trimmed,
+			path: targetUrl,
+			name: targetUrl,
 		});
 	}
 
@@ -157,6 +189,7 @@
 			e.preventDefault();
 			view = "categories";
 			activeCategory = null;
+			onFocusTextarea?.();
 		}
 	}
 
@@ -168,8 +201,14 @@
 	// ── Keyboard handling (using Runes composable) ─────────────────────────────
 	function handleSelectCurrent() {
 		if (view === "categories") {
-			const cat = filteredCategories[nav.activeIndex];
-			if (cat) selectCategory(cat);
+			if (nav.activeIndex < filteredCategories.length) {
+				const cat = filteredCategories[nav.activeIndex];
+				if (cat) selectCategory(cat);
+			} else {
+				const directIndex = nav.activeIndex - filteredCategories.length;
+				const item = directSearchItems[directIndex];
+				if (item) selectItem(item);
+			}
 		} else if (view === "items") {
 			const item = categoryItems[nav.activeIndex];
 			if (item) selectItem(item);
@@ -208,14 +247,7 @@
 		setIsKeyboardNavigating: (val) => { isKeyboardNavigating = val; },
 	});
 
-	function handleClickOutside(e: MouseEvent) {
-		if (containerEl && !containerEl.contains(e.target as Node)) {
-			onClose(false);
-		}
-	}
-
 	$effect(() => {
-		activeDocument.addEventListener("click", handleClickOutside);
 		const onGlobalKeydown = (e: KeyboardEvent) => {
 			if (view === "url_input") return;
 			if (e.isComposing && e.key === "Enter") return; // Ignore IME composition Enter
@@ -223,7 +255,6 @@
 		};
 		activeDocument.addEventListener("keydown", onGlobalKeydown, true);
 		return () => {
-			activeDocument.removeEventListener("click", handleClickOutside);
 			activeDocument.removeEventListener("keydown", onGlobalKeydown, true);
 		};
 	});
@@ -249,14 +280,13 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<div class="lumina-popup-selector" bind:this={containerEl} onclick={(e) => e.stopPropagation()}>
+<div class="lumina-popup-selector" bind:this={containerEl} use:clickOutside={() => onClose(false)}>
 	{#if view === 'categories'}
 		<div class="lumina-popup-selector__header">
 			<span class="lumina-context-selector__header-title">{$tStore('settings.chat.context.categoryTitle')}</span>
 		</div>
 		<div class="lumina-popup-selector__list" bind:this={listEl}>
-			{#if filteredCategories.length === 0}
+			{#if filteredCategories.length === 0 && directSearchItems.length === 0}
 				<div class="lumina-popup-selector__empty">{$tStore('uiMessages.noSearchResults')}</div>
 			{:else}
 				{#each filteredCategories as cat, i}
@@ -273,6 +303,26 @@
 							<span class="lumina-popup-selector__item-name">{cat.label}</span>
 						</div>
 						<span class="lumina-context-selector__item-arrow">→</span>
+					</button>
+				{/each}
+				{#each directSearchItems as item, j}
+					{@const itemIndex = filteredCategories.length + j}
+					<button
+						class="lumina-popup-selector__item"
+						class:is-active={itemIndex === nav.activeIndex}
+						onclick={() => selectItem(item)}
+						onmouseenter={() => { if (!nav.isKeyboardNavigating) nav.activeIndex = itemIndex; }}
+						onmousemove={() => { if (!nav.isKeyboardNavigating && nav.activeIndex !== itemIndex) nav.activeIndex = itemIndex; }}
+						type="button"
+					>
+						<span class="lumina-popup-selector__item-icon" use:icon={getAttachmentIcon(item.type)}></span>
+						<div class="lumina-popup-selector__item-info">
+							<span class="lumina-popup-selector__item-name">{item.name}</span>
+							{#if item.type === 'file' || item.type === 'folder' || item.type === 'canvas'}
+								<span class="lumina-context-selector__item-path">{item.path}</span>
+							{/if}
+						</div>
+						<span class="lumina-popup-selector__item-badge">{item.type}</span>
 					</button>
 				{/each}
 			{/if}

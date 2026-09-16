@@ -51,9 +51,10 @@ interface EditorWithGetSelection {
 }
 
 export function buildCategoryContext(plugin: LuminaPlugin): CategoryContext {
-	const activeFile = plugin.app.workspace.getActiveFile();
+	const activeFile = plugin.app.workspace.getActiveFile() ?? plugin.app.workspace.activeEditor?.file ?? null;
+	const activeEditor = plugin.app.workspace.activeEditor?.editor as EditorWithGetSelection | undefined;
 	const activeView = plugin.app.workspace.getActiveViewOfType(MarkdownView);
-	const editor = activeView?.editor as EditorWithGetSelection | undefined;
+	const editor = activeEditor ?? (activeView?.editor as EditorWithGetSelection | undefined);
 	const selection = editor?.getSelection?.();
 	// metadataCache.getTags()는 Obsidian API에 존재하지만 타입 정의에 누락되어 있습니다.
 	const metadataCache = plugin.app.metadataCache as unknown as MetadataCacheWithTags;
@@ -62,7 +63,7 @@ export function buildCategoryContext(plugin: LuminaPlugin): CategoryContext {
 
 	return {
 		hasActiveFile: !!activeFile,
-		hasSelection: !!selection,
+		hasSelection: !!selection && selection.trim().length > 0,
 		tagsInfo,
 		files,
 	};

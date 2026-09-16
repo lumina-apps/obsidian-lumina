@@ -74,7 +74,7 @@ export function useKeyboardNav(config: KeyboardNavConfig) {
 				config.setActiveIndex((activeIndex - 1 + count) % count);
 				config.scrollIntoView();
 			}
-		} else if (e.key === "Enter") {
+		} else if (e.key === "Enter" || e.key === "Tab") {
 			e.preventDefault();
 			e.stopPropagation();
 			config.onSelectCurrent();

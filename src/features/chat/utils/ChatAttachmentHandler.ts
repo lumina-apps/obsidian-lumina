@@ -47,10 +47,10 @@ export class ChatAttachmentHandler {
 					return await this.parseFolderAttachment(app, att);
 
 				case 'selection':
-					return this.parseSelectionAttachment(app);
+					return this.parseSelectionAttachment(app, att);
 
 				case 'active_note':
-					return await this.parseActiveNoteAttachment(app);
+					return await this.parseActiveNoteAttachment(app, att);
 
 				case 'canvas':
 					return await this.parseCanvasAttachment(app, att);
@@ -167,20 +167,24 @@ export class ChatAttachmentHandler {
 		return this.createTextPayload(folderContent);
 	}
 
-	private static parseSelectionAttachment(app: App): ParsedAttachment | null {
+	private static parseSelectionAttachment(app: App, att: ContextAttachment): ParsedAttachment | null {
+		const activeEditor = app.workspace.activeEditor?.editor;
 		const activeView = app.workspace.getActiveViewOfType(MarkdownView);
-		// @ts-ignore
-		const selection = activeView?.editor?.getSelection();
+		const selection = att.content ??
+			activeEditor?.getSelection() ??
+			(activeView?.editor as { getSelection?: () => string } | undefined)?.getSelection?.();
 		if (!selection) return null;
 		return this.createTextPayload(`[${t('uiMessages.qaSelectedText')}]\n${selection}`);
 	}
 
-	private static async parseActiveNoteAttachment(app: App): Promise<ParsedAttachment | null> {
-		const activeFile = app.workspace.getActiveFile();
-		if (!activeFile) return null;
-		const content = await app.vault.read(activeFile);
+	private static async parseActiveNoteAttachment(app: App, att: ContextAttachment): Promise<ParsedAttachment | null> {
+		const file = (att.path ? app.vault.getAbstractFileByPath(att.path) : null) as TFile
+			?? app.workspace.getActiveFile()
+			?? app.workspace.activeEditor?.file;
+		if (!(file instanceof TFile)) return null;
+		const content = await app.vault.read(file);
 		return this.createTextPayload(
-			t('settings.chat.context.activeNotePrefix', { name: activeFile.basename }) + '\n' + content,
+			t('settings.chat.context.activeNotePrefix', { name: file.basename }) + '\n' + content,
 		);
 	}
 

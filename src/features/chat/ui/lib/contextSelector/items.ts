@@ -20,7 +20,7 @@ export function buildCategoryItems(
 
 	switch (categoryId) {
 		case "active_note": {
-			const activeFile = plugin.app.workspace.getActiveFile();
+			const activeFile = plugin.app.workspace.getActiveFile() ?? plugin.app.workspace.activeEditor?.file;
 			if (activeFile) {
 				items.push({
 					type: "active_note",
@@ -31,13 +31,16 @@ export function buildCategoryItems(
 			break;
 		}
 		case "selection": {
+			const activeEditor = plugin.app.workspace.activeEditor?.editor;
 			const activeView = plugin.app.workspace.getActiveViewOfType(MarkdownView);
-			const sel = (activeView?.editor as { getSelection?: () => string } | undefined)?.getSelection?.();
-			if (sel) {
+			const editor = activeEditor ?? (activeView?.editor as { getSelection?: () => string } | undefined);
+			const sel = editor?.getSelection?.();
+			if (sel && sel.trim().length > 0) {
 				items.push({
 					type: "selection",
 					path: "selection",
 					name: getLabel("settings.chat.context.selectedText", { length: sel.length }),
+					content: sel,
 				});
 			}
 			break;
