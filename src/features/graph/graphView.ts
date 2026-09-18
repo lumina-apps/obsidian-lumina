@@ -56,7 +56,6 @@ export class GraphView extends ItemView {
 					void unmount(comp);
 				} catch (e) {
 					debugLogger.logError('graph_view', e instanceof Error ? e : new Error(`GraphView unmount error: ${e}`));
-					console.error('[Lumina] GraphView unmount error:', e);
 				}
 			}, 0);
 		}

@@ -37,9 +37,9 @@ A Lumina oferece dois modos adequados ao seu nível de experiência. Escolha o q
    - [Obter Chave de API Groq (Grátis)](https://console.groq.com/keys)
 3. Abra qualquer nota e faça uma pergunta à Lumina no painel lateral direito. É isso! (Assim que a indexação RAG local for concluída no painel lateral, as conversas baseadas nas suas notas serão imediatamente ativadas.)
 
-### Via 2: Domine o Agente (Recomendado para Utilizadores Avançados)
-1. Conecte um LLM local ou a sua IA na nuvem preferida nas configurações.
-2. Digite `/mcp` no chat para ativar o **Modo Agente Inteligente**.
+### Trilha 2: Dominando o Agente (Recomendado para utilizadores avançados)
+1. Em **Configurações > Conexões (Connections)**, conecte seu **Agente CLI de Terminal** (`Claude Code`, `Antigravity`, `OpenCode`, `Codex`), um LLM local ou uma IA na nuvem.
+2. Selecione o agente CLI no chat do painel lateral (com modos **👁️ Somente leitura** / **✏️ Edição**), ou digite `/mcp` para ativar o **Modo Agente Inteligente**.
 3. Emita comandos autónomos como: "Encontre todas as notas de reuniões desta semana no meu cofre e compile-as num único ficheiro de resumo."
 
 > [!IMPORTANT]

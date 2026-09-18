@@ -37,10 +37,10 @@ Lumina offre due modalità in base al tuo livello di competenza. Scegli quella c
    - [Ottieni Chiave API Groq (Gratis)](https://console.groq.com/keys)
 3. Apri una qualsiasi nota e fai una domanda a Lumina nel pannello laterale destro. Tutto qui! (Una volta completata l'indicizzazione RAG locale nel pannello laterale, le conversazioni basate sulle tue note verranno immediatamente attivate.)
 
-### Traccia 2: Padroneggia l'Agente (Consigliato per Utenti Avanzati)
-1. Collega un LLM locale o la tua IA cloud preferita nelle impostazioni.
-2. Digita `/mcp` nella chat per attivare la **Modalità Agente Intelligente**.
-3. Dai comandi autonomi come: "Trova tutti i verbali delle riunioni di questa settimana nel mio vault e compilali in un unico file di riepilogo."
+### Traccia 2: Padroneggiare l'Agente (Consigliato per utenti avanzati)
+1. In **Impostazioni > Connessioni (Connections)**, connetti il tuo **Agente CLI da Terminale** (`Claude Code`, `Antigravity`, `OpenCode`, `Codex`), un LLM locale o un'IA cloud.
+2. Seleziona l'agente CLI nella chat del pannello laterale (con modalità **👁️ Sola lettura** / **✏️ Modifica**), o digita `/mcp` per attivare la **Modalità Agente Intelligente**.
+3. Invia comandi autonomi come: "Trova tutti i verbali delle riunioni di questa settimana nel mio vault e compilali in un unico file di riassunto."
 
 > [!IMPORTANT]
 > **Archiviazione Sicura delle Chiavi API**

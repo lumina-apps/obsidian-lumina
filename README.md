@@ -38,8 +38,8 @@ Lumina offers two tracks tailored to your skill level. Choose the one that suits
 3. Open any note and ask Lumina a question in the right sidebar panel. That's it! (Once the local RAG indexing is complete in the side panel, conversations based on your notes will be immediately activated.)
 
 ### Track 2: Master the Agent (Recommended for Advanced Users)
-1. Connect a local LLM or your cloud AI of choice in the settings.
-2. Type `/mcp` in the chat to activate **Smart Agent Mode**.
+1. In **Settings > Connections**, connect your preferred **Terminal CLI Agent** (`Claude Code`, `Antigravity`, `OpenCode`, `Codex`), local LLM, or cloud AI.
+2. Select the CLI agent in the side panel chat (with **👁️ Read-Only** / **✏️ Edit Mode**), or type `/mcp` to activate **Smart Agent Mode**.
 3. Issue autonomous commands like, "Find all this week's meeting notes in my vault and compile them into a single summary file."
 
 > [!IMPORTANT]

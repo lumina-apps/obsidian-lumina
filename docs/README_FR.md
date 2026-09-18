@@ -38,8 +38,8 @@ Lumina propose deux modes adaptés à votre niveau. Choisissez celui qui vous co
 3. Ouvrez n'importe quelle note et posez une question à Lumina dans le panneau latéral droit. C'est tout ! (Une fois l'indexation RAG locale terminée dans le panneau latéral, les conversations basées sur vos notes seront immédiatement activées.)
 
 ### Piste 2 : Maîtrisez l'Agent (Recommandé pour les Utilisateurs Avancés)
-1. Connectez un LLM local ou votre IA cloud préférée dans les paramètres.
-2. Tapez `/mcp` dans le chat pour activer le **Mode Agent Intelligent**.
+1. Dans **Paramètres > Connexions (Connections)**, connectez votre **Agent CLI de terminal** (`Claude Code`, `Antigravity`, `OpenCode`, `Codex`), un LLM local ou une IA cloud.
+2. Sélectionnez l'agent CLI dans le chat du panneau latéral (avec modes **👁️ Lecture seule** / **✏️ Édition**), ou tapez `/mcp` pour activer le **Mode Agent Intelligent**.
 3. Donnez des commandes autonomes comme : « Trouve tous les comptes rendus de réunion de cette semaine dans mon coffre et compile-les en un seul fichier de résumé. »
 
 > [!IMPORTANT]

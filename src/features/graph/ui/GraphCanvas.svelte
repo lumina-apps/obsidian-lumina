@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import ForceGraph from 'force-graph';
-	import type { GraphData, GraphNode } from '../graphDataBuilder';
+	import type { GraphData, GraphNode, GraphEdge } from '../graphDataBuilder';
 	import { graphState, updateGraphState } from '../graphStore';
 	import GraphTooltip from './GraphTooltip.svelte';
 

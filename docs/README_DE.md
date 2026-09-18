@@ -38,9 +38,9 @@ Lumina bietet zwei auf dein Können zugeschnittene Modi. Wähle die Methode, die
 3. Öffne eine beliebige Notiz und stelle Lumina eine Frage im rechten Seitenpanel. Fertig! (Sobald die lokale RAG-Indizierung im Seitenpanel abgeschlossen ist, werden Unterhaltungen basierend auf deinen Notizen sofort aktiviert.)
 
 ### Track 2: Den Agenten meistern (für Fortgeschrittene empfohlen)
-1. Verbinde ein lokales LLM oder deine bevorzugte Cloud-KI in den Einstellungen.
-2. Gib `/mcp` im Chat ein, um den **Smart Agent Mode** zu aktivieren.
-3. Erteile autonome Befehle wie: "Finde alle Besprechungsnotizen dieser Woche in meinem Vault und erstelle eine einzige Zusammenfassungsdatei daraus."
+1. Verbinden Sie unter **Einstellungen > Verbindungen (Connections)** Ihren bevorzugten **Terminal CLI-Agenten** (`Claude Code`, `Antigravity`, `OpenCode`, `Codex`), ein lokales LLM oder eine Cloud-KI.
+2. Wählen Sie den CLI-Agenten im Seitenpanel-Chat (mit **👁️ Nur-Lese-** / **✏️ Bearbeitungsmodus**) oder geben Sie `/mcp` ein, um den **Smart Agent Mode** zu aktivieren.
+3. Erteilen Sie autonome Befehle wie: „Finde alle Besprechungsnotizen dieser Woche in meinem Vault und fasse sie in einer Datei zusammen.“
 
 > [!IMPORTANT]
 > **Sichere Speicherung von API-Schlüsseln**

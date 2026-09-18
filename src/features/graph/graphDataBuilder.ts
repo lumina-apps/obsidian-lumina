@@ -22,7 +22,27 @@ export interface GraphData {
 }
 
 let edgeCache: GraphEdge[] | null = null;
-let lastChunkCount = -1;
+let lastCacheKey = '';
+
+/**
+ * Invalidates the cached pairwise similarity edges.
+ * Call this when indexer state resets or changes.
+ */
+export function invalidateEdgeCache(): void {
+	edgeCache = null;
+	lastCacheKey = '';
+}
+
+function computeGraphCacheKey(parentChunks: ParentChunk[], childChunks: ChildChunk[]): string {
+	const pLen = parentChunks.length;
+	const cLen = childChunks.length;
+	if (pLen === 0 || cLen === 0) return '';
+	const pFirst = parentChunks[0]?.id ?? '';
+	const pLast = parentChunks[pLen - 1]?.id ?? '';
+	const cFirst = childChunks[0]?.id ?? '';
+	const cLast = childChunks[cLen - 1]?.id ?? '';
+	return `${pLen}:${cLen}:${pFirst}:${pLast}:${cFirst}:${cLast}`;
+}
 
 const workerCode = `
 self.onmessage = function(e) {
@@ -78,13 +98,13 @@ self.onmessage = function(e) {
 };
 `;
 
-function getTopLevelFolder(path: string): string {
+export function getTopLevelFolder(path: string): string {
 	const parts = path.split('/');
 	if (parts.length <= 1) return '/'; // root
 	return parts[0];
 }
 
-function extractBasename(path: string): string {
+export function extractBasename(path: string): string {
 	const parts = path.split('/');
 	return parts[parts.length - 1].replace(/\.md$/i, '');
 }
@@ -106,18 +126,19 @@ export async function buildGraphData(
 		`buildGraphData started (parentChunks=${parentChunks.length}, childChunks=${childChunks.length}, minSimilarity=${minSimilarity}, maxK=${maxK}, mode=${mode}, focusPath=${focusPath ?? 'null'})`,
 	);
 
+	const cacheKey = computeGraphCacheKey(parentChunks, childChunks);
+
 	// If chunks changed, we must rebuild the cache
-	if (lastChunkCount !== parentChunks.length || edgeCache === null) {
+	if (!cacheKey || cacheKey !== lastCacheKey || edgeCache === null) {
 		updateGraphState({ isCalculating: true, errorMessage: null });
-		debugLogger.logSystem('graph', `buildGraphData: cache miss (lastChunkCount=${lastChunkCount}, newChunkCount=${parentChunks.length}). Recalculating edges...`);
+		debugLogger.logSystem('graph', `buildGraphData: cache miss (lastCacheKey=${lastCacheKey}, newCacheKey=${cacheKey}). Recalculating edges...`);
 		
 		try {
 			edgeCache = await calculateEdgesInWorker(childChunks, 0.4); // Calculate down to 0.4 for caching
-			lastChunkCount = parentChunks.length;
+			lastCacheKey = cacheKey;
 			debugLogger.logSystem('graph', `buildGraphData: edge calculation completed (edges=${edgeCache.length})`);
 		} catch (e) {
 			debugLogger.logError('graph', new Error(`워커 엣지 계산 실패: ${e instanceof Error ? e.message : String(e)}`));
-			console.error('[Lumina Graph] Worker calculation failed:', e);
 			updateGraphState({ isCalculating: false, errorMessage: t('graph.calcError') });
 			return { nodes: [], links: [] };
 		}
@@ -237,7 +258,7 @@ function calculateEdgesInWorker(childChunks: ChildChunk[], baseMinSimilarity: nu
 	});
 }
 
-function getLocalSubgraphNodes(startPath: string, edges: GraphEdge[], depth: number): Set<string> {
+export function getLocalSubgraphNodes(startPath: string, edges: GraphEdge[], depth: number): Set<string> {
 	const graph = new Map<string, string[]>();
 	for (const e of edges) {
 		if (!graph.has(e.source)) graph.set(e.source, []);
@@ -250,8 +271,12 @@ function getLocalSubgraphNodes(startPath: string, edges: GraphEdge[], depth: num
 	let queue: string[] = [startPath];
 	visited.add(startPath);
 
+	if (depth <= 0) {
+		return visited;
+	}
+
 	let currentDepth = 0;
-	while (queue.length > 0 && currentDepth <= depth) {
+	while (queue.length > 0 && currentDepth < depth) {
 		const nextQueue: string[] = [];
 		for (const node of queue) {
 			const neighbors = graph.get(node) || [];

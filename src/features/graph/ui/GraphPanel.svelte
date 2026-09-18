@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { onMount, onDestroy, untrack } from 'svelte';
-	import { TFile } from 'obsidian';
+	import { TFile, type EventRef } from 'obsidian';
 	import type LuminaPlugin from '../../../main';
 	import { isRagEnabled } from '../../../core/store/settingsStore';
 	import { indexingState } from '../../../core/store/ragStore';
 	import { graphState } from '../graphStore';
-	import { buildGraphData, type GraphData } from '../graphDataBuilder';
+	import { buildGraphData, invalidateEdgeCache, type GraphData } from '../graphDataBuilder';
 	import GraphControls from './GraphControls.svelte';
 	import GraphCanvas from './GraphCanvas.svelte';
 	import { tStore } from '../../../shared/locales/index';
@@ -13,7 +13,7 @@
 	let { plugin }: { plugin: LuminaPlugin } = $props();
 
 	let graphData = $state<GraphData | null>(null);
-	let activeFileListener: any;
+	let activeFileListener: EventRef | null = null;
 	let lastParamsStr = '';
 	let lastFocusPath: string | null = null;
 
@@ -39,6 +39,7 @@
 			if (activeFileListener) {
 				plugin.app.workspace.offref(activeFileListener);
 			}
+			invalidateEdgeCache();
 		};
 	});
 
@@ -48,7 +49,12 @@
 		const sim = $graphState.minSimilarity;
 		const k = $graphState.maxK;
 		const d = $graphState.localDepth;
-		const ready = $indexingState.status === 'ready';
+		const status = $indexingState.status;
+		const ready = status === 'ready';
+		
+		if (status === 'indexing' || status === 'loading-model') {
+			invalidateEdgeCache();
+		}
 		
 		if (ready) {
 			const paramsStr = JSON.stringify({ m, sim, k, d });
