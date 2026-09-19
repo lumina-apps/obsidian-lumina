@@ -9,7 +9,7 @@ import { StripFrontmatterModal } from '../../features/frontmatter/stripFrontmatt
 import { activeSidebarTab } from '../store/chatStore';
 
 interface ObsidianAppWithCommands extends App {
-	commands: {
+	commands?: {
 		removeCommand(id: string): void;
 	};
 }
@@ -143,8 +143,10 @@ export class CommandManager {
 	registerQuickActions(): void {
 		const appWithCommands = this.plugin.app as unknown as ObsidianAppWithCommands;
 		
-		for (const cmdId of this.registeredQuickActionIds) {
-			appWithCommands.commands.removeCommand(`${this.plugin.manifest.id}:${cmdId}`);
+		if (appWithCommands.commands?.removeCommand) {
+			for (const cmdId of this.registeredQuickActionIds) {
+				appWithCommands.commands.removeCommand(`${this.plugin.manifest.id}:${cmdId}`);
+			}
 		}
 		this.registeredQuickActionIds = [];
 

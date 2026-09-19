@@ -68,9 +68,9 @@ export class EventManager {
 						});
 					}
 
-					if (selection.trim() && this.plugin.settings.chat.quickActions.length > 0) {
+					if (selection.trim() && (this.plugin.settings.chat.quickActions?.length ?? 0) > 0) {
 						target.addSeparator();
-						for (const qa of this.plugin.settings.chat.quickActions) {
+						for (const qa of (this.plugin.settings.chat.quickActions ?? [])) {
 							target.addItem((subItem) => {
 								subItem
 									.setTitle(qa.name)

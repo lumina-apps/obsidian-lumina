@@ -27,6 +27,10 @@ export class QuickActionHandler {
 			return;
 		}
 
+		// 비동기 작업 전 초기 커서 및 선택 영역 위치 캡처 (레이스 컨디션 방지)
+		const initialFrom = editor.getCursor('from');
+		const initialTo = editor.getCursor('to');
+
 		const { connections, chat } = this.plugin.settings;
 		
 		let providerId = connections.quickActionProviderId;
@@ -85,6 +89,35 @@ export class QuickActionHandler {
 
 		// replace 또는 append 동작: 에디터 텍스트 수정 및 로딩 표시
 		new Notice(t('uiMessages.qaExecuting', { name: action.name }));
+		let hasModifiedEditor = false;
+		let isFirstChunk = true;
+		let currentOffset = 0;
+		const indicatorText = t('uiMessages.qaWaitingAI');
+
+		const revertEditor = () => {
+			if (!hasModifiedEditor) return;
+			try {
+				if (!chat.streaming) {
+					return;
+				}
+				if (action.actionType === 'replace') {
+					const startPos = initialFrom;
+					const endPos = isFirstChunk
+						? editor.offsetToPos(editor.posToOffset(initialFrom) + indicatorText.length)
+						: editor.offsetToPos(currentOffset);
+					editor.replaceRange(selection, startPos, endPos);
+				} else { // append
+					const startPos = initialTo;
+					const endPos = isFirstChunk
+						? editor.offsetToPos(editor.posToOffset(initialTo) + 2 + indicatorText.length)
+						: editor.offsetToPos(currentOffset);
+					editor.replaceRange('', startPos, endPos);
+				}
+			} catch (revertErr) {
+				debugLogger.logError('editor', revertErr instanceof Error ? revertErr : new Error(String(revertErr)));
+			}
+		};
+
 		try {
 			const provider = createProvider(providerConfig);
 
@@ -115,21 +148,15 @@ export class QuickActionHandler {
 				messages: llmMessages.map(m => ({ role: m.role, content: m.content as string })),
 			});
 
-			// 스트리밍 응답 중 로딩 표시
-			const indicatorText = t('uiMessages.qaWaitingAI');
-			let isFirstChunk = true;
-
 			if (chat.streaming) {
-				let currentOffset: number;
 				if (action.actionType === 'replace') {
-					const from = editor.getCursor('from');
-					const to = editor.getCursor('to');
-					editor.replaceRange(indicatorText, from, to);
-					currentOffset = editor.posToOffset(from);
+					editor.replaceRange(indicatorText, initialFrom, initialTo);
+					hasModifiedEditor = true;
+					currentOffset = editor.posToOffset(initialFrom);
 				} else { // append
-					const to = editor.getCursor('to');
-					editor.replaceRange(`\n\n${indicatorText}`, to);
-					currentOffset = editor.posToOffset(to) + 2;
+					editor.replaceRange(`\n\n${indicatorText}`, initialTo);
+					hasModifiedEditor = true;
+					currentOffset = editor.posToOffset(initialTo) + 2;
 				}
 
 				let chunkCount = 0;
@@ -185,15 +212,19 @@ export class QuickActionHandler {
 						throw new Error('REASONING_DETECTED');
 					}
 
-					// 인디케이터 제거
+					// 인디케이터 제거 및 결과 텍스트 삽입
 					const startPos = editor.offsetToPos(currentOffset);
 					const endPos = editor.offsetToPos(currentOffset + indicatorText.length);
-					editor.replaceRange('', startPos, endPos);
 
 					if (resultText && resultText.trim() !== '') {
-						const pos = editor.offsetToPos(currentOffset);
-						editor.replaceRange(resultText, pos);
+						editor.replaceRange(resultText, startPos, endPos);
 					} else {
+						// 빈 응답일 경우: 원본 선택 영역 보존
+						if (action.actionType === 'replace') {
+							editor.replaceRange(selection, startPos, endPos);
+						} else {
+							editor.replaceRange('', startPos, endPos);
+						}
 						new Notice(t('uiMessages.qaEmptyResponse'));
 					}
 				}
@@ -216,13 +247,14 @@ export class QuickActionHandler {
 					throw new Error('REASONING_DETECTED');
 				}
 
-				if (action.actionType === 'replace') {
-					const from = editor.getCursor('from');
-					const to = editor.getCursor('to');
-					editor.replaceRange(resultText, from, to);
+				if (!resultText || resultText.trim() === '') {
+					new Notice(t('uiMessages.qaEmptyResponse'));
+				} else if (action.actionType === 'replace') {
+					editor.replaceRange(resultText, initialFrom, initialTo);
+					hasModifiedEditor = true;
 				} else if (action.actionType === 'append') {
-					const to = editor.getCursor('to');
-					editor.replaceRange(`\n\n${resultText}`, to);
+					editor.replaceRange(`\n\n${resultText}`, initialTo);
+					hasModifiedEditor = true;
 				}
 			}
 
@@ -238,24 +270,11 @@ export class QuickActionHandler {
 			const msg = err instanceof Error ? err.message : t('uiMessages.qaUnknownError');
 			if (msg === 'REASONING_DETECTED') {
 				new Notice(t('uiMessages.qaReasoningDetected'), 10000);
-				// 에디터 상태 복구
-				if (action.actionType === 'replace') {
-					editor.undo();
-					editor.undo(); // 선택 영역 제거와 indicator 삽입이 2단계일 수 있으므로 안전하게 복구
-				} else {
-					editor.undo();
-				}
+				revertEditor();
 				return;
 			}
 
-			if (chat.streaming) {
-				if (action.actionType === 'replace') {
-					editor.undo();
-					editor.undo();
-				} else {
-					editor.undo();
-				}
-			}
+			revertEditor();
 
 			debugLogger.logError('llm', err instanceof Error ? err : new Error(String(err)));
 			new Notice(t('uiMessages.qaError', { msg: formatLlmError(err) }));

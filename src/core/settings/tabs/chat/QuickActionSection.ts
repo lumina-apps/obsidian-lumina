@@ -87,6 +87,8 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 					action.name = nameInputEl.value;
 					header.setText(`✨ ${nameInputEl.value || t('settings.chat.quickActions.newAction')}`);
 					void tab.saveAndSync();
+				});
+				nameInputEl.addEventListener('blur', () => {
 					if (tab.plugin.commandManager.registerQuickActions) {
 						tab.plugin.commandManager.registerQuickActions();
 					}
@@ -97,9 +99,6 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 						action.name = val;
 						header.setText(`✨ ${val || t('settings.chat.quickActions.newAction')}`);
 						await tab.saveAndSync();
-						if (tab.plugin.commandManager.registerQuickActions) {
-							tab.plugin.commandManager.registerQuickActions();
-						}
 					});
 			});
 
@@ -148,7 +147,7 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 				btn.setButtonText(t('settings.chat.quickActions.deleteAction'));
 				applyWarningStyle(btn);
 				btn.onClick(async () => {
-					s.quickActions = s.quickActions.filter(a => a.id !== action.id);
+					s.quickActions = (s.quickActions || []).filter(a => a.id !== action.id);
 					await tab.saveAndSync();
 					if (tab.plugin.commandManager.registerQuickActions) {
 						tab.plugin.commandManager.registerQuickActions();

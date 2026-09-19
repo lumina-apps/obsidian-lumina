@@ -105,7 +105,13 @@ vi.mock('obsidian', () => {
 		setIcon: vi.fn(),
 		Vault: vi.fn(() => mockVault),
 		Workspace: vi.fn(() => mockWorkspace),
-		Notice: vi.fn((_message: string, _timeout?: number) => mockNotice),
+		Notice: class {
+			setMessage = mockNotice.setMessage;
+			hide = mockNotice.hide;
+			noticeEl = mockNotice.noticeEl;
+			messageEl = document.createElement('div');
+			constructor(_message?: string, _timeout?: number) {}
+		},
 		MarkdownRenderer: {
 			render: vi.fn(),
 		},
