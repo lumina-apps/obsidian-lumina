@@ -80,7 +80,7 @@ describe('fileUtils', () => {
 		});
 
 		it('확장자가 없는 경우 빈 문자열을 반환한다', () => {
-			expect(getFileExtension('filename')).toBe('filename');
+			expect(getFileExtension('filename')).toBe('');
 		});
 	});
 
@@ -157,10 +157,13 @@ describe('fileUtils', () => {
 		it('경로에서 확장자가 제외된 파일명만 추출한다', () => {
 			expect(extractFileName('folder/subfolder/my-file.md')).toBe('my-file');
 			expect(extractFileName('my-file.md')).toBe('my-file');
+			expect(extractFileName('my-file.MD')).toBe('my-file');
+			expect(extractFileName('folder\\subfolder\\my-file.md')).toBe('my-file');
 		});
 
 		it('.md 확장자가 없는 경우 파일명 전체를 반환한다', () => {
 			expect(extractFileName('folder/my-file.txt')).toBe('my-file.txt');
+			expect(extractFileName('folder\\my-file.txt')).toBe('my-file.txt');
 		});
 	});
 

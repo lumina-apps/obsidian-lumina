@@ -70,7 +70,7 @@ export class CommandManager {
 					new Notice(t('settings.rag.reindex.success'), 3000);
 				} catch (err) {
 					debugLogger.logError('commands', err instanceof Error ? err : new Error(`reindex-vault failed: ${err}`));
-					new Notice(`${t('settings.rag.reindex.fail')}${(err as Error).message}`, 5000);
+					new Notice(`${t('settings.rag.reindex.fail')}${err instanceof Error ? err.message : String(err)}`, 5000);
 				}
 			},
 		});

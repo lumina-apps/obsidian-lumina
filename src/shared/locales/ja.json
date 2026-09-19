@@ -1049,5 +1049,8 @@
       "default": "デフォルト",
       "manage": "設定で管理"
     }
+  },
+  "modal": {
+    "errorProcessing": "アクションの処理中にエラーが発生しました: {{message}}"
   }
 }

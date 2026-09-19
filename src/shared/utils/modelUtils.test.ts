@@ -178,11 +178,16 @@ describe('modelUtils', () => {
 			expect(isEmbeddingModel('ollama', undefined)).toBe(true);
 			expect(isEmbeddingModel('openai', 'text-embedding-3-large')).toBe(true);
 			expect(isEmbeddingModel('openai', 'gpt-4o')).toBe(false);
+			expect(isEmbeddingModel('ollama', 'nomic-embed-text:latest')).toBe(true);
+			expect(isEmbeddingModel('ollama', 'bge-m3:latest')).toBe(true);
+			expect(isEmbeddingModel('ollama', 'llama3:latest')).toBe(false);
 		});
 
 		it('warnIfReasoningModel은 modelId가 undefined/빈값이어도 예외 없이 안전하게 동작한다', () => {
 			expect(() => warnIfReasoningModel(undefined)).not.toThrow();
 			expect(() => warnIfReasoningModel('')).not.toThrow();
+			expect(() => warnIfReasoningModel('server1')).not.toThrow();
+			expect(() => warnIfReasoningModel('deepseek-r1')).not.toThrow();
 		});
 	});
 });

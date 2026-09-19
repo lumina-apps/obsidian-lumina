@@ -26,12 +26,7 @@ export function isDangerousTool(toolName: string): boolean {
 		/patch/i,
 		/save/i,
 		/mkdir/i,
-		/\bshell\b/i,
-		/\bcmd\b/i,
-		/\bbash\b/i,
-		/\beval\b/i,
-		/\blink\b/i,
-		/\bmoc\b/i,
+		/(?:^|[_\W])(?:shell|cmd|bash|eval|link|moc)(?:$|[_\W])/i,
 	];
 	return dangerousPatterns.some((pattern) => pattern.test(lower));
 }
@@ -42,8 +37,13 @@ export function withTimeout<T>(
 	timeoutMs: number = MCP_CONNECT_TIMEOUT,
 	errorMessage = 'Connection timeout',
 ): Promise<T> {
+	let timerId: number | undefined;
 	const timeout = new Promise<never>((_, reject) => {
-		window.setTimeout(() => reject(new Error(errorMessage)), timeoutMs);
+		timerId = window.setTimeout(() => reject(new Error(errorMessage)), timeoutMs);
 	});
-	return Promise.race([promise, timeout]);
+	return Promise.race([promise, timeout]).finally(() => {
+		if (timerId !== undefined) {
+			window.clearTimeout(timerId);
+		}
+	});
 }

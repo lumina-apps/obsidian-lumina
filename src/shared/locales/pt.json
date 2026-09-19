@@ -1049,5 +1049,8 @@
       "default": "Padrão",
       "manage": "Gerenciar nas Configurações"
     }
+  },
+  "modal": {
+    "errorProcessing": "Erro ao processar a ação: {{message}}"
   }
 }

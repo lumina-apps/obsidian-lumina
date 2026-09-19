@@ -619,7 +619,7 @@
         "name": "切换代理模式",
         "desc": "在代理只读模式与编辑模式之间切换。"
       },
-        "settings": {
+      "settings": {
         "name": "设置",
         "desc": "打开 Lumina 设置界面。"
       }
@@ -1049,5 +1049,8 @@
       "default": "默认",
       "manage": "在设置中管理"
     }
+  },
+  "modal": {
+    "errorProcessing": "处理操作时出错: {{message}}"
   }
 }

@@ -47,10 +47,10 @@ export function createButtonContainer(el: HTMLElement, cls: string): HTMLDivElem
 	return container;
 }
 
-/** Svelte use: 액션 — setIcon(node, iconId) 호출 */
-export function iconAction(node: HTMLElement, iconId: string) {
-	setIcon(node, iconId);
-}
+import { icon } from './iconAction';
+
+/** Svelte use: 액션 — setIcon(node, iconId) 호출 및 반응형 업데이트 지원 */
+export const iconAction = icon;
 
 /** Svelte use: 액션 — 요소 외부 클릭 감지 */
 export function clickOutside(node: HTMLElement, callback: () => void) {

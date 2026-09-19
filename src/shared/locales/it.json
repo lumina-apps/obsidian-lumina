@@ -1053,5 +1053,8 @@
   "providerErrors": {
     "timeoutTTFT": "Timeout: First token response took too long. ({{fallback}})",
     "timeoutInterToken": "Timeout: Stream interrupted or hung. ({{fallback}})"
+  },
+  "modal": {
+    "errorProcessing": "Errore durante l'elaborazione dell'azione: {{message}}"
   }
 }

@@ -15,6 +15,7 @@
 	import { resizeTextarea } from "../../../shared/utils/textareaUtils";
 	import { useAutoScroll } from "./utils/useAutoScroll.svelte.ts";
 	import { openSettingsTab } from "../../../shared/utils/openSettingsTab";
+	import { debugLogger } from "../../../shared/debugLogger";
 
 	import {
 		messages,
@@ -272,13 +273,13 @@
 			// 안전하게 처리 - UI는 chatController.sendMessage에서 setMessageError로 이미 처리됨
 			if (!(err instanceof Error && err.name === "AbortError")) {
 				// Non-AbortError: UI에 이미 에러 메시지가 표시되었으므로 조용히 처리
-				console.error("[Lumina] Stream operation error (handled):", err);
+				debugLogger.logError("chat_stream", err instanceof Error ? err : new Error(`Stream operation error: ${err}`));
 			}
 		} finally {
 			abortController = null;
 			// 에러 발생 시에도 history 저장 시도 (final 상태로 저장)
 			await ctrl!.saveHistory(selectedProviderId, selectedModelId).catch((e: unknown) => {
-				console.error("[Lumina] Failed to save history after error:", e);
+				debugLogger.logError("chat_stream", e instanceof Error ? e : new Error(`Failed to save history: ${e}`));
 			});
 		}
 		autoScroll.resetUserScrolledUp();

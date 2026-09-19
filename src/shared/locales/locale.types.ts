@@ -1127,6 +1127,10 @@ export interface TranslationProjects {
   selector: TranslationProjectsSelector;
 }
 
+export interface TranslationModal {
+  errorProcessing: string;
+}
+
 // 최상위 Translation 타입
 export interface Translation {
   settings: TranslationSettings;
@@ -1140,6 +1144,7 @@ export interface Translation {
   canvas: TranslationCanvas;
   summarization: TranslationSummarization;
   projects: TranslationProjects;
+  modal: TranslationModal;
 }
 
 // DeepPartial 타입
@@ -1148,18 +1153,12 @@ export type DeepPartial<T> = T extends object ? {
 } : T;
 
 // dot-notation TranslationKeys
-type Join<K, P> = K extends string | number ?
-    P extends string | number ?
-    `${K}${"" extends P ? "" : "."}${P}`
-    : never : never;
+type DotPrefix<T extends string> = T extends "" ? "" : `.${T}`;
 
-type Prev = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-    11, 12, 13, 14, 15, 16, 17, 18, 19, 20, ...0[]]
+export type DotNestedKeys<T> = (
+  T extends object
+    ? { [K in Exclude<keyof T, symbol>]: `${K}${DotPrefix<DotNestedKeys<T[K]>>}` }[Exclude<keyof T, symbol>]
+    : ""
+) extends infer D ? Extract<D, string> : never;
 
-type Paths<T, D extends number = 10> = [D] extends [never] ? never : T extends object ?
-    { [K in keyof T]-?: K extends string | number ?
-        `${K}` | Join<K, Paths<T[K], Prev[D]>>
-        : never
-    }[keyof T] : ""
-
-export type TranslationKeys = Extract<Paths<Translation>, string>;
+export type TranslationKeys = DotNestedKeys<Translation>;

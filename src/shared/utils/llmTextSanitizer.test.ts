@@ -50,6 +50,11 @@ describe('stripThinkTags', () => {
 	it('think 태그가 없으면 원본 유지', () => {
 		expect(stripThinkTags('normal text')).toBe('normal text');
 	});
+
+	it('<response> 태그는 think 태그로 오인되어 삭제되지 않는다', () => {
+		const input = 'The server gave a <response> with payload';
+		expect(stripThinkTags(input)).toBe('The server gave a <response> with payload');
+	});
 });
 
 // ── stripToolCallTags ──

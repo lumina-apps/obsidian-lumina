@@ -1105,5 +1105,8 @@
       "default": "Default",
       "manage": "Manage in Settings"
     }
+  },
+  "modal": {
+    "errorProcessing": "Error processing action: {{message}}"
   }
 }

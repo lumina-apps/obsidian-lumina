@@ -5,8 +5,6 @@
  * LLM 요청/응답, RAG 검색, 시스템 이벤트, 에러를 링 버퍼에 쌓고 구독자에게 전달.
  */
 
-import { get } from 'svelte/store';
-import { settingsStore } from '../core/store/settingsStore';
 import type {
 	DebugLogEntry,
 	LLMRequestLog,
@@ -30,10 +28,14 @@ class DebugLogger {
 	private logListeners: Set<LogListener> = new Set();
 	private clearListeners: Set<ClearListener> = new Set();
 	private counter = 0;
+	private _isEnabled = false;
 
 	get isEnabled(): boolean {
-		const settings = get(settingsStore);
-		return settings?.misc.debugMode ?? false;
+		return this._isEnabled;
+	}
+
+	setEnabled(enabled: boolean): void {
+		this._isEnabled = enabled;
 	}
 
 	private nextId(): string {
@@ -46,7 +48,13 @@ class DebugLogger {
 			this.entries.shift();
 		}
 		this.entries.push(entry);
-		this.logListeners.forEach(fn => fn(entry));
+		this.logListeners.forEach(fn => {
+			try {
+				fn(entry);
+			} catch (e) {
+				console.error('[DebugLogger] Listener error:', e);
+			}
+		});
 	}
 
 	/** LLM 요청 기록. 응답과 매칭할 requestId 반환 */
@@ -99,6 +107,19 @@ class DebugLogger {
 		this.push(entry);
 	}
 
+	/** Info 기록 */
+	logInfo(domain: string, message: string): void {
+		if (!this.isEnabled) return;
+		const entry: SystemLog = {
+			id: this.nextId(),
+			type: 'system',
+			timestamp: Date.now(),
+			event: 'info',
+			message: `[${domain}] ${message}`,
+		};
+		this.push(entry);
+	}
+
 	/** Warning 기록 */
 	logWarn(domain: string, message: string): void {
 		if (!this.isEnabled) return;
@@ -125,9 +146,8 @@ class DebugLogger {
 		this.push(entry);
 	}
 
-	/** 에러 기록 */
+	/** 에러 기록 - 프로덕션에서도 버퍼에 보존하며 콘솔에 출력 */
 	logError(domain: string, error: Error | string): void {
-		if (!this.isEnabled) return;
 		const msg = error instanceof Error ? error.message : error;
 		const stack = error instanceof Error ? error.stack : undefined;
 		const entry: ErrorLog = {
@@ -139,6 +159,11 @@ class DebugLogger {
 			...(stack ? { stack } : {}),
 		};
 		this.push(entry);
+
+		// 디버그 모드가 비활성화되어 있더라도 프로덕션 에러는 콘솔에 출력하여 추적 보장
+		if (!this.isEnabled) {
+			console.error(`[Lumina:${domain}]`, error);
+		}
 	}
 
 	/** MCP 로그 기록 */

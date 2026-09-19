@@ -1,5 +1,6 @@
-import { App, TFile, TFolder, normalizePath } from 'obsidian';
+import { App, Notice, TFile, TFolder, normalizePath } from 'obsidian';
 import { debugLogger } from '../../shared/debugLogger';
+import { t } from '../../shared/locales/helpers';
 
 const BACKUP_FOLDER = 'backups';
 const MAX_BACKUPS_PER_FILE = 10;
@@ -33,7 +34,7 @@ export async function createBackup(app: App, targetPath: string): Promise<void> 
 		if (!backupFolder) {
 			backupFolder = await vault.createFolder(BACKUP_FOLDER);
 		} else if (!(backupFolder instanceof TFolder)) {
-			console.error(`[Backup] Path '${BACKUP_FOLDER}' exists but is not a folder.`);
+			debugLogger.logError('backup', `Path '${BACKUP_FOLDER}' exists but is not a folder.`);
 			return;
 		}
 
@@ -68,7 +69,7 @@ export async function createBackup(app: App, targetPath: string): Promise<void> 
 
 	} catch (error) {
 		debugLogger.logError('backup', error instanceof Error ? error : new Error(`Failed to create backup for ${targetPath}: ${error}`));
-		console.error(`[Backup] Failed to create backup for ${targetPath}:`, error);
+		new Notice(`${t('common.error')}: Failed to create backup for ${targetPath}`);
 	}
 }
 
@@ -102,7 +103,6 @@ async function enforceRetentionPolicy(app: App, flatOriginalPath: string): Promi
 			debugLogger.logSystem('backup', `enforceRetentionPolicy: deleted old backup ${file.path}`);
 		} catch (e) {
 			debugLogger.logError('backup', e instanceof Error ? e : new Error(`Failed to delete old backup ${file.path}`));
-			console.error(`[Backup] Failed to delete old backup ${file.path}:`, e);
 		}
 	}
 }

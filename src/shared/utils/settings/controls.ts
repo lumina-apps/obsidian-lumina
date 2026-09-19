@@ -13,8 +13,6 @@ import type {
 	SecretFieldOptions
 } from '../../types/settingsUI.types';
 
-const _t = t as (key: string, params?: Record<string, string | number>) => string;
-
 const DEFAULT_HIDE_TOOLTIP = 'Hide value';
 const DEFAULT_SHOW_TOOLTIP = 'Show value';
 const DEFAULT_RESET_TOOLTIP = 'Reset to default';
@@ -42,7 +40,7 @@ export function addDescButton(opts: DescButtonOptions): void {
 				await opts.onClick(btn.buttonEl);
 			} catch (err: unknown) {
 				debugLogger.logError('addDescButton', normalizeError(err));
-				new Notice(_t('modal.errorProcessing', { message: normalizeError(err).message }));
+				new Notice(t('modal.errorProcessing', { message: normalizeError(err).message }));
 			}
 		});
 		if (opts.disabled) btn.setDisabled(true); // 버튼 자체도 disabled

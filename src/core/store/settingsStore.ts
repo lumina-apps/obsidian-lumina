@@ -11,11 +11,17 @@
 
 import { writable, derived } from 'svelte/store';
 import type { LuminaSettings } from '../settings/settings.types';
+import { debugLogger } from '../../shared/debugLogger';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
 /** 플러그인 초기화 전: null, 초기화 후: LuminaSettings */
 export const settingsStore = writable<LuminaSettings | null>(null);
+
+// debugLogger가 core/store에 역의존하지 않도록 settingsStore 변화에 맞춰 동기화
+settingsStore.subscribe((settings) => {
+	debugLogger.setEnabled(settings?.misc.debugMode ?? false);
+});
 
 // ─── Derived ──────────────────────────────────────────────────────────────────
 

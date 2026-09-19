@@ -8,15 +8,16 @@ export const MAX_TOOL_RESULT_CHARS = 1_000_000;
 
 /** MCP tool call 결과에서 텍스트 추출 */
 export function extractToolResultText(toolResult: unknown): string {
+	if (toolResult == null) return '';
 	const typedResult = toolResult as {
 		content?: Array<{ text?: string }>;
 		isError?: boolean;
-	} | null | undefined;
+	};
 	if (typedResult?.content) {
 		return typedResult.content.map((c) => c.text ?? '').join('\n');
 	}
 	if (typeof toolResult === 'string') return toolResult;
-	return JSON.stringify(toolResult);
+	return JSON.stringify(toolResult) ?? '';
 }
 
 /** 툴 결과 텍스트를 최대 길이로 자르고 마스크 토큰 제거 */

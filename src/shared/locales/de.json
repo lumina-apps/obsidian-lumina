@@ -916,7 +916,7 @@
       "truncated": "\\n\\n... (Inhalt aufgrund des Längenlimits von {{limit}} Zeichen abgeschnitten. Der wesentliche Inhalt wurde bereitgestellt — rufen Sie dieses Tool NICHT erneut auf, um den restlichen Teil abzurufen.)",
       "unknownTool": "Unbekanntes Tool.",
       "executionError": "Beim Ausführen des Tools ist ein Fehler aufgetreten: {{error}}",
-      "pathExcluded": "pathExcluded"
+      "pathExcluded": "Der Zugriff auf diesen Pfad ist durch RAG-Ausschluss-/Einschlusseinstellungen eingeschränkt: {{path}}"
     },
     "generate_moc": {
       "desc": "Erstellt eine MOC-Notiz (Map of Content), die verwandte Notizen aus einem Ordner, nach Tags oder aus einer expliziten Dateiliste sammelt und verlinkt.",
@@ -1061,5 +1061,8 @@
   "providerErrors": {
     "timeoutTTFT": "Timeout: First token response took too long. ({{fallback}})",
     "timeoutInterToken": "Timeout: Stream interrupted or hung. ({{fallback}})"
+  },
+  "modal": {
+    "errorProcessing": "Fehler beim Ausführen der Aktion: {{message}}"
   }
 }

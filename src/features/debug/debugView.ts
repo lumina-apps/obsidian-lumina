@@ -5,6 +5,7 @@ import { mount, unmount } from 'svelte';
 import type LuminaPlugin from '../../main';
 
 import { DEBUG_VIEW_TYPE } from '../../shared/constants/viewTypes';
+import { debugLogger } from '../../shared/debugLogger';
 export { DEBUG_VIEW_TYPE };
 
 export class DebugView extends ItemView {
@@ -48,14 +49,16 @@ export class DebugView extends ItemView {
 				try {
 					void unmount(comp);
 				} catch (e) {
-					console.error('[Lumina] debug panel unmount error:', e);
+					debugLogger.logError('debug_view', e instanceof Error ? e : new Error(`debug panel unmount error: ${e}`));
 				}
 			}, 0);
 		}
 
 		if (this.plugin.settings.misc.debugMode) {
 			this.plugin.settings.misc.debugMode = false;
-			this.plugin.saveSettings().catch(e => console.error('[Lumina] Failed to save settings on debug view close', e));
+			this.plugin.saveSettings().catch(e => {
+				debugLogger.logError('debug_view', e instanceof Error ? e : new Error(`Failed to save settings on debug view close: ${e}`));
+			});
 		}
 	}
 }

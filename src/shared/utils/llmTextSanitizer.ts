@@ -10,9 +10,9 @@ export function stripMaskTokens(text: string): string {
 		.trim();
 }
 
-/** <think>/<thinking>/<response>/<thought>/<reasoning> 등 추론/사고 블록 제거 */
+/** <think>/<thinking>/<thought>/<reasoning> 등 추론/사고 블록 제거 */
 export function stripThinkTags(text: string): string {
-	const thinkTags = ['think', 'thinking', 'response', 'thought', 'reasoning'];
+	const thinkTags = ['think', 'thinking', 'thought', 'reasoning'];
 	let result = text;
 	for (const tag of thinkTags) {
 		const pattern = new RegExp(`<${tag}>([\\s\\S]*?)(?:<\\/${tag}>|$)`, 'gi');
@@ -27,9 +27,9 @@ export function stripToolCallTags(text: string): string {
 	return text.replace(pattern, '').trim();
 }
 
-/** <think>/<thinking>/<response>/<thought>/<reasoning> 블록 내용만 추출 (UI 표시용) */
+/** <think>/<thinking>/<thought>/<reasoning> 블록 내용만 추출 (UI 표시용) */
 export function extractThinkBlocks(text: string): string[] {
-	const thinkTags = ['think', 'thinking', 'response', 'thought', 'reasoning'];
+	const thinkTags = ['think', 'thinking', 'thought', 'reasoning'];
 	const results: string[] = [];
 	for (const tag of thinkTags) {
 		const pattern = new RegExp(`<${tag}>([\\s\\S]*?)(?:<\\/${tag}>|$)`, 'gi');

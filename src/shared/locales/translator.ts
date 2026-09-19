@@ -1,12 +1,13 @@
 import { getActiveProject } from "../../core/store/projectStore";
 
-import { App, Notice, Modal } from 'obsidian';
+import { App, Notice, Modal, normalizePath } from 'obsidian';
 import type { LLMProviderConfig } from '../types/settings.types';
 import type { LuminaSettings } from '../../core/settings/settings.types';
 import { createProvider } from '../../core/llm-providers/index';
 import en from './en.json';
 import { ConfirmModal } from '../utils/modal';
 import { addDynamicLocale, setLanguage, t } from './helpers';
+import { debugLogger } from '../debugLogger';
 
 /** LLM 번역 플로우 시작. 사용자 확인 후 번역 실행 */
 export async function translatePluginLocales(app: App, settings: LuminaSettings): Promise<void> {
@@ -101,21 +102,21 @@ ${sourceJson}
     try {
         translatedData = JSON.parse(jsonStr);
     } catch (e) {
-        console.error("Translation JSON Parse Error:", e);
-        console.log("Raw Response:", response);
+        debugLogger.logError("translator", e instanceof Error ? e : new Error(`Translation JSON Parse Error: ${e}`));
+        debugLogger.logDebug("translator", `Raw Response: ${response}`);
         throw new Error("LLM이 올바른 JSON 형식을 반환하지 않았습니다.");
     }
 
     // Save to cache
     const configDir = app.vault.configDir;
-    const cacheDir = `${configDir}/plugins/lumina/locales`;
+    const cacheDir = normalizePath(`${configDir}/plugins/lumina/locales`);
 
     const exists = await app.vault.adapter.exists(cacheDir);
     if (!exists) {
         await app.vault.adapter.mkdir(cacheDir);
     }
 
-    const cacheFile = `${cacheDir}/system.json`;
+    const cacheFile = normalizePath(`${cacheDir}/system.json`);
     await app.vault.adapter.write(cacheFile, JSON.stringify(translatedData, null, 2));
 
     // Load into memory
@@ -128,7 +129,7 @@ ${sourceJson}
 /** 캐시된 번역을 디스크에서 메모리로 로드 */
 export async function loadSystemLocaleCache(app: App): Promise<boolean> {
     const configDir = app.vault.configDir;
-    const cacheFile = `${configDir}/plugins/lumina/locales/system.json`;
+    const cacheFile = normalizePath(`${configDir}/plugins/lumina/locales/system.json`);
 
     if (await app.vault.adapter.exists(cacheFile)) {
         try {
@@ -137,7 +138,7 @@ export async function loadSystemLocaleCache(app: App): Promise<boolean> {
             addDynamicLocale('system', json);
             return true;
         } catch (e) {
-            console.error('Failed to load locale cache', e);
+            debugLogger.logError('translator', e instanceof Error ? e : new Error(`Failed to load locale cache: ${e}`));
             return false;
         }
     }
@@ -147,7 +148,7 @@ export async function loadSystemLocaleCache(app: App): Promise<boolean> {
 /** 캐시된 번역 삭제 */
 export async function deleteSystemLocaleCache(app: App): Promise<boolean> {
     const configDir = app.vault.configDir;
-    const cacheFile = `${configDir}/plugins/lumina/locales/system.json`;
+    const cacheFile = normalizePath(`${configDir}/plugins/lumina/locales/system.json`);
 
     if (await app.vault.adapter.exists(cacheFile)) {
         try {
@@ -155,8 +156,8 @@ export async function deleteSystemLocaleCache(app: App): Promise<boolean> {
             new Notice(t('settings.translation.cacheDeleted'));
             return true;
         } catch (e) {
-            console.error('Failed to delete locale cache', e);
-            new Notice(`${t('settings.translation.cacheDeleteFail')}${(e as Error).message}`);
+            debugLogger.logError('translator', e instanceof Error ? e : new Error(`Failed to delete locale cache: ${e}`));
+            new Notice(`${t('settings.translation.cacheDeleteFail')}${e instanceof Error ? e.message : String(e)}`);
             return false;
         }
     }

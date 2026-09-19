@@ -77,7 +77,9 @@ export function isMarkdownFile(file: unknown): file is TFile {
 
 /** 파일명에서 확장자 추출 (소문자, 점 제외) */
 export function getFileExtension(fileName: string): string {
-	return fileName.split('.').pop()?.toLowerCase() ?? '';
+	const lastDot = fileName.lastIndexOf('.');
+	if (lastDot <= 0) return '';
+	return fileName.slice(lastDot + 1).toLowerCase();
 }
 
 /** Windows 예약 디바이스 이름 패턴 (대소문자 무시, 확장자 포함 가능) */
@@ -88,20 +90,35 @@ export function sanitizeFilename(name: string): string {
 	let sanitized = name.replace(/[\\/:*?"<>|]/g, '_');
 	// Windows에서 오류를 유발하는 후행 점 및 공백 제거
 	sanitized = sanitized.replace(/[. ]+$/, '');
-	// Windows 예약 디바이스 이름 충돌 방어
+
+	// 예약된 디바이스 이름인 경우 접두사 추가
 	if (WINDOWS_RESERVED_NAMES.test(sanitized)) {
-		sanitized = '_' + sanitized;
+		sanitized = `_${sanitized}`;
 	}
+
 	return sanitized;
 }
 
-/** .md 확장자가 없으면 추가 */
+/** .md 확장자가 없으면 추가 (대소문자 무시) */
 export function enforceMarkdownExt(path: string): string {
 	const norm = normalizePath(path);
 	if (!norm.toLowerCase().endsWith('.md')) {
 		return norm + '.md';
 	}
 	return norm;
+}
+
+/**
+ * 경로 세그먼트들을 안전하게 결합하고 normalizePath 적용
+ * '..' 나 '.' 와 같은 디렉토리 순회 방지
+ */
+export function sanitizeAndNormalizePath(parts: string[], enforceMd: boolean = false): string {
+	const safeParts = parts
+		.filter((p) => p !== '..' && p !== '.')
+		.map((p) => sanitizeFilename(p));
+		
+	const joined = safeParts.join('/');
+	return enforceMd ? enforceMarkdownExt(joined) : normalizePath(joined);
 }
 
 /** 경로 전체 정제 (경로 순회 방지 + 폴더/파일명 특수문자 치환 + .md 확장자 보장) */
@@ -135,9 +152,9 @@ export function sanitizeFilePath(rawPath: string, enforceMd: boolean = true, app
 	return enforceMd ? enforceMarkdownExt(joined) : normalizePath(joined);
 }
 
-/** 경로에서 .md를 제외한 파일명만 추출 */
+/** 경로에서 .md를 제외한 파일명만 추출 (Windows 백슬래시 및 대소문자 지원) */
 export function extractFileName(path: string): string {
-	return path.replace(/\.md$/, '').split('/').pop() ?? '';
+	return path.replace(/\.md$/i, '').split(/[/\\]/).pop() ?? '';
 }
 
 /** 파일의 프론트매터에 태그를 추가합니다. */

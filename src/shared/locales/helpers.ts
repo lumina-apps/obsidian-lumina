@@ -1,5 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import type { Translation, DeepPartial, TranslationKeys } from './locale.types';
+import { debugLogger } from '../debugLogger';
 
 // 동적 JSON import 로더. esbuild에서 코드 스플리팅으로 별도 청크 분리
 const localeLoaders: Record<string, () => Promise<{ default: DeepPartial<Translation> }>> = {
@@ -41,7 +42,7 @@ export function addDynamicLocale(lang: string, translation: DeepPartial<Translat
 
 /** 언어 설정 및 해당 locale JSON 로드. 실패 시 en 폴백 */
 export async function setLanguage(lang: string): Promise<void> {
-  console.log('[Lumina Localization] setLanguage called with:', lang);
+  debugLogger.logDebug('locale', `setLanguage called with: ${lang}`);
 
   if (lang === 'system') {
     currentLanguage = 'system';
@@ -63,14 +64,14 @@ export async function setLanguage(lang: string): Promise<void> {
       const mod = await loader();
       loadedLocales[lang] = mod.default || mod;
       currentLanguage = lang as Language;
-      console.log('[Lumina Localization] Loaded locale:', lang);
+      debugLogger.logDebug('locale', `Loaded locale: ${lang}`);
     } catch (e) {
-      console.warn(`[Lumina Localization] Failed to load locale "${lang}", falling back to en:`, e);
+      debugLogger.logWarn('locale', `Failed to load locale "${lang}", falling back to en: ${e}`);
       currentLanguage = 'en';
     }
   } else {
     // 지원되지 않는 언어 → en 폴백
-    console.warn(`[Lumina Localization] Unsupported language: "${lang}", falling back to en`);
+    debugLogger.logWarn('locale', `Unsupported language: "${lang}", falling back to en`);
     currentLanguage = 'en';
   }
 

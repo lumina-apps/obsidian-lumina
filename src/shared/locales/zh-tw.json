@@ -1049,5 +1049,8 @@
       "default": "預設",
       "manage": "在設定中管理"
     }
+  },
+  "modal": {
+    "errorProcessing": "處理操作時出錯: {{message}}"
   }
 }

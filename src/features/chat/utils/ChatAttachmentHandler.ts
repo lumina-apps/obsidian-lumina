@@ -7,6 +7,7 @@ import { DocumentParserRouter, SUPPORTED_EXTENSIONS } from '../../rag/parsers/Do
 import type { ContextAttachment } from '../../../shared/types/chat.types';
 import type LuminaPlugin from '../../../main';
 import { t } from '../../../shared/locales/helpers';
+import { debugLogger } from '../../../shared/debugLogger';
 
 export const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif']);
 const MAX_TEXT_LENGTH = 100000; // 대략적인 글자 수 제한 (초과 시 잘림)
@@ -18,12 +19,14 @@ export interface ParsedAttachment {
 }
 
 // canvas 파일 구조 타입
-interface CanvasNode {
-	type: string;
-	text?: string;
-}
 interface CanvasData {
-	nodes?: CanvasNode[];
+	nodes?: Array<{
+		id: string;
+		type: string;
+		text?: string;
+		file?: string;
+		label?: string;
+	}>;
 }
 
 export class ChatAttachmentHandler {
@@ -62,7 +65,7 @@ export class ChatAttachmentHandler {
 					return null;
 			}
 		} catch (error) {
-			console.warn(`[Lumina] 첨부파일 파싱 실패: ${att.name}`, error);
+			debugLogger.logWarn('chat_attachment', `첨부파일 파싱 실패: ${att.name} - ${error}`);
 			return null;
 		}
 	}
@@ -91,7 +94,7 @@ export class ChatAttachmentHandler {
 					const buffer = await app.vault.readBinary(file);
 					text = await plugin.embeddingWorker.parse(buffer, ext);
 				} else {
-					console.warn('Worker not ready to parse binary file:', file.name);
+					debugLogger.logWarn('chat_attachment', `Worker not ready to parse binary file: ${file.name}`);
 				}
 			} else {
 				const textContent = await app.vault.read(file);
@@ -109,11 +112,11 @@ export class ChatAttachmentHandler {
 		try {
 			const parsed = new URL(att.path);
 			if (!['http:', 'https:'].includes(parsed.protocol)) {
-				console.warn(`[Lumina] URL 첨부 차단: 허용되지 않는 프로토콜 (${parsed.protocol})`);
+				debugLogger.logWarn('chat_attachment', `URL 첨부 차단: 허용되지 않는 프로토콜 (${parsed.protocol})`);
 				return null;
 			}
 		} catch {
-			console.warn(`[Lumina] URL 첨부 차단: 유효하지 않은 URL (${att.path})`);
+			debugLogger.logWarn('chat_attachment', `URL 첨부 차단: 유효하지 않은 URL (${att.path})`);
 			return null;
 		}
 
@@ -203,7 +206,7 @@ export class ChatAttachmentHandler {
 			});
 			return this.createTextPayload(canvasText);
 		} catch (e) {
-			console.warn('Failed to parse canvas', e);
+			debugLogger.logWarn('chat_attachment', `Failed to parse canvas: ${e}`);
 			return null;
 		}
 	}
@@ -262,7 +265,7 @@ export class ChatAttachmentHandler {
 					attachmentContext += `${parsed.content}\n\n`;
 				}
 			} catch (e) {
-				console.warn(`Failed to read attachment: ${att.name}`, e);
+				debugLogger.logWarn('chat_attachment', `Failed to read attachment: ${att.name} - ${e}`);
 			}
 		}
 
@@ -271,7 +274,7 @@ export class ChatAttachmentHandler {
 
 	private static createTextPayload(text: string): ParsedAttachment {
 		if (text.length > MAX_TEXT_LENGTH) {
-			console.warn('[Lumina] 첨부 텍스트가 너무 길어 일부 잘렸습니다.');
+			debugLogger.logWarn('chat_attachment', '첨부 텍스트가 너무 길어 일부 잘렸습니다.');
 			return { type: 'text', content: text.substring(0, MAX_TEXT_LENGTH) + '\n\n... (내용이 너무 길어 생략됨)' };
 		}
 		return { type: 'text', content: text };

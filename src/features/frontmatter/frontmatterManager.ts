@@ -79,7 +79,9 @@ export class FrontmatterManager {
 
 		const refCreate = this.app.vault.on('create', (file) => {
 			if (isMarkdownFile(file)) {
-				this.autoGenerate(file, false).catch(console.error);
+				this.autoGenerate(file, false).catch((err: unknown) => {
+					debugLogger.logError('frontmatter', err instanceof Error ? err : String(err));
+				});
 			}
 		});
 		this.plugin.registerEvent(refCreate);
@@ -106,7 +108,9 @@ export class FrontmatterManager {
 			}
 			const timer = window.setTimeout(() => {
 				this.llmDebounceTimers.delete(file.path);
-				this.generateFrontmatterData(file).catch(console.error);
+				this.generateFrontmatterData(file).catch((err: unknown) => {
+					debugLogger.logError('frontmatter', err instanceof Error ? err : String(err));
+				});
 			}, 8000);
 			this.llmDebounceTimers.set(file.path, timer);
 		});
@@ -361,7 +365,9 @@ ${contentWithoutFm.substring(0, 3000)}`;
 			const file = this.app.vault.getAbstractFileByPath(path);
 			if (file && isMarkdownFile(file)) {
 				this.pendingUpdates.delete(path);
-				await this.autoGenerate(file, true).catch(console.error);
+				await this.autoGenerate(file, true).catch((err: unknown) => {
+					debugLogger.logError('frontmatter', err instanceof Error ? err : String(err));
+				});
 			} else {
 				this.pendingUpdates.delete(path);
 			}

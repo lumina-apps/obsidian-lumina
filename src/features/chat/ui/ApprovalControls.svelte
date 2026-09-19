@@ -1,17 +1,23 @@
 <script lang="ts">
-	export let status: 'pending' | 'accepted' | 'rejected' = 'pending';
-	export let onAccept: () => void;
-	export let onReject: () => void;
+	import { t } from '../../../shared/locales/helpers';
+
+	interface Props {
+		status?: 'pending' | 'accepted' | 'rejected';
+		onAccept: () => void;
+		onReject: () => void;
+	}
+
+	const { status = 'pending', onAccept, onReject }: Props = $props();
 </script>
 
 <div class="approval-controls">
 	{#if status === 'pending'}
-		<button class="accept-btn" on:click={onAccept}>Accept</button>
-		<button class="reject-btn" on:click={onReject}>Reject</button>
+		<button class="accept-btn" onclick={onAccept}>{t('uiMessages.actionApproval.accept')}</button>
+		<button class="reject-btn" onclick={onReject}>{t('uiMessages.actionApproval.reject')}</button>
 	{:else if status === 'accepted'}
-		<span class="status-label accepted">✓ Accepted</span>
+		<span class="status-label accepted">✓ {t('uiMessages.actionApproval.chunkAcceptedShort')}</span>
 	{:else if status === 'rejected'}
-		<span class="status-label rejected">✕ Rejected</span>
+		<span class="status-label rejected">✕ {t('uiMessages.actionApproval.chunkRejectedShort')}</span>
 	{/if}
 </div>
 

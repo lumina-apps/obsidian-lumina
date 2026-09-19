@@ -52,8 +52,6 @@ export {
 	showDisconnectedNotice,
 	showConnectedNotice,
 	getConnectionStatus,
-	refreshAfterConnectionToggle,
-	refreshAfterMcpConnectionToggle,
 } from './connectionNoticeUtils';
 
 // Locales Helpers
