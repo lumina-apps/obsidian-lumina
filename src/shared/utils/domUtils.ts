@@ -1,5 +1,3 @@
-import { setIcon } from 'obsidian';
-
 /** 개행 포함 설명 텍스트를 DOM 요소로 변환하여 컨테이너에 추가 */
 export function renderDescriptionLines(
 	container: HTMLElement,

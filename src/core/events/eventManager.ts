@@ -4,7 +4,7 @@ import { activateView } from '../views/viewHelper';
 import { CHAT_VIEW_TYPE } from '../../shared/constants/viewTypes';
 import { addPendingAttachment, activeSidebarTab } from '../store/chatStore';
 import { updateDiscoveryState } from '../store/discoveryStore';
-import { Notice, Menu, MenuItem, TFile } from 'obsidian';
+import { Notice, Menu, MenuItem } from 'obsidian';
 import { debugLogger } from '../../shared/debugLogger';
 
 export class EventManager {

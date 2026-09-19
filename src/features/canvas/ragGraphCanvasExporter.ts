@@ -67,7 +67,7 @@ interface NodePos {
 
 function getLinkId(endpoint: GraphNode | string): string {
   if (typeof endpoint === 'object' && endpoint !== null && 'id' in endpoint) {
-    return (endpoint as GraphNode).id;
+    return endpoint.id;
   }
   return String(endpoint);
 }
