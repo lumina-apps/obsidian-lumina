@@ -48,8 +48,8 @@ export function createExaProvider(config: WebSearchProviderConfig): IWebSearchPr
 					content: item.text || item.summary || '',
 				}));
 			} catch (error) {
-				console.error('Exa search failed:', error);
-				throw new Error('Failed to fetch from Exa API');
+				const errorMsg = error instanceof Error ? error.message : String(error);
+				throw new Error(`Exa search failed: ${errorMsg}`);
 			}
 		},
 	};

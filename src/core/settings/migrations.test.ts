@@ -152,9 +152,56 @@ describe('migrateWebSearch', () => {
 		expect(migrateWebSearch(mockPlugin)).toBe(true);
 		expect(mockPlugin.settings.webSearch).toBeDefined();
 		expect(mockPlugin.settings.webSearch.activeProviderId).toBe('tavily');
+		expect(mockPlugin.settings.webSearch.providers).toHaveLength(6);
+		const providerTypes = mockPlugin.settings.webSearch.providers.map((p: any) => p.type);
+		expect(providerTypes).toEqual(['tavily', 'brave', 'searxng', 'exa', 'google', 'serpapi']);
 	});
-	it('does not modify existing webSearch', () => {
-		const mockPlugin = { settings: { webSearch: { enabled: true } } } as any;
+
+	it('backfills missing providers for existing webSearch', () => {
+		const mockPlugin = {
+			settings: {
+				webSearch: {
+					enabled: true,
+					providers: [
+						{ type: 'tavily', apiKey: 'test-key' },
+						{ type: 'brave', apiKey: '' },
+						{ type: 'searxng', baseUrl: 'http://localhost:8080' },
+					],
+					activeProviderId: 'tavily',
+					maxResults: 5,
+					maxContentLength: 3000,
+				},
+			},
+		} as any;
+		expect(migrateWebSearch(mockPlugin)).toBe(true);
+		expect(mockPlugin.settings.webSearch.providers).toHaveLength(6);
+		// 기존 키 유지 확인
+		expect(mockPlugin.settings.webSearch.providers.find((p: any) => p.type === 'tavily')?.apiKey).toBe('test-key');
+		// 새로 추가된 프로바이더 확인
+		expect(mockPlugin.settings.webSearch.providers.some((p: any) => p.type === 'exa')).toBe(true);
+		expect(mockPlugin.settings.webSearch.providers.some((p: any) => p.type === 'google')).toBe(true);
+		expect(mockPlugin.settings.webSearch.providers.some((p: any) => p.type === 'serpapi')).toBe(true);
+	});
+
+	it('does not modify existing webSearch when all providers exist', () => {
+		const mockPlugin = {
+			settings: {
+				webSearch: {
+					enabled: true,
+					providers: [
+						{ type: 'tavily', apiKey: '' },
+						{ type: 'brave', apiKey: '' },
+						{ type: 'searxng', baseUrl: 'http://localhost:8080' },
+						{ type: 'exa', apiKey: '' },
+						{ type: 'google', apiKey: '', googleSearchEngineId: '' },
+						{ type: 'serpapi', apiKey: '' },
+					],
+					activeProviderId: 'tavily',
+					maxResults: 5,
+					maxContentLength: 3000,
+				},
+			},
+		} as any;
 		expect(migrateWebSearch(mockPlugin)).toBe(false);
 	});
 });
@@ -246,7 +293,20 @@ describe('runMigrations', () => {
 				misc: { hasMigratedChatHistory: true },
 				rag: { minSimilarity: 0.5 },
 				chat: { quickActions: [], memoryMethod: 'tokens', contextWindowTurns: 10, cliOperationMode: 'cli-agent' },
-				webSearch: { enabled: false, providers: [], activeProviderId: 'tavily', maxResults: 5, maxContentLength: 3000 },
+				webSearch: {
+					enabled: false,
+					providers: [
+						{ type: 'tavily', apiKey: '' },
+						{ type: 'brave', apiKey: '' },
+						{ type: 'searxng', baseUrl: 'http://localhost:8080' },
+						{ type: 'exa', apiKey: '' },
+						{ type: 'google', apiKey: '', googleSearchEngineId: '' },
+						{ type: 'serpapi', apiKey: '' },
+					],
+					activeProviderId: 'tavily',
+					maxResults: 5,
+					maxContentLength: 3000,
+				},
 				canvas: { depth: 1, layout: 'radial', bidirectional: true, includeAttachments: false, maxNodes: 200, folderDepth: 0, outputPath: 'canvasVisualize', showFolderGroups: false },
 				projects: { list: [{ id: 'default', name: 'Default', ragIncludedPaths: [], ragExcludedPaths: ['.obsidian', 'chatHistory', 'backups'], historySubfolder: '', createdAt: 0, defaultProviderId: '', defaultModelId: '', systemPromptId: 'default' }], activeProjectId: 'default' },
 			},

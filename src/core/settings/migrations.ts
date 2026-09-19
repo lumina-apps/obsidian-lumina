@@ -11,6 +11,7 @@
 import { t } from '../../shared/locales/helpers';
 import type LuminaPlugin from '../../main';
 import { createDefaultProject } from '../../shared/types/project.types';
+import type { WebSearchProviderConfig } from '../../shared/types/settings.types';
 
 /** 마이그레이션 대상인 구버전 chat 설정 타입 */
 interface LegacyChatSettings {
@@ -160,26 +161,47 @@ export function migrateContextWindowTurns(plugin: LuminaPlugin): boolean {
 	return false;
 }
 
+const DEFAULT_WEB_SEARCH_PROVIDERS: WebSearchProviderConfig[] = [
+	{ type: 'tavily', apiKey: '' },
+	{ type: 'brave', apiKey: '' },
+	{ type: 'searxng', baseUrl: 'http://localhost:8080' },
+	{ type: 'exa', apiKey: '' },
+	{ type: 'google', apiKey: '', googleSearchEngineId: '' },
+	{ type: 'serpapi', apiKey: '' },
+];
+
 /**
  * Web Search 마이그레이션.
- * 기존 사용자 설정에 webSearch 속성이 없으면 기본값을 주입합니다.
+ * 기존 사용자 설정에 webSearch 속성이 없으면 기본값을 주입하고,
+ * 기존 설정에 누락된 프로바이더가 있으면 보충합니다.
  */
 export function migrateWebSearch(plugin: LuminaPlugin): boolean {
 	if (!plugin.settings.webSearch) {
 		plugin.settings.webSearch = {
 			enabled: false,
-			providers: [
-				{ type: 'tavily', apiKey: '' },
-				{ type: 'brave', apiKey: '' },
-				{ type: 'searxng', baseUrl: 'http://localhost:8080' },
-			],
+			providers: DEFAULT_WEB_SEARCH_PROVIDERS.map((p) => ({ ...p })),
 			activeProviderId: 'tavily',
 			maxResults: 5,
 			maxContentLength: 3000,
 		};
 		return true;
 	}
-	return false;
+
+	let modified = false;
+	if (!Array.isArray(plugin.settings.webSearch.providers)) {
+		plugin.settings.webSearch.providers = DEFAULT_WEB_SEARCH_PROVIDERS.map((p) => ({ ...p }));
+		modified = true;
+	} else {
+		for (const defaultProvider of DEFAULT_WEB_SEARCH_PROVIDERS) {
+			const exists = plugin.settings.webSearch.providers.some((p) => p.type === defaultProvider.type);
+			if (!exists) {
+				plugin.settings.webSearch.providers.push({ ...defaultProvider });
+				modified = true;
+			}
+		}
+	}
+
+	return modified;
 }
 
 /**

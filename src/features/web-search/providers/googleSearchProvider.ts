@@ -44,8 +44,8 @@ export function createGoogleSearchProvider(config: WebSearchProviderConfig): IWe
 					content: item.snippet || '',
 				}));
 			} catch (error) {
-				console.error('Google Custom Search failed:', error);
-				throw new Error('Failed to fetch from Google Custom Search API');
+				const errorMsg = error instanceof Error ? error.message : String(error);
+				throw new Error(`Google Custom Search failed: ${errorMsg}`);
 			}
 		},
 	};

@@ -44,8 +44,8 @@ export function createSerpapiProvider(config: WebSearchProviderConfig): IWebSear
 					content: item.snippet || '',
 				}));
 			} catch (error) {
-				console.error('SerpApi search failed:', error);
-				throw new Error('Failed to fetch from SerpApi');
+				const errorMsg = error instanceof Error ? error.message : String(error);
+				throw new Error(`SerpApi search failed: ${errorMsg}`);
 			}
 		},
 	};
