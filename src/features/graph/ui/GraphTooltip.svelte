@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { GraphNode } from '../graphDataBuilder';
+	import type { GraphNode } from '../../../shared/types/graph.types';
 	import { tStore } from '../../../shared/locales/index';
 
 	let { node, x, y }: { node: GraphNode; x: number; y: number } = $props();

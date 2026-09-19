@@ -3,8 +3,8 @@
 	import { tStore } from '../../../shared/locales/index';
 	import { iconAction } from '../../../shared/utils/domUtils';
 	import type LuminaPlugin from '../../../main';
-	import type { GraphData } from '../graphDataBuilder';
-	import { generateCanvasForRagGraph } from '../../canvas/canvasGenerator';
+	import type { GraphData } from '../../../shared/types/graph.types';
+	import { debugLogger } from '../../../shared/debugLogger';
 
 	let { plugin, graphData }: { plugin: LuminaPlugin; graphData: GraphData | null } = $props();
 
@@ -24,15 +24,25 @@
 		if (!graphData || graphData.nodes.length === 0 || isExporting) return;
 		isExporting = true;
 		try {
-			await generateCanvasForRagGraph(
-				plugin.app,
-				graphData,
-				{
+			if (plugin.canvasManager) {
+				await plugin.canvasManager.exportRagGraph(graphData, {
 					showSimilarityLabel: false,
 					showGroups: plugin.settings.canvas.showFolderGroups,
-				},
-				plugin.settings.canvas.outputPath,
-			);
+				});
+			} else {
+				const { generateCanvasForRagGraph } = await import('../../canvas/canvasGenerator');
+				await generateCanvasForRagGraph(
+					plugin.app,
+					graphData,
+					{
+						showSimilarityLabel: false,
+						showGroups: plugin.settings.canvas.showFolderGroups,
+					},
+					plugin.settings.canvas.outputPath,
+				);
+			}
+		} catch (e) {
+			debugLogger.logError('graph', e instanceof Error ? e : new Error(`Canvas export failed: ${e}`));
 		} finally {
 			isExporting = false;
 		}

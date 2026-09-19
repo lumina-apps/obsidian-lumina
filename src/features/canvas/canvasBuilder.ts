@@ -5,14 +5,16 @@
  * 방사형(Radial) 또는 계층형(Tree) 레이아웃으로 좌표를 계산합니다.
  */
 
-import type { App, TFile } from 'obsidian';
+import { normalizePath, type App, type TFile } from 'obsidian';
 import type {
 	CanvasData,
 	CanvasTextNode,
 	CanvasEdge,
 	CanvasGroupNode,
 	CanvasBuildOptions,
+	CanvasSide,
 } from './canvasTypes';
+import { t } from '../../shared/locales/helpers';
 
 // ─── 상수 ─────────────────────────────────────────────────────────────────────
 
@@ -32,8 +34,6 @@ function generateEdgeId(fromId: string, toId: string): string {
 	return `edge-${fromId}-${toId}`;
 }
 
-import type { CanvasSide } from './canvasTypes';
-
 export function getEdgeSides(fromPos: {x: number, y: number}, toPos: {x: number, y: number}): {fromSide: CanvasSide, toSide: CanvasSide} {
 	const dx = toPos.x - fromPos.x;
 	const dy = toPos.y - fromPos.y;
@@ -46,6 +46,10 @@ export function getEdgeSides(fromPos: {x: number, y: number}, toPos: {x: number,
 
 // ─── 링크 수집 ────────────────────────────────────────────────────────────────
 
+function cleanLinkpath(link: string): string {
+	return link.split('#')[0].split('^')[0].trim();
+}
+
 /**
  * 단일 파일에서 아웃링크(outgoing) 파일 목록을 반환합니다.
  */
@@ -56,14 +60,18 @@ function getOutlinks(app: App, file: TFile): TFile[] {
 	const result: TFile[] = [];
 	if (cache.links) {
 		for (const link of cache.links) {
-			const resolved = app.metadataCache.getFirstLinkpathDest(link.link, file.path);
+			const cleanPath = cleanLinkpath(link.link);
+			if (!cleanPath) continue;
+			const resolved = app.metadataCache.getFirstLinkpathDest(cleanPath, file.path);
 			if (resolved) result.push(resolved);
 		}
 	}
 	// 임베드 링크도 포함 (![[...]])
 	if (cache.embeds) {
 		for (const embed of cache.embeds) {
-			const resolved = app.metadataCache.getFirstLinkpathDest(embed.link, file.path);
+			const cleanPath = cleanLinkpath(embed.link);
+			if (!cleanPath) continue;
+			const resolved = app.metadataCache.getFirstLinkpathDest(cleanPath, file.path);
 			if (resolved && !result.some((f) => f.path === resolved.path)) {
 				result.push(resolved);
 			}
@@ -235,7 +243,8 @@ function computeRadialPositions(
 				});
 			});
 		} else {
-			const radius = layer * RADIAL_LAYER_GAP;
+			const minRadius = Math.ceil((nodes.length * (NODE_WIDTH + 40)) / (2 * Math.PI));
+			const radius = Math.max(layer * RADIAL_LAYER_GAP, minRadius);
 			const angleStep = (2 * Math.PI) / nodes.length;
 			nodes.forEach((path, i) => {
 				const angle = i * angleStep - Math.PI / 2;
@@ -373,7 +382,7 @@ export function buildCanvasData(
 		const isRoot = rootPaths.includes(path);
 
 		const fileObj = collected.nodeMap.get(path);
-		const baseName = fileObj ? fileObj.basename : path.split('/').pop()?.replace(/\.md$/, '') ?? path;
+		const baseName = fileObj ? fileObj.basename : normalizePath(path).split('/').pop()?.replace(/\.md$/, '') ?? path;
 
 		canvasNodes.push({
 			type: 'text',
@@ -474,7 +483,7 @@ export function addFolderGroups(
 			y: minY,
 			width: maxX - minX,
 			height: maxY - minY,
-			label: folder === '/' ? '(Root)' : folder,
+			label: !folder || folder === '/' ? t('canvas.rootGroup') : folder,
 			color: '6', // 보라색 그룹
 		});
 	}

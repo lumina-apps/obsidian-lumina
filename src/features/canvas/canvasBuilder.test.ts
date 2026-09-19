@@ -1,23 +1,40 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getEdgeSides, buildCanvasData, collectGraph, addFolderGroups } from './canvasBuilder';
-import type { CanvasBuildOptions, CanvasData } from './canvasTypes';
-import type { App, TFile } from 'obsidian';
+import type { CanvasBuildOptions, CanvasData, CanvasTextNode, CanvasGroupNode } from './canvasTypes';
+import type { App, TFile, CachedMetadata } from 'obsidian';
+import { t } from '../../shared/locales/helpers';
+
+interface MockAppFixture {
+	app: App;
+	getFileCache: ReturnType<typeof vi.fn>;
+	getFirstLinkpathDest: ReturnType<typeof vi.fn>;
+	getFileByPath: ReturnType<typeof vi.fn>;
+}
+
+function createMockApp(): MockAppFixture {
+	const getFileCache = vi.fn().mockReturnValue(null);
+	const getFirstLinkpathDest = vi.fn();
+	const getFileByPath = vi.fn();
+	const app = {
+		metadataCache: {
+			getFileCache,
+			getFirstLinkpathDest,
+			resolvedLinks: {},
+		},
+		vault: {
+			getFileByPath,
+		},
+	} as unknown as App;
+	return { app, getFileCache, getFirstLinkpathDest, getFileByPath };
+}
 
 describe('canvasBuilder', () => {
+	let fixture: MockAppFixture;
 	let mockApp: App;
 
 	beforeEach(() => {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		mockApp = {
-			metadataCache: {
-				getFileCache: vi.fn().mockReturnValue(null),
-				getFirstLinkpathDest: vi.fn(),
-				resolvedLinks: {}
-			},
-			vault: {
-				getFileByPath: vi.fn()
-			}
-		} as unknown as App;
+		fixture = createMockApp();
+		mockApp = fixture.app;
 	});
 
 	describe('getEdgeSides', () => {
@@ -47,15 +64,13 @@ describe('canvasBuilder', () => {
 			const root = { path: 'root.md', extension: 'md' } as TFile;
 			const child = { path: 'child.md', extension: 'md' } as TFile;
 
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			(mockApp.metadataCache.getFileCache as any).mockImplementation((file: TFile) => {
+			fixture.getFileCache.mockImplementation((file: TFile) => {
 				if (file.path === 'root.md') {
-					return { links: [{ link: 'child' }] };
+					return { links: [{ link: 'child' }] } as unknown as CachedMetadata;
 				}
 				return null;
 			});
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			(mockApp.metadataCache.getFirstLinkpathDest as any).mockImplementation((link: string) => {
+			fixture.getFirstLinkpathDest.mockImplementation((link: string) => {
 				if (link === 'child') return child;
 				return null;
 			});
@@ -80,11 +95,11 @@ describe('canvasBuilder', () => {
 			const child1 = { path: 'child1.md', extension: 'md' } as TFile;
 			const child2 = { path: 'child2.md', extension: 'md' } as TFile;
 
-			vi.mocked(mockApp.metadataCache.getFileCache).mockImplementation((file: TFile) => {
-				if (file.path === 'root.md') return { links: [{ link: 'child1' }, { link: 'child2' }] } as any;
+			fixture.getFileCache.mockImplementation((file: TFile) => {
+				if (file.path === 'root.md') return { links: [{ link: 'child1' }, { link: 'child2' }] } as unknown as CachedMetadata;
 				return null;
 			});
-			vi.mocked(mockApp.metadataCache.getFirstLinkpathDest).mockImplementation((link: string) => {
+			fixture.getFirstLinkpathDest.mockImplementation((link: string) => {
 				if (link === 'child1') return child1;
 				if (link === 'child2') return child2;
 				return null;
@@ -101,11 +116,11 @@ describe('canvasBuilder', () => {
 			const root = { path: 'root.md', extension: 'md' } as TFile;
 			const embedFile = { path: 'embed.md', extension: 'md' } as TFile;
 
-			vi.mocked(mockApp.metadataCache.getFileCache).mockImplementation((file: TFile) => {
-				if (file.path === 'root.md') return { embeds: [{ link: 'embed' }] } as any;
+			fixture.getFileCache.mockImplementation((file: TFile) => {
+				if (file.path === 'root.md') return { embeds: [{ link: 'embed' }] } as unknown as CachedMetadata;
 				return null;
 			});
-			vi.mocked(mockApp.metadataCache.getFirstLinkpathDest).mockImplementation((link: string) => {
+			fixture.getFirstLinkpathDest.mockImplementation((link: string) => {
 				if (link === 'embed') return embedFile;
 				return null;
 			});
@@ -122,7 +137,7 @@ describe('canvasBuilder', () => {
 			mockApp.metadataCache.resolvedLinks = {
 				'backlink.md': { 'root.md': 1 }
 			};
-			vi.mocked(mockApp.vault.getFileByPath).mockImplementation((path: string) => {
+			fixture.getFileByPath.mockImplementation((path: string) => {
 				if (path === 'backlink.md') return backlinkFile;
 				return null;
 			});
@@ -137,11 +152,11 @@ describe('canvasBuilder', () => {
 			const root = { path: 'root.md', extension: 'md' } as TFile;
 			const image = { path: 'image.png', extension: 'png' } as TFile;
 
-			vi.mocked(mockApp.metadataCache.getFileCache).mockImplementation((file: TFile) => {
-				if (file.path === 'root.md') return { links: [{ link: 'image.png' }] } as any;
+			fixture.getFileCache.mockImplementation((file: TFile) => {
+				if (file.path === 'root.md') return { links: [{ link: 'image.png' }] } as unknown as CachedMetadata;
 				return null;
 			});
-			vi.mocked(mockApp.metadataCache.getFirstLinkpathDest).mockImplementation(() => image);
+			fixture.getFirstLinkpathDest.mockImplementation(() => image);
 
 			let opts: CanvasBuildOptions = { layout: 'radial', depth: 1, folderDepth: 0, maxNodes: 10, bidirectional: false, includeAttachments: false };
 			let result = collectGraph(mockApp, [root], opts);
@@ -150,6 +165,37 @@ describe('canvasBuilder', () => {
 			opts = { ...opts, includeAttachments: true };
 			result = collectGraph(mockApp, [root], opts);
 			expect(result.nodeMap.has('image.png')).toBe(true);
+		});
+
+		it('should strip heading and block subpaths when resolving links', () => {
+			const root = { path: 'root.md', extension: 'md' } as TFile;
+			const child1 = { path: 'child1.md', extension: 'md' } as TFile;
+			const child2 = { path: 'child2.md', extension: 'md' } as TFile;
+
+			fixture.getFileCache.mockImplementation((file: TFile) => {
+				if (file.path === 'root.md') {
+					return {
+						links: [
+							{ link: 'child1#Section Header' },
+							{ link: 'child2^blockid123' },
+						],
+					} as unknown as CachedMetadata;
+				}
+				return null;
+			});
+
+			fixture.getFirstLinkpathDest.mockImplementation((link: string) => {
+				if (link === 'child1') return child1;
+				if (link === 'child2') return child2;
+				return null;
+			});
+
+			const opts: CanvasBuildOptions = { layout: 'radial', depth: 1, folderDepth: 0, maxNodes: 10, bidirectional: false, includeAttachments: false };
+			const result = collectGraph(mockApp, [root], opts);
+			expect(result.nodeMap.has('child1.md')).toBe(true);
+			expect(result.nodeMap.has('child2.md')).toBe(true);
+			expect(mockApp.metadataCache.getFirstLinkpathDest).toHaveBeenCalledWith('child1', 'root.md');
+			expect(mockApp.metadataCache.getFirstLinkpathDest).toHaveBeenCalledWith('child2', 'root.md');
 		});
 	});
 
@@ -175,10 +221,8 @@ describe('canvasBuilder', () => {
 			const data = buildCanvasData(collected, [root1, root2], opts);
 			expect(data.nodes.length).toBe(2);
 			
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const n1 = data.nodes.find(n => n.id === 'root1.md' || (n as any).text?.includes('root1.md'));
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const n2 = data.nodes.find(n => n.id === 'root2.md' || (n as any).text?.includes('root2.md'));
+			const n1 = data.nodes.find((n): n is CanvasTextNode => n.type === 'text' && (n.id === 'root1.md' || n.text.includes('root1.md')));
+			const n2 = data.nodes.find((n): n is CanvasTextNode => n.type === 'text' && (n.id === 'root2.md' || n.text.includes('root2.md')));
 
 			expect(n1).toBeDefined();
 			expect(n2).toBeDefined();
@@ -220,14 +264,40 @@ describe('canvasBuilder', () => {
 			const opts: CanvasBuildOptions = { layout: 'tree', depth: 1, folderDepth: 0, maxNodes: 10, bidirectional: false, includeAttachments: false };
 			const data = buildCanvasData(collected, [root1], opts);
 			
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const rootNode = data.nodes.find((n: any) => n.text?.includes('root1.md'));
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const childNode = data.nodes.find((n: any) => n.text?.includes('child.md'));
+			const rootNode = data.nodes.find((n): n is CanvasTextNode => n.type === 'text' && n.text.includes('root1.md'));
+			const childNode = data.nodes.find((n): n is CanvasTextNode => n.type === 'text' && n.text.includes('child.md'));
 			
 			expect(rootNode).toBeDefined();
 			expect(childNode).toBeDefined();
 			expect(childNode!.x).toBeGreaterThan(rootNode!.x);
+		});
+
+		it('should expand radial radius when node count in a layer is large', () => {
+			const root = { path: 'root.md', extension: 'md' } as TFile;
+			const children: TFile[] = [];
+			const nodeMap = new Map<string, TFile>([['root.md', root]]);
+			const edges: Array<[string, string]> = [];
+
+			// 10개 자식 노드 생성
+			for (let i = 0; i < 10; i++) {
+				const p = `child${i}.md`;
+				const child = { path: p, extension: 'md' } as TFile;
+				children.push(child);
+				nodeMap.set(p, child);
+				edges.push(['root.md', p]);
+			}
+
+			const collected = { nodeMap, edges };
+			const opts: CanvasBuildOptions = { layout: 'radial', depth: 1, folderDepth: 0, maxNodes: 20, bidirectional: false, includeAttachments: false };
+			const data = buildCanvasData(collected, [root], opts);
+
+			// 10개 노드의 경우 minRadius = ceil(10 * 280 / 2pi) = 446px > 260px (기본 간격)
+			// 자식 노드들의 원점으로부터의 거리(radius)가 260보다 커야 함
+			const childNodes = data.nodes.filter((n): n is CanvasTextNode => n.type === 'text' && n.text.includes('child'));
+			expect(childNodes.length).toBe(10);
+			const firstChild = childNodes[0];
+			const dist = Math.sqrt(firstChild.x * firstChild.x + firstChild.y * firstChild.y);
+			expect(dist).toBeGreaterThan(400);
 		});
 	});
 
@@ -251,18 +321,16 @@ describe('canvasBuilder', () => {
 
 			const result = addFolderGroups(canvasData, nodeMap);
 			
-			const groups = result.nodes.filter(n => n.type === 'group');
+			const groups = result.nodes.filter((n): n is CanvasGroupNode => n.type === 'group');
 			expect(groups.length).toBe(2);
 			
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const folder1Group = groups.find((g: any) => g.label === 'folder1');
+			const folder1Group = groups.find((g) => g.label === 'folder1');
 			expect(folder1Group).toBeDefined();
 			expect(folder1Group!.x).toBeLessThan(0);
 			expect(folder1Group!.y).toBeLessThan(0);
 			expect(folder1Group!.width).toBeGreaterThan(100);
 
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const rootGroup = groups.find((g: any) => g.label === '(Root)');
+			const rootGroup = groups.find((g) => g.label === t('canvas.rootGroup'));
 			expect(rootGroup).toBeDefined();
 		});
 	});

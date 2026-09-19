@@ -21,6 +21,7 @@ import { RagWatchManager } from './features/rag/watchManager';
 import type { McpManager } from './core/mcp/mcpManager';
 import type { QuickActionHandler } from './features/editor/quickActionHandler';
 import type { FrontmatterManager } from './features/frontmatter/frontmatterManager';
+import type { CanvasManager } from './features/canvas/canvasManager';
 // Lazy Loading Type
 import type { LuminaSettingTab } from './core/settings/settingTab';
 
@@ -93,6 +94,7 @@ export default class LuminaPlugin extends Plugin {
 	public settingTab: LazyLuminaSettingTab | null = null;
 	public frontmatterManager!: FrontmatterManager;
 	public quickActionHandler!: QuickActionHandler;
+	public canvasManager?: CanvasManager;
 
 	/** 플러그인 언로드 여부 — 비동기 초기화 중 언로드되면 MCP 생성을 건너뛰기 위한 플래그 */
 	private _unloaded = false;
@@ -218,6 +220,11 @@ export default class LuminaPlugin extends Plugin {
 			this.frontmatterManager = new FrontmatterManager(this);
 			this.frontmatterManager.registerIfEnabled();
 
+			// ── 캔버스 매니저 초기화
+			const { CanvasManager: RealCanvasManager } = await import('./features/canvas/canvasManager');
+			this.canvasManager = new RealCanvasManager(this);
+			this.canvasManager.registerEvents();
+
 			// debugMode ON이면 자동으로 패널 열기
 			if (this.settings.misc.debugMode) {
 				void activateView(this.app.workspace, DEBUG_VIEW_TYPE, false);
@@ -253,6 +260,7 @@ export default class LuminaPlugin extends Plugin {
 		this.embeddingWorker?.terminate();
 		this.watchManager?.clearWatchEvents();
 		this.frontmatterManager?.destroy();
+		this.canvasManager?.destroy();
 		cleanupApprovalListener();
 		void this.mcpManager?.destroy();
 		// 프로젝트별 인덱서 캐시 정리

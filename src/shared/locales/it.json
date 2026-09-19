@@ -955,6 +955,7 @@
     "noticeTruncated": "Il numero di nodi ha superato il massimo ({{max}}). Alcuni nodi sono stati esclusi.",
     "noticeNoFiles": "Nessun file markdown trovato in questa cartella.",
     "noticeError": "Si è verificato un errore durante la generazione del canvas.",
+    "rootGroup": "Radice",
     "settings": {
       "depth": {
         "name": "Profondità di attraversamento",

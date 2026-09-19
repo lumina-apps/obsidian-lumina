@@ -989,6 +989,7 @@ export interface TranslationCanvas {
   noticeTruncated: string;
   noticeNoFiles: string;
   noticeError: string;
+  rootGroup: string;
   settings: {
     depth: { name: string; desc: string };
     layout: { name: string; desc: string; radial: string; tree: string };

@@ -8,7 +8,7 @@ import { resetIndexing } from '../../store/ragStore';
 import { loadSystemLocaleCache } from '../../../shared/locales/translator';
 import { initEmbeddingWorker } from '../../../features/rag/ragInitializer';
 import { activateView, closeView } from '../../views/viewHelper';
-import { DEBUG_VIEW_TYPE } from '../../../features/debug/debugView';
+import { DEBUG_VIEW_TYPE } from '../../../shared/constants/viewTypes';
 
 export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 	const s = tab.plugin.settings.misc;

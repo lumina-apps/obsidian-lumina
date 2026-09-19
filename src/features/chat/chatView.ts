@@ -7,7 +7,8 @@ import { mount, unmount } from 'svelte';
 import type LuminaPlugin from '../../main';
 import { debugLogger } from '../../shared/debugLogger';
 
-export const CHAT_VIEW_TYPE = 'lumina-chat';
+import { CHAT_VIEW_TYPE } from '../../shared/constants/viewTypes';
+export { CHAT_VIEW_TYPE };
 
 export class ChatView extends ItemView {
 	private plugin: LuminaPlugin;

@@ -1,14 +1,15 @@
 <script lang="ts">
-	import { onMount, onDestroy, untrack } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { TFile, type EventRef } from 'obsidian';
 	import type LuminaPlugin from '../../../main';
 	import { isRagEnabled } from '../../../core/store/settingsStore';
 	import { indexingState } from '../../../core/store/ragStore';
-	import { graphState } from '../graphStore';
+	import { graphState, updateGraphState } from '../graphStore';
 	import { buildGraphData, invalidateEdgeCache, type GraphData } from '../graphDataBuilder';
 	import GraphControls from './GraphControls.svelte';
 	import GraphCanvas from './GraphCanvas.svelte';
 	import { tStore } from '../../../shared/locales/index';
+	import { debugLogger } from '../../../shared/debugLogger';
 
 	let { plugin }: { plugin: LuminaPlugin } = $props();
 
@@ -16,6 +17,10 @@
 	let activeFileListener: EventRef | null = null;
 	let lastParamsStr = '';
 	let lastFocusPath: string | null = null;
+
+	let debounceTimer: number | null = null;
+	let currentAbortController: AbortController | null = null;
+	let latestRequestId = 0;
 
 	onMount(() => {
 		const activeFile = plugin.app.workspace.getActiveFile();
@@ -27,15 +32,21 @@
 				const newActiveFile = plugin.app.workspace.getActiveFile();
 				if (newActiveFile && newActiveFile.path !== lastFocusPath) {
 					lastFocusPath = newActiveFile.path;
-					triggerRebuild();
+					queueRebuild(true);
 				}
 			}
 		});
 
 		// Initial build
-		triggerRebuild();
+		queueRebuild(true);
 
 		return () => {
+			if (debounceTimer !== null) {
+				window.clearTimeout(debounceTimer);
+			}
+			if (currentAbortController) {
+				currentAbortController.abort();
+			}
 			if (activeFileListener) {
 				plugin.app.workspace.offref(activeFileListener);
 			}
@@ -65,13 +76,29 @@
 						const activeFile = plugin.app.workspace.getActiveFile();
 						if (activeFile) lastFocusPath = activeFile.path;
 					}
-					triggerRebuild();
+					queueRebuild(false);
 				});
 			}
 		}
 	});
 
-	async function triggerRebuild() {
+	function queueRebuild(immediate: boolean = false) {
+		if (debounceTimer !== null) {
+			window.clearTimeout(debounceTimer);
+			debounceTimer = null;
+		}
+
+		if (immediate) {
+			void executeRebuild();
+		} else {
+			debounceTimer = window.setTimeout(() => {
+				debounceTimer = null;
+				void executeRebuild();
+			}, 250);
+		}
+	}
+
+	async function executeRebuild() {
 		if (!$isRagEnabled || $indexingState.status !== 'ready') {
 			graphData = null;
 			return;
@@ -82,28 +109,53 @@
 			return;
 		}
 
+		if (currentAbortController) {
+			currentAbortController.abort();
+		}
+		const abortController = new AbortController();
+		currentAbortController = abortController;
+		const requestId = ++latestRequestId;
+
 		let focusPath: string | null = null;
 		if ($graphState.mode === 'local') {
 			focusPath = lastFocusPath;
 		}
 
-		graphData = await buildGraphData(
-			plugin.indexer.indexedParentChunks,
-			plugin.indexer.indexedChildChunks,
-			$graphState.minSimilarity,
-			$graphState.maxK,
-			$graphState.mode,
-			focusPath,
-			$graphState.localDepth
-		);
+		try {
+			const data = await buildGraphData(
+				plugin.indexer.indexedParentChunks,
+				plugin.indexer.indexedChildChunks,
+				$graphState.minSimilarity,
+				$graphState.maxK,
+				$graphState.mode,
+				focusPath,
+				$graphState.localDepth,
+				abortController.signal
+			);
+
+			if (requestId === latestRequestId && !abortController.signal.aborted) {
+				graphData = data;
+			}
+		} catch (e) {
+			if (abortController.signal.aborted || (e instanceof DOMException && e.name === 'AbortError')) {
+				return;
+			}
+			debugLogger.logError('graph', e instanceof Error ? e : new Error(`Graph rebuild failed: ${e}`));
+			if (requestId === latestRequestId) {
+				updateGraphState({ errorMessage: String(e) });
+			}
+		}
 	}
 
 	async function handleNodeClick(nodeId: string) {
-		const file = plugin.app.vault.getAbstractFileByPath(nodeId);
-		if (file instanceof TFile) {
-			// Open in the active leaf, or create a new leaf if we are in the sidebar
-			const leaf = plugin.app.workspace.getLeaf(false);
-			await leaf.openFile(file);
+		try {
+			const file = plugin.app.vault.getAbstractFileByPath(nodeId);
+			if (file instanceof TFile) {
+				const leaf = plugin.app.workspace.getLeaf(false);
+				await leaf.openFile(file);
+			}
+		} catch (e) {
+			debugLogger.logError('graph', e instanceof Error ? e : new Error(`Failed to open node file ${nodeId}: ${e}`));
 		}
 	}
 </script>

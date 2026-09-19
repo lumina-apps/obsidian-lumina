@@ -963,6 +963,7 @@
     "noticeTruncated": "Knotenanzahl hat das Maximum ({{max}}) überschritten. Einige Knoten wurden ausgeschlossen.",
     "noticeNoFiles": "Keine Markdown-Dateien in diesem Ordner gefunden.",
     "noticeError": "Ein Fehler ist beim Erstellen des Canvas aufgetreten.",
+    "rootGroup": "Stammverzeichnis",
     "settings": {
       "depth": {
         "name": "Durchsuchungstiefe",

@@ -955,6 +955,7 @@
     "noticeTruncated": "O número de nós excedeu o máximo ({{max}}). Alguns nós foram excluídos.",
     "noticeNoFiles": "Nenhum arquivo markdown encontrado nesta pasta.",
     "noticeError": "Ocorreu um erro ao gerar o canvas.",
+    "rootGroup": "Raiz",
     "settings": {
       "depth": {
         "name": "Profundidade de travessia",

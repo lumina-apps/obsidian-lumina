@@ -955,6 +955,7 @@
     "noticeTruncated": "ノード数が最大値（{{max}}）を超えました。一部のノードは除外されました。",
     "noticeNoFiles": "このフォルダにMarkdownファイルが見つかりません。",
     "noticeError": "キャンバスの生成中にエラーが発生しました。",
+    "rootGroup": "ルート",
     "settings": {
       "depth": {
         "name": "探索の深さ",

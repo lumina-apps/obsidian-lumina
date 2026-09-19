@@ -3,23 +3,8 @@ import { updateGraphState } from './graphStore';
 import { t } from '../../shared/locales/helpers';
 import { debugLogger } from '../../shared/debugLogger';
 
-export interface GraphNode {
-	id: string; // path
-	name: string; // basename
-	group: string; // top-level folder
-	degree: number; // number of connections
-}
-
-export interface GraphEdge {
-	source: string; // path
-	target: string; // path
-	weight: number; // cosine similarity score
-}
-
-export interface GraphData {
-	nodes: GraphNode[];
-	links: GraphEdge[];
-}
+import type { GraphNode, GraphEdge, GraphData } from '../../shared/types/graph.types';
+export type { GraphNode, GraphEdge, GraphData };
 
 let edgeCache: GraphEdge[] | null = null;
 let lastCacheKey = '';
@@ -119,7 +104,8 @@ export async function buildGraphData(
 	maxK: number = 5,
 	mode: 'local' | 'global' = 'global',
 	focusPath: string | null = null,
-	localDepth: number = 2
+	localDepth: number = 2,
+	signal?: AbortSignal
 ): Promise<GraphData> {
 	debugLogger.logSystem(
 		'graph',
@@ -134,10 +120,14 @@ export async function buildGraphData(
 		debugLogger.logSystem('graph', `buildGraphData: cache miss (lastCacheKey=${lastCacheKey}, newCacheKey=${cacheKey}). Recalculating edges...`);
 		
 		try {
-			edgeCache = await calculateEdgesInWorker(childChunks, 0.4); // Calculate down to 0.4 for caching
+			edgeCache = await calculateEdgesInWorker(childChunks, 0.4, signal); // Calculate down to 0.4 for caching
 			lastCacheKey = cacheKey;
 			debugLogger.logSystem('graph', `buildGraphData: edge calculation completed (edges=${edgeCache.length})`);
 		} catch (e) {
+			if (signal?.aborted || (e instanceof DOMException && e.name === 'AbortError')) {
+				debugLogger.logSystem('graph', 'buildGraphData: calculation aborted');
+				throw e;
+			}
 			debugLogger.logError('graph', new Error(`워커 엣지 계산 실패: ${e instanceof Error ? e.message : String(e)}`));
 			updateGraphState({ isCalculating: false, errorMessage: t('graph.calcError') });
 			return { nodes: [], links: [] };
@@ -147,6 +137,10 @@ export async function buildGraphData(
 	}
 
 	updateGraphState({ isCalculating: false });
+
+	if (signal?.aborted) {
+		throw new DOMException('Aborted', 'AbortError');
+	}
 
 	// 1. Filter edges by similarity
 	let filteredEdges = edgeCache.filter(e => e.weight >= minSimilarity);
@@ -216,8 +210,17 @@ export async function buildGraphData(
 	return { nodes, links: actualLinks };
 }
 
-function calculateEdgesInWorker(childChunks: ChildChunk[], baseMinSimilarity: number): Promise<GraphEdge[]> {
+function calculateEdgesInWorker(
+	childChunks: ChildChunk[],
+	baseMinSimilarity: number,
+	signal?: AbortSignal
+): Promise<GraphEdge[]> {
 	return new Promise((resolve, reject) => {
+		if (signal?.aborted) {
+			reject(new DOMException('Aborted', 'AbortError'));
+			return;
+		}
+
 		// We only want 1 chunk per file to avoid dense self-loops and redundant computation
 		const firstChunks = new Map<string, ChildChunk>();
 		for (const c of childChunks) {
@@ -241,16 +244,41 @@ function calculateEdgesInWorker(childChunks: ChildChunk[], baseMinSimilarity: nu
 		const url = URL.createObjectURL(blob);
 		const worker = new Worker(url);
 
-		worker.onmessage = (e: MessageEvent) => {
+		let timeoutId: number | null = null;
+		let cleanedUp = false;
+
+		const cleanup = () => {
+			if (cleanedUp) return;
+			cleanedUp = true;
+			if (timeoutId !== null) window.clearTimeout(timeoutId);
+			if (signal) signal.removeEventListener('abort', onAbort);
 			URL.revokeObjectURL(url);
 			worker.terminate();
+		};
+
+		const onAbort = () => {
+			cleanup();
+			reject(new DOMException('Aborted', 'AbortError'));
+		};
+
+		if (signal) {
+			signal.addEventListener('abort', onAbort);
+		}
+
+		// 30초 안전 타임아웃
+		timeoutId = window.setTimeout(() => {
+			cleanup();
+			reject(new Error('Worker calculation timed out (30s limit)'));
+		}, 30000);
+
+		worker.onmessage = (e: MessageEvent) => {
+			cleanup();
 			const data = e.data as { edges: GraphEdge[] };
 			resolve(data.edges);
 		};
 
 		worker.onerror = (err: ErrorEvent) => {
-			URL.revokeObjectURL(url);
-			worker.terminate();
+			cleanup();
 			reject(new Error(err.message || 'Worker calculation failed'));
 		};
 

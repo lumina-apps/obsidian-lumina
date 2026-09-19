@@ -955,6 +955,7 @@
     "noticeTruncated": "節點數量超過上限 ({{max}})。某些節點已被排除。",
     "noticeNoFiles": "在此資料夾中找不到 markdown 檔案。",
     "noticeError": "生成 白板 時發生錯誤。",
+    "rootGroup": "根目錄",
     "settings": {
       "depth": {
         "name": "遍歷深度",

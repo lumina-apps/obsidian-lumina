@@ -1011,6 +1011,7 @@
     "noticeTruncated": "Node count exceeded the maximum ({{max}}). Some nodes were excluded.",
     "noticeNoFiles": "No markdown files found in this folder.",
     "noticeError": "An error occurred while generating the canvas.",
+    "rootGroup": "Root",
     "settings": {
       "depth": {
         "name": "Traversal Depth",

@@ -1005,7 +1005,8 @@
     "noticeFolderCreated": "'{{name}}' 폴더의 캔버스 {{count}}개를 생성했습니다.",
     "noticeTruncated": "노드 수가 최대({{max}}개)를 초과하여 일부가 제외되었습니다.",
     "noticeNoFiles": "폴더에 md 파일이 없습니다.",
-    "noticeError": "캔버스 생성 중 오류가 발생했습니다.",
+    "noticeError": "Canvas 생성 중 오류가 발생했습니다.",
+    "rootGroup": "최상위",
     "settings": {
       "depth": {
         "name": "탐색 깊이",

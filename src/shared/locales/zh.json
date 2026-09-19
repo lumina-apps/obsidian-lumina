@@ -955,6 +955,7 @@
     "noticeTruncated": "节点数量超过上限 ({{max}})。部分节点已被排除。",
     "noticeNoFiles": "在此文件夹中找不到 markdown 文件。",
     "noticeError": "生成 白板 时发生错误。",
+    "rootGroup": "根目录",
     "settings": {
       "depth": {
         "name": "遍历深度",

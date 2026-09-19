@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import ForceGraph from 'force-graph';
-	import type { GraphData, GraphNode, GraphEdge } from '../graphDataBuilder';
+	import type { GraphData, GraphNode, GraphEdge } from '../../../shared/types/graph.types';
 	import { graphState, updateGraphState } from '../graphStore';
 	import GraphTooltip from './GraphTooltip.svelte';
 
@@ -122,10 +122,10 @@
 				ctx.stroke();
 			}
 
-			// Draw label if highly zoomed in, or if it's highlighted/focused
-			if (globalScale > 2 || highlight || node.id === $graphState.focusedPath) {
+			// Render node label only when zoomed in enough or highlighted/focused
+			if (globalScale >= 0.8 || highlight || node.id === $graphState.focusedPath) {
 				const isLight = document.body.classList.contains('theme-light');
-				ctx.font = `${fontSize}px Sans-Serif`;
+				ctx.font = `${fontSize}px var(--font-interface, sans-serif)`;
 				ctx.textAlign = 'center';
 				ctx.textBaseline = 'middle';
 				ctx.fillStyle = dimmed 
@@ -146,7 +146,7 @@
 		// Set initial cursor
 		container.style.cursor = 'grab';
 		container.addEventListener('mousedown', handleMouseDown);
-		container.addEventListener('mouseup', handleMouseUp);
+		window.addEventListener('mouseup', handleMouseUp);
 	});
 
 	onDestroy(() => {
@@ -156,8 +156,8 @@
 		}
 		if (container) {
 			container.removeEventListener('mousedown', handleMouseDown);
-			container.removeEventListener('mouseup', handleMouseUp);
 		}
+		window.removeEventListener('mouseup', handleMouseUp);
 	});
 
 	// React to data changes
@@ -222,7 +222,9 @@
 					const tH = highlightSet.has(tNode);
 					opacity = (sH || tH) ? Math.min(0.8, opacity + 0.5) : 0.02;
 				} else if (f) {
-					const isConnected = (link.source.id || link.source) === f || (link.target.id || link.target) === f;
+					const sNode = typeof link.source === 'object' ? (link.source as ForceNode).id : link.source;
+					const tNode = typeof link.target === 'object' ? (link.target as ForceNode).id : link.target;
+					const isConnected = sNode === f || tNode === f;
 					opacity = isConnected ? Math.min(0.8, opacity + 0.5) : 0.02;
 				}
 				return `rgba(139, 92, 246, ${opacity})`;

@@ -4,7 +4,8 @@ import type LuminaPlugin from '../../main';
 import { t } from '../../shared/locales/helpers';
 import { debugLogger } from '../../shared/debugLogger';
 
-export const GRAPH_VIEW_TYPE = 'lumina-graph';
+import { GRAPH_VIEW_TYPE } from '../../shared/constants/viewTypes';
+export { GRAPH_VIEW_TYPE };
 
 export class GraphView extends ItemView {
 	private plugin: LuminaPlugin;
@@ -51,13 +52,11 @@ export class GraphView extends ItemView {
 		if (this.component) {
 			const comp = this.component;
 			this.component = null;
-			window.setTimeout(() => {
-				try {
-					void unmount(comp);
-				} catch (e) {
-					debugLogger.logError('graph_view', e instanceof Error ? e : new Error(`GraphView unmount error: ${e}`));
-				}
-			}, 0);
+			try {
+				void unmount(comp);
+			} catch (e) {
+				debugLogger.logError('graph_view', e instanceof Error ? e : new Error(`GraphView unmount error: ${e}`));
+			}
 		}
 	}
 }

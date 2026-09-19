@@ -7,9 +7,11 @@
  * - 레이아웃: 간소화된 force-directed 알고리즘
  */
 
-import type { CanvasData, CanvasEdge, CanvasTextNode } from './canvasTypes';
-import type { GraphData, GraphNode, GraphEdge } from '../graph/graphDataBuilder';
+import { normalizePath } from 'obsidian';
+import type { CanvasData, CanvasEdge, CanvasTextNode, CanvasGroupNode } from './canvasTypes';
+import type { GraphData, GraphNode, GraphEdge } from '../../shared/types/graph.types';
 import { getEdgeSides } from './canvasBuilder';
+import { t } from '../../shared/locales/helpers';
 
 // ─── 상수 ─────────────────────────────────────────────────────────────────────
 
@@ -49,9 +51,9 @@ function getNodeSize(degree: number): { width: number; height: number } {
  * 백분위수 기반 임계값을 사용하여 임베딩 모델에 상관없이 최적의 가독성을 보장합니다.
  */
 function getSimilarityColor(weight: number, threshold95: number, threshold80: number): string | undefined {
-  if (weight >= threshold95) return '4'; // 상위 5%: 녹색 강조
-  if (weight >= threshold80) return '#88888866'; // 상위 20%: 반투명 회색
-  return '#8888881a'; // 나머지: 매우 투명한 회색
+  if (weight >= threshold95) return '4'; // 상위 5%: 녹색 강조 (Canvas color 4)
+  if (weight >= threshold80) return '#888888'; // 상위 20%: 일반 회색
+  return '#444444'; // 나머지: 어두운 회색 (스펙 준수 6자리 hex)
 }
 
 // ─── Force-directed 레이아웃 ──────────────────────────────────────────────────
@@ -61,6 +63,13 @@ interface NodePos {
   y: number;
   vx: number;
   vy: number;
+}
+
+function getLinkId(endpoint: GraphNode | string): string {
+  if (typeof endpoint === 'object' && endpoint !== null && 'id' in endpoint) {
+    return (endpoint as GraphNode).id;
+  }
+  return String(endpoint);
 }
 
 /**
@@ -97,8 +106,9 @@ function computeForceLayout(
   // adjacency map
   const adjacency = new Map<string, { target: string; weight: number }[]>();
   for (const link of links) {
-    const sourceId = typeof link.source === 'object' && link.source !== null && 'id' in link.source ? (link.source as GraphNode).id : link.source;
-    const targetId = typeof link.target === 'object' && link.target !== null && 'id' in link.target ? (link.target as GraphNode).id : link.target;
+    const sourceId = getLinkId(link.source);
+    const targetId = getLinkId(link.target);
+    if (sourceId === targetId) continue;
     
     if (!adjacency.has(sourceId)) adjacency.set(sourceId, []);
     if (!adjacency.has(targetId)) adjacency.set(targetId, []);
@@ -189,6 +199,10 @@ class UnionFind {
     nodes.forEach(n => this.parent.set(n, n));
   }
   find(i: string): string {
+    if (!this.parent.has(i)) {
+      this.parent.set(i, i);
+      return i;
+    }
     if (this.parent.get(i) === i) return i;
     const root = this.find(this.parent.get(i)!);
     this.parent.set(i, root);
@@ -231,8 +245,9 @@ export function buildRagGraphCanvasData(
   const sortedLinks = [...links].sort((a, b) => b.weight - a.weight);
   
   for (const link of sortedLinks) {
-    const srcId = typeof link.source === 'object' && link.source !== null && 'id' in link.source ? (link.source as GraphNode).id : link.source;
-    const tgtId = typeof link.target === 'object' && link.target !== null && 'id' in link.target ? (link.target as GraphNode).id : link.target;
+    const srcId = getLinkId(link.source);
+    const tgtId = getLinkId(link.target);
+    if (srcId === tgtId) continue;
     if (uf.find(srcId) !== uf.find(tgtId)) {
       uf.union(srcId, tgtId);
       prunedLinksSet.add(link);
@@ -243,16 +258,17 @@ export function buildRagGraphCanvasData(
   const MAX_EXTRA_LINKS = 1;
   nodes.forEach(node => {
     const connected = sortedLinks.filter(l => {
-      const srcId = typeof l.source === 'object' && l.source !== null && 'id' in l.source ? (l.source as GraphNode).id : l.source;
-      const tgtId = typeof l.target === 'object' && l.target !== null && 'id' in l.target ? (l.target as GraphNode).id : l.target;
+      const srcId = getLinkId(l.source);
+      const tgtId = getLinkId(l.target);
+      if (srcId === tgtId) return false;
       return srcId === node.id || tgtId === node.id;
     });
     
     let addedCount = 0;
-    for (const link of connected) {
+    for (const extraLink of connected) {
       if (addedCount >= MAX_EXTRA_LINKS) break;
-      if (!prunedLinksSet.has(link)) {
-        prunedLinksSet.add(link);
+      if (!prunedLinksSet.has(extraLink)) {
+        prunedLinksSet.add(extraLink);
         addedCount++;
       }
     }
@@ -277,7 +293,7 @@ export function buildRagGraphCanvasData(
     const normalizedDegree = maxDegree > 1 ? (node.degree / maxDegree) * 10 : node.degree;
     const { width, height } = getNodeSize(normalizedDegree);
 
-    const baseName = node.id.split('/').pop()?.replace(/\.md$/, '') ?? node.id;
+    const baseName = normalizePath(node.id).split('/').pop()?.replace(/\.md$/, '') ?? node.id;
 
     canvasNodes.push({
       type: 'text',
@@ -295,8 +311,9 @@ export function buildRagGraphCanvasData(
   const processedEdges = new Set<string>();
 
   for (const link of prunedLinks) {
-    const sourcePath = typeof link.source === 'object' && link.source !== null && 'id' in link.source ? (link.source as GraphNode).id : link.source;
-    const targetPath = typeof link.target === 'object' && link.target !== null && 'id' in link.target ? (link.target as GraphNode).id : link.target;
+    const sourcePath = getLinkId(link.source);
+    const targetPath = getLinkId(link.target);
+    if (sourcePath === targetPath) continue;
 
     const fromId = idMap.get(sourcePath);
     const toId = idMap.get(targetPath);
@@ -328,5 +345,42 @@ export function buildRagGraphCanvasData(
     canvasEdges.push(edge);
   }
 
-  return { nodes: canvasNodes, edges: canvasEdges };
+  // 4. 폴더 그룹 노드 빌드 (옵션)
+  const groupNodes: CanvasGroupNode[] = [];
+  if (opts.showGroups) {
+    const GROUP_PADDING = 40;
+    const folderMap = new Map<string, CanvasTextNode[]>();
+
+    nodes.forEach(node => {
+      const canvasId = idMap.get(node.id);
+      const textNode = canvasNodes.find(cn => cn.id === canvasId);
+      if (!textNode) return;
+
+      const groupName = node.group || '__root__';
+      if (!folderMap.has(groupName)) folderMap.set(groupName, []);
+      folderMap.get(groupName)!.push(textNode);
+    });
+
+    let groupCounter = 0;
+    for (const [groupName, gNodes] of folderMap) {
+      if (gNodes.length === 0) continue;
+      const minX = Math.min(...gNodes.map(n => n.x)) - GROUP_PADDING;
+      const minY = Math.min(...gNodes.map(n => n.y)) - GROUP_PADDING;
+      const maxX = Math.max(...gNodes.map(n => n.x + n.width)) + GROUP_PADDING;
+      const maxY = Math.max(...gNodes.map(n => n.y + n.height)) + GROUP_PADDING;
+
+      groupNodes.push({
+        type: 'group',
+        id: `rag-group-${groupCounter++}`,
+        x: minX,
+        y: minY,
+        width: maxX - minX,
+        height: maxY - minY,
+        label: groupName === '__root__' ? t('canvas.rootGroup') : groupName,
+        color: '6',
+      });
+    }
+  }
+
+  return { nodes: [...groupNodes, ...canvasNodes], edges: canvasEdges };
 }

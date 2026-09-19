@@ -4,7 +4,8 @@ import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { mount, unmount } from 'svelte';
 import type LuminaPlugin from '../../main';
 
-export const DEBUG_VIEW_TYPE = 'lumina-debug-panel';
+import { DEBUG_VIEW_TYPE } from '../../shared/constants/viewTypes';
+export { DEBUG_VIEW_TYPE };
 
 export class DebugView extends ItemView {
 	private plugin: LuminaPlugin;

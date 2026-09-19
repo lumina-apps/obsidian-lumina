@@ -955,6 +955,7 @@
     "noticeTruncated": "Le nombre de nœuds a dépassé le maximum ({{max}}). Certains nœuds ont été exclus.",
     "noticeNoFiles": "Aucun fichier markdown trouvé dans ce dossier.",
     "noticeError": "Une erreur s'est produite lors de la génération du toile.",
+    "rootGroup": "Racine",
     "settings": {
       "depth": {
         "name": "Profondeur d'exploration",

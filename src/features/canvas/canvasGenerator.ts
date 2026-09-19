@@ -5,14 +5,15 @@
  */
 
 import type { App } from 'obsidian';
-import { Notice, TFile, TFolder } from 'obsidian';
+import { Notice, Platform, TFile, TFolder, normalizePath } from 'obsidian';
 import { collectGraph, buildCanvasData, addFolderGroups } from './canvasBuilder';
 import type { CanvasBuildOptions } from './canvasTypes';
 import { buildRagGraphCanvasData } from './ragGraphCanvasExporter';
 import type { RagGraphCanvasOptions } from './ragGraphCanvasExporter';
-import type { GraphData } from '../graph/graphDataBuilder';
+import type { GraphData } from '../../shared/types/graph.types';
 import { t } from '../../shared/locales/helpers';
 import { debugLogger } from '../../shared/debugLogger';
+import { ensureFolderExists, sanitizeFilename } from '../../shared/utils/fileUtils';
 
 // ─── 파일명 생성 ──────────────────────────────────────────────────────────────
 
@@ -23,13 +24,15 @@ function getTimestamp(): string {
 }
 
 async function resolveOutputPath(app: App, baseName: string, outputFolder: string): Promise<string> {
-	// 출력 폴더 생성 (없을 경우)
-	if (!(await app.vault.adapter.exists(outputFolder))) {
-		await app.vault.createFolder(outputFolder);
-	}
+	const sanitizedBase = sanitizeFilename(baseName);
+	const trimmedFolder = outputFolder.trim();
+	const cleanFolder = trimmedFolder === '/' || trimmedFolder === '' ? '' : normalizePath(trimmedFolder);
 
-	const base = `${outputFolder}/${baseName}`;
-	let candidate = `${base}.canvas`;
+	const candidateBase = cleanFolder ? `${cleanFolder}/${sanitizedBase}` : sanitizedBase;
+	const candidate = normalizePath(`${candidateBase}.canvas`);
+
+	// 필요한 부모 폴더가 존재하지 않으면 재귀적으로 생성
+	await ensureFolderExists(app, candidate);
 
 	if (!(await app.vault.adapter.exists(candidate))) {
 		return candidate;
@@ -37,10 +40,15 @@ async function resolveOutputPath(app: App, baseName: string, outputFolder: strin
 
 	// 중복 시 suffix 추가
 	let i = 1;
-	while (await app.vault.adapter.exists(`${base}-${i}.canvas`)) {
+	while (await app.vault.adapter.exists(normalizePath(`${candidateBase}-${i}.canvas`))) {
 		i++;
 	}
-	return `${base}-${i}.canvas`;
+	return normalizePath(`${candidateBase}-${i}.canvas`);
+}
+
+async function openCanvasFile(app: App, canvasFile: TFile): Promise<void> {
+	const leaf = Platform.isMobile ? app.workspace.getLeaf(true) : app.workspace.getLeaf(false);
+	await leaf.openFile(canvasFile);
 }
 
 // ─── 단일 노트 기준 Canvas 생성 ──────────────────────────────────────────────
@@ -76,7 +84,7 @@ export async function generateCanvasForFile(
 		const baseName = `${file.basename}-canvas-${getTimestamp()}`;
 		const outputPath = await resolveOutputPath(app, baseName, outputFolder);
 
-		await app.vault.create(outputPath, json);
+		const canvasFile = await app.vault.create(outputPath, json);
 
 		debugLogger.logSystem(
 			'canvas',
@@ -88,15 +96,11 @@ export async function generateCanvasForFile(
 		}
 
 		// 생성된 캔버스 파일 열기
-		const canvasFile = app.vault.getFileByPath(outputPath);
-		if (canvasFile) {
-			await app.workspace.getLeaf(false).openFile(canvasFile);
-		}
+		await openCanvasFile(app, canvasFile);
 
 		new Notice(t('canvas.noticeCreated', { name: file.basename }), 3000);
 	} catch (e) {
-		debugLogger.logError('canvas', new Error(`Canvas 생성 실패 (file=${file.path}): ${e instanceof Error ? e.message : String(e)}`));
-		console.error('[Lumina Canvas] 생성 실패:', e);
+		debugLogger.logError('canvas', new Error(`Failed to generate canvas for file ${file.path}: ${e instanceof Error ? e.message : String(e)}`));
 		new Notice(t('canvas.noticeError'), 5000);
 	}
 }
@@ -151,7 +155,7 @@ export async function generateCanvasForFolder(
 		const json = JSON.stringify(canvasData, null, 2);
 		const baseName = `${folder.name}-canvas-${getTimestamp()}`;
 		const outputPath = await resolveOutputPath(app, baseName, outputFolder);
-		await app.vault.create(outputPath, json);
+		const canvasFile = await app.vault.create(outputPath, json);
 
 		debugLogger.logSystem(
 			'canvas',
@@ -164,13 +168,9 @@ export async function generateCanvasForFolder(
 			new Notice(t('canvas.noticeFolderCreated', { name: folder.name, count: 1 }), 3000);
 		}
 
-		const canvasFile = app.vault.getFileByPath(outputPath);
-		if (canvasFile) {
-			await app.workspace.getLeaf(false).openFile(canvasFile);
-		}
+		await openCanvasFile(app, canvasFile);
 	} catch (e) {
-		debugLogger.logError('canvas', new Error(`폴더 캔버스 생성 실패 (folder=${folder.path}): ${e instanceof Error ? e.message : String(e)}`));
-		console.error('[Lumina Canvas] 폴더 캔버스 생성 실패:', e);
+		debugLogger.logError('canvas', new Error(`Failed to generate canvas for folder ${folder.path}: ${e instanceof Error ? e.message : String(e)}`));
 		new Notice(t('canvas.noticeError'), 5000);
 	}
 }
@@ -197,19 +197,15 @@ export async function generateCanvasForRagGraph(
 		const baseName = `rag-graph-canvas-${getTimestamp()}`;
 		const outputPath = await resolveOutputPath(app, baseName, outputFolder);
 
-		await app.vault.create(outputPath, json);
+		const canvasFile = await app.vault.create(outputPath, json);
 
 		debugLogger.logSystem('canvas', `generateCanvasForRagGraph completed (output=${outputPath}, nodes=${graphData.nodes.length}, links=${graphData.links.length})`);
 
-		const canvasFile = app.vault.getFileByPath(outputPath);
-		if (canvasFile) {
-			await app.workspace.getLeaf(false).openFile(canvasFile);
-		}
+		await openCanvasFile(app, canvasFile);
 
 		new Notice(t('graph.exportSuccess'), 3000);
 	} catch (e) {
-		debugLogger.logError('canvas', new Error(`RAG 그래프 캔버스 생성 실패: ${e instanceof Error ? e.message : String(e)}`));
-		console.error('[Lumina Canvas] RAG 그래프 캔버스 생성 실패:', e);
+		debugLogger.logError('canvas', new Error(`Failed to generate RAG graph canvas: ${e instanceof Error ? e.message : String(e)}`));
 		new Notice(t('graph.exportError'), 5000);
 	}
 }

@@ -955,6 +955,7 @@
     "noticeTruncated": "El número de nodos superó el máximo ({{max}}). Se excluyeron algunos nodos.",
     "noticeNoFiles": "No se encontraron archivos markdown en esta carpeta.",
     "noticeError": "Ocurrió un error al generar el lienzo.",
+    "rootGroup": "Raíz",
     "settings": {
       "depth": {
         "name": "Profundidad de exploración",
