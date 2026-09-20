@@ -152,7 +152,6 @@
 	$effect(() => {
 		if (!$isRagEnabled) {
 			useRagContext = false;
-			includeActiveNote = false;
 		}
 	});
 

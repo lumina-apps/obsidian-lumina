@@ -40,7 +40,7 @@ export async function searchVault(
 	oramaDb: OramaStore | null,
 	embedFn: (texts: string[]) => Promise<number[][]>,
 	topK: number,
-	minSimilarity = 0.65,
+	minSimilarity = 0.0,
 	alpha = 0.5,
 	activeFilePath?: string | null,
 ): Promise<SearchResult[]> {

@@ -68,6 +68,12 @@ export function formatAnthropicMessages(messages: ChatMessage[]) {
 			merged.push(msg);
 		}
 	}
+
+	// Anthropic API 제약: 첫 메시지는 반드시 'user' 역할이어야 함
+	while (merged.length > 0 && merged[0].role !== 'user') {
+		merged.shift();
+	}
+
 	return merged;
 }
 

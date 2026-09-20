@@ -25,7 +25,7 @@ export function getGeminiSystemInstruction(messages: ChatMessage[]) {
  */
 export function formatGeminiMessages(messages: ChatMessage[]) {
 	const filtered = messages.filter(m => m.role !== 'system');
-	return filtered.map((m) => {
+	const formatted = filtered.map((m) => {
 		switch (m.role) {
 			case 'user':
 				return formatUserMessage(m);
@@ -37,6 +37,13 @@ export function formatGeminiMessages(messages: ChatMessage[]) {
 				return { role: 'user', parts: [{ text: String(m.content) }] };
 		}
 	});
+
+	// Gemini API 제약: 첫 메시지는 반드시 'user' 역할이어야 함
+	while (formatted.length > 0 && formatted[0].role !== 'user') {
+		formatted.shift();
+	}
+
+	return formatted;
 }
 
 /**

@@ -101,5 +101,19 @@ describe('anthropic-message-formatter', () => {
 		expect(formatAnthropicTools(undefined)).toBeUndefined();
 		expect(formatAnthropicTools([])).toBeUndefined();
 	});
+
+	it('should strip leading assistant messages so first message is always user', () => {
+		const messages: ChatMessage[] = [
+			{ role: 'assistant', content: 'Orphan assistant message from truncated history' },
+			{ role: 'user', content: 'Hello' },
+			{ role: 'assistant', content: 'Hi there' },
+		];
+
+		const formatted = formatAnthropicMessages(messages);
+		expect(formatted.length).toBe(2);
+		expect(formatted[0].role).toBe('user');
+		expect(formatted[0].content).toBe('Hello');
+		expect(formatted[1].role).toBe('assistant');
+	});
 });
 

@@ -37,21 +37,25 @@ export function renderAdvancedSection(tab: LuminaSettingTab, el: HTMLElement): v
 	if (s.memoryMethod === 'tokens') {
 		new Setting(el)
 			.setName(t('settings.chat.memoryLimit.maxTokens'))
+			.setDesc(t('settings.chat.memoryLimit.desc'))
 			.addText(text => {
 				let composing = false;
 				const inputEl = text.inputEl;
 				inputEl.type = 'number';
+				inputEl.min = '500';
+				inputEl.step = '100';
+				inputEl.placeholder = '8000';
 				inputEl.addEventListener('compositionstart', () => { composing = true; });
 				inputEl.addEventListener('compositionend', () => {
 					composing = false;
 					const n = parseInt(inputEl.value);
-					s.maxContextTokens = isNaN(n) ? 8000 : n;
+					s.maxContextTokens = isNaN(n) ? 8000 : Math.max(500, n);
 					void tab.saveAndSync();
 				});
 				text.setValue(String(s.maxContextTokens)).onChange(wrapAsync(async (val) => {
 					if (composing) return;
 					const n = parseInt(val);
-					s.maxContextTokens = isNaN(n) ? 8000 : n;
+					s.maxContextTokens = isNaN(n) ? 8000 : Math.max(500, n);
 					await tab.saveAndSync();
 				}));
 			});

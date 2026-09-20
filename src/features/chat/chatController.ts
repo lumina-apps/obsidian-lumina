@@ -82,7 +82,7 @@ export class ChatController {
 		const updatedAttachments = await resolveAttachmentsWithActiveNote(
 			this.app,
 			attachments,
-			connections.ragEnabled && (options?.includeActiveNote ?? rag.includeActiveNote),
+			options?.includeActiveNote ?? rag.includeActiveNote,
 		);
 
 		const userMsg: UIChatMessage = {

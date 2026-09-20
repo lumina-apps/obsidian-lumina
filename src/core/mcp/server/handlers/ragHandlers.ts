@@ -30,7 +30,7 @@ export const ragSearchHandler = async (
 	const minSim =
 		typeof rawMinSim === 'number'
 			? Math.max(0, Math.min(1, rawMinSim))
-			: 0.65;
+			: (ctx.plugin.settings.rag.minSimilarity ?? 0.0);
 
 	try {
 		const results = await searchVault(

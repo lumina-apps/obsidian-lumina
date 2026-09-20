@@ -171,4 +171,34 @@ describe('Chat Flow & Saving Integration', () => {
 		// 히스토리 저장 호출 완료 확인
 		expect(saveSession).toHaveBeenCalled();
 	});
+
+	it('should include active note when includeActiveNote is true even if ragEnabled is false', async () => {
+		const mockFile = { path: 'ActiveNote.md', basename: 'ActiveNote', extension: 'md' };
+		mockPlugin.app.workspace.getActiveFile = vi.fn().mockReturnValue(mockFile);
+		mockPlugin.app.vault.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
+		mockPlugin.app.vault.read = vi.fn().mockResolvedValue('Content of active note');
+
+		const controller = new ChatController(mockPlugin);
+		currentSessionId.set('test-session-active-note');
+
+		// ragEnabled is false in mockPlugin.settings.connections
+		expect(mockPlugin.settings.connections.ragEnabled).toBe(false);
+
+		const sendPromise = controller.sendMessage(
+			'Summarize active note',
+			[],
+			'test-provider-1',
+			'model-abc',
+			{ includeActiveNote: true }
+		);
+
+		await vi.advanceTimersByTimeAsync(100);
+		await sendPromise;
+
+		const msgs = getMessages();
+		expect(msgs.length).toBe(2);
+		expect(msgs[0].attachments?.length).toBe(1);
+		expect(msgs[0].attachments?.[0].type).toBe('active_note');
+		expect(msgs[0].attachments?.[0].path).toBe('ActiveNote.md');
+	});
 });

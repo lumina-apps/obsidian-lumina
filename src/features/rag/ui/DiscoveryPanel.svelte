@@ -44,7 +44,7 @@
 	let stagedTokenCount = $derived(
 		$discoveryState.stagedItems.reduce((acc, item) => acc + Math.floor(item.chunk.text.length / 4), 0)
 	);
-	let maxTokens = $derived(plugin.settings.chat.maxContextTokens || 128000);
+	const maxTokens = 128000;
 
 	// ── 마운트 시 활성 파일 초기화 ──
 	onMount(() => {
