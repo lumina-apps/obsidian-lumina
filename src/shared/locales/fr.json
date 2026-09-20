@@ -265,7 +265,11 @@
         "unknownModel": "Modèle inconnu",
         "exportSuccess": "Exporté vers le dossier Lumina Exports avec succès.",
         "exportFail": "Échec de l'exportation de la session.",
-        "exportToolTip": "Exporter la session"
+        "exportToolTip": "Exporter la session",
+        "searchPlaceholder": "Rechercher par titre ou modèle...",
+        "rename": "Renommer",
+        "renameSuccess": "Discussion renommée.",
+        "renameFail": "Échec du renommage de la discussion."
       },
       "sendMode": {
         "name": "Mode d'envoi de message",
@@ -651,7 +655,8 @@
     "back": "Retour",
     "settings": "Paramètres",
     "loading": "Chargement...",
-    "refresh": "Actualiser"
+    "refresh": "Actualiser",
+    "noResults": "Aucun résultat de recherche trouvé."
   },
   "discovery": {
     "tabName": "Découverte intelligente",

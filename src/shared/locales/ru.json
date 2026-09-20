@@ -265,7 +265,11 @@
         "unknownModel": "Неизвестная модель",
         "exportSuccess": "Успешно экспортировано в папку Lumina Exports.",
         "exportFail": "Не удалось экспортировать сеанс.",
-        "exportToolTip": "Экспорт сеанса"
+        "exportToolTip": "Экспорт сеанса",
+        "searchPlaceholder": "Поиск по названию или модели...",
+        "rename": "Переименовать",
+        "renameSuccess": "Чат переименован.",
+        "renameFail": "Не удалось переименовать чат."
       },
       "sendMode": {
         "name": "Режим отправки сообщений",
@@ -651,7 +655,8 @@
     "back": "Назад",
     "settings": "Настройки",
     "loading": "Загрузка...",
-    "refresh": "Обновить"
+    "refresh": "Обновить",
+    "noResults": "Результатов поиска не найдено."
   },
   "discovery": {
     "tabName": "Умный поиск (Smart Discovery)",

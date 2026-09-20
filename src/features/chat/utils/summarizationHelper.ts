@@ -99,7 +99,7 @@ function applySummaryToStoreAndHistory(
 		if (sessionId) {
 			const session: ChatSession = {
 				id: sessionId,
-				title: get(currentSessionTitle) || '새 대화',
+				title: get(currentSessionTitle) || t('chat.newChat'),
 				messages: get(messages),
 				createdAt: get(messages)[0]?.timestamp || Date.now(),
 				updatedAt: Date.now(),
@@ -109,7 +109,7 @@ function applySummaryToStoreAndHistory(
 				summaryUpToMessageId: newUpToId,
 			};
 			const project = getActiveProject();
-			const basePath = chat.historyPath;
+			const basePath = chat.historyPath?.trim() || 'chatHistory';
 			const historyPath = project?.historySubfolder
 				? normalizePath(`${basePath}/${project.historySubfolder}`)
 				: basePath;

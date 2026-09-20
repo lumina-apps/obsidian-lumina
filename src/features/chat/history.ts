@@ -3,9 +3,47 @@ import { t } from '../../shared/locales/helpers';
 import type { ChatSession, UIChatMessage } from '../../shared/types/chat.types';
 import type { LLMProviderConfig } from '../../shared/types/settings.types';
 import { debugLogger } from '../../shared/debugLogger';
+/** 안전한 세션 제목 정제 (Windows 금지문자 및 말미 마침표/공백 제거) */
+export function sanitizeSafeTitle(title: string): string {
+	const stripped = title.replace(/[\\/:*?"<>|]/g, '_').replace(/[.\s]+$/, '').trim();
+	return stripped || t('chat.newChat');
+}
+
+/**
+ * 대상 폴더 내에서 파일명이 중복되지 않도록 (1), (2) 접미사를 붙여 고유 경로 반환.
+ * 대상 파일이 이미 존재하더라도 existingFile과 동일한 파일인 경우는 그대로 반환.
+ */
+export async function getAvailableHistoryPath(
+	app: App,
+	folderPath: string,
+	baseFilename: string,
+	existingFile: TFile | null,
+): Promise<string> {
+	let candidateName = baseFilename;
+	let counter = 1;
+	const dotIdx = baseFilename.lastIndexOf('.');
+	const nameWithoutExt = dotIdx !== -1 ? baseFilename.slice(0, dotIdx) : baseFilename;
+	const ext = dotIdx !== -1 ? baseFilename.slice(dotIdx) : '';
+
+	for (let i = 0; i < 100; i++) {
+		const candidatePath = normalizePath(`${folderPath}/${candidateName}`);
+		const abstractFile = app.vault.getAbstractFileByPath(candidatePath);
+		if (!abstractFile || (existingFile && abstractFile.path === existingFile.path)) {
+			return candidatePath;
+		}
+		if (!(abstractFile instanceof TFile)) {
+			return candidatePath;
+		}
+		candidateName = `${nameWithoutExt} (${counter})${ext}`;
+		counter++;
+	}
+	return normalizePath(`${folderPath}/${baseFilename}`);
+}
+
 /** 특정 디렉토리 내 .md 파일만 가져온다 (vault 전체 스캔 방지) */
 function getHistoryFiles(app: App, basePath: string): TFile[] {
-	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
+	const cleanBase = (basePath?.trim() || 'chatHistory').replace(/[/\\]+$/, '');
+	const normalBase = normalizePath(cleanBase);
 	const folder = app.vault.getAbstractFileByPath(normalBase);
 	const files: TFile[] = [];
 	if (folder instanceof TFolder) {
@@ -22,6 +60,9 @@ function getHistoryFiles(app: App, basePath: string): TFile[] {
 
 export async function saveSession(app: App, session: ChatSession, basePath: string): Promise<void> {
 	debugLogger.logSystem('history', `saveSession started (sessionId=${session.id}, title="${session.title}", basePath=${basePath})`);
+	const cleanBase = (basePath?.trim() || 'chatHistory').replace(/[/\\]+$/, '');
+	const normalBase = normalizePath(cleanBase);
+
 	// 파일명: YYMMDD_HHMM - [title]
 	const dateObj = new Date(session.createdAt);
 	const yy = String(dateObj.getFullYear()).slice(2);
@@ -29,11 +70,8 @@ export async function saveSession(app: App, session: ChatSession, basePath: stri
 	const dd = String(dateObj.getDate()).padStart(2, '0');
 	const hh = String(dateObj.getHours()).padStart(2, '0');
 	const min = String(dateObj.getMinutes()).padStart(2, '0');
-	const safeTitle = session.title.replace(/[\\/:*?"<>|]/g, '_').trim();
+	const safeTitle = sanitizeSafeTitle(session.title);
 	const filename = `${yy}${mm}${dd}_${hh}${min} - ${safeTitle}.md`;
-
-	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
-	const filePath = normalizePath(`${normalBase}/${filename}`);
 
 	const content = serializeSession(session);
 
@@ -53,8 +91,8 @@ export async function saveSession(app: App, session: ChatSession, basePath: stri
 		for (const f of files) {
 			try {
 				const text = await app.vault.cachedRead(f);
-				const idVal = parseFrontmatterBlock(text, 'id');
-				if (idVal === session.id) {
+				const fm = extractFrontmatter(text);
+				if (fm?.id === session.id) {
 					existingFile = f;
 					break;
 				}
@@ -62,15 +100,17 @@ export async function saveSession(app: App, session: ChatSession, basePath: stri
 		}
 	}
 
+	const targetFilePath = await getAvailableHistoryPath(app, normalBase, filename, existingFile ?? null);
+
 	if (existingFile) {
-		if (existingFile.name !== filename) {
-			await app.vault.rename(existingFile, filePath);
+		if (existingFile.path !== targetFilePath) {
+			await app.vault.rename(existingFile, targetFilePath);
 		}
 		await app.vault.modify(existingFile, content);
 		debugLogger.logSystem('history', `saveSession: updated existing session file (${existingFile.path})`);
 	} else {
-		await app.vault.create(filePath, content);
-		debugLogger.logSystem('history', `saveSession: created new session file (${filePath})`);
+		await app.vault.create(targetFilePath, content);
+		debugLogger.logSystem('history', `saveSession: created new session file (${targetFilePath})`);
 	}
 }
 
@@ -86,41 +126,49 @@ interface HistoryFrontmatter {
 	model?: string;
 }
 
-/** frontmatter 블록(파일 첫 번째 --- ... ---) 내에서만 키를 찾는다. */
-function parseFrontmatterBlock(text: string, key: string): string | undefined {
+/** frontmatter 블록(파일 첫 번째 --- ... ---)의 모든 키-값을 1회 정규식으로 추출한다. */
+export function extractFrontmatter(text: string): Record<string, string> | null {
 	const fmMatch = text.match(/^---\r?\n([\s\S]*?)\r?\n---/m);
-	if (!fmMatch) return undefined;
-	const fmText = fmMatch[1];
-	const match = fmText.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'));
-	return match?.[1]?.trim();
+	if (!fmMatch) return null;
+	const result: Record<string, string> = {};
+	for (const line of fmMatch[1].split(/\r?\n/)) {
+		const colonIdx = line.indexOf(':');
+		if (colonIdx !== -1) {
+			const key = line.slice(0, colonIdx).trim();
+			const val = line.slice(colonIdx + 1).trim();
+			result[key] = val;
+		}
+	}
+	return result;
 }
 
 /**
- * 파일 내용에서 frontmatter 블록(첫 번째 --- ... ---)만 추출하여 파싱한다.
- * frontmatter 블록이 없거나 파싱해도 id를 찾지 못한 경우 null 반환.
+ * 파일 내용에서 frontmatter 블록을 추출하여 파싱한다.
+ * frontmatter 블록이 없거나 id가 없는 경우 null 반환.
  */
 function parseFrontmatterFromContent(content: string, file: TFile): HistoryFrontmatter | null {
-	const idVal = parseFrontmatterBlock(content, 'id');
-	if (!idVal) return null;
-
-	const titleVal = parseFrontmatterBlock(content, 'title');
-	const createdVal = parseFrontmatterBlock(content, 'created');
-	const updatedVal = parseFrontmatterBlock(content, 'updated');
-	const modelVal = parseFrontmatterBlock(content, 'model');
-	const providerVal = parseFrontmatterBlock(content, 'provider');
+	const fm = extractFrontmatter(content);
+	if (!fm || !fm.id) return null;
 
 	let parsedTitle = t('chat.newChat');
-	if (titleVal) {
-		try { parsedTitle = JSON.parse(titleVal) as string; } catch { parsedTitle = titleVal; }
+	if (fm.title) {
+		try {
+			parsedTitle = JSON.parse(fm.title) as string;
+		} catch {
+			parsedTitle = fm.title.replace(/^["']|["']$/g, '');
+		}
 	}
 
+	const modelVal = fm.model ? fm.model.replace(/^["']|["']$/g, '') : '';
+	const providerVal = fm.provider ? fm.provider.replace(/^["']|["']$/g, '') : '';
+
 	return {
-		id: idVal,
+		id: fm.id,
 		title: parsedTitle,
-		created: createdVal ?? file.stat.ctime,
-		updated: updatedVal ?? file.stat.mtime,
-		model: modelVal ?? '',
-		provider: providerVal ?? '',
+		created: fm.created ?? file.stat.ctime,
+		updated: fm.updated ?? file.stat.mtime,
+		model: modelVal,
+		provider: providerVal,
 	};
 }
 
@@ -152,7 +200,8 @@ function parseTimestampFromFilename(filename: string): number | null {
 
 export async function loadSessionsList(app: App, basePath: string): Promise<ChatSession[]> {
 	debugLogger.logSystem('history', `loadSessionsList started (basePath=${basePath})`);
-	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
+	const cleanBase = (basePath?.trim() || 'chatHistory').replace(/[/\\]+$/, '');
+	const normalBase = normalizePath(cleanBase);
 	const folderExists = await app.vault.adapter.exists(normalBase);
 	if (!folderExists) {
 		debugLogger.logSystem('history', `loadSessionsList: folder does not exist (${normalBase}), returning empty.`);
@@ -188,13 +237,16 @@ export async function loadSessionsList(app: App, basePath: string): Promise<Chat
 			const updatedAt = fileUpdated > 0 ? fileUpdated
 				: (parseTimestampFromFilename(file.name) ?? file.stat.mtime);
 
+			const modelClean = fm.model ? String(fm.model).replace(/^["']|["']$/g, '') : '';
+			const providerClean = fm.provider ? String(fm.provider).replace(/^["']|["']$/g, '') : '';
+
 			sessions.push({
-				id: fm.id,
+				id: String(fm.id),
 				title: fm.title || t('chat.newChat'),
 				createdAt,
 				updatedAt,
-				providerId: fm.provider || '',
-				modelId: fm.model || '',
+				providerId: providerClean,
+				modelId: modelClean,
 				messages: [], // 목록에서는 메시지 본문을 로드하지 않음 (최적화)
 			});
 		}
@@ -226,7 +278,8 @@ async function findSessionFile(app: App, files: TFile[], sessionId: string): Pro
 	for (const f of files) {
 		try {
 			const text = await app.vault.cachedRead(f);
-			if (parseFrontmatterBlock(text, 'id') === sessionId) {
+			const fm = extractFrontmatter(text);
+			if (fm?.id === sessionId) {
 				return f;
 			}
 		} catch { /* ignore */ }
@@ -260,7 +313,8 @@ export function base64ToUtf8(base64: string): string {
 /** 세션 파일에서 숨김 JSON을 파싱해 ChatSession(메시지 포함) 복원 */
 export async function loadSession(app: App, sessionId: string, basePath: string): Promise<ChatSession | null> {
 	debugLogger.logSystem('history', `loadSession started (sessionId=${sessionId}, basePath=${basePath})`);
-	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
+	const cleanBase = (basePath?.trim() || 'chatHistory').replace(/[/\\]+$/, '');
+	const normalBase = normalizePath(cleanBase);
 	const files = getHistoryFiles(app, normalBase);
 	
 	const file = await findSessionFile(app, files, sessionId);
@@ -271,11 +325,12 @@ export async function loadSession(app: App, sessionId: string, basePath: string)
 
 	const content = await app.vault.read(file);
 	
-	// V2 포맷 우선 시도 (base64 인코딩), V1 폴백 (하위 호환)
-	const matchV2 = content.match(/<!-- LUMINA_HISTORY_DATA_V2:\s*(\S+)\s*-->/);
+	// V2 포맷 우선 시도 (base64 인코딩 - 공백/줄바꿈 관용 처리), V1 폴백 (하위 호환)
+	const matchV2 = content.match(/<!-- LUMINA_HISTORY_DATA_V2:\s*([\s\S]*?)\s*-->/);
 	if (matchV2?.[1]) {
 		try {
-			const parsed = JSON.parse(base64ToUtf8(matchV2[1])) as ChatSession;
+			const cleanBase64 = matchV2[1].replace(/\s+/g, '');
+			const parsed = JSON.parse(base64ToUtf8(cleanBase64)) as ChatSession;
 			return parsed;
 		} catch (e) {
 			debugLogger.logError('history', e instanceof Error ? e : new Error(`Failed to parse V2 history data: ${e}`));
@@ -295,9 +350,26 @@ export async function loadSession(app: App, sessionId: string, basePath: string)
 	return null;
 }
 
+/** 세션 제목 변경 */
+export async function renameSession(
+	app: App,
+	sessionId: string,
+	newTitle: string,
+	basePath: string,
+): Promise<ChatSession | null> {
+	const trimmedTitle = newTitle.trim() || t('chat.newChat');
+	const session = await loadSession(app, sessionId, basePath);
+	if (!session) return null;
+	session.title = trimmedTitle;
+	session.updatedAt = Date.now();
+	await saveSession(app, session, basePath);
+	return session;
+}
+
 /** 세션 파일 삭제 */
 export async function deleteSession(app: App, sessionId: string, basePath: string): Promise<boolean> {
-	const normalBase = normalizePath(basePath.replace(/[/\\]+$/, ''));
+	const cleanBase = (basePath?.trim() || 'chatHistory').replace(/[/\\]+$/, '');
+	const normalBase = normalizePath(cleanBase);
 	const files = getHistoryFiles(app, normalBase);
 	
 	const file = await findSessionFile(app, files, sessionId);
@@ -381,22 +453,33 @@ export async function exportSessionToMarkdown(app: App, session: ChatSession): P
 	const dd = String(dateObj.getDate()).padStart(2, '0');
 	const hh = String(dateObj.getHours()).padStart(2, '0');
 	const min = String(dateObj.getMinutes()).padStart(2, '0');
-	const safeTitle = session.title.replace(/[\\/:*?"<>|]/g, '_').trim();
+	const safeTitle = sanitizeSafeTitle(session.title);
 	const filename = `${yy}${mm}${dd}_${hh}${min} - ${safeTitle}.md`;
 
 	const exportFolder = normalizePath('Lumina Exports');
-	const filePath = normalizePath(`${exportFolder}/${filename}`);
-
 	if (!(await app.vault.adapter.exists(exportFolder))) {
 		await app.vault.createFolder(exportFolder);
 	}
+
+	const targetPath = await getAvailableHistoryPath(app, exportFolder, filename, null);
 
 	const body = session.messages
 		.filter(m => m.role !== 'system')
 		.map(m => {
 			const label = m.role === 'user' ? '**👤 You**' : `**✦ Lumina** _(${m.model ?? ''})_`;
 			const time = new Date(m.timestamp).toLocaleTimeString();
-			const content = m.role === 'assistant' ? sanitizeDisplayContent(m.content) : m.content;
+			let content = m.role === 'assistant' ? sanitizeDisplayContent(m.content) : m.content;
+
+			if (m.attachments && m.attachments.length > 0) {
+				const attList = m.attachments.map(a => a.path ? `[[${a.path}|${a.name}]]` : `[[${a.name}]]`).join(', ');
+				content += `\n\n📎 **Attachments**: ${attList}`;
+			}
+
+			if (m.ragSources && m.ragSources.length > 0) {
+				const sourceList = Array.from(new Set(m.ragSources.map(s => `[[${s.filePath}]]`))).join(', ');
+				content += `\n\n📚 **Sources**: ${sourceList}`;
+			}
+
 			return `${label} · ${time}\n\n${content}\n`;
 		})
 		.join('\n---\n\n');
@@ -404,17 +487,9 @@ export async function exportSessionToMarkdown(app: App, session: ChatSession): P
 	const header = `# ${session.title}\n\n- **Date**: ${dateObj.toLocaleString()}\n- **Model**: ${session.modelId || 'Unknown'}\n\n---\n\n`;
 	const fullContent = header + body;
 
-	let file: TFile;
-	const existingFile = app.vault.getAbstractFileByPath(filePath);
-	if (existingFile instanceof TFile) {
-		file = existingFile;
-		await app.vault.modify(file, fullContent);
-	} else {
-		file = await app.vault.create(filePath, fullContent);
-	}
-
+	const file = await app.vault.create(targetPath, fullContent);
 	await app.workspace.getLeaf('tab').openFile(file);
-	debugLogger.logSystem('history', `exportSessionToMarkdown completed (file=${filePath})`);
+	debugLogger.logSystem('history', `exportSessionToMarkdown completed (file=${targetPath})`);
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -422,7 +497,12 @@ export async function exportSessionToMarkdown(app: App, session: ChatSession): P
 export function generateTitle(messages: UIChatMessage[]): string {
 	const first = messages.find(m => m.role === 'user');
 	if (!first) return t('chat.newChat');
-	return first.content.slice(0, 40) + (first.content.length > 40 ? '…' : '');
+	const text = first.content?.trim();
+	if (!text && first.attachments && first.attachments.length > 0) {
+		return first.attachments[0].name;
+	}
+	if (!text) return t('chat.newChat');
+	return text.slice(0, 40) + (text.length > 40 ? '…' : '');
 }
 
 export async function generateTitleWithLLM(
@@ -463,7 +543,7 @@ export async function generateTitleWithLLM(
 		const title = sanitizeDisplayContent(rawContent).replace(/["']/g, '').trim();
 		return title || generateTitle(messages);
 	} catch (e) {
-		console.warn('Lumina: Failed to generate title with LLM, falling back to text extraction.', e);
+		debugLogger.logWarn('history', `Failed to generate title with LLM, falling back to text extraction: ${e}`);
 		return generateTitle(messages);
 	}
 }

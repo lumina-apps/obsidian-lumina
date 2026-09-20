@@ -36,11 +36,11 @@ export class ChatHistoryController {
 
 	/**
 	 * 활성 프로젝트를 기반으로 히스토리 저장 경로를 계산합니다.
-	 * - Default 프로젝트(historySubfolder=''): chat.historyPath 그대로
+	 * - Default 프로젝트(historySubfolder=''): chat.historyPath 그대로 (빈 값시 chatHistory 기본값)
 	 * - 다른 프로젝트: chat.historyPath/historySubfolder
 	 */
-	private resolveHistoryPath(): string {
-		const basePath = this.plugin.settings.chat.historyPath;
+	public resolveHistoryPath(): string {
+		const basePath = this.plugin.settings.chat.historyPath?.trim() || 'chatHistory';
 		const project = getActiveProject();
 		if (!project.historySubfolder) {
 			return basePath;
@@ -61,6 +61,11 @@ export class ChatHistoryController {
 
 		const currentId = get(currentSessionId);
 		const newId = currentId || crypto.randomUUID();
+
+		// 비동기 타이틀 생성 대기 중 새 대화가 섞이지 않도록 세션 ID를 미리 확정
+		if (!currentId) {
+			currentSessionId.set(newId);
+		}
 
 		let title = get(currentSessionTitle);
 		if (!title) {
@@ -89,7 +94,11 @@ export class ChatHistoryController {
 					title = generateTitle(msgs);
 				}
 			}
-			currentSessionTitle.set(title);
+
+			// 비동기 LLM 대기 도중 새 대화(resetChat)나 다른 세션으로 전환되었으면 현재 스토어 오염 방지
+			if (get(currentSessionId) === newId) {
+				currentSessionTitle.set(title);
+			}
 		}
 
 		// 히스토리 저장 전 assistant 메시지에서 생각 과정(<think> 태그)을 제거
@@ -100,7 +109,7 @@ export class ChatHistoryController {
 
 		const session: ChatSession = {
 			id: newId,
-			title,
+			title: title || t('chat.newChat'),
 			messages: sanitizedMsgs,
 			createdAt: msgs[0].timestamp,
 			updatedAt: Date.now(),
@@ -109,13 +118,6 @@ export class ChatHistoryController {
 			sessionSummary: get(sessionSummary),
 			summaryUpToMessageId: get(summaryUpToMessageId),
 		};
-
-		// 저장 시도 전에 sessionId를 먼저 설정한다.
-		// - 첫 저장(sessionId 없음)이면 새 ID를 store에 등록한다
-		// - 저장 자체가 실패해도 이후 subscribe에서 같은 sessionId로 재시도 가능하다
-		if (!currentId) {
-			currentSessionId.set(newId);
-		}
 
 		const historyPath = this.resolveHistoryPath();
 		try {
@@ -128,6 +130,29 @@ export class ChatHistoryController {
 	/** 히스토리 세션 목록을 반환합니다. */
 	async fetchSessions(): Promise<ChatSession[]> {
 		return loadSessionsList(this.app, this.resolveHistoryPath());
+	}
+
+	/** 특정 세션의 제목을 변경합니다. */
+	async renameSession(sessionId: string, newTitle: string): Promise<boolean> {
+		const trimmed = newTitle.trim();
+		if (!trimmed) return false;
+		try {
+			const { renameSession } = await import('./history');
+			const updated = await renameSession(this.app, sessionId, trimmed, this.resolveHistoryPath());
+			if (updated) {
+				if (get(currentSessionId) === sessionId) {
+					currentSessionTitle.set(trimmed);
+				}
+				new Notice(t('settings.chat.history.renameSuccess'));
+				return true;
+			}
+			new Notice(t('settings.chat.history.renameFail'));
+			return false;
+		} catch (e) {
+			debugLogger.logError('history', e instanceof Error ? e : new Error(String(e)));
+			new Notice(t('settings.chat.history.renameFail'));
+			return false;
+		}
 	}
 
 	/** 특정 세션을 불러와 현재 대화창을 덮어씁니다. */

@@ -19,6 +19,10 @@ vi.mock('../../../shared/svgIcons', () => ({
 	SVG_REFRESH: '',
 	SVG_TRASH: '',
 	SVG_EXPORT: '',
+	SVG_EDIT: '',
+	SVG_CHECK: '',
+	SVG_CLOSE: '',
+	SVG_SEARCH: '',
 }));
 vi.mock('../../../shared/debugLogger', () => ({
 	debugLogger: { logError: vi.fn() },
@@ -45,6 +49,7 @@ function makeCtrl() {
 		),
 		restoreSession: vi.fn().mockResolvedValue(true),
 		removeSession: vi.fn().mockResolvedValue(true),
+		renameSession: vi.fn().mockResolvedValue(true),
 		history: { exportSession: vi.fn().mockResolvedValue(true) },
 	};
 }
@@ -101,6 +106,73 @@ describe('ChatHistoryList (regression: infinite loadSessions loop)', () => {
 			activeProjectId.set('project-c');
 			await new Promise((r) => setTimeout(r, 60));
 			expect(ctrl.fetchSessions).toHaveBeenCalledTimes(3);
+		} finally {
+			if (comp) unmount(comp);
+			target.remove();
+		}
+	});
+
+	it('entering rename mode and pressing Enter saves title without triggering onSessionSelect', async () => {
+		const ctrl = makeCtrl();
+		const onSessionSelect = vi.fn();
+		const target = document.createElement('div');
+		document.body.appendChild(target);
+		let comp: Record<string, unknown> | null = null;
+		try {
+			comp = mount(ChatHistoryList, {
+				target,
+				props: { ctrl: ctrl as never, onSessionSelect, onBack: () => {} },
+			});
+			await new Promise((r) => setTimeout(r, 60));
+
+			// Find the rename button
+			const renameBtn = target.querySelector('.lumina-history__action-btn') as HTMLButtonElement;
+			expect(renameBtn).toBeTruthy();
+			renameBtn.click();
+			await new Promise((r) => setTimeout(r, 30));
+
+			// Rename input should now be mounted
+			const input = target.querySelector('.lumina-history__rename-input') as HTMLInputElement;
+			expect(input).toBeTruthy();
+
+			// Change input value
+			input.value = 'New Renamed Title';
+			input.dispatchEvent(new Event('input'));
+
+			// Press Enter inside input
+			input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+			await new Promise((r) => setTimeout(r, 30));
+
+			expect(ctrl.renameSession).toHaveBeenCalledWith('s1', 'New Renamed Title');
+			// Crucial: onSessionSelect must NOT be called when pressing Enter during rename!
+			expect(onSessionSelect).not.toHaveBeenCalled();
+		} finally {
+			if (comp) unmount(comp);
+			target.remove();
+		}
+	});
+
+	it('displays empty search state using common.noResults when query matches nothing', async () => {
+		const ctrl = makeCtrl();
+		const target = document.createElement('div');
+		document.body.appendChild(target);
+		let comp: Record<string, unknown> | null = null;
+		try {
+			comp = mount(ChatHistoryList, {
+				target,
+				props: { ctrl: ctrl as never, onSessionSelect: () => {}, onBack: () => {} },
+			});
+			await new Promise((r) => setTimeout(r, 60));
+
+			const searchInput = target.querySelector('.lumina-history__search-input') as HTMLInputElement;
+			expect(searchInput).toBeTruthy();
+			searchInput.value = 'nonexistent_keyword_xyz';
+			searchInput.dispatchEvent(new Event('input'));
+			await new Promise((r) => setTimeout(r, 30));
+
+			const emptyEl = target.querySelector('.lumina-history__empty');
+			expect(emptyEl).toBeTruthy();
+			expect(emptyEl?.textContent?.trim()).toBe('common.noResults');
 		} finally {
 			if (comp) unmount(comp);
 			target.remove();

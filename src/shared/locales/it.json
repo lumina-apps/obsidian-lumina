@@ -265,7 +265,11 @@
         "unknownModel": "Modello sconosciuto",
         "exportSuccess": "Esportato con successo nella cartella Lumina Exports.",
         "exportFail": "Errore durante l'esportazione della sessione.",
-        "exportToolTip": "Esporta sessione"
+        "exportToolTip": "Esporta sessione",
+        "searchPlaceholder": "Cerca per titolo o modello...",
+        "rename": "Rinomina",
+        "renameSuccess": "Chat rinominata.",
+        "renameFail": "Impossibile rinominare la chat."
       },
       "sendMode": {
         "name": "Modalità di Invio Messaggi",
@@ -651,7 +655,8 @@
     "back": "Indietro",
     "settings": "Impostazioni",
     "loading": "Caricamento...",
-    "refresh": "Aggiorna"
+    "refresh": "Aggiorna",
+    "noResults": "Nessun risultato di ricerca trovato."
   },
   "discovery": {
     "tabName": "Smart Discovery",

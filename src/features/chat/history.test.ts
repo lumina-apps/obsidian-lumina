@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TFile, TFolder, type App } from 'obsidian';
-import { saveSession, loadSession, utf8ToBase64, base64ToUtf8 } from './history';
+import {
+	saveSession,
+	loadSession,
+	utf8ToBase64,
+	base64ToUtf8,
+	renameSession,
+	exportSessionToMarkdown,
+	loadSessionsList,
+	sanitizeSafeTitle,
+} from './history';
 import type { ChatSession } from '../../shared/types/chat.types';
 
 describe('chat history persistence', () => {
@@ -19,6 +28,9 @@ describe('chat history persistence', () => {
 				getAbstractFileByPath: vi.fn().mockImplementation((path: string) => {
 					// Normalize path without trailing slash
 					const cleanPath = path.replace(/[/\\]+$/, '');
+					if (virtualFiles.has(cleanPath)) {
+						return virtualFiles.get(cleanPath)!.file;
+					}
 					const folder = new TFolder();
 					folder.path = cleanPath;
 					for (const [filePath, fileData] of virtualFiles.entries()) {
@@ -61,6 +73,11 @@ describe('chat history persistence', () => {
 			},
 			fileManager: {
 				trashFile: vi.fn().mockResolvedValue(undefined),
+			},
+			workspace: {
+				getLeaf: vi.fn().mockReturnValue({
+					openFile: vi.fn().mockResolvedValue(undefined),
+				}),
 			},
 		} as unknown as App;
 	});
@@ -210,6 +227,157 @@ title: "유니코드 세션 🚀"
 		expect(loaded?.id).toBe('session-v2-legacy');
 		expect(loaded?.title).toBe('유니코드 세션 🚀');
 		expect(loaded?.messages[0].content).toBe('한글 질문 및 이모지 ✨');
+	});
+
+	it('should handle duplicate filenames by appending (1) without crashing', async () => {
+		const session1: ChatSession = {
+			id: 'session-dup-1',
+			title: 'Duplicate Title Test',
+			createdAt: 1700000000000,
+			updatedAt: 1700000000000,
+			providerId: 'openai',
+			modelId: 'gpt-4o',
+			messages: [{ id: 'm1', role: 'user', content: 'First chat', timestamp: 1700000000000, isStreaming: false }],
+		};
+
+		const session2: ChatSession = {
+			id: 'session-dup-2',
+			title: 'Duplicate Title Test',
+			createdAt: 1700000000000, // Same timestamp -> same minute -> same base filename!
+			updatedAt: 1700000000000,
+			providerId: 'openai',
+			modelId: 'gpt-4o',
+			messages: [{ id: 'm2', role: 'user', content: 'Second chat', timestamp: 1700000000000, isStreaming: false }],
+		};
+
+		await saveSession(mockApp, session1, 'Lumina/History');
+		await saveSession(mockApp, session2, 'Lumina/History');
+
+		const files = Array.from(virtualFiles.keys());
+		expect(files.length).toBe(2);
+		expect(files.some(f => f.includes('Duplicate Title Test.md'))).toBe(true);
+		expect(files.some(f => f.includes('Duplicate Title Test (1).md'))).toBe(true);
+
+		// Both sessions can be loaded by id
+		const loaded1 = await loadSession(mockApp, 'session-dup-1', 'Lumina/History');
+		const loaded2 = await loadSession(mockApp, 'session-dup-2', 'Lumina/History');
+		expect(loaded1).not.toBeNull();
+		expect(loaded2).not.toBeNull();
+		expect(loaded1?.id).toBe('session-dup-1');
+		expect(loaded2?.id).toBe('session-dup-2');
+	});
+
+	it('should tolerate newlines and spaces in V2 data comments', async () => {
+		const rawSession: ChatSession = {
+			id: 'session-multiline-v2',
+			title: 'Multiline Test',
+			createdAt: 1700000000000,
+			updatedAt: 1700000000000,
+			providerId: 'openai',
+			modelId: 'gpt-4o',
+			messages: [{ id: 'm1', role: 'user', content: 'Multiline base64', timestamp: 1700000000000, isStreaming: false }],
+		};
+		const encoded = utf8ToBase64(JSON.stringify(rawSession));
+		// Insert line breaks every 20 characters as linters or formatters might do
+		const chunked = encoded.match(/.{1,20}/g)?.join('\n   ') || encoded;
+
+		const fileContent = `---
+id: session-multiline-v2
+title: "Multiline Test"
+provider: openai
+model: "gpt-4o"
+---
+
+**👤 You** · 10:00:00 AM
+
+Multiline base64
+
+<!-- LUMINA_HISTORY_DATA_V2:
+   ${chunked}
+-->
+`;
+
+		const filePath = 'Lumina/History/231115_0000 - Multiline Test.md';
+		const file = new TFile();
+		file.path = filePath;
+		file.name = '231115_0000 - Multiline Test.md';
+		file.extension = 'md';
+		file.stat = { ctime: 1700000000000, mtime: 1700000000000, size: fileContent.length };
+		virtualFiles.set(filePath, { content: fileContent, file });
+
+		const loaded = await loadSession(mockApp, 'session-multiline-v2', 'Lumina/History');
+		expect(loaded).not.toBeNull();
+		expect(loaded?.id).toBe('session-multiline-v2');
+		expect(loaded?.title).toBe('Multiline Test');
+	});
+
+	it('should sanitize Windows unsafe trailing dots and spaces in safeTitle', () => {
+		expect(sanitizeSafeTitle('Test Title...')).toBe('Test Title');
+		expect(sanitizeSafeTitle('Test Title   ')).toBe('Test Title');
+		expect(sanitizeSafeTitle('Invalid /:*?"<>| chars')).toBe('Invalid ________ chars');
+		expect(sanitizeSafeTitle('   ')).toBe('New Chat');
+	});
+
+	it('should rename a session, updating title and file name', async () => {
+		const session: ChatSession = {
+			id: 'session-rename-test',
+			title: 'Initial Title',
+			createdAt: 1700000000000,
+			updatedAt: 1700000000000,
+			providerId: 'openai',
+			modelId: 'gpt-4o',
+			messages: [{ id: 'm1', role: 'user', content: 'Hello', timestamp: 1700000000000, isStreaming: false }],
+		};
+
+		await saveSession(mockApp, session, 'Lumina/History');
+		const renamed = await renameSession(mockApp, 'session-rename-test', 'Updated Title', 'Lumina/History');
+		expect(renamed).not.toBeNull();
+		expect(renamed?.title).toBe('Updated Title');
+
+		// Check file was renamed on disk
+		const files = Array.from(virtualFiles.keys());
+		expect(files.some(f => f.includes('Updated Title.md'))).toBe(true);
+		expect(files.some(f => f.includes('Initial Title.md'))).toBe(false);
+
+		const loaded = await loadSession(mockApp, 'session-rename-test', 'Lumina/History');
+		expect(loaded?.title).toBe('Updated Title');
+	});
+
+	it('should export session to markdown including attachments and RAG sources', async () => {
+		const sessionWithMeta: ChatSession = {
+			id: 'session-export-test',
+			title: 'Export Test',
+			createdAt: 1700000000000,
+			updatedAt: 1700000000000,
+			providerId: 'openai',
+			modelId: 'gpt-4o',
+			messages: [
+				{
+					id: 'm1',
+					role: 'user',
+					content: 'Explain this doc',
+					timestamp: 1700000000000,
+					isStreaming: false,
+					attachments: [{ type: 'file', path: 'notes/doc.md', name: 'doc.md' }],
+				},
+				{
+					id: 'm2',
+					role: 'assistant',
+					content: 'Here is the explanation.',
+					timestamp: 1700000005000,
+					isStreaming: false,
+					ragSources: [{ filePath: 'knowledge/faq.md' }],
+				},
+			],
+		};
+
+		await exportSessionToMarkdown(mockApp, sessionWithMeta);
+
+		const exportEntry = Array.from(virtualFiles.entries()).find(([k]) => k.startsWith('Lumina Exports/'));
+		expect(exportEntry).toBeDefined();
+		const exportedContent = exportEntry![1].content;
+		expect(exportedContent).toContain('📎 **Attachments**: [[notes/doc.md|doc.md]]');
+		expect(exportedContent).toContain('📚 **Sources**: [[knowledge/faq.md]]');
 	});
 });
 

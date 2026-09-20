@@ -265,7 +265,11 @@
         "unknownModel": "Modelo desconocido",
         "exportSuccess": "Exportado a la carpeta Lumina Exports correctamente.",
         "exportFail": "Error al exportar la sesión.",
-        "exportToolTip": "Exportar sesión"
+        "exportToolTip": "Exportar sesión",
+        "searchPlaceholder": "Buscar por título o modelo...",
+        "rename": "Renombrar",
+        "renameSuccess": "Chat renombrado.",
+        "renameFail": "Error al renombrar el chat."
       },
       "sendMode": {
         "name": "Modo de envío de mensajes",
@@ -651,7 +655,8 @@
     "back": "Atrás",
     "settings": "Ajustes",
     "loading": "Cargando...",
-    "refresh": "Actualizar"
+    "refresh": "Actualizar",
+    "noResults": "No se encontraron resultados de búsqueda."
   },
   "discovery": {
     "tabName": "Descubrimiento inteligente",

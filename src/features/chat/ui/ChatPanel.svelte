@@ -518,6 +518,12 @@
 			{#if ctrl}
 				<ChatHistoryList
 					{ctrl}
+					onBeforeSelect={async () => {
+						if ($isLoading) cancelStream();
+						if (ctrl && $messages.length > 0) {
+							await ctrl.saveHistory(selectedProviderId, selectedModelId);
+						}
+					}}
 					onSessionSelect={() => (showHistory = false)}
 					onBack={() => (showHistory = false)}
 				/>

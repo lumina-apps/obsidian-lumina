@@ -268,7 +268,11 @@
         "unknownModel": "Unknown Model",
         "exportSuccess": "Exported to Lumina Exports folder successfully.",
         "exportFail": "Failed to export session.",
-        "exportToolTip": "Export Session"
+        "exportToolTip": "Export Session",
+        "searchPlaceholder": "Search by title or model...",
+        "rename": "Rename",
+        "renameSuccess": "Chat renamed.",
+        "renameFail": "Failed to rename chat."
       },
       "context": {
         "activeNote": "Include Current Note: {{name}}",
@@ -654,7 +658,8 @@
     "back": "Back",
     "settings": "Settings",
     "loading": "Loading...",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "noResults": "No results found."
   },
   "discovery": {
     "tabName": "Smart Discovery",

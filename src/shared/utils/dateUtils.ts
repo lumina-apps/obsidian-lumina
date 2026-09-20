@@ -6,8 +6,13 @@ export function formatTime(ts: number, locale?: string): string {
 	});
 }
 
-/** 타임스탬프 → "M월 D일 HH:MM" */
-export function formatDate(ts: number): string {
+/** 타임스탬프 → 로케일에 맞춘 "M/D HH:MM" */
+export function formatDate(ts: number, locale?: string): string {
 	const d = new Date(ts);
-	return `${d.getMonth() + 1}월 ${d.getDate()}일 ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+	return d.toLocaleString(locale, {
+		month: "numeric",
+		day: "numeric",
+		hour: "2-digit",
+		minute: "2-digit",
+	});
 }

@@ -15,6 +15,8 @@ import {
 	isLoading,
 	getMessages,
 	messages,
+	sessionProviderId,
+	sessionModelId,
 } from '../../core/store/chatStore';
 import { get } from 'svelte/store';
 import type { UIChatMessage, ChatSession, ContextAttachment } from '../../shared/types/chat.types';
@@ -34,6 +36,7 @@ export class ChatController {
 	private lastModelId: string = '';
 	private _unsubMessages: (() => void) | null = null;
 	private _isSaving = false;
+	private _pendingSave: { providerId: string; modelId: string } | null = null;
 	private pendingApprovals = new Map<string, (approved: boolean) => void>();
 
 	constructor(plugin: LuminaPlugin) {
@@ -42,7 +45,9 @@ export class ChatController {
 		this.history = new ChatHistoryController(plugin);
 
 		this._unsubMessages = messages.subscribe(() => {
-			if (this.lastProviderId && this.lastModelId) {
+			const effectivePid = this.lastProviderId || get(sessionProviderId);
+			const effectiveMid = this.lastModelId || get(sessionModelId);
+			if (effectivePid && effectiveMid) {
 				// 스트리밍 중일 때는 저장을 지연시킴
 				const msgs = get(messages);
 				if (msgs.some(m => m.isStreaming)) return;
@@ -53,7 +58,8 @@ export class ChatController {
 					window.clearTimeout(this.autoSaveTimeout);
 				}
 				this.autoSaveTimeout = window.setTimeout(() => {
-					this.saveHistory(this.lastProviderId, this.lastModelId).catch((e: unknown) => {
+					this.autoSaveTimeout = null;
+					this.saveHistory(effectivePid, effectiveMid).catch((e: unknown) => {
 						debugLogger.logError('history', e instanceof Error ? e : new Error(String(e)));
 					});
 				}, 3000);
@@ -253,12 +259,20 @@ export class ChatController {
 	// ─── History Methods (Delegated to ChatHistoryController) ─────────────
 
 	async saveHistory(providerId: string, modelId: string): Promise<void> {
-		if (this._isSaving) return;
+		if (this._isSaving) {
+			this._pendingSave = { providerId, modelId };
+			return;
+		}
 		this._isSaving = true;
 		try {
 			await this.history.saveHistory(providerId, modelId);
 		} finally {
 			this._isSaving = false;
+			if (this._pendingSave) {
+				const next = this._pendingSave;
+				this._pendingSave = null;
+				void this.saveHistory(next.providerId, next.modelId);
+			}
 		}
 	}
 
@@ -266,8 +280,21 @@ export class ChatController {
 		return this.history.fetchSessions();
 	}
 
+	async renameSession(sessionId: string, newTitle: string): Promise<boolean> {
+		return this.history.renameSession(sessionId, newTitle);
+	}
+
 	async restoreSession(sessionId: string): Promise<boolean> {
-		return this.history.restoreSession(sessionId);
+		const success = await this.history.restoreSession(sessionId);
+		if (success) {
+			const sPid = get(sessionProviderId);
+			const sMid = get(sessionModelId);
+			if (sPid && sMid) {
+				this.lastProviderId = sPid;
+				this.lastModelId = sMid;
+			}
+		}
+		return success;
 	}
 
 	async removeSession(sessionId: string): Promise<boolean> {
@@ -302,6 +329,15 @@ export class ChatController {
 		if (this.autoSaveTimeout) {
 			window.clearTimeout(this.autoSaveTimeout);
 			this.autoSaveTimeout = null;
+
+			// 뷰 닫힘 시 대기 중이던 저장을 즉시 flush
+			const effectivePid = this.lastProviderId || get(sessionProviderId);
+			const effectiveMid = this.lastModelId || get(sessionModelId);
+			if (effectivePid && effectiveMid) {
+				void this.history.saveHistory(effectivePid, effectiveMid).catch((e: unknown) => {
+					debugLogger.logError('history', e instanceof Error ? e : new Error(String(e)));
+				});
+			}
 		}
 	}
 }

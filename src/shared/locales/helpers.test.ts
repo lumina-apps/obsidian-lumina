@@ -18,6 +18,9 @@ describe('Locale Helpers', () => {
 					memoryMethod: "Memory Method",
 				}
 			},
+			common: {
+				noResults: "No results found.",
+			},
 			greeting: "Hello {{name}}"
 		} as any);
 
@@ -26,6 +29,9 @@ describe('Locale Helpers', () => {
 				chat: {
 					memoryMethod: "메모리 방식",
 				}
+			},
+			common: {
+				noResults: "검색 결과가 없습니다.",
 			},
 			greeting: "안녕하세요 {{name}}"
 		} as any);
@@ -86,6 +92,11 @@ describe('Locale Helpers', () => {
 			await setLanguage('system');
 			// system 로케일 데이터가 로드되어 있지 않으므로 en으로 fallback되어야 함
 			expect(t('settings.chat.memoryMethod' as any)).toBe('Memory Method');
+		});
+
+		it('common.noResults 키가 en 기본 로케일에서 정상 조회된다', async () => {
+			await setLanguage('en');
+			expect(t('common.noResults')).toBe('No results found.');
 		});
 	});
 

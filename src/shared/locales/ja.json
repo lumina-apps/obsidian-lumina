@@ -265,7 +265,11 @@
         "unknownModel": "不明なモデル",
         "exportSuccess": "Lumina Exports フォルダにエクスポートしました。",
         "exportFail": "セッションのエクスポートに失敗しました。",
-        "exportToolTip": "チャットをエクスポート"
+        "exportToolTip": "セッションをエクスポート",
+        "searchPlaceholder": "タイトルやモデル名で検索...",
+        "rename": "名前変更",
+        "renameSuccess": "チャット名を変更しました。",
+        "renameFail": "チャット名の変更に失敗しました。"
       },
       "sendMode": {
         "name": "メッセージ送信モード",
@@ -651,7 +655,8 @@
     "back": "戻る",
     "settings": "設定",
     "loading": "読み込み中...",
-    "refresh": "更新"
+    "refresh": "更新",
+    "noResults": "検索結果がありません。"
   },
   "discovery": {
     "tabName": "スマートディスカバリー",

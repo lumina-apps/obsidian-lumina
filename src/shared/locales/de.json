@@ -265,7 +265,11 @@
         "unknownModel": "Unbekanntes Modell",
         "exportSuccess": "Erfolgreich in den Lumina Exports Ordner exportiert.",
         "exportFail": "Sitzung konnte nicht exportiert werden.",
-        "exportToolTip": "Sitzung exportieren"
+        "exportToolTip": "Sitzung exportieren",
+        "searchPlaceholder": "Nach Titel oder Modell suchen...",
+        "rename": "Umbenennen",
+        "renameSuccess": "Chat umbenannt.",
+        "renameFail": "Fehler beim Umbenennen des Chats."
       },
       "sendMode": {
         "name": "Nachrichtensende-Modus",
@@ -659,7 +663,8 @@
     "back": "Zurück",
     "settings": "Einstellungen",
     "loading": "Wird geladen...",
-    "refresh": "Aktualisieren"
+    "refresh": "Aktualisieren",
+    "noResults": "Keine Suchergebnisse gefunden."
   },
   "discovery": {
     "tabName": "Smart Discovery",

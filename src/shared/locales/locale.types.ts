@@ -296,6 +296,10 @@ export interface TranslationSettingsChatHistory {
   exportSuccess: string;
   exportFail: string;
   exportToolTip: string;
+  searchPlaceholder: string;
+  rename: string;
+  renameSuccess: string;
+  renameFail: string;
 }
 
 export interface TranslationSettingsChatContext {
@@ -756,6 +760,7 @@ export interface TranslationCommon {
   settings: string;
   loading: string;
   refresh: string;
+  noResults: string;
 }
 
 // discovery

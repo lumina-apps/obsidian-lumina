@@ -265,7 +265,11 @@
         "unknownModel": "未知模型",
         "exportSuccess": "成功匯出至 Lumina Exports 資料夾。",
         "exportFail": "匯出對話失敗。",
-        "exportToolTip": "匯出對話"
+        "exportToolTip": "匯出對話",
+        "searchPlaceholder": "按標題或模型搜尋...",
+        "rename": "重新命名",
+        "renameSuccess": "聊天已重新命名。",
+        "renameFail": "重新命名聊天失敗。"
       },
       "sendMode": {
         "name": "訊息發送方式",
@@ -651,7 +655,8 @@
     "back": "返回",
     "settings": "設定",
     "loading": "載入中...",
-    "refresh": "重新整理"
+    "refresh": "重新整理",
+    "noResults": "未找到搜尋結果。"
   },
   "discovery": {
     "tabName": "智能探索",
