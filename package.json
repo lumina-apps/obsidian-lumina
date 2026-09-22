@@ -9,7 +9,8 @@
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"test:coverage": "vitest run --coverage"
+		"test:coverage": "vitest run --coverage",
+		"test:e2e": "node scripts/e2e-cdp-runner.mjs"
 	},
 	"keywords": [],
 	"author": "",
