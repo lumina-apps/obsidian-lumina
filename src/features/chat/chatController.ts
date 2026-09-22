@@ -255,7 +255,8 @@ export class ChatController {
 		if (targetIndex === -1) return;
 
 		const targetMsg = msgs[targetIndex];
-		const attachments = targetMsg.attachments || [];
+		// 이전 메시지에 자동 포함되었던 active_note는 제거하여, 현재의 활성 노트 및 옵션에 따라 올바르게 재반영되도록 함
+		const attachments = (targetMsg.attachments || []).filter(a => a.type !== 'active_note');
 
 		messages.set(msgs.slice(0, targetIndex));
 

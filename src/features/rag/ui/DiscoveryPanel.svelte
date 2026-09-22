@@ -47,11 +47,11 @@
 		$discoveryState.stagedItems.reduce((acc, item) => acc + estimateTokens(item.chunk.text), 0)
 	);
 	const currentProvider = $derived(
-		plugin.settings.providers.find(p => p.id === $sessionProviderId)
+		(plugin.settings.connections?.providers ?? []).find(p => p.id === $sessionProviderId)
 	);
 	const maxTokens = $derived(
 		getEffectiveContextLimit(
-			$sessionModelId ?? plugin.settings.chat.quickActionModelId,
+			$sessionModelId ?? plugin.settings.connections?.quickActionModelId,
 			$settingsStore?.chat,
 			currentProvider?.type
 		)

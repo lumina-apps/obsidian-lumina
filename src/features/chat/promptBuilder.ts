@@ -186,8 +186,9 @@ export function buildMessages(
 			debugLogger.logWarn('rag', t('uiMessages.ragTooLong', { max: MAX_RAG_CHARS }) || `RAG context exceeded ${MAX_RAG_CHARS} chars`);
 		}
 		
+		const effectiveUserText = userText.trim() || 'Please review, explain, or summarize the provided context.';
 		// User 메시지 상단에 컨텍스트를 주입
-		finalUserText = `<context>\n${optimizedRag}\n</context>\n\nUser Question: ${userText}\n\n<instruction>\nAnswer the user's question using ONLY the provided context. If the context is irrelevant or does not contain the answer, explicitly state that you cannot answer based on the context. DO NOT repeat, regurgitate, or summarize the context unless explicitly requested by the user.\n</instruction>`;
+		finalUserText = `<context>\n${optimizedRag}\n</context>\n\nUser Question: ${effectiveUserText}\n\n<instruction>\nUse the provided context to address the user's request. Prioritize and accurately ground your response in the facts from the context where relevant. You may synthesize, explain, translate, or extrapolate as requested by the user. DO NOT repeat, regurgitate, or dump the raw context unless explicitly requested by the user.\n</instruction>`;
 	}
 
 	messages.push({ role: 'user', content: finalUserText });

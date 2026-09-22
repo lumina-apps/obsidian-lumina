@@ -2,7 +2,7 @@
  * 모든 ContextAttachment 타입을 텍스트/이미지(base64)로 변환하는 핸들러.
  */
 
-import { App, TFile, TFolder, MarkdownView, requestUrl } from 'obsidian';
+import { App, TFile, TFolder, MarkdownView, requestUrl, getAllTags } from 'obsidian';
 import { DocumentParserRouter, SUPPORTED_EXTENSIONS } from '../../rag/parsers/DocumentParserRouter';
 import type { ContextAttachment } from '../../../shared/types/chat.types';
 import type LuminaPlugin from '../../../main';
@@ -12,6 +12,7 @@ import { debugLogger } from '../../../shared/debugLogger';
 export const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif']);
 const MAX_TEXT_LENGTH = 100000; // 대략적인 글자 수 제한 (초과 시 잘림)
 const MAX_TAG_FILES = 5;       // 태그 검색 시 최대 파일 수
+const MAX_FOLDER_FILES = 30;   // 폴더 검색 시 최대 파일 수
 
 export interface ParsedAttachment {
 	type: 'text' | 'image';
@@ -21,10 +22,17 @@ export interface ParsedAttachment {
 // canvas 파일 구조 타입
 interface CanvasData {
 	nodes?: Array<{
-		id: string;
+		id?: string;
 		type: string;
 		text?: string;
 		file?: string;
+		url?: string;
+		label?: string;
+	}>;
+	edges?: Array<{
+		id?: string;
+		fromNode?: string;
+		toNode?: string;
 		label?: string;
 	}>;
 }
@@ -144,7 +152,9 @@ export class ChatAttachmentHandler {
 		text = text.replace(/\n\s*\n/g, '\n\n');  // 빈 줄은 최대 1번만 연속되도록 정리
 		text = text.trim();
 
-		return this.createTextPayload(`[외부 웹페이지: ${att.path}]\n${text}`);
+		const pageTitle = doc.title?.trim();
+		const headerLabel = pageTitle ? `[외부 웹페이지: ${pageTitle} (${att.path})]` : `[외부 웹페이지: ${att.path}]`;
+		return this.createTextPayload(`${headerLabel}\n${text}`);
 	}
 
 	private static parseExternalFileAttachment(att: ContextAttachment): ParsedAttachment | null {
@@ -160,12 +170,24 @@ export class ChatAttachmentHandler {
 		const folder = app.vault.getAbstractFileByPath(att.path);
 		if (!(folder instanceof TFolder)) return null;
 
-		let folderContent = t('settings.chat.context.folderFiles', { name: att.name }) + '\n';
-		for (const child of folder.children) {
-			if (child instanceof TFile && child.extension === 'md') {
-				const content = await app.vault.read(child);
-				folderContent += `--- ${child.basename} ---\n${content}\n\n`;
+		const mdFiles: TFile[] = [];
+		const collectFiles = (f: TFolder) => {
+			for (const child of f.children) {
+				if (mdFiles.length >= MAX_FOLDER_FILES) return;
+				if (child instanceof TFile && child.extension === 'md') {
+					mdFiles.push(child);
+				} else if (child instanceof TFolder) {
+					collectFiles(child);
+				}
 			}
+		};
+		collectFiles(folder);
+
+		let folderContent = t('settings.chat.context.folderFiles', { name: att.name }) + '\n';
+		for (const file of mdFiles) {
+			const content = await app.vault.read(file);
+			folderContent += `--- ${file.path} ---\n${content}\n\n`;
+			if (folderContent.length >= MAX_TEXT_LENGTH) break;
 		}
 		return this.createTextPayload(folderContent);
 	}
@@ -181,10 +203,22 @@ export class ChatAttachmentHandler {
 	}
 
 	private static async parseActiveNoteAttachment(app: App, att: ContextAttachment): Promise<ParsedAttachment | null> {
-		const file = (att.path ? app.vault.getAbstractFileByPath(att.path) : null)
-			?? app.workspace.getActiveFile()
-			?? app.workspace.activeEditor?.file;
-		if (!(file instanceof TFile)) return null;
+		let file: TFile | null = null;
+		if (att.path) {
+			const target = app.vault.getAbstractFileByPath(att.path);
+			if (target instanceof TFile) {
+				file = target;
+			} else {
+				debugLogger.logWarn('chat_attachment', `Active note path not found: ${att.path}`);
+				return null;
+			}
+		} else {
+			const current = app.workspace.getActiveFile() ?? app.workspace.activeEditor?.file;
+			if (current instanceof TFile) {
+				file = current;
+			}
+		}
+		if (!file) return null;
 		const content = await app.vault.read(file);
 		return this.createTextPayload(
 			t('settings.chat.context.activeNotePrefix', { name: file.basename }) + '\n' + content,
@@ -199,11 +233,38 @@ export class ChatAttachmentHandler {
 		try {
 			const canvasData = JSON.parse(content) as CanvasData;
 			let canvasText = t('settings.chat.context.canvasFile', { name: att.name }) + '\n';
-			canvasData.nodes?.forEach((node) => {
-				if (node.type === 'text' && node.text) {
-					canvasText += `- ${node.text}\n`;
+
+			const nodeMap = new Map<string, string>();
+
+			if (canvasData.nodes && canvasData.nodes.length > 0) {
+				canvasText += '\n[Cards & Elements]\n';
+				for (const node of canvasData.nodes) {
+					if (node.type === 'text' && node.text) {
+						canvasText += `- [Text Card]: ${node.text.replace(/\n+/g, ' ')}\n`;
+						if (node.id) nodeMap.set(node.id, `Text: ${node.text.slice(0, 20)}...`);
+					} else if (node.type === 'file' && node.file) {
+						canvasText += `- [Note/File]: [[${node.file}]]\n`;
+						if (node.id) nodeMap.set(node.id, `Note: ${node.file}`);
+					} else if (node.type === 'link' && node.url) {
+						canvasText += `- [Link]: ${node.url}\n`;
+						if (node.id) nodeMap.set(node.id, `Link: ${node.url}`);
+					} else if (node.type === 'group' && node.label) {
+						canvasText += `- [Group]: ${node.label}\n`;
+						if (node.id) nodeMap.set(node.id, `Group: ${node.label}`);
+					}
 				}
-			});
+			}
+
+			if (canvasData.edges && canvasData.edges.length > 0) {
+				canvasText += '\n[Connections]\n';
+				for (const edge of canvasData.edges) {
+					const from = (edge.fromNode && nodeMap.get(edge.fromNode)) || edge.fromNode || 'Unknown';
+					const to = (edge.toNode && nodeMap.get(edge.toNode)) || edge.toNode || 'Unknown';
+					const labelInfo = edge.label ? ` (${edge.label})` : '';
+					canvasText += `- [${from}] --> [${to}]${labelInfo}\n`;
+				}
+			}
+
 			return this.createTextPayload(canvasText);
 		} catch (e) {
 			debugLogger.logWarn('chat_attachment', `Failed to parse canvas: ${e}`);
@@ -214,15 +275,13 @@ export class ChatAttachmentHandler {
 	private static async parseTagAttachment(app: App, att: ContextAttachment): Promise<ParsedAttachment | null> {
 		const files = app.vault.getMarkdownFiles();
 		let tagContent = t('settings.chat.context.tagFiles', { name: att.name }) + '\n';
+		const targetTag = att.name.startsWith('#') ? att.name : `#${att.name}`;
 		let count = 0;
 
 		for (const file of files) {
 			const cache = app.metadataCache.getFileCache(file);
-			const tags = cache?.tags;
-			const fmTags = cache?.frontmatter?.tags as string[] | undefined;
-			const hasTag =
-				(Array.isArray(tags) && tags.some(tg => tg.tag === att.name)) ||
-				(Array.isArray(fmTags) && fmTags.includes(att.name.replace('#', '')));
+			const allTags = cache ? (getAllTags(cache) || []) : [];
+			const hasTag = allTags.some(tg => tg === targetTag || tg.startsWith(targetTag + '/'));
 
 			if (hasTag) {
 				const content = await app.vault.read(file);

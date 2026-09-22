@@ -62,7 +62,7 @@ export function buildCategoryItems(
 					items.push({
 						type: "file",
 						path: f.path,
-						name: f.basename,
+						name: f.extension === "md" ? f.basename : f.name,
 					});
 				}
 			}

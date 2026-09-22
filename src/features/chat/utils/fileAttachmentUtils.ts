@@ -1,10 +1,15 @@
 import { Notice } from "obsidian";
 import type { ContextAttachment } from "../../../shared/types/chat.types";
 import type LuminaPlugin from "../../../main";
+import { debugLogger } from "../../../shared/debugLogger";
 
 const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "webp", "gif"]);
-const TEXT_EXTS = new Set(["md", "txt", "csv", "json", "jsonl", "html", "htm"]);
-const DOC_EXTS = new Set(["pdf", "docx", "xlsx", "xls"]);
+const TEXT_EXTS = new Set([
+	"md", "txt", "csv", "json", "jsonl", "html", "htm",
+	"yaml", "yml", "py", "ts", "js", "css", "sh", "sql", "xml",
+	"rs", "go", "java", "c", "cpp", "h", "rb", "php"
+]);
+const DOC_EXTS = new Set(["pdf", "docx", "xlsx", "xls", "pptx", "epub"]);
 
 export async function readImageAsDataURL(file: File): Promise<string> {
 	return new Promise((resolve) => {
@@ -23,7 +28,7 @@ export async function readBinaryDocument(file: File, ext: string, plugin?: Lumin
 	if (plugin?.embeddingWorker) {
 		return plugin.embeddingWorker.parse(buffer, ext);
 	}
-	console.warn('Worker not ready to parse binary file:', file.name);
+	debugLogger.logWarn('file_attachment', `Worker not ready to parse binary file: ${file.name}`);
 	return '';
 }
 
@@ -87,7 +92,7 @@ export async function processFiles(
 				content,
 			});
 		} catch (error) {
-			console.error("Failed to attach file:", error);
+			debugLogger.logError('file_attachment', error instanceof Error ? error : new Error(String(error)));
 			new Notice(t('uiMessages.attachFileFailed', { file: file.name }));
 		}
 	}

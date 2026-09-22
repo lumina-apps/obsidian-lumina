@@ -129,6 +129,11 @@
 		for (const att of attachments) {
 			if (att.content) {
 				tokens += estimateTokens(att.content);
+			} else if (att.path && (att.type === 'file' || att.type === 'active_note')) {
+				const file = plugin.app.vault.getAbstractFileByPath(att.path);
+				if (file && 'stat' in file && typeof file.stat.size === 'number') {
+					tokens += Math.ceil(file.stat.size / 3);
+				}
 			}
 		}
 		return tokens;

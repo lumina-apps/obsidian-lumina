@@ -106,6 +106,18 @@ describe('promptBuilder', () => {
 		expect(lastMessage.content).toContain('<context>');
 		expect(lastMessage.content).toContain(ragContext);
 		expect(lastMessage.content).toContain('<instruction>');
+		expect(lastMessage.content).toContain('User Question: What does the context say?');
+	});
+
+	it('should use fallback question when userText is empty with ragContext', () => {
+		const ragContext = 'Attached document content.';
+		const messages = buildMessages(mockHistory, '', {
+			chat: mockChatSettings,
+			ragContext
+		});
+		
+		const lastMessage = messages[messages.length - 1];
+		expect(lastMessage.content).toContain('User Question: Please review, explain, or summarize the provided context.');
 	});
 
 	it('should strip think tags from assistant messages', () => {
