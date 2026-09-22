@@ -630,6 +630,7 @@
     },
     "sessionUsage": "当前会话用量",
     "sessionTokens": "累计: {{tokens}} tokens",
+    "estimatedTokensTooltip": "本次发送预估输入 Token 数（近似值）",
     "cliMode": {
       "cliAgent": "CLI 智能体",
       "pluginAgent": "插件智能体",

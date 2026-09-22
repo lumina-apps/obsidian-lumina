@@ -9,6 +9,7 @@ import { ChatController } from '../chat/chatController';
 import type { QuickAction } from '../../shared/types/settings.types';
 import { t } from '../../shared/locales/helpers';
 import { debugLogger } from '../../shared/debugLogger';
+import { estimateTokens } from '../../shared/utils/tokenEstimator';
 import type { ChatMessage, TokenUsage } from '../../shared/types/llm.types';
 import { activateView } from '../../core/views/viewHelper';
 import { CHAT_VIEW_TYPE } from '../chat/chatView';
@@ -138,6 +139,11 @@ export class QuickActionHandler {
 			let tokenUsage: TokenUsage | undefined;
 			let fullResponse = '';
 
+			const estimatedInputTokens = llmMessages.reduce((acc, m) => {
+				const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
+				return acc + estimateTokens(c);
+			}, 0);
+
 			const requestId = debugLogger.logRequest({
 				provider: providerConfig.type,
 				model: modelId,
@@ -146,6 +152,7 @@ export class QuickActionHandler {
 				stream: chat.streaming,
 				systemPrompt: sysPrompt,
 				messages: llmMessages.map(m => ({ role: m.role, content: m.content as string })),
+				estimatedInputTokens,
 			});
 
 			if (chat.streaming) {

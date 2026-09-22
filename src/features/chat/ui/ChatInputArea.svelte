@@ -16,6 +16,7 @@
 	import { buildSlashCommands } from "../utils/slashCommandUtils";
 	import { activeProject } from "../../../core/store/projectStore";
 	import { settingsStore } from "../../../core/store/settingsStore";
+	import { estimateTokens } from "../../../shared/utils/tokenEstimator";
 	import {
 		createKeydownHandler,
 		createInputHandler,
@@ -118,6 +119,20 @@
 	// ── 시스템 프롬프트 파생 값 ──────────────────────────────────────────────
 	const systemPrompts = $derived($settingsStore?.chat.systemPrompts ?? []);
 	const activePromptId = $derived($activeProject?.systemPromptId || "default");
+
+	// ── 실시간 입력 예상 토큰 계산 (참조용) ──────────────────────────────────
+	const estimatedInputTokens = $derived.by(() => {
+		let tokens = 0;
+		if (inputText.trim()) {
+			tokens += estimateTokens(inputText);
+		}
+		for (const att of attachments) {
+			if (att.content) {
+				tokens += estimateTokens(att.content);
+			}
+		}
+		return tokens;
+	});
 
 	async function handlePromptSelect(promptId: string): Promise<void> {
 		const project = $activeProject;
@@ -372,6 +387,14 @@
 		/>
 
 		<div class="lumina-chat__toolbar-right">
+			{#if estimatedInputTokens > 0}
+				<span
+					class="lumina-chat__token-stats"
+					title={$tStore("chat.estimatedTokensTooltip") || "Estimated input tokens for this prompt (approx.)"}
+				>
+					~{estimatedInputTokens.toLocaleString()} tokens
+				</span>
+			{/if}
 			{#if sessionTokenStats.totalTokens > 0}
 				<span
 					class="lumina-chat__token-stats"

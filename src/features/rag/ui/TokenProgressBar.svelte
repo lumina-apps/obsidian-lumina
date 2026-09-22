@@ -10,15 +10,17 @@
 </script>
 
 <div class="lumina-token-progress-wrapper">
-	<div
-		class="lumina-token-progress-bar"
-		style="width: {percentage}%"
-		class:is-danger={isDanger}
-	></div>
+	<div class="lumina-token-progress-track">
+		<div
+			class="lumina-token-progress-bar"
+			style="width: {percentage}%"
+			class:is-danger={isDanger}
+		></div>
+	</div>
 	<div class="lumina-token-progress-text" class:is-danger={isDanger}>
 		{$tStore('discovery.approxTokens', {
 			current: safeCurrent.toLocaleString(),
-			max: max.toLocaleString()
+			max: safeMax.toLocaleString()
 		})}
 	</div>
 </div>
@@ -30,8 +32,16 @@
 		gap: 4px;
 	}
 
-	.lumina-token-progress-bar {
+	.lumina-token-progress-track {
+		width: 100%;
 		height: 4px;
+		background: var(--background-modifier-border);
+		border-radius: 2px;
+		overflow: hidden;
+	}
+
+	.lumina-token-progress-bar {
+		height: 100%;
 		background: var(--interactive-accent);
 		border-radius: 2px;
 		transition: width 0.3s ease, background-color 0.3s ease;

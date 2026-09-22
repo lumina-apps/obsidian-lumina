@@ -12,6 +12,8 @@ import {
 	sortModelOptionsWithFavorites,
 	isEmbeddingModel,
 	warnIfReasoningModel,
+	getModelContextLimit,
+	getEffectiveContextLimit,
 } from './modelUtils';
 import type { LLMProviderConfig, FavoriteModel } from '../types/settings.types';
 
@@ -188,6 +190,47 @@ describe('modelUtils', () => {
 			expect(() => warnIfReasoningModel('')).not.toThrow();
 			expect(() => warnIfReasoningModel('server1')).not.toThrow();
 			expect(() => warnIfReasoningModel('deepseek-r1')).not.toThrow();
+		});
+
+		describe('getModelContextLimit', () => {
+			it('알려진 모델 패턴에 대해 올바른 컨텍스트 윈도우를 반환한다', () => {
+				expect(getModelContextLimit('gpt-4o')).toBe(128000);
+				expect(getModelContextLimit('gpt-4o-mini')).toBe(128000);
+				expect(getModelContextLimit('claude-3-5-sonnet-20241022')).toBe(200000);
+				expect(getModelContextLimit('claude-3-7-sonnet')).toBe(200000);
+				expect(getModelContextLimit('gemini-1.5-pro')).toBe(1000000);
+				expect(getModelContextLimit('gemini-2.0-flash')).toBe(1000000);
+				expect(getModelContextLimit('deepseek-chat')).toBe(64000);
+				expect(getModelContextLimit('llama-3.1-70b')).toBe(128000);
+				expect(getModelContextLimit('llama-3-8b')).toBe(8192);
+				expect(getModelContextLimit('unknown-local-model', 'ollama')).toBe(32768);
+				expect(getModelContextLimit('some-random-model')).toBe(128000);
+				expect(getModelContextLimit(undefined)).toBe(128000);
+			});
+		});
+
+		describe('getEffectiveContextLimit', () => {
+			it('memoryMethod가 tokens인 경우 사용자의 maxContextTokens를 최우선 적용한다', () => {
+				const limit = getEffectiveContextLimit('gpt-4o', {
+					memoryMethod: 'tokens',
+					maxContextTokens: 4000,
+				});
+				expect(limit).toBe(4000);
+			});
+
+			it('memoryMethod가 turns 또는 auto_summary인 경우 모델의 실제 한도를 적용한다', () => {
+				const turnsLimit = getEffectiveContextLimit('gpt-4o', {
+					memoryMethod: 'turns',
+					maxContextTokens: 4000,
+				});
+				expect(turnsLimit).toBe(128000);
+
+				const summaryLimit = getEffectiveContextLimit('claude-3-5-sonnet', {
+					memoryMethod: 'auto_summary',
+					maxContextTokens: 8000,
+				});
+				expect(summaryLimit).toBe(200000);
+			});
 		});
 	});
 });

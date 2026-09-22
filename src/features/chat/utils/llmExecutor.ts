@@ -9,6 +9,7 @@ import { CliAgentProvider, formatMessagesToPrompt } from '../../../core/llm-prov
 import { stripAnsiCodes, extractTextFromUnknown } from '../../../core/llm-providers/cli/ndjson-parser';
 import { runAgentLoop, isTokenLimitReached } from '../agentLoop';
 import { debugLogger } from '../../../shared/debugLogger';
+import { estimateTokens } from '../../../shared/utils/tokenEstimator';
 import {
 	appendChunk,
 	appendThinking,
@@ -150,6 +151,11 @@ export async function executeCliAgentCall(
 	}
 
 	const startTime = Date.now();
+	const estimatedInputTokens = ctx.llmMessages.reduce((acc, m) => {
+		const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
+		return acc + estimateTokens(c);
+	}, 0);
+
 	const requestId = debugLogger.logRequest({
 		provider: providerConfig.type,
 		model: resolvedModelId,
@@ -161,6 +167,7 @@ export async function executeCliAgentCall(
 			role: m.role,
 			content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
 		})),
+		estimatedInputTokens,
 	});
 
 	debugLogger.logSystem(

@@ -630,6 +630,7 @@
     },
     "sessionUsage": "Utilizzo sessione corrente",
     "sessionTokens": "Totale: {{tokens}} token",
+    "estimatedTokensTooltip": "Token di input stimati per questo prompt (circa)",
     "cliMode": {
       "cliAgent": "Agente CLI",
       "pluginAgent": "Agente plugin",

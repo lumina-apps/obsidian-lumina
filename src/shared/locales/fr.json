@@ -630,6 +630,7 @@
     },
     "sessionUsage": "Utilisation de la session actuelle",
     "sessionTokens": "Total: {{tokens}} jetons",
+    "estimatedTokensTooltip": "Jetons d'entrée estimés pour ce prompt (env.)",
     "cliMode": {
       "cliAgent": "Agent CLI",
       "pluginAgent": "Agent du plugin",

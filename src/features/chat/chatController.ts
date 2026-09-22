@@ -21,6 +21,7 @@ import {
 import { get } from 'svelte/store';
 import type { UIChatMessage, ChatSession, ContextAttachment } from '../../shared/types/chat.types';
 import { debugLogger } from '../../shared/debugLogger';
+import { estimateTokens } from '../../shared/utils/tokenEstimator';
 import { triggerAutoSummarization } from './utils/summarizationHelper';
 import { ChatHistoryController } from './chatHistoryController';
 import { resolveAttachmentsWithActiveNote, buildLlmContext } from './utils/contextBuilder';
@@ -211,6 +212,10 @@ export class ChatController {
 		const systemPromptText = typeof systemMessage?.content === 'string' 
 			? systemMessage.content 
 			: (systemMessage?.content ? JSON.stringify(systemMessage.content) : '');
+		const estimatedInputTokens = ctx.llmMessages.reduce((acc, m) => {
+			const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
+			return acc + estimateTokens(c);
+		}, 0);
 
 		const requestId = debugLogger.logRequest({
 			provider: providerConfig.type,
@@ -223,6 +228,7 @@ export class ChatController {
 				role: m.role,
 				content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
 			})),
+			estimatedInputTokens,
 			...(ctx.ragChunksForLog ? { ragChunks: ctx.ragChunksForLog } : {}),
 		});
 		debugLogger.logResponse(requestId, {

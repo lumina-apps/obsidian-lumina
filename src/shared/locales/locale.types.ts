@@ -742,6 +742,7 @@ export interface TranslationChat {
   slashCommands: TranslationChatSlashCommands;
   sessionUsage: string;
   sessionTokens: string;
+  estimatedTokensTooltip: string;
   cliMode: TranslationChatCliMode;
 }
 

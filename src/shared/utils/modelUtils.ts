@@ -205,3 +205,85 @@ export function warnIfReasoningModel(modelId?: string): void {
 		new Notice(t('settings.connections.quickActionModel.reasoningWarning'), REASONING_MODEL_NOTICE_DURATION);
 	}
 }
+
+/**
+ * 알려진 모델명 패턴을 기반으로 물리적 컨텍스트 윈도우(토큰 한도)를 추정합니다.
+ * 미확인 모델의 경우 안전 기본값 128,000을 반환합니다.
+ */
+export function getModelContextLimit(modelId?: string, providerType?: ProviderType): number {
+	if (!modelId) return 128000;
+	const lower = modelId.toLowerCase();
+
+	// 1. Google Gemini (1M ~ 2M)
+	if (lower.includes('gemini')) {
+		if (lower.includes('1.5') || lower.includes('2.0') || lower.includes('2.5') || lower.includes('pro') || lower.includes('flash')) {
+			return 1000000;
+		}
+		return 32768;
+	}
+
+	// 2. Anthropic Claude (200k)
+	if (lower.includes('claude')) {
+		if (lower.includes('3') || lower.includes('2.1')) {
+			return 200000;
+		}
+		return 100000;
+	}
+
+	// 3. OpenAI GPT / Reasoning
+	if (lower.includes('gpt-4o') || lower.includes('o1') || lower.includes('o3') || lower.includes('gpt-4-turbo')) {
+		return 128000;
+	}
+	if (lower.includes('gpt-4-32k')) return 32768;
+	if (lower.includes('gpt-4')) return 8192;
+	if (lower.includes('gpt-3.5-turbo-16k')) return 16385;
+	if (lower.includes('gpt-3.5')) return 16385;
+
+	// 4. DeepSeek (64k ~ 128k)
+	if (lower.includes('deepseek')) {
+		return 64000;
+	}
+
+	// 5. Meta Llama
+	if (lower.includes('llama-3.1') || lower.includes('llama-3.2') || lower.includes('llama-3.3') || lower.includes('llama3.1') || lower.includes('llama3.2') || lower.includes('llama3.3')) {
+		return 128000;
+	}
+	if (lower.includes('llama-3') || lower.includes('llama3')) {
+		return 8192;
+	}
+
+	// 6. Mistral / Qwen
+	if (lower.includes('mistral-large') || lower.includes('codestral')) {
+		return 128000;
+	}
+	if (lower.includes('qwen-2.5') || lower.includes('qwen2.5')) {
+		return 128000;
+	}
+	if (lower.includes('qwen')) {
+		return 32768;
+	}
+
+	// 7. Provider 카테고리가 로컬인 경우 (기본 32k)
+	if (providerType && PROVIDER_CATEGORIES[providerType] === 'local') {
+		return 32768;
+	}
+
+	// 8. 기본 fallback
+	return 128000;
+}
+
+/**
+ * 대화 기억 방식(memoryMethod)과 모델 스펙을 종합하여 유효 컨텍스트 한도를 반환합니다.
+ * - memoryMethod === 'tokens' 인 경우: 사용자가 지정한 maxContextTokens 우선 적용.
+ * - memoryMethod === 'turns' 또는 'auto_summary' 인 경우: 모델의 실제 물리적 컨텍스트 윈도우 적용.
+ */
+export function getEffectiveContextLimit(
+	modelId?: string,
+	chatSettings?: { memoryMethod?: 'auto_summary' | 'turns' | 'tokens'; maxContextTokens?: number },
+	providerType?: ProviderType,
+): number {
+	if (chatSettings?.memoryMethod === 'tokens' && chatSettings.maxContextTokens) {
+		return chatSettings.maxContextTokens;
+	}
+	return getModelContextLimit(modelId, providerType);
+}

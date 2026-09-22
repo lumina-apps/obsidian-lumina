@@ -630,6 +630,7 @@
     },
     "sessionUsage": "現在のセッション使用量",
     "sessionTokens": "累積: {{tokens}} トークン",
+    "estimatedTokensTooltip": "今回の送信予想入力トークン数（推定値）",
     "cliMode": {
       "cliAgent": "CLIエージェント",
       "pluginAgent": "プラグインエージェント",

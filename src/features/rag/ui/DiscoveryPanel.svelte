@@ -2,12 +2,14 @@
 	import { onMount } from 'svelte';
 	import type LuminaPlugin from '../../../main';
 	import { discoveryState, updateDiscoveryState, addToStaging, removeFromStaging, clearStaging } from '../../../core/store/discoveryStore';
-	import { isRagEnabled } from '../../../core/store/settingsStore';
+	import { isRagEnabled, settingsStore } from '../../../core/store/settingsStore';
 	import { indexingState, showIndexingIndicator } from '../../../core/store/ragStore';
-	import { addPendingAttachment, activeSidebarTab } from '../../../core/store/chatStore';
+	import { addPendingAttachment, activeSidebarTab, sessionModelId, sessionProviderId } from '../../../core/store/chatStore';
 	import { searchVault } from '../search';
 	import type { SearchResult } from '../../../shared/types/rag.types';
 	import { tStore } from '../../../shared/locales/index';
+	import { estimateTokens } from '../../../shared/utils/tokenEstimator';
+	import { getEffectiveContextLimit } from '../../../shared/utils/modelUtils';
 	import { extractFileName, insertTagIntoFrontmatter } from '../../../shared/utils/fileUtils';
 	import { openNoteFile } from '../utils/openNoteFile';
 	import { buildContextFromActiveFile, applyContextResult } from '../utils/discoveryContext';
@@ -42,9 +44,18 @@
 
 	// ── Derived ──
 	let stagedTokenCount = $derived(
-		$discoveryState.stagedItems.reduce((acc, item) => acc + Math.floor(item.chunk.text.length / 4), 0)
+		$discoveryState.stagedItems.reduce((acc, item) => acc + estimateTokens(item.chunk.text), 0)
 	);
-	const maxTokens = 128000;
+	const currentProvider = $derived(
+		plugin.settings.providers.find(p => p.id === $sessionProviderId)
+	);
+	const maxTokens = $derived(
+		getEffectiveContextLimit(
+			$sessionModelId ?? plugin.settings.chat.quickActionModelId,
+			$settingsStore?.chat,
+			currentProvider?.type
+		)
+	);
 
 	// ── 마운트 시 활성 파일 초기화 ──
 	onMount(() => {

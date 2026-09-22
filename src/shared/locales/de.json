@@ -632,6 +632,7 @@
     },
     "sessionUsage": "Nutzung der aktuellen Sitzung",
     "sessionTokens": "Gesamt: {{tokens}} Tokens",
+    "estimatedTokensTooltip": "Geschätzte Eingabe-Tokens für diesen Prompt (ca.)",
     "cliMode": {
       "cliAgent": "CLI-Agent",
       "pluginAgent": "Plugin-Agent",
