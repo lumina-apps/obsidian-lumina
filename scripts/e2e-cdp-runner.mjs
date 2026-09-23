@@ -377,6 +377,28 @@ async function run() {
 			reporter.record('Physical Tab Click & Navigation', false, err.message, Date.now() - t2);
 		}
 
+		// 5. Chat Controls Readiness Check
+		const t3 = Date.now();
+		try {
+			const controls = await client.evaluate(`(() => {
+				const chatView = document.querySelector('.lumina-chat-view');
+				return {
+					hasSendBtn: !!chatView?.querySelector('.lumina-chat__send-btn'),
+					hasToolbar: !!chatView?.querySelector('.lumina-chat__toolbar, .lumina-chat__input-container'),
+					hasModelSelector: !!chatView?.querySelector('.lumina-model-selector__trigger')
+				};
+			})()`);
+
+			reporter.record(
+				'Chat Controls & UI Components Mounted',
+				controls.hasSendBtn && controls.hasToolbar && controls.hasModelSelector,
+				`Send button: ${controls.hasSendBtn}, Toolbar: ${controls.hasToolbar}, ModelSelector: ${controls.hasModelSelector}`,
+				Date.now() - t3
+			);
+		} catch (err) {
+			reporter.record('Chat Controls & UI Components Mounted', false, err.message, Date.now() - t3);
+		}
+
 		// Teardown: close leaves
 		await client.evaluate(`(() => {
 			const leaves = app.workspace.getLeavesOfType('lumina-chat');
@@ -491,6 +513,34 @@ async function run() {
 			})()`);
 
 			reporter.record('Embedding Generation via Worker', embedTest.success, `Vector Dimension: ${embedTest.dim}, Latency: ${embedTest.duration}ms`, Date.now() - t0);
+
+			// Test Live Vault Hybrid Search (Orama + BM25)
+			const t1 = Date.now();
+			try {
+				const ragSearchTest = await client.evaluate(`(async () => {
+					const lumina = app.plugins.plugins['lumina'];
+					const tools = lumina.mcpManager?.getAllTools() || [];
+					const ragTool = tools.find(t => t.name === 'rag_search');
+					if (!ragTool) return { success: false, reason: 'no rag_search tool' };
+					const start = Date.now();
+					const res = await lumina.mcpManager.callTool(ragTool._serverId, 'rag_search', { query: '세계관', topK: 3 });
+					const text = res?.content?.[0]?.text || '';
+					return {
+						success: !res?.isError && (text.includes('RAG 검색 결과') || text.includes('청크 발견')),
+						summary: text.split('\\n')[0],
+						duration: Date.now() - start
+					};
+				})()`);
+
+				reporter.record(
+					'Live Vault Hybrid Search (RAG)',
+					ragSearchTest.success,
+					`${ragSearchTest.summary || 'Search completed'} (Latency: ${ragSearchTest.duration}ms)`,
+					Date.now() - t1
+				);
+			} catch (searchErr) {
+				reporter.record('Live Vault Hybrid Search (RAG)', false, searchErr.message, Date.now() - t1);
+			}
 		} catch (err) {
 			reporter.record('RAG Indexer & Worker Ready', false, err.message, Date.now() - t0);
 		}
@@ -605,10 +655,131 @@ async function run() {
 		} catch (err) {
 			reporter.record('Settings Tab Loaded & Dismissed via Physical Escape', false, err.message, Date.now() - t0);
 		}
+
+		// 2. Settings Disk Persistence & Reload Verification
+		const t1 = Date.now();
+		try {
+			const persistResult = await client.evaluate(`(async () => {
+				const lumina = app.plugins.plugins['lumina'];
+				const originalMaxResults = lumina.settings.rag?.maxResults ?? 5;
+				const testVal = originalMaxResults === 7 ? 8 : 7;
+
+				// 1. Mutate setting in memory & save to disk
+				lumina.settings.rag.maxResults = testVal;
+				await lumina.saveSettings();
+
+				// 2. Read directly from Obsidian vault adapter (raw disk file)
+				const rawData = await app.vault.adapter.read('.obsidian/plugins/lumina/data.json');
+				const diskJson = JSON.parse(rawData);
+
+				// 3. Restore original setting
+				lumina.settings.rag.maxResults = originalMaxResults;
+				await lumina.saveSettings();
+
+				return {
+					success: diskJson.rag?.maxResults === testVal,
+					savedVal: diskJson.rag?.maxResults,
+					expected: testVal
+				};
+			})()`);
+
+			reporter.record(
+				'Settings Disk Persistence & Reload',
+				persistResult.success,
+				`Persisted to data.json: ${persistResult.savedVal} (expected: ${persistResult.expected}) -> restored`,
+				Date.now() - t1
+			);
+		} catch (err) {
+			reporter.record('Settings Disk Persistence & Reload', false, err.message, Date.now() - t1);
+		}
 		await sleep(200);
 	}
 
-	// ─── SUITE 9: Live LLM Provider Test ────────────────────────────────────
+	// ─── SUITE 9: MCP Tool Execution Engine ─────────────────────────────────
+	reporter.startSuite('MCP Tool Execution Engine (Real Vault Actions)');
+	{
+		const t0 = Date.now();
+		try {
+			const mcpInfo = await client.evaluate(`(() => {
+				const lumina = app.plugins.plugins['lumina'];
+				const tools = lumina.mcpManager?.getAllTools() || [];
+				return {
+					ready: !!lumina.mcpManager,
+					toolsCount: tools.length,
+					hasEssentialTools: ['list_tags', 'search_notes', 'read_note', 'rag_search'].every(name =>
+						tools.some(t => t.name === name)
+					)
+				};
+			})()`);
+
+			reporter.record(
+				'MCP Tools Collection & Server Ready',
+				mcpInfo.ready && mcpInfo.hasEssentialTools && mcpInfo.toolsCount >= 20,
+				`Registered tools: ${mcpInfo.toolsCount}, Essential tools verified`,
+				Date.now() - t0
+			);
+		} catch (err) {
+			reporter.record('MCP Tools Collection & Server Ready', false, err.message, Date.now() - t0);
+		}
+
+		// Test list_tags tool
+		const t1 = Date.now();
+		try {
+			const tagToolResult = await client.evaluate(`(async () => {
+				const lumina = app.plugins.plugins['lumina'];
+				const tools = lumina.mcpManager.getAllTools();
+				const tagTool = tools.find(t => t.name === 'list_tags');
+				if (!tagTool) return { success: false, reason: 'no list_tags tool' };
+				const start = Date.now();
+				const res = await lumina.mcpManager.callTool(tagTool._serverId, 'list_tags', {});
+				const text = res?.content?.[0]?.text || '';
+				return {
+					success: !res?.isError && (text.includes('Tags in vault') || text.includes('#')),
+					snippet: text.split('\\n').slice(0, 3).join(', '),
+					duration: Date.now() - start
+				};
+			})()`);
+
+			reporter.record(
+				'Live Metadata Tool Execution (list_tags)',
+				tagToolResult.success,
+				`${tagToolResult.snippet} (Latency: ${tagToolResult.duration}ms)`,
+				Date.now() - t1
+			);
+		} catch (err) {
+			reporter.record('Live Metadata Tool Execution (list_tags)', false, err.message, Date.now() - t1);
+		}
+
+		// Test search_notes tool
+		const t2 = Date.now();
+		try {
+			const searchToolResult = await client.evaluate(`(async () => {
+				const lumina = app.plugins.plugins['lumina'];
+				const tools = lumina.mcpManager.getAllTools();
+				const searchTool = tools.find(t => t.name === 'search_notes');
+				if (!searchTool) return { success: false, reason: 'no search_notes tool' };
+				const start = Date.now();
+				const res = await lumina.mcpManager.callTool(searchTool._serverId, 'search_notes', { query: '기본' });
+				const text = res?.content?.[0]?.text || '';
+				return {
+					success: !res?.isError && (text.includes('발견됨') || text.includes('found') || text.includes('.md')),
+					snippet: text.split('\\n')[0],
+					duration: Date.now() - start
+				};
+			})()`);
+
+			reporter.record(
+				'Live Vault Search Tool Execution (search_notes)',
+				searchToolResult.success,
+				`${searchToolResult.snippet} (Latency: ${searchToolResult.duration}ms)`,
+				Date.now() - t2
+			);
+		} catch (err) {
+			reporter.record('Live Vault Search Tool Execution (search_notes)', false, err.message, Date.now() - t2);
+		}
+	}
+
+	// ─── SUITE 10: Live LLM Provider Test ────────────────────────────────────
 	reporter.startSuite('Live LLM Provider (Short Prompt Test)');
 	{
 		const t0 = Date.now();
