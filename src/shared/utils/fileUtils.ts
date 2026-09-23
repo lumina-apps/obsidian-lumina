@@ -88,7 +88,7 @@ const WINDOWS_RESERVED_NAMES = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\..*)?$/i;
 /** 파일명 특수문자를 '_'로 치환하고 Windows 예약어, 제어문자 및 후행 점/공백을 안전하게 처리 */
 export function sanitizeFilename(name: string): string {
 	let sanitized = name
-		.replace(/[\r\n\t\x00-\x1f]/g, '_')
+		.replace(/[\r\n\t\p{Cc}]/gu, '_')
 		.replace(/[\\/:*?"<>|]/g, '_');
 	// Windows에서 오류를 유발하는 후행 점 및 공백 제거
 	sanitized = sanitized.replace(/[. ]+$/, '');

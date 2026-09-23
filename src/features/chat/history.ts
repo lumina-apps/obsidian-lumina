@@ -6,7 +6,7 @@ import { debugLogger } from '../../shared/debugLogger';
 /** 안전한 세션 제목 정제 (Windows 금지문자, 제어문자 및 말미 마침표/공백 제거) */
 export function sanitizeSafeTitle(title: string): string {
 	const stripped = title
-		.replace(/[\s\x00-\x1f]+/g, ' ')
+		.replace(/[\s\p{Cc}]+/gu, ' ')
 		.replace(/[\\/:*?"<>|]/g, '_')
 		.replace(/[.\s]+$/, '')
 		.trim();
@@ -361,7 +361,7 @@ export async function renameSession(
 	newTitle: string,
 	basePath: string,
 ): Promise<ChatSession | null> {
-	const trimmedTitle = newTitle.replace(/[\r\n\t\x00-\x1f]+/g, ' ').trim() || t('chat.newChat');
+	const trimmedTitle = newTitle.replace(/[\r\n\t\p{Cc}]+/gu, ' ').trim() || t('chat.newChat');
 	const session = await loadSession(app, sessionId, basePath);
 	if (!session) return null;
 	session.title = trimmedTitle;
