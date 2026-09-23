@@ -237,6 +237,13 @@ export class VaultIndexer {
 			await this.embeddingStore.loadEmbeddings(this.state.childChunks).catch((e) => {
 				debugLogger.logError('rag', e instanceof Error ? e : new Error(`loadEmbeddings (indexVault path) failed: ${e}`));
 			});
+			const currentPaths = new Set(files.map(f => f.path));
+			const pathsToDelete = new Set(
+				Object.keys(this.state.fileMtimes).filter(p => !currentPaths.has(p))
+			);
+			if (pathsToDelete.size > 0) {
+				await this.removePaths(pathsToDelete);
+			}
 			const withEmb = this.state.childChunks.filter(c => c.embedding && c.embedding.length > 0).length;
 			debugLogger.logSystem('rag', `indexVault (restored): childChunks=${this.state.childChunks.length}, with embedding=${withEmb}`);
 		} else {
@@ -304,9 +311,7 @@ export class VaultIndexer {
 		previousProcessedPaths: string[] = [],
 	): Promise<void> {
 		const processId = ++this.currentProcessId;
-		if (alreadyProcessed === 0) {
-			setTotalFiles(totalFiles.length, totalFiles.length - filesToProcess.length, this.indexingStartedAt);
-		}
+		setTotalFiles(totalFiles.length, totalFiles.length - filesToProcess.length, this.indexingStartedAt);
 
 		try {
 			await processFiles(filesToProcess, {

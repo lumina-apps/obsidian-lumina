@@ -116,6 +116,62 @@ describe('checkpointManager', () => {
 			expect(result.indexRestored).toBe(false);
 			expect(ragStore.setTotalFiles).toHaveBeenCalledWith(3);
 		});
+
+		it('should filter out deleted files from checkpoint.processedPaths and not exceed totalFiles', async () => {
+			vi.mocked(indexPersistence.loadIndex).mockResolvedValueOnce({
+				needsFullReindex: false,
+				chunks: [{ id: '1', path: 'path/valid1' } as any],
+				childChunks: [],
+				fileMtimes: {},
+				fileHashes: {},
+				indexedPaths: new Set(),
+			});
+			// Old checkpoint had 2047 files and 3 processed paths, 2 of which were deleted
+			vi.mocked(indexPersistence.loadCheckpoint).mockResolvedValueOnce({
+				processedPaths: ['path/deleted1', 'path/deleted2', 'path/valid1'],
+				totalFiles: 2047,
+				startedAt: 1000,
+				lastSavedAt: 1000,
+			});
+
+			// Current vault only has 2 files left (e.g., 1035 files in real vault)
+			const totalFiles = [{ path: 'path/valid1' } as TFile, { path: 'path/valid2' } as TFile];
+
+			const result = await restoreFromCheckpoint(mockApp, modelName, totalFiles, false, projectId);
+
+			// Deleted paths should be removed from processedPaths
+			expect(result.processedPaths).toEqual(['path/valid1']);
+			expect(result.filesToProcess).toEqual([{ path: 'path/valid2' }]);
+			expect(result.alreadyProcessed).toBe(1);
+			expect(result.alreadyProcessed + result.filesToProcess.length).toBe(totalFiles.length);
+			expect(ragStore.setTotalFiles).toHaveBeenCalledWith(2, 1, 1000);
+		});
+
+		it('should delete checkpoint if all processedPaths were deleted from the vault', async () => {
+			vi.mocked(indexPersistence.loadIndex).mockResolvedValueOnce({
+				needsFullReindex: false,
+				chunks: [],
+				childChunks: [],
+				fileMtimes: {},
+				fileHashes: {},
+				indexedPaths: new Set(),
+			});
+			vi.mocked(indexPersistence.loadCheckpoint).mockResolvedValueOnce({
+				processedPaths: ['path/deleted1', 'path/deleted2'],
+				totalFiles: 100,
+				startedAt: 1000,
+				lastSavedAt: 1000,
+			});
+
+			const totalFiles = [{ path: 'path/remaining1' } as TFile, { path: 'path/remaining2' } as TFile];
+
+			const result = await restoreFromCheckpoint(mockApp, modelName, totalFiles, false, projectId);
+
+			expect(indexPersistence.deleteCheckpoint).toHaveBeenCalledWith(mockApp, projectId);
+			expect(result.filesToProcess).toEqual(totalFiles);
+			expect(result.alreadyProcessed).toBe(0);
+			expect(result.processedPaths).toEqual([]);
+		});
 	});
 
 	describe('saveCheckpointIfNeeded', () => {

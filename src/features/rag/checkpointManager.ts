@@ -54,25 +54,35 @@ export async function restoreFromCheckpoint(
 		checkpoint = null;
 	}
 
-	if (checkpoint && (clearOnFullReindex ? checkpoint.totalFiles === totalFiles.length : true)) {
-		const processedSet = new Set(checkpoint.processedPaths);
-		const filesToProcess = totalFiles.filter(f => !processedSet.has(f.path));
-		const alreadyProcessed = checkpoint.processedPaths.length;
+	if (checkpoint) {
+		const currentPathSet = new Set(totalFiles.map(f => f.path));
+		// 디스크에서 삭제된 파일(고스트 경로) 필터링
+		const validProcessedPaths = checkpoint.processedPaths.filter(p => currentPathSet.has(p));
 
-		if (filesToProcess.length === 0) {
-			if (totalFiles.length === 0 || loadResult.chunks.length > 0) {
-				setIndexingStatus('ready', { totalFiles: totalFiles.length, processedFiles: totalFiles.length });
+		// 전체 재색인 모드에서 파일 수 불일치하거나 유효한 파일이 없는 경우 체크포인트 폐기
+		if ((clearOnFullReindex && checkpoint.totalFiles !== totalFiles.length) || validProcessedPaths.length === 0) {
+			await deleteCheckpoint(app, projectId);
+			checkpoint = null;
+		} else {
+			const validProcessedSet = new Set(validProcessedPaths);
+			const filesToProcess = totalFiles.filter(f => !validProcessedSet.has(f.path));
+			const alreadyProcessed = totalFiles.length - filesToProcess.length;
+
+			if (filesToProcess.length === 0) {
+				if (totalFiles.length === 0 || loadResult.chunks.length > 0) {
+					setIndexingStatus('ready', { totalFiles: totalFiles.length, processedFiles: totalFiles.length });
+					await deleteCheckpoint(app, projectId);
+					return { filesToProcess: [], alreadyProcessed: totalFiles.length, indexRestored: true, startedAt: checkpoint.startedAt, processedPaths: validProcessedPaths };
+				}
 				await deleteCheckpoint(app, projectId);
-				return { filesToProcess: [], alreadyProcessed: totalFiles.length, indexRestored: true, startedAt: checkpoint.startedAt, processedPaths: checkpoint.processedPaths };
+				setTotalFiles(totalFiles.length);
+				return { filesToProcess: totalFiles, alreadyProcessed: 0, indexRestored: false, startedAt: Date.now(), processedPaths: EMPTY_PATHS };
 			}
-			if (checkpoint) await deleteCheckpoint(app, projectId);
-			setTotalFiles(totalFiles.length);
-			return { filesToProcess: totalFiles, alreadyProcessed: 0, indexRestored: false, startedAt: Date.now(), processedPaths: EMPTY_PATHS };
-		}
 
-		resumedFromCheckpoint.set(true);
-		setTotalFiles(totalFiles.length, alreadyProcessed, checkpoint.startedAt);
-		return { filesToProcess, alreadyProcessed, indexRestored: true, startedAt: checkpoint.startedAt, processedPaths: checkpoint.processedPaths };
+			resumedFromCheckpoint.set(true);
+			setTotalFiles(totalFiles.length, alreadyProcessed, checkpoint.startedAt);
+			return { filesToProcess, alreadyProcessed, indexRestored: true, startedAt: checkpoint.startedAt, processedPaths: validProcessedPaths };
+		}
 	}
 
 	if (checkpoint) await deleteCheckpoint(app, projectId);

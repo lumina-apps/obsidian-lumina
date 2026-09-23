@@ -127,4 +127,25 @@ describe('ragStore', () => {
 		setIndexingStatus('idle');
 		expect(get(showIndexingIndicator)).toBe(false);
 	});
+
+	it('should clamp initialProcessed to totalFiles in setTotalFiles', () => {
+		setTotalFiles(100, 150);
+		const state = get(indexingState);
+		expect(state.totalFiles).toBe(100);
+		expect(state.processedFiles).toBe(100);
+		expect(get(indexingProgress)).toBe(100);
+	});
+
+	it('should not allow incrementProcessedBy to exceed totalFiles', () => {
+		setTotalFiles(10, 8);
+		incrementProcessedBy(5); // 8 + 5 = 13 > 10
+		const state = get(indexingState);
+		expect(state.processedFiles).toBe(10);
+		expect(get(indexingProgress)).toBe(100);
+	});
+
+	it('should clamp indexingProgress between 0 and 100', () => {
+		setIndexingStatus('indexing', { totalFiles: 50, processedFiles: 100 });
+		expect(get(indexingProgress)).toBe(100);
+	});
 });

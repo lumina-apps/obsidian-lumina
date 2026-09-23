@@ -49,7 +49,7 @@ indexingState.subscribe(state => {
 
 /** 인덱싱 진행률 (0 ~ 100). totalFiles가 0이면 0 반환 */
 export const indexingProgress = derived(indexingState, ($s) =>
-	$s.totalFiles > 0 ? Math.round(($s.processedFiles / $s.totalFiles) * 100) : 0,
+	$s.totalFiles > 0 ? Math.min(100, Math.max(0, Math.round(($s.processedFiles / $s.totalFiles) * 100))) : 0,
 );
 
 /** 사람이 읽기 좋은 상태 문자열 */
@@ -106,7 +106,13 @@ export function setIndexingStatus(
 	status: IndexingStatus,
 	extra?: Partial<Omit<IndexingState, 'status'>>,
 ): void {
-	indexingState.update(s => ({ ...s, status, ...extra }));
+	indexingState.update(s => {
+		const next = { ...s, status, ...extra };
+		if (next.totalFiles > 0 && next.processedFiles > next.totalFiles) {
+			next.processedFiles = next.totalFiles;
+		}
+		return next;
+	});
 }
 
 /** 처리된 파일 수 증가 (1씩) */
@@ -131,9 +137,13 @@ export function incrementProcessedBy(count: number): void {
 			newEMA = newEMA === 0 ? currentRate : (newEMA * 0.7 + currentRate * 0.3);
 		}
 
+		const nextProcessed = s.totalFiles > 0 
+			? Math.min(s.totalFiles, s.processedFiles + count)
+			: s.processedFiles + count;
+
 		return { 
 			...s, 
-			processedFiles: s.processedFiles + count,
+			processedFiles: nextProcessed,
 			lastUpdateTime: elapsedSec > 0.1 ? now : s.lastUpdateTime,
 			currentRateEMA: newEMA
 		};
@@ -151,10 +161,12 @@ export function setTotalFiles(
 	initialProcessed: number = 0,
 	initialStartTime: number = Date.now(),
 ): void {
+	const safeTotal = Math.max(0, total);
+	const safeProcessed = Math.min(safeTotal, Math.max(0, initialProcessed));
 	indexingState.update(s => ({
 		...s,
-		totalFiles: total,
-		processedFiles: initialProcessed,
+		totalFiles: safeTotal,
+		processedFiles: safeProcessed,
 		status: 'indexing',
 		startTime: initialStartTime,
 		lastUpdateTime: initialStartTime,
