@@ -15,7 +15,6 @@ import { setIndexingStatus } from '../../core/store/ragStore';
 import { projectIndexCache } from './projectIndexCache';
 import { getActiveProject } from '../../core/store/projectStore';
 import { debugLogger } from '../../shared/debugLogger';
-import { DocumentParserRouter } from './parsers/DocumentParserRouter';
 import type LuminaPlugin from '../../main';
 
 /** 기본 임베딩 모델 (auto 모드). 다국어 지원. */
@@ -132,7 +131,7 @@ export async function initEmbeddingWorker(
 			embedFn,
 			parseBinaryFn: (buffer, ext) => plugin.embeddingWorker
 				? plugin.embeddingWorker.parse(buffer, ext)
-				: DocumentParserRouter.parseBinary(buffer, ext),
+				: Promise.resolve(''),
 			settings: ragSettings,
 			includedPaths: activeProject.ragIncludedPaths,
 			excludedPaths: activeProject.ragExcludedPaths,
@@ -267,7 +266,7 @@ export async function switchProjectIndex(
 		embedFn,
 		parseBinaryFn: (buffer, ext) => plugin.embeddingWorker
 			? plugin.embeddingWorker.parse(buffer, ext)
-			: DocumentParserRouter.parseBinary(buffer, ext),
+			: Promise.resolve(''),
 		settings: plugin.settings.rag,
 		includedPaths: project.ragIncludedPaths,
 		excludedPaths: project.ragExcludedPaths,

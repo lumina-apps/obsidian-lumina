@@ -71,10 +71,16 @@ async function postProcessMainBundle() {
 	text = text.replace(/require\(['"](node:)?fs['"]\)/g, 'undefined');
 	text = text.replace(/require\(['"](node:)?fs\/promises['"]\)/g, 'undefined');
 
+	// Replace dynamic Function("return this")() used by lodash-es with safe globalThis reference
+	text = text.replace(/Function\(["']return this["']\)\(\)/g, '(typeof globalThis !== "undefined" ? globalThis : window)');
+
 	if (text !== original) {
 		writeFileSync(outPath, text);
 	}
 
+	if (dir !== "./" && existsSync(outPath)) {
+		copyFileSync(outPath, "./main.js");
+	}
 }
 
 async function postProcessWorkerBundle() {
@@ -86,8 +92,17 @@ async function postProcessWorkerBundle() {
 	text = text.replace(/import\.meta\.url/g, '"app://obsidian.md/"');
 	// Zf = async e => (await import(e)).default → stub
 	text = text.split('Zf=async e=>(await import(e)).default').join('Zf=async()=>({default:{}})');
+	// Replace dynamic Function("return this")() with safe globalThis reference
+	text = text.replace(/Function\(["']return this["']\)\(\)/g, '(typeof globalThis !== "undefined" ? globalThis : self)');
+	// Remove new Function in setImmediate polyfills
+	text = text.replace(/typeof\s+([a-zA-Z0-9_$]+)\s*!==?\s*['"]function['"]\s*&&\s*\(\1\s*=\s*new\s+Function\([^)]*\)\)/g, 'if(typeof $1!=="function")return');
+
 	if (text !== original) {
 		writeFileSync(outPath, text);
+	}
+
+	if (dir !== "./" && existsSync(outPath)) {
+		copyFileSync(outPath, "./embedding.worker.js");
 	}
 
 	// Compress worker code and output to workerCode.ts
@@ -286,6 +301,13 @@ const workerContext = await esbuild.context({
 	// Note: Node built-ins(fs, path 등)은 external에 넣으면 브라우저용 worker 빌드 시
 	// bare import("fs")가 생성되어 에러를 유발합니다. 제거하여 package.json의 browser 필드가 작동하게 합니다.
 	external: obsidianExternals.filter(e => !builtinModules.includes(e) && !e.startsWith("node:")),
+	alias: {
+		"bluebird/js/release/promise": "./src/core/mocks/bluebird.js",
+		"bluebird": "./src/core/mocks/bluebird.js",
+		"ajv": "./src/core/mocks/ajv.js",
+		"ajv-formats": "./src/core/mocks/ajv-formats.js",
+		"underscore": "./src/core/mocks/underscore.js",
+	},
 	outfile: workerOutfile,
 	plugins: [workerNodeStubs, postProcessWorkerPlugin],
 	define: {
@@ -297,17 +319,26 @@ const workerContext = await esbuild.context({
 
 // ─── Watch / Build ────────────────────────────────────────────────────────────
 if (prod) {
-	const [workerResult, mainResult] = await Promise.all([
-		workerContext.rebuild(),
-		mainContext.rebuild()
-	]);
+	// Worker must build first so workerCode.ts is updated before main bundle compiles
+	await workerContext.rebuild();
+	const mainResult = await mainContext.rebuild();
 	const fs = await import("fs");
 	if (mainResult && mainResult.metafile) fs.writeFileSync('meta.json', JSON.stringify(mainResult.metafile));
+
+	if (fs.existsSync(outfile)) {
+		const stat = fs.statSync(outfile);
+		const sizeMB = (stat.size / (1024 * 1024)).toFixed(2);
+		const sizeKB = (stat.size / 1024).toFixed(1);
+		console.log(`\n📦 Build Complete: main.js is ${sizeMB} MB (${sizeKB} KB)`);
+		if (stat.size > 5 * 1024 * 1024) {
+			console.error(`⚠️  WARNING: main.js is larger than 5 MB (${stat.size} bytes). Obsidian Sync Standard limit exceeded!`);
+		} else {
+			console.log(`✅ Obsidian Sync limit check passed: ${sizeMB} MB < 5.00 MB`);
+		}
+	}
 	process.exit(0);
 } else {
-	await Promise.all([
-		workerContext.rebuild(),
-		mainContext.rebuild()
-	]);
+	await workerContext.rebuild();
+	await mainContext.rebuild();
 	await Promise.all([mainContext.watch(), workerContext.watch()]);
 }
