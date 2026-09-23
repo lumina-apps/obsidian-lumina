@@ -29,6 +29,11 @@ describe('graphDataBuilder', () => {
 		it('should return filename as is if not ending in .md', () => {
 			expect(extractBasename('folder/data.json')).toBe('data.json');
 		});
+
+		it('should handle Windows backslash paths', () => {
+			expect(extractBasename('folder\\note.md')).toBe('note');
+			expect(extractBasename('folder\\sub\\my-note.md')).toBe('my-note');
+		});
 	});
 
 	describe('getTopLevelFolder', () => {
@@ -39,6 +44,11 @@ describe('graphDataBuilder', () => {
 		it('should return top-level folder name for nested files', () => {
 			expect(getTopLevelFolder('Docs/guide.md')).toBe('Docs');
 			expect(getTopLevelFolder('Projects/2026/plan.md')).toBe('Projects');
+		});
+
+		it('should handle Windows backslash paths', () => {
+			expect(getTopLevelFolder('Docs\\guide.md')).toBe('Docs');
+			expect(getTopLevelFolder('Projects\\2026\\plan.md')).toBe('Projects');
 		});
 	});
 

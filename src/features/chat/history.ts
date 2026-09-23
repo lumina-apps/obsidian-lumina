@@ -3,9 +3,13 @@ import { t } from '../../shared/locales/helpers';
 import type { ChatSession, UIChatMessage } from '../../shared/types/chat.types';
 import type { LLMProviderConfig } from '../../shared/types/settings.types';
 import { debugLogger } from '../../shared/debugLogger';
-/** 안전한 세션 제목 정제 (Windows 금지문자 및 말미 마침표/공백 제거) */
+/** 안전한 세션 제목 정제 (Windows 금지문자, 제어문자 및 말미 마침표/공백 제거) */
 export function sanitizeSafeTitle(title: string): string {
-	const stripped = title.replace(/[\\/:*?"<>|]/g, '_').replace(/[.\s]+$/, '').trim();
+	const stripped = title
+		.replace(/[\s\x00-\x1f]+/g, ' ')
+		.replace(/[\\/:*?"<>|]/g, '_')
+		.replace(/[.\s]+$/, '')
+		.trim();
 	return stripped || t('chat.newChat');
 }
 
@@ -357,7 +361,7 @@ export async function renameSession(
 	newTitle: string,
 	basePath: string,
 ): Promise<ChatSession | null> {
-	const trimmedTitle = newTitle.trim() || t('chat.newChat');
+	const trimmedTitle = newTitle.replace(/[\r\n\t\x00-\x1f]+/g, ' ').trim() || t('chat.newChat');
 	const session = await loadSession(app, sessionId, basePath);
 	if (!session) return null;
 	session.title = trimmedTitle;
@@ -497,7 +501,7 @@ export async function exportSessionToMarkdown(app: App, session: ChatSession): P
 export function generateTitle(messages: UIChatMessage[]): string {
 	const first = messages.find(m => m.role === 'user');
 	if (!first) return t('chat.newChat');
-	const text = first.content?.trim();
+	const text = first.content?.replace(/[\r\n\t]+/g, ' ').trim();
 	if (!text && first.attachments && first.attachments.length > 0) {
 		return first.attachments[0].name;
 	}

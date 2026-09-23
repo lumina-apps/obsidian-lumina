@@ -9,6 +9,7 @@ import {
 	exportSessionToMarkdown,
 	loadSessionsList,
 	sanitizeSafeTitle,
+	generateTitle,
 } from './history';
 import type { ChatSession } from '../../shared/types/chat.types';
 
@@ -316,6 +317,19 @@ Multiline base64
 		expect(sanitizeSafeTitle('Test Title   ')).toBe('Test Title');
 		expect(sanitizeSafeTitle('Invalid /:*?"<>| chars')).toBe('Invalid ________ chars');
 		expect(sanitizeSafeTitle('   ')).toBe('New Chat');
+	});
+
+	it('should sanitize newlines, carriage returns, and control characters in safeTitle', () => {
+		expect(sanitizeSafeTitle('First line\nSecond line')).toBe('First line Second line');
+		expect(sanitizeSafeTitle('Title with\r\nCRLF and \ttabs')).toBe('Title with CRLF and tabs');
+		expect(sanitizeSafeTitle('Test\x00Control\x1fChar')).toBe('Test Control Char');
+	});
+
+	it('should normalize multiline message content into a single line in generateTitle', () => {
+		const messages = [
+			{ id: 'm1', role: 'user' as const, content: 'First line\nSecond line\nThird line', timestamp: 1000, isStreaming: false },
+		];
+		expect(generateTitle(messages)).toBe('First line Second line Third line');
 	});
 
 	it('should rename a session, updating title and file name', async () => {

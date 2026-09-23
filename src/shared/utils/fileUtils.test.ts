@@ -102,6 +102,11 @@ describe('fileUtils', () => {
 			expect(sanitizeFilename('test.')).toBe('test');
 			expect(sanitizeFilename('test   ')).toBe('test');
 		});
+
+		it('Windows에서 금지되는 줄바꿈 및 제어문자를 언더스코어로 치환한다', () => {
+			expect(sanitizeFilename('line1\nline2\r\ntab\t')).toBe('line1_line2__tab_');
+			expect(sanitizeFilename('test\x00null')).toBe('test_null');
+		});
 	});
 
 	describe('enforceMarkdownExt', () => {

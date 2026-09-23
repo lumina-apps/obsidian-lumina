@@ -84,13 +84,14 @@ self.onmessage = function(e) {
 `;
 
 export function getTopLevelFolder(path: string): string {
-	const parts = path.split('/');
+	const normalized = path.replace(/\\/g, '/');
+	const parts = normalized.split('/');
 	if (parts.length <= 1) return '/'; // root
 	return parts[0];
 }
 
 export function extractBasename(path: string): string {
-	const parts = path.split('/');
+	const parts = path.split(/[/\\]/);
 	return parts[parts.length - 1].replace(/\.md$/i, '');
 }
 
