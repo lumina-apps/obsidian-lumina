@@ -8,7 +8,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
 	protected readonly baseUrl = 'https://api.openai.com';
 
 	constructor(providerId: string, apiKey: string) {
-		super(apiKey);
+		super(apiKey?.trim() ?? '');
 		this.providerId = providerId;
 		this.enableReasoning = true;
 	}
@@ -20,11 +20,12 @@ export class OpenAIProvider extends BaseOpenAIProvider {
 				method: 'GET',
 				headers: { Authorization: `Bearer ${this.apiKey}` },
 			});
-			const data = res.json as { data: { id: string; created: number }[] };
+			const data = res.json as { data?: { id: string; created?: number }[] };
+			const list = Array.isArray(data?.data) ? data.data : [];
 
-			return data.data
-				.filter((m) => /^gpt-|^o\d|^chatgpt-/.test(m.id) || m.id.includes('embedding'))
-				.sort((a, b) => b.created - a.created)
+			return list
+				.filter((m) => /^gpt-|^o\d|^chatgpt-|^ft:gpt-/.test(m.id) || m.id.includes('embedding'))
+				.sort((a, b) => (b.created ?? 0) - (a.created ?? 0))
 				.map((m) => m.id);
 		} catch (error) {
 			raiseApiError(error, 'OpenAI');

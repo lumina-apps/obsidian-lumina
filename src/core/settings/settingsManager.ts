@@ -5,6 +5,7 @@ import type { LuminaSettings } from './settings.types';
 import type { PluginLanguage } from '../../shared/types/settings.types';
 import { initSettingsStore, syncSettingsStore } from '../store/settingsStore';
 import { initProjectStore, syncProjectStore } from '../store/projectStore';
+import { debugLogger } from '../../shared/debugLogger';
 
 export class SettingsManager {
 	private plugin: LuminaPlugin;
@@ -63,38 +64,58 @@ export class SettingsManager {
 	}
 
 	async loadSecrets(): Promise<void> {
+		if (!this.app.secretStorage) {
+			return;
+		}
+
 		// SecretStorage에서 자격 증명 로드 (LLM Provider)
 		for (const provider of this.plugin.settings.connections.providers) {
-			const storedSecret = this.app.secretStorage.getSecret(`lumina-provider-${provider.id}`);
-			if (storedSecret !== null) {
-				provider.credential = storedSecret;
+			try {
+				const storedSecret = this.app.secretStorage.getSecret(`lumina-provider-${provider.id}`);
+				if (storedSecret !== null && storedSecret !== '') {
+					provider.credential = storedSecret;
+				}
+			} catch (e) {
+				debugLogger.logWarn('settings', `Failed to get secret for provider ${provider.id}: ${e}`);
 			}
 		}
 
 		// SecretStorage에서 MCP 토큰 로드 (내장 서버)
-		const mcpServerSecret = this.app.secretStorage.getSecret('lumina-mcp-server-auth');
-		if (mcpServerSecret !== null) {
-			this.plugin.settings.mcp.serverAuthToken = mcpServerSecret;
+		try {
+			const mcpServerSecret = this.app.secretStorage.getSecret('lumina-mcp-server-auth');
+			if (mcpServerSecret !== null && mcpServerSecret !== '') {
+				this.plugin.settings.mcp.serverAuthToken = mcpServerSecret;
+			}
+		} catch (e) {
+			debugLogger.logWarn('settings', `Failed to get mcp server auth secret: ${e}`);
 		}
 
 		// SecretStorage에서 MCP 토큰 로드 (외부 서버)
 		for (const server of this.plugin.settings.mcp.servers) {
-			const storedSecret = this.app.secretStorage.getSecret(`lumina-mcp-client-${server.id}`);
-			if (storedSecret !== null) {
-				server.authToken = storedSecret;
+			try {
+				const storedSecret = this.app.secretStorage.getSecret(`lumina-mcp-client-${server.id}`);
+				if (storedSecret !== null && storedSecret !== '') {
+					server.authToken = storedSecret;
+				}
+			} catch (e) {
+				debugLogger.logWarn('settings', `Failed to get mcp client secret for ${server.id}: ${e}`);
 			}
 		}
 
 		for (const provider of this.plugin.settings.webSearch.providers) {
-			const apiKey = this.app.secretStorage.getSecret(`lumina-websearch-apikey-${provider.type}`);
-			if (apiKey !== null) {
-				provider.apiKey = apiKey;
-			}
-			if (provider.type === 'google') {
-				const cx = this.app.secretStorage.getSecret(`lumina-websearch-cx-${provider.type}`);
-				if (cx !== null) {
-					provider.googleSearchEngineId = cx;
+			try {
+				const apiKey = this.app.secretStorage.getSecret(`lumina-websearch-apikey-${provider.type}`);
+				if (apiKey !== null && apiKey !== '') {
+					provider.apiKey = apiKey;
 				}
+				if (provider.type === 'google') {
+					const cx = this.app.secretStorage.getSecret(`lumina-websearch-cx-${provider.type}`);
+					if (cx !== null && cx !== '') {
+						provider.googleSearchEngineId = cx;
+					}
+				}
+			} catch (e) {
+				debugLogger.logWarn('settings', `Failed to get websearch secret for ${provider.type}: ${e}`);
 			}
 		}
 		
@@ -104,53 +125,94 @@ export class SettingsManager {
 
 	async saveSettings(): Promise<void> {
 		const settingsToSave = JSON.parse(JSON.stringify(this.plugin.settings)) as LuminaSettings;
+		const hasSecretStorage = !!this.app.secretStorage;
 
 		// 자격 증명은 SecretStorage에 저장하고, 파일 저장 객체에서는 제거 (LLM Provider)
 		for (const provider of settingsToSave.connections.providers) {
 			const originalProvider = this.plugin.settings.connections.providers.find((p) => p.id === provider.id);
-			if (originalProvider) {
-				this.app.secretStorage.setSecret(
-					`lumina-provider-${provider.id}`,
-					originalProvider.credential || '',
-				);
+			const credential = originalProvider?.credential || '';
+			if (hasSecretStorage) {
+				try {
+					this.app.secretStorage.setSecret(
+						`lumina-provider-${provider.id}`,
+						credential,
+					);
+					provider.credential = '';
+				} catch (e) {
+					debugLogger.logWarn('settings', `Failed to save secret for provider ${provider.id}: ${e}`);
+					provider.credential = credential;
+				}
+			} else {
+				provider.credential = credential;
 			}
-			provider.credential = '';
 		}
 
 		for (const provider of settingsToSave.webSearch.providers) {
 			const originalProvider = this.plugin.settings.webSearch.providers.find((p) => p.type === provider.type);
-			if (originalProvider) {
-				this.app.secretStorage.setSecret(
-					`lumina-websearch-apikey-${provider.type}`,
-					originalProvider.apiKey || '',
-				);
-				if (provider.type === 'google') {
+			const apiKey = originalProvider?.apiKey || '';
+			const cx = (originalProvider?.type === 'google' ? originalProvider.googleSearchEngineId : '') || '';
+
+			if (hasSecretStorage) {
+				try {
 					this.app.secretStorage.setSecret(
-						`lumina-websearch-cx-${provider.type}`,
-						originalProvider.googleSearchEngineId || '',
+						`lumina-websearch-apikey-${provider.type}`,
+						apiKey,
 					);
+					provider.apiKey = '';
+				} catch (e) {
+					debugLogger.logWarn('settings', `Failed to save websearch apikey for ${provider.type}: ${e}`);
+					provider.apiKey = apiKey;
 				}
-			}
-			provider.apiKey = '';
-			if (provider.type === 'google') {
-				provider.googleSearchEngineId = '';
+
+				if (provider.type === 'google') {
+					try {
+						this.app.secretStorage.setSecret(
+							`lumina-websearch-cx-${provider.type}`,
+							cx,
+						);
+						provider.googleSearchEngineId = '';
+					} catch (e) {
+						debugLogger.logWarn('settings', `Failed to save websearch cx for google: ${e}`);
+						provider.googleSearchEngineId = cx;
+					}
+				}
+			} else {
+				provider.apiKey = apiKey;
+				if (provider.type === 'google') {
+					provider.googleSearchEngineId = cx;
+				}
 			}
 		}
 
 		// MCP 내장 서버 토큰
-		this.app.secretStorage.setSecret(
-			'lumina-mcp-server-auth',
-			this.plugin.settings.mcp.serverAuthToken || '',
-		);
-		settingsToSave.mcp.serverAuthToken = '';
+		const mcpToken = this.plugin.settings.mcp.serverAuthToken || '';
+		if (hasSecretStorage) {
+			try {
+				this.app.secretStorage.setSecret('lumina-mcp-server-auth', mcpToken);
+				settingsToSave.mcp.serverAuthToken = '';
+			} catch (e) {
+				debugLogger.logWarn('settings', `Failed to save mcp server auth token: ${e}`);
+				settingsToSave.mcp.serverAuthToken = mcpToken;
+			}
+		} else {
+			settingsToSave.mcp.serverAuthToken = mcpToken;
+		}
 
 		// MCP 외부 서버 토큰
 		for (const server of settingsToSave.mcp.servers) {
 			const originalServer = this.plugin.settings.mcp.servers.find((s) => s.id === server.id);
-			if (originalServer?.authToken) {
-				this.app.secretStorage.setSecret(`lumina-mcp-client-${server.id}`, originalServer.authToken);
+			const authToken = originalServer?.authToken || '';
+			if (hasSecretStorage) {
+				try {
+					this.app.secretStorage.setSecret(`lumina-mcp-client-${server.id}`, authToken);
+					server.authToken = '';
+				} catch (e) {
+					debugLogger.logWarn('settings', `Failed to save mcp client secret for ${server.id}: ${e}`);
+					server.authToken = authToken;
+				}
+			} else {
+				server.authToken = authToken;
 			}
-			server.authToken = '';
 		}
 
 		await this.plugin.saveData(settingsToSave);

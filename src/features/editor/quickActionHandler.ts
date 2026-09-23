@@ -37,14 +37,17 @@ export class QuickActionHandler {
 		let providerId = connections.quickActionProviderId;
 		let modelId = connections.quickActionModelId;
 
-		if (action.actionType === 'chat') {
+		// 퀵 액션 전용 모델이 없거나 actionType이 chat인 경우: 활성 프로젝트 기본 모델 및 검증된 프로바이더로 자동 폴백
+		if (!providerId || !modelId || action.actionType === 'chat') {
 			const activeProject = getActiveProject();
-			providerId = activeProject.defaultProviderId || providerId;
-			modelId = activeProject.defaultModelId || modelId;
+			if (action.actionType === 'chat' || !providerId || !modelId) {
+				providerId = activeProject.defaultProviderId || providerId;
+				modelId = activeProject.defaultModelId || modelId;
+			}
 
 			if (!providerId || !modelId) {
-				const verified = connections.providers.filter(p => p.isVerified);
-				if (verified.length > 0 && verified[0].availableModels.length > 0) {
+				const verified = connections.providers.filter(p => p.isVerified && p.availableModels.length > 0);
+				if (verified.length > 0) {
 					providerId = verified[0].id;
 					modelId = verified[0].availableModels[0];
 				}

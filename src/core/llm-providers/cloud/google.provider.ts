@@ -14,7 +14,7 @@ export class GoogleProvider implements ILLMProvider {
 
 	constructor(providerId: string, apiKey: string) {
 		this.providerId = providerId;
-		this.apiKey = apiKey;
+		this.apiKey = apiKey.trim();
 	}
 
 	async listModels(): Promise<string[]> {
@@ -24,9 +24,10 @@ export class GoogleProvider implements ILLMProvider {
 				method: 'GET',
 			});
 			const data = res.json as {
-				models: { name: string; supportedGenerationMethods?: string[] }[]
+				models?: { name: string; supportedGenerationMethods?: string[] }[]
 			};
-			const apiModels = data.models
+			const list = Array.isArray(data?.models) ? data.models : [];
+			const apiModels = list
 				.filter(m =>
 					(m.name.startsWith('models/gemini') && (m.supportedGenerationMethods ?? []).includes('generateContent')) ||
 					m.name.includes('embedding')
@@ -90,28 +91,39 @@ export class GoogleProvider implements ILLMProvider {
 	}
 
 	async embed(texts: string[], options: { model: string }): Promise<number[][]> {
+		if (texts.length === 0) return [];
 		try {
 			const modelName = options.model.startsWith('models/') ? options.model : `models/${options.model}`;
 			const url = `https://generativelanguage.googleapis.com/v1beta/${modelName}:batchEmbedContents?key=${this.apiKey}`;
-			
-			const requests = texts.map((text) => ({
-				model: modelName,
-				content: {
-					parts: [{ text }],
-				},
-			}));
+			const BATCH_SIZE = 100;
+			const allEmbeddings: number[][] = [];
 
-			const res = await requestUrl({
-				url,
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({ requests }),
-			});
+			for (let i = 0; i < texts.length; i += BATCH_SIZE) {
+				const slice = texts.slice(i, i + BATCH_SIZE);
+				const requests = slice.map((text) => ({
+					model: modelName,
+					content: {
+						parts: [{ text }],
+					},
+				}));
 
-			const data = res.json as { embeddings: { values: number[] }[] };
-			return data.embeddings.map((e) => e.values);
+				const res = await requestUrl({
+					url,
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ requests }),
+				});
+
+				const data = res.json as { embeddings?: { values: number[] }[] };
+				if (!data?.embeddings || !Array.isArray(data.embeddings)) {
+					throw new Error(`Invalid response from Gemini embedding API: ${res.text || 'No embeddings'}`);
+				}
+				allEmbeddings.push(...data.embeddings.map((e) => e.values));
+			}
+
+			return allEmbeddings;
 		} catch (error) {
 			throw new Error(`Google Gemini Embedding Error: ${error instanceof Error ? error.message : String(error)}`);
 		}

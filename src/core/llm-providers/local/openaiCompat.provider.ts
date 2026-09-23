@@ -20,11 +20,11 @@ export class OpenAICompatProvider extends BaseOpenAIProvider {
 	protected readonly baseUrl: string;
 
 	constructor(providerId: string, type: ProviderType, baseUrl: string, apiKey = 'ollama') {
-		super(apiKey || 'ollama');
+		super(apiKey?.trim() || 'ollama');
 		this.providerId = providerId;
 		this.type = type;
-		// 후행 슬래시 제거
-		this.baseUrl = baseUrl.replace(/\/$/, '');
+		// 후행 슬래시 및 중복 /v1 제거 정규화
+		this.baseUrl = baseUrl.trim().replace(/\/+$/, '').replace(/\/v1$/, '');
 		this.enableReasoning = true;
 	}
 
@@ -52,9 +52,12 @@ export class OpenAICompatProvider extends BaseOpenAIProvider {
 				url: `${this.baseUrl}/api/tags`,
 				method: 'GET',
 			});
-			const data = res.json as { models: { name: string }[] };
-			if (!data.models?.length) throw new Error(t('settings.providerErrors.ollamaNoModel'));
-			return data.models.map((m) => m.name);
+			const data = res.json as { models?: { name: string }[] };
+			const models = (data?.models ?? [])
+				.map((m) => m?.name?.trim())
+				.filter((name): name is string => typeof name === 'string' && name.length > 0);
+			if (!models.length) throw new Error(t('settings.providerErrors.ollamaNoModel'));
+			return models;
 		} catch (error) {
 			raiseApiError(error, 'Ollama');
 			return []; // should not reach here since raiseApiError throws
@@ -68,8 +71,18 @@ export class OpenAICompatProvider extends BaseOpenAIProvider {
 				method: 'GET',
 				headers: { Authorization: `Bearer ${this.apiKey}` },
 			});
-			const data = res.json as { data: { id: string }[] };
-			return data.data.map((m) => m.id);
+			const data = res.json as { data?: { id?: string; name?: string }[]; models?: { id?: string; name?: string }[] } | { id?: string; name?: string }[];
+			const list = Array.isArray(data)
+				? data
+				: (Array.isArray(data?.data) ? data.data : (Array.isArray(data?.models) ? data.models : []));
+			const models = list
+				.map((m) => m?.id || m?.name)
+				.filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+				.map((id) => id.trim());
+			if (models.length === 0) {
+				throw new Error(t('settings.providerErrors.ollamaNoModel', { fallback: 'No models found' }));
+			}
+			return models;
 		} catch (error) {
 			raiseApiError(error, this.type);
 			return []; // should not reach here since raiseApiError throws

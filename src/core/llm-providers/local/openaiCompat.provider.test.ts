@@ -46,6 +46,17 @@ describe('OpenAICompatProvider', () => {
 			expect((p as any).baseUrl).toBe('http://localhost:11434');
 		});
 
+		it('should normalize baseUrl by removing redundant /v1 and /v1/', () => {
+			const p1 = new OpenAICompatProvider('test', 'custom', 'http://localhost:1234/v1');
+			expect((p1 as any).baseUrl).toBe('http://localhost:1234');
+
+			const p2 = new OpenAICompatProvider('test', 'custom', 'http://localhost:1234/v1/');
+			expect((p2 as any).baseUrl).toBe('http://localhost:1234');
+
+			const p3 = new OpenAICompatProvider('test', 'ollama', '  http://localhost:11434/v1/  ');
+			expect((p3 as any).baseUrl).toBe('http://localhost:11434');
+		});
+
 		it('should set enableReasoning to true', () => {
 			const p = new OpenAICompatProvider('test', 'ollama', 'http://localhost:11434');
 			expect((p as any).enableReasoning).toBe(true);
@@ -122,6 +133,24 @@ describe('OpenAICompatProvider', () => {
 				method: 'GET',
 				headers: { Authorization: 'Bearer Bearer-token-xyz' },
 			});
+		});
+
+		it('should support various response shapes like { models: [] } or raw array', async () => {
+			mockRequestUrl.mockResolvedValueOnce({
+				json: {
+					models: [{ id: 'qwen2.5' }],
+				},
+			} as RequestUrlResponse);
+
+			const models1 = await compatProvider.listModels();
+			expect(models1).toEqual(['qwen2.5']);
+
+			mockRequestUrl.mockResolvedValueOnce({
+				json: [{ id: 'deepseek-r1' }],
+			} as RequestUrlResponse);
+
+			const models2 = await compatProvider.listModels();
+			expect(models2).toEqual(['deepseek-r1']);
 		});
 
 		it('should throw error on OpenAI Compat API failure', async () => {

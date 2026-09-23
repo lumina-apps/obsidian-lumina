@@ -118,6 +118,7 @@ export default class LuminaPlugin extends Plugin {
 		registerLuminaIcons();
 
 		await this.settingsManager.loadSettings();
+		await this.settingsManager.loadSecrets();
 
 		// 기본 언어 즉시 적용 (en.json은 정적 캐시되어 있어 지연 없음)
 		// 이후 onLayoutReady에서 비동기적으로 실제 시스템/사용자 언어 적용
@@ -155,7 +156,6 @@ export default class LuminaPlugin extends Plugin {
 			// 지연 로딩할 무거운 모듈들 및 locale 설정 병렬 대기
 			const [
 				,
-				,
 				[
 					{ McpManager },
 					{ setupApprovalListener },
@@ -168,7 +168,6 @@ export default class LuminaPlugin extends Plugin {
 				]
 			] = await Promise.all([
 				initLocale(),
-				this.settingsManager.loadSecrets(),
 				Promise.all([
 					import('./core/mcp/mcpManager'),
 					import('./features/chat/utils/approvalListener'),

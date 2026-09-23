@@ -39,6 +39,12 @@ vi.mock('obsidian', () => {
 		register: vi.fn(),
 	};
 
+	const mockSecretStorage = {
+		getSecret: vi.fn((_id: string) => null as string | null),
+		setSecret: vi.fn(),
+		listSecrets: vi.fn(() => [] as string[]),
+	};
+
 	const mockApp = {
 		vault: mockVault,
 		workspace: mockWorkspace,
@@ -46,6 +52,7 @@ vi.mock('obsidian', () => {
 			pushScope: vi.fn(() => mockScope),
 			popScope: vi.fn(),
 		},
+		secretStorage: mockSecretStorage,
 	};
 
 

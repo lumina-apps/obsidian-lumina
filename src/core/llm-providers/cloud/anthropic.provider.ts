@@ -17,7 +17,7 @@ export class AnthropicProvider implements ILLMProvider {
 
 	constructor(providerId: string, apiKey: string) {
 		this.providerId = providerId;
-		this.apiKey = apiKey;
+		this.apiKey = apiKey.trim();
 	}
 
 	async listModels(): Promise<string[]> {

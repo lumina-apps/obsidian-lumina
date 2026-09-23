@@ -33,18 +33,20 @@ export { isCliProvider };
  * @throws {Error} credential이 비어있거나 baseUrl이 비어있으면 에러
  */
 export function createProvider(config: LLMProviderConfig): ILLMProvider {
-	const { id, type, credential, baseUrl } = config;
+	const { id, type } = config;
+	const credential = config.credential?.trim() ?? '';
+	const baseUrl = config.baseUrl?.trim();
 
 	const category = PROVIDER_CATEGORIES[type];
 
 	// 로컬이나 커스텀의 경우 URL이 필수
 	if (category === 'local' || category === 'custom') {
-		if (!baseUrl?.trim()) {
+		if (!baseUrl) {
 			throw new Error(t('settings.providerErrors.missingUrl'));
 		}
 	} else if (category !== 'cli') {
 		// 클라우드/애그리게이터의 경우 API Key가 필수 (CLI 제외)
-		if (!credential?.trim()) {
+		if (!credential) {
 			throw new Error(t('settings.providerErrors.missingKey'));
 		}
 	}
@@ -57,7 +59,10 @@ export function createProvider(config: LLMProviderConfig): ILLMProvider {
 			if (Platform.isMobile) {
 				throw new Error(t('settings.providerErrors.cliDesktopOnly'));
 			}
-			return new CliAgentProvider(config);
+			return new CliAgentProvider({
+				...config,
+				binaryPath: config.binaryPath?.trim(),
+			});
 
 		case 'openai':
 			return new OpenAIProvider(id, credential);

@@ -65,20 +65,31 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 	}
 
 	async embed(texts: string[], options: { model: string }): Promise<number[][]> {
+		if (texts.length === 0) return [];
 		try {
-			const res = await requestUrl({
-				url: `${this.baseUrl}/v1/embeddings`,
-				method: 'POST',
-				headers: this.buildHeaders(),
-				body: JSON.stringify({
-					input: texts,
-					model: options.model,
-				}),
-			});
-			const data = res.json as { data: { embedding: number[]; index: number }[] };
-			return data.data
-				.sort((a, b) => a.index - b.index)
-				.map((d) => d.embedding);
+			const BATCH_SIZE = 100;
+			const allEmbeddings: number[][] = [];
+
+			for (let i = 0; i < texts.length; i += BATCH_SIZE) {
+				const slice = texts.slice(i, i + BATCH_SIZE);
+				const res = await requestUrl({
+					url: `${this.baseUrl}/v1/embeddings`,
+					method: 'POST',
+					headers: this.buildHeaders(),
+					body: JSON.stringify({
+						input: slice,
+						model: options.model,
+					}),
+				});
+				const data = res.json as { data?: { embedding: number[]; index?: number }[] };
+				if (!data?.data || !Array.isArray(data.data)) {
+					throw new Error(`Invalid response format from embeddings endpoint: ${res.text || 'No data array'}`);
+				}
+				const sorted = [...data.data].sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+				allEmbeddings.push(...sorted.map((d) => d.embedding));
+			}
+
+			return allEmbeddings;
 		} catch (error) {
 			throw new Error(`${this.type} Embedding Error: ${error instanceof Error ? error.message : String(error)}`);
 		}

@@ -144,10 +144,35 @@ export async function requestUrlWithAbort(params: RequestUrlParam, signal?: Abor
  * 모든 프로바이더에서 중복되는 catch 블록을 대체합니다.
  */
 export function raiseApiError(error: unknown, providerName: string): never {
-	const err = error as { status?: string | number; message?: string };
+	const err = error as { status?: string | number; message?: string; text?: string; json?: Record<string, unknown> };
 	const status = err.status ? String(err.status) : 'unknown';
-	const text = err.message || '';
-	throw new Error(t('settings.providerErrors.apiError', { provider: providerName, status, text }));
+	let text = err.message || '';
+	if (err.text) {
+		try {
+			const parsed = JSON.parse(err.text) as { error?: { message?: string } | string; message?: string };
+			if (typeof parsed.error === 'object' && parsed.error?.message) {
+				text = parsed.error.message;
+			} else if (typeof parsed.error === 'string') {
+				text = parsed.error;
+			} else if (parsed.message) {
+				text = parsed.message;
+			} else {
+				text = err.text;
+			}
+		} catch {
+			text = err.text;
+		}
+	} else if (err.json) {
+		const json = err.json as { error?: { message?: string } | string; message?: string };
+		if (typeof json.error === 'object' && json.error?.message) {
+			text = json.error.message;
+		} else if (typeof json.error === 'string') {
+			text = json.error;
+		} else if (json.message) {
+			text = json.message;
+		}
+	}
+	throw new Error(t('settings.providerErrors.apiError', { provider: providerName, status, text: text.trim() }));
 }
 
 /**

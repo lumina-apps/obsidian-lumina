@@ -206,4 +206,29 @@ describe('GoogleProvider', () => {
 			expect(result.toolCalls![0].arguments).toEqual({ query: 'test' });
 		});
 	});
+
+	describe('embed', () => {
+		it('should return empty array when texts is empty', async () => {
+			const res = await provider.embed([], { model: 'text-embedding-004' });
+			expect(res).toEqual([]);
+			expect(mockRequestUrl).not.toHaveBeenCalled();
+		});
+
+		it('should chunk requests when texts exceed 100 items', async () => {
+			const texts = Array.from({ length: 150 }, (_, i) => `chunk ${i}`);
+			mockRequestUrl.mockImplementation(async (params: { body: string }) => {
+				const body = JSON.parse(params.body) as { requests: { content: { parts: { text: string }[] } }[] };
+				expect(body.requests.length).toBeLessThanOrEqual(100);
+				return {
+					json: {
+						embeddings: body.requests.map((_, idx) => ({ values: [idx * 0.1, idx * 0.2] })),
+					},
+				} as RequestUrlResponse;
+			});
+
+			const results = await provider.embed(texts, { model: 'text-embedding-004' });
+			expect(results).toHaveLength(150);
+			expect(mockRequestUrl).toHaveBeenCalledTimes(2);
+		});
+	});
 });
