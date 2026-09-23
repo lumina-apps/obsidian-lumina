@@ -47,11 +47,13 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 
 	try {
 		let parentChunks = indexer.indexedParentChunks;
+		let allowedPaths: string[] | undefined = undefined;
 
 		if (filterPaths && filterPaths.length > 0) {
 			parentChunks = parentChunks.filter(c =>
 				filterPaths.some(fp => c.path === fp || c.path.startsWith(fp + '/'))
 			);
+			allowedPaths = Array.from(new Set(parentChunks.map(c => c.path)));
 		}
 
 		const ragStart = Date.now();
@@ -74,7 +76,7 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 			initialTopK,
 			rag.minSimilarity,
 			0.5,
-			null // no more active-note scope
+			allowedPaths
 		);
 
 		debugLogger.logSystem('rag', `parentChunks: ${parentChunks.length}, Initial Results: ${results.length}`);

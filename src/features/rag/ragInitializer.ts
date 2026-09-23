@@ -15,6 +15,7 @@ import { setIndexingStatus } from '../../core/store/ragStore';
 import { projectIndexCache } from './projectIndexCache';
 import { getActiveProject } from '../../core/store/projectStore';
 import { debugLogger } from '../../shared/debugLogger';
+import { DocumentParserRouter } from './parsers/DocumentParserRouter';
 import type LuminaPlugin from '../../main';
 
 /** 기본 임베딩 모델 (auto 모드). 다국어 지원. */
@@ -131,7 +132,7 @@ export async function initEmbeddingWorker(
 			embedFn,
 			parseBinaryFn: (buffer, ext) => plugin.embeddingWorker
 				? plugin.embeddingWorker.parse(buffer, ext)
-				: Promise.resolve(''),
+				: DocumentParserRouter.parseBinary(buffer, ext),
 			settings: ragSettings,
 			includedPaths: activeProject.ragIncludedPaths,
 			excludedPaths: activeProject.ragExcludedPaths,
@@ -203,7 +204,6 @@ export async function switchProjectIndex(
 	newProjectId: string,
 ): Promise<void> {
 	if (!plugin.settings.connections.ragEnabled) return;
-	if (!plugin.embeddingWorker && plugin.settings.connections.embedding.mode === 'auto') return;
 
 	// 현재 인덱서 watch 이벤트 해제
 	plugin.watchManager.clearWatchEvents();
@@ -254,7 +254,7 @@ export async function switchProjectIndex(
 		embedFn = (texts: string[]) => worker.embed(texts);
 	}
 
-	const project = getActiveProject();
+	const project = plugin.settings.projects.list.find(p => p.id === newProjectId) ?? getActiveProject();
 
 	debugLogger.logSystem('rag', `switchProjectIndex: Cache miss for '${newProjectId}'. Current active project in store is '${project.id}'. Included: ${JSON.stringify(project.ragIncludedPaths)}, Excluded: ${JSON.stringify(project.ragExcludedPaths)}`);
 
@@ -265,9 +265,9 @@ export async function switchProjectIndex(
 	const newIndexer = new VaultIndexer({
 		app: plugin.app,
 		embedFn,
-		parseBinaryFn: plugin.embeddingWorker
-			? (buffer, ext) => plugin.embeddingWorker!.parse(buffer, ext)
-			: () => Promise.resolve(''),
+		parseBinaryFn: (buffer, ext) => plugin.embeddingWorker
+			? plugin.embeddingWorker.parse(buffer, ext)
+			: DocumentParserRouter.parseBinary(buffer, ext),
 		settings: plugin.settings.rag,
 		includedPaths: project.ragIncludedPaths,
 		excludedPaths: project.ragExcludedPaths,

@@ -219,4 +219,35 @@ describe('indexProcessing', () => {
 		// Should only be called once because it cancelled before the second file
 		expect(fileProcessor.readAndPrepareFile).toHaveBeenCalledTimes(1);
 	});
+
+	it('should incrementally store embeddings to embeddingStore and delete old embeddings when file is modified', async () => {
+		const mockEmbeddingStore = {
+			storeEmbeddings: vi.fn().mockResolvedValue(undefined),
+			deleteEmbeddings: vi.fn().mockResolvedValue(undefined),
+		};
+		ctx.embeddingStore = mockEmbeddingStore as any;
+
+		// Pre-populate ctx with an existing chunk for file1.md
+		ctx.childChunks = [{ id: 'old_c1', path: 'file1.md', text: 'old', parentId: 'old_p1', chunkIndex: 0 }];
+		ctx.parentChunks = [{ id: 'old_p1', path: 'file1.md', text: 'old', chunkIndex: 0 }];
+
+		const files = [
+			{ path: 'file1.md', stat: { mtime: 2000 } } as TFile
+		];
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		vi.mocked(fileProcessor.readAndPrepareFile).mockResolvedValue({
+			parentChunks: [{ id: 'new_p1', path: 'file1.md', text: 'new parent' } as any],
+			childChunks: [{ id: 'new_c1', path: 'file1.md', text: 'new child', parentId: 'new_p1', embedding: null as any } as any],
+			contentHash: 5678,
+			skip: false
+		});
+
+		await processFiles(files, ctx, 0, []);
+
+		// Old embedding should have been deleted from embeddingStore
+		expect(mockEmbeddingStore.deleteEmbeddings).toHaveBeenCalledWith(['old_c1']);
+		// New embedding should have been stored to embeddingStore
+		expect(mockEmbeddingStore.storeEmbeddings).toHaveBeenCalled();
+	});
 });

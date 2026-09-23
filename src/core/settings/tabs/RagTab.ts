@@ -220,6 +220,13 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 					.onChange(wrapAsync(async (val) => {
 						s.syncMode = val as typeof s.syncMode;
 						await tab.saveAndSync();
+						if (tab.plugin.settings.connections.ragEnabled && tab.plugin.indexer) {
+							if (s.syncMode === 'watch') {
+								tab.plugin.watchManager.registerWatchEvents();
+							} else {
+								tab.plugin.watchManager.clearWatchEvents();
+							}
+						}
 					}));
 			});
 

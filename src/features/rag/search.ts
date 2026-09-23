@@ -42,7 +42,7 @@ export async function searchVault(
 	topK: number,
 	minSimilarity = 0.0,
 	alpha = 0.5,
-	activeFilePath?: string | null,
+	allowedPaths?: string | string[] | null,
 ): Promise<SearchResult[]> {
 	if (!oramaDb) return [];
 	if (parentChunks.length === 0) return [];
@@ -57,7 +57,7 @@ export async function searchVault(
 
 	// 2. Orama 벡터 검색 (여유있게 topK의 2배 이상, 최소 10개)
 	const limit = Math.max(10, topK * 2);
-	const hits = await oramaDb.search(queryEmbedding, limit, activeFilePath);
+	const hits = await oramaDb.search(queryEmbedding, limit, allowedPaths);
 	debugLogger.logDebug('rag', `Orama hits: ${hits.length}`);
 
 	// 3. 하위 청크 결과를 상위 청크 기준으로 그룹화
@@ -88,7 +88,7 @@ export async function searchVault(
 	if (query.trim().length > 0) {
 		// Orama 풀텍스트 검색을 활용해 후보군을 매우 빠르게 추출
 		const fulltextLimit = Math.max(50, topK * 5);
-		const fulltextHits = await oramaDb.searchFulltext(query, fulltextLimit, activeFilePath);
+		const fulltextHits = await oramaDb.searchFulltext(query, fulltextLimit, allowedPaths);
 		
 		const candidateParentIds = new Set<string>();
 		for (const hit of fulltextHits) {

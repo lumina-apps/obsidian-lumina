@@ -41,11 +41,6 @@ export class RagWatchManager {
 		const renameRef = this.plugin.app.vault.on('rename', triggerUpdate);
 
 		this.watchEventRefs.push(modifyRef, createRef, deleteRef, renameRef);
-
-		this.plugin.registerEvent(modifyRef);
-		this.plugin.registerEvent(createRef);
-		this.plugin.registerEvent(deleteRef);
-		this.plugin.registerEvent(renameRef);
 	}
 
 	/** watch 이벤트 및 타이머 정리 */

@@ -13,11 +13,10 @@ export const DEFAULT_EXCLUDED_PATHS: readonly string[] = [
 
 function matchesPrefix(filePath: string, prefix: string): boolean {
 	let normalized = prefix.trim().replace(/\\/g, '/');
-	if (normalized === '/' || normalized === '') return true;
 	if (normalized.endsWith('/')) {
 		normalized = normalized.slice(0, -1);
 	}
-	if (!normalized) return false;
+	if (!normalized || normalized === '/') return false;
 	return filePath === normalized || filePath.startsWith(normalized + '/');
 }
 
@@ -32,7 +31,9 @@ export function isExcluded(filePath: string, userPaths: string[]): boolean {
 	}
 	if (userPaths && userPaths.length > 0) {
 		for (let i = 0; i < userPaths.length; i++) {
-			if (matchesPrefix(filePath, userPaths[i])) return true;
+			const p = userPaths[i]?.trim();
+			if (!p || p === '/' || p === '\\') continue;
+			if (matchesPrefix(filePath, p)) return true;
 		}
 	}
 	return false;
@@ -50,7 +51,9 @@ export function isIncluded(filePath: string, includePaths: string[]): boolean {
 	}
 
 	for (let i = 0; i < includePaths.length; i++) {
-		if (matchesPrefix(filePath, includePaths[i])) return true;
+		const p = includePaths[i]?.trim();
+		if (!p || p === '/' || p === '\\') return true; // 루트 포함은 전체 포함
+		if (matchesPrefix(filePath, p)) return true;
 	}
 	return false;
 }

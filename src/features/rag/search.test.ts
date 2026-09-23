@@ -107,5 +107,33 @@ describe('search module', () => {
 
 			expect(results).toHaveLength(0);
 		});
+
+		it('should pass allowedPaths to oramaStore search and searchFulltext', async () => {
+			const parentChunks: ParentChunk[] = [
+				{ id: 'p1', path: 'folderA/file1.md', text: 'Text in folder A', chunkIndex: 0 },
+			];
+
+			const mockOramaStore = {
+				search: vi.fn().mockResolvedValue([]),
+				searchFulltext: vi.fn().mockResolvedValue([]),
+			} as unknown as OramaStore;
+
+			const embedFn = vi.fn().mockResolvedValue([[0.1, 0.2]]);
+			const allowedPaths = ['folderA/file1.md'];
+
+			await searchVault(
+				'query',
+				parentChunks,
+				mockOramaStore,
+				embedFn,
+				5,
+				0.0,
+				0.5,
+				allowedPaths
+			);
+
+			expect(mockOramaStore.search).toHaveBeenCalledWith(expect.anything(), expect.any(Number), allowedPaths);
+			expect(mockOramaStore.searchFulltext).toHaveBeenCalledWith('query', expect.any(Number), allowedPaths);
+		});
 	});
 });

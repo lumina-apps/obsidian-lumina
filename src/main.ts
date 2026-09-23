@@ -257,6 +257,7 @@ export default class LuminaPlugin extends Plugin {
 
 	onunload() {
 		this._unloaded = true;
+		this.indexer?.destroy();
 		this.embeddingWorker?.terminate();
 		this.watchManager?.clearWatchEvents();
 		this.frontmatterManager?.destroy();

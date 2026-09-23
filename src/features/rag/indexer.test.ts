@@ -212,6 +212,29 @@ describe('VaultIndexer', () => {
 			expect(indexPersistence.saveIndex).toHaveBeenCalled(); // via persist()
 			expect(ragStore.setIndexingStatus).toHaveBeenCalledWith('ready', { totalFiles: 1, processedFiles: 1 });
 		});
+
+		it('should persist index when paths are deleted even if no files changed', async () => {
+			const targetFile = { path: 'file1.md', stat: { mtime: 1000 } } as TFile;
+			vi.mocked(fileFilter.getTargetFiles).mockReturnValue([targetFile]);
+			vi.mocked(indexPersistence.loadIndex).mockResolvedValue({
+				needsFullReindex: false,
+				chunks: [{ id: 'p_del', path: 'deleted.md', text: 'txt', chunkIndex: 0 }],
+				childChunks: [{ id: 'c_del', path: 'deleted.md', text: 'txt', parentId: 'p_del', chunkIndex: 0 }],
+				fileMtimes: { 'deleted.md': 500, 'file1.md': 1000 },
+				fileHashes: {},
+				indexedPaths: new Set(['deleted.md', 'file1.md'])
+			});
+			vi.mocked(indexDiff.calculateIndexDiff).mockResolvedValue({
+				pathsToDelete: new Set(['deleted.md']),
+				changedFiles: [] // no changed files
+			});
+
+			await indexer.updateIndex();
+
+			expect(mockEmbeddingStore.deleteEmbeddings).toHaveBeenCalledWith(['c_del']);
+			expect(indexPersistence.saveIndex).toHaveBeenCalled(); // via persist()
+			expect(ragStore.setIndexingStatus).toHaveBeenCalledWith('ready', { totalFiles: 1, processedFiles: 1 });
+		});
 	});
 
 	describe('resetIndex', () => {

@@ -52,7 +52,11 @@ export class WorkerPool {
 				worker.addEventListener('error', (e: Event) => {
 					const msg = e instanceof ErrorEvent ? e.message : t('uiMessages.ragWorkerInitErr');
 					debugLogger.logError('rag', new Error(`[EmbeddingWorker] worker #${i} uncaught error: ${msg}`));
-					instance.readyReject?.(new Error(`Worker 오류: ${msg}`));
+					instance.isReady = false;
+					const err = new Error(`Worker 오류: ${msg}`);
+					instance.readyReject?.(err);
+					instance.embedRequests.rejectAll(err);
+					instance.parseRequests.rejectAll(err);
 				});
 
 				this.workers.push(instance);
@@ -152,6 +156,7 @@ export class WorkerPool {
 		const err = new Error(message);
 
 		if (requestId === 'init') {
+			inst.isReady = false;
 			inst.readyReject?.(err);
 		} else {
 			const handledByEmbed = inst.embedRequests.reject(requestId, err);

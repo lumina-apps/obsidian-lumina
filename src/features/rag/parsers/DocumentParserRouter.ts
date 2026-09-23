@@ -15,5 +15,31 @@ export class DocumentParserRouter {
 		}
 		return await TextParser.parse(text, ext);
 	}
+
+	/** 바이너리 파일 ArrayBuffer에서 텍스트를 추출합니다. */
+	static async parseBinary(buffer: ArrayBuffer, ext: string): Promise<string> {
+		const lowerExt = ext.toLowerCase();
+		try {
+			if (lowerExt === 'pdf') {
+				const { PdfParser } = await import('./PdfParser');
+				return await PdfParser.parse(buffer);
+			} else if (lowerExt === 'docx') {
+				const { DocxParser } = await import('./DocxParser');
+				return await DocxParser.parse(buffer);
+			} else if (lowerExt === 'xlsx' || lowerExt === 'xls') {
+				const { XlsxParser } = await import('./XlsxParser');
+				return await XlsxParser.parse(buffer);
+			} else if (lowerExt === 'pptx') {
+				const { PptxParser } = await import('./PptxParser');
+				return await PptxParser.parse(buffer);
+			} else if (lowerExt === 'epub') {
+				const { EpubParser } = await import('./EpubParser');
+				return await EpubParser.parse(buffer);
+			}
+		} catch {
+			return '';
+		}
+		return '';
+	}
 }
 

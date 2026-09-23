@@ -15,6 +15,7 @@ import {
 	type IndexPersistContext,
 } from './checkpointManager';
 import type { OramaStore } from './oramaStore';
+import type { EmbeddingStore } from './embeddingStore';
 
 const CHUNK_EMBED_BATCH = 512;
 const SMALL_VAULT_THRESHOLD = 50;
@@ -41,6 +42,7 @@ export interface ProcessContext {
 	cachePersistCheckpointInterval?: number;
 	/** vault 전체 파일 수 (체크포인트 totalFiles 용) */
 	totalFileCount: number;
+	embeddingStore?: EmbeddingStore;
 }
 
 export async function processFiles(files: TFile[], ctx: ProcessContext, startedAt: number, initialProcessedPaths: string[] = []): Promise<void> {
@@ -86,6 +88,13 @@ async function removePathChunks(path: string, ctx: ProcessContext): Promise<void
 	}
 	if (idsToRemove.length > 0) {
 		await ctx.oramaStore.deleteByIds(idsToRemove);
+		if (ctx.embeddingStore) {
+			try {
+				await ctx.embeddingStore.deleteEmbeddings(idsToRemove);
+			} catch (err) {
+				debugLogger.logWarn('rag', `Failed to delete old embeddings for ${path}: ${err}`);
+			}
+		}
 	}
 }
 
@@ -115,6 +124,11 @@ async function processSequential(
 							result.childChunks[j].embedding = new Float32Array(embeddings[j]);
 						}
 						await ctx.oramaStore.insertChunks(result.childChunks);
+						if (ctx.embeddingStore) {
+							await ctx.embeddingStore.storeEmbeddings(result.childChunks).catch((e) => {
+								debugLogger.logWarn('rag', `Incremental storeEmbeddings failed: ${e}`);
+							});
+						}
 					}
 					
 					ctx.parentChunks.push(...result.parentChunks);
@@ -220,6 +234,11 @@ async function processBatched(
 				if (checkCancel()) return;
 
 				await ctx.oramaStore.insertChunks(toEmbedChildChunks);
+				if (ctx.embeddingStore) {
+					await ctx.embeddingStore.storeEmbeddings(toEmbedChildChunks).catch((e) => {
+						debugLogger.logWarn('rag', `Batch storeEmbeddings failed: ${e}`);
+					});
+				}
 				
 				ctx.parentChunks.push(...toEmbedParentChunks);
 				ctx.childChunks.push(...toEmbedChildChunks);

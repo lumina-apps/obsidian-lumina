@@ -36,10 +36,33 @@ export interface TagCollectorInput {
 	activeFilePath: string | null;
 }
 
-/** 유사 문서와 현재 활성 파일의 메타데이터를 종합하여 추천 태그를 생성합니다. */
+/** 유사 문서의 메타데이터로부터 현재 활성 파일에 유용한 새로운 추천 태그를 생성합니다. */
 export function collectRecommendedTags(input: TagCollectorInput): TagScore[] {
 	const { results, metadataCache, activeFilePath } = input;
 	
+	// 현재 활성 파일에 이미 있는 태그 수집 (추천에서 제외 대상)
+	const activeTags = new Set<string>();
+	if (activeFilePath) {
+		const ownCache = metadataCache.getCache(activeFilePath);
+		if (ownCache) {
+			if (ownCache.frontmatter?.tags) {
+				const fmTags = Array.isArray(ownCache.frontmatter.tags) ? ownCache.frontmatter.tags : [ownCache.frontmatter.tags];
+				for (const rawTag of fmTags) {
+					const tagStr = typeof rawTag === 'string' ? rawTag.trim() : String(rawTag).trim();
+					if (!tagStr) continue;
+					const tag = tagStr.startsWith('#') ? tagStr : '#' + tagStr;
+					activeTags.add(tag.toLowerCase());
+				}
+			}
+			if (ownCache.tags) {
+				for (const t of ownCache.tags) {
+					const tag = t.tag.startsWith('#') ? t.tag : '#' + t.tag;
+					activeTags.add(tag.toLowerCase());
+				}
+			}
+		}
+	}
+
 	const tagScoreMap = new Map<string, number>();
 	const bodyTagScores = extractBodyTags(results);
 	for (const t of bodyTagScores) {
@@ -57,23 +80,9 @@ export function collectRecommendedTags(input: TagCollectorInput): TagScore[] {
 		collectPathTags(result.chunk.path, result.score, tagScoreMap);
 	}
 
-	// 현재 활성 파일의 태그도 높은 우선순위로 포함
-	if (activeFilePath) {
-		const ownCache = metadataCache.getCache(activeFilePath);
-		if (ownCache) {
-			collectFrontmatterTags(ownCache.frontmatter, 0.95, tagScoreMap, true);
-			if (ownCache.tags) {
-				for (const t of ownCache.tags) {
-					const tag = t.tag.startsWith('#') ? t.tag : '#' + t.tag;
-					if (!tagScoreMap.has(tag)) {
-						tagScoreMap.set(tag, 0.9);
-					}
-				}
-			}
-		}
-	}
-
+	// 현재 활성 파일에 이미 존재하는 태그는 추천 목록에서 제외
 	return Array.from(tagScoreMap.entries())
+		.filter(([tag]) => !activeTags.has(tag.toLowerCase()))
 		.map(([tag, score]) => ({ tag, score }))
 		.sort((a, b) => b.score - a.score)
 		.slice(0, 5);

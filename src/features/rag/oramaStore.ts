@@ -74,7 +74,11 @@ export class OramaStore {
 	}
 
 	/** 쿼리 벡터와 유사한 하위 청크들을 검색합니다. */
-	async search(queryEmbedding: number[] | Float32Array, limit: number, activeFilePath?: string | null): Promise<{ id: string; score: number; activeDocument: Record<string, unknown> }[]> {
+	async search(
+		queryEmbedding: number[] | Float32Array,
+		limit: number,
+		allowedPaths?: string | string[] | null,
+	): Promise<{ id: string; score: number; activeDocument: Record<string, unknown> }[]> {
 		if (!this.db) throw new Error('OramaStore not initialized');
 
 		const searchParams: Parameters<typeof search>[1] = {
@@ -87,8 +91,16 @@ export class OramaStore {
 			similarity: 0.0, // 필터링은 외부에서 수행
 		};
 
-		if (activeFilePath) {
-			searchParams.where = { path: { eq: activeFilePath } };
+		if (allowedPaths) {
+			if (typeof allowedPaths === 'string') {
+				searchParams.where = { path: { eq: allowedPaths } };
+			} else if (Array.isArray(allowedPaths) && allowedPaths.length > 0) {
+				if (allowedPaths.length === 1) {
+					searchParams.where = { path: { eq: allowedPaths[0] } };
+				} else {
+					searchParams.where = { path: { in: allowedPaths } };
+				}
+			}
 		}
 
 		const results = await search(this.db, searchParams);
@@ -101,7 +113,11 @@ export class OramaStore {
 	}
 
 	/** 쿼리 텍스트에 기반해 BM25/Full-text 검색을 수행하여 하위 청크들을 찾습니다. */
-	async searchFulltext(query: string, limit: number, activeFilePath?: string | null): Promise<{ id: string; parentId: string }[]> {
+	async searchFulltext(
+		query: string,
+		limit: number,
+		allowedPaths?: string | string[] | null,
+	): Promise<{ id: string; parentId: string }[]> {
 		if (!this.db) throw new Error('OramaStore not initialized');
 		
 		const searchParams: Parameters<typeof search>[1] = {
@@ -110,8 +126,16 @@ export class OramaStore {
 			properties: ['text'],
 		};
 
-		if (activeFilePath) {
-			searchParams.where = { path: { eq: activeFilePath } };
+		if (allowedPaths) {
+			if (typeof allowedPaths === 'string') {
+				searchParams.where = { path: { eq: allowedPaths } };
+			} else if (Array.isArray(allowedPaths) && allowedPaths.length > 0) {
+				if (allowedPaths.length === 1) {
+					searchParams.where = { path: { eq: allowedPaths[0] } };
+				} else {
+					searchParams.where = { path: { in: allowedPaths } };
+				}
+			}
 		}
 
 		const results = await search(this.db, searchParams);

@@ -199,6 +199,9 @@ export class VaultIndexer {
 				}
 
 				if (changedFiles.length === 0) {
+					if (pathsToDelete.size > 0) {
+						await this.persist();
+					}
 					setIndexingStatus('ready', { totalFiles: files.length, processedFiles: files.length });
 					return;
 				}
@@ -301,8 +304,8 @@ export class VaultIndexer {
 		previousProcessedPaths: string[] = [],
 	): Promise<void> {
 		const processId = ++this.currentProcessId;
-		if (alreadyProcessed === 0 && filesToProcess.length === totalFiles.length) {
-			setTotalFiles(totalFiles.length, 0, this.indexingStartedAt);
+		if (alreadyProcessed === 0) {
+			setTotalFiles(totalFiles.length, totalFiles.length - filesToProcess.length, this.indexingStartedAt);
 		}
 
 		try {
@@ -317,6 +320,7 @@ export class VaultIndexer {
 				persistCache: this.persistCacheFn,
 				cachePersistCheckpointInterval: this.settings.cachePersistCheckpointInterval,
 				totalFileCount: totalFiles.length,
+				embeddingStore: this.embeddingStore,
 			}, this.indexingStartedAt, previousProcessedPaths);
 		} finally {
 			if (this.currentProcessId === processId && !this.isDestroyed) {

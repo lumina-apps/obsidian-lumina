@@ -40,11 +40,12 @@ export async function buildContextFromActiveFile(
 	let queryText = '';
 
 	if (otherParentChunks.length > 0) {
+		const allowedPaths = Array.from(new Set(otherParentChunks.map(c => c.path)));
 		const myFirstChildChunk = plugin.indexer.indexedChildChunks.find(c => c.path === file.path && c.chunkIndex === 0);
 
 		if (myFirstChildChunk?.embedding) {
 			const cachedEmbedding = myFirstChildChunk.embedding;
-			results = await searchVault('', otherParentChunks, plugin.indexer.oramaDb, async () => [Array.from(cachedEmbedding)], 20, 0.55);
+			results = await searchVault('', otherParentChunks, plugin.indexer.oramaDb, async () => [Array.from(cachedEmbedding)], 20, 0.55, 0.5, allowedPaths);
 			queryText = myFirstChildChunk.text;
 		} else {
 			const content = await plugin.app.vault.read(file);
@@ -52,7 +53,7 @@ export async function buildContextFromActiveFile(
 			const queryContext = cleanContent.substring(0, plugin.settings.rag.parentChunkSize || 2000);
 
 			if (queryContext.trim()) {
-				results = await searchVault(queryContext, otherParentChunks, plugin.indexer.oramaDb, texts => plugin.indexer!.embed(texts), 20, 0.55);
+				results = await searchVault(queryContext, otherParentChunks, plugin.indexer.oramaDb, texts => plugin.indexer!.embed(texts), 20, 0.55, 0.5, allowedPaths);
 				queryText = queryContext;
 			}
 		}

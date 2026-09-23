@@ -107,7 +107,8 @@
 			isSearching = true;
 			if (plugin.indexer) {
 				const chunks = filterParentChunks(plugin.app, plugin.indexer.indexedParentChunks, filterQuery);
-				searchResults = await searchVault(searchQuery, chunks, plugin.indexer.oramaDb, texts => plugin.indexer!.embed(texts), 15, 0.60);
+				const allowedPaths = filterQuery ? Array.from(new Set(chunks.map(c => c.path))) : null;
+				searchResults = await searchVault(searchQuery, chunks, plugin.indexer.oramaDb, texts => plugin.indexer!.embed(texts), 15, 0.60, 0.5, allowedPaths);
 			}
 		} catch (err) {
 			debugLogger.logError('rag', err instanceof Error ? err : new Error(`Semantic Search 실패: ${err}`));
