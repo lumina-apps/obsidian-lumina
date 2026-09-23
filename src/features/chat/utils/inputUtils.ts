@@ -1,3 +1,6 @@
+import type { ContextAttachment } from "../../../shared/types/chat.types";
+import { estimateTokens } from "../../../shared/utils/tokenEstimator";
+
 export function splitProviderModel(val: string): [string, string] {
 	const idx = val.indexOf("::");
 	if (idx === -1) return [val, ""];
@@ -33,4 +36,39 @@ export function detectSlashCommand(val: string, cursor: number, lastSlash: numbe
 	}
 
 	return { detected: true, query: trimmed, startIndex: lastSlash };
+}
+
+export interface EstimateInputTokensOptions {
+	inputText: string;
+	attachments: ContextAttachment[];
+	includeActiveNote?: boolean;
+	activeFileInfo?: { path: string; size: number } | null;
+	getFileSize?: (path: string) => number | undefined;
+}
+
+export function calculateEstimatedInputTokens(options: EstimateInputTokensOptions): number {
+	const { inputText, attachments, includeActiveNote, activeFileInfo, getFileSize } = options;
+	let tokens = 0;
+	if (inputText.trim()) {
+		tokens += estimateTokens(inputText);
+	}
+	for (const att of attachments) {
+		if (att.content) {
+			tokens += estimateTokens(att.content);
+		} else if (att.path && (att.type === "file" || att.type === "active_note")) {
+			const size = getFileSize ? getFileSize(att.path) : undefined;
+			if (typeof size === "number") {
+				tokens += Math.ceil(size / 3);
+			}
+		}
+	}
+	if (includeActiveNote && activeFileInfo) {
+		const alreadyIncluded = attachments.some(
+			(att) => att.type === "active_note" || (att.type === "file" && att.path === activeFileInfo.path),
+		);
+		if (!alreadyIncluded) {
+			tokens += Math.ceil(activeFileInfo.size / 3);
+		}
+	}
+	return tokens;
 }

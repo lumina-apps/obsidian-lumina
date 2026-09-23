@@ -8,7 +8,7 @@ import type { PathGuard } from '../pathGuard';
 export const ragSearchHandler = async (
 	args: ToolArguments,
 	ctx: ToolHandlerContext,
-	_pathGuard: PathGuard,
+	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
 	const indexer = ctx.plugin.indexer;
 	if (!indexer || indexer.indexedParentChunks.length === 0) {
@@ -42,13 +42,15 @@ export const ragSearchHandler = async (
 			minSim,
 		);
 
-		if (results.length === 0) {
+		const allowedResults = results.filter((r) => pathGuard.isAgentPathAllowed(r.chunk.path, ctx.plugin));
+
+		if (allowedResults.length === 0) {
 			return { content: [{ type: 'text', text: t('mcpServerTools.rag_search.noResults') }] };
 		}
 
-		const context = formatRagContext(results);
+		const context = formatRagContext(allowedResults);
 		const summary = t('mcpServerTools.rag_search.summary', {
-			count: results.length,
+			count: allowedResults.length,
 			minSim,
 			context,
 		});

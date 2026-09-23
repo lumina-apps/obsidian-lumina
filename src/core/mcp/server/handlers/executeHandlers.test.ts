@@ -68,3 +68,53 @@ describe('executeHandlers code block regex', () => {
 	});
 });
 
+import { runShellCommandHandler, runNoteCodeBlockHandler } from './executeHandlers';
+import { PathGuard } from '../pathGuard';
+import type { ToolHandlerContext } from '../toolTypes';
+
+describe('executeHandlers settings & validation', () => {
+	const pathGuard = new PathGuard();
+
+	it('run_shell_command returns error when serverEnableShellCommands is false', async () => {
+		const ctx: ToolHandlerContext = {
+			plugin: {
+				settings: {
+					mcp: {
+						serverEnableShellCommands: false,
+					},
+				},
+				app: { vault: { adapter: {} } },
+			} as any,
+			limitRead: 20000,
+			limitAppend: 10000,
+			snippetLen: 300,
+			maxResults: 50,
+		};
+
+		const res = await runShellCommandHandler({ command: 'ls' }, ctx, pathGuard);
+		expect(res.isError).toBe(true);
+		const text = res.content[0].type === 'text' ? res.content[0].text : '';
+		expect(text).toContain('disabled in Lumina settings');
+	});
+
+	it('run_note_code_block returns error cleanly when blockIndex is missing or invalid', async () => {
+		const ctx: ToolHandlerContext = {
+			plugin: {
+				settings: { mcp: {} },
+				app: {
+					vault: {
+						getAbstractFileByPath: () => null,
+					},
+				},
+			} as any,
+			limitRead: 20000,
+			limitAppend: 10000,
+			snippetLen: 300,
+			maxResults: 50,
+		};
+
+		const res = await runNoteCodeBlockHandler({ path: 'test.md', blockIndex: undefined }, ctx, pathGuard);
+		expect(res.isError).toBe(true);
+	});
+});
+

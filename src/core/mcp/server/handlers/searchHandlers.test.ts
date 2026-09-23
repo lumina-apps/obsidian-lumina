@@ -81,3 +81,29 @@ describe('searchNotesHandler', () => {
 		expect(item.type === 'text' ? item.text : '').toContain('[note1.md]');
 	});
 });
+
+import { globToRegex } from './searchHandlers';
+
+describe('globToRegex', () => {
+	it('matches root files with **/*.md', () => {
+		const regex = globToRegex('**/*.md');
+		expect(regex.test('note.md')).toBe(true);
+		expect(regex.test('folder/note.md')).toBe(true);
+		expect(regex.test('deep/nested/folder/note.md')).toBe(true);
+		expect(regex.test('note.canvas')).toBe(false);
+	});
+
+	it('matches wildcard extension like test.*', () => {
+		const regex = globToRegex('test.*');
+		expect(regex.test('test.md')).toBe(true);
+		expect(regex.test('test.canvas')).toBe(true);
+		expect(regex.test('test.json')).toBe(true);
+		expect(regex.test('test')).toBe(false);
+	});
+
+	it('matches specific folder patterns with wildcard', () => {
+		const regex = globToRegex('Daily/*');
+		expect(regex.test('Daily/2026-09-23.md')).toBe(true);
+		expect(regex.test('Daily/sub/2026-09-23.md')).toBe(false);
+	});
+});

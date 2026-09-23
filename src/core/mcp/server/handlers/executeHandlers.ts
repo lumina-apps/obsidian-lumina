@@ -57,8 +57,8 @@ export const runNoteCodeBlockHandler = async (
 	const blockRegex = /^[\t ]*```[a-zA-Z0-9_-]*[^\n]*\r?\n([\s\S]*?)^[\t ]*```/gm;
 	const matches = [...content.matchAll(blockRegex)];
 	
-	if (blockIndex < 0 || blockIndex >= matches.length) {
-		return { isError: true, content: [{ type: 'text', text: `Code block index ${blockIndex} out of bounds. Found ${matches.length} blocks.` }] };
+	if (isNaN(blockIndex) || blockIndex < 0 || blockIndex >= matches.length) {
+		return { isError: true, content: [{ type: 'text', text: `Code block index ${blockIndex} is invalid or out of bounds. Found ${matches.length} blocks.` }] };
 	}
 
 	const code = matches[blockIndex][1];
@@ -85,6 +85,13 @@ export const runShellCommandHandler = async (
 	ctx: ToolHandlerContext,
 	_pathGuard: PathGuard,
 ): Promise<ToolResult> => {
+	if (!ctx.plugin.settings.mcp.serverEnableShellCommands) {
+		return {
+			isError: true,
+			content: [{ type: 'text', text: 'Shell command execution is disabled in Lumina settings.' }],
+		};
+	}
+
 	const command = getStringArg(args, 'command');
 	const cwd = typeof args.cwd === 'string' ? args.cwd : undefined;
 

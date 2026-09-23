@@ -59,7 +59,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 					query: { type: 'string', description: t('mcpServerTools.search_notes.argQuery') },
 					tags: { type: 'array', items: { type: 'string' }, description: 'List of tags to filter by (e.g. ["#idea", "#task"]).' }
 				},
-				required: ['query'],
+				required: [],
 			},
 		},
 		{

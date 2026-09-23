@@ -72,50 +72,53 @@ export function applyAutoLink(content: string, terms: { originalTerm: string, pa
 	return { newContent: textTokens.map(t => t.text).join(''), linksAdded };
 }
 
-export async function processAutoLink(app: App, file: TFile, editor?: Editor): Promise<{ success: boolean; linksAdded: number; message: string }> {
-	try {
-		const content = editor ? editor.getValue() : await app.vault.read(file);
+export function calculateAutoLinks(app: App, file: TFile, content: string): { newContent: string; linksAdded: number } {
+	// 1. Vault 내 모든 노트 제목 및 별명(aliases) 수집
+	const allFiles = app.vault.getMarkdownFiles();
+	const termsMap = new Map<string, string>(); // key: term lower, value: original file basename
 
-		// 1. Vault 내 모든 노트 제목 및 별명(aliases) 수집
-		const allFiles = app.vault.getMarkdownFiles();
-		const termsMap = new Map<string, string>(); // key: term lower, value: original file basename
+	for (const f of allFiles) {
+		if (f.path === file.path) continue; // 자기 자신 제외
 
-		for (const f of allFiles) {
-			if (f.path === file.path) continue; // 자기 자신 제외
+		const normalizedBasename = f.basename.normalize('NFC');
+		const basenameLower = normalizedBasename.toLowerCase();
+		if (!termsMap.has(basenameLower)) {
+			termsMap.set(basenameLower, normalizedBasename);
+		}
 
-			const normalizedBasename = f.basename.normalize('NFC');
-			const basenameLower = normalizedBasename.toLowerCase();
-			if (!termsMap.has(basenameLower)) {
-				termsMap.set(basenameLower, normalizedBasename);
-			}
-
-			const cache = app.metadataCache.getFileCache(f);
-			if (cache?.frontmatter?.aliases) {
-				const aliases = Array.isArray(cache.frontmatter.aliases)
-					? cache.frontmatter.aliases
-					: [cache.frontmatter.aliases];
-				
-				for (const alias of aliases) {
-					if (typeof alias === 'string' && alias.trim()) {
-						const normalizedAlias = alias.trim().normalize('NFC');
-						const aliasLower = normalizedAlias.toLowerCase();
-						if (!termsMap.has(aliasLower)) {
-							termsMap.set(aliasLower, normalizedBasename);
-						}
+		const cache = app.metadataCache.getFileCache(f);
+		if (cache?.frontmatter?.aliases) {
+			const aliases = Array.isArray(cache.frontmatter.aliases)
+				? cache.frontmatter.aliases
+				: [cache.frontmatter.aliases];
+			
+			for (const alias of aliases) {
+				if (typeof alias === 'string' && alias.trim()) {
+					const normalizedAlias = alias.trim().normalize('NFC');
+					const aliasLower = normalizedAlias.toLowerCase();
+					if (!termsMap.has(aliasLower)) {
+						termsMap.set(aliasLower, normalizedBasename);
 					}
 				}
 			}
 		}
+	}
 
-		// 2. 검색어 목록 생성 및 길이 내림차순 정렬 (가장 긴 단어부터 매칭)
-		const terms = Array.from(termsMap.entries()).map(([lower, path]) => ({
-			originalTerm: lower, 
-			path
-		}));
-		terms.sort((a, b) => b.originalTerm.length - a.originalTerm.length);
+	// 2. 검색어 목록 생성 및 길이 내림차순 정렬 (가장 긴 단어부터 매칭)
+	const terms = Array.from(termsMap.entries()).map(([lower, path]) => ({
+		originalTerm: lower, 
+		path
+	}));
+	terms.sort((a, b) => b.originalTerm.length - a.originalTerm.length);
 
-		// 3. 순수 함수로 치환 수행
-		const { newContent, linksAdded } = applyAutoLink(content, terms);
+	// 3. 순수 함수로 치환 수행
+	return applyAutoLink(content, terms);
+}
+
+export async function processAutoLink(app: App, file: TFile, editor?: Editor): Promise<{ success: boolean; linksAdded: number; message: string }> {
+	try {
+		const content = editor ? editor.getValue() : await app.vault.read(file);
+		const { newContent, linksAdded } = calculateAutoLinks(app, file, content);
 
 		if (linksAdded === 0) {
 			return { success: true, linksAdded: 0, message: "추가할 링크가 없습니다." };

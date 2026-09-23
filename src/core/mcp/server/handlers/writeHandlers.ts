@@ -165,8 +165,11 @@ export const patchNoteHandler = async (
 	const isCrlf = currentContent.includes('\r\n');
 
 	for (const patch of patches) {
-		let target = patch.target;
-		let replacement = patch.replacement;
+		let target = typeof patch.target === 'string' ? patch.target : String(patch.target ?? '');
+		let replacement = typeof patch.replacement === 'string' ? patch.replacement : String(patch.replacement ?? '');
+		if (!target) {
+			return { isError: true, content: [{ type: 'text', text: 'Target text cannot be empty.' }] };
+		}
 
 		// 개행 일치: 원본 파일이 CRLF인데 패치가 LF인 경우 (또는 그 반대)
 		if (isCrlf) {
@@ -191,7 +194,7 @@ export const patchNoteHandler = async (
 			const normTarget = patch.target.replace(/\r\n/g, '\n');
 			if (normProposed.includes(normTarget)) {
 				const normReplacement = patch.replacement.replace(/\r\n/g, '\n');
-				const replacedNorm = normProposed.replace(normTarget, normReplacement);
+				const replacedNorm = normProposed.replace(normTarget, () => normReplacement);
 				proposedContent = isCrlf ? replacedNorm.replace(/\n/g, '\r\n') : replacedNorm;
 				continue;
 			}
@@ -201,7 +204,7 @@ export const patchNoteHandler = async (
 				content: [{ type: 'text', text: `Target text not found in ${path}: "${patch.target.substring(0, 80)}${patch.target.length > 80 ? '...' : ''}". Ensure whitespace matches exactly.` }]
 			};
 		}
-		proposedContent = proposedContent.replace(target, replacement);
+		proposedContent = proposedContent.replace(target, () => replacement);
 	}
 
 	return safeModifyFile(
@@ -247,6 +250,15 @@ export const moveNoteHandler = async (
 
 	const { path: targetPath, errorResult: tgtError } = getValidatedPathAndFile(args, ctx, pathGuard, 'targetPath', false);
 	if (tgtError) return tgtError;
+
+	if (sourcePath === targetPath) {
+		return { isError: true, content: [{ type: 'text', text: `Source and target path are identical: ${sourcePath}` }] };
+	}
+
+	const existingTarget = ctx.plugin.app.vault.getAbstractFileByPath(targetPath);
+	if (existingTarget) {
+		return { isError: true, content: [{ type: 'text', text: `Target file already exists: ${targetPath}` }] };
+	}
 
 	return safeActionFile(
 		'rename',
@@ -310,7 +322,19 @@ export const saveAttachmentHandler = async (
 		return { isError: true, content: [{ type: 'text', text: `Attachment is too large (max 50MB allowed)` }] };
 	}
 
-	const binaryString = window.atob(base64Data);
+	let cleanedBase64 = base64Data.trim();
+	const dataUrlMatch = cleanedBase64.match(/^data:[^;]+;base64,([\s\S]*)$/);
+	if (dataUrlMatch) {
+		cleanedBase64 = dataUrlMatch[1].trim();
+	}
+	cleanedBase64 = cleanedBase64.replace(/\s/g, '');
+
+	let binaryString: string;
+	try {
+		binaryString = window.atob(cleanedBase64);
+	} catch {
+		return { isError: true, content: [{ type: 'text', text: 'Invalid base64 data provided.' }] };
+	}
 	const sizeBytes = binaryString.length;
 
 	const approved = await approvalManager.requestActionApproval('attachment', path, { sizeBytes }, { timeoutMs: APPROVAL_TIMEOUT_MS });

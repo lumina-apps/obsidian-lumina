@@ -84,7 +84,10 @@ export function buildCanvas(
 
 	// Process nodes
 	for (const input of nodesInput) {
-		const id = input.id || generateId();
+		let id = input.id || generateId();
+		while (nodeIds.has(id)) {
+			id = generateId();
+		}
 		nodeIds.add(id);
 
 		const type = input.type;
@@ -110,7 +113,7 @@ export function buildCanvas(
 
 		let node: CanvasNode;
 		if (type === 'text') {
-			if (!input.text) return { error: `text node ${id} requires a 'text' field` };
+			if (typeof input.text !== 'string') return { error: `text node ${id} requires a 'text' field` };
 			node = { ...base, type: 'text', text: input.text };
 		} else if (type === 'file') {
 			if (!input.file) return { error: `file node ${id} requires a 'file' field` };

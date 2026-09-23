@@ -1,9 +1,10 @@
-import { TFile, MarkdownView } from 'obsidian';
+import { TFile } from 'obsidian';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
 import type { PathGuard } from '../pathGuard';
-import { processAutoLink } from './utils/autoLinker';
+import { calculateAutoLinks } from './utils/autoLinker';
 import { sanitizeFilePath } from '../../../../shared/utils/fileUtils';
 import { getStringArg, blockIfPathNotAllowed } from '../handlerHelpers';
+import { safeModifyFile } from './utils/writeHandlerUtils';
 
 export async function autoLinkNoteHandler(
 	args: ToolArguments,
@@ -29,26 +30,22 @@ export async function autoLinkNoteHandler(
 		};
 	}
 
-	const activeView = ctx.plugin.app.workspace.getActiveViewOfType(MarkdownView);
-	const editor = activeView?.file?.path === file.path ? activeView.editor : undefined;
+	const currentContent = await ctx.plugin.app.vault.read(file);
+	const { newContent, linksAdded } = calculateAutoLinks(ctx.plugin.app, file, currentContent);
 
-	return await pathGuard.lock(path, async () => {
-		const result = await processAutoLink(ctx.plugin.app, file, editor);
-
-		if (!result.success) {
-			return {
-				isError: true,
-				content: [{ type: 'text', text: result.message }],
-			};
-		}
-
+	if (linksAdded === 0) {
 		return {
-			content: [
-				{
-					type: 'text',
-					text: result.message,
-				},
-			],
+			content: [{ type: 'text', text: '추가할 링크가 없습니다.' }],
 		};
-	});
+	}
+
+	return safeModifyFile(
+		path,
+		file,
+		currentContent,
+		newContent,
+		`총 ${linksAdded}개의 백링크가 생성되었습니다.`,
+		ctx,
+		pathGuard,
+	);
 }

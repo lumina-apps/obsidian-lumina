@@ -24,18 +24,37 @@ export const readNoteHandler = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
-	const path = sanitizeFilePath(getStringArg(args, 'path'), true, ctx.plugin.app);
+	const rawPath = getStringArg(args, 'path');
+	if (!rawPath.trim()) {
+		return { isError: true, content: [{ type: 'text', text: 'Path is required.' }] };
+	}
+
+	let path = sanitizeFilePath(rawPath, false, ctx.plugin.app);
+	let file = ctx.plugin.app.vault.getAbstractFileByPath(path);
+	if (!(file instanceof TFile) && !path.toLowerCase().endsWith('.md')) {
+		const mdPath = `${path}.md`;
+		const mdFile = ctx.plugin.app.vault.getAbstractFileByPath(mdPath);
+		if (mdFile instanceof TFile) {
+			path = mdPath;
+			file = mdFile;
+		}
+	}
+
 	const blocked = blockIfPathNotAllowed(path, ctx, pathGuard);
 	if (blocked) return blocked;
 
-	const file = ctx.plugin.app.vault.getAbstractFileByPath(path);
 	if (!(file instanceof TFile)) {
 		return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.read_note.notFound', { path }) }] };
 	}
-	const content = await ctx.plugin.app.vault.read(file);
 
 	const startLine = typeof args.startLine === 'number' && args.startLine > 0 ? Math.floor(args.startLine) : undefined;
 	const endLine = typeof args.endLine === 'number' && args.endLine > 0 ? Math.floor(args.endLine) : undefined;
+
+	if (startLine !== undefined && endLine !== undefined && startLine > endLine) {
+		return { isError: true, content: [{ type: 'text', text: `startLine (${startLine}) cannot be greater than endLine (${endLine}).` }] };
+	}
+
+	const content = await ctx.plugin.app.vault.read(file);
 
 	if (startLine !== undefined || endLine !== undefined) {
 		const lines = content.split('\n');
@@ -75,7 +94,18 @@ export const getBacklinksHandler = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
-	const path = sanitizeFilePath(getStringArg(args, 'path'), true, ctx.plugin.app);
+	const rawPath = getStringArg(args, 'path');
+	let path = sanitizeFilePath(rawPath, false, ctx.plugin.app);
+	let file = ctx.plugin.app.vault.getAbstractFileByPath(path);
+	if (!(file instanceof TFile) && !path.toLowerCase().endsWith('.md')) {
+		const mdPath = `${path}.md`;
+		const mdFile = ctx.plugin.app.vault.getAbstractFileByPath(mdPath);
+		if (mdFile instanceof TFile) {
+			path = mdPath;
+			file = mdFile;
+		}
+	}
+
 	const blocked = blockIfPathNotAllowed(path, ctx, pathGuard);
 	if (blocked) return blocked;
 
@@ -84,14 +114,17 @@ export const getBacklinksHandler = async (
 
 	for (const sourcePath in resolvedLinks) {
 		if (resolvedLinks[sourcePath][path] !== undefined) {
-			backlinks.push(sourcePath);
+			if (pathGuard.isAgentPathAllowed(sourcePath, ctx.plugin)) {
+				backlinks.push(sourcePath);
+			}
 		}
 	}
 
 	if (backlinks.length === 0) {
 		return { content: [{ type: 'text', text: `No backlinks found for ${path}` }] };
 	}
-	return { content: [{ type: 'text', text: `Backlinks for ${path}:\n${backlinks.join('\n')}` }] };
+	const result = `Backlinks for ${path}:\n${backlinks.join('\n')}`;
+	return { content: [{ type: 'text', text: applyReadLimit(result, ctx.limitRead) }] };
 };
 
 export const getNoteMetadataHandler = async (
@@ -99,18 +132,33 @@ export const getNoteMetadataHandler = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
-	const path = sanitizeFilePath(getStringArg(args, 'path'), true, ctx.plugin.app);
+	const rawPath = getStringArg(args, 'path');
+	let path = sanitizeFilePath(rawPath, false, ctx.plugin.app);
+	let file = ctx.plugin.app.vault.getAbstractFileByPath(path);
+	if (!(file instanceof TFile) && !path.toLowerCase().endsWith('.md')) {
+		const mdPath = `${path}.md`;
+		const mdFile = ctx.plugin.app.vault.getAbstractFileByPath(mdPath);
+		if (mdFile instanceof TFile) {
+			path = mdPath;
+			file = mdFile;
+		}
+	}
+
 	const blocked = blockIfPathNotAllowed(path, ctx, pathGuard);
 	if (blocked) return blocked;
 
-	const file = ctx.plugin.app.vault.getAbstractFileByPath(path);
 	if (!(file instanceof TFile)) {
 		return { isError: true, content: [{ type: 'text', text: `File not found: ${path}` }] };
 	}
 
 	const cache = ctx.plugin.app.metadataCache.getFileCache(file);
 	const frontmatter = cache?.frontmatter;
-	const tags = cache?.tags?.map(t => t.tag) || [];
+	const bodyTags = cache?.tags?.map(t => t.tag) || [];
+	const fmTags: unknown = frontmatter?.tags ?? frontmatter?.tag;
+	const normalizedFm: string[] = fmTags
+		? (Array.isArray(fmTags) ? (fmTags as unknown[]) : [fmTags]).map(t => String(t).startsWith('#') ? String(t) : '#' + String(t))
+		: [];
+	const tags = Array.from(new Set([...bodyTags, ...normalizedFm]));
 	const aliases = (frontmatter?.aliases ?? frontmatter?.alias ?? []) as unknown;
 
 	const metadata = {
@@ -125,7 +173,8 @@ export const getNoteMetadataHandler = async (
 		frontmatter
 	};
 
-	return { content: [{ type: 'text', text: JSON.stringify(metadata, null, 2) }] };
+	const json = JSON.stringify(metadata, null, 2);
+	return { content: [{ type: 'text', text: applyReadLimit(json, ctx.limitRead) }] };
 };
 
 export const listAttachmentsHandler = async (
@@ -133,30 +182,41 @@ export const listAttachmentsHandler = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
-	const path = args.path ? sanitizeFilePath(args.path as string, false, ctx.plugin.app) : undefined;
+	const rawPath = args.path ? sanitizeFilePath(args.path as string, false, ctx.plugin.app) : undefined;
 	const allFiles = ctx.plugin.app.vault.getFiles();
 	
 	const isAttachment = (f: TFile) => !f.path.endsWith('.md') && !f.path.endsWith('.canvas');
 
-	if (path) {
-		const blocked = blockIfPathNotAllowed(path, ctx, pathGuard);
+	if (rawPath) {
+		let targetPath = rawPath;
+		let file = ctx.plugin.app.vault.getAbstractFileByPath(targetPath);
+		if (!(file instanceof TFile) && !targetPath.toLowerCase().endsWith('.md')) {
+			const mdPath = `${targetPath}.md`;
+			const mdFile = ctx.plugin.app.vault.getAbstractFileByPath(mdPath);
+			if (mdFile instanceof TFile) {
+				targetPath = mdPath;
+				file = mdFile;
+			}
+		}
+
+		const blocked = blockIfPathNotAllowed(targetPath, ctx, pathGuard);
 		if (blocked) return blocked;
 
-		const file = ctx.plugin.app.vault.getAbstractFileByPath(path);
 		if (!(file instanceof TFile)) {
-			return { isError: true, content: [{ type: 'text', text: `File not found: ${path}` }] };
+			return { isError: true, content: [{ type: 'text', text: `File not found: ${targetPath}` }] };
 		}
 		
-		const resolvedLinks = ctx.plugin.app.metadataCache.resolvedLinks[path] || {};
+		const resolvedLinks = ctx.plugin.app.metadataCache.resolvedLinks[targetPath] || {};
 		const attachments = Object.keys(resolvedLinks).filter(p => {
 			const targetFile = ctx.plugin.app.vault.getAbstractFileByPath(p);
 			return targetFile instanceof TFile && isAttachment(targetFile);
 		});
 
 		if (attachments.length === 0) {
-			return { content: [{ type: 'text', text: `No attachments linked in ${path}` }] };
+			return { content: [{ type: 'text', text: `No attachments linked in ${targetPath}` }] };
 		}
-		return { content: [{ type: 'text', text: `Attachments linked in ${path}:\n${attachments.join('\n')}` }] };
+		const result = `Attachments linked in ${targetPath}:\n${attachments.join('\n')}`;
+		return { content: [{ type: 'text', text: applyReadLimit(result, ctx.limitRead) }] };
 	} else {
 		// List all attachments in vault
 		const attachments = allFiles.filter(isAttachment).map(f => f.path);

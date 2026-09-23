@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { tick } from "svelte";
+	import { tick, onMount } from "svelte";
 	import { setIcon } from "obsidian";
 	import type LuminaPlugin from "../../../main";
 	import type { Readable } from "svelte/store";
@@ -16,7 +16,7 @@
 	import { buildSlashCommands } from "../utils/slashCommandUtils";
 	import { activeProject } from "../../../core/store/projectStore";
 	import { settingsStore } from "../../../core/store/settingsStore";
-	import { estimateTokens } from "../../../shared/utils/tokenEstimator";
+	import { calculateEstimatedInputTokens } from "../utils/inputUtils";
 	import {
 		createKeydownHandler,
 		createInputHandler,
@@ -120,23 +120,61 @@
 	const systemPrompts = $derived($settingsStore?.chat.systemPrompts ?? []);
 	const activePromptId = $derived($activeProject?.systemPromptId || "default");
 
+	// ── 활성 파일 추적 (실시간 토큰 계산용) ──────────────────────────────────
+	function getInitialActiveFile(): { path: string; size: number } | null {
+		const file = plugin.app.workspace?.getActiveFile?.() ?? plugin.app.workspace?.activeEditor?.file ?? null;
+		if (file && "stat" in file && typeof file.stat.size === "number") {
+			return { path: file.path, size: file.stat.size };
+		}
+		return null;
+	}
+
+	let activeFileInfo = $state<{ path: string; size: number } | null>(getInitialActiveFile());
+
+	function updateActiveFile(): void {
+		const file = plugin.app.workspace?.getActiveFile?.() ?? plugin.app.workspace?.activeEditor?.file ?? null;
+		if (file && "stat" in file && typeof file.stat.size === "number") {
+			activeFileInfo = { path: file.path, size: file.stat.size };
+		} else {
+			activeFileInfo = null;
+		}
+	}
+
+	onMount(() => {
+		updateActiveFile();
+		const refLeaf = plugin.app.workspace?.on?.("active-leaf-change", () => {
+			updateActiveFile();
+		});
+		const refFile = plugin.app.workspace?.on?.("file-open", () => {
+			updateActiveFile();
+		});
+		const refModify = plugin.app.vault?.on?.("modify", (file) => {
+			if (activeFileInfo && file?.path === activeFileInfo.path) {
+				updateActiveFile();
+			}
+		});
+
+		return () => {
+			if (refLeaf) plugin.app.workspace?.offref?.(refLeaf);
+			if (refFile) plugin.app.workspace?.offref?.(refFile);
+			if (refModify) plugin.app.vault?.offref?.(refModify);
+		};
+	});
+
 	// ── 실시간 입력 예상 토큰 계산 (참조용) ──────────────────────────────────
 	const estimatedInputTokens = $derived.by(() => {
-		let tokens = 0;
-		if (inputText.trim()) {
-			tokens += estimateTokens(inputText);
-		}
-		for (const att of attachments) {
-			if (att.content) {
-				tokens += estimateTokens(att.content);
-			} else if (att.path && (att.type === 'file' || att.type === 'active_note')) {
-				const file = plugin.app.vault.getAbstractFileByPath(att.path);
-				if (file && 'stat' in file && typeof file.stat.size === 'number') {
-					tokens += Math.ceil(file.stat.size / 3);
-				}
-			}
-		}
-		return tokens;
+		return calculateEstimatedInputTokens({
+			inputText,
+			attachments,
+			includeActiveNote,
+			activeFileInfo,
+			getFileSize: (path) => {
+				const file = plugin.app.vault.getAbstractFileByPath(path);
+				return file && "stat" in file && typeof file.stat.size === "number"
+					? file.stat.size
+					: undefined;
+			},
+		});
 	});
 
 	async function handlePromptSelect(promptId: string): Promise<void> {
@@ -553,6 +591,7 @@
 					onkeydown={handleKeydown}
 					oninput={handleInput}
 					onpaste={handlePaste}
+					onfocus={() => updateActiveFile()}
 				></textarea>
 
 				{#if inputText.length > 0 && !isLoading}

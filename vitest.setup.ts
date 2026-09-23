@@ -23,6 +23,7 @@ vi.mock('obsidian', () => {
 		getAbstractFileByPath: vi.fn(),
 		getMarkdownFiles: vi.fn(),
 		on: vi.fn(),
+		offref: vi.fn(),
 	};
 
 	const mockWorkspace = {

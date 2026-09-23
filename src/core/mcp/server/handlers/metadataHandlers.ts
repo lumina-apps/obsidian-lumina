@@ -1,4 +1,5 @@
 import { TFile, normalizePath, getAllTags, type CachedMetadata } from 'obsidian';
+import { applyReadLimit } from '../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
 import type { PathGuard } from '../pathGuard';
 
@@ -89,7 +90,7 @@ export const queryMetadataHandler = async (
 	const filters = Array.isArray(args.filters) ? (args.filters as Filter[]) : [];
 	const sort = typeof args.sort === 'object' && args.sort !== null ? (args.sort as Sort) : undefined;
 	const returnFields = Array.isArray(args.returnFields) ? (args.returnFields as string[]) : [];
-	const limit = typeof args.limit === 'number' ? args.limit : 50;
+	const limit = typeof args.limit === 'number' && args.limit > 0 ? Math.min(args.limit, 200) : 50;
 
 	const allFiles = ctx.plugin.app.vault.getMarkdownFiles();
 	const results: { file: TFile; fields: Record<string, unknown> }[] = [];
@@ -169,7 +170,12 @@ export const queryMetadataHandler = async (
 			if (valA === undefined) return sort.dir === 'asc' ? 1 : -1;
 			if (valB === undefined) return sort.dir === 'asc' ? -1 : 1;
 
-			const comparison = (valA as number) > (valB as number) ? 1 : -1;
+			let comparison = 0;
+			if (typeof valA === 'string' && typeof valB === 'string') {
+				comparison = valA.localeCompare(valB);
+			} else {
+				comparison = (valA as number) > (valB as number) ? 1 : -1;
+			}
 			return sort.dir === 'asc' ? comparison : -comparison;
 		});
 	}
@@ -204,5 +210,5 @@ export const queryMetadataHandler = async (
 
 	const summary = `Found ${results.length} results (showing ${limitedResults.length}):\n\n`;
 
-	return { content: [{ type: 'text', text: summary + mdTable }] };
+	return { content: [{ type: 'text', text: applyReadLimit(summary + mdTable, ctx.limitRead) }] };
 };

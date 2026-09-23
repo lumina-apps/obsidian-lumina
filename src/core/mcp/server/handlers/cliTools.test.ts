@@ -105,6 +105,13 @@ describe('Lumina CLI Parity MCP Tools', () => {
 			expect(text).toContain('empty, startLine exceeds total lines');
 		});
 
+		it('startLine이 endLine보다 크면 에러를 반환한다', async () => {
+			const res = await readNoteHandler({ path: 'Notes/Hello.md', startLine: 10, endLine: 5 }, ctx, pathGuard);
+			expect(res.isError).toBe(true);
+			const text = getText(res);
+			expect(text).toContain('cannot be greater than endLine');
+		});
+
 		it('startLine/endLine이 없으면 파일 전체를 정상 반환한다', async () => {
 			const res = await readNoteHandler({ path: 'Notes/Hello.md' }, ctx, pathGuard);
 			const text = getText(res);

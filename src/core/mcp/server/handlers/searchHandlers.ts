@@ -129,15 +129,18 @@ export const listTagsHandler = async (
 	ctx: ToolHandlerContext,
 	_pathGuard: PathGuard,
 ): Promise<ToolResult> => {
-	const tagsRecord = (ctx.plugin.app.metadataCache as unknown as { getTags(): Record<string, number> }).getTags();
+	const cache = ctx.plugin.app.metadataCache as unknown as { getTags?: () => Record<string, number> };
+	const tagsRecord = typeof cache?.getTags === 'function' ? cache.getTags() : {};
 	// tagsRecord is Record<string, number> where key is tag like '#foo' and value is count
-	const tagsList = Object.entries(tagsRecord).map(([tag, count]) => `${tag} (${count})`);
+	const tagsList = Object.entries(tagsRecord || {}).map(([tag, count]) => `${tag} (${count})`);
 	
 	if (tagsList.length === 0) {
 		return { content: [{ type: 'text', text: 'No tags found in the vault.' }] };
 	}
 
-	return { content: [{ type: 'text', text: `Tags in vault:\n${tagsList.join('\n')}` }] };
+	tagsList.sort((a, b) => a.localeCompare(b));
+	const result = `Tags in vault:\n${tagsList.join('\n')}`;
+	return { content: [{ type: 'text', text: applyReadLimit(result, ctx.limitRead) }] };
 };
 
 const BINARY_EXTENSIONS = new Set([
@@ -145,12 +148,36 @@ const BINARY_EXTENSIONS = new Set([
 	'mp3', 'mp4', 'wav', 'ogg', 'zip', 'tar', 'gz', 'wasm', 'ico'
 ]);
 
-function globToRegex(pattern: string): RegExp {
-	let escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
-	escaped = escaped.replace(/\*\*/g, '.*');
-	escaped = escaped.replace(/(?<!\.)\*/g, '[^/]*');
-	escaped = escaped.replace(/\?/g, '[^/]');
-	return new RegExp(`^${escaped}$`, 'i');
+export function globToRegex(pattern: string): RegExp {
+	const p = pattern.replace(/\\/g, '/');
+	let regexStr = '';
+	let i = 0;
+	while (i < p.length) {
+		const c = p[i];
+		if (c === '*' && p[i + 1] === '*') {
+			if (p[i + 2] === '/') {
+				regexStr += '(?:.*/)?';
+				i += 3;
+			} else {
+				regexStr += '.*';
+				i += 2;
+			}
+		} else if (c === '*') {
+			regexStr += '[^/]*';
+			i += 1;
+		} else if (c === '?') {
+			regexStr += '[^/]';
+			i += 1;
+		} else {
+			if ('[()+^${}|.\\/]'.includes(c)) {
+				regexStr += '\\' + c;
+			} else {
+				regexStr += c;
+			}
+			i += 1;
+		}
+	}
+	return new RegExp(`^${regexStr}$`, 'i');
 }
 
 export const grepSearchHandler = async (

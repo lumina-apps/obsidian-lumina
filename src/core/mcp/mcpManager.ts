@@ -135,7 +135,7 @@ export class McpManager {
 			// It is often just a tool-level logical error (e.g., file not found).
 			return {
 				isError: true,
-				content: [{ type: 'text', text: errorMsg }],
+				content: [{ type: 'text', text: errorMsg.message }],
 			};
 		}
 	}

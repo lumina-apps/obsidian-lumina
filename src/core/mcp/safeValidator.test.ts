@@ -106,6 +106,23 @@ describe('SafeJsonSchemaValidator', () => {
 			expect(validate({ meta: { x: 1 } })).toHaveProperty('valid', true);
 			expect(validate({ meta: null })).toHaveProperty('valid', false);
 			});
+
+		it('should allow optional properties with undefined value', () => {
+			const schema = {
+				type: 'object',
+				properties: {
+					query: { type: 'string' },
+					tags: { type: 'array' },
+				},
+				required: ['query'],
+			};
+			const validate = validator.getValidator<any>(schema);
+			expect(validate({ query: 'hello', tags: undefined })).toEqual({
+				valid: true,
+				data: { query: 'hello', tags: undefined },
+				errorMessage: undefined,
+			});
+		});
 		});
 
 	describe('invalid schema type', () => {

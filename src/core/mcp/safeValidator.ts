@@ -50,6 +50,7 @@ export class SafeJsonSchemaValidator {
 						const propType = (propSchema as Record<string, unknown>).type;
 						if (typeof propType === 'string') {
 							const val = inputObj[key];
+							if (val === undefined) continue;
 							const valType = typeof val;
 							
 							let typeMatch = false;
