@@ -28,6 +28,8 @@ const LANGUAGE_HINTS: Record<string, string> = {
 
 export interface PromptBuilderOptions {
 	chat: ChatSettings;
+	/** 사용자가 명시적으로 첨부한 파일/폴더/선택영역 컨텍스트 (선택적) */
+	attachmentContext?: string;
 	/** RAG 검색 결과 텍스트 (선택적) */
 	ragContext?: string;
 	/** 현재 세션의 요약본 (auto_summary 모드일 경우) */
@@ -51,7 +53,7 @@ export function buildMessages(
 	userText: string,
 	opts: PromptBuilderOptions,
 ): ChatMessage[] {
-	const { chat, ragContext, sessionSummary, summaryUpToMessageId } = opts;
+	const { chat, attachmentContext, ragContext, sessionSummary, summaryUpToMessageId } = opts;
 
 	// ── 1. 시스템 프롬프트 구성 ───────────────────────────────────────────────
 	const project = getActiveProject();
@@ -163,13 +165,13 @@ export function buildMessages(
 		});
 	}
 
-	// ── 4. 현재 사용자 메시지 추가 (RAG 컨텍스트 병합) ─────────────────────────
+	// ── 4. 현재 사용자 메시지 추가 (컨텍스트 병합) ─────────────────────────
 	let finalUserText = userText;
 	
-	if (ragContext) {
+	let optimizedRag = ragContext;
+	if (optimizedRag) {
 		// RAG 컨텍스트 길이 최적화 (예: 최대 20000자, 약 5000토큰 분량)
 		const MAX_RAG_CHARS = 20000;
-		let optimizedRag = ragContext;
 		if (optimizedRag.length > MAX_RAG_CHARS) {
 			const chunks = optimizedRag.split('\n\n---\n\n');
 			let currentLen = 0;
@@ -185,10 +187,21 @@ export function buildMessages(
 			optimizedRag = validChunks.join('\n\n---\n\n');
 			debugLogger.logWarn('rag', t('uiMessages.ragTooLong', { max: MAX_RAG_CHARS }) || `RAG context exceeded ${MAX_RAG_CHARS} chars`);
 		}
-		
+	}
+
+	let combinedContext = '';
+	if (attachmentContext?.trim()) {
+		combinedContext += attachmentContext.trim();
+	}
+	if (optimizedRag?.trim()) {
+		if (combinedContext) combinedContext += '\n\n---\n\n';
+		combinedContext += optimizedRag.trim();
+	}
+
+	if (combinedContext) {
 		const effectiveUserText = userText.trim() || 'Please review, explain, or summarize the provided context.';
 		// User 메시지 상단에 컨텍스트를 주입
-		finalUserText = `<context>\n${optimizedRag}\n</context>\n\nUser Question: ${effectiveUserText}\n\n<instruction>\nUse the provided context to address the user's request. Prioritize and accurately ground your response in the facts from the context where relevant. You may synthesize, explain, translate, or extrapolate as requested by the user. DO NOT repeat, regurgitate, or dump the raw context unless explicitly requested by the user.\n</instruction>`;
+		finalUserText = `<context>\n${combinedContext}\n</context>\n\nUser Question: ${effectiveUserText}\n\n<instruction>\nUse the provided context to address the user's request. Prioritize and accurately ground your response in the facts from the context where relevant. You may synthesize, explain, translate, or extrapolate as requested by the user. DO NOT repeat, regurgitate, or dump the raw context unless explicitly requested by the user.\n</instruction>`;
 	}
 
 	messages.push({ role: 'user', content: finalUserText });

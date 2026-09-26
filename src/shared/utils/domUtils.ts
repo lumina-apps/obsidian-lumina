@@ -53,9 +53,11 @@ export const iconAction = icon;
 /** Svelte use: 액션 — 요소 외부 클릭 감지 */
 export function clickOutside(node: HTMLElement, callback: () => void) {
 	function handler(e: MouseEvent) {
-		if (!node.contains(e.target as Node)) {
-			callback();
+		const path = e.composedPath ? e.composedPath() : [];
+		if (path.includes(node) || node.contains(e.target as Node)) {
+			return;
 		}
+		callback();
 	}
 	const timer = window.setTimeout(() => {
 		activeDocument.addEventListener('click', handler);

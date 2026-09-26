@@ -631,6 +631,7 @@
     "sessionUsage": "Utilisation de la session actuelle",
     "sessionTokens": "Total: {{tokens}} jetons",
     "estimatedTokensTooltip": "Jetons d'entrée estimés pour ce prompt (env.)",
+    "tokenOverLimitTooltip": "Le contexte dépasse 100k jetons (estimation plafonnée)",
     "cliMode": {
       "cliAgent": "Agent CLI",
       "pluginAgent": "Agent du plugin",

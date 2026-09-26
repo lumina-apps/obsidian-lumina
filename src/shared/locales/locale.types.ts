@@ -743,6 +743,7 @@ export interface TranslationChat {
   sessionUsage: string;
   sessionTokens: string;
   estimatedTokensTooltip: string;
+  tokenOverLimitTooltip: string;
   cliMode: TranslationChatCliMode;
 }
 

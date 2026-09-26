@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { tick, onMount } from "svelte";
+	import { tick } from "svelte";
 	import { setIcon } from "obsidian";
 	import type LuminaPlugin from "../../../main";
 	import type { Readable } from "svelte/store";
@@ -11,12 +11,13 @@
 	import McpQuickPopup from "./McpQuickPopup.svelte";
 	import ModelPickerPopup from "./ModelPickerPopup.svelte";
 	import PromptPickerPopup from "./PromptPickerPopup.svelte";
+	import ChatInputToolbar from "./ChatInputToolbar.svelte";
 	import { getAttachmentIcon } from "../utils/fileAttachmentUtils";
 	import { resizeTextarea } from "../../../shared/utils/textareaUtils";
 	import { buildSlashCommands } from "../utils/slashCommandUtils";
 	import { activeProject } from "../../../core/store/projectStore";
 	import { settingsStore } from "../../../core/store/settingsStore";
-	import { calculateEstimatedInputTokens } from "../utils/inputUtils";
+	import { estimateInputTokensDetails, calculateFolderSize } from "../utils/inputUtils";
 	import {
 		createKeydownHandler,
 		createInputHandler,
@@ -25,7 +26,6 @@
 		createSlashSelectHandler,
 	} from "./composables/useInputHandler";
 	import {
-		createFileInputTrigger,
 		createFileSelectHandler,
 		createDropHandler,
 		createDragOverHandler,
@@ -33,6 +33,7 @@
 		createRemoveAttachment,
 	} from "./composables/useFileAttachment";
 	import { handleMcpPopupToggle } from "./composables/useInputPopups";
+	import { useActiveFileTracker, type ActiveFileInfo } from "./composables/useActiveFileTracker";
 
 	type TStore = Readable<
 		(key: TranslationKeys, params?: Record<string, string | number>) => string
@@ -102,7 +103,7 @@
 		onCompressContext: () => void;
 	}>();
 
-	// ── UI state (컴포넌트 내에 유지) ──────────────────────────────────────
+	// ── UI state (팝업 표시 여부 및 검색 쿼리) ───────────────────────────────
 	let showContextSelector = $state(false);
 	let contextSearchQuery = $state("");
 	let mentionStartIndex = $state(-1);
@@ -114,56 +115,24 @@
 	let showMcpPopup = $state(false);
 	let showModelPicker = $state(false);
 	let showPromptPicker = $state(false);
-	let fileInputEl: HTMLInputElement | null = $state(null);
 
 	// ── 시스템 프롬프트 파생 값 ──────────────────────────────────────────────
 	const systemPrompts = $derived($settingsStore?.chat.systemPrompts ?? []);
 	const activePromptId = $derived($activeProject?.systemPromptId || "default");
 
-	// ── 활성 파일 추적 (실시간 토큰 계산용) ──────────────────────────────────
-	function getInitialActiveFile(): { path: string; size: number } | null {
-		const file = plugin.app.workspace?.getActiveFile?.() ?? plugin.app.workspace?.activeEditor?.file ?? null;
-		if (file && "stat" in file && typeof file.stat.size === "number") {
-			return { path: file.path, size: file.stat.size };
-		}
-		return null;
-	}
+	// ── 활성 파일 추적 (실시간 토큰 계산용 Composable) ───────────────────────
+	const activeTracker = useActiveFileTracker(
+		() => plugin,
+		(info) => {
+			activeFileInfo = info;
+		},
+	);
+	let activeFileInfo = $state<ActiveFileInfo | null>(activeTracker.getInitialActiveFile());
 
-	let activeFileInfo = $state<{ path: string; size: number } | null>(getInitialActiveFile());
-
-	function updateActiveFile(): void {
-		const file = plugin.app.workspace?.getActiveFile?.() ?? plugin.app.workspace?.activeEditor?.file ?? null;
-		if (file && "stat" in file && typeof file.stat.size === "number") {
-			activeFileInfo = { path: file.path, size: file.stat.size };
-		} else {
-			activeFileInfo = null;
-		}
-	}
-
-	onMount(() => {
-		updateActiveFile();
-		const refLeaf = plugin.app.workspace?.on?.("active-leaf-change", () => {
-			updateActiveFile();
-		});
-		const refFile = plugin.app.workspace?.on?.("file-open", () => {
-			updateActiveFile();
-		});
-		const refModify = plugin.app.vault?.on?.("modify", (file) => {
-			if (activeFileInfo && file?.path === activeFileInfo.path) {
-				updateActiveFile();
-			}
-		});
-
-		return () => {
-			if (refLeaf) plugin.app.workspace?.offref?.(refLeaf);
-			if (refFile) plugin.app.workspace?.offref?.(refFile);
-			if (refModify) plugin.app.vault?.offref?.(refModify);
-		};
-	});
-
-	// ── 실시간 입력 예상 토큰 계산 (참조용) ──────────────────────────────────
-	const estimatedInputTokens = $derived.by(() => {
-		return calculateEstimatedInputTokens({
+	// ── 실시간 입력 예상 토큰 계산 ────────────────────────────────────────────
+	// ── 실시간 입력 예상 토큰 계산 ────────────────────────────────────────────
+	const tokenEstimation = $derived.by(() => {
+		return estimateInputTokensDetails({
 			inputText,
 			attachments,
 			includeActiveNote,
@@ -173,6 +142,9 @@
 				return file && "stat" in file && typeof file.stat.size === "number"
 					? file.stat.size
 					: undefined;
+			},
+			getFolderSize: (path, maxBytes) => {
+				return calculateFolderSize(plugin.app, path, maxBytes);
 			},
 		});
 	});
@@ -195,7 +167,6 @@
 	// ── 슬래시 명령어 가로채기 및 전송 핸들러 ─────────────────────────────
 	function handleSendMessage() {
 		const text = inputText.trim();
-		// 슬래시 명령어 직접 입력 감지 (/clear, /rag 등)
 		if (text.startsWith("/") && attachments.length === 0) {
 			const cmdId = text.slice(1).trim().toLowerCase();
 			const matched = slashCommands.find((c) => c.id.toLowerCase() === cmdId);
@@ -323,13 +294,11 @@
 		onResizeTextarea: onResize,
 	};
 
-	const triggerFileInput = createFileInputTrigger(() => fileInputEl);
 	const handleFileSelect = createFileSelectHandler(fileCtx);
 	const handleDrop = createDropHandler(fileCtx);
 	const handleDragOver = createDragOverHandler();
 	const handlePaste = createPasteHandler(fileCtx);
-	/** createRemoveAttachment는 attachments를 클로저로 참조하므로,
-	 *  $derived로 attachments 변경 시 재생성한다. */
+
 	const removeAttachmentFn = $derived(
 		createRemoveAttachment(attachments, (a: ContextAttachment[]) => {
 			attachments = a;
@@ -391,102 +360,23 @@
 	ondrop={handleDrop}
 	ondragover={handleDragOver}
 >
-	<div class="lumina-chat__input-toolbar">
-		<div class="lumina-chat__toolbar-group">
-			<button
-				class="lumina-chat__toolbar-btn"
-				aria-label={$tStore("chat.addContext")}
-				title={$tStore("chat.addContext")}
-				use:icon={"lumina-at-sign"}
-				onclick={insertContextMention}
-				type="button"
-			></button>
-			<button
-				class="lumina-chat__toolbar-btn"
-				aria-label={$tStore("chat.uploadFile")}
-				use:icon={"paperclip"}
-				onclick={triggerFileInput}
-				type="button"
-			></button>
-			{#if !isCliSelected}
-				<button
-					class="lumina-chat__toolbar-btn"
-					class:is-agent-active={agentEnabled}
-					aria-label="Agent & MCP Tools"
-					title="Agent & MCP Tools"
-					use:icon={"bot"}
-					onclick={toggleMcpPopup}
-					type="button"
-				></button>
-			{/if}
-		</div>
-
-		<input
-			type="file"
-			multiple
-			class="lumina-chat__hidden-file-input"
-			bind:this={fileInputEl}
-			onchange={handleFileSelect}
-		/>
-
-		<div class="lumina-chat__toolbar-right">
-			{#if estimatedInputTokens > 0}
-				<span
-					class="lumina-chat__token-stats"
-					title={$tStore("chat.estimatedTokensTooltip") || "Estimated input tokens for this prompt (approx.)"}
-				>
-					~{estimatedInputTokens.toLocaleString()} tokens
-				</span>
-			{/if}
-			{#if sessionTokenStats.totalTokens > 0}
-				<span
-					class="lumina-chat__token-stats"
-					title={$tStore("chat.sessionUsage")}
-				>
-					{$tStore("chat.sessionTokens", {
-						tokens: sessionTokenStats.totalTokens.toLocaleString(),
-					})}
-				</span>
-			{/if}
-			<span class="lumina-chat__hint-inline">{sendHint}</span>
-			{#if agentEnabled || isCliSelected}
-				<button
-					class="lumina-chat__context-badge"
-					class:is-active={agentExecutionMode === "edit"}
-					onclick={onToggleAgentExecutionMode}
-					aria-label={isCliSelected
-						? (agentExecutionMode === "edit"
-							? ($tStore("chat.cliMode.editModeTooltip") || "Edit Mode: CLI agent can create and edit notes")
-							: ($tStore("chat.cliMode.readModeTooltip") || "Read Mode: CLI agent is read-only and cannot modify notes"))
-						: (agentExecutionMode === "edit"
-							? ($tStore("settings.mcp.agentMode.editMode") || "Toggle Agent Mode (Read/Edit)")
-							: ($tStore("settings.mcp.agentMode.readMode") || "Toggle Agent Mode (Read/Edit)"))}
-					title={isCliSelected
-						? (agentExecutionMode === "edit"
-							? ($tStore("chat.cliMode.editModeTooltip") || "Edit Mode: CLI agent can create and edit notes")
-							: ($tStore("chat.cliMode.readModeTooltip") || "Read Mode: CLI agent is read-only and cannot modify notes"))
-						: undefined}
-					type="button"
-				>
-					<span use:icon={agentExecutionMode === "edit" ? "edit-2" : "eye"}></span>
-					<span>{agentExecutionMode === "edit"
-							? $tStore("settings.mcp.agentMode.editMode") || "Edit Mode"
-							: $tStore("settings.mcp.agentMode.readMode") || "Read Mode"}</span>
-				</button>
-			{/if}
-			<button
-				class="lumina-chat__context-badge"
-				class:is-active={includeActiveNote}
-				aria-label={$tStore("settings.rag.autoIncludeActive.name")}
-				onclick={onToggleActiveNote}
-			>
-				<span use:icon={includeActiveNote ? "file-text" : "file-minus"}></span>
-				<span>{includeActiveNote
-						? $tStore("settings.chat.context.includeNote") || "Include Note"
-						: $tStore("settings.chat.context.excludeNote") || "Exclude Note"}</span>
-			</button>
-		</div>
-	</div>
+	<ChatInputToolbar
+		{isCliSelected}
+		{agentEnabled}
+		{agentExecutionMode}
+		{includeActiveNote}
+		{sendHint}
+		estimatedInputTokens={tokenEstimation.tokens}
+		estimatedTokensDisplayText={tokenEstimation.displayText}
+		isTokenOverLimit={tokenEstimation.isOverLimit}
+		{sessionTokenStats}
+		{tStore}
+		onInsertContextMention={insertContextMention}
+		onFileSelect={handleFileSelect}
+		onToggleMcpPopup={toggleMcpPopup}
+		onToggleAgentExecutionMode={onToggleAgentExecutionMode}
+		onToggleActiveNote={onToggleActiveNote}
+	/>
 
 	<div class="lumina-chat__textarea-wrap">
 		<div class="lumina-chat__input-container">
@@ -591,7 +481,7 @@
 					onkeydown={handleKeydown}
 					oninput={handleInput}
 					onpaste={handlePaste}
-					onfocus={() => updateActiveFile()}
+					onfocus={() => activeTracker.updateActiveFile()}
 				></textarea>
 
 				{#if inputText.length > 0 && !isLoading}

@@ -195,6 +195,18 @@ describe('promptBuilder', () => {
 		expect(lastMessage.content.length).toBeLessThan(25000); // Truncated
 		expect(lastMessage.content).toContain('... (Context truncated due to length limits)');
 	});
+
+	it('should NOT truncate attachmentContext even if it exceeds MAX_RAG_CHARS', () => {
+		const longAttachment = 'b'.repeat(30000); // 30,000 chars > MAX_RAG_CHARS (20000)
+		const messages = buildMessages([], 'Question', {
+			chat: mockChatSettings,
+			attachmentContext: longAttachment,
+		});
+
+		const lastMessage = messages[messages.length - 1];
+		expect(lastMessage.content).toContain(longAttachment);
+		expect(lastMessage.content).not.toContain('... (Context truncated due to length limits)');
+	});
 });
 
 describe('estimateTokens', () => {

@@ -1,3 +1,4 @@
+import { App, TFile, TFolder } from "obsidian";
 import type { ContextAttachment } from "../../../shared/types/chat.types";
 import { estimateTokens } from "../../../shared/utils/tokenEstimator";
 
@@ -44,15 +45,82 @@ export interface EstimateInputTokensOptions {
 	includeActiveNote?: boolean;
 	activeFileInfo?: { path: string; size: number } | null;
 	getFileSize?: (path: string) => number | undefined;
+	getFolderSize?: (path: string, maxBytes?: number) => { size: number; isOverLimit: boolean } | number | undefined;
+	maxTokenThreshold?: number;
 }
 
-export function calculateEstimatedInputTokens(options: EstimateInputTokensOptions): number {
-	const { inputText, attachments, includeActiveNote, activeFileInfo, getFileSize } = options;
+export interface EstimatedTokensResult {
+	tokens: number;
+	isOverLimit: boolean;
+	displayText: string;
+}
+
+/**
+ * 메모리 내 TFolder 트리 순회를 통해 하위 .md 파일들의 크기를 합산한다.
+ * maxBytes 도달 시 즉시 순회를 중단(short-circuit)하여 UI 버벅임을 방지한다.
+ */
+export function calculateFolderSize(
+	app: App,
+	folderPath: string,
+	maxBytes: number = 300_000,
+	maxDepth: number = 15,
+): { size: number; isOverLimit: boolean } {
+	const folder = app.vault.getAbstractFileByPath(folderPath);
+	if (!(folder instanceof TFolder)) {
+		return { size: 0, isOverLimit: false };
+	}
+
+	let totalSize = 0;
+	let isOverLimit = false;
+	const visited = new Set<string>();
+
+	function traverse(f: TFolder, depth: number) {
+		if (isOverLimit || depth > maxDepth) return;
+		if (visited.has(f.path)) return;
+		visited.add(f.path);
+
+		for (const child of f.children) {
+			if (isOverLimit) break;
+			if (child instanceof TFile && child.extension === "md") {
+				totalSize += child.stat.size;
+				if (totalSize >= maxBytes) {
+					isOverLimit = true;
+					break;
+				}
+			} else if (child instanceof TFolder) {
+				traverse(child, depth + 1);
+			}
+		}
+	}
+
+	traverse(folder, 1);
+	return { size: totalSize, isOverLimit };
+}
+
+export function estimateInputTokensDetails(options: EstimateInputTokensOptions): EstimatedTokensResult {
+	const {
+		inputText,
+		attachments,
+		includeActiveNote,
+		activeFileInfo,
+		getFileSize,
+		getFolderSize,
+		maxTokenThreshold = 100_000,
+	} = options;
+
 	let tokens = 0;
+	let isOverLimit = false;
+
 	if (inputText.trim()) {
 		tokens += estimateTokens(inputText);
 	}
+
 	for (const att of attachments) {
+		if (tokens >= maxTokenThreshold) {
+			isOverLimit = true;
+			break;
+		}
+
 		if (att.content) {
 			tokens += estimateTokens(att.content);
 		} else if (att.path && (att.type === "file" || att.type === "active_note")) {
@@ -60,9 +128,24 @@ export function calculateEstimatedInputTokens(options: EstimateInputTokensOption
 			if (typeof size === "number") {
 				tokens += Math.ceil(size / 3);
 			}
+		} else if (att.path && att.type === "folder") {
+			if (getFolderSize) {
+				const remainingTokens = Math.max(0, maxTokenThreshold - tokens);
+				const maxBytes = remainingTokens * 3;
+				const res = getFolderSize(att.path, maxBytes);
+				if (typeof res === "number") {
+					tokens += Math.ceil(res / 3);
+				} else if (res && typeof res.size === "number") {
+					tokens += Math.ceil(res.size / 3);
+					if (res.isOverLimit) {
+						isOverLimit = true;
+					}
+				}
+			}
 		}
 	}
-	if (includeActiveNote && activeFileInfo) {
+
+	if (!isOverLimit && includeActiveNote && activeFileInfo) {
 		const alreadyIncluded = attachments.some(
 			(att) => att.type === "active_note" || (att.type === "file" && att.path === activeFileInfo.path),
 		);
@@ -70,5 +153,24 @@ export function calculateEstimatedInputTokens(options: EstimateInputTokensOption
 			tokens += Math.ceil(activeFileInfo.size / 3);
 		}
 	}
-	return tokens;
+
+	if (tokens >= maxTokenThreshold) {
+		isOverLimit = true;
+	}
+
+	const displayText = isOverLimit
+		? "> 100k tokens"
+		: tokens > 0
+			? `~${tokens.toLocaleString()} tokens`
+			: "";
+
+	return {
+		tokens,
+		isOverLimit,
+		displayText,
+	};
+}
+
+export function calculateEstimatedInputTokens(options: EstimateInputTokensOptions): number {
+	return estimateInputTokensDetails(options).tokens;
 }

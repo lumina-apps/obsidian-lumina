@@ -631,6 +631,7 @@
     "sessionUsage": "Utilizzo sessione corrente",
     "sessionTokens": "Totale: {{tokens}} token",
     "estimatedTokensTooltip": "Token di input stimati per questo prompt (circa)",
+    "tokenOverLimitTooltip": "Il contesto supera 100k token (stima limitata)",
     "cliMode": {
       "cliAgent": "Agente CLI",
       "pluginAgent": "Agente plugin",

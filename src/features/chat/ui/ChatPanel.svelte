@@ -27,8 +27,6 @@
 		sessionModelId,
 	} from "../../../core/store/chatStore";
 	import { get } from "svelte/store";
-	import { TFile } from "obsidian";
-	import { toVaultRelativePath } from "../utils/llmExecutor";
 	import {
 		indexingState,
 		indexingProgress,
@@ -41,15 +39,15 @@
 		settingsStore,
 		favoriteModels,
 	} from "../../../core/store/settingsStore";
-	import { toggleFavoriteModel } from "../../../shared/utils/modelUtils";
 	import {
 		projectList,
 		activeProjectId,
-		setActiveProject,
 		getActiveProject,
 	} from "../../../core/store/projectStore";
 	import { PROVIDER_LABELS, isCliProvider } from "../../../shared/types/settings.types";
 	import { tStore } from "../../../shared/locales/index";
+	import { executeProjectSwitch } from "./composables/useProjectSwitch";
+	import { useChatActions } from "./composables/useChatActions";
 
 	let { plugin }: { plugin: LuminaPlugin } = $props();
 
@@ -61,6 +59,41 @@
 	let attachments = $state<ContextAttachment[]>([]);
 	let includeActiveNote = $state(false);
 	let useRagContext = $state(false);
+	let savedScrollTop = $state<number | null>(null);
+
+	function openHistory(): void {
+		if (messagesEl) {
+			savedScrollTop = messagesEl.scrollTop;
+		}
+		showHistory = true;
+	}
+
+	function closeHistory(resetToBottom: boolean = false): void {
+		showHistory = false;
+		const targetScroll = resetToBottom || savedScrollTop === null || !autoScroll.isUserScrolledUp
+			? "bottom"
+			: savedScrollTop;
+
+		tick().then(() => {
+			if (messagesEl) {
+				if (targetScroll === "bottom") {
+					autoScroll.resetUserScrolledUp();
+					messagesEl.scrollTop = messagesEl.scrollHeight;
+				} else {
+					messagesEl.scrollTop = targetScroll;
+				}
+			}
+			setTimeout(() => {
+				if (messagesEl) {
+					if (targetScroll === "bottom") {
+						messagesEl.scrollTop = messagesEl.scrollHeight;
+					} else {
+						messagesEl.scrollTop = targetScroll;
+					}
+				}
+			}, 50);
+		});
+	}
 
 	// ── Refs ───────────────────────────────────────────────────────────────
 	let messagesEl: HTMLElement | null = $state(null);
@@ -122,6 +155,29 @@
 			}
 		}
 		return { totalTokens };
+	});
+
+	// ── Chat Actions (Composable) ──────────────────────────────────────────
+	const chatActions = useChatActions({
+		getPlugin: () => plugin,
+		getCtrl: () => ctrl,
+		getSelectedProviderId: () => selectedProviderId,
+		getSelectedModelId: () => selectedModelId,
+		getIsLoading: () => $isLoading,
+		getHasProvider: () => hasProvider,
+		getIsRagEnabled: () => $isRagEnabled,
+		getUseRagContext: () => useRagContext,
+		setUseRagContext: (v) => {
+			useRagContext = v;
+		},
+		getIncludeActiveNote: () => includeActiveNote,
+		setIncludeActiveNote: (v) => {
+			includeActiveNote = v;
+		},
+		getAgentEnabled: () => agentEnabled,
+		getAgentExecutionMode: () => agentExecutionMode,
+		getIsCliSelected: () => isCliSelected,
+		getVerifiedProviders: () => $verifiedProviders,
 	});
 
 	// ── Initialization ────────────────────────────────────────────────────
@@ -186,53 +242,20 @@
 
 	// ── Project switch handler ────────────────────────────────────────────
 	async function handleProjectSwitch(newProjectId: string): Promise<void> {
-		if (newProjectId === $activeProjectId) return;
-
-		// 1. 스트리밍 중이면 즉시 중단
-		if (abortController) {
-			abortController.abort();
-			abortController = null;
-			
-			// 강제로 스트리밍 상태 해제 (비동기 abort 처리 전 미리 상태 정리하여 히스토리에 오류 상태가 저장되지 않게 함)
-			messages.update(msgs => msgs.map(m => ({
-				...m,
-				isStreaming: false,
-				ragPipelineStep: null
-			})));
-		}
-
-		// 2. 현재 세션 저장
-		if (ctrl && $messages.length > 0) {
-			try {
-				await ctrl.saveHistory(selectedProviderId, selectedModelId);
-			} catch (e) {
-				// 저장 실패해도 전환은 계속 진행
-			}
-		}
-
-		// 3. 채팅 초기화
-		resetChat();
-
-		// 4. activeProjectId store 업데이트 + plugin.settings 저장
-		setActiveProject(newProjectId);
-		plugin.settings.projects.activeProjectId = newProjectId;
-		await plugin.saveSettings();
-
-		// 4.5. 새 프로젝트의 기본 모델로 전환
-		const activeProject = getActiveProject();
-		if (activeProject.defaultProviderId && activeProject.defaultModelId) {
-			selectedProviderId = activeProject.defaultProviderId;
-			selectedModelId = activeProject.defaultModelId;
-		}
-
-		// 5. RAG 인덱서 hot-swap (비동기, await 없이 시작만)
-		if ($isRagEnabled) {
-			import("../../../features/rag/ragInitializer").then(
-				({ switchProjectIndex }) => {
-					void switchProjectIndex(plugin, newProjectId);
-				},
-			);
-		}
+		await executeProjectSwitch({
+			plugin,
+			newProjectId,
+			currentProjectId: $activeProjectId,
+			abortController,
+			ctrl,
+			selectedProviderId,
+			selectedModelId,
+			isRagEnabled: $isRagEnabled,
+			onUpdateSelectedModel: (pid, mid) => {
+				selectedProviderId = pid;
+				selectedModelId = mid;
+			},
+		});
 	}
 
 	// ── Pending attachments sync ──────────────────────────────────────────
@@ -268,15 +291,11 @@
 		try {
 			await op(abortController.signal);
 		} catch (err: unknown) {
-			// AbortError가 아닌 에러(토큰 한도, 컨텍스트 오버플로우, 네트워크 에러 등)도
-			// 안전하게 처리 - UI는 chatController.sendMessage에서 setMessageError로 이미 처리됨
 			if (!(err instanceof Error && err.name === "AbortError")) {
-				// Non-AbortError: UI에 이미 에러 메시지가 표시되었으므로 조용히 처리
 				debugLogger.logError("chat_stream", err instanceof Error ? err : new Error(`Stream operation error: ${err}`));
 			}
 		} finally {
 			abortController = null;
-			// 에러 발생 시에도 history 저장 시도 (final 상태로 저장)
 			await ctrl!.saveHistory(selectedProviderId, selectedModelId).catch((e: unknown) => {
 				debugLogger.logError("chat_stream", e instanceof Error ? e : new Error(`Failed to save history: ${e}`));
 			});
@@ -286,7 +305,7 @@
 		await autoScroll.scrollToBottom("smooth");
 	}
 
-	// ── Actions ───────────────────────────────────────────────────────────
+	// ── Message Actions ───────────────────────────────────────────────────
 	async function sendMessage(): Promise<void> {
 		const text = inputText.trim();
 		if ((!text && attachments.length === 0) || $isLoading || !hasProvider || !ctrl) return;
@@ -371,16 +390,6 @@
 		}
 	}
 
-	function handleOpenFile(path: string): void {
-		const relPath = toVaultRelativePath(plugin, path);
-		const file = plugin.app.vault.getAbstractFileByPath(relPath);
-		if (file instanceof TFile) {
-			void plugin.app.workspace.getLeaf(false).openFile(file);
-		} else {
-			new Notice(`File not found: ${path}`);
-		}
-	}
-
 	function clearChat(): void {
 		if ($isLoading) cancelStream();
 		const activeProject = getActiveProject();
@@ -395,98 +404,8 @@
 		resetChat();
 	}
 
-	function toggleActiveNote(): void {
-		includeActiveNote = !includeActiveNote;
-	}
-
-	function toggleRagMode(): void {
-		if (!$isRagEnabled) {
-			new Notice(
-				$tStore("errors.ragDisabledGlobally") || "Global RAG engine is disabled. Turn it on in Settings.",
-			);
-			return;
-		}
-		useRagContext = !useRagContext;
-	}
-
-	async function toggleAgentExecutionMode(): Promise<void> {
-		if (!agentEnabled && !isCliSelected) {
-			new Notice(
-				$tStore("errors.agentDisabledGlobally") ||
-					"Agent feature is disabled. Please enable it in Settings first.",
-			);
-			return;
-		}
-		const newMode = agentExecutionMode === "read" ? "edit" : "read";
-		plugin.settings.chat.agentExecutionMode = newMode;
-		await plugin.saveSettings();
-		settingsStore.set(plugin.settings);
-		new Notice(
-			newMode === "edit"
-				? (isCliSelected
-					? ($tStore("chat.cliMode.editModeNotice") || "✏️ CLI Agent: Edit Mode (Allowed to create and edit notes)")
-					: ($tStore("uiMessages.agentModeSwitchedToEdit") || "✏️ Agent switched to Edit Mode. (Can create & edit notes)"))
-				: (isCliSelected
-					? ($tStore("chat.cliMode.readModeNotice") || "👁️ CLI Agent: Read Mode (Read-only, file modifications blocked)")
-					: ($tStore("uiMessages.agentModeSwitchedToRead") || "👁️ Agent switched to Read Mode. (Read-only)"))
-		);
-	}
-
-	async function toggleWebSearch(): Promise<void> {
-		const currentProvider = $verifiedProviders.find((p) => p.id === selectedProviderId);
-		if (currentProvider && isCliProvider(currentProvider.type)) {
-			new Notice(
-				$tStore("uiMessages.webSearchNotNeededForCli") ||
-					"ℹ️ CLI agents use their own built-in web search tools.",
-			);
-			return;
-		}
-		plugin.settings.webSearch.enabled = !plugin.settings.webSearch.enabled;
-		await plugin.saveSettings();
-		new Notice(
-			plugin.settings.webSearch.enabled
-				? $tStore("uiMessages.webSearchEnabled") || "✅ Web search enabled."
-				: $tStore("uiMessages.webSearchDisabled") || "🛑 Web search disabled.",
-		);
-	}
-
-	async function exportChat(): Promise<void> {
-		if (!ctrl) return;
-		await ctrl.history.exportCurrentSession(selectedProviderId, selectedModelId);
-	}
-
-	async function compressContext(): Promise<void> {
-		if ($isLoading || !ctrl || !hasProvider) return;
-		const result = await ctrl.compressContext(selectedProviderId, selectedModelId);
-		if (result.status === "ok") {
-			new Notice(
-				$tStore("uiMessages.contextCompressed", {
-					messages: result.messages.toLocaleString(),
-					tokens: result.tokens.toLocaleString(),
-				}) ||
-					`📋 Context compressed: ${result.messages} messages → 1 summary (~${result.tokens} tokens freed).`,
-			);
-		} else if (result.status === "too-short") {
-			new Notice(
-				$tStore("uiMessages.tooShortToCompress") ||
-					"Not enough conversation to compress.",
-			);
-		} else {
-			new Notice(
-				$tStore("uiMessages.compressFailed") || "⚠️ Failed to compress context.",
-			);
-		}
-	}
-
 	function resetTextareaHeight(): void {
 		resizeTextarea(textareaEl);
-	}
-
-	async function handleToggleFavorite(providerId: string, modelId: string): Promise<void> {
-		const current = plugin.settings.connections.favoriteModels ?? [];
-		const updated = toggleFavoriteModel(current, providerId, modelId);
-		plugin.settings.connections.favoriteModels = updated;
-		await plugin.settingsManager.saveSettings();
 	}
 </script>
 
@@ -506,9 +425,15 @@
 		bind:selectedModelId
 		projectList={$projectList}
 		activeProjectId={$activeProjectId}
-		onToggleRag={toggleRagMode}
-		onToggleFavorite={handleToggleFavorite}
-		onToggleHistory={() => (showHistory = !showHistory)}
+		onToggleRag={chatActions.toggleRagMode}
+		onToggleFavorite={chatActions.handleToggleFavorite}
+		onToggleHistory={() => {
+			if (showHistory) {
+				closeHistory(false);
+			} else {
+				openHistory();
+			}
+		}}
 		onNewChat={clearChat}
 		onProjectSelect={handleProjectSwitch}
 	/>
@@ -524,8 +449,8 @@
 							await ctrl.saveHistory(selectedProviderId, selectedModelId);
 						}
 					}}
-					onSessionSelect={() => (showHistory = false)}
-					onBack={() => (showHistory = false)}
+					onSessionSelect={() => closeHistory(true)}
+					onBack={() => closeHistory(false)}
 				/>
 			{/if}
 		</div>
@@ -548,7 +473,7 @@
 			openSettingsToTab={() => openSettingsTab(plugin.app, "lumina")}
 			onApproveTool={(id) => ctrl?.respondToolApproval(id, true)}
 			onRejectTool={(id) => ctrl?.respondToolApproval(id, false)}
-			onOpenFile={handleOpenFile}
+			onOpenFile={chatActions.handleOpenFile}
 		/>
 
 		{#if $approvalStore.queue.length > 0}
@@ -567,15 +492,15 @@
 			{isCliSelected}
 			providers={$verifiedProviders}
 			favoriteModels={$favoriteModels}
-			onToggleFavorite={handleToggleFavorite}
+			onToggleFavorite={chatActions.handleToggleFavorite}
 			{selectedProviderId}
 			{selectedModelId}
 			{tStore}
 			bind:inputText
 			bind:attachments
 			bind:textareaEl
-			onToggleActiveNote={toggleActiveNote}
-			onToggleAgentExecutionMode={toggleAgentExecutionMode}
+			onToggleActiveNote={chatActions.toggleActiveNote}
+			onToggleAgentExecutionMode={chatActions.toggleAgentExecutionMode}
 			onSelectModel={(providerId, modelId) => {
 				selectedProviderId = providerId;
 				selectedModelId = modelId;
@@ -583,12 +508,12 @@
 			onSendMessage={sendMessage}
 			onCancelStream={cancelStream}
 			onClearChat={clearChat}
-			onToggleRagMode={toggleRagMode}
+			onToggleRagMode={chatActions.toggleRagMode}
 			onOpenSettings={() => openSettingsTab(plugin.app, "lumina")}
-			onToggleWebSearch={toggleWebSearch}
-			onExportChat={exportChat}
+			onToggleWebSearch={chatActions.toggleWebSearch}
+			onExportChat={chatActions.exportChat}
 			onRegenerateLast={regenerateLastAnswer}
-			onCompressContext={compressContext}
+			onCompressContext={chatActions.compressContext}
 		/>
 	{/if}
 </div>

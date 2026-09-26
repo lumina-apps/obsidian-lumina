@@ -631,6 +631,7 @@
     "sessionUsage": "目前工作階段用量",
     "sessionTokens": "累計: {{tokens}} tokens",
     "estimatedTokensTooltip": "本次發送預估輸入 Token 數（近似值）",
+    "tokenOverLimitTooltip": "上下文超過 10 萬 Token，顯示估算上限（> 100k tokens）",
     "cliMode": {
       "cliAgent": "CLI 代理",
       "pluginAgent": "外掛代理",

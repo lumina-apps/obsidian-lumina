@@ -634,6 +634,7 @@
     "sessionUsage": "현재 세션 누적 사용량",
     "sessionTokens": "누적: {{tokens}} 토큰",
     "estimatedTokensTooltip": "이번 전송 예상 입력 토큰 (추정치)",
+    "tokenOverLimitTooltip": "컨텍스트가 10만 토큰을 초과하여 추정치가 제한 표기됩니다 (> 100k tokens)",
     "cliMode": {
       "cliAgent": "CLI 에이전트",
       "pluginAgent": "플러그인 에이전트",

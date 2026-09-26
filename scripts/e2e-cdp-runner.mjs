@@ -5,7 +5,10 @@
  * open -a Obsidian --args --remote-debugging-port=9222
  */
 
+import { readFileSync } from 'fs';
+
 const CDP_PORT = 9222;
+const localManifest = JSON.parse(readFileSync('./manifest.json', 'utf8'));
 
 async function sleep(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
@@ -228,6 +231,16 @@ async function run() {
 	const input = new InputController(client);
 	const reporter = new TestReporter();
 
+	// Reload plugin to guarantee running latest built bundle
+	await client.evaluate(`(async () => {
+		if (app.plugins.enabledPlugins.has('lumina')) {
+			await app.plugins.disablePlugin('lumina');
+			await new Promise(r => setTimeout(r, 200));
+			await app.plugins.enablePlugin('lumina');
+			await new Promise(r => setTimeout(r, 400));
+		}
+	})()`);
+
 	// ─── SUITE 1: Core Lifecycle & Registrations ─────────────────────────────
 	reporter.startSuite('Core Lifecycle & Registrations');
 	{
@@ -243,7 +256,7 @@ async function run() {
 				};
 			})()`);
 
-			reporter.record('Plugin Loaded & Version Match', info.loaded && info.manifestVersion === '1.4.4', `Version: ${info.manifestVersion}`, Date.now() - t0);
+			reporter.record('Plugin Loaded & Version Match', info.loaded && info.manifestVersion === localManifest.version, `Version: ${info.manifestVersion}`, Date.now() - t0);
 			reporter.record('Ribbon Icon Present', info.hasRibbon, `Vault: ${info.vaultName}`, Date.now() - t0);
 		} catch (err) {
 			reporter.record('Plugin Loaded & Version Match', false, err.message, Date.now() - t0);
@@ -398,6 +411,68 @@ async function run() {
 		} catch (err) {
 			reporter.record('Chat Controls & UI Components Mounted', false, err.message, Date.now() - t3);
 		}
+
+		// 6. Chat History List Toggle & Back Navigation
+		const tHistory = Date.now();
+		try {
+			// Find and click the history button in chat header
+			const historyBtnSelector = '.lumina-chat__header .lumina-chat__icon-btn[aria-label*="기록"], .lumina-chat__header .lumina-chat__icon-btn[aria-label*="History"]';
+			await input.click(historyBtnSelector);
+			await sleep(300);
+
+			let historyMounted = await client.evaluate(`(() => {
+				return !!document.querySelector('.lumina-history');
+			})()`);
+
+			if (!historyMounted) {
+				// Fallback to direct click if tooltip intercepted physical mouse
+				await client.evaluate(`(() => {
+					const btn = document.querySelector('.lumina-chat__header .lumina-chat__icon-btn[aria-label*="기록"], .lumina-chat__header .lumina-chat__icon-btn[aria-label*="History"]');
+					btn?.click();
+				})()`);
+				await sleep(300);
+				historyMounted = await client.evaluate(`(() => {
+					return !!document.querySelector('.lumina-history');
+				})()`);
+			}
+
+			if (!historyMounted) {
+				throw new Error('Chat history view failed to mount');
+			}
+
+			// Click the back button inside history header
+			await input.click('.lumina-history__header-title button');
+			await sleep(300);
+
+			let historyClosed = await client.evaluate(`(() => {
+				const historyEl = document.querySelector('.lumina-history');
+				const textareaEl = document.querySelector('.lumina-chat-view textarea');
+				return !historyEl && !!textareaEl;
+			})()`);
+
+			if (!historyClosed) {
+				await client.evaluate(`(() => {
+					const backBtn = document.querySelector('.lumina-history__header-title button');
+					backBtn?.click();
+				})()`);
+				await sleep(300);
+				historyClosed = await client.evaluate(`(() => {
+					const historyEl = document.querySelector('.lumina-history');
+					const textareaEl = document.querySelector('.lumina-chat-view textarea');
+					return !historyEl && !!textareaEl;
+				})()`);
+			}
+
+			reporter.record(
+				'Chat History Toggle & Back Navigation',
+				historyMounted && historyClosed,
+				`History mounted: ${historyMounted}, Closed & Textarea restored: ${historyClosed}`,
+				Date.now() - tHistory
+			);
+		} catch (err) {
+			reporter.record('Chat History Toggle & Back Navigation', false, err.message, Date.now() - tHistory);
+		}
+
 
 		// Teardown: close leaves
 		await client.evaluate(`(() => {

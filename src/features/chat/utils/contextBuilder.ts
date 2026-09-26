@@ -83,7 +83,7 @@ export async function buildLlmContext(
 	const { attachmentContext, multimodalImages } =
 		await ChatAttachmentHandler.buildAttachmentContext(plugin.app, updatedAttachments, plugin, { skipFolders: shouldSearchRag });
 
-	let ragContext: string | undefined = attachmentContext || undefined;
+	let ragContext: string | undefined;
 	let ragChunksForLog: RagChunkMeta[] | undefined;
 
 	if (shouldSearchRag && plugin.indexer && get(indexingState).status === 'ready') {
@@ -93,7 +93,7 @@ export async function buildLlmContext(
 			userText,
 			rag: ragSettings,
 			connections: plugin.settings.connections,
-			existingContext: ragContext,
+			existingContext: undefined,
 			assistantId,
 			indexer: plugin.indexer,
 			filterPaths: filterPaths.length > 0 ? filterPaths : undefined,
@@ -135,6 +135,7 @@ export async function buildLlmContext(
 
 	let llmMessages: ChatMessage[] = buildMessages(history, userText, {
 		chat: chatSettings,
+		attachmentContext: attachmentContext || undefined,
 		ragContext,
 		sessionSummary: get(sessionSummary),
 		summaryUpToMessageId: get(summaryUpToMessageId),

@@ -4,7 +4,10 @@ import {
 	detectMention,
 	detectSlashCommand,
 	calculateEstimatedInputTokens,
+	estimateInputTokensDetails,
+	calculateFolderSize,
 } from "./inputUtils";
+import { App, TFile, TFolder } from "obsidian";
 
 describe("inputUtils", () => {
 	describe("splitProviderModel", () => {
@@ -224,6 +227,134 @@ describe("inputUtils", () => {
 				activeFileInfo: null,
 			});
 			expect(tokens).toBeGreaterThan(0);
+		});
+
+		it("should estimate tokens for folder attachments using getFolderSize", () => {
+			const result = estimateInputTokensDetails({
+				inputText: "",
+				attachments: [
+					{
+						type: "folder",
+						name: "Docs",
+						path: "notes/docs",
+					},
+				],
+				getFolderSize: (p) => (p === "notes/docs" ? { size: 9000, isOverLimit: false } : undefined),
+			});
+			// 9000 / 3 = 3000
+			expect(result.tokens).toBe(3000);
+			expect(result.isOverLimit).toBe(false);
+			expect(result.displayText).toBe("~3,000 tokens");
+		});
+
+		it("should display > 100k tokens and set isOverLimit when folder exceeds limit", () => {
+			const result = estimateInputTokensDetails({
+				inputText: "",
+				attachments: [
+					{
+						type: "folder",
+						name: "LargeFolder",
+						path: "notes/large",
+					},
+				],
+				getFolderSize: (p) => (p === "notes/large" ? { size: 360000, isOverLimit: true } : undefined),
+			});
+			expect(result.isOverLimit).toBe(true);
+			expect(result.displayText).toBe("> 100k tokens");
+		});
+
+		it("should handle getFolderSize returning a number", () => {
+			const result = estimateInputTokensDetails({
+				inputText: "",
+				attachments: [
+					{
+						type: "folder",
+						name: "Docs",
+						path: "notes/docs",
+					},
+				],
+				getFolderSize: (p) => (p === "notes/docs" ? 6000 : undefined),
+			});
+			expect(result.tokens).toBe(2000);
+			expect(result.displayText).toBe("~2,000 tokens");
+		});
+	});
+
+	describe("calculateFolderSize", () => {
+		it("should calculate total size of markdown files in folder tree", () => {
+			const root = new TFolder();
+			root.path = "Folder";
+
+			const sub = new TFolder();
+			sub.path = "Folder/Sub";
+
+			const file1 = new TFile();
+			file1.path = "Folder/file1.md";
+			file1.extension = "md";
+			file1.stat = { ctime: 0, mtime: 0, size: 500 };
+
+			const file2 = new TFile();
+			file2.path = "Folder/Sub/file2.md";
+			file2.extension = "md";
+			file2.stat = { ctime: 0, mtime: 0, size: 800 };
+
+			const nonMd = new TFile();
+			nonMd.path = "Folder/image.png";
+			nonMd.extension = "png";
+			nonMd.stat = { ctime: 0, mtime: 0, size: 50000 };
+
+			root.children = [file1, sub, nonMd];
+			sub.children = [file2];
+
+			const mockApp = {
+				vault: {
+					getAbstractFileByPath: (p: string) => (p === "Folder" ? root : null),
+				},
+			} as unknown as App;
+
+			const result = calculateFolderSize(mockApp, "Folder", 300_000);
+			expect(result.size).toBe(1300);
+			expect(result.isOverLimit).toBe(false);
+		});
+
+		it("should short-circuit and set isOverLimit when maxBytes is reached", () => {
+			const root = new TFolder();
+			root.path = "Folder";
+
+			const file1 = new TFile();
+			file1.path = "Folder/file1.md";
+			file1.extension = "md";
+			file1.stat = { ctime: 0, mtime: 0, size: 2000 };
+
+			const file2 = new TFile();
+			file2.path = "Folder/file2.md";
+			file2.extension = "md";
+			file2.stat = { ctime: 0, mtime: 0, size: 2000 };
+
+			root.children = [file1, file2];
+
+			const mockApp = {
+				vault: {
+					getAbstractFileByPath: (p: string) => (p === "Folder" ? root : null),
+				},
+			} as unknown as App;
+
+			// Set maxBytes = 1500 (file1 alone exceeds it)
+			const result = calculateFolderSize(mockApp, "Folder", 1500);
+			expect(result.size).toBe(2000);
+			expect(result.isOverLimit).toBe(true);
+		});
+
+		it("should return 0 when path is not a TFolder", () => {
+			const mockApp = {
+				vault: {
+					getAbstractFileByPath: () => null,
+				},
+			} as unknown as App;
+
+			const result = calculateFolderSize(mockApp, "NonExistent");
+			expect(result.size).toBe(0);
+			expect(result.isOverLimit).toBe(false);
 		});
 	});
 });

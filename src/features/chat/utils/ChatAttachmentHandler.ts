@@ -10,9 +10,7 @@ import { t } from '../../../shared/locales/helpers';
 import { debugLogger } from '../../../shared/debugLogger';
 
 export const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif']);
-const MAX_TEXT_LENGTH = 100000; // 대략적인 글자 수 제한 (초과 시 잘림)
-const MAX_TAG_FILES = 5;       // 태그 검색 시 최대 파일 수
-const MAX_FOLDER_FILES = 30;   // 폴더 검색 시 최대 파일 수
+const MAX_TEXT_LENGTH = 2000000; // 물리적 텍스트 안전 상한선 (약 50만 토큰, OOM 힙 크래시 방지)
 
 export interface ParsedAttachment {
 	type: 'text' | 'image';
@@ -171,22 +169,32 @@ export class ChatAttachmentHandler {
 		if (!(folder instanceof TFolder)) return null;
 
 		const mdFiles: TFile[] = [];
-		const collectFiles = (f: TFolder) => {
+		const visitedFolders = new Set<string>();
+		const MAX_DEPTH = 15;
+
+		const collectFiles = (f: TFolder, depth: number) => {
+			if (depth > MAX_DEPTH || visitedFolders.has(f.path)) return;
+			visitedFolders.add(f.path);
+
 			for (const child of f.children) {
-				if (mdFiles.length >= MAX_FOLDER_FILES) return;
 				if (child instanceof TFile && child.extension === 'md') {
 					mdFiles.push(child);
 				} else if (child instanceof TFolder) {
-					collectFiles(child);
+					collectFiles(child, depth + 1);
 				}
 			}
 		};
-		collectFiles(folder);
+		collectFiles(folder, 1);
 
 		let folderContent = t('settings.chat.context.folderFiles', { name: att.name }) + '\n';
+		let readCount = 0;
 		for (const file of mdFiles) {
 			const content = await app.vault.read(file);
 			folderContent += `--- ${file.path} ---\n${content}\n\n`;
+			readCount++;
+			if (readCount % 50 === 0) {
+				await new Promise((resolve) => setTimeout(resolve, 0));
+			}
 			if (folderContent.length >= MAX_TEXT_LENGTH) break;
 		}
 		return this.createTextPayload(folderContent);
@@ -276,7 +284,7 @@ export class ChatAttachmentHandler {
 		const files = app.vault.getMarkdownFiles();
 		let tagContent = t('settings.chat.context.tagFiles', { name: att.name }) + '\n';
 		const targetTag = att.name.startsWith('#') ? att.name : `#${att.name}`;
-		let count = 0;
+		let readCount = 0;
 
 		for (const file of files) {
 			const cache = app.metadataCache.getFileCache(file);
@@ -286,8 +294,11 @@ export class ChatAttachmentHandler {
 			if (hasTag) {
 				const content = await app.vault.read(file);
 				tagContent += `--- ${file.basename} ---\n${content}\n\n`;
-				count++;
-				if (count >= MAX_TAG_FILES) break;
+				readCount++;
+				if (readCount % 50 === 0) {
+					await new Promise((resolve) => setTimeout(resolve, 0));
+				}
+				if (tagContent.length >= MAX_TEXT_LENGTH) break;
 			}
 		}
 

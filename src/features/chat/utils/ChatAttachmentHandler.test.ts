@@ -243,6 +243,65 @@ describe('ChatAttachmentHandler', () => {
 			expect(result?.content).toContain('--- Projects/Note1.md ---');
 			expect(result?.content).toContain('--- Projects/Sub/Note2.md ---');
 		});
+
+		it('should collect more than 30 markdown files without arbitrary limits', async () => {
+			const rootFolder = new TFolder();
+			rootFolder.path = 'BigFolder';
+
+			const files: TFile[] = [];
+			for (let i = 1; i <= 35; i++) {
+				const f = new TFile();
+				f.path = `BigFolder/Note${i}.md`;
+				f.extension = 'md';
+				files.push(f);
+			}
+			rootFolder.children = files;
+
+			mockVault.getAbstractFileByPath.mockReturnValue(rootFolder);
+			mockVault.read.mockImplementation(async (file: TFile) => `Content of ${file.path}`);
+
+			const att: ContextAttachment = {
+				type: 'folder',
+				path: 'BigFolder',
+				name: 'BigFolder',
+			};
+
+			const result = await ChatAttachmentHandler.parseAttachment(mockApp, att);
+			expect(result).not.toBeNull();
+			// Should contain file 1 and file 35 (not cut off at 30)
+			expect(result?.content).toContain('--- BigFolder/Note1.md ---');
+			expect(result?.content).toContain('--- BigFolder/Note35.md ---');
+		});
+
+		it('should prevent circular symlink recursion without crashing', async () => {
+			const rootFolder = new TFolder();
+			rootFolder.path = 'CircularRoot';
+
+			const childFolder = new TFolder();
+			childFolder.path = 'CircularRoot/Child';
+
+			const file = new TFile();
+			file.path = 'CircularRoot/Note.md';
+			file.extension = 'md';
+
+			// Circular reference: childFolder contains rootFolder
+			rootFolder.children = [file, childFolder];
+			childFolder.children = [rootFolder];
+
+			mockVault.getAbstractFileByPath.mockReturnValue(rootFolder);
+			mockVault.read.mockResolvedValue('Safe content');
+
+			const att: ContextAttachment = {
+				type: 'folder',
+				path: 'CircularRoot',
+				name: 'CircularRoot',
+			};
+
+			// Must terminate without call stack overflow
+			const result = await ChatAttachmentHandler.parseAttachment(mockApp, att);
+			expect(result).not.toBeNull();
+			expect(result?.content).toContain('--- CircularRoot/Note.md ---');
+		});
 	});
 
 	describe('parseActiveNoteAttachment', () => {
