@@ -476,8 +476,12 @@
         "desc": "Añade Lumina al menú de clic derecho del editor."
       },
       "ribbonIcon": {
-        "name": "Mostrar icono en la cinta",
-        "desc": "Muestra el icono del plugin en la barra lateral izquierda."
+        "name": "Mostrar icono de chat en la cinta",
+        "desc": "Muestra el icono de Lumina Chat en la barra lateral izquierda."
+      },
+      "graphRibbonIcon": {
+        "name": "Mostrar icono de grafo en la cinta",
+        "desc": "Muestra el icono del grafo RAG en la barra lateral izquierda."
       },
       "frontmatter": {
         "name": "Autogenerar frontmatter",

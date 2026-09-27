@@ -8,6 +8,7 @@ import { App, normalizePath } from 'obsidian';
 import type { ParentChunk, ChildChunk, PersistedIndex, IndexingCheckpoint } from '../../shared/types/rag.types';
 import { SCHEMA_VERSION } from '../../shared/types/rag.types';
 import { debugLogger } from '../../shared/debugLogger';
+import { normalizeError } from '../../shared/utils/errorUtils';
 
 /** 플러그인 스토리지 경로 */
 const STORAGE_SUBPATH = 'plugins/lumina/storage';
@@ -115,7 +116,7 @@ export async function saveIndex(
 	} catch (err) {
 		debugLogger.logError(
 			'rag',
-			err instanceof Error ? err : new Error(`인덱스 저장 실패: ${err}`),
+			normalizeError(err, `인덱스 저장 실패: ${err}`),
 		);
 	}
 }
@@ -157,7 +158,7 @@ export async function saveCheckpoint(
 	} catch (err) {
 		debugLogger.logError(
 			'rag',
-			err instanceof Error ? err : new Error(`체크포인트 저장 실패: ${err}`),
+			normalizeError(err, `체크포인트 저장 실패: ${err}`),
 		);
 	}
 }

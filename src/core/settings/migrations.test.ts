@@ -9,6 +9,7 @@ import {
 	migrateWebSearch,
 	migrateCanvasSettings,
 	migrateCliOperationMode,
+	migrateGraphRibbonIcon,
 	runMigrations,
 } from './migrations';
 import { addDynamicLocale, setLanguage } from '../../shared/locales/helpers';
@@ -290,7 +291,7 @@ describe('runMigrations', () => {
 	it('returns false if no migration returns true', () => {
 		const mockPlugin = {
 			settings: {
-				misc: { hasMigratedChatHistory: true },
+				misc: { hasMigratedChatHistory: true, showGraphRibbonIcon: false },
 				rag: { minSimilarity: 0.5 },
 				chat: { quickActions: [], memoryMethod: 'tokens', contextWindowTurns: 10, cliOperationMode: 'cli-agent' },
 				webSearch: {
@@ -413,6 +414,34 @@ describe('migrateCliOperationMode', () => {
 		const result = migrateCliOperationMode(mockPlugin);
 		expect(result).toBe(false);
 		expect(mockPlugin.settings.chat.cliOperationMode).toBe('plugin-agent');
+	});
+});
+
+describe('migrateGraphRibbonIcon', () => {
+	it('showGraphRibbonIcon이 없을 때 false로 초기화하고 true를 반환한다', () => {
+		const mockPlugin = {
+			settings: {
+				misc: {} as unknown as LuminaPlugin['settings']['misc'],
+			},
+		} as unknown as LuminaPlugin;
+
+		const result = migrateGraphRibbonIcon(mockPlugin);
+		expect(result).toBe(true);
+		expect(mockPlugin.settings.misc.showGraphRibbonIcon).toBe(false);
+	});
+
+	it('showGraphRibbonIcon이 이미 있으면 변경하지 않고 false를 반환한다', () => {
+		const mockPlugin = {
+			settings: {
+				misc: {
+					showGraphRibbonIcon: true,
+				} as unknown as LuminaPlugin['settings']['misc'],
+			},
+		} as unknown as LuminaPlugin;
+
+		const result = migrateGraphRibbonIcon(mockPlugin);
+		expect(result).toBe(false);
+		expect(mockPlugin.settings.misc.showGraphRibbonIcon).toBe(true);
 	});
 });
 

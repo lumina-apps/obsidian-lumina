@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { debugLogger } from '../../../shared/debugLogger';
+import { normalizeError } from '../../../shared/utils/errorUtils';
 
 export class PptxParser {
 	/** PPTX ArrayBuffer에서 슬라이드 텍스트를 추출합니다. */
@@ -37,7 +38,7 @@ export class PptxParser {
 
 			return slideTexts.join('\n\n');
 		} catch (error) {
-			debugLogger.logError('rag', error instanceof Error ? error : new Error(`PPTX 파싱 오류: ${error}`));
+			debugLogger.logError('rag', normalizeError(error, `PPTX 파싱 오류: ${error}`));
 			return '';
 		}
 	}

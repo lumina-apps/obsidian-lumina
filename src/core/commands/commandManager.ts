@@ -5,6 +5,7 @@ import { t } from '../../shared/locales/helpers';
 import { activateView, activateMainView } from '../views/viewHelper';
 import { CHAT_VIEW_TYPE, DEBUG_VIEW_TYPE, GRAPH_VIEW_TYPE } from '../../shared/constants/viewTypes';
 import { debugLogger } from '../../shared/debugLogger';
+import { normalizeError } from '../../shared/utils/errorUtils';
 import { StripFrontmatterModal } from '../../features/frontmatter/stripFrontmatterModal';
 import { activeSidebarTab } from '../store/chatStore';
 
@@ -69,8 +70,8 @@ export class CommandManager {
 					debugLogger.logSystem('commands', 'reindex-vault: completed successfully');
 					new Notice(t('settings.rag.reindex.success'), 3000);
 				} catch (err) {
-					debugLogger.logError('commands', err instanceof Error ? err : new Error(`reindex-vault failed: ${err}`));
-					new Notice(`${t('settings.rag.reindex.fail')}${err instanceof Error ? err.message : String(err)}`, 5000);
+					debugLogger.logError('commands', normalizeError(err, `reindex-vault failed: ${err}`));
+					new Notice(`${t('settings.rag.reindex.fail')}${normalizeError(err).message}`, 5000);
 				}
 			},
 		});

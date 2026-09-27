@@ -2,6 +2,7 @@ import * as http from 'http';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { debugLogger } from '../../../shared/debugLogger';
+import { normalizeError } from '../../../shared/utils/errorUtils';
 import { authenticateRequest } from './auth';
 
 /**
@@ -63,7 +64,7 @@ export class HttpTransport {
 						reject(err);
 					}
 				} else {
-					debugLogger.logError('mcp', err instanceof Error ? err : new Error(`MCP Server failed to start: ${err}`));
+					debugLogger.logError('mcp', normalizeError(err, `MCP Server failed to start: ${err}`));
 					this.isRunning = false;
 					reject(err);
 				}
@@ -122,11 +123,11 @@ export class HttpTransport {
 				try {
 					resolve(body ? JSON.parse(body) : null);
 				} catch (e) {
-					reject(e instanceof Error ? e : new Error(String(e)));
+					reject(normalizeError(e));
 				}
 			});
 			req.on('error', (err) => {
-				reject(err instanceof Error ? err : new Error(String(err)));
+				reject(normalizeError(err));
 			});
 		});
 	}
@@ -160,7 +161,7 @@ export class HttpTransport {
 				try {
 					parsedBody = await this.parseBody(req);
 				} catch (e) {
-					debugLogger.logError('mcp', e instanceof Error ? e : new Error(`Body parse error: ${e}`));
+					debugLogger.logError('mcp', normalizeError(e, `Body parse error: ${e}`));
 					res.writeHead(400, { 'Content-Type': 'application/json' });
 					res.end(JSON.stringify({
 						jsonrpc: '2.0',
@@ -193,7 +194,7 @@ export class HttpTransport {
 			res.writeHead(404, { 'Content-Type': 'text/plain' });
 			res.end('Not Found');
 		} catch (err) {
-			debugLogger.logError('mcp', err instanceof Error ? err : new Error(`HTTP 요청 처리 중 예외: ${err}`));
+			debugLogger.logError('mcp', normalizeError(err, `HTTP 요청 처리 중 예외: ${err}`));
 			if (!res.headersSent) {
 				res.writeHead(500, { 'Content-Type': 'text/plain' });
 				res.end('Internal Server Error');

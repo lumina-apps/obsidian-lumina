@@ -48,20 +48,35 @@ class CDPClient {
 		});
 	}
 
-	async send(method, params = {}) {
+	async send(method, params = {}, timeoutMs = 25000) {
 		const id = this.msgId++;
 		return new Promise((resolve, reject) => {
-			this.pending.set(id, { resolve, reject });
+			const timer = setTimeout(() => {
+				if (this.pending.has(id)) {
+					this.pending.delete(id);
+					reject(new Error(`CDP request timed out after ${timeoutMs}ms: ${method}`));
+				}
+			}, timeoutMs);
+			this.pending.set(id, {
+				resolve: (res) => {
+					clearTimeout(timer);
+					resolve(res);
+				},
+				reject: (err) => {
+					clearTimeout(timer);
+					reject(err);
+				},
+			});
 			this.ws.send(JSON.stringify({ id, method, params }));
 		});
 	}
 
-	async evaluate(expression) {
+	async evaluate(expression, timeoutMs = 25000) {
 		const result = await this.send('Runtime.evaluate', {
 			expression,
 			returnByValue: true,
 			awaitPromise: true,
-		});
+		}, timeoutMs);
 		if (result.exceptionDetails) {
 			const desc = result.exceptionDetails.exception?.description || result.exceptionDetails.text;
 			throw new Error(`Evaluation Exception: ${desc}`);
@@ -231,14 +246,16 @@ async function run() {
 	const input = new InputController(client);
 	const reporter = new TestReporter();
 
-	// Reload plugin to guarantee running latest built bundle
+	// Clean up any residual test files from previous crashed runs & close leftover test leaves
 	await client.evaluate(`(async () => {
-		if (app.plugins.enabledPlugins.has('lumina')) {
-			await app.plugins.disablePlugin('lumina');
-			await new Promise(r => setTimeout(r, 200));
-			await app.plugins.enablePlugin('lumina');
-			await new Promise(r => setTimeout(r, 400));
+		const cleanupPaths = ['__lumina_e2e_test__.md', '__lumina_e2e_mcp_test__.md'];
+		for (const p of cleanupPaths) {
+			const f = app.vault.getAbstractFileByPath(p);
+			if (f) await app.vault.delete(f, true);
 		}
+		app.workspace.getLeavesOfType('lumina-chat').forEach(l => l.detach());
+		app.workspace.getLeavesOfType('lumina-debug-panel').forEach(l => l.detach());
+		app.workspace.getLeavesOfType('lumina-graph').forEach(l => l.detach());
 	})()`);
 
 	// ─── SUITE 1: Core Lifecycle & Registrations ─────────────────────────────
@@ -260,6 +277,56 @@ async function run() {
 			reporter.record('Ribbon Icon Present', info.hasRibbon, `Vault: ${info.vaultName}`, Date.now() - t0);
 		} catch (err) {
 			reporter.record('Plugin Loaded & Version Match', false, err.message, Date.now() - t0);
+		}
+
+		// Verify Core Feature Managers
+		const tManagers = Date.now();
+		try {
+			const managers = await client.evaluate(`(() => {
+				const p = app.plugins.plugins['lumina'];
+				return {
+					hasCanvas: !!p?.canvasManager,
+					hasEvents: !!p?.eventManager,
+					hasCommands: !!p?.commandManager,
+					hasSettings: !!p?.settingsManager
+				};
+			})()`);
+
+			reporter.record(
+				'Core Feature Managers Initialized',
+				managers.hasCanvas && managers.hasEvents && managers.hasCommands && managers.hasSettings,
+				`Canvas: ${managers.hasCanvas}, Events: ${managers.hasEvents}, Commands: ${managers.hasCommands}, Settings: ${managers.hasSettings}`,
+				Date.now() - tManagers
+			);
+		} catch (err) {
+			reporter.record('Core Feature Managers Initialized', false, err.message, Date.now() - tManagers);
+		}
+
+		// Verify Dynamic Plugin Reload & Re-initialization
+		const tReload = Date.now();
+		try {
+			const reloadResult = await client.evaluate(`(async () => {
+				if (app.plugins.enabledPlugins.has('lumina')) {
+					await app.plugins.disablePlugin('lumina');
+					await new Promise(r => setTimeout(r, 200));
+					const unloaded = !app.plugins.plugins['lumina'];
+					await app.plugins.enablePlugin('lumina');
+					await new Promise(r => setTimeout(r, 500));
+					const p = app.plugins.plugins['lumina'];
+					const reloaded = !!p && !!p.commandManager && !!p.mcpManager;
+					return { success: unloaded && reloaded, unloaded, reloaded };
+				}
+				return { success: false, reason: 'plugin not enabled' };
+			})()`);
+
+			reporter.record(
+				'Plugin Reload & Lifecycle Cycle',
+				reloadResult.success,
+				`Clean unload: ${reloadResult.unloaded}, Re-enable: ${reloadResult.reloaded}`,
+				Date.now() - tReload
+			);
+		} catch (err) {
+			reporter.record('Plugin Reload & Lifecycle Cycle', false, err.message, Date.now() - tReload);
 		}
 
 		const t1 = Date.now();
@@ -304,7 +371,7 @@ async function run() {
 
 	// ─── SUITE 2: Chat View (Physical Mouse Click & Typing Simulation) ───────
 	reporter.startSuite('Chat View (Physical Mouse & Keyboard Interaction)');
-	{
+	try {
 		// 1. Ensure any previous chat leaf is detached
 		await client.evaluate(`(() => {
 			const leaves = app.workspace.getLeavesOfType('lumina-chat');
@@ -366,24 +433,28 @@ async function run() {
 			await input.click('.lumina-sidebar__tab:nth-child(2)');
 			await sleep(300);
 
-			const discoveryActive = await client.evaluate(`(() => {
+			const discoveryStatus = await client.evaluate(`(() => {
 				const tabs = document.querySelectorAll('.lumina-sidebar__tab');
-				return tabs[1]?.classList.contains('is-active');
+				const isTabActive = tabs[1]?.classList.contains('is-active');
+				const hasDiscovery = !!document.querySelector('.lumina-discovery');
+				return { isTabActive, hasDiscovery };
 			})()`);
 
 			// Click AI Chat Tab back (1st button)
 			await input.click('.lumina-sidebar__tab:nth-child(1)');
 			await sleep(300);
 
-			const chatActive = await client.evaluate(`(() => {
+			const chatStatus = await client.evaluate(`(() => {
 				const tabs = document.querySelectorAll('.lumina-sidebar__tab');
-				return tabs[0]?.classList.contains('is-active');
+				const isTabActive = tabs[0]?.classList.contains('is-active');
+				const hasChatTextarea = !!document.querySelector('.lumina-chat-view textarea');
+				return { isTabActive, hasChatTextarea };
 			})()`);
 
 			reporter.record(
 				'Physical Tab Click & Navigation',
-				discoveryActive && chatActive,
-				`Switched to Discovery (active: ${discoveryActive}) -> Switched back to Chat (active: ${chatActive})`,
+				discoveryStatus.isTabActive && discoveryStatus.hasDiscovery && chatStatus.isTabActive && chatStatus.hasChatTextarea,
+				`Switched to Discovery (active: ${discoveryStatus.isTabActive}, mounted: ${discoveryStatus.hasDiscovery}) -> Switched back to Chat (active: ${chatStatus.isTabActive}, mounted: ${chatStatus.hasChatTextarea})`,
 				Date.now() - t2
 			);
 		} catch (err) {
@@ -472,8 +543,7 @@ async function run() {
 		} catch (err) {
 			reporter.record('Chat History Toggle & Back Navigation', false, err.message, Date.now() - tHistory);
 		}
-
-
+	} finally {
 		// Teardown: close leaves
 		await client.evaluate(`(() => {
 			const leaves = app.workspace.getLeavesOfType('lumina-chat');
@@ -484,7 +554,7 @@ async function run() {
 
 	// ─── SUITE 3: Debug Panel View ──────────────────────────────────────────
 	reporter.startSuite('Debug Panel (Logging System)');
-	{
+	try {
 		const t0 = Date.now();
 		try {
 			await client.evaluate(`app.commands.executeCommandById('lumina:open-devlog')`);
@@ -496,11 +566,20 @@ async function run() {
 				const el = leaves[0].view?.contentEl;
 				return {
 					open: true,
-					hasContainer: !!el?.querySelector('.lumina-debug-view, .debug-panel, div')
+					hasContainer: !!el?.querySelector('.lumina-debug-view, .debug-panel, div'),
+					hasPanel: !!el?.querySelector('.lumina-debug'),
+					hasHeader: !!el?.querySelector('.lumina-debug__header'),
+					hasFilters: !!el?.querySelector('.lumina-debug__filters')
 				};
 			})()`);
 
 			reporter.record('Open Debug Panel via Command', debugStatus.open, 'lumina-debug-panel leaf created', Date.now() - t0);
+			reporter.record(
+				'Debug Panel Subcomponents Mounted',
+				debugStatus.hasPanel && debugStatus.hasHeader && debugStatus.hasFilters,
+				`Header: ${debugStatus.hasHeader}, Filters: ${debugStatus.hasFilters}`,
+				Date.now() - t0
+			);
 
 			// Test view lifecycle
 			const logTest = await client.evaluate(`(() => {
@@ -514,7 +593,7 @@ async function run() {
 		} catch (err) {
 			reporter.record('Open Debug Panel via Command', false, err.message, Date.now() - t0);
 		}
-
+	} finally {
 		// Teardown
 		await client.evaluate(`(() => {
 			const leaves = app.workspace.getLeavesOfType('lumina-debug-panel');
@@ -525,7 +604,7 @@ async function run() {
 
 	// ─── SUITE 4: Graph View ────────────────────────────────────────────────
 	reporter.startSuite('Graph View (Semantic Visualizer)');
-	{
+	try {
 		const t0 = Date.now();
 		try {
 			await client.evaluate(`app.commands.executeCommandById('lumina:open-graph-view')`);
@@ -537,16 +616,18 @@ async function run() {
 				const el = leaves[0].view?.contentEl;
 				return {
 					open: true,
-					hasCanvasOrContainer: !!el?.querySelector('.lumina-graph-view, canvas, div')
+					hasContainer: !!el?.querySelector('.lumina-graph-view, .lumina-graph-panel, div'),
+					hasPanel: !!el?.querySelector('.lumina-graph-panel'),
+					hasControls: !!el?.querySelector('.lumina-graph-controls')
 				};
 			})()`);
 
 			reporter.record('Open Graph View via Command', graphStatus.open, 'lumina-graph leaf created in workspace', Date.now() - t0);
-			reporter.record('Graph Container Initialized', graphStatus.hasCanvasOrContainer, 'DOM container mounted without crash', Date.now() - t0);
+			reporter.record('Graph Container Initialized', graphStatus.hasContainer && graphStatus.hasControls, 'DOM container and controls mounted without crash', Date.now() - t0);
 		} catch (err) {
 			reporter.record('Open Graph View via Command', false, err.message, Date.now() - t0);
 		}
-
+	} finally {
 		// Teardown
 		await client.evaluate(`(() => {
 			const leaves = app.workspace.getLeavesOfType('lumina-graph');
@@ -623,7 +704,7 @@ async function run() {
 
 	// ─── SUITE 6: Editor Extensions & Quick Actions ─────────────────────────
 	reporter.startSuite('Editor & Quick Actions');
-	{
+	try {
 		const t0 = Date.now();
 		try {
 			await client.evaluate(`(async () => {
@@ -652,18 +733,18 @@ async function run() {
 
 			reporter.record('Active Note Opened in Editor', editorCheck.hasEditor, 'Test note opened in leaf', Date.now() - t0);
 			reporter.record('Quick Action Handler Ready', editorCheck.hasQuickAction, 'Handler registered', Date.now() - t0);
-
-			// Teardown: delete test note & close leaf
-			await client.evaluate(`(async () => {
-				const activeLeaf = app.workspace.activeLeaf;
-				if (activeLeaf) activeLeaf.detach();
-				const file = app.vault.getAbstractFileByPath('__lumina_e2e_test__.md');
-				if (file) await app.vault.delete(file);
-			})()`);
-			await sleep(200);
 		} catch (err) {
 			reporter.record('Editor & Quick Actions', false, err.message, Date.now() - t0);
 		}
+	} finally {
+		// Teardown: delete test note & close leaf
+		await client.evaluate(`(async () => {
+			const activeLeaf = app.workspace.activeLeaf;
+			if (activeLeaf) activeLeaf.detach();
+			const file = app.vault.getAbstractFileByPath('__lumina_e2e_test__.md');
+			if (file) await app.vault.delete(file);
+		})()`);
+		await sleep(200);
 	}
 
 	// ─── SUITE 7: Frontmatter Strip Modal (Physical Keyboard Escape) ─────────
@@ -767,6 +848,36 @@ async function run() {
 		} catch (err) {
 			reporter.record('Settings Disk Persistence & Reload', false, err.message, Date.now() - t1);
 		}
+
+		// 3. Settings Reactive UI Effect Verification
+		const t2 = Date.now();
+		try {
+			const toggleResult = await client.evaluate(`(() => {
+				const lumina = app.plugins.plugins['lumina'];
+				const orig = lumina.settings.misc.showRibbonIcon;
+
+				// 1. Turn off ribbon icon
+				lumina.settings.misc.showRibbonIcon = false;
+				lumina.updateRibbonIcon();
+				const off = !document.querySelector(".side-dock-ribbon-action[aria-label*='Lumina']");
+
+				// 2. Restore original setting
+				lumina.settings.misc.showRibbonIcon = orig;
+				lumina.updateRibbonIcon();
+				const on = !!document.querySelector(".side-dock-ribbon-action[aria-label*='Lumina']");
+
+				return { offWorked: off, restoreWorked: on };
+			})()`);
+
+			reporter.record(
+				'Settings Reactive UI Update (Ribbon Toggle)',
+				toggleResult.offWorked && toggleResult.restoreWorked,
+				`Hidden on false: ${toggleResult.offWorked}, Restored on true: ${toggleResult.restoreWorked}`,
+				Date.now() - t2
+			);
+		} catch (err) {
+			reporter.record('Settings Reactive UI Update (Ribbon Toggle)', false, err.message, Date.now() - t2);
+		}
 		await sleep(200);
 	}
 
@@ -852,6 +963,161 @@ async function run() {
 		} catch (err) {
 			reporter.record('Live Vault Search Tool Execution (search_notes)', false, err.message, Date.now() - t2);
 		}
+
+		// Test read_note tool (Success + Error Handling)
+		const t3 = Date.now();
+		try {
+			const readToolResult = await client.evaluate(`(async () => {
+				const lumina = app.plugins.plugins['lumina'];
+				const tools = lumina.mcpManager.getAllTools();
+				const readTool = tools.find(t => t.name === 'read_note');
+				if (!readTool) return { success: false, reason: 'no read_note tool' };
+
+				const start = Date.now();
+				// 1. Read existing note
+				const firstFile = app.vault.getMarkdownFiles()[0]?.path;
+				const existRes = await lumina.mcpManager.callTool(readTool._serverId, 'read_note', { path: firstFile, endLine: 5 });
+				const existText = existRes?.content?.[0]?.text || '';
+				const existSuccess = !existRes?.isError && existText.length > 0;
+
+				// 2. Read non-existent note (verify error handling)
+				const nonExistRes = await lumina.mcpManager.callTool(readTool._serverId, 'read_note', { path: '__non_existent_note_12345__.md' });
+				const nonExistSuccess = nonExistRes?.isError === true;
+
+				return {
+					success: existSuccess && nonExistSuccess,
+					existSnippet: existText.split('\\n')[0],
+					nonExistHandled: nonExistSuccess,
+					duration: Date.now() - start
+				};
+			})()`);
+
+			reporter.record(
+				'Live Vault Note Read & Error Handling (read_note)',
+				readToolResult.success,
+				`Existing: "${readToolResult.existSnippet?.slice(0, 30)}...", Error handling: ${readToolResult.nonExistHandled} (Latency: ${readToolResult.duration}ms)`,
+				Date.now() - t3
+			);
+		} catch (err) {
+			reporter.record('Live Vault Note Read & Error Handling (read_note)', false, err.message, Date.now() - t3);
+		}
+
+		// Test security guard: Read mode blocks mutating tools
+		const tSecurity = Date.now();
+		try {
+			const guardResult = await client.evaluate(`(async () => {
+				const lumina = app.plugins.plugins['lumina'];
+				const origMode = lumina.settings.chat.agentExecutionMode;
+				lumina.settings.chat.agentExecutionMode = 'read';
+
+				const tools = lumina.mcpManager.getAllTools();
+				const createTool = tools.find(t => t.name === 'create_note');
+				if (!createTool) return { success: false, reason: 'no create_note tool' };
+
+				const res = await lumina.mcpManager.callTool(createTool._serverId, 'create_note', {
+					path: '__lumina_security_test__.md',
+					content: 'test'
+				});
+				lumina.settings.chat.agentExecutionMode = origMode;
+
+				const blocked = res?.isError === true && (res?.content?.[0]?.text || '').includes('수정 모드');
+				return { success: blocked, reason: res?.content?.[0]?.text };
+			})()`);
+
+			reporter.record(
+				'Security Guard: Read Mode Blocks Mutating Tools',
+				guardResult.success,
+				guardResult.success ? 'create_note blocked in read mode as expected' : `Failed: ${guardResult.reason}`,
+				Date.now() - tSecurity
+			);
+		} catch (err) {
+			reporter.record('Security Guard: Read Mode Blocks Mutating Tools', false, err.message, Date.now() - tSecurity);
+		}
+
+		// Test HITL Approval flow & mutating tool execution in edit mode
+		const tHitl = Date.now();
+		try {
+			const hitlResult = await client.evaluate(`(async () => {
+				const lumina = app.plugins.plugins['lumina'];
+				const origMode = lumina.settings.chat.agentExecutionMode;
+				lumina.settings.chat.agentExecutionMode = 'edit';
+
+				// 1. Ensure chat leaf is open to receive approval UI card
+				app.commands.executeCommandById('lumina:open-chat');
+				await new Promise(r => setTimeout(r, 400));
+
+				// 2. Invoke create_note asynchronously (it will await approval)
+				const testPath = '__lumina_e2e_mcp_test__.md';
+				const createTool = lumina.mcpManager.getAllTools().find(t => t.name === 'create_note');
+				if (!createTool) return { success: false, reason: 'no create_note tool' };
+
+				let toolFinished = false;
+				let toolResult = null;
+				lumina.mcpManager.callTool(createTool._serverId, 'create_note', {
+					path: testPath,
+					content: '# Lumina E2E Note\\nCreated by MCP tool'
+				}).then(res => {
+					toolFinished = true;
+					toolResult = res;
+				});
+
+				// 3. Wait for approval card in UI
+				let approved = false;
+				for (let i = 0; i < 20; i++) {
+					await new Promise(r => setTimeout(r, 100));
+					const card = document.querySelector('.lumina-inline-approval-card');
+					const acceptBtn = card?.querySelector('button.mod-cta');
+					if (acceptBtn) {
+						acceptBtn.click();
+						approved = true;
+						break;
+					}
+				}
+
+				// 4. Wait for tool completion
+				for (let i = 0; i < 20; i++) {
+					if (toolFinished) break;
+					await new Promise(r => setTimeout(r, 100));
+				}
+
+				// 5. Verify file was created in vault
+				const file = app.vault.getAbstractFileByPath(testPath);
+				const fileExists = !!file;
+				let snippet = '';
+				if (fileExists) {
+					snippet = await app.vault.read(file);
+					await app.vault.delete(file, true);
+				}
+
+				// 6. Restore settings & close chat leaf
+				lumina.settings.chat.agentExecutionMode = origMode;
+				app.workspace.getLeavesOfType('lumina-chat').forEach(l => l.detach());
+
+				return {
+					success: approved && fileExists && !toolResult?.isError,
+					approved,
+					fileExists,
+					hasFrontmatter: snippet.includes('luminaCreated') || snippet.includes('Lumina')
+				};
+			})()`);
+
+			reporter.record(
+				'HITL Approval & Live Note Creation (create_note)',
+				hitlResult.success,
+				`Approval received: ${hitlResult.approved}, Vault file created: ${hitlResult.fileExists}, Stamped: ${hitlResult.hasFrontmatter}`,
+				Date.now() - tHitl
+			);
+		} catch (err) {
+			reporter.record('HITL Approval & Live Note Creation (create_note)', false, err.message, Date.now() - tHitl);
+		} finally {
+			// Guarantee cleanup of test file and leaf
+			await client.evaluate(`(async () => {
+				const p = '__lumina_e2e_mcp_test__.md';
+				const f = app.vault.getAbstractFileByPath(p);
+				if (f) await app.vault.delete(f, true);
+				app.workspace.getLeavesOfType('lumina-chat').forEach(l => l.detach());
+			})()`);
+		}
 	}
 
 	// ─── SUITE 10: Live LLM Provider Test ────────────────────────────────────
@@ -932,7 +1198,11 @@ async function run() {
 	return reporter.summary();
 }
 
-run().catch((err) => {
-	console.error('Fatal error running E2E tests:', err);
-	process.exit(1);
-});
+run()
+	.then(({ failed }) => {
+		process.exit(failed > 0 ? 1 : 0);
+	})
+	.catch((err) => {
+		console.error('Fatal error running E2E tests:', err);
+		process.exit(1);
+	});

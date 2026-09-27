@@ -478,8 +478,12 @@
         "desc": "Fügt Lumina zum Rechtsklick-Menü des Editors hinzu."
       },
       "ribbonIcon": {
-        "name": "Ribbon-Symbol anzeigen",
-        "desc": "Zeigt das Plugin-Symbol in der linken Seitenleiste an."
+        "name": "Chat-Ribbon-Symbol anzeigen",
+        "desc": "Zeigt das Lumina Chat-Symbol in der linken Seitenleiste an."
+      },
+      "graphRibbonIcon": {
+        "name": "Graph-Ribbon-Symbol anzeigen",
+        "desc": "Zeigt das RAG-Graph-Symbol in der linken Seitenleiste an."
       },
       "frontmatter": {
         "name": "Frontmatter automatisch generieren",

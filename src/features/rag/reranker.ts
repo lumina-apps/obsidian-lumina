@@ -2,6 +2,7 @@ import type { SearchResult } from '../../shared/types/rag.types';
 import type { LLMProviderConfig } from '../../shared/types/settings.types';
 import { createProvider } from '../../core/llm-providers';
 import { debugLogger } from '../../shared/debugLogger';
+import { normalizeError } from '../../shared/utils/errorUtils';
 
 /**
  * 프롬프트 기반 Listwise Reranking 구현체.
@@ -94,7 +95,7 @@ ${chunks.map((c, i) => `[${i}] ${c.chunk.text.slice(0, 300)}...`).join('\n\n')}
 		if (e instanceof Error && e.name === 'AbortError') {
 			throw e;
 		}
-		debugLogger.logError('rag_rerank', e instanceof Error ? e : new Error(`Reranking failed: ${e}`));
+		debugLogger.logError('rag_rerank', normalizeError(e, `Reranking failed: ${e}`));
 		// Fallback: 기존 1차 검색 순위대로 잘라서 반환
 		return chunks.slice(0, topK);
 	}

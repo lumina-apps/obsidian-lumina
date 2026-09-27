@@ -11,16 +11,17 @@ import { debugLogger } from '../../shared/debugLogger';
 import type LuminaPlugin from '../../main';
 import { syncSettingsStore } from '../store/settingsStore';
 import { t } from '../../shared/locales/helpers';
-import { MCP_REFRESH_DELAY, normalizeError } from '../../shared/utils/settingHelpers';
 import {
+	MCP_REFRESH_DELAY,
+	normalizeError,
 	sectionHeading,
 	advancedLabel,
 	infoBox,
 	getSystemLocale,
 	getLangSuffix,
 	warnIfReasoningModel,
-} from '../../shared/utils/settingsUIHelpers';
-import { addModelSelector } from '../../shared/utils/settingHelpers';
+	addModelSelector,
+} from '../../shared/utils/settingHelpers';
 
 // Tab renderers
 import { renderConnectionsTab } from './tabs/ConnectionsTab';

@@ -476,8 +476,12 @@
         "desc": "Aggiungi Lumina al menu contestuale dell'editor."
       },
       "ribbonIcon": {
-        "name": "Mostra Icona Ribbon",
-        "desc": "Visualizza icona plugin nella barra laterale sinistra."
+        "name": "Mostra Icona Chat Ribbon",
+        "desc": "Visualizza l'icona di Lumina Chat nella barra laterale sinistra."
+      },
+      "graphRibbonIcon": {
+        "name": "Mostra Icona Grafo Ribbon",
+        "desc": "Visualizza l'icona del grafo RAG nella barra laterale sinistra."
       },
       "frontmatter": {
         "name": "Generazione Automatica Frontmatter",

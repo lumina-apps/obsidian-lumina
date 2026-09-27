@@ -3,6 +3,7 @@ import { mount, unmount } from 'svelte';
 import type LuminaPlugin from '../../main';
 import { t } from '../../shared/locales/helpers';
 import { debugLogger } from '../../shared/debugLogger';
+import { normalizeError } from '../../shared/utils/errorUtils';
 
 import { GRAPH_VIEW_TYPE } from '../../shared/constants/viewTypes';
 export { GRAPH_VIEW_TYPE };
@@ -42,7 +43,7 @@ export class GraphView extends ItemView {
 			});
 			debugLogger.logSystem('graph_view', 'GraphView component mounted');
 		} catch (e) {
-			debugLogger.logError('graph_view', e instanceof Error ? e : new Error(`GraphView mount failed: ${e}`));
+			debugLogger.logError('graph_view', normalizeError(e, `GraphView mount failed: ${e}`));
 			throw e;
 		}
 	}
@@ -55,7 +56,7 @@ export class GraphView extends ItemView {
 			try {
 				void unmount(comp);
 			} catch (e) {
-				debugLogger.logError('graph_view', e instanceof Error ? e : new Error(`GraphView unmount error: ${e}`));
+				debugLogger.logError('graph_view', normalizeError(e, `GraphView unmount error: ${e}`));
 			}
 		}
 	}

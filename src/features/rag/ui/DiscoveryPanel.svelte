@@ -29,6 +29,7 @@
 	import { insertLinkToActiveEditor } from '../../../shared/utils/editorUtils';
 	import { Notice, Keymap } from 'obsidian';
 	import { debugLogger } from '../../../shared/debugLogger';
+	import { normalizeError } from '../../../shared/utils/errorUtils';
 
 	let { plugin, isActive }: { plugin: LuminaPlugin; isActive: boolean } = $props();
 
@@ -91,7 +92,7 @@
 			const result = await buildContextFromActiveFile(plugin, file, filterQuery);
 			applyContextResult(result, file.path);
 		} catch (err) {
-			debugLogger.logError('rag', err instanceof Error ? err : new Error(`Context 업데이트 실패: ${err}`));
+			debugLogger.logError('rag', normalizeError(err, `Context 업데이트 실패: ${err}`));
 			updateDiscoveryState({ isSearching: false });
 		}
 	}
@@ -111,7 +112,7 @@
 				searchResults = await searchVault(searchQuery, chunks, plugin.indexer.oramaDb, texts => plugin.indexer!.embed(texts), 15, 0.60, 0.5, allowedPaths);
 			}
 		} catch (err) {
-			debugLogger.logError('rag', err instanceof Error ? err : new Error(`Semantic Search 실패: ${err}`));
+			debugLogger.logError('rag', normalizeError(err, `Semantic Search 실패: ${err}`));
 		} finally {
 			isSearching = false;
 		}

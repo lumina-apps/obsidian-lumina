@@ -1,4 +1,5 @@
 import { debugLogger } from '../../../shared/debugLogger';
+import { normalizeError } from '../../../shared/utils/errorUtils';
 
 export class TextParser {
 	/** 단순 텍스트 기반 파일의 내용을 파싱합니다. */
@@ -33,7 +34,7 @@ export class TextParser {
 			
 			return content;
 		} catch (error) {
-			debugLogger.logError('rag', error instanceof Error ? error : new Error(`${extension} 파싱 오류: ${error}`));
+			debugLogger.logError('rag', normalizeError(error, `${extension} 파싱 오류: ${error}`));
 			return '';
 		}
 	}

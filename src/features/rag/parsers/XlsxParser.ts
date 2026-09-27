@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { debugLogger } from '../../../shared/debugLogger';
+import { normalizeError } from '../../../shared/utils/errorUtils';
 
 /** XML 엔티티 디코딩 */
 function unescapeXml(str: string): string {
@@ -146,7 +147,7 @@ export class XlsxParser {
 
 			return resultText;
 		} catch (error) {
-			debugLogger.logError('rag', error instanceof Error ? error : new Error(`XLSX/CSV 파싱 오류: ${error}`));
+			debugLogger.logError('rag', normalizeError(error, `XLSX/CSV 파싱 오류: ${error}`));
 			return '';
 		}
 	}

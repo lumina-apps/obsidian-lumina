@@ -8,6 +8,7 @@ import en from './en.json';
 import { ConfirmModal } from '../utils/modal';
 import { addDynamicLocale, setLanguage, t } from './helpers';
 import { debugLogger } from '../debugLogger';
+import { normalizeError } from '../utils/errorUtils';
 
 /** LLM 번역 플로우 시작. 사용자 확인 후 번역 실행 */
 export async function translatePluginLocales(app: App, settings: LuminaSettings): Promise<void> {
@@ -102,7 +103,7 @@ ${sourceJson}
     try {
         translatedData = JSON.parse(jsonStr);
     } catch (e) {
-        debugLogger.logError("translator", e instanceof Error ? e : new Error(`Translation JSON Parse Error: ${e}`));
+        debugLogger.logError("translator", normalizeError(e, `Translation JSON Parse Error: ${e}`));
         debugLogger.logDebug("translator", `Raw Response: ${response}`);
         throw new Error("LLM이 올바른 JSON 형식을 반환하지 않았습니다.");
     }
@@ -138,7 +139,7 @@ export async function loadSystemLocaleCache(app: App): Promise<boolean> {
             addDynamicLocale('system', json);
             return true;
         } catch (e) {
-            debugLogger.logError('translator', e instanceof Error ? e : new Error(`Failed to load locale cache: ${e}`));
+            debugLogger.logError('translator', normalizeError(e, `Failed to load locale cache: ${e}`));
             return false;
         }
     }
@@ -156,8 +157,8 @@ export async function deleteSystemLocaleCache(app: App): Promise<boolean> {
             new Notice(t('settings.translation.cacheDeleted'));
             return true;
         } catch (e) {
-            debugLogger.logError('translator', e instanceof Error ? e : new Error(`Failed to delete locale cache: ${e}`));
-            new Notice(`${t('settings.translation.cacheDeleteFail')}${e instanceof Error ? e.message : String(e)}`);
+            debugLogger.logError('translator', normalizeError(e, `Failed to delete locale cache: ${e}`));
+            new Notice(`${t('settings.translation.cacheDeleteFail')}${normalizeError(e).message}`);
             return false;
         }
     }

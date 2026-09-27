@@ -1,5 +1,6 @@
 import { App, Notice, TFile, TFolder, normalizePath } from 'obsidian';
 import { debugLogger } from '../../shared/debugLogger';
+import { normalizeError } from '../../shared/utils/errorUtils';
 import { t } from '../../shared/locales/helpers';
 
 const BACKUP_FOLDER = 'backups';
@@ -68,7 +69,7 @@ export async function createBackup(app: App, targetPath: string): Promise<void> 
 		await enforceRetentionPolicy(app, flatOriginalPath);
 
 	} catch (error) {
-		debugLogger.logError('backup', error instanceof Error ? error : new Error(`Failed to create backup for ${targetPath}: ${error}`));
+		debugLogger.logError('backup', normalizeError(error, `Failed to create backup for ${targetPath}: ${error}`));
 		new Notice(`${t('common.error')}: Failed to create backup for ${targetPath}`);
 	}
 }
@@ -102,7 +103,7 @@ async function enforceRetentionPolicy(app: App, flatOriginalPath: string): Promi
 			await app.fileManager.trashFile(file); // Use system trash
 			debugLogger.logSystem('backup', `enforceRetentionPolicy: deleted old backup ${file.path}`);
 		} catch (e) {
-			debugLogger.logError('backup', e instanceof Error ? e : new Error(`Failed to delete old backup ${file.path}`));
+			debugLogger.logError('backup', normalizeError(e, `Failed to delete old backup ${file.path}`));
 		}
 	}
 }

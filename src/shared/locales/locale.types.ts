@@ -596,6 +596,7 @@ export interface TranslationSettingsMisc {
   title: string;
   contextMenu: TranslationSettingsMiscContextMenu;
   ribbonIcon: TranslationSettingsMiscRibbonIcon;
+  graphRibbonIcon: TranslationSettingsMiscRibbonIcon;
   frontmatter: TranslationSettingsMiscFrontmatter;
   debugMode: TranslationSettingsMiscDebugMode;
   versionInfo: TranslationSettingsMiscVersionInfo;

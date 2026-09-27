@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { debugLogger } from '../../../shared/debugLogger';
+import { normalizeError } from '../../../shared/utils/errorUtils';
 
 export class EpubParser {
 	/** EPUB ArrayBuffer에서 챕터 텍스트를 추출합니다. */
@@ -90,7 +91,7 @@ export class EpubParser {
 
 			return chapterTexts.join('\n\n');
 		} catch (error) {
-			debugLogger.logError('rag', error instanceof Error ? error : new Error(`EPUB 파싱 오류: ${error}`));
+			debugLogger.logError('rag', normalizeError(error, `EPUB 파싱 오류: ${error}`));
 			return '';
 		}
 	}

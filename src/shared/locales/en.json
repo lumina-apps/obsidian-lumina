@@ -479,8 +479,12 @@
         "desc": "Add Lumina to the editor right-click menu."
       },
       "ribbonIcon": {
-        "name": "Show Ribbon Icon",
-        "desc": "Display plugin icon in the left sidebar."
+        "name": "Show Chat Ribbon Icon",
+        "desc": "Display the Lumina Chat icon in the left ribbon."
+      },
+      "graphRibbonIcon": {
+        "name": "Show Graph Ribbon Icon",
+        "desc": "Display the RAG Graph visualizer icon in the left ribbon."
       },
       "frontmatter": {
         "name": "Auto-generate Frontmatter",

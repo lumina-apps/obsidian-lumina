@@ -2,6 +2,7 @@ import { normalizePath, type App, TFolder, TFile } from 'obsidian';
 import { t } from '../../shared/locales/helpers';
 import type { ChatSession } from '../../shared/types/chat.types';
 import { debugLogger } from '../../shared/debugLogger';
+import { normalizeError } from '../../shared/utils/errorUtils';
 import { sanitizeDisplayContent } from '../../shared/utils/llmTextSanitizer';
 
 // ─── 하위 호환성을 위한 Re-exports ──────────────────────────────────────────────
@@ -241,7 +242,7 @@ export async function loadSession(app: App, sessionId: string, basePath: string)
 			const parsed = JSON.parse(base64ToUtf8(cleanBase64)) as ChatSession;
 			return parsed;
 		} catch (e) {
-			debugLogger.logError('history', e instanceof Error ? e : new Error(`Failed to parse V2 history data: ${e}`));
+			debugLogger.logError('history', normalizeError(e, `Failed to parse V2 history data: ${e}`));
 		}
 	}
 
@@ -251,7 +252,7 @@ export async function loadSession(app: App, sessionId: string, basePath: string)
 			const parsed = JSON.parse(match[1]) as ChatSession;
 			return parsed;
 		} catch (e) {
-			debugLogger.logError('history', e instanceof Error ? e : new Error(`Failed to parse history JSON data: ${e}`));
+			debugLogger.logError('history', normalizeError(e, `Failed to parse history JSON data: ${e}`));
 		}
 	}
 

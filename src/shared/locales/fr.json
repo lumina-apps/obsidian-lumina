@@ -476,8 +476,12 @@
         "desc": "Ajouter Lumina au menu clic droit de l'éditeur."
       },
       "ribbonIcon": {
-        "name": "Afficher l'icône du ruban",
-        "desc": "Afficher l'icône de l'extension dans la barre latérale gauche."
+        "name": "Afficher l'icône de chat du ruban",
+        "desc": "Afficher l'icône de Lumina Chat dans la barre latérale gauche."
+      },
+      "graphRibbonIcon": {
+        "name": "Afficher l'icône de graphe du ruban",
+        "desc": "Afficher l'icône du graphe RAG dans la barre latérale gauche."
       },
       "frontmatter": {
         "name": "Générer automatiquement le frontmatter",

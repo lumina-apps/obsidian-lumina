@@ -476,8 +476,12 @@
         "desc": "Adiciona Lumina ao menu de contexto do editor."
       },
       "ribbonIcon": {
-        "name": "Mostrar Ícone na Faixa de Opções",
-        "desc": "Exiba o ícone do plugin na barra lateral esquerda."
+        "name": "Mostrar Ícone de Chat na Faixa",
+        "desc": "Exiba o ícone do Lumina Chat na barra lateral esquerda."
+      },
+      "graphRibbonIcon": {
+        "name": "Mostrar Ícone de Grafo na Faixa",
+        "desc": "Exiba o ícone do Grafo RAG na barra lateral esquerda."
       },
       "frontmatter": {
         "name": "Gerar Frontmatter Automaticamente",

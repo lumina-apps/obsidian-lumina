@@ -6,6 +6,7 @@ import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { mount, unmount } from 'svelte';
 import type LuminaPlugin from '../../main';
 import { debugLogger } from '../../shared/debugLogger';
+import { normalizeError } from '../../shared/utils/errorUtils';
 
 import { CHAT_VIEW_TYPE } from '../../shared/constants/viewTypes';
 export { CHAT_VIEW_TYPE };
@@ -46,7 +47,7 @@ export class ChatView extends ItemView {
 			});
 			debugLogger.logSystem('chat_view', 'ChatView component mounted');
 		} catch (e) {
-			debugLogger.logError('chat_view', e instanceof Error ? e : new Error(`ChatView mount failed: ${e}`));
+			debugLogger.logError('chat_view', normalizeError(e, `ChatView mount failed: ${e}`));
 			throw e;
 		}
 	}
@@ -63,7 +64,7 @@ export class ChatView extends ItemView {
 				try {
 					void unmount(comp);
 				} catch (e) {
-					debugLogger.logError('chat_view', e instanceof Error ? e : new Error(`ChatView unmount error: ${e}`));
+					debugLogger.logError('chat_view', normalizeError(e, `ChatView unmount error: ${e}`));
 					console.error('[Lumina] unmount error:', e);
 				}
 			}, 0);

@@ -10,6 +10,7 @@
 	import GraphCanvas from './GraphCanvas.svelte';
 	import { tStore } from '../../../shared/locales/index';
 	import { debugLogger } from '../../../shared/debugLogger';
+	import { normalizeError } from '../../../shared/utils/errorUtils';
 
 	let { plugin }: { plugin: LuminaPlugin } = $props();
 
@@ -140,7 +141,7 @@
 			if (abortController.signal.aborted || (e instanceof DOMException && e.name === 'AbortError')) {
 				return;
 			}
-			debugLogger.logError('graph', e instanceof Error ? e : new Error(`Graph rebuild failed: ${e}`));
+			debugLogger.logError('graph', normalizeError(e, `Graph rebuild failed: ${e}`));
 			if (requestId === latestRequestId) {
 				updateGraphState({ errorMessage: String(e) });
 			}
@@ -155,7 +156,7 @@
 				await leaf.openFile(file);
 			}
 		} catch (e) {
-			debugLogger.logError('graph', e instanceof Error ? e : new Error(`Failed to open node file ${nodeId}: ${e}`));
+			debugLogger.logError('graph', normalizeError(e, `Failed to open node file ${nodeId}: ${e}`));
 		}
 	}
 </script>

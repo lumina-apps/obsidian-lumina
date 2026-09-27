@@ -38,6 +38,18 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			});
 		});
 
+	new Setting(el)
+		.setName(t('settings.misc.graphRibbonIcon.name'))
+		.setDesc(t('settings.misc.graphRibbonIcon.desc'))
+		.addToggle(toggle => {
+			toggle.setValue(s.showGraphRibbonIcon).onChange(async (val) => {
+				s.showGraphRibbonIcon = val;
+				await tab.saveAndSync();
+				// 재시작 없이 즉시 반영
+				tab.plugin.updateRibbonIcon();
+			});
+		});
+
 
 	// ── Canvas 시각화 설정 ────────────────────────────────────────────────────
 	const cs = tab.plugin.settings.canvas;

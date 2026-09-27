@@ -21,6 +21,7 @@ import {
 import { get } from 'svelte/store';
 import type { UIChatMessage, ChatSession, ContextAttachment } from '../../shared/types/chat.types';
 import { debugLogger } from '../../shared/debugLogger';
+import { normalizeError } from '../../shared/utils/errorUtils';
 import { estimateTokens } from '../../shared/utils/tokenEstimator';
 import { triggerAutoSummarization } from './utils/summarizationHelper';
 import { ChatHistoryController } from './chatHistoryController';
@@ -61,7 +62,7 @@ export class ChatController {
 				this.autoSaveTimeout = window.setTimeout(() => {
 					this.autoSaveTimeout = null;
 					this.saveHistory(effectivePid, effectiveMid).catch((e: unknown) => {
-						debugLogger.logError('history', e instanceof Error ? e : new Error(String(e)));
+						debugLogger.logError('history', normalizeError(e));
 					});
 				}, 3000);
 			}
@@ -133,7 +134,7 @@ export class ChatController {
 			} else {
 				const friendlyMsg = formatLlmError(err);
 				setMessageError(assistantId, friendlyMsg);
-				debugLogger.logError('llm', err instanceof Error ? err : new Error(String(err)));
+				debugLogger.logError('llm', normalizeError(err));
 			}
 		} finally {
 			isLoading.set(false);
@@ -203,7 +204,7 @@ export class ChatController {
 		// ── 7.5. 자동 요약 (백그라운드) ───────────────────────────────────────────
 		if (chat.memoryMethod === 'auto_summary') {
 			triggerAutoSummarization(this.plugin, providerConfig, resolvedModelId, chat.contextWindowTurns).catch((e: unknown) => {
-				debugLogger.logError('auto_summary', e instanceof Error ? e : new Error(String(e)));
+				debugLogger.logError('auto_summary', normalizeError(e));
 			});
 		}
 
@@ -342,7 +343,7 @@ export class ChatController {
 			const effectiveMid = this.lastModelId || get(sessionModelId);
 			if (effectivePid && effectiveMid) {
 				void this.history.saveHistory(effectivePid, effectiveMid).catch((e: unknown) => {
-					debugLogger.logError('history', e instanceof Error ? e : new Error(String(e)));
+					debugLogger.logError('history', normalizeError(e));
 				});
 			}
 		}

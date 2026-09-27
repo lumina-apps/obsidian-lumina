@@ -1,5 +1,6 @@
 import type LuminaPlugin from '../../main';
 import { debugLogger } from '../../shared/debugLogger';
+import { normalizeError } from '../../shared/utils/errorUtils';
 import type { EventRef } from 'obsidian';
 
 export class RagWatchManager {
@@ -28,7 +29,7 @@ export class RagWatchManager {
 					} catch (err) {
 						debugLogger.logError(
 							'rag',
-							err instanceof Error ? err : new Error(`watch 인덱싱 실패: ${err}`),
+							normalizeError(err, `watch 인덱싱 실패: ${err}`),
 						);
 					}
 				})();

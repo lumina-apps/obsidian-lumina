@@ -9,6 +9,7 @@ import { preprocessMarkdown } from '../../../shared/utils/markdownPreprocessor';
 import { rerankChunks } from '../reranker';
 import { filterParentChunks } from './searchUtils';
 import { debugLogger } from '../../../shared/debugLogger';
+import { normalizeError } from '../../../shared/utils/errorUtils';
 
 export interface ContextUpdateResult {
 	similarNotes: SearchResult[];
@@ -75,7 +76,7 @@ export async function buildContextFromActiveFile(
 						8
 					);
 				} catch (e) {
-					debugLogger.logError('rag', e instanceof Error ? e : new Error(`Related notes reranking failed: ${e}`));
+					debugLogger.logError('rag', normalizeError(e, `Related notes reranking failed: ${e}`));
 					results = results.slice(0, 8);
 				}
 			} else {

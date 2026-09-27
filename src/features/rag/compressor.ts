@@ -4,6 +4,7 @@ import type { SearchResult } from '../../shared/types/rag.types';
 import type { LLMProviderConfig } from '../../shared/types/settings.types';
 import { createProvider } from '../../core/llm-providers';
 import { debugLogger } from '../../shared/debugLogger';
+import { normalizeError } from '../../shared/utils/errorUtils';
 
 /**
  * Task 전용 모델을 이용한 RAG 청크 컨텍스트 압축.
@@ -62,7 +63,7 @@ ${c.chunk.text}`;
 				if (innerErr instanceof Error && innerErr.name === 'AbortError') {
 					throw innerErr;
 				}
-				debugLogger.logError('rag_compress_chunk', innerErr instanceof Error ? innerErr : new Error(String(innerErr)));
+				debugLogger.logError('rag_compress_chunk', normalizeError(innerErr));
 				return c; // Fallback to original
 			}
 		});
@@ -72,7 +73,7 @@ ${c.chunk.text}`;
 		if (e instanceof Error && e.name === 'AbortError') {
 			throw e;
 		}
-		debugLogger.logError('rag_compress', e instanceof Error ? e : new Error(`Compression failed: ${e}`));
+		debugLogger.logError('rag_compress', normalizeError(e, `Compression failed: ${e}`));
 		return chunks; // Fallback to original
 	}
 }

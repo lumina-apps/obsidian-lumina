@@ -4,6 +4,7 @@ import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { requestUrl } from 'obsidian';
 import { debugLogger } from '../../shared/debugLogger';
+import { normalizeError } from '../../shared/utils/errorUtils';
 import type { McpServerConfig } from '../../shared/types/settings.types';
 import { SafeJsonSchemaValidator } from './safeValidator';
 
@@ -157,7 +158,7 @@ export class LuminaMcpClient {
 			const response = await this.client.listTools();
 			this.availableTools = response.tools;
 		} catch (error) {
-			debugLogger.logError('mcp', error instanceof Error ? error : new Error(`Failed to list tools for ${this.config.name}: ${error}`));
+			debugLogger.logError('mcp', normalizeError(error, `Failed to list tools for ${this.config.name}: ${error}`));
 			this.availableTools = [];
 		}
 	}

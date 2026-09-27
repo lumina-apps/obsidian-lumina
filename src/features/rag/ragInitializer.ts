@@ -15,6 +15,7 @@ import { setIndexingStatus } from '../../core/store/ragStore';
 import { projectIndexCache } from './projectIndexCache';
 import { getActiveProject } from '../../core/store/projectStore';
 import { debugLogger } from '../../shared/debugLogger';
+import { normalizeError } from '../../shared/utils/errorUtils';
 import type LuminaPlugin from '../../main';
 
 /** 기본 임베딩 모델 (auto 모드). 다국어 지원. */
@@ -65,7 +66,7 @@ export async function initEmbeddingWorker(
 			try {
 				await plugin.saveSettings();
 			} catch (e) {
-				debugLogger.logError('rag', e instanceof Error ? e : new Error(`Failed to save settings during fallback: ${e}`));
+				debugLogger.logError('rag', normalizeError(e, `Failed to save settings during fallback: ${e}`));
 			}
 		}
 
@@ -87,7 +88,7 @@ export async function initEmbeddingWorker(
 					plugin.app.saveLocalStorage('lumina-cache-cleared-v1.2.3', 'true');
 					debugLogger.logSystem('rag', 'Cleared transformers-cache for migration');
 				} catch (e) {
-					debugLogger.logError('rag', e instanceof Error ? e : new Error(`Failed to clear transformers-cache: ${e}`));
+					debugLogger.logError('rag', normalizeError(e, `Failed to clear transformers-cache: ${e}`));
 				}
 			}
 
@@ -161,7 +162,7 @@ export async function initEmbeddingWorker(
 				})
 				.catch((err: Error) => {
 					new Notice(t('settings.rag.init.indexFail', { error: err.message }), 5000);
-					debugLogger.logError('rag', err instanceof Error ? err : new Error(`인덱싱 실패: ${err}`));
+					debugLogger.logError('rag', normalizeError(err, `인덱싱 실패: ${err}`));
 				})
 				.finally(() => {
 					// watch 모드: 초기 인덱싱 완료 후 파일 변경 이벤트 등록
@@ -180,7 +181,7 @@ export async function initEmbeddingWorker(
 		}
 		setIndexingStatus('error', { errorMessage: (err as Error).message });
 		new Notice(t('settings.rag.init.initFail', { error: (err as Error).message }), 5000);
-		debugLogger.logError('rag', err instanceof Error ? err : new Error(`embedding worker init failed: ${err}`));
+		debugLogger.logError('rag', normalizeError(err, `embedding worker init failed: ${err}`));
 		plugin.embeddingWorker = null;
 		// 초기화 실패 시 RAG 토글을 false로 되돌림
 		if (plugin.settings.connections.ragEnabled) {

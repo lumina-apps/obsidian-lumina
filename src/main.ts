@@ -10,6 +10,7 @@ import { loadSystemLocaleCache } from './shared/locales/translator';
 import { setLanguage, t } from './shared/locales/helpers';
 import { debugLogger } from './shared/debugLogger';
 import { registerLuminaIcons } from './shared/icons';
+import { normalizeError } from './shared/utils/errorUtils';
 import { runMigrations } from './core/settings/migrations';
 import { activateView, activateMainView } from './core/views/viewHelper';
 import { cleanupApprovalListener } from './features/chat/utils/approvalListener';
@@ -60,7 +61,7 @@ class LazyLuminaSettingTab extends PluginSettingTab {
 		}).catch((err) => {
 			this.loadingPromise = null;
 			new Notice(t('uiMessages.errorLoadingSettings') || 'Failed to load settings tab.');
-			debugLogger.logError('ui', err instanceof Error ? err : new Error(`Setting tab load error: ${err}`));
+			debugLogger.logError('ui', normalizeError(err, `Setting tab load error: ${err}`));
 		});
 	}
 
@@ -120,6 +121,9 @@ export default class LuminaPlugin extends Plugin {
 		await this.settingsManager.loadSettings();
 		await this.settingsManager.loadSecrets();
 
+		// 이전 세션이나 비정상 언로드로 남은 고아 리본 항목 정리
+		this.cleanupLegacyRibbonItems();
+
 		// 기본 언어 즉시 적용 (en.json은 정적 캐시되어 있어 지연 없음)
 		// 이후 onLayoutReady에서 비동기적으로 실제 시스템/사용자 언어 적용
 		void setLanguage('en');
@@ -151,6 +155,7 @@ export default class LuminaPlugin extends Plugin {
 				} else {
 					await setLanguage(this.settings.connections.language);
 				}
+				this.refreshLocales();
 			};
 
 			// 지연 로딩할 무거운 모듈들 및 locale 설정 병렬 대기
@@ -197,7 +202,7 @@ export default class LuminaPlugin extends Plugin {
 			this.mcpManager.syncServers().catch((err: unknown) => {
 				debugLogger.logError(
 					'mcp',
-					err instanceof Error ? err : new Error(`MCP sync failed on startup: ${err}`),
+					normalizeError(err, `MCP sync failed on startup: ${err}`),
 				);
 				new Notice(t('uiMessages.mcpSyncError'));
 			});
@@ -244,10 +249,10 @@ export default class LuminaPlugin extends Plugin {
 					}
 					import('./features/rag/ragInitializer').then(({ initEmbeddingWorker }) => {
 						initEmbeddingWorker(this, true, this.isFirstRun).catch((err) => {
-							debugLogger.logError('rag', err instanceof Error ? err : new Error(`RAG init fail: ${err}`));
+							debugLogger.logError('rag', normalizeError(err, `RAG init fail: ${err}`));
 						});
 					}).catch((err) => {
-						debugLogger.logError('rag', err instanceof Error ? err : new Error(`ragInitializer import fail: ${err}`));
+						debugLogger.logError('rag', normalizeError(err, `ragInitializer import fail: ${err}`));
 					});
 				}
 			}
@@ -256,6 +261,14 @@ export default class LuminaPlugin extends Plugin {
 
 	onunload() {
 		this._unloaded = true;
+		if (this.ribbonEl) {
+			this.removeRibbonButton(this.ribbonEl);
+			this.ribbonEl = null;
+		}
+		if (this.graphRibbonEl) {
+			this.removeRibbonButton(this.graphRibbonEl);
+			this.graphRibbonEl = null;
+		}
 		this.indexer?.destroy();
 		this.embeddingWorker?.terminate();
 		this.watchManager?.clearWatchEvents();
@@ -308,7 +321,55 @@ export default class LuminaPlugin extends Plugin {
 
 	// ─── Ribbon Icon ────────────────────────────────────────────────────
 
+	private cleanupLegacyRibbonItems(): void {
+		try {
+			const ribbon = (this.app.workspace as unknown as {
+				leftRibbon?: { items?: Array<{ id: string; buttonEl?: HTMLElement }> };
+			}).leftRibbon;
+			if (ribbon && Array.isArray(ribbon.items)) {
+				for (let i = ribbon.items.length - 1; i >= 0; i--) {
+					const item = ribbon.items[i];
+					if (item.id.startsWith(`${this.manifest.id}:`)) {
+						if (!item.buttonEl || !item.buttonEl.isConnected) {
+							ribbon.items.splice(i, 1);
+						}
+					}
+				}
+			}
+		} catch {
+			// ignore leftRibbon not ready
+		}
+	}
+
+	private removeRibbonButton(buttonEl: HTMLElement | null): void {
+		if (!buttonEl) return;
+		try {
+			const ribbon = (this.app.workspace as unknown as {
+				leftRibbon?: {
+					items?: Array<{ id: string; buttonEl?: HTMLElement }>;
+					removeRibbonAction?: (id: string) => void;
+					onChange?: (save: boolean) => void;
+				};
+			}).leftRibbon;
+			if (ribbon && Array.isArray(ribbon.items)) {
+				const idx = ribbon.items.findIndex((item) => item.buttonEl === buttonEl);
+				if (idx !== -1) {
+					const item = ribbon.items[idx];
+					if (typeof ribbon.removeRibbonAction === 'function' && item.id) {
+						ribbon.removeRibbonAction(item.id);
+					}
+					ribbon.items.splice(idx, 1);
+					ribbon.onChange?.(false);
+				}
+			}
+		} catch (e) {
+			debugLogger.logDebug('main', `Failed to remove ribbon action cleanly: ${e}`);
+		}
+		buttonEl.detach();
+	}
+
 	updateRibbonIcon(): void {
+		// 1. Chat Ribbon Icon
 		if (this.settings.misc.showRibbonIcon) {
 			if (!this.ribbonEl) {
 				this.ribbonEl = this.addRibbonIcon('message-circle', t('uiMessages.ribbonTitle'), () => {
@@ -317,7 +378,15 @@ export default class LuminaPlugin extends Plugin {
 			} else {
 				this.ribbonEl.setAttribute('aria-label', t('uiMessages.ribbonTitle'));
 			}
+		} else {
+			if (this.ribbonEl) {
+				this.removeRibbonButton(this.ribbonEl);
+				this.ribbonEl = null;
+			}
+		}
 
+		// 2. Graph Ribbon Icon
+		if (this.settings.misc.showGraphRibbonIcon) {
 			if (!this.graphRibbonEl) {
 				this.graphRibbonEl = this.addRibbonIcon('network', t('graph.title'), () => {
 					void activateMainView(this.app.workspace, GRAPH_VIEW_TYPE);
@@ -326,12 +395,8 @@ export default class LuminaPlugin extends Plugin {
 				this.graphRibbonEl.setAttribute('aria-label', t('graph.title'));
 			}
 		} else {
-			if (this.ribbonEl) {
-				this.ribbonEl.remove();
-				this.ribbonEl = null;
-			}
 			if (this.graphRibbonEl) {
-				this.graphRibbonEl.remove();
+				this.removeRibbonButton(this.graphRibbonEl);
 				this.graphRibbonEl = null;
 			}
 		}

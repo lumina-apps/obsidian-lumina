@@ -476,8 +476,12 @@
         "desc": "在编辑器右键菜单中添加 Lumina。"
       },
       "ribbonIcon": {
-        "name": "显示功能区图标",
-        "desc": "在左侧边栏显示插件图标。"
+        "name": "显示聊天功能区图标",
+        "desc": "在左侧边栏显示 Lumina Chat 图标。"
+      },
+      "graphRibbonIcon": {
+        "name": "显示图谱功能区图标",
+        "desc": "在左侧边栏显示知识图谱 (RAG Graph) 图标。"
       },
       "frontmatter": {
         "name": "自动生成 Frontmatter",

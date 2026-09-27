@@ -9,6 +9,7 @@ import { ChatController } from '../chat/chatController';
 import type { QuickAction } from '../../shared/types/settings.types';
 import { t } from '../../shared/locales/helpers';
 import { debugLogger } from '../../shared/debugLogger';
+import { normalizeError } from '../../shared/utils/errorUtils';
 import { estimateTokens } from '../../shared/utils/tokenEstimator';
 import type { ChatMessage, TokenUsage } from '../../shared/types/llm.types';
 import { activateView } from '../../core/views/viewHelper';
@@ -118,7 +119,7 @@ export class QuickActionHandler {
 					editor.replaceRange('', startPos, endPos);
 				}
 			} catch (revertErr) {
-				debugLogger.logError('editor', revertErr instanceof Error ? revertErr : new Error(String(revertErr)));
+				debugLogger.logError('editor', normalizeError(revertErr));
 			}
 		};
 
@@ -286,7 +287,7 @@ export class QuickActionHandler {
 
 			revertEditor();
 
-			debugLogger.logError('llm', err instanceof Error ? err : new Error(String(err)));
+			debugLogger.logError('llm', normalizeError(err));
 			new Notice(t('uiMessages.qaError', { msg: formatLlmError(err) }));
 		}
 	}

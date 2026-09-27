@@ -3,6 +3,7 @@
 import { App, TFile, type EventRef } from 'obsidian';
 import { isMarkdownFile } from '../../shared/utils/fileUtils';
 import { debugLogger } from '../../shared/debugLogger';
+import { normalizeError } from '../../shared/utils/errorUtils';
 import { createProvider } from '../../core/llm-providers';
 import type LuminaPlugin from '../../main';
 
@@ -351,7 +352,7 @@ ${contentWithoutFm.substring(0, 3000)}`;
 
 			this.lastUpdateMap.set(file.path, Date.now());
 		} catch (err) {
-			debugLogger.logError('system', err instanceof Error ? err : new Error(`프론트매터 자동생성 실패: ${err}`));
+			debugLogger.logError('system', normalizeError(err, `프론트매터 자동생성 실패: ${err}`));
 		} finally {
 			this.generatingFiles.delete(file.path);
 		}

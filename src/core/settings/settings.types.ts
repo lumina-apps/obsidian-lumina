@@ -120,8 +120,10 @@ export interface RagSettings {
 export interface MiscSettings {
 	/** 우클릭 컨텍스트 메뉴에 "채팅으로 보내기" 항목 표시 여부 */
 	contextMenuEnabled: boolean;
-	/** 좌측 리본 아이콘 표시 여부 */
+	/** 좌측 리본 아이콘 표시 여부 (채팅) */
 	showRibbonIcon: boolean;
+	/** 좌측 리본 아이콘 표시 여부 (그래프) */
+	showGraphRibbonIcon: boolean;
 
 	// ── Advanced ──
 	/** 프론트매터 자동생성 여부 */

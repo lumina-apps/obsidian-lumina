@@ -2,7 +2,7 @@
 	import type { App } from "obsidian";
 	import type { ContextAttachment } from "../../../shared/types/chat.types";
 	import { getAttachmentIcon } from "../utils/fileAttachmentUtils";
-	import { icon } from "./utils/iconAction";
+	import { icon } from "../../../shared/utils/iconAction";
 	import { openFile } from "./utils/messageActions";
 
 	let {

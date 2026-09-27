@@ -1,5 +1,6 @@
 import { TAbstractFile, TFile, Workspace } from 'obsidian';
 import { debugLogger } from '../../../shared/debugLogger';
+import { normalizeError } from '../../../shared/utils/errorUtils';
 
 /**
  * 리프 선택 전략:
@@ -40,7 +41,7 @@ async function findTextLine(
 			return content.substring(0, index).split('\n').length - 1;
 		}
 	} catch (err) {
-		debugLogger.logError('rag', err instanceof Error ? err : new Error(`스크롤 위치 탐색 실패: ${err}`));
+		debugLogger.logError('rag', normalizeError(err, `스크롤 위치 탐색 실패: ${err}`));
 	}
 	return 0;
 }

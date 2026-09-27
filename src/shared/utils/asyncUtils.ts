@@ -1,3 +1,5 @@
+import { normalizeError } from './errorUtils';
+
 /** async 함수를 void 반환 함수로 래핑. 이벤트 핸들러나 onChange 콜백용 */
 export function wrapAsync<T extends unknown[]>(fn: (...args: T) => Promise<unknown>): (...args: T) => void {
 	return (...args) => {
@@ -19,7 +21,7 @@ export function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: 
 			},
 			(err: unknown) => {
 				window.clearTimeout(timer);
-				reject(err instanceof Error ? err : new Error(String(err)));
+				reject(normalizeError(err));
 			},
 		);
 	});

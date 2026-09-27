@@ -193,7 +193,7 @@ export class ChatAttachmentHandler {
 			folderContent += `--- ${file.path} ---\n${content}\n\n`;
 			readCount++;
 			if (readCount % 50 === 0) {
-				await new Promise((resolve) => setTimeout(resolve, 0));
+				await new Promise((resolve) => window.setTimeout(resolve, 0));
 			}
 			if (folderContent.length >= MAX_TEXT_LENGTH) break;
 		}
@@ -296,7 +296,7 @@ export class ChatAttachmentHandler {
 				tagContent += `--- ${file.basename} ---\n${content}\n\n`;
 				readCount++;
 				if (readCount % 50 === 0) {
-					await new Promise((resolve) => setTimeout(resolve, 0));
+					await new Promise((resolve) => window.setTimeout(resolve, 0));
 				}
 				if (tagContent.length >= MAX_TEXT_LENGTH) break;
 			}

@@ -5,6 +5,7 @@
 	import type LuminaPlugin from '../../../main';
 	import type { GraphData } from '../../../shared/types/graph.types';
 	import { debugLogger } from '../../../shared/debugLogger';
+	import { normalizeError } from '../../../shared/utils/errorUtils';
 
 	let { plugin, graphData }: { plugin: LuminaPlugin; graphData: GraphData | null } = $props();
 
@@ -42,7 +43,7 @@
 				);
 			}
 		} catch (e) {
-			debugLogger.logError('graph', e instanceof Error ? e : new Error(`Canvas export failed: ${e}`));
+			debugLogger.logError('graph', normalizeError(e, `Canvas export failed: ${e}`));
 		} finally {
 			isExporting = false;
 		}

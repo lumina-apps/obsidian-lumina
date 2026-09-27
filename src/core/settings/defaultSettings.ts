@@ -81,6 +81,7 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 	misc: {
 		contextMenuEnabled: true,
 		showRibbonIcon: true,
+		showGraphRibbonIcon: false,
 
 		// Advanced
 		autoFrontmatter: false,

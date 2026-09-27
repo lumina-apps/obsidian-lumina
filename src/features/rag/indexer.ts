@@ -32,6 +32,7 @@ import { OramaStore } from './oramaStore';
 import { IndexState } from './utils/indexState';
 import { calculateIndexDiff } from './utils/indexDiff';
 import { debugLogger } from '../../shared/debugLogger';
+import { normalizeError } from '../../shared/utils/errorUtils';
 
 export interface VaultIndexerConfig {
 	app: App;
@@ -181,7 +182,7 @@ export class VaultIndexer {
 			} else {
 				this.state.loadFrom(loadResult);
 				await this.embeddingStore.loadEmbeddings(this.state.childChunks).catch((e) => {
-					debugLogger.logError('rag', e instanceof Error ? e : new Error(`loadEmbeddings failed: ${e}`));
+					debugLogger.logError('rag', normalizeError(e, `loadEmbeddings failed: ${e}`));
 				});
 				const withEmb = this.state.childChunks.filter(c => c.embedding && c.embedding.length > 0).length;
 				debugLogger.logSystem('rag', `updateIndex: childChunks=${this.state.childChunks.length}, with embedding=${withEmb}`);
@@ -235,7 +236,7 @@ export class VaultIndexer {
 			const loadResult = await loadIndex(this.app, this.modelName, this.projectId);
 			this.state.loadFrom(loadResult);
 			await this.embeddingStore.loadEmbeddings(this.state.childChunks).catch((e) => {
-				debugLogger.logError('rag', e instanceof Error ? e : new Error(`loadEmbeddings (indexVault path) failed: ${e}`));
+				debugLogger.logError('rag', normalizeError(e, `loadEmbeddings (indexVault path) failed: ${e}`));
 			});
 			const currentPaths = new Set(files.map(f => f.path));
 			const pathsToDelete = new Set(
@@ -291,7 +292,7 @@ export class VaultIndexer {
 			try {
 				await this.oramaStore.deleteByIds(removedChildChunks.map(c => c.id));
 			} catch (err) {
-				debugLogger.logError('rag', err instanceof Error ? err : new Error(`Orama delete failed: ${err}`));
+				debugLogger.logError('rag', normalizeError(err, `Orama delete failed: ${err}`));
 			}
 		}
 		
@@ -299,7 +300,7 @@ export class VaultIndexer {
 			try {
 				await this.embeddingStore.deleteEmbeddings(removedChildChunks.map(c => c.id));
 			} catch (err) {
-				debugLogger.logError('rag', err instanceof Error ? err : new Error(`Embedding DB delete failed: ${err}`));
+				debugLogger.logError('rag', normalizeError(err, `Embedding DB delete failed: ${err}`));
 			}
 		}
 	}

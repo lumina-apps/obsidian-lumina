@@ -2,6 +2,7 @@ import { Notice, type App } from 'obsidian';
 import { t } from '../../shared/locales/helpers';
 import type LuminaPlugin from '../../main';
 import { debugLogger } from '../../shared/debugLogger';
+import { normalizeError } from '../../shared/utils/errorUtils';
 import {
 	getMessages,
 	setSession,
@@ -149,7 +150,7 @@ export class ChatHistoryController {
 			new Notice(t('settings.chat.history.renameFail'));
 			return false;
 		} catch (e) {
-			debugLogger.logError('history', e instanceof Error ? e : new Error(String(e)));
+			debugLogger.logError('history', normalizeError(e));
 			new Notice(t('settings.chat.history.renameFail'));
 			return false;
 		}

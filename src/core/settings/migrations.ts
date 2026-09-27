@@ -312,6 +312,14 @@ export function migrateCliOperationMode(plugin: LuminaPlugin): boolean {
 	return false;
 }
 
+export function migrateGraphRibbonIcon(plugin: LuminaPlugin): boolean {
+	if (plugin.settings.misc && plugin.settings.misc.showGraphRibbonIcon === undefined) {
+		plugin.settings.misc.showGraphRibbonIcon = false;
+		return true;
+	}
+	return false;
+}
+
 /**
  * 모든 마이그레이션을 순차 실행하고 변경이 있으면 저장합니다.
  * @returns 저장이 필요하면 true
@@ -329,5 +337,6 @@ export function runMigrations(plugin: LuminaPlugin): boolean {
 	if (migrateWebSearch(plugin)) needsSave = true;
 	if (migrateCanvasSettings(plugin)) needsSave = true;
 	if (migrateCliOperationMode(plugin)) needsSave = true;
+	if (migrateGraphRibbonIcon(plugin)) needsSave = true;
 	return needsSave;
 }

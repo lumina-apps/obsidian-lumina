@@ -4,7 +4,7 @@
 	import { t } from "../../../shared/locales/helpers";
 	import { copyToClipboard } from "../../../shared/utils/clipboardUtils";
 	import { sanitizeDisplayContent } from "../../../shared/utils/llmTextSanitizer";
-	import { icon } from "./utils/iconAction";
+	import { icon } from "../../../shared/utils/iconAction";
 	import { insertToNote } from "./utils/messageActions";
 
 	let {

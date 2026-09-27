@@ -1,5 +1,7 @@
 import { resetChat, messages } from "../../../../core/store/chatStore";
 import { setActiveProject, getActiveProject } from "../../../../core/store/projectStore";
+import { debugLogger } from "../../../../shared/debugLogger";
+import { normalizeError } from "../../../../shared/utils/errorUtils";
 import type LuminaPlugin from "../../../../main";
 import type { ChatController } from "../../chatController";
 
@@ -68,8 +70,12 @@ export async function executeProjectSwitch({
 
 	// 6. RAG 인덱서 hot-swap (비동기 트리거)
 	if (isRagEnabled) {
-		import("../../../rag/ragInitializer").then(({ switchProjectIndex }) => {
-			void switchProjectIndex(plugin, newProjectId);
-		});
+		void import("../../../rag/ragInitializer")
+			.then(({ switchProjectIndex }) => {
+				void switchProjectIndex(plugin, newProjectId);
+			})
+			.catch((err: unknown) => {
+				debugLogger.logError("rag", normalizeError(err));
+			});
 	}
 }

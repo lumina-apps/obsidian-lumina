@@ -476,8 +476,12 @@
         "desc": "在編輯器右鍵選單中加入 Lumina。"
       },
       "ribbonIcon": {
-        "name": "顯示功能區圖示",
-        "desc": "在左側邊欄顯示外掛圖示。"
+        "name": "顯示聊天功能區圖示",
+        "desc": "在左側邊欄顯示 Lumina Chat 圖示。"
+      },
+      "graphRibbonIcon": {
+        "name": "顯示圖譜功能區圖示",
+        "desc": "在左側邊欄顯示知識圖譜 (RAG Graph) 圖示。"
       },
       "frontmatter": {
         "name": "自動生成 Frontmatter",
