@@ -752,6 +752,21 @@ async function run() {
 	{
 		const t0 = Date.now();
 		try {
+			// Create a temporary Lumina-stamped file so the command opens the modal
+			// (if count === 0, the command shows a Notice and returns without modal)
+			// Use processFrontMatter to ensure metadataCache properly indexes the key
+			await client.evaluate(`(async () => {
+				const path = '__lumina_e2e_strip_test__.md';
+				let file = app.vault.getAbstractFileByPath(path);
+				if (!file) {
+					file = await app.vault.create(path, '# Strip Test');
+				}
+				await app.fileManager.processFrontMatter(file, (fm) => {
+					fm.luminaModified = true;
+				});
+			})()`);
+			await sleep(500);
+
 			await client.evaluate(`app.commands.executeCommandById('lumina:strip-frontmatter-metadata')`);
 			await sleep(400);
 
@@ -772,6 +787,12 @@ async function run() {
 		} catch (err) {
 			reporter.record('Strip Modal Opened & Closed via Physical Escape Key', false, err.message, Date.now() - t0);
 		}
+
+		// Cleanup: remove temporary stamped file
+		await client.evaluate(`(async () => {
+			const file = app.vault.getAbstractFileByPath('__lumina_e2e_strip_test__.md');
+			if (file) await app.vault.delete(file);
+		})()`);
 		await sleep(200);
 	}
 

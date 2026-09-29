@@ -4,6 +4,8 @@ import {
 	buildTranslationIndex,
 	isSettingItemMatchBilingual,
 	BILINGUAL_KEYWORDS,
+	LOCALE_SYNONYMS,
+	COMMON_SYNONYMS,
 } from './settingSearchUtils';
 
 describe('settingSearchUtils', () => {
@@ -44,6 +46,32 @@ describe('settingSearchUtils', () => {
 			expect(terms).toContain('채팅');
 			expect(terms).toContain('model');
 			expect(terms).toContain('모델');
+		});
+
+		it('expands Japanese query when ja locale is specified', () => {
+			const terms = expandQueryTerms('chat', 'ja');
+			expect(terms).toContain('chat');
+			expect(terms).toContain('チャット');
+			expect(terms).not.toContain('채팅');
+		});
+
+		it('expands Simplified Chinese query when zh locale is specified', () => {
+			const terms = expandQueryTerms('model', 'zh');
+			expect(terms).toContain('model');
+			expect(terms).toContain('模型');
+			expect(terms).not.toContain('モデル');
+		});
+
+		it('expands Traditional Chinese query when zh-tw locale is specified', () => {
+			const terms = expandQueryTerms('search', 'zh-tw');
+			expect(terms).toContain('search');
+			expect(terms).toContain('搜尋');
+		});
+
+		it('expands common technical synonyms across all languages', () => {
+			const terms = expandQueryTerms('temp');
+			expect(terms).toContain('temp');
+			expect(terms).toContain('temperature');
 		});
 	});
 
@@ -146,6 +174,22 @@ describe('settingSearchUtils', () => {
 				'',
 				queryTerms,
 				translationMap
+			);
+			expect(matched).toBe(true);
+		});
+
+		it('matches Japanese setting with English search term', () => {
+			const jaMap = new Map<string, string>([
+				['デフォルトチャットモデル', 'default chat model'],
+				['default chat model', 'デフォルトチャットモデル'],
+			]);
+			const queryTerms = expandQueryTerms('chat', 'ja');
+			const matched = isSettingItemMatchBilingual(
+				'デフォルトチャットモデル',
+				'モデルの設定です。',
+				'',
+				queryTerms,
+				jaMap
 			);
 			expect(matched).toBe(true);
 		});

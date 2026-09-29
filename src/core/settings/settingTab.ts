@@ -288,7 +288,7 @@ export class LuminaSettingTab extends PluginSettingTab {
 
 			// Hide info boxes and advanced labels in search view
 			tabContent.querySelectorAll<HTMLElement>('.lumina-settings__info-box, .lumina-settings__advanced-label')
-				.forEach(item => { item.style.display = 'none'; });
+				.forEach(item => { item.setCssStyles({ display: 'none' }); });
 
 			// Filter settings by section & item
 			let tabMatchCount = 0;
@@ -318,11 +318,11 @@ export class LuminaSettingTab extends PluginSettingTab {
 				let groupMatchCount = 0;
 				for (const item of group.items) {
 					if (this.isSettingItemMatch(item, queryTerms, translationMap)) {
-						item.style.display = '';
+						item.setCssStyles({ display: '' });
 						groupMatchCount++;
 						tabMatchCount++;
 					} else {
-						item.style.display = 'none';
+						item.setCssStyles({ display: 'none' });
 					}
 				}
 
@@ -334,34 +334,46 @@ export class LuminaSettingTab extends PluginSettingTab {
 					);
 
 					if (groupMatchCount > 0 || headingMatches) {
-						group.heading.style.display = '';
+						group.heading.setCssStyles({ display: '' });
 						if (headingMatches && groupMatchCount === 0) {
 							// If the heading itself matched, reveal its items
 							for (const item of group.items) {
-								item.style.display = '';
+								item.setCssStyles({ display: '' });
 								tabMatchCount++;
 							}
 						}
 					} else {
-						group.heading.style.display = 'none';
+						group.heading.setCssStyles({ display: 'none' });
 					}
 				}
 			}
 
 			// Filter cards (e.g. ProviderCard, FeatureCard, PromptCard)
+			// Cards are logical groups — if any item in a card matches,
+			// show the entire card (all items) so it isn't broken/partial.
 			const cards = tabContent.querySelectorAll<HTMLElement>(
 				'.lumina-provider-card, .lumina-feature-card, .lumina-prompt-card'
 			);
 			for (const card of Array.from(cards)) {
 				const cardItems = Array.from(card.querySelectorAll<HTMLElement>('.setting-item'));
 				const hasVisibleItem = cardItems.length === 0 || cardItems.some(i => i.style.display !== 'none');
-				card.style.display = hasVisibleItem ? '' : 'none';
+				if (hasVisibleItem) {
+					// Reveal all sibling items so the card isn't shown partially
+					for (const item of cardItems) {
+						if (item.style.display === 'none') {
+							item.setCssStyles({ display: '' });
+						}
+					}
+					card.setCssStyles({ display: '' });
+				} else {
+					card.setCssStyles({ display: 'none' });
+				}
 			}
 
 			if (tabMatchCount === 0) {
-				tabSection.style.display = 'none';
+				tabSection.setCssStyles({ display: 'none' });
 			} else {
-				tabSection.style.display = '';
+				tabSection.setCssStyles({ display: '' });
 				hasAnyMatches = true;
 			}
 		}
@@ -382,13 +394,35 @@ export class LuminaSettingTab extends PluginSettingTab {
 		const name = item.querySelector('.setting-item-name')?.textContent ?? '';
 		const desc = item.querySelector('.setting-item-description')?.textContent ?? '';
 
-		const inputs = Array.from(item.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea'));
-		const inputValues = inputs.map(i => i.value).join(' ');
+		// Collect only meaningful, visible text from controls — avoid false positives
+		// from hidden dropdown options, API keys in password fields, or internal UUIDs.
+		const extraParts: string[] = [];
+		for (const el of Array.from(item.querySelectorAll<HTMLElement>('input, select, textarea, button'))) {
+			if (el instanceof HTMLSelectElement) {
+				// Use the visible selected option text, not all options or the internal value
+				const selectedOption = el.options[el.selectedIndex];
+				if (selectedOption) {
+					extraParts.push(selectedOption.text);
+				}
+			} else if (el instanceof HTMLInputElement) {
+				// Skip password/hidden fields (API keys, tokens) to prevent accidental matches
+				if (el.type === 'password' || el.type === 'hidden') continue;
+				extraParts.push(el.value);
+			} else if (el instanceof HTMLTextAreaElement) {
+				extraParts.push(el.value);
+			} else if (el instanceof HTMLButtonElement) {
+				// Include button label text (e.g. model selector button showing current model name)
+				// but skip action buttons (test, delete, etc.) which are in the control group
+				if (!el.closest('.setting-item-control .clickable-icon') && el.textContent) {
+					extraParts.push(el.textContent);
+				}
+			}
+		}
 
 		return isSettingItemMatchBilingual(
 			name,
 			desc,
-			`${inputValues} ${item.textContent ?? ''}`,
+			extraParts.join(' '),
 			queryTerms,
 			translationMap
 		);

@@ -108,18 +108,22 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 	height: 14px;
 }
 
+body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__search input[type="text"].lumina-settings__search-input,
+body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__search input[type="text"].lumina-settings__search-input:focus,
+.lumina-settings .lumina-settings__search input[type="text"].lumina-settings__search-input,
+.lumina-settings .lumina-settings__search input[type="text"].lumina-settings__search-input:focus,
 .lumina-settings .lumina-settings__search-input,
 .lumina-settings .lumina-settings__search-input:focus {
 	flex: 1;
-	height: 100% !important;
-	border: none !important;
-	background: transparent !important;
-	outline: none !important;
-	box-shadow: none !important;
+	height: 100%;
+	border: none;
+	background: transparent;
+	outline: none;
+	box-shadow: none;
 	color: var(--text-normal);
 	font-size: 13px;
-	padding: 0 4px !important;
-	border-radius: 0 !important;
+	padding: 0 4px;
+	border-radius: 0;
 	line-height: normal;
 }
 
