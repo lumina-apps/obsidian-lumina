@@ -398,19 +398,19 @@ export class LuminaSettingTab extends PluginSettingTab {
 		// from hidden dropdown options, API keys in password fields, or internal UUIDs.
 		const extraParts: string[] = [];
 		for (const el of Array.from(item.querySelectorAll<HTMLElement>('input, select, textarea, button'))) {
-			if (el instanceof HTMLSelectElement) {
+			if (el.instanceOf(HTMLSelectElement)) {
 				// Use the visible selected option text, not all options or the internal value
 				const selectedOption = el.options[el.selectedIndex];
 				if (selectedOption) {
 					extraParts.push(selectedOption.text);
 				}
-			} else if (el instanceof HTMLInputElement) {
+			} else if (el.instanceOf(HTMLInputElement)) {
 				// Skip password/hidden fields (API keys, tokens) to prevent accidental matches
 				if (el.type === 'password' || el.type === 'hidden') continue;
 				extraParts.push(el.value);
-			} else if (el instanceof HTMLTextAreaElement) {
+			} else if (el.instanceOf(HTMLTextAreaElement)) {
 				extraParts.push(el.value);
-			} else if (el instanceof HTMLButtonElement) {
+			} else if (el.instanceOf(HTMLButtonElement)) {
 				// Include button label text (e.g. model selector button showing current model name)
 				// but skip action buttons (test, delete, etc.) which are in the control group
 				if (!el.closest('.setting-item-control .clickable-icon') && el.textContent) {

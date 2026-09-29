@@ -253,5 +253,75 @@ describe('LuminaSettingTab scroll preservation', () => {
 			expect(tab.searchQuery).toBe('');
 			expect(container.querySelector('.lumina-settings__search-section')).toBeNull();
 		});
+
+		describe('control element text matching (cross-window safe instanceOf)', () => {
+			const invokeIsSettingItemMatch = (item: HTMLElement, query: string) => {
+				const helper = tab as unknown as {
+					isSettingItemMatch: (
+						item: HTMLElement,
+						queryTerms: string[],
+						translationMap: Map<string, string>
+					) => boolean;
+				};
+				return helper.isSettingItemMatch(item, [query.toLowerCase()], new Map());
+			};
+
+			it('matches select element selected option text', () => {
+				const item = document.createElement('div');
+				item.className = 'setting-item';
+				const select = document.createElement('select');
+				const opt1 = document.createElement('option');
+				opt1.text = 'GPT-4o';
+				const opt2 = document.createElement('option');
+				opt2.text = 'Claude 3.5 Sonnet';
+				select.appendChild(opt1);
+				select.appendChild(opt2);
+				select.selectedIndex = 1;
+				item.appendChild(select);
+
+				expect(invokeIsSettingItemMatch(item, 'claude')).toBe(true);
+				expect(invokeIsSettingItemMatch(item, 'gpt')).toBe(false);
+			});
+
+			it('matches input element value and ignores password/hidden types', () => {
+				const item = document.createElement('div');
+				item.className = 'setting-item';
+				const textInput = document.createElement('input');
+				textInput.type = 'text';
+				textInput.value = 'localhost:11434';
+				item.appendChild(textInput);
+
+				expect(invokeIsSettingItemMatch(item, '11434')).toBe(true);
+
+				const pwItem = document.createElement('div');
+				pwItem.className = 'setting-item';
+				const pwInput = document.createElement('input');
+				pwInput.type = 'password';
+				pwInput.value = 'sk-secret-token';
+				pwItem.appendChild(pwInput);
+
+				expect(invokeIsSettingItemMatch(pwItem, 'secret')).toBe(false);
+			});
+
+			it('matches textarea element value', () => {
+				const item = document.createElement('div');
+				item.className = 'setting-item';
+				const textarea = document.createElement('textarea');
+				textarea.value = 'custom instructions prompt';
+				item.appendChild(textarea);
+
+				expect(invokeIsSettingItemMatch(item, 'instructions')).toBe(true);
+			});
+
+			it('matches button text', () => {
+				const item = document.createElement('div');
+				item.className = 'setting-item';
+				const btn = document.createElement('button');
+				btn.textContent = 'gemini-1.5-pro';
+				item.appendChild(btn);
+
+				expect(invokeIsSettingItemMatch(item, 'gemini')).toBe(true);
+			});
+		});
 	});
 });

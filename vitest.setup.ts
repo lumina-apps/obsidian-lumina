@@ -439,4 +439,10 @@ if (typeof HTMLElement !== 'undefined') {
 			this.appendChild(document.createTextNode(text));
 		};
 	}
+	if (!proto.instanceOf) {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		proto.instanceOf = function (type: any): boolean {
+			return this instanceof type;
+		};
+	}
 }
