@@ -1,6 +1,11 @@
 {
   "settings": {
     "showAdvanced": "Advanced",
+    "search": {
+      "placeholder": "Search settings...",
+      "noResults": "No settings found for \"{{query}}\"",
+      "clear": "Clear search"
+    },
     "connections": {
       "title": "Connections\n& Models",
       "provider": "Provider",

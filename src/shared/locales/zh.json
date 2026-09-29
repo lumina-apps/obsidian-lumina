@@ -1,6 +1,11 @@
 {
   "settings": {
     "showAdvanced": "高级设置",
+    "search": {
+      "placeholder": "搜索设置...",
+      "noResults": "未找到与 \"{{query}}\" 相关的设置",
+      "clear": "清除搜索"
+    },
     "connections": {
       "title": "连接与\n模型设置",
       "provider": "提供商",

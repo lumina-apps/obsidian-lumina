@@ -1,6 +1,11 @@
 {
   "settings": {
     "showAdvanced": "Дополнительно",
+    "search": {
+      "placeholder": "Поиск настроек...",
+      "noResults": "Настройки по запросу «{{query}}» не найдены",
+      "clear": "Очистить поиск"
+    },
     "connections": {
       "title": "API\nи модели",
       "provider": "Провайдер",

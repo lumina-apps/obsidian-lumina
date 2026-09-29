@@ -662,8 +662,15 @@ export interface TranslationSettingsCli {
   viewDiff: string;
 }
 
+export interface TranslationSettingsSearch {
+  placeholder: string;
+  noResults: string;
+  clear: string;
+}
+
 export interface TranslationSettings {
   showAdvanced: string;
+  search: TranslationSettingsSearch;
   connections: TranslationSettingsConnections;
   mcp: TranslationSettingsMcp;
   webSearch: TranslationSettingsWebSearch;

@@ -249,7 +249,7 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 
 		// 버전 정보
 		tab.sectionHeading(el, t('settings.misc.versionInfo.name'));
-		const { version } = (tab.app as unknown as { plugins: { manifests: Record<string, { version?: string }> } }).plugins.manifests['lumina'] ?? { version: '—' };
+		const { version } = (tab.app as unknown as { plugins?: { manifests?: Record<string, { version?: string }> } } | undefined)?.plugins?.manifests?.['lumina'] ?? { version: '—' };
 		new Setting(el)
 			.setName(`Lumina v${version}`)
 			.setDesc(t('settings.misc.versionInfo.desc'))

@@ -1,6 +1,11 @@
 {
   "settings": {
     "showAdvanced": "Erweitert",
+    "search": {
+      "placeholder": "Einstellungen durchsuchen...",
+      "noResults": "Keine Einstellungen für \"{{query}}\" gefunden",
+      "clear": "Suche löschen"
+    },
     "connections": {
       "title": "Dienste\n& Modelle",
       "provider": "Anbieter",

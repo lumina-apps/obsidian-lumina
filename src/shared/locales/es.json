@@ -1,6 +1,11 @@
 {
   "settings": {
     "showAdvanced": "Avanzado",
+    "search": {
+      "placeholder": "Buscar configuración...",
+      "noResults": "No se encontraron configuraciones para \"{{query}}\"",
+      "clear": "Borrar búsqueda"
+    },
     "connections": {
       "title": "Conexiones\ny modelos",
       "provider": "Proveedor",

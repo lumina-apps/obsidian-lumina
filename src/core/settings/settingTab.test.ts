@@ -15,6 +15,11 @@ describe('LuminaSettingTab scroll preservation', () => {
 		mockApp = {
 			vault: {},
 			workspace: {},
+			plugins: {
+				manifests: {
+					lumina: { version: '1.4.7' },
+				},
+			},
 		} as unknown as App;
 		mockPlugin = {
 			app: mockApp,
@@ -96,5 +101,157 @@ describe('LuminaSettingTab scroll preservation', () => {
 		} finally {
 			vi.useRealTimers();
 		}
+	});
+
+	describe('Settings search', () => {
+		it('renders search bar with input and icon', () => {
+			tab.display();
+
+			const searchBar = container.querySelector('.lumina-settings__search');
+			expect(searchBar).not.toBeNull();
+
+			const input = searchBar?.querySelector<HTMLInputElement>('input.lumina-settings__search-input');
+			expect(input).not.toBeNull();
+			expect(input?.placeholder).toBeTruthy();
+
+			const icon = searchBar?.querySelector('.lumina-settings__search-icon');
+			expect(icon).not.toBeNull();
+		});
+
+		it('filters settings across all tabs when searchQuery is set', () => {
+			tab.display();
+			tab.searchQuery = 'debug';
+			tab.refreshDisplay();
+
+			const searchSections = container.querySelectorAll('.lumina-settings__search-section');
+			expect(searchSections.length).toBeGreaterThan(0);
+
+			const nav = container.querySelector('.lumina-settings__nav');
+			expect(nav?.classList.contains('lumina-settings__nav--search-active')).toBe(true);
+
+			const visibleItems = Array.from(
+				container.querySelectorAll<HTMLElement>('.setting-item')
+			).filter(el => el.style.display !== 'none');
+
+			const visibleNonHeadingItems = visibleItems.filter(
+				el => !el.classList.contains('setting-item-heading') &&
+					!el.classList.contains('lumina-settings__section-heading')
+			);
+
+			expect(visibleNonHeadingItems.length).toBeGreaterThan(0);
+			for (const item of visibleNonHeadingItems) {
+				const text = (item.textContent ?? '').toLowerCase();
+				expect(text).toContain('debug');
+			}
+		});
+
+		it('matches model settings when searching with "model" or "모델"', () => {
+			tab.display();
+
+			// 1. Search with English "model"
+			tab.searchQuery = 'model';
+			tab.refreshDisplay();
+
+			const visibleItemsEn = Array.from(
+				container.querySelectorAll<HTMLElement>('.setting-item')
+			).filter(el => el.style.display !== 'none');
+			expect(visibleItemsEn.length).toBeGreaterThan(0);
+
+			// 2. Search with Korean "모델"
+			tab.searchQuery = '모델';
+			tab.refreshDisplay();
+
+			const visibleItemsKo = Array.from(
+				container.querySelectorAll<HTMLElement>('.setting-item')
+			).filter(el => el.style.display !== 'none');
+			expect(visibleItemsKo.length).toBeGreaterThan(0);
+		});
+
+		it('shows no results message for unmatched query', () => {
+			tab.display();
+			tab.searchQuery = 'xyznonexistentquery999';
+			tab.refreshDisplay();
+
+			const emptyMsg = container.querySelector('.lumina-settings__search-empty');
+			expect(emptyMsg).not.toBeNull();
+			expect(emptyMsg?.textContent).toContain('xyznonexistentquery999');
+
+			const visibleSections = Array.from(
+				container.querySelectorAll<HTMLElement>('.lumina-settings__search-section')
+			).filter(el => el.style.display !== 'none');
+			expect(visibleSections.length).toBe(0);
+		});
+
+		it('restores normal tab view when search is cleared', () => {
+			tab.display();
+			tab.searchQuery = 'debug';
+			tab.refreshDisplay();
+
+			expect(container.querySelectorAll('.lumina-settings__search-section').length).toBeGreaterThan(0);
+
+			tab.searchQuery = '';
+			tab.refreshDisplay();
+
+			expect(container.querySelector('.lumina-settings__search-section')).toBeNull();
+			expect(container.querySelector('.lumina-settings__body')).not.toBeNull();
+
+			const nav = container.querySelector('.lumina-settings__nav');
+			expect(nav?.classList.contains('lumina-settings__nav--search-active')).toBe(false);
+		});
+
+		it('performs debounced search on input event', () => {
+			vi.useFakeTimers();
+			try {
+				tab.display();
+				const input = container.querySelector<HTMLInputElement>('.lumina-settings__search-input')!;
+				expect(input).not.toBeNull();
+
+				input.value = 'debug';
+				input.dispatchEvent(new Event('input'));
+
+				// Before debounce fires
+				expect(tab.searchQuery).toBe('');
+
+				// Advance debounce timer (150ms)
+				vi.advanceTimersByTime(200);
+
+				expect(tab.searchQuery).toBe('debug');
+				const visibleItems = Array.from(
+					container.querySelectorAll<HTMLElement>('.setting-item')
+				).filter(el => el.style.display !== 'none');
+				expect(visibleItems.length).toBeGreaterThan(0);
+			} finally {
+				vi.useRealTimers();
+			}
+		});
+
+		it('clears search when Escape key is pressed in search input', () => {
+			tab.display();
+			tab.searchQuery = 'debug';
+			tab.refreshDisplay();
+
+			const input = container.querySelector<HTMLInputElement>('.lumina-settings__search-input')!;
+			expect(input.value).toBe('debug');
+
+			input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+			expect(tab.searchQuery).toBe('');
+			expect(input.value).toBe('');
+			expect(container.querySelector('.lumina-settings__search-section')).toBeNull();
+		});
+
+		it('clears search when clear button is clicked', () => {
+			tab.display();
+			tab.searchQuery = 'debug';
+			tab.refreshDisplay();
+
+			const clearBtn = container.querySelector<HTMLButtonElement>('.lumina-settings__search-clear')!;
+			expect(clearBtn.classList.contains('is-hidden')).toBe(false);
+
+			clearBtn.click();
+
+			expect(tab.searchQuery).toBe('');
+			expect(container.querySelector('.lumina-settings__search-section')).toBeNull();
+		});
 	});
 });

@@ -1,6 +1,11 @@
 {
   "settings": {
     "showAdvanced": "進階設定",
+    "search": {
+      "placeholder": "搜尋設定...",
+      "noResults": "找不到與 \"{{query}}\" 相關的設定",
+      "clear": "清除搜尋"
+    },
     "connections": {
       "title": "連線與\n模型設定",
       "provider": "提供者",

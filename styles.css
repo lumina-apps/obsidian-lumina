@@ -15,6 +15,7 @@
 }
 
 /* Center all top-level layout components */
+.lumina-settings .lumina-settings__search,
 .lumina-settings .lumina-settings__nav,
 .lumina-settings .lumina-settings__body,
 .lumina-settings .lumina-settings__section-heading,
@@ -69,6 +70,118 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 	html body .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn--advanced .lumina-settings__nav-text {
 		display: none;
 	}
+}
+
+/* 2.5. Settings Search Bar */
+.lumina-settings__search {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	height: 30px;
+	padding: 0 10px;
+	border-radius: 6px;
+	border: 1px solid var(--background-modifier-border);
+	background-color: var(--background-primary);
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+	margin-bottom: 8px;
+	box-sizing: border-box;
+}
+
+.lumina-settings__search:focus-within {
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.lumina-settings__search-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 14px;
+	height: 14px;
+	color: var(--text-muted);
+	opacity: 0.75;
+}
+
+.lumina-settings__search-icon svg {
+	width: 14px;
+	height: 14px;
+}
+
+.lumina-settings .lumina-settings__search-input,
+.lumina-settings .lumina-settings__search-input:focus {
+	flex: 1;
+	height: 100% !important;
+	border: none !important;
+	background: transparent !important;
+	outline: none !important;
+	box-shadow: none !important;
+	color: var(--text-normal);
+	font-size: 13px;
+	padding: 0 4px !important;
+	border-radius: 0 !important;
+	line-height: normal;
+}
+
+.lumina-settings__search-input::placeholder {
+	color: var(--text-faint);
+	font-size: 12.5px;
+}
+
+.lumina-settings__search-clear {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 18px;
+	height: 18px;
+	background: none;
+	border: none;
+	color: var(--text-muted);
+	cursor: pointer;
+	padding: 0;
+	border-radius: 3px;
+	transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.lumina-settings__search-clear svg {
+	width: 12px;
+	height: 12px;
+}
+
+.lumina-settings__search-clear:hover {
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover);
+}
+
+.lumina-settings__search-clear.is-hidden {
+	display: none;
+}
+
+/* 검색 모드: 탭 네비게이션 비활성화 */
+.lumina-settings__nav--search-active {
+	opacity: 0.45;
+	pointer-events: none;
+}
+
+/* 검색 결과 탭 섹션 헤더 */
+.lumina-settings__search-tab-header {
+	font-size: 0.78em;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: var(--text-accent);
+	padding: 14px 0 6px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	margin-bottom: 10px;
+}
+
+/* 검색 결과 없음 */
+.lumina-settings__search-empty {
+	text-align: center;
+	color: var(--text-faint);
+	padding: 48px 20px;
+	font-size: 14px;
 }
 
 /* 3. Tab Navigation Menu (Horizontal Segmented Control) */

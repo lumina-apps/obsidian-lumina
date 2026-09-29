@@ -40,6 +40,20 @@ export function addDynamicLocale(lang: string, translation: DeepPartial<Translat
   loadedLocales[lang] = translation;
 }
 
+/** 현재 로드된 로캘 객체 반환 */
+export function getCurrentLoadedLocale(): DeepPartial<Translation> {
+  const lang = currentLanguage;
+  if (lang !== 'en' && lang !== 'system' && loadedLocales[lang]) {
+    return loadedLocales[lang];
+  }
+  return loadedLocales['en'] || enJson;
+}
+
+/** en 기본 로케일 객체 반환 */
+export function getEnLocale(): DeepPartial<Translation> {
+  return enJson as unknown as DeepPartial<Translation>;
+}
+
 /** 언어 설정 및 해당 locale JSON 로드. 실패 시 en 폴백 */
 export async function setLanguage(lang: string): Promise<void> {
   debugLogger.logDebug('locale', `setLanguage called with: ${lang}`);

@@ -1,6 +1,11 @@
 {
   "settings": {
     "showAdvanced": "Avancé",
+    "search": {
+      "placeholder": "Rechercher dans les paramètres...",
+      "noResults": "Aucun paramètre trouvé pour \"{{query}}\"",
+      "clear": "Effacer la recherche"
+    },
     "connections": {
       "title": "Connexions\net Modèles",
       "provider": "Fournisseur",

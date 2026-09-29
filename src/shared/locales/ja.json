@@ -1,6 +1,11 @@
 {
   "settings": {
     "showAdvanced": "詳細設定",
+    "search": {
+      "placeholder": "設定を検索...",
+      "noResults": "\"{{query}}\" の検索結果は見つかりませんでした",
+      "clear": "検索をクリア"
+    },
     "connections": {
       "title": "接続と\nモデル",
       "provider": "プロバイダー",

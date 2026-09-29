@@ -1,6 +1,11 @@
 {
   "settings": {
     "showAdvanced": "고급 설정",
+    "search": {
+      "placeholder": "설정 검색...",
+      "noResults": "\"{{query}}\"에 대한 검색 결과가 없습니다",
+      "clear": "검색 초기화"
+    },
     "connections": {
       "title": "연결 및\n모델 설정",
       "provider": "제공자",

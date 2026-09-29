@@ -94,7 +94,14 @@ vi.mock('obsidian', () => {
 		},
 		PluginSettingTab: class {
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			constructor(_app: any, _plugin: any) {}
+			app: any;
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			plugin: any;
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			constructor(app: any, plugin: any) {
+				this.app = app;
+				this.plugin = plugin;
+			}
 			display() {}
 		},
 		Modal: class {
@@ -164,16 +171,35 @@ vi.mock('obsidian', () => {
 			descEl = document.createElement('div');
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			constructor(containerEl?: any) {
+				this.settingEl.className = 'setting-item';
+				this.infoEl.className = 'setting-item-info';
+				this.controlEl.className = 'setting-item-control';
+				this.nameEl.className = 'setting-item-name';
+				this.descEl.className = 'setting-item-description';
+				this.infoEl.appendChild(this.nameEl);
+				this.infoEl.appendChild(this.descEl);
+				this.settingEl.appendChild(this.infoEl);
+				this.settingEl.appendChild(this.controlEl);
 				if (containerEl?.appendChild) {
 					containerEl.appendChild(this.settingEl);
 				}
-				this.settingEl.appendChild(this.infoEl);
-				this.settingEl.appendChild(this.controlEl);
 			}
-			setName(_name: string) { return this; }
-			setDesc(_desc: string) { return this; }
-			setClass(_cls: string) { return this; }
-			setHeading() { return this; }
+			setName(name: string) {
+				this.nameEl.textContent = name;
+				return this;
+			}
+			setDesc(desc: string) {
+				this.descEl.textContent = desc;
+				return this;
+			}
+			setClass(cls: string) {
+				this.settingEl.classList.add(cls);
+				return this;
+			}
+			setHeading() {
+				this.settingEl.classList.add('setting-item-heading');
+				return this;
+			}
 			setDisabled(_disabled?: boolean) { return this; }
 			setTooltip(_tooltip: string) { return this; }
 			clear() { return this; }
@@ -235,6 +261,7 @@ vi.mock('obsidian', () => {
 				const btn = {
 					buttonEl,
 					setButtonText: vi.fn().mockReturnThis(),
+					setIcon: vi.fn().mockReturnThis(),
 					setCta: vi.fn().mockReturnThis(),
 					setTooltip: vi.fn().mockReturnThis(),
 					setDisabled: vi.fn().mockReturnThis(),
