@@ -75,7 +75,7 @@ ${chunks.map((c, i) => `[${i}] ${c.chunk.text.slice(0, 300)}...`).join('\n\n')}
 		const lines = resultText.split('\n').map(l => l.trim()).filter(Boolean);
 		if (lines.length > 1) {
 			for (const line of lines) {
-				const m = line.match(/^(?:\d+[\.\)]|[-*])\s*(?:chunk\s*)?\[?(\d+)\]?/i) || line.match(/^(?:chunk\s*)?\[?(\d+)\]?/i);
+				const m = line.match(/^(?:\d+[.)]|[-*])\s*(?:chunk\s*)?\[?(\d+)\]?/i) || line.match(/^(?:chunk\s*)?\[?(\d+)\]?/i);
 				if (m && m[1]) {
 					const idx = parseInt(m[1], 10);
 					if (!isNaN(idx) && idx >= 0 && idx < chunks.length) {
