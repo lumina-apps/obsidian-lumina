@@ -54,9 +54,10 @@ export async function searchVault(
 
 	// 1. 쿼리 임베딩
 	const [queryEmbedding] = await embedFn([query]);
+	if (!queryEmbedding || queryEmbedding.length === 0) return [];
 
-	// 2. Orama 벡터 검색 (여유있게 topK의 2배 이상, 최소 10개)
-	const limit = Math.max(10, topK * 2);
+	// 2. Orama 벡터 검색 (상위 청크당 여러 하위 청크가 생성되므로 topK의 8배 이상, 최소 50개 확보)
+	const limit = Math.max(50, topK * 8);
 	const hits = await oramaDb.search(queryEmbedding, limit, allowedPaths);
 	debugLogger.logDebug('rag', `Orama hits: ${hits.length}`);
 
@@ -93,6 +94,11 @@ export async function searchVault(
 		const candidateParentIds = new Set<string>();
 		for (const hit of fulltextHits) {
 			if (hit.parentId) candidateParentIds.add(hit.parentId);
+		}
+
+		// 벡터 검색에서 매칭된 상위 청크들도 BM25 후보군에 포함하여 정확한 하이브리드 점수 산출
+		for (const pid of parentVectorScores.keys()) {
+			candidateParentIds.add(pid);
 		}
 		
 		for (const pid of candidateParentIds) {

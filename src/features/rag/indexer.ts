@@ -75,6 +75,8 @@ export class VaultIndexer {
 	private persistCacheFn?: () => Promise<void>;
 	/** 인덱싱 상태 (청크, 파일 메타데이터 등) */
 	private state: IndexState = new IndexState();
+	/** 인덱스가 이미 메모리에 로드되었는지 여부 */
+	public isLoaded = false;
 	/** 인스턴스 파괴 여부 — true면 모든 작업 중단 */
 	public isDestroyed = false;
 	/** 현재 실행 중인 처리 프로세스 ID (중복 실행 방지) */
@@ -174,20 +176,25 @@ export class VaultIndexer {
 		debugLogger.logSystem('rag', `VaultIndexer.processSync (project=${this.projectId}): found ${files.length} target files. Included=${JSON.stringify(this.includedPaths)}, Excluded=${JSON.stringify(this.excludedPaths)}`);
 
 		if (isUpdate) {
-			const loadResult = await loadIndex(this.app, this.modelName, this.projectId);
-			if (loadResult.needsFullReindex) {
-				this.state.clear();
-				await this.embeddingStore.clear();
-				// Full reindex -> proceed with normal indexing flow below
-			} else {
-				this.state.loadFrom(loadResult);
-				await this.embeddingStore.loadEmbeddings(this.state.childChunks).catch((e) => {
-					debugLogger.logError('rag', normalizeError(e, `loadEmbeddings failed: ${e}`));
-				});
-				const withEmb = this.state.childChunks.filter(c => c.embedding && c.embedding.length > 0).length;
-				debugLogger.logSystem('rag', `updateIndex: childChunks=${this.state.childChunks.length}, with embedding=${withEmb}`);
-				await this.initOramaStore();
-				
+			if (!this.isLoaded) {
+				const loadResult = await loadIndex(this.app, this.modelName, this.projectId);
+				if (loadResult.needsFullReindex) {
+					this.state.clear();
+					await this.embeddingStore.clear();
+					// Full reindex -> proceed with normal indexing flow below
+				} else {
+					this.state.loadFrom(loadResult);
+					await this.embeddingStore.loadEmbeddings(this.state.childChunks).catch((e) => {
+						debugLogger.logError('rag', normalizeError(e, `loadEmbeddings failed: ${e}`));
+					});
+					const withEmb = this.state.childChunks.filter(c => c.embedding && c.embedding.length > 0).length;
+					debugLogger.logSystem('rag', `updateIndex: childChunks=${this.state.childChunks.length}, with embedding=${withEmb}`);
+					await this.initOramaStore();
+					this.isLoaded = true;
+				}
+			}
+
+			if (this.isLoaded) {
 				if (files.length === 0 && this.state.indexedFileCount > 0) {
 					setIndexingStatus('ready', { totalFiles: this.state.indexedFileCount, processedFiles: this.state.indexedFileCount });
 					return;
@@ -271,6 +278,7 @@ export class VaultIndexer {
 		this.isIndexing = true;
 		try {
 			this.state.clear();
+			this.isLoaded = false;
 			if (this.oramaStore) {
 				await this.oramaStore.clear();
 			}
@@ -335,6 +343,7 @@ export class VaultIndexer {
 		}
 
 		if (this.currentProcessId === processId && !this.isDestroyed) {
+			this.isLoaded = true;
 			setIndexingStatus('ready', { totalFiles: totalFiles.length, processedFiles: totalFiles.length });
 			await deleteCheckpoint(this.app, this.projectId);
 			resumedFromCheckpoint.set(false);

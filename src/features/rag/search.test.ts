@@ -42,6 +42,16 @@ describe('search module', () => {
 			expect(result).toEqual([]);
 		});
 
+		it('should return empty array if embedFn returns empty or null vector', async () => {
+			const parentChunks: ParentChunk[] = [
+				{ id: 'p1', path: 'file1.md', text: 'Some text', chunkIndex: 0 }
+			];
+			const mockOramaStore = { search: vi.fn(), searchFulltext: vi.fn() } as unknown as OramaStore;
+			const embedFn = vi.fn().mockResolvedValue([]);
+			const result = await searchVault('query', parentChunks, mockOramaStore, embedFn, 5);
+			expect(result).toEqual([]);
+		});
+
 		it('should combine vector scores and BM25 scores correctly', async () => {
 			const parentChunks: ParentChunk[] = [
 				{ id: 'p1', path: 'file1.md', text: 'This is a test document about testing.', chunkIndex: 0 },

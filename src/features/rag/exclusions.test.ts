@@ -40,4 +40,14 @@ describe('exclusions', () => {
 		expect(isIncluded('ProjectA/note.md', ['ProjectA'])).toBe(true);
 		expect(isIncluded('ProjectB/note.md', ['ProjectA'])).toBe(false);
 	});
+
+	it('should correctly handle leading slashes, trailing slashes, and Windows backslashes in user paths', () => {
+		expect(isExcluded('templates/daily.md', ['/templates'])).toBe(true);
+		expect(isExcluded('templates/daily.md', ['templates/'])).toBe(true);
+		expect(isExcluded('templates\\daily.md', ['templates'])).toBe(true);
+		expect(isExcluded('templates/daily.md', ['templates\\'])).toBe(true);
+		expect(isIncluded('ProjectA/note.md', ['/ProjectA'])).toBe(true);
+		expect(isIncluded('ProjectA/note.md', ['ProjectA/'])).toBe(true);
+		expect(isIncluded('ProjectA\\note.md', ['ProjectA'])).toBe(true);
+	});
 });

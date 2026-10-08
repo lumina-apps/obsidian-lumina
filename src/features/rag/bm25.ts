@@ -5,9 +5,11 @@
 
 import type { ParentChunk } from '../../shared/types/rag.types';
 
+const CJK_REGEX = /[\uAC00-\uD7A3\u4E00-\u9FFF\u3400-\u4DBF\u3040-\u30FF]/;
+
 /**
  * 텍스트 토큰화 (Uni-gram + CJK Bi-gram).
- * 한글 등 CJK 문자는 2-gram 토큰을 추가 생성합니다.
+ * 한글, 한자, 일본어(히라가나/가타카나) 등 CJK 문자는 2-gram 토큰을 추가 생성합니다.
  */
 export function tokenize(text: string): string[] {
 	if (!text) return [];
@@ -19,7 +21,7 @@ export function tokenize(text: string): string[] {
 		if (!word) continue;
 		tokens.push(word);
 		
-		if (/[가-힣]/.test(word) && word.length >= 2) {
+		if (CJK_REGEX.test(word) && word.length >= 2) {
 			for (let i = 0; i < word.length - 1; i++) {
 				tokens.push(word.substring(i, i + 2));
 			}

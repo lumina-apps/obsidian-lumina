@@ -24,6 +24,23 @@ describe('tagExtractor', () => {
 		expect(tags[0].tag).toBe('#rag');
 	});
 
+	it('extractBodyTags should support Japanese, Chinese and Hangul hashtags', () => {
+		const results: SearchResult[] = [
+			{
+				chunk: { id: 'c1', path: 'note1.md', text: 'CJK tags: #設定 #プロジェクト #인공지능 #人工智能', chunkIndex: 0 },
+				score: 0.9,
+				rawVectorScore: 0.9,
+			},
+		];
+
+		const tags = extractBodyTags(results);
+		expect(tags.map(t => t.tag)).toContain('#設定');
+		expect(tags.map(t => t.tag)).toContain('#プロジェクト');
+		expect(tags.map(t => t.tag)).toContain('#인공지능');
+		expect(tags.map(t => t.tag)).toContain('#人工智能');
+		expect(tags[0].score).toBeCloseTo(0.9);
+	});
+
 	it('collectRecommendedTags should EXCLUDE tags already on the active note', () => {
 		const results: SearchResult[] = [
 			{

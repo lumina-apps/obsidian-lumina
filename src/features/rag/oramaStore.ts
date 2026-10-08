@@ -1,11 +1,21 @@
 import { create, insertMultiple, search, removeMultiple, type AnyOrama } from '@orama/orama';
 import type { ChildChunk } from '../../shared/types/rag.types';
 
+function isCJKCode(code: number): boolean {
+	return (
+		(code >= 0xAC00 && code <= 0xD7A3) || // Hangul Syllables
+		(code >= 0x4E00 && code <= 0x9FFF) || // CJK Unified Ideographs
+		(code >= 0x3400 && code <= 0x4DBF) || // CJK Extension A
+		(code >= 0x3040 && code <= 0x309F) || // Hiragana
+		(code >= 0x30A0 && code <= 0x30FF)    // Katakana
+	);
+}
+
 export class OramaStore {
 	private db: AnyOrama | null = null;
 	private dimension: number;
 
-	private koreanBigramTokenizer(this: void, raw: string): string[] {
+	private cjkBigramTokenizer(this: void, raw: string): string[] {
 		if (typeof raw !== 'string') return [String(raw)];
 		const text = raw.normalize('NFC').toLowerCase();
 		const tokens = new Set<string>();
@@ -16,7 +26,7 @@ export class OramaStore {
 			for (let i = 0; i < word.length - 1; i++) {
 				const char1 = word.charCodeAt(i);
 				const char2 = word.charCodeAt(i+1);
-				if (char1 >= 0xAC00 && char1 <= 0xD7A3 && char2 >= 0xAC00 && char2 <= 0xD7A3) {
+				if (isCJKCode(char1) && isCJKCode(char2)) {
 					tokens.add(word.substring(i, i+2));
 				}
 			}
@@ -40,9 +50,9 @@ export class OramaStore {
 			},
 			components: {
 				tokenizer: {
-					language: 'ko',
+					language: 'multilingual',
 					normalizationCache: new Map(),
-					tokenize: this.koreanBigramTokenizer
+					tokenize: this.cjkBigramTokenizer
 				}
 			}
 		});

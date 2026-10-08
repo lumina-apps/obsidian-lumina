@@ -38,14 +38,19 @@
 	}
 
 	/** 표시용 연관도 점수. rawVectorScore(순수 코사인 유사도 0~1)를 우선 사용하고,
-	 *  없을 경우 vectorScore 클램프 → score 순으로 fallback합니다. */
-	let displayScore = $derived(
-		result.rawVectorScore != null
-			? result.rawVectorScore
-			: result.vectorScore != null
-				? Math.min(1, result.vectorScore)
-				: result.score
-	);
+	 *  없을 경우 vectorScore > 0, bm25Score, score 순으로 fallback합니다. */
+	let displayScore = $derived.by(() => {
+		if (result.rawVectorScore != null && result.rawVectorScore > 0) {
+			return Math.min(1, result.rawVectorScore);
+		}
+		if (result.vectorScore != null && result.vectorScore > 0) {
+			return Math.min(1, result.vectorScore);
+		}
+		if (result.bm25Score != null && result.bm25Score > 0) {
+			return Math.min(1, Math.max(0.4, result.bm25Score / 10));
+		}
+		return Math.min(1, result.score || 0);
+	});
 
 	let snippetText = $derived.by(() => {
 		let text = result.bestChildText;

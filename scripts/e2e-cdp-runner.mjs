@@ -263,7 +263,10 @@ async function run() {
 	{
 		const t0 = Date.now();
 		try {
-			const info = await client.evaluate(`(() => {
+			const info = await client.evaluate(`(async () => {
+				if (typeof app.plugins.loadManifests === 'function') {
+					await app.plugins.loadManifests();
+				}
 				const p = app.plugins.plugins['lumina'];
 				return {
 					loaded: !!p,
@@ -764,11 +767,16 @@ async function run() {
 				await app.fileManager.processFrontMatter(file, (fm) => {
 					fm.luminaModified = true;
 				});
+				for (let i = 0; i < 30; i++) {
+					const cache = app.metadataCache.getFileCache(file);
+					if (cache?.frontmatter && 'luminaModified' in cache.frontmatter) break;
+					await new Promise(r => setTimeout(r, 100));
+				}
 			})()`);
-			await sleep(500);
+			await sleep(300);
 
 			await client.evaluate(`app.commands.executeCommandById('lumina:strip-frontmatter-metadata')`);
-			await sleep(400);
+			await sleep(500);
 
 			const modalOpened = await client.evaluate(`!!document.querySelector('.modal-container')`);
 

@@ -28,11 +28,13 @@ export async function rerankChunks(
 				const documentTexts = chunks.map(c => c.chunk.text);
 				const results = await provider.rerank(query, documentTexts, { model: modelId, topN: topK });
 				
-				// 네이티브 API의 정렬 결과 및 점수를 반영하여 반환
-				return results.map(r => ({
-					...chunks[r.index],
-					score: r.score
-				}));
+				// 네이티브 API의 정렬 결과 및 점수를 반영하여 반환 (인덱스 범위 유효성 검증)
+				return results
+					.filter(r => r.index >= 0 && r.index < chunks.length)
+					.map(r => ({
+						...chunks[r.index],
+						score: r.score
+					}));
 			} catch (err) {
 				if (err instanceof Error && err.name === 'AbortError') {
 					throw err;
@@ -68,9 +70,25 @@ ${chunks.map((c, i) => `[${i}] ${c.chunk.text.slice(0, 300)}...`).join('\n\n')}
 		);
 
 		const resultText = response.content.trim();
-		// Extract numbers using regex in case the LLM wrapped it in markdown or text
-		const matches = resultText.match(/\d+/g);
-		const orderedIndices = matches ? matches.map(s => parseInt(s)).filter(n => !isNaN(n) && n >= 0 && n < chunks.length) : [];
+		let orderedIndices: number[] = [];
+
+		const lines = resultText.split('\n').map(l => l.trim()).filter(Boolean);
+		if (lines.length > 1) {
+			for (const line of lines) {
+				const m = line.match(/^(?:\d+[\.\)]|[-*])\s*(?:chunk\s*)?\[?(\d+)\]?/i) || line.match(/^(?:chunk\s*)?\[?(\d+)\]?/i);
+				if (m && m[1]) {
+					const idx = parseInt(m[1], 10);
+					if (!isNaN(idx) && idx >= 0 && idx < chunks.length) {
+						orderedIndices.push(idx);
+					}
+				}
+			}
+		}
+
+		if (orderedIndices.length === 0) {
+			const matches = resultText.match(/\d+/g);
+			orderedIndices = matches ? matches.map(s => parseInt(s, 10)).filter(n => !isNaN(n) && n >= 0 && n < chunks.length) : [];
+		}
 
 		const rankedChunks: SearchResult[] = [];
 		const added = new Set<number>();

@@ -195,6 +195,21 @@ describe('VaultIndexer', () => {
 			expect(checkpointManager.restoreFromCheckpoint).not.toHaveBeenCalled();
 		});
 
+		it('should skip loadIndex and loadEmbeddings if index is already loaded in memory', async () => {
+			const targetFile = { path: 'unchanged.md' } as TFile;
+			vi.mocked(fileFilter.getTargetFiles).mockReturnValue([targetFile]);
+			vi.mocked(indexDiff.calculateIndexDiff).mockResolvedValue({ pathsToDelete: new Set(), changedFiles: [] });
+
+			// Set isLoaded = true manually
+			indexer.isLoaded = true;
+
+			await indexer.updateIndex();
+
+			expect(indexPersistence.loadIndex).not.toHaveBeenCalled();
+			expect(mockEmbeddingStore.loadEmbeddings).not.toHaveBeenCalled();
+			expect(ragStore.setIndexingStatus).toHaveBeenCalledWith('ready', { totalFiles: 1, processedFiles: 1 });
+		});
+
 		it('should clear checkpoint and early return if filesToProcess is empty after changedFiles intersection', async () => {
 			const targetFile = { path: 'changed.md' } as TFile;
 			vi.mocked(fileFilter.getTargetFiles).mockReturnValue([targetFile]);

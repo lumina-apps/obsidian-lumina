@@ -12,12 +12,21 @@ export const DEFAULT_EXCLUDED_PATHS: readonly string[] = [
 ];
 
 function matchesPrefix(filePath: string, prefix: string): boolean {
-	let normalized = prefix.trim().replace(/\\/g, '/');
-	if (normalized.endsWith('/')) {
-		normalized = normalized.slice(0, -1);
+	let normalizedPrefix = prefix.trim().replace(/\\/g, '/');
+	if (normalizedPrefix.startsWith('/')) {
+		normalizedPrefix = normalizedPrefix.slice(1);
 	}
-	if (!normalized || normalized === '/') return false;
-	return filePath === normalized || filePath.startsWith(normalized + '/');
+	if (normalizedPrefix.endsWith('/')) {
+		normalizedPrefix = normalizedPrefix.slice(0, -1);
+	}
+	if (!normalizedPrefix) return false;
+
+	let normalizedFilePath = filePath.trim().replace(/\\/g, '/');
+	if (normalizedFilePath.startsWith('/')) {
+		normalizedFilePath = normalizedFilePath.slice(1);
+	}
+
+	return normalizedFilePath === normalizedPrefix || normalizedFilePath.startsWith(normalizedPrefix + '/');
 }
 
 /**

@@ -68,6 +68,36 @@ describe('reranker', () => {
 		expect(mockProvider.chat).toHaveBeenCalledTimes(1);
 	});
 
+	it('LLM이 번호 매기기 목록(1. Chunk 2)으로 응답해도 인덱스를 정상 추출한다', async () => {
+		const mockProvider = {
+			chat: vi.fn().mockResolvedValue({
+				content: '1. Chunk 2\n2. Chunk 0\n3. Chunk 1',
+			}),
+		};
+		vi.mocked(createProvider).mockReturnValue(mockProvider as any);
+
+		const res = await rerankChunks('query', mockChunks, mockConfig, 'gpt-4o', 3);
+		expect(res).toHaveLength(3);
+		expect(res[0].chunk.id).toBe('c2');
+		expect(res[1].chunk.id).toBe('c0');
+		expect(res[2].chunk.id).toBe('c1');
+	});
+
+	it('LLM이 설명과 쉼표가 포함된 번호 매기기 목록으로 응답해도 인덱스를 정상 추출한다', async () => {
+		const mockProvider = {
+			chat: vi.fn().mockResolvedValue({
+				content: '1. Chunk 2, highly relevant\n2. Chunk 0, moderately relevant\n3. Chunk 1, least relevant',
+			}),
+		};
+		vi.mocked(createProvider).mockReturnValue(mockProvider as any);
+
+		const res = await rerankChunks('query', mockChunks, mockConfig, 'gpt-4o', 3);
+		expect(res).toHaveLength(3);
+		expect(res[0].chunk.id).toBe('c2');
+		expect(res[1].chunk.id).toBe('c0');
+		expect(res[2].chunk.id).toBe('c1');
+	});
+
 	it('네이티브 rerank API 호출 중 오류 발생 시 프롬프트 기반으로 Fallback한다', async () => {
 		const mockProvider = {
 			rerank: vi.fn().mockRejectedValue(new Error('Model not supported')),

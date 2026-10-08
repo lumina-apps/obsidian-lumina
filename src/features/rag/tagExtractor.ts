@@ -5,16 +5,17 @@ export interface TagScore {
 	score: number;
 }
 
-/** 검색 결과 본문에서 #태그를 추출합니다. */
+/** 검색 결과 본문에서 #태그를 추출합니다. 한글, 일본어, 한자(CJK) 지원. */
 export function extractBodyTags(results: SearchResult[]): TagScore[] {
 	const tagMap = new Map<string, number>();
 	for (const result of results) {
-		const matches = result.chunk.text.match(/#[a-zA-Z0-9\uAC00-\uD7AF_-]+/g);
+		const matches = result.chunk.text.match(/#[a-zA-Z0-9\uAC00-\uD7AF\u4E00-\u9FFF\u3040-\u30FF_-]+/g);
 		if (matches) {
+			const effectiveScore = result.rawVectorScore ?? (result.vectorScore && result.vectorScore > 0 ? result.vectorScore : result.score);
 			for (const tag of matches) {
 				const cleaned = tag.trim();
 				if (cleaned.length <= 1) continue;
-				tagMap.set(cleaned, (tagMap.get(cleaned) || 0) + result.score);
+				tagMap.set(cleaned, (tagMap.get(cleaned) || 0) + effectiveScore);
 			}
 		}
 	}
@@ -74,10 +75,11 @@ export function collectRecommendedTags(input: TagCollectorInput): TagScore[] {
 		const cache = metadataCache.getCache(result.chunk.path);
 		if (!cache) continue;
 
-		collectFrontmatterTags(cache.frontmatter, result.score, tagScoreMap);
-		collectCachedBodyTags(cache.tags, result.score, tagScoreMap);
-		collectExtraFrontmatterTags(cache.frontmatter, result.score, tagScoreMap);
-		collectPathTags(result.chunk.path, result.score, tagScoreMap);
+		const effectiveScore = result.rawVectorScore ?? (result.vectorScore && result.vectorScore > 0 ? result.vectorScore : result.score);
+		collectFrontmatterTags(cache.frontmatter, effectiveScore, tagScoreMap);
+		collectCachedBodyTags(cache.tags, effectiveScore, tagScoreMap);
+		collectExtraFrontmatterTags(cache.frontmatter, effectiveScore, tagScoreMap);
+		collectPathTags(result.chunk.path, effectiveScore, tagScoreMap);
 	}
 
 	// 현재 활성 파일에 이미 존재하는 태그는 추천 목록에서 제외

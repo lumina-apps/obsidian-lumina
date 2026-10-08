@@ -40,6 +40,16 @@ describe('tokenize', () => {
 		expect(tokens).toContain('하세');
 		expect(tokens).toContain('세요');
 	});
+
+	it('일본어/한자(CJK)도 uni-gram + bi-gram 생성', () => {
+		const tokens = tokenize('日本語テスト');
+		expect(tokens).toContain('日本語テスト');
+		expect(tokens).toContain('日本');
+		expect(tokens).toContain('本語');
+		expect(tokens).toContain('語テ');
+		expect(tokens).toContain('テス');
+		expect(tokens).toContain('スト');
+	});
 });
 
 // ── calculateBM25 ──
