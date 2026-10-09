@@ -6,10 +6,10 @@
 <div class="lumina-discovery__rag-banner">
 	<div class="lumina-discovery__rag-banner-content">
 		{#if $indexingState.status === 'loading-model'}
-			<strong>{$tStore('settings.rag.init.loadingModel') || 'RAG 모델 다운로드 중...'}</strong>
-			<span>{$tStore('settings.rag.init.loadingModelDesc') || ''}</span>
+			<strong>{$tStore('settings.rag.init.loadingModel')}</strong>
+			<span>{$tStore('settings.rag.init.loadingModelDesc')}</span>
 		{:else}
-			<strong>{$tStore('settings.rag.init.indexingVault') || '내 노트 인덱싱 중...'}</strong>
+			<strong>{$tStore('settings.rag.init.indexingVault')}</strong>
 			<span>
 				{($tStore('settings.rag.init.indexingProgressText') || '')
 					.replace('{{processed}}', $indexingState.processedFiles.toString())

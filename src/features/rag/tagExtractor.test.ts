@@ -84,5 +84,32 @@ describe('tagExtractor', () => {
 		expect(recommendedTagNames).toContain('#recommended');
 		expect(recommendedTagNames).toContain('#noveltag');
 		expect(recommendedTagNames).toContain('#noveltag2');
+
+		// All scores must be <= 1.0
+		for (const t of tags) {
+			expect(t.score).toBeLessThanOrEqual(1.0);
+		}
+	});
+
+	it('collectRecommendedTags should exclude the filename itself from path tags', () => {
+		const results: SearchResult[] = [
+			{
+				chunk: { id: 'c1', path: 'projects/deep-learning/transformer-model.md', text: 'Some text', chunkIndex: 0 },
+				score: 0.9,
+			},
+		];
+		const metadataCache = {
+			getCache: () => null,
+		};
+
+		const tags = collectRecommendedTags({
+			results,
+			metadataCache,
+			activeFilePath: 'active.md',
+		});
+
+		const tagNames = tags.map(t => t.tag);
+		expect(tagNames).toContain('#deep-learning');
+		expect(tagNames).not.toContain('#transformer-model');
 	});
 });

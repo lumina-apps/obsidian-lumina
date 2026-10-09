@@ -4,7 +4,7 @@
 	import { extractFileName } from '../../../../shared/utils/fileUtils';
 	import DiscoveryCard from '../DiscoveryCard.svelte';
 	import type { SearchResult } from '../../../../shared/types/rag.types';
-	import type { DiscoveryState } from '../../../../core/store/discoveryStore';
+	import type { DiscoveryState, StagedNote } from '../../../../core/store/discoveryStore';
 
 	let {
 		discoveryState,
@@ -18,7 +18,7 @@
 	} = $props<{
 		discoveryState: DiscoveryState;
 		isUpdating: boolean;
-		stagedItems: SearchResult[];
+		stagedItems: StagedNote[];
 		onInsertTag: (tag: string) => void;
 		onOpenFile: (path: string, e?: MouseEvent) => void;
 		onInsertLink: (path: string) => void;
@@ -39,10 +39,10 @@
 			<div
 				class="lumina-discovery__warning-link"
 				onclick={(e) => onOpenFile(dupPath, e)}
-				onauxclick={(e) => onOpenFile(dupPath, e)}
+				onauxclick={(e) => { if (e.button === 1) onOpenFile(dupPath, e); }}
 				role="button"
 				tabindex="0"
-				onkeydown={(e) => { if(e.key === 'Enter' || e.key === ' ') onOpenFile(dupPath); }}
+				onkeydown={(e) => { if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenFile(dupPath); } }}
 			>
 				[[{extractFileName(dupPath)}]]
 			</div>
@@ -75,7 +75,7 @@
 				{#each discoveryState.similarNotes as result (result.chunk.id)}
 					<DiscoveryCard
 						{result}
-						isStaged={stagedItems.some((i: SearchResult) => i.chunk.id === result.chunk.id)}
+						isStaged={stagedItems.some(i => i.path === result.chunk.path)}
 						onOpen={onOpenFile}
 						onInsertLink={onInsertLink}
 						onOpenInSplit={onOpenInSplit}
@@ -87,6 +87,10 @@
 	{:else if discoveryState.activeFile}
 		<div class="lumina-discovery__no-results">
 			<span>{$tStore('discovery.noResults')}</span>
+		</div>
+	{:else}
+		<div class="lumina-discovery__no-results">
+			<span>{$tStore('discovery.noActiveFile')}</span>
 		</div>
 	{/if}
 </div>

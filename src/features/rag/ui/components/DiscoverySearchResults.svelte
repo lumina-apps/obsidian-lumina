@@ -1,6 +1,7 @@
 <script lang="ts">
 	import DiscoveryCard from '../DiscoveryCard.svelte';
 	import type { SearchResult } from '../../../../shared/types/rag.types';
+	import type { StagedNote } from '../../../../core/store/discoveryStore';
 
 	let {
 		searchResults,
@@ -15,7 +16,7 @@
 		searchResults: SearchResult[];
 		searchQuery: string;
 		isSearching: boolean;
-		stagedItems: SearchResult[];
+		stagedItems: StagedNote[];
 		onOpenFile: (path: string, e?: MouseEvent) => void;
 		onInsertLink: (path: string) => void;
 		onOpenInSplit: (path: string) => void;
@@ -28,7 +29,7 @@
 		<DiscoveryCard
 			{result}
 			{searchQuery}
-			isStaged={stagedItems.some((i: SearchResult) => i.chunk.id === result.chunk.id)}
+			isStaged={stagedItems.some(i => i.path === result.chunk.path)}
 			onOpen={onOpenFile}
 			onInsertLink={onInsertLink}
 			onOpenInSplit={onOpenInSplit}

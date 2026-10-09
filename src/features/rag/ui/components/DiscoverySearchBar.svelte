@@ -14,7 +14,7 @@
 		bind:value={searchQuery}
 	/>
 	{#if searchQuery}
-		<button class="lumina-discovery__clear-btn" aria-label="Clear Search" onclick={() => searchQuery = ''}>
+		<button class="lumina-discovery__clear-btn" aria-label={$tStore('discovery.clearSearch')} onclick={() => searchQuery = ''}>
 			<span use:iconAction={"x"}></span>
 		</button>
 	{/if}
@@ -28,7 +28,7 @@
 		bind:value={filterQuery}
 	/>
 	{#if filterQuery}
-		<button class="lumina-discovery__clear-btn" aria-label="Clear Filter" onclick={() => filterQuery = ''}>
+		<button class="lumina-discovery__clear-btn" aria-label={$tStore('discovery.clearFilter')} onclick={() => filterQuery = ''}>
 			<span use:iconAction={"x"}></span>
 		</button>
 	{/if}

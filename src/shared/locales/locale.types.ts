@@ -795,6 +795,13 @@ export interface TranslationDiscovery {
   indexing: string;
   loadingModel: string;
   noActiveEditor: string;
+  tagInserted: string;
+  tagInsertFailed: string;
+  searchFailed: string;
+  indexError: string;
+  noActiveFile: string;
+  clearSearch: string;
+  clearFilter: string;
 }
 
 // uiMessages

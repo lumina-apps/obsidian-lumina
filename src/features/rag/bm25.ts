@@ -41,7 +41,8 @@ export function calculateBM25(
 	query: string,
 	chunks: ParentChunk[],
 	k1 = 1.2,
-	b = 0.75
+	b = 0.75,
+	totalCorpusSize?: number
 ): { chunk: ParentChunk; score: number }[] {
 	if (!query || chunks.length === 0) {
 		return chunks.map(c => ({ chunk: c, score: 0 }));
@@ -52,14 +53,14 @@ export function calculateBM25(
 		return chunks.map(c => ({ chunk: c, score: 0 }));
 	}
 
-	const N = chunks.length;
+	const N = totalCorpusSize ?? chunks.length;
 	let totalDocLength = 0;
 	
 	const docTokensMap = new Map<number, string[]>();
 	const df = new Map<string, number>();
 
 	// 1. 문서 토큰화 및 DF 계산
-	for (let i = 0; i < N; i++) {
+	for (let i = 0; i < chunks.length; i++) {
 		const chunk = chunks[i];
 		const tokens = tokenize(chunk.text);
 		docTokensMap.set(i, tokens);
@@ -71,7 +72,7 @@ export function calculateBM25(
 		}
 	}
 
-	const avgDl = totalDocLength / Math.max(N, 1);
+	const avgDl = totalDocLength / Math.max(chunks.length, 1);
 
 	// 2. 쿼리 토큰별 IDF 계산 (Robertson-Sparck Jones 공식)
 	const idf = new Map<string, number>();

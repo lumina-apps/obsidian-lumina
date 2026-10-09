@@ -692,7 +692,14 @@
     "startChat": "Start chat with {{count}} items",
     "indexing": "RAG Indexing... ({{processed}} / {{total}})",
     "loadingModel": "Loading Embedding Model...",
-    "noActiveEditor": "No active Markdown editor found."
+    "noActiveEditor": "No active Markdown editor found.",
+    "tagInserted": "Tag added: {{tag}}",
+    "tagInsertFailed": "Failed to add tag.",
+    "searchFailed": "Semantic search failed.",
+    "indexError": "An error occurred during RAG indexing.",
+    "noActiveFile": "Open a Markdown note to discover related notes.",
+    "clearSearch": "Clear search",
+    "clearFilter": "Clear filter"
   },
   "uiMessages": {
     "toolExecuting": "⚙️ Executing {{name}}...",

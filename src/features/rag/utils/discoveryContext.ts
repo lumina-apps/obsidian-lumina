@@ -69,7 +69,7 @@ export async function buildContextFromActiveFile(
 			if (providerConfig) {
 				try {
 					results = await rerankChunks(
-						`다음 문서의 주요 내용과 연관성이 높은 문서를 찾아주세요:\n\n${queryText.slice(0, 500)}`,
+						`Find documents highly relevant to the main content of the following document:\n\n${queryText.slice(0, 500)}`,
 						results.slice(0, 20),
 						providerConfig,
 						rerankerModelId,

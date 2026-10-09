@@ -8,19 +8,26 @@ export interface TagScore {
 /** 검색 결과 본문에서 #태그를 추출합니다. 한글, 일본어, 한자(CJK) 지원. */
 export function extractBodyTags(results: SearchResult[]): TagScore[] {
 	const tagMap = new Map<string, number>();
+	const tagRegex = /(?:^|[ \t\n\r])#([a-zA-Z\uAC00-\uD7AF\u4E00-\u9FFF\u3040-\u30FF][a-zA-Z0-9\uAC00-\uD7AF\u4E00-\u9FFF\u3040-\u30FF_/-]*)/g;
+
 	for (const result of results) {
-		const matches = result.chunk.text.match(/#[a-zA-Z0-9\uAC00-\uD7AF\u4E00-\u9FFF\u3040-\u30FF_-]+/g);
-		if (matches) {
-			const effectiveScore = result.rawVectorScore ?? (result.vectorScore && result.vectorScore > 0 ? result.vectorScore : result.score);
-			for (const tag of matches) {
-				const cleaned = tag.trim();
-				if (cleaned.length <= 1) continue;
-				tagMap.set(cleaned, (tagMap.get(cleaned) || 0) + effectiveScore);
-			}
+		const text = result.chunk.text;
+		let match: RegExpExecArray | null;
+		tagRegex.lastIndex = 0;
+
+		const rawScore = result.rawVectorScore ?? (result.vectorScore && result.vectorScore > 0 ? result.vectorScore : result.score);
+		const effectiveScore = Math.min(1, Math.max(0, rawScore));
+
+		const seenInChunk = new Set<string>();
+		while ((match = tagRegex.exec(text)) !== null) {
+			const cleaned = '#' + match[1].trim();
+			if (cleaned.length <= 1 || seenInChunk.has(cleaned)) continue;
+			seenInChunk.add(cleaned);
+			tagMap.set(cleaned, (tagMap.get(cleaned) || 0) + effectiveScore);
 		}
 	}
 	return Array.from(tagMap.entries())
-		.map(([tag, score]) => ({ tag, score }))
+		.map(([tag, score]) => ({ tag, score: Math.min(1, score) }))
 		.sort((a, b) => b.score - a.score)
 		.slice(0, 10);
 }
@@ -70,22 +77,23 @@ export function collectRecommendedTags(input: TagCollectorInput): TagScore[] {
 		tagScoreMap.set(t.tag, t.score);
 	}
 
-	// 유사 문서의 프론트매터/캐시 태그 수집
+	// 유사 문서의 프론트매터/캐시 태그 및 경로 태그 수집
 	for (const result of results) {
+		const effectiveScore = result.rawVectorScore ?? (result.vectorScore && result.vectorScore > 0 ? result.vectorScore : result.score);
+		collectPathTags(result.chunk.path, effectiveScore, tagScoreMap);
+
 		const cache = metadataCache.getCache(result.chunk.path);
 		if (!cache) continue;
 
-		const effectiveScore = result.rawVectorScore ?? (result.vectorScore && result.vectorScore > 0 ? result.vectorScore : result.score);
 		collectFrontmatterTags(cache.frontmatter, effectiveScore, tagScoreMap);
 		collectCachedBodyTags(cache.tags, effectiveScore, tagScoreMap);
 		collectExtraFrontmatterTags(cache.frontmatter, effectiveScore, tagScoreMap);
-		collectPathTags(result.chunk.path, effectiveScore, tagScoreMap);
 	}
 
 	// 현재 활성 파일에 이미 존재하는 태그는 추천 목록에서 제외
 	return Array.from(tagScoreMap.entries())
 		.filter(([tag]) => !activeTags.has(tag.toLowerCase()))
-		.map(([tag, score]) => ({ tag, score }))
+		.map(([tag, score]) => ({ tag, score: Math.min(1, Math.max(0, score)) }))
 		.sort((a, b) => b.score - a.score)
 		.slice(0, 5);
 }
@@ -103,7 +111,8 @@ function collectFrontmatterTags(
 		if (!tagStr.trim()) continue;
 		const tag = tagStr.startsWith('#') ? tagStr : '#' + tagStr;
 		const existing = map.get(tag);
-		map.set(tag, Math.max(existing || 0, force ? baseScore : baseScore * 0.7));
+		const score = force ? baseScore : baseScore * 0.7;
+		map.set(tag, Math.max(existing || 0, Math.min(1, score)));
 	}
 }
 
@@ -115,9 +124,8 @@ function collectCachedBodyTags(
 	if (!tags) return;
 	for (const t of tags) {
 		const tag = t.tag.startsWith('#') ? t.tag : '#' + t.tag;
-		if (!map.has(tag)) {
-			map.set(tag, baseScore * 0.8);
-		}
+		const existing = map.get(tag) || 0;
+		map.set(tag, Math.max(existing, Math.min(1, baseScore * 0.8)));
 	}
 }
 
@@ -133,14 +141,14 @@ function collectExtraFrontmatterTags(
 		const val = frontmatter[key];
 		if (typeof val === 'string' && val.trim()) {
 			const tag = '#' + val.trim().replace(/\s+/g, '-');
-			const existing = map.get(tag);
-			map.set(tag, Math.max(existing || 0, baseScore * 0.5));
+			const existing = map.get(tag) || 0;
+			map.set(tag, Math.max(existing, Math.min(1, baseScore * 0.5)));
 		} else if (Array.isArray(val)) {
 			for (const item of val) {
 				if (typeof item === 'string' && item.trim()) {
 					const tag = '#' + item.trim().replace(/\s+/g, '-');
-					const existing = map.get(tag);
-					map.set(tag, Math.max(existing || 0, baseScore * 0.5));
+					const existing = map.get(tag) || 0;
+					map.set(tag, Math.max(existing, Math.min(1, baseScore * 0.5)));
 				}
 			}
 		}
@@ -153,13 +161,14 @@ function collectPathTags(
 	map: Map<string, number>
 ): void {
 	const pathParts = path.replace(/\.md$/, '').split('/');
-	for (const part of pathParts) {
+	// 마지막 부분은 파일명이므로 제외하고 디렉토리 경로만 태그로 추천
+	const dirParts = pathParts.slice(0, -1);
+	for (const part of dirParts) {
 		const cleanPart = part.trim().replace(/\s+/g, '-');
 		if (cleanPart.length >= 2 && cleanPart.length <= 30) {
 			const tag = '#' + cleanPart;
-			if (!map.has(tag)) {
-				map.set(tag, baseScore * 0.35);
-			}
+			const existing = map.get(tag) || 0;
+			map.set(tag, Math.max(existing, Math.min(1, baseScore * 0.35)));
 		}
 	}
 }

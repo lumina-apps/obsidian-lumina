@@ -705,6 +705,133 @@ async function run() {
 		}
 	}
 
+	// ─── SUITE 5.5: Discovery Panel UI (Smart Discovery) ────────────────────
+	reporter.startSuite('Discovery Panel UI (Smart Discovery)');
+	try {
+		const tCtx = Date.now();
+		// 1. Open active note to trigger Context Mode
+		await client.evaluate(`(async () => {
+			const testPath = '__lumina_discovery_e2e__.md';
+			let file = app.vault.getAbstractFileByPath(testPath);
+			if (!file) {
+				file = await app.vault.create(testPath, '# 세계관\\n\\n테스트 연관 노트');
+			}
+			const leaf = app.workspace.getLeaf(true);
+			await leaf.openFile(file);
+			
+			// Open Chat View
+			app.commands.executeCommandById('lumina:open-chat');
+			await new Promise(r => setTimeout(r, 300));
+			
+			// Switch to discovery tab
+			const tabs = document.querySelectorAll('.lumina-sidebar-tabs button');
+			if (tabs.length > 1) tabs[1].click();
+		})()`);
+
+		await sleep(1500); // Wait for context search
+
+		const contextCheck = await client.evaluate(`(() => {
+			const panel = document.querySelector('.lumina-discovery');
+			const contextView = document.querySelector('.lumina-discovery__context-view');
+			return {
+				panelMounted: !!panel,
+				contextViewMounted: !!contextView
+			};
+		})()`);
+		reporter.record('Active Note Context Mode', contextCheck.panelMounted && contextCheck.contextViewMounted, `Panel: ${contextCheck.panelMounted}, ContextView: ${contextCheck.contextViewMounted}`, Date.now() - tCtx);
+
+		// 2. Search & Filter Reactivity
+		const tSearch = Date.now();
+		const searchCheck = await client.evaluate(`(async () => {
+			const inputs = document.querySelectorAll('.lumina-discovery__search-input');
+			if (inputs.length < 2) return { success: false, reason: 'Missing search inputs' };
+			
+			const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+
+			// Type in search query
+			setter.call(inputs[0], '세계관');
+			inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+			
+			await new Promise(r => setTimeout(r, 1000)); // wait for 400ms debounce + search
+			
+			const results = document.querySelectorAll('.lumina-discovery__card');
+			
+			// Type in filter query
+			setter.call(inputs[1], ''); // clear first just in case
+			inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
+			
+			await new Promise(r => setTimeout(r, 1000));
+			const filteredResults = document.querySelectorAll('.lumina-discovery__card');
+
+			return {
+				success: results.length > 0,
+				resultCount: results.length,
+				filteredCount: filteredResults.length
+			};
+		})()`);
+		reporter.record('Search & Filter Reactivity', searchCheck.success, `Search Results: ${searchCheck.resultCount}, Filtered Results: ${searchCheck.filteredCount}`, Date.now() - tSearch);
+
+		// 3. File-based Staging & Token Calculation
+		const tStage = Date.now();
+		const stageCheck = await client.evaluate(`(async () => {
+			const card = document.querySelector('.lumina-discovery__card');
+			if (!card) return { success: false, reason: 'No card' };
+			
+			// Dispatch mouseenter to reveal action buttons
+			card.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+			await new Promise(r => setTimeout(r, 100)); // wait for svelte update
+			
+			const actionBtns = card.querySelectorAll('.lumina-discovery__action-btn');
+			if (actionBtns.length === 0) return { success: false, reason: 'No action buttons' };
+			
+			const addBtn = actionBtns[actionBtns.length - 1];
+			
+			addBtn.click();
+			await new Promise(r => setTimeout(r, 400)); // Wait for token calculation
+			
+			const stagedItems = document.querySelectorAll('.lumina-discovery__staging-chip');
+			const stagingArea = document.querySelector('.lumina-discovery__staging-area');
+			
+			return {
+				success: stagedItems.length > 0 && !!stagingArea,
+				stagedCount: stagedItems.length
+			};
+		})()`);
+		reporter.record('File-based Staging & Token Calculation', stageCheck.success, `Staged Items: ${stageCheck.stagedCount}`, Date.now() - tStage);
+
+		// 4. State Preservation (Mount Persistence)
+		const tPersist = Date.now();
+		const persistCheck = await client.evaluate(`(async () => {
+			const tabs = document.querySelectorAll('.lumina-sidebar-tabs button');
+			if (tabs.length > 1) {
+				tabs[0].click(); // Switch to Chat
+				await new Promise(r => setTimeout(r, 200));
+				tabs[1].click(); // Switch back to Discovery
+				await new Promise(r => setTimeout(r, 200));
+			}
+			
+			const inputs = document.querySelectorAll('.lumina-discovery__search-input');
+			const stagedItems = document.querySelectorAll('.lumina-discovery__staging-chip');
+			
+			return {
+				success: inputs[0]?.value === '세계관' && stagedItems.length > 0,
+				preservedQuery: inputs[0]?.value
+			};
+		})()`);
+		reporter.record('State Preservation (Mount Persistence)', persistCheck.success, `Preserved Query: ${persistCheck.preservedQuery}`, Date.now() - tPersist);
+
+	} catch (err) {
+		reporter.record('Discovery Panel UI (Smart Discovery)', false, err.message, 0);
+	} finally {
+		await client.evaluate(`(async () => {
+			const activeLeaf = app.workspace.activeLeaf;
+			if (activeLeaf && activeLeaf.view?.getViewType() === 'markdown') activeLeaf.detach();
+			const file = app.vault.getAbstractFileByPath('__lumina_discovery_e2e__.md');
+			if (file) await app.vault.delete(file);
+		})()`);
+		await sleep(200);
+	}
+
 	// ─── SUITE 6: Editor Extensions & Quick Actions ─────────────────────────
 	reporter.startSuite('Editor & Quick Actions');
 	try {

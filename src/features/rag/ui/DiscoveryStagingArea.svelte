@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { SearchResult } from '../../../shared/types/rag.types';
+	import type { StagedNote } from '../../../core/store/discoveryStore';
 	import { tStore } from '../../../shared/locales/index';
 	import { iconAction } from '../../../shared/utils/domUtils';
 	import { extractFileName } from '../../../shared/utils/fileUtils';
@@ -13,11 +13,11 @@
 		onRemove,
 		onStartChat
 	}: {
-		stagedItems: SearchResult[];
+		stagedItems: StagedNote[];
 		stagedTokenCount: number;
 		maxTokens: number;
 		onClear: () => void;
-		onRemove: (id: string) => void;
+		onRemove: (path: string) => void;
 		onStartChat: () => void;
 	} = $props();
 
@@ -44,15 +44,15 @@
 	<!-- 칩 목록: stagedItems가 없으면 아무것도 렌더링하지 않음 -->
 	{#if stagedItems.length > 0}
 		<div class="lumina-discovery__staging-chips">
-			{#each stagedItems as item (item.chunk.id)}
+			{#each stagedItems as item (item.path)}
 				<div class="lumina-discovery__staging-chip">
 					<span class="lumina-discovery__staging-chip-text">
-						{extractFileName(item.chunk.path)}
+						{extractFileName(item.path)}
 					</span>
 					<button
 						class="lumina-discovery__staging-chip-remove"
 						aria-label={$tStore('common.remove')}
-						onclick={() => onRemove(item.chunk.id)}
+						onclick={() => onRemove(item.path)}
 					>
 						<span use:iconAction={"x"}></span>
 					</button>

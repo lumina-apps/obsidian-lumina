@@ -23,6 +23,7 @@
 	} = $props();
 
 	function handleOpen(e: MouseEvent) {
+		if (e.type === 'auxclick' && e.button !== 1) return;
 		onOpen(result.chunk.path, e, result.bestChildText || result.chunk.text);
 	}
 
@@ -54,6 +55,7 @@
 
 	let snippetText = $derived.by(() => {
 		let text = result.bestChildText;
+		let prefix = '';
 		if (!text) {
 			const fullText = result.chunk.text;
 			if (searchQuery.trim()) {
@@ -68,11 +70,26 @@
 					}
 				}
 				text = fullText.substring(bestIndex, bestIndex + 300);
+				if (bestIndex > 0) prefix = '...';
 			} else {
 				text = fullText;
 			}
+		} else {
+			// child chunk인 경우 parent chunk의 중간 부분일 수 있음
+			if (result.chunk.text.indexOf(text) > 0) prefix = '...';
 		}
-		return text.substring(0, 150) + '...';
+		
+		const trimmed = text.trim();
+		const isSnippetCut = (searchQuery.trim() && result.chunk.text.length > text.length) || (!text && result.chunk.text.length > 300);
+		
+		let finalSnippet = trimmed;
+		if (trimmed.length > 150) {
+			finalSnippet = trimmed.substring(0, 150) + '...';
+		} else if (isSnippetCut) {
+			finalSnippet = trimmed + '...';
+		}
+		
+		return prefix + finalSnippet;
 	});
 </script>
 
@@ -137,6 +154,11 @@
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 	}
 
+	:global(.is-mobile) .lumina-discovery__card:hover {
+		transform: none;
+		box-shadow: none;
+	}
+
 	.lumina-discovery__card-header {
 		display: flex;
 		justify-content: space-between;
@@ -196,6 +218,12 @@
 	.lumina-discovery__action-btn:hover {
 		color: var(--text-normal);
 		background: var(--background-modifier-hover);
+	}
+
+	:global(.is-mobile) .lumina-discovery__action-btn {
+		padding: 8px 12px;
+		font-size: 12px;
+		margin-top: 4px;
 	}
 
 	.lumina-discovery__action-btn.is-staged {

@@ -107,7 +107,7 @@ export async function searchVault(
 		}
 	}
 
-	const bm25Results = calculateBM25(query, bm25Candidates);
+	const bm25Results = calculateBM25(query, bm25Candidates, 1.2, 0.75, parentChunks.length);
 	const bm25ScoreMap = new Map<string, number>();
 	let maxBm25Score = 0.0001;
 	for (let i = 0; i < bm25Candidates.length; i++) {

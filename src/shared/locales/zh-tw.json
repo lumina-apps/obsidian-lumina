@@ -689,7 +689,14 @@
     "startChat": "與 {{count}} 個項目開始聊天",
     "indexing": "RAG 索引中... ({{processed}} / {{total}})",
     "loadingModel": "正在載入嵌入模型...",
-    "noActiveEditor": "未找到活動的 Markdown 編輯器。"
+    "noActiveEditor": "未找到活動的 Markdown 編輯器。",
+    "tagInserted": "已新增標籤: {{tag}}",
+    "tagInsertFailed": "新增標籤失敗。",
+    "searchFailed": "語意搜尋失敗。",
+    "indexError": "RAG 建立索引時發生錯誤。",
+    "noActiveFile": "開啟 Markdown 筆記以探索相關筆記。",
+    "clearSearch": "清除搜尋",
+    "clearFilter": "清除篩選"
   },
   "uiMessages": {
     "toolExecuting": "⚙️ 正在執行 {{name}}...",

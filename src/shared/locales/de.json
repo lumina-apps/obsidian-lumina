@@ -697,7 +697,14 @@
     "startChat": "Chat mit {{count}} Elementen starten",
     "indexing": "RAG-Indexierung... ({{processed}} / {{total}})",
     "loadingModel": "Embedding-Modell wird geladen...",
-    "noActiveEditor": "Kein aktiver Markdown-Editor gefunden."
+    "noActiveEditor": "Kein aktiver Markdown-Editor gefunden.",
+    "tagInserted": "Tag hinzugefügt: {{tag}}",
+    "tagInsertFailed": "Fehler beim Hinzufügen des Tags.",
+    "searchFailed": "Semantische Suche fehlgeschlagen.",
+    "indexError": "Beim RAG-Indizieren ist ein Fehler aufgetreten.",
+    "noActiveFile": "Öffnen Sie eine Markdown-Notiz, um verwandte Notizen zu entdecken.",
+    "clearSearch": "Suche löschen",
+    "clearFilter": "Filter löschen"
   },
   "uiMessages": {
     "toolExecuting": "⚙️ Führe {{name}} aus...",

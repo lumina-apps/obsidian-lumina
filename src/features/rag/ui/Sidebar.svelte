@@ -1,12 +1,7 @@
 <script lang="ts">
-	import { onMount, tick } from "svelte";
 	import type LuminaPlugin from "../../../main";
 	import ChatPanel from "../../chat/ui/ChatPanel.svelte";
 	import DiscoveryPanel from "./DiscoveryPanel.svelte";
-	import {
-		isRagEnabled,
-		settingsStore,
-	} from "../../../core/store/settingsStore";
 	import { tStore } from "../../../shared/locales/index";
 	import { activeSidebarTab } from "../../../core/store/chatStore";
 
@@ -34,11 +29,6 @@
 
 	<!-- 탭 컨텐츠 -->
 	<div class="lumina-sidebar__content">
-		<!-- Svelte 5에서는 display: none 으로 숨기거나 {#if}로 마운트/언마운트 가능.
-			ChatPanel의 상태 유지를 위해 display: none 방식을 고려할 수도 있으나,
-			Svelte의 기본 {#if}를 사용하여 ChatPanel과 DiscoveryPanel을 조건부 렌더링.
-			다만 ChatPanel의 입력창 상태가 날아갈 수 있으므로,
-			UX를 위해 CSS display:none으로 상태를 보존하는 것이 옵시디언에서는 좋습니다. -->
 		<div
 			class="lumina-sidebar__pane"
 			style:display={$activeSidebarTab === "chat" ? "flex" : "none"}
@@ -49,9 +39,7 @@
 			class="lumina-sidebar__pane"
 			style:display={$activeSidebarTab === "discovery" ? "flex" : "none"}
 		>
-			{#if $activeSidebarTab === "discovery"}
-				<DiscoveryPanel {plugin} isActive={$activeSidebarTab === "discovery"} />
-			{/if}
+			<DiscoveryPanel {plugin} isActive={$activeSidebarTab === "discovery"} />
 		</div>
 	</div>
 </div>

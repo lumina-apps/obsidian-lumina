@@ -689,7 +689,14 @@
     "startChat": "Начать чат с {{count}} элементами",
     "indexing": "Индексирование RAG... ({{processed}} / {{total}})",
     "loadingModel": "Загрузка модели эмбеддингов...",
-    "noActiveEditor": "Активный Markdown редактор не найден."
+    "noActiveEditor": "Активный Markdown редактор не найден.",
+    "tagInserted": "Тег добавлен: {{tag}}",
+    "tagInsertFailed": "Не удалось добавить тег.",
+    "searchFailed": "Семантический поиск не удался.",
+    "indexError": "Произошла ошибка при индексации RAG.",
+    "noActiveFile": "Откройте заметку Markdown, чтобы найти связанные заметки.",
+    "clearSearch": "Очистить поиск",
+    "clearFilter": "Очистить фильтр"
   },
   "uiMessages": {
     "toolExecuting": "⚙️ Выполнение {{name}}...",

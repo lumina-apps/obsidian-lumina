@@ -689,7 +689,14 @@
     "startChat": "与 {{count}} 个项目开始聊天",
     "indexing": "RAG 索引中... ({{processed}} / {{total}})",
     "loadingModel": "正在加载嵌入模型...",
-    "noActiveEditor": "未找到激活的 Markdown 编辑器。"
+    "noActiveEditor": "未找到激活的 Markdown 编辑器。",
+    "tagInserted": "已添加标签: {{tag}}",
+    "tagInsertFailed": "添加标签失败。",
+    "searchFailed": "语义搜索失败。",
+    "indexError": "RAG 索引过程中发生错误。",
+    "noActiveFile": "打开 Markdown 笔记以发现相关笔记。",
+    "clearSearch": "清除搜索",
+    "clearFilter": "清除过滤"
   },
   "uiMessages": {
     "toolExecuting": "⚙️ 正在执行 {{name}}...",

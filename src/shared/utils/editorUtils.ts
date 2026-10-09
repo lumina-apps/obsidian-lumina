@@ -1,14 +1,25 @@
-import { App, MarkdownView } from 'obsidian';
+import { App, MarkdownView, TFile } from 'obsidian';
 import { extractFileName } from './fileUtils';
 
 /**
  * 활성 에디터의 커서 위치에 마크다운 파일 링크를 삽입합니다.
  * @param app Obsidian App 인스턴스
- * @param path 대상 파일의 절대 경로
+ * @param path 대상 파일의 경로
+ * @param sourcePath 현재 편집 중인 파일의 경로 (선택적)
  * @returns 성공 여부 (에디터를 찾은 경우 true)
  */
-export function insertLinkToActiveEditor(app: App, path: string): boolean {
+export function insertLinkToActiveEditor(app: App, path: string, sourcePath?: string): boolean {
 	let editor = app.workspace.activeEditor?.editor;
+
+	if (!editor && sourcePath) {
+		const matchingLeaf = app.workspace.getLeavesOfType('markdown').find(leaf => {
+			const view = leaf.view as MarkdownView;
+			return view.file?.path === sourcePath && !!view.editor;
+		});
+		if (matchingLeaf) {
+			editor = (matchingLeaf.view as MarkdownView).editor;
+		}
+	}
 
 	if (!editor) {
 		const mdView = app.workspace.getLeavesOfType('markdown')
@@ -18,9 +29,17 @@ export function insertLinkToActiveEditor(app: App, path: string): boolean {
 	}
 
 	if (editor) {
+		const targetFile = app.vault.getAbstractFileByPath(path);
+		let linkText: string;
+		if (targetFile instanceof TFile && app.fileManager?.generateMarkdownLink) {
+			linkText = app.fileManager.generateMarkdownLink(targetFile, sourcePath ?? '');
+		} else {
+			const fileName = extractFileName(path);
+			linkText = `[[${fileName}]]`;
+		}
+
 		const cursor = editor.getCursor();
-		const fileName = extractFileName(path);
-		editor.replaceRange(`[[${fileName}]]`, cursor);
+		editor.replaceRange(linkText, cursor);
 		return true;
 	}
 

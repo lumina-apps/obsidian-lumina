@@ -692,7 +692,14 @@
     "startChat": "{{count}}개로 채팅 시작",
     "indexing": "RAG 인덱싱 중... ({{processed}} / {{total}})",
     "loadingModel": "임베딩 모델 로딩 중...",
-    "noActiveEditor": "활성화된 마크다운 에디터를 찾을 수 없습니다."
+    "noActiveEditor": "활성화된 마크다운 에디터를 찾을 수 없습니다.",
+    "tagInserted": "태그가 추가되었습니다: {{tag}}",
+    "tagInsertFailed": "태그 추가에 실패했습니다.",
+    "searchFailed": "시맨틱 검색에 실패했습니다.",
+    "indexError": "RAG 인덱싱 중 오류가 발생했습니다.",
+    "noActiveFile": "활성화된 마크다운 노트를 열면 연관 노트가 표시됩니다.",
+    "clearSearch": "검색어 지우기",
+    "clearFilter": "필터 지우기"
   },
   "uiMessages": {
     "toolExecuting": "⚙️ {{name}} 실행 중...",

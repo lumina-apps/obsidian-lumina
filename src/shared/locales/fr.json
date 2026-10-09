@@ -689,7 +689,14 @@
     "startChat": "Démarrer le chat avec {{count}} éléments",
     "indexing": "Indexation RAG... ({{processed}} / {{total}})",
     "loadingModel": "Chargement du modèle d'embedding...",
-    "noActiveEditor": "Aucun éditeur Markdown actif trouvé."
+    "noActiveEditor": "Aucun éditeur Markdown actif trouvé.",
+    "tagInserted": "Balise ajoutée : {{tag}}",
+    "tagInsertFailed": "Échec de l'ajout de la balise.",
+    "searchFailed": "Échec de la recherche sémantique.",
+    "indexError": "Une erreur est survenue lors de l'indexation RAG.",
+    "noActiveFile": "Ouvrez une note Markdown pour découvrir les notes associées.",
+    "clearSearch": "Effacer la recherche",
+    "clearFilter": "Effacer le filtre"
   },
   "uiMessages": {
     "toolExecuting": "⚙️ Exécution de {{name}}...",

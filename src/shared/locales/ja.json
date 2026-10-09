@@ -689,7 +689,14 @@
     "startChat": "{{count}}個でチャット開始",
     "indexing": "RAGインデックス作成中... ({{processed}} / {{total}})",
     "loadingModel": "埋め込みモデルを読み込んでいます...",
-    "noActiveEditor": "アクティブなMarkdownエディターが見つかりません。"
+    "noActiveEditor": "アクティブなMarkdownエディターが見つかりません。",
+    "tagInserted": "タグを追加しました: {{tag}}",
+    "tagInsertFailed": "タグの追加に失敗しました。",
+    "searchFailed": "セマンティック検索に失敗しました。",
+    "indexError": "RAGインデックス作成中にエラーが発生しました。",
+    "noActiveFile": "Markdownノートを開くと、関連ノートが表示されます。",
+    "clearSearch": "検索をクリア",
+    "clearFilter": "フィルターをクリア"
   },
   "uiMessages": {
     "toolExecuting": "⚙️ {{name}} を実行中...",

@@ -1,21 +1,32 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import type LuminaPlugin from '../../../main';
-	import { discoveryState, updateDiscoveryState, addToStaging, removeFromStaging, clearStaging } from '../../../core/store/discoveryStore';
+	import {
+		discoveryState,
+		updateDiscoveryState,
+		addToStaging,
+		removeFromStaging,
+		clearStaging
+	} from '../../../core/store/discoveryStore';
 	import { isRagEnabled, settingsStore } from '../../../core/store/settingsStore';
 	import { indexingState, showIndexingIndicator } from '../../../core/store/ragStore';
-	import { addPendingAttachment, activeSidebarTab, sessionModelId, sessionProviderId } from '../../../core/store/chatStore';
+	import {
+		addPendingAttachment,
+		activeSidebarTab,
+		sessionModelId,
+		sessionProviderId
+	} from '../../../core/store/chatStore';
 	import { searchVault } from '../search';
 	import type { SearchResult } from '../../../shared/types/rag.types';
 	import { tStore } from '../../../shared/locales/index';
-	import { estimateTokens } from '../../../shared/utils/tokenEstimator';
 	import { getEffectiveContextLimit } from '../../../shared/utils/modelUtils';
 	import { extractFileName, insertTagIntoFrontmatter } from '../../../shared/utils/fileUtils';
 	import { openNoteFile } from '../utils/openNoteFile';
 	import { buildContextFromActiveFile, applyContextResult } from '../utils/discoveryContext';
+	import { estimateFileTokens } from '../utils/stagingUtils';
 	import DiscoveryStagingArea from './DiscoveryStagingArea.svelte';
 	import { activateView } from '../../../core/views/viewHelper';
-	import { CHAT_VIEW_TYPE } from '../../chat/chatView';
+	import { CHAT_VIEW_TYPE } from '../../../shared/constants/viewTypes';
 
 	// Components
 	import DiscoverySearchBar from './components/DiscoverySearchBar.svelte';
@@ -27,7 +38,7 @@
 	// Utils
 	import { filterParentChunks } from '../utils/searchUtils';
 	import { insertLinkToActiveEditor } from '../../../shared/utils/editorUtils';
-	import { Notice, Keymap } from 'obsidian';
+	import { Notice, Keymap, type TFile } from 'obsidian';
 	import { debugLogger } from '../../../shared/debugLogger';
 	import { normalizeError } from '../../../shared/utils/errorUtils';
 
@@ -38,21 +49,30 @@
 	let filterQuery = $state('');
 	let searchResults = $state<SearchResult[]>([]);
 	let isSearching = $state(false);
+	let hasBeenReady = $state(false);
 	let contextTimer: ReturnType<typeof setTimeout> | null = null;
 	let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
-	let lastSearchedFilePath = $state<string | null>(null);
+	let lastContextKey = $state<string | null>(null);
+	let contextSeq = 0;
+	let searchSeq = 0;
 
 	// ── Derived ──
 	let stagedTokenCount = $derived(
-		$discoveryState.stagedItems.reduce((acc, item) => acc + estimateTokens(item.chunk.text), 0)
+		$discoveryState.stagedItems.reduce((acc, item) => acc + item.tokens, 0)
 	);
+	const activeProject = $derived(
+		plugin.settings.projects?.list?.find(p => p.id === plugin.settings.projects?.activeProjectId)
+	);
+	const fallbackModelId = $derived(activeProject?.defaultModelId);
+	const fallbackProviderId = $derived(activeProject?.defaultProviderId);
+
 	const currentProvider = $derived(
-		(plugin.settings.connections?.providers ?? []).find(p => p.id === $sessionProviderId)
+		(plugin.settings.connections?.providers ?? []).find(p => p.id === ($sessionProviderId ?? fallbackProviderId))
 	);
 	const maxTokens = $derived(
 		getEffectiveContextLimit(
-			$sessionModelId ?? plugin.settings.connections?.quickActionModelId,
+			$sessionModelId ?? fallbackModelId,
 			$settingsStore?.chat,
 			currentProvider?.type
 		)
@@ -73,65 +93,112 @@
 		};
 	});
 
-	// ── Context 갱신 (활성 노트 변경 시) ──
-	async function updateContext() {
-		if (!isActive || !$isRagEnabled || $indexingState.status !== 'ready') return;
-		const file = $discoveryState.activeFile;
-
-		if (!file) {
-			updateDiscoveryState({ similarNotes: [], duplicateNote: null, recommendedTags: [], lastSearchedFilePath: null });
-			lastSearchedFilePath = null;
-			return;
+	// ready 상태 감지
+	$effect(() => {
+		if ($indexingState.status === 'ready') {
+			hasBeenReady = true;
 		}
+	});
 
-		if (file.path === lastSearchedFilePath) return;
-		lastSearchedFilePath = file.path;
+	// ── Context 갱신 (활성 노트 변경 / 필터 변경 시) ──
+	async function updateContext(file: TFile, currentFilter: string, key: string) {
+		if (!isActive || !$isRagEnabled) return;
+		const currentSeq = ++contextSeq;
+		lastContextKey = key;
 
 		try {
 			updateDiscoveryState({ isSearching: true });
-			const result = await buildContextFromActiveFile(plugin, file, filterQuery);
-			applyContextResult(result, file.path);
+			const result = await buildContextFromActiveFile(plugin, file, currentFilter);
+			// 최신 요청이고 현재 활성 파일이 맞을 때만 상태 적용 (비동기 경쟁 방지)
+			if (currentSeq === contextSeq && $discoveryState.activeFile?.path === file.path) {
+				applyContextResult(result, file.path);
+			}
 		} catch (err) {
 			debugLogger.logError('rag', normalizeError(err, `Context 업데이트 실패: ${err}`));
-			updateDiscoveryState({ isSearching: false });
+			if (currentSeq === contextSeq) {
+				lastContextKey = null; // 오류 발생 시 다음 번에 재시도 가능하도록 복원
+				updateDiscoveryState({ isSearching: false });
+			}
 		}
 	}
 
 	// ── 사용자 검색어 기반 시맨틱 검색 ──
-	async function performSearch() {
-		if (!$isRagEnabled || $indexingState.status !== 'ready' || !searchQuery.trim()) {
+	async function performSearch(queryToSearch: string, currentFilter: string) {
+		if (!$isRagEnabled || !queryToSearch.trim()) {
 			searchResults = [];
 			return;
 		}
 
+		const currentSeq = ++searchSeq;
+		isSearching = true;
+
 		try {
-			isSearching = true;
 			if (plugin.indexer) {
-				const chunks = filterParentChunks(plugin.app, plugin.indexer.indexedParentChunks, filterQuery);
-				const allowedPaths = filterQuery ? Array.from(new Set(chunks.map(c => c.path))) : null;
-				searchResults = await searchVault(searchQuery, chunks, plugin.indexer.oramaDb, texts => plugin.indexer!.embed(texts), 15, 0.60, 0.5, allowedPaths);
+				const chunks = filterParentChunks(plugin.app, plugin.indexer.indexedParentChunks, currentFilter);
+				const allowedPaths = currentFilter ? Array.from(new Set(chunks.map(c => c.path))) : null;
+				const results = await searchVault(
+					queryToSearch,
+					chunks,
+					plugin.indexer.oramaDb,
+					texts => plugin.indexer!.embed(texts),
+					15,
+					0.60,
+					0.5,
+					allowedPaths
+				);
+				if (currentSeq === searchSeq) {
+					searchResults = results;
+				}
 			}
 		} catch (err) {
 			debugLogger.logError('rag', normalizeError(err, `Semantic Search 실패: ${err}`));
+			if (currentSeq === searchSeq) {
+				new Notice($tStore('discovery.searchFailed'));
+			}
 		} finally {
-			isSearching = false;
+			if (currentSeq === searchSeq) {
+				isSearching = false;
+			}
 		}
 	}
 
-	// ── $effect: activeFile/isActive/인덱싱 상태 감지 (Context 모드) ──
+	// ── $effect: activeFile/isActive/filterQuery/인덱싱 상태 감지 (Context 모드) ──
 	$effect(() => {
 		const file = $discoveryState.activeFile;
 		const status = $indexingState.status;
 		const active = isActive;
+		const filter = filterQuery;
+		const canSearch = status === 'ready' || hasBeenReady;
 
 		if (contextTimer) clearTimeout(contextTimer);
 
-		if (active && file && status === 'ready') {
-			contextTimer = setTimeout(() => {
-				updateContext();
-			}, 1000);
-		} else if (!active || !file || status !== 'ready') {
-			lastSearchedFilePath = null;
+		if (!file) {
+			const state = untrack(() => $discoveryState);
+			if (
+				state.similarNotes.length > 0 ||
+				state.duplicateNote !== null ||
+				state.recommendedTags.length > 0 ||
+				state.lastSearchedFilePath !== null
+			) {
+				updateDiscoveryState({
+					similarNotes: [],
+					duplicateNote: null,
+					recommendedTags: [],
+					lastSearchedFilePath: null
+				});
+			}
+			lastContextKey = null;
+			return;
+		}
+
+		if (active && canSearch) {
+			const mtime = file.stat?.mtime ?? 0;
+			const currentKey = `${file.path}|${filter}|${mtime}`;
+			if (currentKey !== lastContextKey) {
+				contextTimer = setTimeout(() => {
+					void updateContext(file, filter, currentKey);
+				}, 600);
+			}
 		}
 
 		return () => {
@@ -142,16 +209,19 @@
 	// ── $effect: searchQuery/filterQuery 감지 (검색 모드) ──
 	$effect(() => {
 		const q = searchQuery;
+		const filter = filterQuery;
 		const status = $indexingState.status;
+		const canSearch = status === 'ready' || hasBeenReady;
 
 		if (searchTimer) clearTimeout(searchTimer);
 
-		if (q.trim() && status === 'ready') {
+		if (q.trim() && canSearch) {
 			searchTimer = setTimeout(() => {
-				performSearch();
-			}, 500);
+				void performSearch(q, filter);
+			}, 400);
 		} else if (!q.trim()) {
 			searchResults = [];
+			isSearching = false;
 		}
 
 		return () => {
@@ -161,7 +231,7 @@
 
 	// ── 핸들러 함수 ──
 	function handleInsertLink(path: string) {
-		const success = insertLinkToActiveEditor(plugin.app, path);
+		const success = insertLinkToActiveEditor(plugin.app, path, $discoveryState.activeFile?.path);
 		if (!success) {
 			new Notice($tStore('discovery.noActiveEditor'));
 		}
@@ -170,10 +240,20 @@
 	async function handleInsertTag(tag: string) {
 		const file = $discoveryState.activeFile;
 		if (!file) return;
-		await insertTagIntoFrontmatter(plugin.app, file, tag);
+		try {
+			await insertTagIntoFrontmatter(plugin.app, file, tag);
+			updateDiscoveryState({
+				recommendedTags: $discoveryState.recommendedTags.filter(t => t.tag !== tag)
+			});
+			new Notice($tStore('discovery.tagInserted', { tag }));
+		} catch (err) {
+			debugLogger.logError('rag', normalizeError(err, `태그 추가 실패: ${err}`));
+			new Notice($tStore('discovery.tagInsertFailed'));
+		}
 	}
 
 	async function handleOpenFile(path: string, e?: MouseEvent, chunkText?: string) {
+		if (e && e.button !== 0 && e.button !== 1) return;
 		const newLeaf: boolean = e ? !!(Keymap.isModEvent(e) || e.button === 1) : false;
 		await openNoteFile({
 			workspace: plugin.app.workspace,
@@ -188,22 +268,24 @@
 		plugin.app.workspace.openLinkText(path, '', 'split');
 	}
 
-	function handleToggleStage(result: SearchResult) {
-		const isStaged = $discoveryState.stagedItems.some(i => i.chunk.id === result.chunk.id);
+	async function handleToggleStage(result: SearchResult) {
+		const path = result.chunk.path;
+		const isStaged = $discoveryState.stagedItems.some(i => i.path === path);
 		if (isStaged) {
-			removeFromStaging(result.chunk.id);
+			removeFromStaging(path);
 		} else {
-			addToStaging(result);
+			const fileName = extractFileName(path);
+			const tokens = await estimateFileTokens(plugin, path);
+			addToStaging({ path, name: fileName, tokens });
 		}
 	}
 
 	async function startChatWithStaged() {
 		for (const item of $discoveryState.stagedItems) {
-			const fileName = extractFileName(item.chunk.path);
 			addPendingAttachment({
 				type: 'file',
-				path: item.chunk.path,
-				name: fileName,
+				path: item.path,
+				name: item.name,
 			});
 		}
 		clearStaging();
@@ -226,7 +308,16 @@
 		{/if}
 
 		<div class="lumina-discovery__content">
-			{#if $indexingState.status === 'ready'}
+			{#if $indexingState.status === 'error'}
+				<div class="lumina-discovery__error-box">
+					<span class="lumina-discovery__error-title">
+						{$tStore('discovery.indexError')}
+					</span>
+					{#if $indexingState.errorMessage}
+						<span class="lumina-discovery__error-detail">{$indexingState.errorMessage}</span>
+					{/if}
+				</div>
+			{:else if $indexingState.status === 'ready' || hasBeenReady}
 				{#if searchQuery.trim()}
 					<!-- 검색 모드 -->
 					{#if isSearching && searchResults.length === 0}
@@ -322,6 +413,29 @@
 		border-top-color: var(--interactive-accent);
 		border-radius: 50%;
 		animation: spin 1s linear infinite;
+	}
+
+	.lumina-discovery__error-box {
+		margin: 12px 4px;
+		padding: 12px;
+		background: rgba(var(--color-red-rgb), 0.1);
+		border: 1px solid var(--color-red);
+		border-radius: 6px;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.lumina-discovery__error-title {
+		font-weight: 600;
+		font-size: 13px;
+		color: var(--text-error);
+	}
+
+	.lumina-discovery__error-detail {
+		font-size: 12px;
+		color: var(--text-muted);
+		word-break: break-all;
 	}
 
 	@keyframes spin {
