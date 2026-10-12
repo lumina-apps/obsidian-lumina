@@ -310,16 +310,17 @@ export class ChatAttachmentHandler {
 	/**
 	 * 첨부파일 배열 전체를 처리하여 컨텍스트 텍스트와 멀티모달 이미지 목록을 반환한다.
 	 *
-	 * @returns { attachmentContext, multimodalImages }
+	 * @returns { attachmentContext, multimodalImages, failedAttachments }
 	 */
 	static async buildAttachmentContext(
 		app: App,
 		attachments: ContextAttachment[],
 		plugin?: LuminaPlugin,
 		options?: { skipFolders?: boolean }
-	): Promise<{ attachmentContext: string; multimodalImages: string[] }> {
+	): Promise<{ attachmentContext: string; multimodalImages: string[]; failedAttachments: string[] }> {
 		let attachmentContext = '';
 		const multimodalImages: string[] = [];
+		const failedAttachments: string[] = [];
 
 		for (const att of attachments) {
 			if (options?.skipFolders && att.type === 'folder') {
@@ -327,7 +328,10 @@ export class ChatAttachmentHandler {
 			}
 			try {
 				const parsed = await this.parseAttachment(app, att, plugin);
-				if (!parsed) continue;
+				if (!parsed) {
+					failedAttachments.push(att.name);
+					continue;
+				}
 
 				if (parsed.type === 'image') {
 					multimodalImages.push(parsed.content);
@@ -336,10 +340,11 @@ export class ChatAttachmentHandler {
 				}
 			} catch (e) {
 				debugLogger.logWarn('chat_attachment', `Failed to read attachment: ${att.name} - ${e}`);
+				failedAttachments.push(att.name);
 			}
 		}
 
-		return { attachmentContext, multimodalImages };
+		return { attachmentContext, multimodalImages, failedAttachments };
 	}
 
 	private static createTextPayload(text: string): ParsedAttachment {

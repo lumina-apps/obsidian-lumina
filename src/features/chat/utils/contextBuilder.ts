@@ -1,4 +1,4 @@
-import type { App } from 'obsidian';
+import { Notice, type App } from 'obsidian';
 import { get } from 'svelte/store';
 import { t } from '../../../shared/locales/helpers';
 import type { ContextAttachment, UIChatMessage } from '../../../shared/types/chat.types';
@@ -80,8 +80,12 @@ export async function buildLlmContext(
 	});
 
 	// 첨부파일 컨텍스트 빌드
-	const { attachmentContext, multimodalImages } =
+	const { attachmentContext, multimodalImages, failedAttachments } =
 		await ChatAttachmentHandler.buildAttachmentContext(plugin.app, updatedAttachments, plugin, { skipFolders: shouldSearchRag });
+
+	if (failedAttachments && failedAttachments.length > 0) {
+		new Notice(t('uiMessages.attachmentsSkipped', { files: failedAttachments.join(', ') }));
+	}
 
 	let ragContext: string | undefined;
 	let ragChunksForLog: RagChunkMeta[] | undefined;
@@ -150,11 +154,15 @@ export async function buildLlmContext(
 
 	// 멀티모달 이미지 주입
 	if (multimodalImages.length > 0) {
-		if (VISION_UNSUPPORTED_PROVIDERS.has(providerConfig.type)) {
-			const providerLabel = PROVIDER_LABELS[providerConfig.type];
-			throw new Error(t('settings.providerErrors.visionNotSupported', { provider: providerLabel }));
+		if (isCliAgent) {
+			new Notice(t('uiMessages.cliImageNotSupported'));
+		} else {
+			if (VISION_UNSUPPORTED_PROVIDERS.has(providerConfig.type)) {
+				const providerLabel = PROVIDER_LABELS[providerConfig.type];
+				throw new Error(t('settings.providerErrors.visionNotSupported', { provider: providerLabel }));
+			}
+			llmMessages = injectMultimodalImages(llmMessages, multimodalImages);
 		}
-		llmMessages = injectMultimodalImages(llmMessages, multimodalImages);
 	}
 
 	return { llmMessages, ragChunksForLog, useTextTools, mcpTools, toolServerMap, attachments: updatedAttachments };

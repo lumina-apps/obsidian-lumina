@@ -11,10 +11,28 @@ const TEXT_EXTS = new Set([
 ]);
 const DOC_EXTS = new Set(["pdf", "docx", "xlsx", "xls", "pptx", "epub"]);
 
-export async function readImageAsDataURL(file: File): Promise<string> {
-	return new Promise((resolve) => {
+export function getImageMimeType(ext: string): string {
+	const lower = ext.toLowerCase();
+	if (lower === "jpg" || lower === "jpeg") return "image/jpeg";
+	if (lower === "png") return "image/png";
+	if (lower === "webp") return "image/webp";
+	if (lower === "gif") return "image/gif";
+	return `image/${lower}`;
+}
+
+export async function readImageAsDataURL(file: File, ext?: string): Promise<string> {
+	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
-		reader.onload = () => resolve(reader.result as string);
+		reader.onload = () => {
+			let result = reader.result as string;
+			if (typeof result === "string" && !result.startsWith("data:image/") && ext) {
+				const mime = getImageMimeType(ext);
+				result = result.replace(/^data:[^;]*/, `data:${mime}`);
+			}
+			resolve(result);
+		};
+		reader.onerror = () => reject(reader.error ?? new Error(`Failed to read image: ${file.name}`));
+		reader.onabort = () => reject(new Error(`Image reading aborted: ${file.name}`));
 		reader.readAsDataURL(file);
 	});
 }
@@ -23,13 +41,19 @@ export async function readTextFile(file: File): Promise<string> {
 	return file.text();
 }
 
-export async function readBinaryDocument(file: File, ext: string, plugin?: LuminaPlugin): Promise<string> {
-	const buffer = await file.arrayBuffer();
-	if (plugin?.embeddingWorker) {
-		return plugin.embeddingWorker.parse(buffer, ext);
+export async function readBinaryDocument(
+	file: File,
+	ext: string,
+	plugin?: LuminaPlugin,
+	t?: (key: string, vars?: Record<string, string>) => string,
+): Promise<string | null> {
+	if (!plugin?.embeddingWorker) {
+		debugLogger.logWarn('file_attachment', `Worker not ready to parse binary file: ${file.name}`);
+		if (t) new Notice(t('uiMessages.attachWorkerNotReady'));
+		return null;
 	}
-	debugLogger.logWarn('file_attachment', `Worker not ready to parse binary file: ${file.name}`);
-	return '';
+	const buffer = await file.arrayBuffer();
+	return plugin.embeddingWorker.parse(buffer, ext);
 }
 
 export async function readFileContent(
@@ -38,17 +62,29 @@ export async function readFileContent(
 	t: (key: string, vars?: Record<string, string>) => string,
 	plugin?: LuminaPlugin
 ): Promise<string | null> {
+	let content: string | null = null;
 	if (IMAGE_EXTS.has(ext)) {
-		return readImageAsDataURL(file);
+		content = await readImageAsDataURL(file, ext);
+	} else if (TEXT_EXTS.has(ext)) {
+		content = await readTextFile(file);
+	} else if (DOC_EXTS.has(ext)) {
+		content = await readBinaryDocument(file, ext, plugin, t);
+	} else {
+		new Notice(t('uiMessages.unsupportedFileType', { ext }));
+		return null;
 	}
-	if (TEXT_EXTS.has(ext)) {
-		return readTextFile(file);
+
+	if (content === null) {
+		return null;
 	}
-	if (DOC_EXTS.has(ext)) {
-		return readBinaryDocument(file, ext, plugin);
+
+	if (!content.trim()) {
+		debugLogger.logWarn('file_attachment', `File content is empty: ${file.name}`);
+		new Notice(t('uiMessages.attachFileEmpty', { file: file.name }));
+		return null;
 	}
-	new Notice(t('uiMessages.unsupportedFileType', { ext }));
-	return null;
+
+	return content;
 }
 
 export function extractFileFromEntry(entry: File | DataTransferItem): File | null {

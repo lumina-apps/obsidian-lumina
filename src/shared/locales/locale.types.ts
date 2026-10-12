@@ -869,6 +869,13 @@ export interface TranslationUiMessages {
   noSearchResults: string;
   unsupportedFileType: string;
   attachFileFailed: string;
+  attachWorkerNotReady: string;
+  attachFileEmpty: string;
+  attachmentsSkipped: string;
+  cliImageNotSupported: string;
+  attachFileTooLarge: string;
+  attachDuplicate: string;
+  attachProcessing: string;
   fsAdapterErr: string;
   searchSource: string;
   debugDelAllMsg: string;

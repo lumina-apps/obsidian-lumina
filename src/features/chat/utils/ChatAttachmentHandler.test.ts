@@ -411,11 +411,27 @@ describe('ChatAttachmentHandler', () => {
 				{ type: 'file', path: 'Pic.jpg', name: 'Pic.jpg' },
 			];
 
-			const { attachmentContext, multimodalImages } = await ChatAttachmentHandler.buildAttachmentContext(mockApp, attachments);
+			const { attachmentContext, multimodalImages, failedAttachments } = await ChatAttachmentHandler.buildAttachmentContext(mockApp, attachments);
 
 			expect(attachmentContext).toContain('Markdown content');
 			expect(multimodalImages.length).toBe(1);
 			expect(multimodalImages[0]).toContain('data:image/jpeg;base64,');
+			expect(failedAttachments).toEqual([]);
+		});
+
+		it('tracks failedAttachments when file does not exist or cannot be parsed', async () => {
+			mockVault.getAbstractFileByPath.mockReturnValue(null);
+
+			const attachments: ContextAttachment[] = [
+				{ type: 'file', path: 'NotFound.md', name: 'NotFound.md' },
+				{ type: 'external_file', path: '', name: 'Empty.txt', content: '' },
+			];
+
+			const { attachmentContext, multimodalImages, failedAttachments } = await ChatAttachmentHandler.buildAttachmentContext(mockApp, attachments);
+
+			expect(attachmentContext).toBe('');
+			expect(multimodalImages).toEqual([]);
+			expect(failedAttachments).toEqual(['NotFound.md', 'Empty.txt']);
 		});
 	});
 });
