@@ -115,5 +115,64 @@ describe('anthropic-message-formatter', () => {
 		expect(formatted[0].content).toBe('Hello');
 		expect(formatted[1].role).toBe('assistant');
 	});
+
+	it('should format multimodal user messages with base64 images into Anthropic image blocks', () => {
+		const messages: ChatMessage[] = [
+			{
+				role: 'user',
+				content: [
+					{ type: 'text', text: 'What is this image?' },
+					{
+						type: 'image_url',
+						image_url: { url: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ' },
+					},
+				],
+			},
+		];
+
+		const formatted = formatAnthropicMessages(messages);
+		expect(formatted).toEqual([
+			{
+				role: 'user',
+				content: [
+					{ type: 'text', text: 'What is this image?' },
+					{
+						type: 'image',
+						source: {
+							type: 'base64',
+							media_type: 'image/png',
+							data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ',
+						},
+					},
+				],
+			},
+		]);
+	});
+
+	it('should handle unsupported image MIME types gracefully', () => {
+		const messages: ChatMessage[] = [
+			{
+				role: 'user',
+				content: [
+					{ type: 'text', text: 'Unsupported' },
+					{
+						type: 'image_url',
+						image_url: { url: 'data:image/bmp;base64,Qk0=' },
+					},
+				],
+			},
+		];
+
+		const formatted = formatAnthropicMessages(messages);
+		expect(formatted).toEqual([
+			{
+				role: 'user',
+				content: [
+					{ type: 'text', text: 'Unsupported' },
+					{ type: 'text', text: '[Unsupported image type: image/bmp]' },
+				],
+			},
+		]);
+	});
 });
 

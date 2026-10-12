@@ -97,6 +97,9 @@ export function calculateFolderSize(
 	return { size: totalSize, isOverLimit };
 }
 
+export const IMAGE_TOKEN_ESTIMATE = 1_600;
+const IMAGE_EXTENSIONS_SET = new Set(["png", "jpg", "jpeg", "webp", "gif"]);
+
 export function estimateInputTokensDetails(options: EstimateInputTokensOptions): EstimatedTokensResult {
 	const {
 		inputText,
@@ -122,11 +125,20 @@ export function estimateInputTokensDetails(options: EstimateInputTokensOptions):
 		}
 
 		if (att.content) {
-			tokens += estimateTokens(att.content);
+			if (att.content.startsWith("data:image/")) {
+				tokens += IMAGE_TOKEN_ESTIMATE;
+			} else {
+				tokens += estimateTokens(att.content);
+			}
 		} else if (att.path && (att.type === "file" || att.type === "active_note")) {
-			const size = getFileSize ? getFileSize(att.path) : undefined;
-			if (typeof size === "number") {
-				tokens += Math.ceil(size / 3);
+			const ext = att.path.split(".").pop()?.toLowerCase() || "";
+			if (IMAGE_EXTENSIONS_SET.has(ext)) {
+				tokens += IMAGE_TOKEN_ESTIMATE;
+			} else {
+				const size = getFileSize ? getFileSize(att.path) : undefined;
+				if (typeof size === "number") {
+					tokens += Math.ceil(size / 3);
+				}
 			}
 		} else if (att.path && att.type === "folder") {
 			if (getFolderSize) {
@@ -150,7 +162,12 @@ export function estimateInputTokensDetails(options: EstimateInputTokensOptions):
 			(att) => att.type === "active_note" || (att.type === "file" && att.path === activeFileInfo.path),
 		);
 		if (!alreadyIncluded) {
-			tokens += Math.ceil(activeFileInfo.size / 3);
+			const ext = activeFileInfo.path.split(".").pop()?.toLowerCase() || "";
+			if (IMAGE_EXTENSIONS_SET.has(ext)) {
+				tokens += IMAGE_TOKEN_ESTIMATE;
+			} else {
+				tokens += Math.ceil(activeFileInfo.size / 3);
+			}
 		}
 	}
 

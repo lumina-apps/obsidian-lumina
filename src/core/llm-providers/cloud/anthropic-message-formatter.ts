@@ -15,6 +15,34 @@ export function formatAnthropicMessages(messages: ChatMessage[]) {
 	const filtered = messages.filter(m => m.role !== 'system');
 	const mapped = filtered.map((m) => {
 		if (m.role === 'user') {
+			if (Array.isArray(m.content)) {
+				const contentArray = m.content.map(c => {
+					if (c.type === 'text') {
+						return { type: 'text' as const, text: c.text };
+					}
+					if (c.type === 'image_url') {
+						const match = c.image_url.url.match(/^data:([^;]+);base64,(.+)$/);
+						if (match) {
+							const mediaType = match[1];
+							const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+							if (allowedTypes.includes(mediaType)) {
+								return {
+									type: 'image' as const,
+									source: {
+										type: 'base64' as const,
+										media_type: mediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+										data: match[2],
+									},
+								};
+							}
+							return { type: 'text' as const, text: `[Unsupported image type: ${mediaType}]` };
+						}
+						return { type: 'text' as const, text: `[Image: ${c.image_url.url}]` };
+					}
+					return { type: 'text' as const, text: '' };
+				});
+				return { role: 'user', content: contentArray };
+			}
 			return { role: 'user', content: m.content };
 		}
 		if (m.role === 'assistant') {

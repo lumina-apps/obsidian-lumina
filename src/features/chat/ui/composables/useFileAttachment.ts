@@ -108,15 +108,22 @@ export function createRemoveAttachment(
 /**
  * 파일 처리 공통 로직 (processFiles 호출 → attachments 업데이트)
  */
-async function handleFiles(
+export async function handleFiles(
 	files: FileList | File[],
 	ctx: FileAttachmentContext,
 ): Promise<void> {
-	const { plugin, attachments, setAttachments, t, onResizeTextarea } = ctx;
-	const newAtts = await processFiles(files, attachments, t, plugin);
+	const { plugin, setAttachments, t, onResizeTextarea } = ctx;
+	const currentBefore = ctx.attachments;
+	const newAtts = await processFiles(files, currentBefore, t, plugin);
 	if (newAtts.length > 0) {
-		setAttachments([...attachments, ...newAtts]);
-		// tick().then(() => resizeTextarea()) 와 동일하게
-		window.setTimeout(() => onResizeTextarea(), 0);
+		const latest = ctx.attachments;
+		const deduped = newAtts.filter(
+			(n) => !latest.some((a) => a.type === "external_file" && a.name === n.name),
+		);
+		if (deduped.length > 0) {
+			setAttachments([...latest, ...deduped]);
+			// tick().then(() => resizeTextarea()) 와 동일하게
+			window.setTimeout(() => onResizeTextarea(), 0);
+		}
 	}
 }

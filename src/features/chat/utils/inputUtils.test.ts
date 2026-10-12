@@ -263,6 +263,53 @@ describe("inputUtils", () => {
 			expect(result.displayText).toBe("> 100k tokens");
 		});
 
+		it("should estimate fixed token count (1,600) for base64 image data URL", () => {
+			// 1MB-sized base64 string
+			const hugeBase64 = "data:image/png;base64," + "A".repeat(1_000_000);
+			const result = estimateInputTokensDetails({
+				inputText: "",
+				attachments: [
+					{
+						type: "external_file",
+						name: "screenshot.png",
+						path: "",
+						content: hugeBase64,
+					},
+				],
+			});
+			expect(result.tokens).toBe(1600);
+			expect(result.isOverLimit).toBe(false);
+			expect(result.displayText).toBe("~1,600 tokens");
+		});
+
+		it("should estimate fixed token count (1,600) for image files in vault", () => {
+			const result = estimateInputTokensDetails({
+				inputText: "",
+				attachments: [
+					{
+						type: "file",
+						name: "photo.jpg",
+						path: "attachments/photo.jpg",
+					},
+				],
+				getFileSize: () => 15_000_000, // 15MB file would be 5M tokens if text
+			});
+			expect(result.tokens).toBe(1600);
+			expect(result.isOverLimit).toBe(false);
+			expect(result.displayText).toBe("~1,600 tokens");
+		});
+
+		it("should estimate fixed token count for active note if it is an image", () => {
+			const result = estimateInputTokensDetails({
+				inputText: "",
+				attachments: [],
+				includeActiveNote: true,
+				activeFileInfo: { path: "attachments/diagram.webp", size: 5_000_000 },
+			});
+			expect(result.tokens).toBe(1600);
+			expect(result.isOverLimit).toBe(false);
+		});
+
 		it("should handle getFolderSize returning a number", () => {
 			const result = estimateInputTokensDetails({
 				inputText: "",
