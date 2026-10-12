@@ -8,6 +8,7 @@ import type { ContextAttachment } from '../../../shared/types/chat.types';
 import type LuminaPlugin from '../../../main';
 import { t } from '../../../shared/locales/helpers';
 import { debugLogger } from '../../../shared/debugLogger';
+import { resizeImageDataUrl } from './imageUtils';
 
 export const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif']);
 const MAX_TEXT_LENGTH = 2000000; // 물리적 텍스트 안전 상한선 (약 50만 토큰, OOM 힙 크래시 방지)
@@ -89,7 +90,9 @@ export class ChatAttachmentHandler {
 			const buffer = await app.vault.readBinary(file);
 			const base64 = this.arrayBufferToBase64(buffer);
 			const mimeType = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
-			return { type: 'image', content: `data:${mimeType};base64,${base64}` };
+			const dataUrl = `data:${mimeType};base64,${base64}`;
+			const resized = await resizeImageDataUrl(dataUrl);
+			return { type: 'image', content: resized };
 		}
 
 		// 2. 문서 파일 처리 (파서 라우터 재사용)

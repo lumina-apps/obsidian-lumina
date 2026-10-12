@@ -107,4 +107,61 @@ describe('useFileAttachment composable', () => {
 		// initial.txt should NOT have revived!
 		expect(currentAttachments.some((a) => a.name === 'initial.txt')).toBe(false);
 	});
+
+	it('createPasteHandler ignores virtual image.png when text/plain exists (Office paste)', async () => {
+		const processFilesSpy = vi.spyOn(fileAttachmentUtils, 'processFiles').mockResolvedValue([]);
+		const ctx = {
+			plugin: {} as unknown as LuminaPlugin,
+			attachments: [],
+			setAttachments: vi.fn(),
+			t: (k: string) => k,
+			onResizeTextarea: vi.fn(),
+		};
+
+		const pasteHandler = (await import('./useFileAttachment')).createPasteHandler(ctx);
+
+		const dummyImageFile = new File(['dummy'], 'image.png', { type: 'image/png' });
+		const mockEvent = {
+			clipboardData: {
+				getData: (format: string) => (format === 'text/plain' ? 'Copied cell text' : ''),
+				items: [
+					{ kind: 'string', type: 'text/plain' },
+					{ kind: 'file', getAsFile: () => dummyImageFile },
+				],
+			},
+		} as unknown as ClipboardEvent;
+
+		pasteHandler(mockEvent);
+
+		// processFiles should NOT be called because it was ignored as an Office paste
+		expect(processFilesSpy).not.toHaveBeenCalled();
+	});
+
+	it('createPasteHandler attaches image when text/plain is empty (clean screenshot paste)', async () => {
+		const processFilesSpy = vi.spyOn(fileAttachmentUtils, 'processFiles').mockResolvedValue([]);
+		const ctx = {
+			plugin: {} as unknown as LuminaPlugin,
+			attachments: [],
+			setAttachments: vi.fn(),
+			t: (k: string) => k,
+			onResizeTextarea: vi.fn(),
+		};
+
+		const pasteHandler = (await import('./useFileAttachment')).createPasteHandler(ctx);
+
+		const dummyImageFile = new File(['dummy'], 'image.png', { type: 'image/png' });
+		const mockEvent = {
+			clipboardData: {
+				getData: () => '',
+				items: [
+					{ kind: 'file', getAsFile: () => dummyImageFile },
+				],
+			},
+		} as unknown as ClipboardEvent;
+
+		pasteHandler(mockEvent);
+
+		// Clean screenshot paste should proceed to processFiles
+		expect(processFilesSpy).toHaveBeenCalled();
+	});
 });

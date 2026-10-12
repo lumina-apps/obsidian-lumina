@@ -14,6 +14,7 @@ export interface FileAttachmentContext {
 	setAttachments: (a: ContextAttachment[]) => void;
 	t: (key: string, vars?: Record<string, string>) => string;
 	onResizeTextarea: () => void;
+	setIsProcessing?: (isProcessing: boolean) => void;
 }
 
 /**
@@ -37,9 +38,9 @@ export function createFileSelectHandler(
 	return (e: Event) => {
 		const target = e.target as HTMLInputElement;
 		if (!target.files || target.files.length === 0) return;
-		void handleFiles(target.files, ctx).then(() => {
-			target.value = "";
-		});
+		const files = target.files;
+		target.value = "";
+		void handleFiles(files, ctx);
 	};
 }
 
@@ -74,8 +75,12 @@ export function createPasteHandler(
 	ctx: FileAttachmentContext,
 ): (e: ClipboardEvent) => void {
 	return (e: ClipboardEvent) => {
-		const items = e.clipboardData?.items;
+		const clipboardData = e.clipboardData;
+		if (!clipboardData) return;
+		const items = clipboardData.items;
 		if (!items) return;
+
+		const hasPlainText = Boolean(clipboardData.getData("text/plain")?.trim());
 
 		const files: File[] = [];
 		for (let i = 0; i < items.length; i++) {
@@ -88,6 +93,11 @@ export function createPasteHandler(
 		}
 
 		if (files.length > 0) {
+			// Office 앱(Excel/Word 등)에서 셀 복사 시 text/plain과 가상 렌더링 image.png가 동시에 들어오는 경우
+			// 텍스트 붙여넣기를 우선하고 가상 이미지 첨부는 무시
+			if (hasPlainText && files.every((f) => f.name.startsWith("Pasted_Image_") || f.name === "image.png")) {
+				return;
+			}
 			void handleFiles(files, ctx);
 		}
 	};
@@ -112,18 +122,23 @@ export async function handleFiles(
 	files: FileList | File[],
 	ctx: FileAttachmentContext,
 ): Promise<void> {
-	const { plugin, setAttachments, t, onResizeTextarea } = ctx;
-	const currentBefore = ctx.attachments;
-	const newAtts = await processFiles(files, currentBefore, t, plugin);
-	if (newAtts.length > 0) {
-		const latest = ctx.attachments;
-		const deduped = newAtts.filter(
-			(n) => !latest.some((a) => a.type === "external_file" && a.name === n.name),
-		);
-		if (deduped.length > 0) {
-			setAttachments([...latest, ...deduped]);
-			// tick().then(() => resizeTextarea()) 와 동일하게
-			window.setTimeout(() => onResizeTextarea(), 0);
+	const { plugin, setAttachments, t, onResizeTextarea, setIsProcessing } = ctx;
+	setIsProcessing?.(true);
+	try {
+		const currentBefore = ctx.attachments;
+		const newAtts = await processFiles(files, currentBefore, t, plugin);
+		if (newAtts.length > 0) {
+			const latest = ctx.attachments;
+			const deduped = newAtts.filter(
+				(n) => !latest.some((a) => a.type === "external_file" && a.name === n.name),
+			);
+			if (deduped.length > 0) {
+				setAttachments([...latest, ...deduped]);
+				// tick().then(() => resizeTextarea()) 와 동일하게
+				window.setTimeout(() => onResizeTextarea(), 0);
+			}
 		}
+	} finally {
+		setIsProcessing?.(false);
 	}
 }

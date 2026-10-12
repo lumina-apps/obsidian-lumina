@@ -164,8 +164,12 @@
 		resizeTextarea(textareaEl);
 	}
 
+	// ── 파일 첨부 처리 상태 ──────────────────────────────────────────────
+	let isAttaching = $state(false);
+
 	// ── 슬래시 명령어 가로채기 및 전송 핸들러 ─────────────────────────────
 	function handleSendMessage() {
+		if (isAttaching) return;
 		const text = inputText.trim();
 		if (text.startsWith("/") && attachments.length === 0) {
 			const cmdId = text.slice(1).trim().toLowerCase();
@@ -292,6 +296,9 @@
 		},
 		t: tProxy,
 		onResizeTextarea: onResize,
+		setIsProcessing: (v: boolean) => {
+			isAttaching = v;
+		},
 	};
 
 	const handleFileSelect = createFileSelectHandler(fileCtx);
@@ -380,7 +387,7 @@
 
 	<div class="lumina-chat__textarea-wrap">
 		<div class="lumina-chat__input-container">
-			{#if attachments.length > 0}
+			{#if attachments.length > 0 || isAttaching}
 				<div class="lumina-chat__attachments">
 					{#each attachments as att, i}
 						<div class="lumina-chat__attachment-chip">
@@ -399,6 +406,15 @@
 							</button>
 						</div>
 					{/each}
+					{#if isAttaching}
+						<div class="lumina-chat__attachment-chip lumina-chat__attachment-chip--loading">
+							<span
+								class="lumina-chat__attachment-icon"
+								use:icon={"loader"}
+							></span>
+							<span class="lumina-chat__attachment-name">{$tStore("uiMessages.attachProcessing")}</span>
+						</div>
+					{/if}
 				</div>
 			{/if}
 
@@ -510,11 +526,11 @@
 				{:else}
 					<button
 						class="lumina-chat__send-btn"
-						class:is-active={inputText.trim().length > 0 ||
-							attachments.length > 0}
+						class:is-active={(inputText.trim().length > 0 ||
+							attachments.length > 0) && !isAttaching}
 						onclick={handleSendMessage}
 						disabled={(!inputText.trim() && attachments.length === 0) ||
-							!hasProvider}
+							!hasProvider || isAttaching}
 						aria-label={$tStore("errors.send")}
 						use:icon={"lumina-send"}
 					></button>

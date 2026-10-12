@@ -75,6 +75,26 @@ describe('fileAttachmentUtils', () => {
 			expect(result).toBe('Hello Lumina!');
 		});
 
+		it('rejects file larger than 20MB and triggers attachFileTooLarge notice', async () => {
+			const hugeFile = {
+				name: 'huge.txt',
+				size: 25 * 1024 * 1024,
+				arrayBuffer: vi.fn(),
+			} as unknown as File;
+			const t = vi.fn((k: string) => k);
+
+			const result = await readFileContent(hugeFile, 'txt', t);
+			expect(result).toBeNull();
+			expect(t).toHaveBeenCalledWith('uiMessages.attachFileTooLarge', { max: '20MB', file: 'huge.txt' });
+		});
+
+		it('strips UTF-8 BOM from text files', async () => {
+			const contentWithBOM = '\uFEFFBOM content';
+			const file = new File([contentWithBOM], 'bom.txt', { type: 'text/plain' });
+			const result = await readTextFile(file);
+			expect(result).toBe('BOM content');
+		});
+
 		it('rejects empty file and triggers attachFileEmpty notice', async () => {
 			const file = new File(['   \n\t  '], 'empty.txt', { type: 'text/plain' });
 			const t = vi.fn((k: string) => k);

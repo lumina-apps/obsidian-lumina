@@ -2,6 +2,7 @@
 	import { setIcon } from "obsidian";
 	import type { Readable } from "svelte/store";
 	import type { TranslationKeys } from "../../../shared/locales/locale.types";
+	import { FILE_INPUT_ACCEPT } from "../utils/fileAttachmentUtils";
 
 	type TStore = Readable<
 		(key: TranslationKeys, params?: Record<string, string | number>) => string
@@ -91,6 +92,7 @@
 	<input
 		type="file"
 		multiple
+		accept={FILE_INPUT_ACCEPT}
 		class="lumina-chat__hidden-file-input"
 		bind:this={fileInputEl}
 		onchange={onFileSelect}

@@ -3,13 +3,22 @@ import type { ContextAttachment } from "../../../shared/types/chat.types";
 import type LuminaPlugin from "../../../main";
 import { debugLogger } from "../../../shared/debugLogger";
 
-const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "webp", "gif"]);
-const TEXT_EXTS = new Set([
-	"md", "txt", "csv", "json", "jsonl", "html", "htm",
-	"yaml", "yml", "py", "ts", "js", "css", "sh", "sql", "xml",
-	"rs", "go", "java", "c", "cpp", "h", "rb", "php"
+import { resizeImageDataUrl, MAX_ATTACHMENT_FILE_SIZE } from "./imageUtils";
+
+export const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "webp", "gif"]);
+export const TEXT_EXTS = new Set([
+	"md", "markdown", "txt", "csv", "json", "jsonl", "html", "htm",
+	"yaml", "yml", "py", "ts", "tsx", "js", "jsx", "svelte", "vue",
+	"css", "sh", "sql", "xml", "rs", "go", "java", "c", "cpp", "h",
+	"rb", "php", "log", "toml", "ini", "kt", "swift"
 ]);
-const DOC_EXTS = new Set(["pdf", "docx", "xlsx", "xls", "pptx", "epub"]);
+export const DOC_EXTS = new Set(["pdf", "docx", "xlsx", "xls", "pptx", "epub"]);
+
+export const FILE_INPUT_ACCEPT = Array.from([
+	...IMAGE_EXTS,
+	...TEXT_EXTS,
+	...DOC_EXTS,
+]).map((ext) => `.${ext}`).join(",");
 
 export function getImageMimeType(ext: string): string {
 	const lower = ext.toLowerCase();
@@ -23,13 +32,18 @@ export function getImageMimeType(ext: string): string {
 export async function readImageAsDataURL(file: File, ext?: string): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
-		reader.onload = () => {
+		reader.onload = async () => {
 			let result = reader.result as string;
 			if (typeof result === "string" && !result.startsWith("data:image/") && ext) {
 				const mime = getImageMimeType(ext);
 				result = result.replace(/^data:[^;]*/, `data:${mime}`);
 			}
-			resolve(result);
+			try {
+				const resized = await resizeImageDataUrl(result);
+				resolve(resized);
+			} catch {
+				resolve(result);
+			}
 		};
 		reader.onerror = () => reject(reader.error ?? new Error(`Failed to read image: ${file.name}`));
 		reader.onabort = () => reject(new Error(`Image reading aborted: ${file.name}`));
@@ -38,7 +52,18 @@ export async function readImageAsDataURL(file: File, ext?: string): Promise<stri
 }
 
 export async function readTextFile(file: File): Promise<string> {
-	return file.text();
+	const buffer = await file.arrayBuffer();
+	try {
+		const text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+		return text.replace(/^\uFEFF/, "");
+	} catch {
+		try {
+			const text = new TextDecoder("euc-kr").decode(buffer);
+			return text.replace(/^\uFEFF/, "");
+		} catch {
+			return new TextDecoder().decode(buffer).replace(/^\uFEFF/, "");
+		}
+	}
 }
 
 export async function readBinaryDocument(
@@ -62,6 +87,12 @@ export async function readFileContent(
 	t: (key: string, vars?: Record<string, string>) => string,
 	plugin?: LuminaPlugin
 ): Promise<string | null> {
+	if (file.size > MAX_ATTACHMENT_FILE_SIZE) {
+		debugLogger.logWarn('file_attachment', `File exceeds max limit (20MB): ${file.name}`);
+		new Notice(t('uiMessages.attachFileTooLarge', { max: '20MB', file: file.name }));
+		return null;
+	}
+
 	let content: string | null = null;
 	if (IMAGE_EXTS.has(ext)) {
 		content = await readImageAsDataURL(file, ext);
@@ -114,6 +145,7 @@ export async function processFiles(
 			existingAttachments.find((a) => a.name === file.name && a.type === "external_file") ||
 			newAttachments.find((a) => a.name === file.name && a.type === "external_file")
 		) {
+			new Notice(t('uiMessages.attachDuplicate', { file: file.name }));
 			continue;
 		}
 
