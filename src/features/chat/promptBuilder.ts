@@ -158,6 +158,11 @@ export function buildMessages(
 		// assistant 메시지의 경우 <think>/<thinking> 태그 내용 제거 (DeepSeek/Anthropic thinking 모델 에러 방지)
 		if (m.role === 'assistant') {
 			content = stripThinkTags(content);
+		} else if (m.role === 'user' && m.attachments && m.attachments.length > 0) {
+			const attNames = m.attachments.map(a => a.name).filter(Boolean).join(', ');
+			if (attNames) {
+				content = `[Attachments: ${attNames}]\n${content}`;
+			}
 		}
 		messages.push({
 			role: m.role,

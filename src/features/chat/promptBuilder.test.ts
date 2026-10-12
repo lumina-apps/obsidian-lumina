@@ -207,6 +207,25 @@ describe('promptBuilder', () => {
 		expect(lastMessage.content).toContain(longAttachment);
 		expect(lastMessage.content).not.toContain('... (Context truncated due to length limits)');
 	});
+	it('should prefix [Attachments: ...] in history user turns when attachments exist', () => {
+		const historyWithAtt: UIChatMessage[] = [
+			{
+				id: 'm1',
+				role: 'user',
+				content: 'Summarize this file please',
+				isStreaming: false,
+				timestamp: 1,
+				attachments: [
+					{ type: 'file', path: 'Docs/Q3_Report.pdf', name: 'Q3_Report.pdf' },
+				],
+			},
+			{ id: 'm2', role: 'assistant', content: 'Here is the summary...', isStreaming: false, timestamp: 2 },
+		];
+
+		const messages = buildMessages(historyWithAtt, 'What about section 3?', { chat: mockChatSettings });
+		const historyUserMsg = messages.find(m => m.role === 'user' && m.content.toString().includes('Summarize this file'));
+		expect(historyUserMsg?.content).toContain('[Attachments: Q3_Report.pdf]\nSummarize this file please');
+	});
 });
 
 describe('estimateTokens', () => {

@@ -4,7 +4,7 @@
  * ChatPanel은 $messages/$isLoading 구독으로 반응형 렌더링한다.
  */
 
-import type { App } from 'obsidian';
+import { Notice, type App } from 'obsidian';
 import { t } from '../../shared/locales/helpers';
 import type LuminaPlugin from '../../main';
 import { formatLlmError } from '../../shared/utils/llmErrorFormatter';
@@ -257,7 +257,20 @@ export class ChatController {
 
 		const targetMsg = msgs[targetIndex];
 		// 이전 메시지에 자동 포함되었던 active_note는 제거하여, 현재의 활성 노트 및 옵션에 따라 올바르게 재반영되도록 함
-		const attachments = (targetMsg.attachments || []).filter(a => a.type !== 'active_note');
+		// 또한 저장 후 복원되어 본문(content)이 없는 과거 external_file 및 selection은 에디터 상태 오염 방지를 위해 제외
+		const skipped: string[] = [];
+		const attachments = (targetMsg.attachments || []).filter(a => {
+			if (a.type === 'active_note') return false;
+			if ((a.type === 'external_file' || a.type === 'selection') && !a.content) {
+				skipped.push(a.name);
+				return false;
+			}
+			return true;
+		});
+
+		if (skipped.length > 0) {
+			new Notice(t('uiMessages.attachmentsSkipped', { files: skipped.join(', ') }));
+		}
 
 		messages.set(msgs.slice(0, targetIndex));
 
