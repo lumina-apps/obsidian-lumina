@@ -142,7 +142,7 @@
 					plugin.indexer.oramaDb,
 					texts => plugin.indexer!.embed(texts),
 					15,
-					0.60,
+					0.65,
 					0.5,
 					allowedPaths
 				);
@@ -323,7 +323,7 @@
 					{#if isSearching && searchResults.length === 0}
 						<div class="lumina-discovery__loading"><div class="spinner"></div></div>
 					{:else if searchResults.length === 0}
-						<div class="lumina-discovery__no-results">
+						<div class="lumina-discovery__no-results lumina-discovery__empty">
 							<span>{$tStore('discovery.noResults')}</span>
 						</div>
 					{:else}

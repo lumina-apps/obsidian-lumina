@@ -85,11 +85,11 @@
 			</div>
 		</div>
 	{:else if discoveryState.activeFile}
-		<div class="lumina-discovery__no-results">
+		<div class="lumina-discovery__no-results lumina-discovery__empty">
 			<span>{$tStore('discovery.noResults')}</span>
 		</div>
 	{:else}
-		<div class="lumina-discovery__no-results">
+		<div class="lumina-discovery__no-results lumina-discovery__empty">
 			<span>{$tStore('discovery.noActiveFile')}</span>
 		</div>
 	{/if}

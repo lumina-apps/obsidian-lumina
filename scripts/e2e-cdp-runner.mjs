@@ -313,6 +313,13 @@ async function run() {
 					await app.plugins.disablePlugin('lumina');
 					await new Promise(r => setTimeout(r, 200));
 					const unloaded = !app.plugins.plugins['lumina'];
+					if (window.require && window.require.cache) {
+						for (const k of Object.keys(window.require.cache)) {
+							if (k.includes('obsidian-lumina') || k.includes('plugins/lumina')) {
+								delete window.require.cache[k];
+							}
+						}
+					}
 					await app.plugins.enablePlugin('lumina');
 					await new Promise(r => setTimeout(r, 500));
 					const p = app.plugins.plugins['lumina'];
@@ -370,6 +377,47 @@ async function run() {
 		} catch (err) {
 			reporter.record('Registered View Types', false, err.message, Date.now() - t2);
 		}
+	}
+
+	// ─── SUITE 1.5: Empty Workspace Resilience (Edge Cases) ──────────────────
+	reporter.startSuite('Empty Workspace Resilience (Edge Cases)');
+	try {
+		const tEmptyAll = Date.now();
+		const emptyResilience = await client.evaluate(`(async () => {
+			// 1. Close ALL markdown leaves
+			app.workspace.getLeavesOfType('markdown').forEach(l => l.detach());
+			await new Promise(r => setTimeout(r, 100));
+			
+			// 2. Open all UI panels that might depend on activeFile
+			app.commands.executeCommandById('lumina:open-chat');
+			app.commands.executeCommandById('lumina:open-graph-view');
+			app.commands.executeCommandById('lumina:open-devlog');
+			
+			await new Promise(r => setTimeout(r, 600)); // Wait for all to mount
+
+			const chatLeaves = app.workspace.getLeavesOfType('lumina-chat');
+			const graphLeaves = app.workspace.getLeavesOfType('lumina-graph');
+			const debugLeaves = app.workspace.getLeavesOfType('lumina-debug-panel');
+
+			const success = chatLeaves.length > 0 && graphLeaves.length > 0 && debugLeaves.length > 0;
+			
+			// Cleanup for next suite
+			chatLeaves.forEach(l => l.detach());
+			graphLeaves.forEach(l => l.detach());
+			debugLeaves.forEach(l => l.detach());
+			await new Promise(r => setTimeout(r, 200));
+
+			return { success };
+		})()`);
+
+		reporter.record(
+			'Mount All Views on Empty Workspace without Crash',
+			emptyResilience.success,
+			'Chat, Graph, Debug panels rendered safely with null activeFile',
+			Date.now() - tEmptyAll
+		);
+	} catch (err) {
+		reporter.record('Mount All Views on Empty Workspace without Crash', false, err.message, 0);
 	}
 
 	// ─── SUITE 2: Chat View (Physical Mouse Click & Typing Simulation) ───────
@@ -708,6 +756,37 @@ async function run() {
 	// ─── SUITE 5.5: Discovery Panel UI (Smart Discovery) ────────────────────
 	reporter.startSuite('Discovery Panel UI (Smart Discovery)');
 	try {
+		// 0. Empty State Mounting (No Active File) to prevent effect_update_depth_exceeded regressions
+		const tEmptyState = Date.now();
+		const emptyStateCheck = await client.evaluate(`(async () => {
+			// Close all markdown leaves to ensure activeFile is null
+			app.workspace.getLeavesOfType('markdown').forEach(l => l.detach());
+			
+			// Open Chat View & switch to discovery tab
+			app.commands.executeCommandById('lumina:open-chat');
+			await new Promise(r => setTimeout(r, 500));
+			
+			const tabs = document.querySelectorAll('.lumina-sidebar__tab, .lumina-sidebar-tabs button');
+			if (tabs.length > 1) tabs[1].click();
+			
+			await new Promise(r => setTimeout(r, 800)); // Wait for DiscoveryPanel to mount and settle
+			
+			const panel = document.querySelector('.lumina-discovery');
+			const emptyState = document.querySelector('.lumina-discovery__empty');
+			
+			return {
+				panelMounted: !!panel,
+				emptyStateVisible: !!emptyState
+			};
+		})()`);
+
+		reporter.record(
+			'Empty State Mounts without Crash (No Active File)',
+			emptyStateCheck.panelMounted && emptyStateCheck.emptyStateVisible,
+			`Panel: ${emptyStateCheck.panelMounted}, EmptyState: ${emptyStateCheck.emptyStateVisible}`,
+			Date.now() - tEmptyState
+		);
+
 		const tCtx = Date.now();
 		// 1. Open active note to trigger Context Mode
 		await client.evaluate(`(async () => {
@@ -724,7 +803,7 @@ async function run() {
 			await new Promise(r => setTimeout(r, 300));
 			
 			// Switch to discovery tab
-			const tabs = document.querySelectorAll('.lumina-sidebar-tabs button');
+			const tabs = document.querySelectorAll('.lumina-sidebar__tab, .lumina-sidebar-tabs button');
 			if (tabs.length > 1) tabs[1].click();
 		})()`);
 
@@ -770,6 +849,35 @@ async function run() {
 			};
 		})()`);
 		reporter.record('Search & Filter Reactivity', searchCheck.success, `Search Results: ${searchCheck.resultCount}, Filtered Results: ${searchCheck.filteredCount}`, Date.now() - tSearch);
+
+		// 2.5 Zero Results State Check
+		const tZeroSearch = Date.now();
+		const zeroCheck = await client.evaluate(`(async () => {
+			const inputs = document.querySelectorAll('.lumina-discovery__search-input');
+			if (inputs.length < 1) return { success: false, reason: 'Missing search input' };
+			const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+			
+			// Type nonsensical query to get 0 results
+			setter.call(inputs[0], '@@@@NOT_FOUND_QUERY_1234@@@@');
+			inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+			
+			await new Promise(r => setTimeout(r, 1200));
+			
+			const results = document.querySelectorAll('.lumina-discovery__card');
+			const emptyUI = document.querySelector('.lumina-discovery__empty');
+			
+			// Revert to normal search for next tests
+			setter.call(inputs[0], '세계관');
+			inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+			await new Promise(r => setTimeout(r, 1200));
+			
+			return {
+				success: results.length === 0,
+				hasEmptyUI: !!emptyUI,
+				resultCount: results.length
+			};
+		})()`);
+		reporter.record('Zero Results Empty State', zeroCheck.success && zeroCheck.hasEmptyUI, `Results: ${zeroCheck.resultCount}, Empty UI: ${zeroCheck.hasEmptyUI}`, Date.now() - tZeroSearch);
 
 		// 3. File-based Staging & Token Calculation
 		const tStage = Date.now();
@@ -845,6 +953,7 @@ async function run() {
 				}
 				const leaf = app.workspace.getLeaf(true);
 				await leaf.openFile(file);
+				app.workspace.setActiveLeaf(leaf, { focus: true });
 				return { success: true, leafId: leaf.id };
 			})()`);
 
@@ -853,7 +962,7 @@ async function run() {
 			const editorCheck = await client.evaluate(`(() => {
 				const lumina = app.plugins.plugins['lumina'];
 				const activeLeaf = app.workspace.activeLeaf;
-				const editor = activeLeaf?.view?.editor;
+				const editor = activeLeaf?.view?.editor || app.workspace.activeEditor?.editor;
 				const hasQuickAction = !!lumina.quickActionHandler;
 				return {
 					hasEditor: !!editor,
