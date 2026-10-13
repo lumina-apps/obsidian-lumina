@@ -3,7 +3,7 @@
 	import type { ContextAttachment } from "../../../shared/types/chat.types";
 	import { getAttachmentIcon } from "../utils/fileAttachmentUtils";
 	import { icon } from "../../../shared/utils/iconAction";
-	import { openFile } from "./utils/messageActions";
+	import { openAttachment } from "./utils/messageActions";
 
 	let {
 		attachments,
@@ -12,12 +12,9 @@
 		attachments: ContextAttachment[];
 		app: App;
 	} = $props();
-	function handleClick(att: ContextAttachment, e: MouseEvent) {
-		if (att.type === 'file' || att.type === 'active_note' || att.type === 'canvas') {
-			openFile(app, att.path, e);
-		} else if (att.type === 'url') {
-			window.open(att.path, '_blank', 'noopener,noreferrer');
-		}
+
+	function handleClick(att: ContextAttachment, e: MouseEvent | KeyboardEvent) {
+		openAttachment(app, att, e);
 	}
 </script>
 

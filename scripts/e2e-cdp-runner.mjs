@@ -761,23 +761,30 @@ async function run() {
 				const chipMounted = chips.length > 0;
 				const chipName = document.querySelector('.lumina-chat__attachment-name')?.textContent || '';
 
+				// 4) Test click attachment chip to open note in editor
+				const chip = document.querySelector('.lumina-chat__attachment-chip');
+				chip?.click();
+				await new Promise(r => setTimeout(r, 400));
+				const activeFileOpened = app.workspace.getActiveFile()?.path === targetNote.path;
+
 				// Cleanup chip
 				document.querySelector('.lumina-chat__attachment-remove')?.click();
 				await new Promise(r => setTimeout(r, 200));
 
 				return {
-					success: hasDragOver && dragOverRemoved && chipMounted,
+					success: hasDragOver && dragOverRemoved && chipMounted && activeFileOpened,
 					hasDragOver,
 					dragOverRemoved,
 					chipMounted,
+					activeFileOpened,
 					chipName: chipName.trim()
 				};
 			})()`);
 
 			reporter.record(
-				'Drag & Drop Dragover Feedback & Native Note Drop',
+				'Drag & Drop Dragover Feedback & Native Note Drop & Click-to-Open',
 				dropResult.success,
-				`Dragover: ${dropResult.hasDragOver}, Drop Clean: ${dropResult.dragOverRemoved}, Note Attached: "${dropResult.chipName}"`,
+				`Dragover: ${dropResult.hasDragOver}, Note: "${dropResult.chipName}", Click-to-Open: ${dropResult.activeFileOpened}`,
 				Date.now() - tDrop
 			);
 		} catch (err) {

@@ -1,5 +1,6 @@
-import { Notice, TFile, MarkdownView, type App } from "obsidian";
+import { Notice, TFile, MarkdownView, Modal, type App } from "obsidian";
 import { t } from "../../../../shared/locales/helpers";
+import type { ContextAttachment } from "../../../../shared/types/chat.types";
 
 /**
  * 파일 경로로 Obsidian 노트를 연다.
@@ -11,7 +12,11 @@ export async function openFile(
 	e: MouseEvent | KeyboardEvent,
 	chunkText?: string
 ): Promise<void> {
-	const file = app.vault.getAbstractFileByPath(filePath);
+	let file = app.vault.getAbstractFileByPath(filePath);
+	if (!file) {
+		file = app.metadataCache.getFirstLinkpathDest(filePath, "") ??
+			app.vault.getAbstractFileByPath(`${filePath}.md`);
+	}
 	if (file instanceof TFile) {
 		const leaf = app.workspace.getLeaf(
 			e.ctrlKey || e.metaKey || ("button" in e && e.button === 1) ? "tab" : false,
@@ -47,6 +52,99 @@ export async function openFile(
 		await leaf.openFile(file, lineNo !== undefined ? { eState: { line: lineNo } } : undefined);
 	} else {
 		new Notice(t("uiMessages.fileNotFound"));
+	}
+}
+
+/**
+ * 이미지 또는 텍스트 컨텍스트 첨부파일 미리보기 모달
+ */
+export class AttachmentPreviewModal extends Modal {
+	private attachment: ContextAttachment;
+
+	constructor(app: App, attachment: ContextAttachment) {
+		super(app);
+		this.attachment = attachment;
+	}
+
+	onOpen() {
+		const { contentEl } = this;
+		contentEl.empty();
+		contentEl.createEl("h3", { text: this.attachment.name, cls: "lumina-attachment-modal-title" });
+
+		if (this.attachment.content?.startsWith("data:image/")) {
+			const imgContainer = contentEl.createDiv({ cls: "lumina-attachment-modal-image-wrap" });
+			const img = imgContainer.createEl("img", {
+				cls: "lumina-attachment-preview-img",
+			});
+			img.src = this.attachment.content;
+			img.alt = this.attachment.name;
+			img.style.maxWidth = "100%";
+			img.style.maxHeight = "70vh";
+			img.style.objectFit = "contain";
+			img.style.display = "block";
+			img.style.margin = "0 auto";
+			img.style.borderRadius = "8px";
+		} else if (this.attachment.content) {
+			const pre = contentEl.createEl("pre", {
+				cls: "lumina-attachment-preview-text",
+			});
+			pre.textContent = this.attachment.content.slice(0, 50000);
+			pre.style.maxHeight = "60vh";
+			pre.style.overflowY = "auto";
+			pre.style.whiteSpace = "pre-wrap";
+			pre.style.userSelect = "text";
+			pre.style.padding = "12px";
+			pre.style.background = "var(--background-secondary)";
+			pre.style.borderRadius = "6px";
+		}
+	}
+
+	onClose() {
+		this.contentEl.empty();
+	}
+}
+
+/**
+ * 첨부파일 클릭 시 타입에 맞게 파일 열기 / 브라우저 열기 / 미리보기 모달 열기
+ */
+export function openAttachment(
+	app: App,
+	att: ContextAttachment,
+	e: MouseEvent | KeyboardEvent
+): void {
+	if (att.type === "file" || att.type === "active_note" || att.type === "canvas") {
+		const targetPath = att.path || att.name;
+		void openFile(app, targetPath, e);
+	} else if (att.type === "url") {
+		if (att.path) {
+			window.open(att.path, "_blank", "noopener,noreferrer");
+		}
+	} else if (att.type === "folder") {
+		if (att.path) {
+			new Notice(`Folder: ${att.path}`);
+		}
+	} else if (att.type === "tag") {
+		const globalSearch = (app as unknown as { internalPlugins?: { getPluginById?: (id: string) => { instance?: { openGlobalSearch?: (q: string) => void } } } })
+			.internalPlugins?.getPluginById?.("global-search");
+		if (globalSearch?.instance?.openGlobalSearch) {
+			globalSearch.instance.openGlobalSearch(`tag:${att.name}`);
+		} else {
+			new Notice(`Tag: #${att.name}`);
+		}
+	} else if (att.type === "external_file" || att.content) {
+		const targetPath = att.path;
+		let inVaultFile: unknown = null;
+		if (targetPath) {
+			inVaultFile = app.vault.getAbstractFileByPath(targetPath) ??
+				app.metadataCache.getFirstLinkpathDest(targetPath, "");
+		}
+		if (inVaultFile instanceof TFile) {
+			void openFile(app, inVaultFile.path, e);
+		} else if (att.content) {
+			new AttachmentPreviewModal(app, att).open();
+		} else if (targetPath) {
+			void openFile(app, targetPath, e);
+		}
 	}
 }
 

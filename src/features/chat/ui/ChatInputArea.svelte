@@ -33,6 +33,7 @@
 		createRemoveAttachment,
 	} from "./composables/useFileAttachment";
 	import { handleMcpPopupToggle } from "./composables/useInputPopups";
+	import { openAttachment } from "./utils/messageActions";
 	import { useActiveFileTracker, type ActiveFileInfo } from "./composables/useActiveFileTracker";
 
 	type TStore = Readable<
@@ -315,6 +316,10 @@
 		removeAttachmentFn(index);
 	}
 
+	function handleAttachmentClick(att: ContextAttachment, e: MouseEvent | KeyboardEvent) {
+		openAttachment(plugin.app, att, e);
+	}
+
 	// ── 슬래시 명령어 빌드 ─────────────────────────────────────────────────
 	const slashCommands = $derived(
 		buildSlashCommands(
@@ -418,7 +423,20 @@
 			{#if attachments.length > 0 || isAttaching}
 				<div class="lumina-chat__attachments">
 					{#each attachments as att, i}
-						<div class="lumina-chat__attachment-chip">
+						<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+						<div
+							class="lumina-chat__attachment-chip"
+							role="button"
+							tabindex="0"
+							title={att.path || att.name}
+							onclick={(e) => handleAttachmentClick(att, e)}
+							onkeydown={(e) => {
+								if (e.key === "Enter" || e.key === " ") {
+									e.preventDefault();
+									handleAttachmentClick(att, e);
+								}
+							}}
+						>
 							{#if att.content?.startsWith("data:image/")}
 								<img
 									src={att.content}
@@ -434,7 +452,10 @@
 							<span class="lumina-chat__attachment-name">{att.name}</span>
 							<button
 								class="lumina-chat__attachment-remove"
-								onclick={() => removeAttachment(i)}
+								onclick={(e) => {
+									e.stopPropagation();
+									removeAttachment(i);
+								}}
 								aria-label="Remove"
 								type="button"
 							>

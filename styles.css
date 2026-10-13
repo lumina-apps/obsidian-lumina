@@ -1758,6 +1758,18 @@ button.lumina-chat__send-btn.lumina-chat__send-btn--cancel:hover {
 	font-size: 11px;
 	color: var(--text-normal);
 	max-width: 100%;
+	cursor: pointer;
+	user-select: none;
+	transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.lumina-chat__attachment-chip:hover {
+	background: var(--background-modifier-hover);
+	border-color: var(--interactive-accent);
+}
+
+.lumina-chat__attachment-chip:active {
+	transform: scale(0.98);
 }
 
 .lumina-chat__attachment-icon {
