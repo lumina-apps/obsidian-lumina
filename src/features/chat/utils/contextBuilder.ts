@@ -155,7 +155,14 @@ export async function buildLlmContext(
 	// 멀티모달 이미지 주입
 	if (multimodalImages.length > 0) {
 		if (isCliAgent) {
-			new Notice(t('uiMessages.cliImageNotSupported'));
+			// 로컬 파일 경로가 있는 이미지는 llmExecutor에서 CLI 에이전트에 직접 경로로 전달되어 분석됩니다.
+			// 디스크 파일 경로가 없는 순수 인라인(Base64) 이미지인 경우에만 안내 알림 표시
+			const hasUnlinkedInlineImage = updatedAttachments.some(
+				(a) => !a.path && a.content?.startsWith('data:image/'),
+			);
+			if (hasUnlinkedInlineImage) {
+				new Notice(t('uiMessages.cliImageNotSupported'));
+			}
 		} else {
 			if (VISION_UNSUPPORTED_PROVIDERS.has(providerConfig.type)) {
 				const providerLabel = PROVIDER_LABELS[providerConfig.type];
