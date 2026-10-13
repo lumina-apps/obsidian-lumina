@@ -790,6 +790,206 @@ async function run() {
 		} catch (err) {
 			reporter.record('Drag & Drop Dragover Feedback & Native Note Drop', false, err.message, Date.now() - tDrop);
 		}
+
+		// 4. Pasted Image Attachment & Vault Auto-Save
+		const tPaste = Date.now();
+		try {
+			const pasteResult = await client.evaluate(`(async () => {
+				const inputArea = document.querySelector('.lumina-chat__input-area');
+				if (!inputArea) return { success: false, reason: 'Input area not found' };
+
+				const pngBytes = new Uint8Array([
+					137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82,
+					0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0, 31, 21, 196,
+					137, 0, 0, 0, 10, 73, 68, 65, 84, 120, 156, 99, 0, 1, 0, 0,
+					5, 0, 1, 13, 10, 45, 180, 0, 0, 0, 0, 73, 69, 78, 68,
+					174, 66, 96, 130
+				]);
+				const testFile = new File([pngBytes], 'Pasted_Image_E2E_Test.png', { type: 'image/png' });
+
+				const pasteEvent = new Event('paste', { bubbles: true, cancelable: true });
+				Object.defineProperty(pasteEvent, 'clipboardData', {
+					value: {
+						files: [testFile],
+						items: [
+							{
+								kind: 'file',
+								type: 'image/png',
+								getAsFile: () => testFile
+							}
+						],
+						getData: (format) => ''
+					}
+				});
+
+				inputArea.dispatchEvent(pasteEvent);
+				await new Promise(r => setTimeout(r, 600));
+
+				const chips = Array.from(document.querySelectorAll('.lumina-chat__attachment-chip'));
+				const chipMounted = chips.some(c => c.textContent.includes('Pasted image') || c.textContent.includes('Pasted_Image'));
+
+				const vaultFiles = app.vault.getFiles();
+				const createdImage = vaultFiles.find(f => f.name.includes('Pasted image') && f.extension === 'png');
+				const vaultFileCreated = !!createdImage;
+
+				// Cleanup chip
+				document.querySelector('.lumina-chat__attachment-remove')?.click();
+				await new Promise(r => setTimeout(r, 200));
+
+				// Cleanup created image file
+				if (createdImage) {
+					await app.vault.delete(createdImage, true);
+				}
+
+				return {
+					success: chipMounted && vaultFileCreated,
+					chipMounted,
+					vaultFileCreated,
+					createdPath: createdImage?.path || ''
+				};
+			})()`);
+
+			reporter.record(
+				'Pasted Image Attachment to Vault & Input Chip Lifecycle',
+				pasteResult.success,
+				`Chip Mounted: ${pasteResult.chipMounted}, Vault File Created: ${pasteResult.vaultFileCreated} (${pasteResult.createdPath})`,
+				Date.now() - tPaste
+			);
+		} catch (err) {
+			reporter.record('Pasted Image Attachment to Vault & Input Chip Lifecycle', false, err.message, Date.now() - tPaste);
+		}
+
+		// 5. Chat History Session Persistence & Attachment Restore Click-to-Open
+		const tHistoryRestore = Date.now();
+		try {
+			const historyResult = await client.evaluate(`(async () => {
+				const files = app.vault.getMarkdownFiles();
+				if (files.length === 0) return { success: false, reason: 'No markdown files in vault' };
+				const targetNote = files[0];
+
+				const lumina = app.plugins.plugins['lumina'];
+				const historyDir = lumina.settings.chat.historyPath || 'chatHistory';
+				if (!app.vault.getAbstractFileByPath(historyDir)) {
+					await app.vault.createFolder(historyDir);
+				}
+
+				const testSessionId = 'e2e-restore-test-' + Date.now();
+				const sessionData = {
+					id: testSessionId,
+					title: 'E2E Attachment History Test',
+					createdAt: Date.now(),
+					updatedAt: Date.now(),
+					providerId: 'google',
+					modelId: 'gemini-2.5-flash',
+					messages: [
+						{
+							id: 'msg-user-1',
+							role: 'user',
+							content: '노트 첨부파일을 확인합니다.',
+							timestamp: Date.now(),
+							attachments: [
+								{
+									type: 'external_file',
+									path: '',
+									name: targetNote.basename
+								}
+							]
+						},
+						{
+							id: 'msg-asst-1',
+							role: 'assistant',
+							content: '노트 확인이 완료되었습니다.',
+							timestamp: Date.now() + 1000,
+							isStreaming: false
+						}
+					]
+				};
+
+				const jsonStr = JSON.stringify(sessionData);
+				const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
+				const mdContent = [
+					'---',
+					'id: ' + testSessionId,
+					'title: "E2E Attachment History Test"',
+					'created: ' + new Date().toISOString(),
+					'updated: ' + new Date().toISOString(),
+					'---',
+					'',
+					'**👤 You**',
+					'',
+					'노트 첨부파일을 확인합니다.',
+					'',
+					'---',
+					'',
+					'**✦ Lumina**',
+					'',
+					'노트 확인이 완료되었습니다.',
+					'',
+					'<!-- LUMINA_HISTORY_DATA_V2: ' + b64 + ' -->'
+				].join('\\n');
+
+				const filePath = historyDir + '/__e2e_history_test__.md';
+				const existing = app.vault.getAbstractFileByPath(filePath);
+				if (existing) await app.vault.delete(existing, true);
+				await app.vault.create(filePath, mdContent);
+
+				// Click history button in chat header
+				const histBtn = document.querySelector('.lumina-chat__header .lumina-chat__icon-btn[aria-label*="기록"], .lumina-chat__header .lumina-chat__icon-btn[aria-label*="History"]');
+				histBtn?.click();
+				await new Promise(r => setTimeout(r, 400));
+
+				// Click refresh button in history header
+				const refreshBtn = document.querySelector('.lumina-history__header button[aria-label*="새로고침"], .lumina-history__header button[aria-label*="Refresh"]');
+				refreshBtn?.click();
+				await new Promise(r => setTimeout(r, 500));
+
+				// Find test session item
+				const items = Array.from(document.querySelectorAll('.lumina-history__item'));
+				const targetItem = items.find(el => el.textContent.includes('E2E Attachment History Test'));
+				if (!targetItem) {
+					const f = app.vault.getAbstractFileByPath(filePath);
+					if (f) await app.vault.delete(f, true);
+					return { success: false, reason: 'History item not rendered in list' };
+				}
+
+				// Click history item to restore session
+				targetItem.click();
+				await new Promise(r => setTimeout(r, 600));
+
+				// Verify message bubble attachment chip rendered
+				const messageChips = document.querySelectorAll('.lumina-message__attachment-chip');
+				const chipMounted = messageChips.length > 0;
+				const chipText = messageChips[0]?.textContent?.trim() || '';
+
+				// Click attachment chip in message bubble (testing linkpath fallback for path: "")
+				messageChips[0]?.click();
+				await new Promise(r => setTimeout(r, 600));
+
+				const activeAfter = app.workspace.getActiveFile()?.path;
+				const fileOpened = activeAfter === targetNote.path;
+
+				// Cleanup test history file
+				const f = app.vault.getAbstractFileByPath(filePath);
+				if (f) await app.vault.delete(f, true);
+
+				return {
+					success: chipMounted && fileOpened,
+					chipMounted,
+					chipText,
+					fileOpened,
+					targetPath: targetNote.path
+				};
+			})()`);
+
+			reporter.record(
+				'Chat History Session Restore & Bubble Attachment Fallback Click',
+				historyResult.success,
+				`Chip Restored: ${historyResult.chipMounted} ("${historyResult.chipText}"), Click-to-Open: ${historyResult.fileOpened} (${historyResult.targetPath})`,
+				Date.now() - tHistoryRestore
+			);
+		} catch (err) {
+			reporter.record('Chat History Session Restore & Bubble Attachment Fallback Click', false, err.message, Date.now() - tHistoryRestore);
+		}
 	} finally {
 		// Cleanup chat leaf
 		await client.evaluate(`(() => {

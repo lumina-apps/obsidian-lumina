@@ -87,28 +87,23 @@ export function attachTextLinks(text: string, ctx: FileAttachmentContext): boole
 			app.vault.getAbstractFileByPath(linkpath) ??
 			app.vault.getAbstractFileByPath(`${linkpath}.md`);
 
-		const isTFile = target instanceof TFile || (target && typeof target === "object" && "extension" in target);
-		const isTFolder = target instanceof TFolder || (target && typeof target === "object" && "children" in target);
-
-		if (isTFile) {
-			const file = target as TFile;
-			const isCanvas = file.extension === "canvas";
+		if (target instanceof TFile) {
+			const isCanvas = target.extension === "canvas";
 			const newAttachment: ContextAttachment = {
 				type: isCanvas ? "canvas" : "file",
-				path: file.path,
-				name: file.extension === "md" ? file.basename : file.name,
+				path: target.path,
+				name: target.extension === "md" ? target.basename : target.name,
 			};
 			const latest = ctx.attachments;
 			if (!latest.some((a) => a.path === newAttachment.path)) {
 				ctx.setAttachments([...latest, newAttachment]);
 				addedAny = true;
 			}
-		} else if (isTFolder) {
-			const folder = target as TFolder;
+		} else if (target instanceof TFolder) {
 			const newAttachment: ContextAttachment = {
 				type: "folder",
-				path: folder.path,
-				name: folder.name,
+				path: target.path,
+				name: target.name,
 			};
 			const latest = ctx.attachments;
 			if (!latest.some((a) => a.path === newAttachment.path)) {

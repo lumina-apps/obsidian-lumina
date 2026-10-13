@@ -1818,8 +1818,40 @@ button.lumina-chat__send-btn.lumina-chat__send-btn--cancel:hover {
 }
 
 .lumina-chat__input-area.is-dragover {
-	border-color: var(--interactive-accent) !important;
+	border-color: var(--interactive-accent);
 	background: var(--background-modifier-hover);
+}
+
+/* Attachment Preview Modal */
+
+.lumina-attachment-modal-title {
+	margin-bottom: 12px;
+	word-break: break-all;
+}
+
+.lumina-attachment-modal-image-wrap {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.lumina-attachment-preview-img {
+	max-width: 100%;
+	max-height: 70vh;
+	object-fit: contain;
+	display: block;
+	margin: 0 auto;
+	border-radius: 8px;
+}
+
+.lumina-attachment-preview-text {
+	max-height: 60vh;
+	overflow-y: auto;
+	white-space: pre-wrap;
+	user-select: text;
+	padding: 12px;
+	background: var(--background-secondary);
+	border-radius: 6px;
 }
 
 /* Misc */

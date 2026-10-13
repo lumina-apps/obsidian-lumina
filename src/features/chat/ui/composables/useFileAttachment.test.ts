@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { TFile, TFolder } from 'obsidian';
 import {
 	createRemoveAttachment,
 	handleFiles,
@@ -170,12 +171,12 @@ describe('useFileAttachment composable', () => {
 	});
 
 	it('createDropHandler handles internal Obsidian note drop via [[Note Link]] text', async () => {
-		const mockFile = {
+		const mockFile = Object.assign(new TFile(), {
 			path: 'Notes/Project.md',
 			basename: 'Project',
 			name: 'Project.md',
 			extension: 'md',
-		};
+		});
 		const mockPlugin = {
 			app: {
 				metadataCache: {
@@ -229,12 +230,12 @@ describe('useFileAttachment composable', () => {
 	});
 
 	it('createDropHandler handles Obsidian file explorer drag with obsidian:// URL', async () => {
-		const mockFile = {
+		const mockFile = Object.assign(new TFile(), {
 			path: '00_Guides/Prompting.md',
 			basename: 'Prompting',
 			name: 'Prompting.md',
 			extension: 'md',
-		};
+		});
 		const mockPlugin = {
 			app: {
 				metadataCache: {
@@ -290,6 +291,64 @@ describe('useFileAttachment composable', () => {
 				type: 'file',
 				path: '00_Guides/Prompting.md',
 				name: 'Prompting',
+			},
+		]);
+	});
+
+	it('createDropHandler handles folder drop via path', async () => {
+		const mockFolder = Object.assign(new TFolder(), {
+			path: 'Projects/Lumina',
+			name: 'Lumina',
+			children: [],
+		});
+		const mockPlugin = {
+			app: {
+				metadataCache: {
+					getFirstLinkpathDest: vi.fn().mockReturnValue(null),
+				},
+				vault: {
+					getAbstractFileByPath: vi.fn((path: string) => {
+						if (path === 'Projects/Lumina') return mockFolder;
+						return null;
+					}),
+				},
+			},
+		} as unknown as LuminaPlugin;
+
+		let attachments: ContextAttachment[] = [];
+		const setAttachments = vi.fn((updated: ContextAttachment[]) => {
+			attachments = updated;
+		});
+
+		const ctx = {
+			plugin: mockPlugin,
+			get attachments() {
+				return attachments;
+			},
+			setAttachments,
+			t: (k: string) => k,
+			onResizeTextarea: vi.fn(),
+		};
+
+		const dropHandler = (await import('./useFileAttachment')).createDropHandler(ctx);
+
+		const mockEvent = {
+			preventDefault: vi.fn(),
+			stopPropagation: vi.fn(),
+			dataTransfer: {
+				files: [],
+				getData: (format: string) => (format === 'text/plain' ? 'Projects/Lumina' : ''),
+			},
+		} as unknown as DragEvent;
+
+		dropHandler(mockEvent);
+
+		expect(mockEvent.preventDefault).toHaveBeenCalled();
+		expect(setAttachments).toHaveBeenCalledWith([
+			{
+				type: 'folder',
+				path: 'Projects/Lumina',
+				name: 'Lumina',
 			},
 		]);
 	});

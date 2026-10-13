@@ -78,24 +78,11 @@ export class AttachmentPreviewModal extends Modal {
 			});
 			img.src = this.attachment.content;
 			img.alt = this.attachment.name;
-			img.style.maxWidth = "100%";
-			img.style.maxHeight = "70vh";
-			img.style.objectFit = "contain";
-			img.style.display = "block";
-			img.style.margin = "0 auto";
-			img.style.borderRadius = "8px";
 		} else if (this.attachment.content) {
 			const pre = contentEl.createEl("pre", {
 				cls: "lumina-attachment-preview-text",
 			});
 			pre.textContent = this.attachment.content.slice(0, 50000);
-			pre.style.maxHeight = "60vh";
-			pre.style.overflowY = "auto";
-			pre.style.whiteSpace = "pre-wrap";
-			pre.style.userSelect = "text";
-			pre.style.padding = "12px";
-			pre.style.background = "var(--background-secondary)";
-			pre.style.borderRadius = "6px";
 		}
 	}
 
