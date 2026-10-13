@@ -163,6 +163,33 @@ export async function processFiles(
 			continue;
 		}
 
+		// 이미지 파일인 경우: Obsidian 볼트의 첨부 파일 폴더에 저장하여 실제 디스크 경로를 확보 (CLI 비전 에이전트 및 옵시디언 뷰어 지원)
+		if (IMAGE_EXTS.has(ext) && plugin?.app?.fileManager && plugin?.app?.vault) {
+			try {
+				const now = new Date();
+				const pad = (n: number) => String(n).padStart(2, '0');
+				const dateStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+				const isPasted = file.name.startsWith('Pasted_Image_') || file.name === 'image.png' || !file.name.includes('.');
+				const candidateName = isPasted
+					? `Pasted image ${dateStr}.${ext}`
+					: file.name;
+
+				const targetPath = await plugin.app.fileManager.getAvailablePathForAttachment(candidateName, '');
+				const buffer = await file.arrayBuffer();
+				const created = await plugin.app.vault.createBinary(targetPath, buffer);
+				if (created) {
+					newAttachments.push({
+						type: 'file',
+						path: created.path,
+						name: created.name || created.basename,
+					});
+					continue;
+				}
+			} catch (err) {
+				debugLogger.logWarn('file_attachment', `Failed to save image attachment to vault, falling back to inline data URL: ${err}`);
+			}
+		}
+
 		try {
 			const content = await readFileContent(file, ext, t, plugin);
 			if (content === null) continue;

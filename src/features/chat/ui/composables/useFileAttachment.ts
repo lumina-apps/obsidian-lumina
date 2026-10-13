@@ -47,6 +47,84 @@ export function createFileSelectHandler(
 }
 
 /**
+/**
+ * 텍스트 라인에서 옵시디언 노트/폴더/파일 링크를 추출하여 첨부합니다.
+ */
+export function attachTextLinks(text: string, ctx: FileAttachmentContext): boolean {
+	if (!text || !ctx.plugin?.app) return false;
+	const app = ctx.plugin.app;
+	const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+	let addedAny = false;
+
+	for (let line of lines) {
+		// 1) obsidian:// URL 처리
+		if (line.startsWith("obsidian://")) {
+			try {
+				const parsed = new URL(line);
+				const fileParam = parsed.searchParams.get("file");
+				if (fileParam) {
+					line = decodeURIComponent(fileParam);
+				}
+			} catch {
+				const match = line.match(/file=([^&]+)/);
+				if (match) line = decodeURIComponent(match[1]);
+			}
+		}
+
+		// 2) file:// URL 처리 (Finder 복사 등)
+		if (line.startsWith("file://")) {
+			try {
+				const parsed = new URL(line);
+				line = decodeURIComponent(parsed.pathname);
+			} catch {
+				// ignore
+			}
+		}
+
+		// 3) [[wikilink]] 또는 파일 경로 정규화
+		const linkpath = line.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].split("#")[0].trim();
+		const target = app.metadataCache.getFirstLinkpathDest(linkpath, "") ??
+			app.vault.getAbstractFileByPath(linkpath) ??
+			app.vault.getAbstractFileByPath(`${linkpath}.md`);
+
+		const isTFile = target instanceof TFile || (target && typeof target === "object" && "extension" in target);
+		const isTFolder = target instanceof TFolder || (target && typeof target === "object" && "children" in target);
+
+		if (isTFile) {
+			const file = target as TFile;
+			const isCanvas = file.extension === "canvas";
+			const newAttachment: ContextAttachment = {
+				type: isCanvas ? "canvas" : "file",
+				path: file.path,
+				name: file.extension === "md" ? file.basename : file.name,
+			};
+			const latest = ctx.attachments;
+			if (!latest.some((a) => a.path === newAttachment.path)) {
+				ctx.setAttachments([...latest, newAttachment]);
+				addedAny = true;
+			}
+		} else if (isTFolder) {
+			const folder = target as TFolder;
+			const newAttachment: ContextAttachment = {
+				type: "folder",
+				path: folder.path,
+				name: folder.name,
+			};
+			const latest = ctx.attachments;
+			if (!latest.some((a) => a.path === newAttachment.path)) {
+				ctx.setAttachments([...latest, newAttachment]);
+				addedAny = true;
+			}
+		}
+	}
+
+	if (addedAny) {
+		window.setTimeout(() => ctx.onResizeTextarea(), 0);
+	}
+	return addedAny;
+}
+
+/**
  * drop 이벤트 핸들러
  */
 export function createDropHandler(
@@ -63,66 +141,8 @@ export function createDropHandler(
 
 		// 옵시디언 내부 파일 탐색기 또는 에디터에서 드래그한 경우 지원 ([[노트명]], obsidian:// URL, 파일 경로)
 		const text = e.dataTransfer?.getData("text/plain")?.trim();
-		if (text && ctx.plugin?.app) {
-			const app = ctx.plugin.app;
-			const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-			let addedAny = false;
-
-			for (let line of lines) {
-				// 1) obsidian:// URL 처리 (파일 탐색기 드래그 시)
-				if (line.startsWith("obsidian://")) {
-					try {
-						const parsed = new URL(line);
-						const fileParam = parsed.searchParams.get("file");
-						if (fileParam) {
-							line = decodeURIComponent(fileParam);
-						}
-					} catch {
-						const match = line.match(/file=([^&]+)/);
-						if (match) line = decodeURIComponent(match[1]);
-					}
-				}
-
-				// 2) [[wikilink]] 또는 파일 경로 정규화
-				const linkpath = line.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].split("#")[0].trim();
-				const target = app.metadataCache.getFirstLinkpathDest(linkpath, "") ??
-					app.vault.getAbstractFileByPath(linkpath) ??
-					app.vault.getAbstractFileByPath(`${linkpath}.md`);
-
-				const isTFile = target instanceof TFile || (target && typeof target === "object" && "extension" in target);
-				const isTFolder = target instanceof TFolder || (target && typeof target === "object" && "children" in target);
-
-				if (isTFile) {
-					const file = target as TFile;
-					const isCanvas = file.extension === "canvas";
-					const newAttachment: ContextAttachment = {
-						type: isCanvas ? "canvas" : "file",
-						path: file.path,
-						name: file.extension === "md" ? file.basename : file.name,
-					};
-					const latest = ctx.attachments;
-					if (!latest.some((a) => a.path === newAttachment.path)) {
-						ctx.setAttachments([...latest, newAttachment]);
-						addedAny = true;
-					}
-				} else if (isTFolder) {
-					const folder = target as TFolder;
-					const newAttachment: ContextAttachment = {
-						type: "folder",
-						path: folder.path,
-						name: folder.name,
-					};
-					const latest = ctx.attachments;
-					if (!latest.some((a) => a.path === newAttachment.path)) {
-						ctx.setAttachments([...latest, newAttachment]);
-						addedAny = true;
-					}
-				}
-			}
-
-			if (addedAny) {
-				window.setTimeout(() => ctx.onResizeTextarea(), 0);
-			}
+		if (text) {
+			attachTextLinks(text, ctx);
 		}
 	};
 }
@@ -147,7 +167,8 @@ export function createPasteHandler(
 		if (!clipboardData) return;
 
 		const html = clipboardData.getData("text/html") || "";
-		const hasPlainText = Boolean(clipboardData.getData("text/plain")?.trim());
+		const rawPlainText = clipboardData.getData("text/plain") || "";
+		const hasPlainText = Boolean(rawPlainText.trim());
 		// MS Office(Excel/Word) 셀 복사 시 가상 렌더링 이미지 대신 텍스트를 우선하기 위한 전용 서명 검사
 		const isOfficeCellCopy = hasPlainText && (
 			html.includes("urn:schemas-microsoft-com:office") ||
@@ -180,6 +201,17 @@ export function createPasteHandler(
 			e.preventDefault?.();
 			e.stopPropagation?.();
 			void handleFiles(files, ctx);
+			return;
+		}
+
+		// 파일 바이너리가 없는 경우 (예: Finder에서 파일 복사 후 붙여넣거나 노트 링크 복사 후 붙여넣기한 경우)
+		const text = rawPlainText.trim();
+		if (text && (text.startsWith("file://") || text.startsWith("obsidian://") || text.startsWith("[[") || text.includes("/"))) {
+			const attached = attachTextLinks(text, ctx);
+			if (attached) {
+				e.preventDefault?.();
+				e.stopPropagation?.();
+			}
 		}
 	};
 }

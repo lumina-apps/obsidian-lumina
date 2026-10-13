@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { tick } from "svelte";
-	import { setIcon } from "obsidian";
+	import { setIcon, TFile } from "obsidian";
 	import type LuminaPlugin from "../../../main";
 	import type { Readable } from "svelte/store";
 	import type { TranslationKeys } from "../../../shared/locales/locale.types";
@@ -12,7 +12,7 @@
 	import ModelPickerPopup from "./ModelPickerPopup.svelte";
 	import PromptPickerPopup from "./PromptPickerPopup.svelte";
 	import ChatInputToolbar from "./ChatInputToolbar.svelte";
-	import { getAttachmentIcon } from "../utils/fileAttachmentUtils";
+	import { getAttachmentIcon, IMAGE_EXTS } from "../utils/fileAttachmentUtils";
 	import { resizeTextarea } from "../../../shared/utils/textareaUtils";
 	import { buildSlashCommands } from "../utils/slashCommandUtils";
 	import { activeProject } from "../../../core/store/projectStore";
@@ -320,6 +320,22 @@
 		openAttachment(plugin.app, att, e);
 	}
 
+	function getImageSrc(att: ContextAttachment): string | null {
+		if (att.content?.startsWith("data:image/")) {
+			return att.content;
+		}
+		if (att.path) {
+			const ext = att.path.split(".").pop()?.toLowerCase() ?? "";
+			if (IMAGE_EXTS.has(ext)) {
+				const file = plugin?.app?.vault?.getAbstractFileByPath(att.path);
+				if (file instanceof TFile) {
+					return plugin.app.vault.getResourcePath(file);
+				}
+			}
+		}
+		return null;
+	}
+
 	// ── 슬래시 명령어 빌드 ─────────────────────────────────────────────────
 	const slashCommands = $derived(
 		buildSlashCommands(
@@ -438,9 +454,9 @@
 								}
 							}}
 						>
-							{#if att.content?.startsWith("data:image/")}
+							{#if getImageSrc(att)}
 								<img
-									src={att.content}
+									src={getImageSrc(att)}
 									alt={att.name}
 									class="lumina-chat__attachment-thumb"
 								/>
