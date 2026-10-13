@@ -48,6 +48,8 @@
 	import { tStore } from "../../../shared/locales/index";
 	import { executeProjectSwitch } from "./composables/useProjectSwitch";
 	import { useChatActions } from "./composables/useChatActions";
+	import { createDropHandler, createDragOverHandler } from "./composables/useFileAttachment";
+	import type { TranslationKeys } from "../../../shared/locales/locale.types";
 
 	let { plugin }: { plugin: LuminaPlugin } = $props();
 
@@ -407,9 +409,38 @@
 	function resetTextareaHeight(): void {
 		resizeTextarea(textareaEl);
 	}
+
+	const panelFileCtx = {
+		get plugin() {
+			return plugin;
+		},
+		get attachments() {
+			return attachments;
+		},
+		setAttachments: (a: ContextAttachment[]) => {
+			attachments = a;
+		},
+		t: (key: string, vars?: Record<string, string | number>) => {
+			let text = $tStore(key as TranslationKeys);
+			if (vars) {
+				for (const [k, v] of Object.entries(vars)) {
+					text = text.replace(`{{${k}}}`, String(v));
+				}
+			}
+			return text;
+		},
+		onResizeTextarea: resetTextareaHeight,
+	};
+	const handlePanelDrop = createDropHandler(panelFileCtx);
+	const handlePanelDragOver = createDragOverHandler();
 </script>
 
-<div class="lumina-chat">
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+	class="lumina-chat"
+	ondrop={handlePanelDrop}
+	ondragover={handlePanelDragOver}
+>
 	<ChatHeader
 		{plugin}
 		verifiedProviders={$verifiedProviders}

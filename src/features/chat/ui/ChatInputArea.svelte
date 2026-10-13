@@ -351,18 +351,25 @@
 
 	// ── 드래그 앤 드롭 상태 ───────────────────────────────────────────────
 	let isDragOver = $state(false);
+	let dragCounter = 0;
 
 	function handleDragEnter(e: DragEvent) {
 		e.preventDefault();
+		dragCounter++;
 		isDragOver = true;
 	}
 
 	function handleDragLeave(e: DragEvent) {
 		e.preventDefault();
-		isDragOver = false;
+		dragCounter--;
+		if (dragCounter <= 0) {
+			dragCounter = 0;
+			isDragOver = false;
+		}
 	}
 
 	function handleAreaDrop(e: DragEvent) {
+		dragCounter = 0;
 		isDragOver = false;
 		handleDrop(e);
 	}
@@ -526,6 +533,8 @@
 					onkeydown={handleKeydown}
 					oninput={handleInput}
 					onpaste={handlePaste}
+					ondrop={handleAreaDrop}
+					ondragover={handleDragOver}
 					onfocus={() => activeTracker.updateActiveFile()}
 				></textarea>
 

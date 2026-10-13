@@ -205,6 +205,7 @@ describe('useFileAttachment composable', () => {
 
 		const mockEvent = {
 			preventDefault: vi.fn(),
+			stopPropagation: vi.fn(),
 			dataTransfer: {
 				files: [],
 				getData: (format: string) => (format === 'text/plain' ? '[[Project]]' : ''),
@@ -221,5 +222,104 @@ describe('useFileAttachment composable', () => {
 				name: 'Project',
 			},
 		]);
+	});
+
+	it('createDropHandler handles Obsidian file explorer drag with obsidian:// URL', async () => {
+		const mockFile = {
+			path: '00_Guides/Prompting.md',
+			basename: 'Prompting',
+			name: 'Prompting.md',
+			extension: 'md',
+		};
+		const mockPlugin = {
+			app: {
+				metadataCache: {
+					getFirstLinkpathDest: vi.fn((link: string) => {
+						if (link === '00_Guides/Prompting' || link === '00_Guides/Prompting.md') return mockFile;
+						return null;
+					}),
+				},
+				vault: {
+					getAbstractFileByPath: vi.fn((path: string) => {
+						if (path === '00_Guides/Prompting.md') return mockFile;
+						return null;
+					}),
+				},
+			},
+		} as unknown as LuminaPlugin;
+
+		let attachments: ContextAttachment[] = [];
+		const setAttachments = vi.fn((updated: ContextAttachment[]) => {
+			attachments = updated;
+		});
+
+		const ctx = {
+			plugin: mockPlugin,
+			get attachments() {
+				return attachments;
+			},
+			setAttachments,
+			t: (k: string) => k,
+			onResizeTextarea: vi.fn(),
+		};
+
+		const dropHandler = (await import('./useFileAttachment')).createDropHandler(ctx);
+
+		const mockEvent = {
+			preventDefault: vi.fn(),
+			stopPropagation: vi.fn(),
+			dataTransfer: {
+				files: [],
+				getData: (format: string) =>
+					format === 'text/plain'
+						? 'obsidian://open?vault=Vault&file=00_Guides%2FPrompting'
+						: '',
+			},
+		} as unknown as DragEvent;
+
+		dropHandler(mockEvent);
+
+		expect(mockEvent.preventDefault).toHaveBeenCalled();
+		expect(mockEvent.stopPropagation).toHaveBeenCalled();
+		expect(setAttachments).toHaveBeenCalledWith([
+			{
+				type: 'file',
+				path: '00_Guides/Prompting.md',
+				name: 'Prompting',
+			},
+		]);
+	});
+
+	it('createFileSelectHandler clones files before resetting input value', async () => {
+		const processFilesSpy = vi.spyOn(fileAttachmentUtils, 'processFiles').mockResolvedValue([]);
+		const dummyFile = new File(['text'], 'sample.txt', { type: 'text/plain' });
+		const setAttachments = vi.fn();
+		const ctx = {
+			plugin: {} as LuminaPlugin,
+			attachments: [],
+			setAttachments,
+			t: (k: string) => k,
+			onResizeTextarea: vi.fn(),
+		};
+
+		const { createFileSelectHandler } = await import('./useFileAttachment');
+		const handler = createFileSelectHandler(ctx);
+
+		const input = document.createElement('input');
+		input.type = 'file';
+		Object.defineProperty(input, 'files', {
+			value: [dummyFile],
+			writable: true,
+		});
+
+		handler({ target: input } as unknown as Event);
+
+		expect(processFilesSpy).toHaveBeenCalledWith(
+			expect.arrayContaining([dummyFile]),
+			[],
+			expect.any(Function),
+			expect.anything()
+		);
+		expect(input.value).toBe('');
 	});
 });

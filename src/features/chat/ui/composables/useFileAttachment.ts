@@ -39,7 +39,8 @@ export function createFileSelectHandler(
 	return (e: Event) => {
 		const target = e.target as HTMLInputElement;
 		if (!target.files || target.files.length === 0) return;
-		const files = target.files;
+		// Live FileList must be cloned to Array before clearing input.value
+		const files = Array.from(target.files);
 		target.value = "";
 		void handleFiles(files, ctx);
 	};
@@ -53,49 +54,74 @@ export function createDropHandler(
 ): (e: DragEvent) => void {
 	return (e: DragEvent) => {
 		e.preventDefault();
+		e.stopPropagation();
 		const files = e.dataTransfer?.files;
 		if (files && files.length > 0) {
-			void handleFiles(files, ctx);
+			void handleFiles(Array.from(files), ctx);
 			return;
 		}
 
-		// 옵시디언 내부 파일 탐색기에서 드래그한 경우 지원 ([[노트명]] 또는 파일 경로)
+		// 옵시디언 내부 파일 탐색기 또는 에디터에서 드래그한 경우 지원 ([[노트명]], obsidian:// URL, 파일 경로)
 		const text = e.dataTransfer?.getData("text/plain")?.trim();
 		if (text && ctx.plugin?.app) {
 			const app = ctx.plugin.app;
-			const linkpath = text.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].split("#")[0].trim();
-			const target = app.metadataCache.getFirstLinkpathDest(linkpath, "") ??
-				app.vault.getAbstractFileByPath(linkpath) ??
-				app.vault.getAbstractFileByPath(`${linkpath}.md`);
+			const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+			let addedAny = false;
 
-			const isTFile = target instanceof TFile || (target && typeof target === "object" && "extension" in target);
-			const isTFolder = target instanceof TFolder || (target && typeof target === "object" && "children" in target);
+			for (let line of lines) {
+				// 1) obsidian:// URL 처리 (파일 탐색기 드래그 시)
+				if (line.startsWith("obsidian://")) {
+					try {
+						const parsed = new URL(line);
+						const fileParam = parsed.searchParams.get("file");
+						if (fileParam) {
+							line = decodeURIComponent(fileParam);
+						}
+					} catch {
+						const match = line.match(/file=([^&]+)/);
+						if (match) line = decodeURIComponent(match[1]);
+					}
+				}
 
-			if (isTFile) {
-				const file = target as TFile;
-				const isCanvas = file.extension === "canvas";
-				const newAttachment: ContextAttachment = {
-					type: isCanvas ? "canvas" : "file",
-					path: file.path,
-					name: file.extension === "md" ? file.basename : file.name,
-				};
-				const latest = ctx.attachments;
-				if (!latest.some((a) => a.path === newAttachment.path)) {
-					ctx.setAttachments([...latest, newAttachment]);
-					window.setTimeout(() => ctx.onResizeTextarea(), 0);
+				// 2) [[wikilink]] 또는 파일 경로 정규화
+				const linkpath = line.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].split("#")[0].trim();
+				const target = app.metadataCache.getFirstLinkpathDest(linkpath, "") ??
+					app.vault.getAbstractFileByPath(linkpath) ??
+					app.vault.getAbstractFileByPath(`${linkpath}.md`);
+
+				const isTFile = target instanceof TFile || (target && typeof target === "object" && "extension" in target);
+				const isTFolder = target instanceof TFolder || (target && typeof target === "object" && "children" in target);
+
+				if (isTFile) {
+					const file = target as TFile;
+					const isCanvas = file.extension === "canvas";
+					const newAttachment: ContextAttachment = {
+						type: isCanvas ? "canvas" : "file",
+						path: file.path,
+						name: file.extension === "md" ? file.basename : file.name,
+					};
+					const latest = ctx.attachments;
+					if (!latest.some((a) => a.path === newAttachment.path)) {
+						ctx.setAttachments([...latest, newAttachment]);
+						addedAny = true;
+					}
+				} else if (isTFolder) {
+					const folder = target as TFolder;
+					const newAttachment: ContextAttachment = {
+						type: "folder",
+						path: folder.path,
+						name: folder.name,
+					};
+					const latest = ctx.attachments;
+					if (!latest.some((a) => a.path === newAttachment.path)) {
+						ctx.setAttachments([...latest, newAttachment]);
+						addedAny = true;
+					}
 				}
-			} else if (isTFolder) {
-				const folder = target as TFolder;
-				const newAttachment: ContextAttachment = {
-					type: "folder",
-					path: folder.path,
-					name: folder.name,
-				};
-				const latest = ctx.attachments;
-				if (!latest.some((a) => a.path === newAttachment.path)) {
-					ctx.setAttachments([...latest, newAttachment]);
-					window.setTimeout(() => ctx.onResizeTextarea(), 0);
-				}
+			}
+
+			if (addedAny) {
+				window.setTimeout(() => ctx.onResizeTextarea(), 0);
 			}
 		}
 	};
