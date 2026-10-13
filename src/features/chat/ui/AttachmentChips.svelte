@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { App } from "obsidian";
+	import { TFile, type App } from "obsidian";
 	import type { ContextAttachment } from "../../../shared/types/chat.types";
-	import { getAttachmentIcon } from "../utils/fileAttachmentUtils";
+	import { getAttachmentIcon, IMAGE_EXTS } from "../utils/fileAttachmentUtils";
 	import { icon } from "../../../shared/utils/iconAction";
 	import { openAttachment } from "./utils/messageActions";
 
@@ -15,6 +15,26 @@
 
 	function handleClick(att: ContextAttachment, e: MouseEvent | KeyboardEvent) {
 		openAttachment(app, att, e);
+	}
+
+	function getImageSrc(att: ContextAttachment): string | null {
+		if (att.content?.startsWith("data:image/")) {
+			return att.content;
+		}
+		const pathOrName = att.path || att.name;
+		if (pathOrName) {
+			const ext = pathOrName.split(".").pop()?.toLowerCase() ?? "";
+			if (IMAGE_EXTS.has(ext)) {
+				let file = app.vault.getAbstractFileByPath(pathOrName);
+				if (!file) {
+					file = app.metadataCache.getFirstLinkpathDest(pathOrName, "");
+				}
+				if (file instanceof TFile) {
+					return app.vault.getResourcePath(file);
+				}
+			}
+		}
+		return null;
 	}
 </script>
 
@@ -34,8 +54,8 @@
 			role="button"
 			tabindex="0"
 		>
-			{#if att.content?.startsWith('data:image/')}
-				<img src={att.content} alt={att.name} class="lumina-message__attachment-thumb" />
+			{#if getImageSrc(att)}
+				<img src={getImageSrc(att)} alt={att.name} class="lumina-message__attachment-thumb" />
 			{:else}
 				<span class="lumina-message__attachment-icon" use:icon={getAttachmentIcon(att.type)}></span>
 			{/if}

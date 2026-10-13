@@ -132,7 +132,7 @@ export function openAttachment(
 			new Notice(`Tag: #${att.name}`);
 		}
 	} else if (att.type === "external_file" || att.content) {
-		const targetPath = att.path;
+		const targetPath = att.path || att.name;
 		let inVaultFile: unknown = null;
 		if (targetPath) {
 			inVaultFile = app.vault.getAbstractFileByPath(targetPath) ??
@@ -142,8 +142,10 @@ export function openAttachment(
 			void openFile(app, inVaultFile.path, e);
 		} else if (att.content) {
 			new AttachmentPreviewModal(app, att).open();
-		} else if (targetPath) {
-			void openFile(app, targetPath, e);
+		} else if (att.path) {
+			void openFile(app, att.path, e);
+		} else {
+			new Notice(t("uiMessages.fileNotFound"));
 		}
 	}
 }
