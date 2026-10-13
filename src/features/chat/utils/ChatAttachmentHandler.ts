@@ -9,6 +9,7 @@ import type LuminaPlugin from '../../../main';
 import { t } from '../../../shared/locales/helpers';
 import { debugLogger } from '../../../shared/debugLogger';
 import { resizeImageDataUrl } from './imageUtils';
+import { TEXT_EXTS } from './fileAttachmentUtils';
 
 export const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif']);
 const MAX_TEXT_LENGTH = 2000000; // 물리적 텍스트 안전 상한선 (약 50만 토큰, OOM 힙 크래시 방지)
@@ -60,7 +61,7 @@ export class ChatAttachmentHandler {
 					return this.parseSelectionAttachment(app, att);
 
 				case 'active_note':
-					return await this.parseActiveNoteAttachment(app, att);
+					return await this.parseActiveNoteAttachment(app, att, plugin);
 
 				case 'canvas':
 					return await this.parseCanvasAttachment(app, att);
@@ -95,20 +96,22 @@ export class ChatAttachmentHandler {
 			return { type: 'image', content: resized };
 		}
 
-		// 2. 문서 파일 처리 (파서 라우터 재사용)
-		if (SUPPORTED_EXTENSIONS.has(ext)) {
-			let text = '';
-			if (['pdf', 'docx', 'xlsx', 'xls', 'pptx', 'epub'].includes(ext)) {
-				if (plugin?.embeddingWorker) {
-					const buffer = await app.vault.readBinary(file);
-					text = await plugin.embeddingWorker.parse(buffer, ext);
-				} else {
-					debugLogger.logWarn('chat_attachment', `Worker not ready to parse binary file: ${file.name}`);
-				}
+		// 2. 바이너리 문서 파일 처리 (파서 워커 사용)
+		if (['pdf', 'docx', 'xlsx', 'xls', 'pptx', 'epub'].includes(ext)) {
+			if (plugin?.embeddingWorker) {
+				const buffer = await app.vault.readBinary(file);
+				const text = await plugin.embeddingWorker.parse(buffer, ext);
+				return this.createTextPayload(`[첨부 파일: ${att.name}]\n${text}`);
 			} else {
-				const textContent = await app.vault.read(file);
-				text = await DocumentParserRouter.parseText(textContent, ext);
+				debugLogger.logWarn('chat_attachment', `Worker not ready to parse binary file: ${file.name}`);
+				return null;
 			}
+		}
+
+		// 3. 텍스트 및 소스 코드 파일 처리 (SUPPORTED_EXTENSIONS, TEXT_EXTS)
+		if (SUPPORTED_EXTENSIONS.has(ext) || TEXT_EXTS.has(ext)) {
+			const textContent = await app.vault.read(file);
+			const text = await DocumentParserRouter.parseText(textContent, ext);
 			return this.createTextPayload(`[첨부 파일: ${att.name}]\n${text}`);
 		}
 
@@ -171,7 +174,7 @@ export class ChatAttachmentHandler {
 		const folder = app.vault.getAbstractFileByPath(att.path);
 		if (!(folder instanceof TFolder)) return null;
 
-		const mdFiles: TFile[] = [];
+		const textFiles: TFile[] = [];
 		const visitedFolders = new Set<string>();
 		const MAX_DEPTH = 15;
 
@@ -180,8 +183,11 @@ export class ChatAttachmentHandler {
 			visitedFolders.add(f.path);
 
 			for (const child of f.children) {
-				if (child instanceof TFile && child.extension === 'md') {
-					mdFiles.push(child);
+				if (child instanceof TFile) {
+					const childExt = child.extension?.toLowerCase() ?? '';
+					if (childExt === 'md' || TEXT_EXTS.has(childExt) || SUPPORTED_EXTENSIONS.has(childExt)) {
+						textFiles.push(child);
+					}
 				} else if (child instanceof TFolder) {
 					collectFiles(child, depth + 1);
 				}
@@ -191,7 +197,7 @@ export class ChatAttachmentHandler {
 
 		let folderContent = t('settings.chat.context.folderFiles', { name: att.name }) + '\n';
 		let readCount = 0;
-		for (const file of mdFiles) {
+		for (const file of textFiles) {
 			const content = await app.vault.read(file);
 			folderContent += `--- ${file.path} ---\n${content}\n\n`;
 			readCount++;
@@ -213,7 +219,7 @@ export class ChatAttachmentHandler {
 		return this.createTextPayload(`[${t('uiMessages.qaSelectedText')}]\n${selection}`);
 	}
 
-	private static async parseActiveNoteAttachment(app: App, att: ContextAttachment): Promise<ParsedAttachment | null> {
+	private static async parseActiveNoteAttachment(app: App, att: ContextAttachment, plugin?: LuminaPlugin): Promise<ParsedAttachment | null> {
 		let file: TFile | null = null;
 		if (att.path) {
 			const target = app.vault.getAbstractFileByPath(att.path);
@@ -230,6 +236,30 @@ export class ChatAttachmentHandler {
 			}
 		}
 		if (!file) return null;
+
+		const ext = file.extension?.toLowerCase() ?? '';
+
+		if (IMAGE_EXTENSIONS.has(ext)) {
+			const buffer = await app.vault.readBinary(file);
+			const base64 = this.arrayBufferToBase64(buffer);
+			const mimeType = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
+			const dataUrl = `data:${mimeType};base64,${base64}`;
+			const resized = await resizeImageDataUrl(dataUrl);
+			return { type: 'image', content: resized };
+		}
+
+		if (['pdf', 'docx', 'xlsx', 'xls', 'pptx', 'epub'].includes(ext)) {
+			if (plugin?.embeddingWorker) {
+				const buffer = await app.vault.readBinary(file);
+				const text = await plugin.embeddingWorker.parse(buffer, ext);
+				return this.createTextPayload(
+					t('settings.chat.context.activeNotePrefix', { name: file.basename }) + '\n' + text,
+				);
+			}
+			debugLogger.logWarn('chat_attachment', `Worker not ready to parse binary file: ${file.name}`);
+			return null;
+		}
+
 		const content = await app.vault.read(file);
 		return this.createTextPayload(
 			t('settings.chat.context.activeNotePrefix', { name: file.basename }) + '\n' + content,

@@ -603,6 +603,194 @@ async function run() {
 		await sleep(200);
 	}
 
+	// ─── SUITE: Chat Context & Attachment Interactions ──────────────────────
+	reporter.startSuite('Chat Context & Attachment Interactions');
+	try {
+		// Ensure chat view is open
+		await client.evaluate(`app.commands.executeCommandById('lumina:open-chat')`);
+		await sleep(500);
+
+		// 1. Context Selector Popup & Attachment Lifecycle
+		const tAttach = Date.now();
+		try {
+			// Click the @ context button in toolbar
+			await client.evaluate(`(() => {
+				const btn = document.querySelector('.lumina-chat__toolbar-btn[aria-label*="컨텍스트"], .lumina-chat__toolbar-btn[aria-label*="Context"], .lumina-chat__toolbar-group button:first-child');
+				btn?.click();
+			})()`);
+			await sleep(400);
+
+			let popupMounted = await client.evaluate(`(() => {
+				return !!document.querySelector('.lumina-popup-selector');
+			})()`);
+
+			if (!popupMounted) {
+				// Fallback: input @ in textarea to trigger context popup
+				await client.evaluate(`(() => {
+					const ta = document.querySelector('.lumina-chat-view textarea');
+					if (ta) {
+						ta.focus();
+						ta.value = '@';
+						ta.dispatchEvent(new Event('input', { bubbles: true }));
+					}
+				})()`);
+				await sleep(400);
+				popupMounted = await client.evaluate(`(() => {
+					return !!document.querySelector('.lumina-popup-selector');
+				})()`);
+			}
+
+			// Select first category / item inside popup
+			let chipAdded = false;
+			if (popupMounted) {
+				await client.evaluate(`(() => {
+					const firstItem = document.querySelector('.lumina-popup-selector .lumina-popup-selector__item');
+					firstItem?.click();
+				})()`);
+				await sleep(400);
+
+				// If it entered a category (e.g. Files), click first file item inside category
+				const stillInPopup = await client.evaluate(`!!document.querySelector('.lumina-popup-selector')`);
+				if (stillInPopup) {
+					await client.evaluate(`(() => {
+						const subItem = document.querySelector('.lumina-popup-selector .lumina-popup-selector__item');
+						subItem?.click();
+					})()`);
+					await sleep(400);
+				}
+
+				chipAdded = await client.evaluate(`(() => {
+					const chips = document.querySelectorAll('.lumina-chat__attachment-chip');
+					return chips.length > 0;
+				})()`);
+			}
+
+			// Remove attachment chip
+			let chipRemoved = false;
+			if (chipAdded) {
+				await client.evaluate(`(() => {
+					const removeBtn = document.querySelector('.lumina-chat__attachment-chip .lumina-chat__attachment-remove');
+					removeBtn?.click();
+				})()`);
+				await sleep(300);
+
+				chipRemoved = await client.evaluate(`(() => {
+					return document.querySelectorAll('.lumina-chat__attachment-chip').length === 0;
+				})()`);
+			}
+
+			reporter.record(
+				'Context Selector & Attachment Chip Lifecycle',
+				popupMounted && chipAdded && chipRemoved,
+				`Popup: ${popupMounted}, Chip Added: ${chipAdded}, Chip Removed: ${chipRemoved}`,
+				Date.now() - tAttach
+			);
+		} catch (err) {
+			reporter.record('Context Selector & Attachment Chip Lifecycle', false, err.message, Date.now() - tAttach);
+		}
+
+		// 2. Active Note Context Toggle & Token Estimation Badge
+		const tActiveNote = Date.now();
+		try {
+			const toggleResult = await client.evaluate(`(async () => {
+				const badges = Array.from(document.querySelectorAll('.lumina-chat__context-badge'));
+				if (badges.length === 0) return { success: false, reason: 'Badge not found' };
+				const noteBadge = badges.find(b => {
+					const text = (b.textContent || '') + (b.getAttribute('aria-label') || '');
+					return text.includes('Note') || text.includes('노트');
+				}) || badges[badges.length - 1];
+
+				const initialActive = noteBadge.classList.contains('is-active');
+				noteBadge.click();
+				await new Promise(r => setTimeout(r, 100));
+				const toggledActive = noteBadge.classList.contains('is-active');
+				// toggle back to original
+				noteBadge.click();
+				await new Promise(r => setTimeout(r, 100));
+				return {
+					success: initialActive !== toggledActive,
+					initialActive,
+					toggledActive,
+					hasTokenBadge: !!document.querySelector('.lumina-chat__token-stats, .lumina-chat__hint-inline')
+				};
+			})()`);
+
+			reporter.record(
+				'Active Note Context Toggle & Token Badge',
+				toggleResult.success,
+				`Toggled: ${toggleResult.initialActive} -> ${toggleResult.toggledActive}, Token badge: ${toggleResult.hasTokenBadge}`,
+				Date.now() - tActiveNote
+			);
+		} catch (err) {
+			reporter.record('Active Note Context Toggle & Token Badge', false, err.message, Date.now() - tActiveNote);
+		}
+
+		// 3. Drag & Drop Visual State and Internal Obsidian Note Drop
+		const tDrop = Date.now();
+		try {
+			const dropResult = await client.evaluate(`(async () => {
+				const area = document.querySelector('.lumina-chat__input-area');
+				if (!area) return { success: false, reason: 'Input area not found' };
+
+				// 1) Test dragenter -> wait for Svelte 5 DOM flush -> check .is-dragover
+				area.dispatchEvent(new DragEvent('dragenter', { bubbles: true, cancelable: true }));
+				await new Promise(r => setTimeout(r, 100));
+				const hasDragOver = area.classList.contains('is-dragover');
+
+				// 2) Test dragleave -> wait for Svelte 5 DOM flush -> check removed .is-dragover
+				area.dispatchEvent(new DragEvent('dragleave', { bubbles: true, cancelable: true }));
+				await new Promise(r => setTimeout(r, 100));
+				const dragOverRemoved = !area.classList.contains('is-dragover');
+
+				// 3) Test native Obsidian note drop
+				const files = app.vault.getMarkdownFiles();
+				if (files.length === 0) return { success: false, reason: 'No markdown files in vault' };
+				const targetNote = files[0];
+
+				const dropEvent = new DragEvent('drop', { bubbles: true, cancelable: true });
+				Object.defineProperty(dropEvent, 'dataTransfer', {
+					value: {
+						files: [],
+						getData: (format) => format === 'text/plain' ? '[[' + targetNote.basename + ']]' : '',
+					}
+				});
+				area.dispatchEvent(dropEvent);
+				await new Promise(r => setTimeout(r, 400));
+
+				const chips = document.querySelectorAll('.lumina-chat__attachment-chip');
+				const chipMounted = chips.length > 0;
+				const chipName = document.querySelector('.lumina-chat__attachment-name')?.textContent || '';
+
+				// Cleanup chip
+				document.querySelector('.lumina-chat__attachment-remove')?.click();
+				await new Promise(r => setTimeout(r, 200));
+
+				return {
+					success: hasDragOver && dragOverRemoved && chipMounted,
+					hasDragOver,
+					dragOverRemoved,
+					chipMounted,
+					chipName: chipName.trim()
+				};
+			})()`);
+
+			reporter.record(
+				'Drag & Drop Dragover Feedback & Native Note Drop',
+				dropResult.success,
+				`Dragover: ${dropResult.hasDragOver}, Drop Clean: ${dropResult.dragOverRemoved}, Note Attached: "${dropResult.chipName}"`,
+				Date.now() - tDrop
+			);
+		} catch (err) {
+			reporter.record('Drag & Drop Dragover Feedback & Native Note Drop', false, err.message, Date.now() - tDrop);
+		}
+	} finally {
+		// Cleanup chat leaf
+		await client.evaluate(`(() => {
+			app.workspace.getLeavesOfType('lumina-chat').forEach(l => l.detach());
+		})()`);
+		await sleep(200);
+	}
+
 	// ─── SUITE 3: Debug Panel View ──────────────────────────────────────────
 	reporter.startSuite('Debug Panel (Logging System)');
 	try {

@@ -349,6 +349,24 @@
 		}
 	});
 
+	// ── 드래그 앤 드롭 상태 ───────────────────────────────────────────────
+	let isDragOver = $state(false);
+
+	function handleDragEnter(e: DragEvent) {
+		e.preventDefault();
+		isDragOver = true;
+	}
+
+	function handleDragLeave(e: DragEvent) {
+		e.preventDefault();
+		isDragOver = false;
+	}
+
+	function handleAreaDrop(e: DragEvent) {
+		isDragOver = false;
+		handleDrop(e);
+	}
+
 	// ── Obsidian 아이콘 액션 ──────────────────────────────────────────────
 	function icon(node: HTMLElement, iconId: string) {
 		setIcon(node, iconId);
@@ -364,8 +382,11 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
 	class="lumina-chat__input-area"
-	ondrop={handleDrop}
+	class:is-dragover={isDragOver}
+	ondrop={handleAreaDrop}
 	ondragover={handleDragOver}
+	ondragenter={handleDragEnter}
+	ondragleave={handleDragLeave}
 >
 	<ChatInputToolbar
 		{isCliSelected}
@@ -391,10 +412,18 @@
 				<div class="lumina-chat__attachments">
 					{#each attachments as att, i}
 						<div class="lumina-chat__attachment-chip">
-							<span
-								class="lumina-chat__attachment-icon"
-								use:icon={getAttachmentIcon(att.type)}
-							></span>
+							{#if att.content?.startsWith("data:image/")}
+								<img
+									src={att.content}
+									alt={att.name}
+									class="lumina-chat__attachment-thumb"
+								/>
+							{:else}
+								<span
+									class="lumina-chat__attachment-icon"
+									use:icon={getAttachmentIcon(att.type)}
+								></span>
+							{/if}
 							<span class="lumina-chat__attachment-name">{att.name}</span>
 							<button
 								class="lumina-chat__attachment-remove"

@@ -8,11 +8,25 @@ import { resizeImageDataUrl, MAX_ATTACHMENT_FILE_SIZE } from "./imageUtils";
 export const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "webp", "gif"]);
 export const TEXT_EXTS = new Set([
 	"md", "markdown", "txt", "csv", "json", "jsonl", "html", "htm",
-	"yaml", "yml", "py", "ts", "tsx", "js", "jsx", "svelte", "vue",
-	"css", "sh", "sql", "xml", "rs", "go", "java", "c", "cpp", "h",
-	"rb", "php", "log", "toml", "ini", "kt", "swift"
+	"yaml", "yml", "py", "ts", "tsx", "js", "jsx", "mjs", "cjs", "svelte", "vue",
+	"css", "scss", "sass", "less", "sh", "bash", "zsh", "sql", "xml", "rs", "go",
+	"java", "c", "cpp", "h", "hpp", "rb", "php", "log", "toml", "ini", "kt", "swift",
+	"lua", "dart", "r", "tex", "latex", "svg", "graphql", "gql", "proto", "scala",
+	"dockerfile", "makefile", "env", "gitignore"
 ]);
 export const DOC_EXTS = new Set(["pdf", "docx", "xlsx", "xls", "pptx", "epub"]);
+
+export function getFileExtension(file: File): string {
+	const name = file.name.trim();
+	if (name.startsWith(".") && !name.slice(1).includes(".")) {
+		return name.slice(1).toLowerCase();
+	}
+	const parts = name.split(".");
+	if (parts.length > 1) {
+		return parts.pop()?.toLowerCase() || "";
+	}
+	return name.toLowerCase();
+}
 
 export const FILE_INPUT_ACCEPT = Array.from([
 	...IMAGE_EXTS,
@@ -96,7 +110,7 @@ export async function readFileContent(
 	let content: string | null = null;
 	if (IMAGE_EXTS.has(ext)) {
 		content = await readImageAsDataURL(file, ext);
-	} else if (TEXT_EXTS.has(ext)) {
+	} else if (TEXT_EXTS.has(ext) || file.type.startsWith("text/") || file.type === "application/json" || file.type === "application/javascript") {
 		content = await readTextFile(file);
 	} else if (DOC_EXTS.has(ext)) {
 		content = await readBinaryDocument(file, ext, plugin, t);
@@ -138,7 +152,7 @@ export async function processFiles(
 		const file = extractFileFromEntry(files[i]);
 		if (!file) continue;
 
-		const ext = file.name.split(".").pop()?.toLowerCase() || "";
+		const ext = getFileExtension(file);
 
 		// Check if already exists
 		if (

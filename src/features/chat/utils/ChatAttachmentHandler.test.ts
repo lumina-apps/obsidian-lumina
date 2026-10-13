@@ -79,6 +79,29 @@ describe('ChatAttachmentHandler', () => {
 			expect(result?.content).toContain('# Hello World\nContent here');
 		});
 
+		it('should parse source code file (e.g. .ts, .py) from vault', async () => {
+			const file = new TFile();
+			file.path = 'src/main.ts';
+			file.name = 'main.ts';
+			file.basename = 'main';
+			file.extension = 'ts';
+
+			mockVault.getAbstractFileByPath.mockReturnValue(file);
+			mockVault.read.mockResolvedValue('export const x = 42;');
+
+			const att: ContextAttachment = {
+				type: 'file',
+				path: 'src/main.ts',
+				name: 'main.ts',
+			};
+
+			const result = await ChatAttachmentHandler.parseAttachment(mockApp, att);
+			expect(result).not.toBeNull();
+			expect(result?.type).toBe('text');
+			expect(result?.content).toContain('[첨부 파일: main.ts]');
+			expect(result?.content).toContain('export const x = 42;');
+		});
+
 		it('should parse image file to base64 data url', async () => {
 			const file = new TFile();
 			file.path = 'Images/photo.png';
@@ -341,6 +364,29 @@ describe('ChatAttachmentHandler', () => {
 
 			const result = await ChatAttachmentHandler.parseAttachment(mockApp, att);
 			expect(result).toBeNull();
+		});
+
+		it('should parse active note as image if active note is an image file', async () => {
+			const file = new TFile();
+			file.path = 'Images/active-photo.png';
+			file.name = 'active-photo.png';
+			file.basename = 'active-photo';
+			file.extension = 'png';
+
+			mockVault.getAbstractFileByPath.mockReturnValue(file);
+			const uint8 = new Uint8Array([1, 2, 3, 4]);
+			mockVault.readBinary.mockResolvedValue(uint8.buffer);
+
+			const att: ContextAttachment = {
+				type: 'active_note',
+				path: 'Images/active-photo.png',
+				name: 'active-photo',
+			};
+
+			const result = await ChatAttachmentHandler.parseAttachment(mockApp, att);
+			expect(result).not.toBeNull();
+			expect(result?.type).toBe('image');
+			expect(result?.content).toContain('data:image/png;base64,');
 		});
 	});
 

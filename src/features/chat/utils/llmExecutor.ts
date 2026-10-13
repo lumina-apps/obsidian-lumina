@@ -119,7 +119,11 @@ export async function executeCliAgentCall(
 				imageFiles.push(absPath);
 			}
 		} else if (att.content) {
-			inlineContexts.push(`[Attached Content: ${att.name}]\n${att.content}`);
+			if (att.content.startsWith('data:image/')) {
+				inlineContexts.push(`[Attached Image: ${att.name} (image binary omitted for CLI agent)]`);
+			} else {
+				inlineContexts.push(`[Attached Content: ${att.name}]\n${att.content}`);
+			}
 		}
 	}
 

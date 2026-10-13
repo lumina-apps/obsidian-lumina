@@ -9,6 +9,7 @@ import {
 	extractFileFromEntry,
 	normalizePastedFile,
 	getAttachmentIcon,
+	getFileExtension,
 } from './fileAttachmentUtils';
 import type { ContextAttachment } from '../../../shared/types/chat.types';
 import type LuminaPlugin from '../../../main';
@@ -16,6 +17,17 @@ import type LuminaPlugin from '../../../main';
 describe('fileAttachmentUtils', () => {
 	beforeEach(() => {
 		vi.restoreAllMocks();
+	});
+
+	describe('getFileExtension', () => {
+		it('extracts extension from normal files, dotfiles, and extensionless files', () => {
+			expect(getFileExtension(new File([], 'script.ts'))).toBe('ts');
+			expect(getFileExtension(new File([], '.gitignore'))).toBe('gitignore');
+			expect(getFileExtension(new File([], '.env'))).toBe('env');
+			expect(getFileExtension(new File([], 'Dockerfile'))).toBe('dockerfile');
+			expect(getFileExtension(new File([], 'Makefile'))).toBe('makefile');
+			expect(getFileExtension(new File([], 'archive.tar.gz'))).toBe('gz');
+		});
 	});
 
 	describe('getImageMimeType', () => {
@@ -111,6 +123,22 @@ describe('fileAttachmentUtils', () => {
 			const result = await readFileContent(file, 'exe', t);
 			expect(result).toBeNull();
 			expect(t).toHaveBeenCalledWith('uiMessages.unsupportedFileType', { ext: 'exe' });
+		});
+
+		it('reads dotfiles like .gitignore when ext is gitignore', async () => {
+			const file = new File(['node_modules\n*.log'], '.gitignore', { type: '' });
+			const t = vi.fn((k: string) => k);
+
+			const result = await readFileContent(file, 'gitignore', t);
+			expect(result).toBe('node_modules\n*.log');
+		});
+
+		it('reads files with text/* mime type even with uncommon extension', async () => {
+			const file = new File(['custom config text'], 'config.custom', { type: 'text/plain' });
+			const t = vi.fn((k: string) => k);
+
+			const result = await readFileContent(file, 'custom', t);
+			expect(result).toBe('custom config text');
 		});
 	});
 

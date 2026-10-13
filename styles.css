@@ -1797,6 +1797,19 @@ button.lumina-chat__send-btn.lumina-chat__send-btn--cancel:hover {
 
 .lumina-chat__attachment-remove svg { width: 10px; height: 10px; }
 
+.lumina-chat__attachment-thumb {
+	width: 14px;
+	height: 14px;
+	border-radius: 2px;
+	object-fit: cover;
+	flex-shrink: 0;
+}
+
+.lumina-chat__input-area.is-dragover {
+	border-color: var(--interactive-accent) !important;
+	background: var(--background-modifier-hover);
+}
+
 /* Misc */
 
 .lumina-chat__hint-inline {

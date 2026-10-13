@@ -164,4 +164,62 @@ describe('useFileAttachment composable', () => {
 		// Clean screenshot paste should proceed to processFiles
 		expect(processFilesSpy).toHaveBeenCalled();
 	});
+
+	it('createDropHandler handles internal Obsidian note drop via [[Note Link]] text', async () => {
+		const mockFile = {
+			path: 'Notes/Project.md',
+			basename: 'Project',
+			name: 'Project.md',
+			extension: 'md',
+		};
+		const mockPlugin = {
+			app: {
+				metadataCache: {
+					getFirstLinkpathDest: vi.fn((link: string) => {
+						if (link === 'Project') return mockFile;
+						return null;
+					}),
+				},
+				vault: {
+					getAbstractFileByPath: vi.fn(),
+				},
+			},
+		} as unknown as LuminaPlugin;
+
+		let attachments: ContextAttachment[] = [];
+		const setAttachments = vi.fn((updated: ContextAttachment[]) => {
+			attachments = updated;
+		});
+
+		const ctx = {
+			plugin: mockPlugin,
+			get attachments() {
+				return attachments;
+			},
+			setAttachments,
+			t: (k: string) => k,
+			onResizeTextarea: vi.fn(),
+		};
+
+		const dropHandler = (await import('./useFileAttachment')).createDropHandler(ctx);
+
+		const mockEvent = {
+			preventDefault: vi.fn(),
+			dataTransfer: {
+				files: [],
+				getData: (format: string) => (format === 'text/plain' ? '[[Project]]' : ''),
+			},
+		} as unknown as DragEvent;
+
+		dropHandler(mockEvent);
+
+		expect(mockEvent.preventDefault).toHaveBeenCalled();
+		expect(setAttachments).toHaveBeenCalledWith([
+			{
+				type: 'file',
+				path: 'Notes/Project.md',
+				name: 'Project',
+			},
+		]);
+	});
 });

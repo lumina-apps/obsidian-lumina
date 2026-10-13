@@ -1,3 +1,4 @@
+import { TFile, TFolder } from "obsidian";
 import type LuminaPlugin from "../../../../main";
 import type { ContextAttachment } from "../../../../shared/types/chat.types";
 import {
@@ -55,6 +56,47 @@ export function createDropHandler(
 		const files = e.dataTransfer?.files;
 		if (files && files.length > 0) {
 			void handleFiles(files, ctx);
+			return;
+		}
+
+		// 옵시디언 내부 파일 탐색기에서 드래그한 경우 지원 ([[노트명]] 또는 파일 경로)
+		const text = e.dataTransfer?.getData("text/plain")?.trim();
+		if (text && ctx.plugin?.app) {
+			const app = ctx.plugin.app;
+			const linkpath = text.replace(/^\[\[/, "").replace(/\]\]$/, "").split("|")[0].split("#")[0].trim();
+			const target = app.metadataCache.getFirstLinkpathDest(linkpath, "") ??
+				app.vault.getAbstractFileByPath(linkpath) ??
+				app.vault.getAbstractFileByPath(`${linkpath}.md`);
+
+			const isTFile = target instanceof TFile || (target && typeof target === "object" && "extension" in target);
+			const isTFolder = target instanceof TFolder || (target && typeof target === "object" && "children" in target);
+
+			if (isTFile) {
+				const file = target as TFile;
+				const isCanvas = file.extension === "canvas";
+				const newAttachment: ContextAttachment = {
+					type: isCanvas ? "canvas" : "file",
+					path: file.path,
+					name: file.extension === "md" ? file.basename : file.name,
+				};
+				const latest = ctx.attachments;
+				if (!latest.some((a) => a.path === newAttachment.path)) {
+					ctx.setAttachments([...latest, newAttachment]);
+					window.setTimeout(() => ctx.onResizeTextarea(), 0);
+				}
+			} else if (isTFolder) {
+				const folder = target as TFolder;
+				const newAttachment: ContextAttachment = {
+					type: "folder",
+					path: folder.path,
+					name: folder.name,
+				};
+				const latest = ctx.attachments;
+				if (!latest.some((a) => a.path === newAttachment.path)) {
+					ctx.setAttachments([...latest, newAttachment]);
+					window.setTimeout(() => ctx.onResizeTextarea(), 0);
+				}
+			}
 		}
 	};
 }
@@ -98,6 +140,7 @@ export function createPasteHandler(
 			if (hasPlainText && files.every((f) => f.name.startsWith("Pasted_Image_") || f.name === "image.png")) {
 				return;
 			}
+			e.preventDefault?.();
 			void handleFiles(files, ctx);
 		}
 	};

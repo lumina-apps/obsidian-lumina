@@ -12,35 +12,36 @@
 		attachments: ContextAttachment[];
 		app: App;
 	} = $props();
+	function handleClick(att: ContextAttachment, e: MouseEvent) {
+		if (att.type === 'file' || att.type === 'active_note' || att.type === 'canvas') {
+			openFile(app, att.path, e);
+		} else if (att.type === 'url') {
+			window.open(att.path, '_blank', 'noopener,noreferrer');
+		}
+	}
 </script>
 
 <div class="lumina-message__attachments">
 	{#each attachments as att}
 		<div
 			class="lumina-message__attachment-chip"
-			title={att.path}
-			onclick={(e) => {
-				if (att.type === 'file' || att.type === 'active_note') {
-					openFile(app, att.path, e);
-				}
-			}}
-			onauxclick={(e) => {
-				if (att.type === 'file' || att.type === 'active_note') {
-					openFile(app, att.path, e);
-				}
-			}}
+			title={att.path || att.name}
+			onclick={(e) => handleClick(att, e)}
+			onauxclick={(e) => handleClick(att, e)}
 			onkeydown={(e) => {
 				if (e.key === 'Enter' || e.key === ' ') {
 					e.preventDefault();
-					if (att.type === 'file' || att.type === 'active_note') {
-						openFile(app, att.path, e);
-					}
+					handleClick(att, e as unknown as MouseEvent);
 				}
 			}}
 			role="button"
 			tabindex="0"
 		>
-			<span class="lumina-message__attachment-icon" use:icon={getAttachmentIcon(att.type)}></span>
+			{#if att.content?.startsWith('data:image/')}
+				<img src={att.content} alt={att.name} class="lumina-message__attachment-thumb" />
+			{:else}
+				<span class="lumina-message__attachment-icon" use:icon={getAttachmentIcon(att.type)}></span>
+			{/if}
 			<span class="lumina-message__attachment-name">{att.name}</span>
 		</div>
 	{/each}
@@ -73,6 +74,14 @@
 		background: var(--background-modifier-hover);
 		color: var(--text-normal);
 		border-color: rgba(139, 92, 246, 0.3);
+	}
+
+	.lumina-message__attachment-thumb {
+		width: 14px;
+		height: 14px;
+		border-radius: 2px;
+		object-fit: cover;
+		flex-shrink: 0;
 	}
 
 	.lumina-message__attachment-icon {

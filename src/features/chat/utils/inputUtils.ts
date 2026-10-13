@@ -130,7 +130,7 @@ export function estimateInputTokensDetails(options: EstimateInputTokensOptions):
 			} else {
 				tokens += estimateTokens(att.content);
 			}
-		} else if (att.path && (att.type === "file" || att.type === "active_note")) {
+		} else if (att.path && (att.type === "file" || att.type === "active_note" || att.type === "canvas")) {
 			const ext = att.path.split(".").pop()?.toLowerCase() || "";
 			if (IMAGE_EXTENSIONS_SET.has(ext)) {
 				tokens += IMAGE_TOKEN_ESTIMATE;
@@ -140,6 +140,10 @@ export function estimateInputTokensDetails(options: EstimateInputTokensOptions):
 					tokens += Math.ceil(size / 3);
 				}
 			}
+		} else if (att.type === "url") {
+			tokens += 1000;
+		} else if (att.type === "tag") {
+			tokens += 500;
 		} else if (att.path && att.type === "folder") {
 			if (getFolderSize) {
 				const remainingTokens = Math.max(0, maxTokenThreshold - tokens);
