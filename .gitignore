@@ -40,3 +40,6 @@ Thumbs.db
 
 # Test coverage
 coverage/
+
+# Temporary scratch / debug scripts
+scratch/
