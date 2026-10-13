@@ -51,7 +51,7 @@ export async function resizeImageDataUrl(
 
 		const cleanup = () => {
 			if (timer !== null) {
-				clearTimeout(timer);
+				window.clearTimeout(timer);
 				timer = null;
 			}
 		};
@@ -81,7 +81,7 @@ export async function resizeImageDataUrl(
 			}
 
 			try {
-				const canvas = document.createElement('canvas');
+				const canvas = createEl('canvas');
 				canvas.width = targetW;
 				canvas.height = targetH;
 				const ctx = canvas.getContext('2d');

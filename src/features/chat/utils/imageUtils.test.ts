@@ -46,5 +46,11 @@ describe('imageUtils', () => {
 			const res = await resizeImageDataUrl(gif);
 			expect(res).toBe(gif);
 		});
+
+		it('returns dataUrl via timeout fallback when image is not loaded by jsdom', async () => {
+			const dummyPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+			const res = await resizeImageDataUrl(dummyPng);
+			expect(res).toBe(dummyPng);
+		});
 	});
 });

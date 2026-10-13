@@ -335,6 +335,18 @@ if (typeof (globalThis as any).createFragment === 'undefined') {
 	};
 }
 
+// ── Obsidian createEl global ──
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+if (typeof (globalThis as any).createEl === 'undefined') {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	(globalThis as any).createEl = (tag: string, o?: any) => {
+		const el = document.createElement(tag);
+		if (o?.cls) el.className = o.cls;
+		if (o?.text) el.textContent = o.text;
+		return el;
+	};
+}
+
 if (typeof DocumentFragment !== 'undefined') {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const fragProto = DocumentFragment.prototype as any;
