@@ -123,7 +123,11 @@ describe('useFileAttachment composable', () => {
 		const dummyImageFile = new File(['dummy'], 'image.png', { type: 'image/png' });
 		const mockEvent = {
 			clipboardData: {
-				getData: (format: string) => (format === 'text/plain' ? 'Copied cell text' : ''),
+				getData: (format: string) => {
+					if (format === 'text/plain') return 'Copied cell text';
+					if (format === 'text/html') return '<table><tr><td>Copied cell</td></tr></table>';
+					return '';
+				},
 				items: [
 					{ kind: 'string', type: 'text/plain' },
 					{ kind: 'file', getAsFile: () => dummyImageFile },

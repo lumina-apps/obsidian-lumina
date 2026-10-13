@@ -145,28 +145,40 @@ export function createPasteHandler(
 	return (e: ClipboardEvent) => {
 		const clipboardData = e.clipboardData;
 		if (!clipboardData) return;
-		const items = clipboardData.items;
-		if (!items) return;
 
+		const html = clipboardData.getData("text/html") || "";
 		const hasPlainText = Boolean(clipboardData.getData("text/plain")?.trim());
+		// MS Office(Excel/Word) 셀 복사 시 가상 렌더링 이미지 대신 텍스트를 우선하기 위한 전용 서명 검사
+		const isOfficeCellCopy = hasPlainText && (
+			html.includes("urn:schemas-microsoft-com:office") ||
+			html.includes("mso-") ||
+			/<table[^>]*>/i.test(html)
+		);
 
 		const files: File[] = [];
-		for (let i = 0; i < items.length; i++) {
-			if (items[i].kind === "file") {
-				const file = items[i].getAsFile();
-				if (file) {
-					files.push(normalizePastedFile(file));
+		if (clipboardData.files && clipboardData.files.length > 0) {
+			for (let i = 0; i < clipboardData.files.length; i++) {
+				files.push(normalizePastedFile(clipboardData.files[i]));
+			}
+		} else if (clipboardData.items) {
+			const items = clipboardData.items;
+			for (let i = 0; i < items.length; i++) {
+				if (items[i].kind === "file") {
+					const file = items[i].getAsFile();
+					if (file) {
+						files.push(normalizePastedFile(file));
+					}
 				}
 			}
 		}
 
 		if (files.length > 0) {
-			// Office 앱(Excel/Word 등)에서 셀 복사 시 text/plain과 가상 렌더링 image.png가 동시에 들어오는 경우
-			// 텍스트 붙여넣기를 우선하고 가상 이미지 첨부는 무시
-			if (hasPlainText && files.every((f) => f.name.startsWith("Pasted_Image_") || f.name === "image.png")) {
+			// 실제 Office 표/셀 복사인 경우에만 가상 이미지 첨부 무시
+			if (isOfficeCellCopy && files.every((f) => f.name.startsWith("Pasted_Image_") || f.name === "image.png")) {
 				return;
 			}
 			e.preventDefault?.();
+			e.stopPropagation?.();
 			void handleFiles(files, ctx);
 		}
 	};

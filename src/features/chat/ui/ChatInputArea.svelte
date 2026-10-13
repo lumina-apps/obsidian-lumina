@@ -399,6 +399,7 @@
 	ondragover={handleDragOver}
 	ondragenter={handleDragEnter}
 	ondragleave={handleDragLeave}
+	onpaste={handlePaste}
 >
 	<ChatInputToolbar
 		{isCliSelected}
