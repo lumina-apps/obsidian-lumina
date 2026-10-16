@@ -16,6 +16,9 @@ export const executeCodeHandler = async (
 	_pathGuard: PathGuard,
 ): Promise<ToolResult> => {
 	const code = getStringArg(args, 'code');
+	if (!code.trim()) {
+		return { isError: true, content: [{ type: 'text', text: 'code parameter is required.' }] };
+	}
 
 	const approved = await approvalManager.requestActionApproval('execute', 'Code Sandbox', { code }, { timeoutMs: APPROVAL_TIMEOUT_MS });
 	if (!approved) {
@@ -39,7 +42,11 @@ export const runNoteCodeBlockHandler = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
-	const path = sanitizeFilePath(getStringArg(args, 'path'));
+	const rawPath = getStringArg(args, 'path');
+	if (!rawPath.trim()) {
+		return { isError: true, content: [{ type: 'text', text: 'path is required.' }] };
+	}
+	const path = sanitizeFilePath(rawPath);
 	const blockIndex = typeof args.blockIndex === 'number' ? args.blockIndex : parseInt(String(args.blockIndex), 10);
 
 	const blocked = blockIfPathNotAllowed(path, ctx, pathGuard);

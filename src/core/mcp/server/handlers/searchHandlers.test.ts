@@ -80,6 +80,22 @@ describe('searchNotesHandler', () => {
 		const item = result.content[0];
 		expect(item.type === 'text' ? item.text : '').toContain('[note1.md]');
 	});
+
+	it('tags가 배열이 아닌 단일 문자열로 주어져도 크래시 없이 정상 검색한다', async () => {
+		mockCtx.plugin.app.metadataCache.getFileCache = vi.fn().mockReturnValue({
+			tags: [{ tag: '#project' }],
+		});
+
+		const result = await searchNotesHandler({ tags: 'project' }, mockCtx, mockPathGuard);
+		expect(result.isError).toBeUndefined();
+		const item = result.content[0];
+		expect(item.type === 'text' ? item.text : '').toContain('[note1.md]');
+	});
+
+	it('query가 공백만 있고 tags가 없으면 에러를 반환한다', async () => {
+		const result = await searchNotesHandler({ query: '   ' }, mockCtx, mockPathGuard);
+		expect(result.isError).toBe(true);
+	});
 });
 
 import { globToRegex } from './searchHandlers';

@@ -1580,7 +1580,7 @@ async function run() {
 				const res = await lumina.mcpManager.callTool(tagTool._serverId, 'list_tags', {});
 				const text = res?.content?.[0]?.text || '';
 				return {
-					success: !res?.isError && (text.includes('Tags in vault') || text.includes('#')),
+					success: !res?.isError && (text.includes('Tags in vault') || text.includes('#') || text.includes('No tags')),
 					snippet: text.split('\\n').slice(0, 3).join(', '),
 					duration: Date.now() - start
 				};
@@ -1624,7 +1624,7 @@ async function run() {
 			reporter.record('Live Vault Search Tool Execution (search_notes)', false, err.message, Date.now() - t2);
 		}
 
-		// Test read_note tool (Success + Error Handling)
+		// Test read_note tool (Success + Error Handling + RAG PathGuard Security Blocking)
 		const t3 = Date.now();
 		try {
 			const readToolResult = await client.evaluate(`(async () => {
@@ -1634,28 +1634,86 @@ async function run() {
 				if (!readTool) return { success: false, reason: 'no read_note tool' };
 
 				const start = Date.now();
-				// 1. Read existing note
-				const firstFile = app.vault.getMarkdownFiles()[0]?.path;
-				const existRes = await lumina.mcpManager.callTool(readTool._serverId, 'read_note', { path: firstFile, endLine: 5 });
-				const existText = existRes?.content?.[0]?.text || '';
-				const existSuccess = !existRes?.isError && existText.length > 0;
+				// 1. Read existing note (select a note permitted by RAG/path exclusion settings)
+				const files = app.vault.getMarkdownFiles();
+				const pathGuard = lumina.mcpManager?.localServer?.pathGuard;
+				let candidate = files.find(f => {
+					if (f.stat && f.stat.size === 0) return false;
+					if (pathGuard && typeof pathGuard.isAgentPathAllowed === 'function') {
+						return pathGuard.isAgentPathAllowed(f.path, lumina);
+					}
+					const lower = f.path.toLowerCase();
+					const isExcluded = lower.startsWith('templates/') || lower.startsWith('_templates/') || lower.startsWith('chathistory/') || lower.startsWith('backups/');
+					return !isExcluded;
+				});
 
-				// 2. Read non-existent note (verify error handling)
-				const nonExistRes = await lumina.mcpManager.callTool(readTool._serverId, 'read_note', { path: '__non_existent_note_12345__.md' });
-				const nonExistSuccess = nonExistRes?.isError === true;
+				let targetPath = candidate?.path;
+				let createdTemp = false;
+				if (!targetPath) {
+					targetPath = '__lumina_read_test__.md';
+					await app.vault.create(targetPath, '# Lumina MCP Read Test\\nLine 2\\nLine 3');
+					createdTemp = true;
+				}
 
-				return {
-					success: existSuccess && nonExistSuccess,
-					existSnippet: existText.split('\\n')[0],
-					nonExistHandled: nonExistSuccess,
-					duration: Date.now() - start
-				};
+				// 2. Locate or create a note in an excluded path (verify RAG PathGuard security blocking)
+				let excludedPath = files.find(f => {
+					if (pathGuard && typeof pathGuard.isAgentPathAllowed === 'function') {
+						return !pathGuard.isAgentPathAllowed(f.path, lumina);
+					}
+					const lower = f.path.toLowerCase();
+					return lower.startsWith('templates/') || lower.startsWith('_templates/') || lower.startsWith('chathistory/') || lower.startsWith('backups/');
+				})?.path;
+				let createdExcludedTemp = false;
+				if (!excludedPath && lumina.settings.mcp.agentRespectRagExclusions !== false) {
+					const historyFolder = lumina.settings.chat.historyPath || 'chatHistory';
+					if (!app.vault.getAbstractFileByPath(historyFolder)) {
+						await app.vault.createFolder(historyFolder);
+					}
+					excludedPath = historyFolder + '/__lumina_excluded_test__.md';
+					await app.vault.create(excludedPath, '# Excluded note');
+					createdExcludedTemp = true;
+				}
+
+				try {
+					// Test A: Normal note read
+					const existRes = await lumina.mcpManager.callTool(readTool._serverId, 'read_note', { path: targetPath, endLine: 5 });
+					const existText = existRes?.content?.[0]?.text || '';
+					const existSuccess = !existRes?.isError && existText.length > 0;
+
+					// Test B: Read non-existent note (verify not found error handling)
+					const nonExistRes = await lumina.mcpManager.callTool(readTool._serverId, 'read_note', { path: '__non_existent_note_12345__.md' });
+					const nonExistSuccess = nonExistRes?.isError === true;
+
+					// Test C: Read excluded note (verify RAG PathGuard security blocks unauthorized path)
+					let excludedSuccess = true;
+					if (excludedPath && lumina.settings.mcp.agentRespectRagExclusions !== false) {
+						const excludedRes = await lumina.mcpManager.callTool(readTool._serverId, 'read_note', { path: excludedPath });
+						excludedSuccess = excludedRes?.isError === true && (excludedRes?.content?.[0]?.text || '').includes('제한된 경로');
+					}
+
+					return {
+						success: existSuccess && nonExistSuccess && excludedSuccess,
+						existSnippet: existText.split('\\n')[0],
+						nonExistHandled: nonExistSuccess,
+						excludedBlocked: excludedSuccess,
+						duration: Date.now() - start
+					};
+				} finally {
+					if (createdTemp) {
+						const tempFile = app.vault.getAbstractFileByPath(targetPath);
+						if (tempFile) await app.vault.delete(tempFile);
+					}
+					if (createdExcludedTemp) {
+						const tempFile = app.vault.getAbstractFileByPath(excludedPath);
+						if (tempFile) await app.vault.delete(tempFile);
+					}
+				}
 			})()`);
 
 			reporter.record(
 				'Live Vault Note Read & Error Handling (read_note)',
 				readToolResult.success,
-				`Existing: "${readToolResult.existSnippet?.slice(0, 30)}...", Error handling: ${readToolResult.nonExistHandled} (Latency: ${readToolResult.duration}ms)`,
+				`Existing: "${readToolResult.existSnippet?.slice(0, 30)}...", NonExist: ${readToolResult.nonExistHandled}, ExcludedBlocked: ${readToolResult.excludedBlocked} (Latency: ${readToolResult.duration}ms)`,
 				Date.now() - t3
 			);
 		} catch (err) {

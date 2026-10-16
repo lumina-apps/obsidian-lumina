@@ -68,7 +68,7 @@ describe('executeHandlers code block regex', () => {
 	});
 });
 
-import { runShellCommandHandler, runNoteCodeBlockHandler } from './executeHandlers';
+import { runShellCommandHandler, runNoteCodeBlockHandler, executeCodeHandler } from './executeHandlers';
 import { PathGuard } from '../pathGuard';
 import type { ToolHandlerContext } from '../toolTypes';
 
@@ -115,6 +115,37 @@ describe('executeHandlers settings & validation', () => {
 
 		const res = await runNoteCodeBlockHandler({ path: 'test.md', blockIndex: undefined }, ctx, pathGuard);
 		expect(res.isError).toBe(true);
+	});
+
+	it('run_note_code_block returns error when path is empty', async () => {
+		const ctx: ToolHandlerContext = {
+			plugin: {
+				settings: { mcp: {} },
+				app: { vault: { getAbstractFileByPath: () => null } },
+			} as any,
+			limitRead: 20000,
+			limitAppend: 10000,
+			snippetLen: 300,
+			maxResults: 50,
+		};
+
+		const res = await runNoteCodeBlockHandler({ path: '   ', blockIndex: 0 }, ctx, pathGuard);
+		expect(res.isError).toBe(true);
+		expect(res.content[0].type === 'text' ? res.content[0].text : '').toContain('path is required');
+	});
+
+	it('execute_code returns error when code is empty without asking for approval', async () => {
+		const ctx: ToolHandlerContext = {
+			plugin: { settings: { mcp: {} }, app: {} } as any,
+			limitRead: 20000,
+			limitAppend: 10000,
+			snippetLen: 300,
+			maxResults: 50,
+		};
+
+		const res = await executeCodeHandler({ code: '   ' }, ctx, pathGuard);
+		expect(res.isError).toBe(true);
+		expect(res.content[0].type === 'text' ? res.content[0].text : '').toContain('code parameter is required');
 	});
 });
 

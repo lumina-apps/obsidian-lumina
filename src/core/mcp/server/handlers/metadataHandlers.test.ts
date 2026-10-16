@@ -89,4 +89,36 @@ describe('queryMetadataHandler', () => {
 		expect(text).toContain('planning');
 		expect(text).toContain('task');
 	});
+
+	it('ctime, basename 등 파일 내장 속성으로 필터링할 수 있다', async () => {
+		const result = await queryMetadataHandler(
+			{
+				filters: [{ key: 'ctime', operator: '>', value: '2000' }],
+			},
+			mockCtx,
+			mockPathGuard,
+		);
+
+		expect(result.isError).toBeUndefined();
+		const item = result.content[0];
+		const text = item.type === 'text' ? item.text : '';
+		expect(text).not.toContain('note-with-fm-tag.md');
+		expect(text).toContain('note-with-inline-tag.md');
+	});
+
+	it('빈 문자열 비교(value: "")가 숫자 0으로 변환되지 않고 올바르게 평가된다', async () => {
+		const result = await queryMetadataHandler(
+			{
+				filters: [{ key: 'basename', operator: '!=', value: '' }],
+			},
+			mockCtx,
+			mockPathGuard,
+		);
+
+		expect(result.isError).toBeUndefined();
+		const item = result.content[0];
+		const text = item.type === 'text' ? item.text : '';
+		expect(text).toContain('note-with-fm-tag.md');
+		expect(text).toContain('note-with-inline-tag.md');
+	});
 });

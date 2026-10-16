@@ -11,13 +11,14 @@ export async function autoLinkNoteHandler(
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard,
 ): Promise<ToolResult> {
-	const path = sanitizeFilePath(getStringArg(args, 'path'), true, ctx.plugin.app);
-	if (!path) {
+	const rawPath = getStringArg(args, 'path');
+	if (!rawPath.trim()) {
 		return {
 			isError: true,
 			content: [{ type: 'text', text: 'Path argument is required.' }],
 		};
 	}
+	const path = sanitizeFilePath(rawPath, true, ctx.plugin.app);
 
 	const blocked = blockIfPathNotAllowed(path, ctx, pathGuard);
 	if (blocked) return blocked;

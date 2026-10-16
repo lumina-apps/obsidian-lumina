@@ -51,6 +51,19 @@ export async function openNoteHandler(
 	}
 
 	const newTab = Boolean(args.newTab);
+	if (!newTab && typeof ctx.plugin.app.workspace.getLeavesOfType === 'function') {
+		const leaves = ctx.plugin.app.workspace.getLeavesOfType('markdown');
+		for (const l of leaves) {
+			const view = l.view as { file?: { path?: string } };
+			if (view.file?.path === file.path) {
+				ctx.plugin.app.workspace.setActiveLeaf(l, { focus: true });
+				return {
+					content: [{ type: 'text', text: `Focused note "${path}" in existing editor leaf.` }],
+				};
+			}
+		}
+	}
+
 	const leaf = ctx.plugin.app.workspace.getLeaf(newTab ? 'tab' : false);
 	await leaf.openFile(file);
 	ctx.plugin.app.workspace.setActiveLeaf(leaf, { focus: true });

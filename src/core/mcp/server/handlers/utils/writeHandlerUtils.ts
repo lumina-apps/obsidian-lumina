@@ -48,7 +48,14 @@ export const getValidatedPathAndFile = (
 	requireTFile: boolean = true,
 	enforceMd: boolean = true
 ): ValidatedFileResult => {
-	const path = sanitizeFilePath(getStringArg(args, argKey), enforceMd, ctx.plugin.app);
+	const raw = getStringArg(args, argKey);
+	if (!raw.trim()) {
+		return {
+			path: '',
+			errorResult: { isError: true, content: [{ type: 'text', text: `${argKey} parameter is required.` }] },
+		};
+	}
+	const path = sanitizeFilePath(raw, enforceMd, ctx.plugin.app);
 
 	const blocked = blockIfPathNotAllowed(path, ctx, pathGuard);
 	if (blocked) return { path, errorResult: blocked };
@@ -99,6 +106,7 @@ export const safeModifyFile = async (
 		}
 		await createBackup(ctx.plugin.app, path);
 		await ctx.plugin.app.vault.modify(file, result.content);
+		await enforceLuminaMetadata(path, ctx);
 		await openFileInWorkspace(ctx.plugin.app, path);
 		return { content: [{ type: 'text', text: successMessage }] };
 	});

@@ -143,6 +143,18 @@ describe('Lumina CLI Parity MCP Tools', () => {
 			expect(res.isError).toBe(true);
 			expect(getText(res)).toContain('File not found');
 		});
+
+		it('newTab: false이고 이미 해당 노트가 열려있는 leaf가 있으면 해당 leaf를 활성화한다', async () => {
+			const mockLeaf = {
+				view: { file: { path: 'Notes/Hello.md' } },
+			};
+			(ctx.plugin.app.workspace as any).getLeavesOfType = vi.fn().mockReturnValue([mockLeaf]);
+
+			const res = await openNoteHandler({ path: 'Notes/Hello.md' }, ctx, pathGuard);
+			expect(res.isError).toBeFalsy();
+			expect(getText(res)).toContain('Focused note');
+			expect(ctx.plugin.app.workspace.setActiveLeaf).toHaveBeenCalledWith(mockLeaf, { focus: true });
+		});
 	});
 
 	// ─── 3. grep_search ─────────────────────────────────────────────────────

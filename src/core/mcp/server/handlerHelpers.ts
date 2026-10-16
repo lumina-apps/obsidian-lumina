@@ -17,10 +17,15 @@ export function getStringArg(args: ToolArguments, key: string): string {
 	return typeof val === 'string' ? val : '';
 }
 
-/** args에서 number 값을 안전하게 추출합니다 (런타임 타입 가드). */
+/** args에서 number 값을 안전하게 추출합니다 (숫자 및 숫자형 문자열 지원). */
 export function getNumberArg(args: ToolArguments, key: string): number | undefined {
 	const val = args[key];
-	return typeof val === 'number' ? val : undefined;
+	if (typeof val === 'number' && !isNaN(val)) return val;
+	if (typeof val === 'string' && val.trim() !== '') {
+		const num = Number(val);
+		if (!isNaN(num)) return num;
+	}
+	return undefined;
 }
 
 /** args에서 string | undefined 값을 안전하게 추출합니다. */

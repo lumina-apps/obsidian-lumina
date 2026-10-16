@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { patchNoteHandler, moveNoteHandler, saveAttachmentHandler } from './writeHandlers';
+import { patchNoteHandler, moveNoteHandler, saveAttachmentHandler, updateFrontmatterHandler } from './writeHandlers';
 import { autoLinkNoteHandler } from './autoLinkHandlers';
 import { PathGuard } from '../pathGuard';
 import type { ToolHandlerContext } from '../toolTypes';
@@ -164,6 +164,29 @@ describe('writeHandlers', () => {
 			expect(res.isError).toBe(true);
 			const text = res.content[0].type === 'text' ? res.content[0].text : '';
 			expect(text).toContain('Invalid base64');
+		});
+
+		it('returns error when base64Data is missing or empty', async () => {
+			const res = await saveAttachmentHandler({
+				path: 'empty.png',
+				base64Data: '   ',
+			}, ctx, pathGuard);
+
+			expect(res.isError).toBe(true);
+			const text = res.content[0].type === 'text' ? res.content[0].text : '';
+			expect(text).toContain('base64Data parameter is required');
+		});
+	});
+
+	describe('updateFrontmatterHandler', () => {
+		it('returns error when key or value is missing', async () => {
+			const res1 = await updateFrontmatterHandler({ path: 'test.md', key: '' }, ctx, pathGuard);
+			expect(res1.isError).toBe(true);
+			expect(res1.content[0].type === 'text' ? res1.content[0].text : '').toContain('key parameter is required');
+
+			const res2 = await updateFrontmatterHandler({ path: 'test.md', key: 'status' }, ctx, pathGuard);
+			expect(res2.isError).toBe(true);
+			expect(res2.content[0].type === 'text' ? res2.content[0].text : '').toContain('value parameter is required');
 		});
 	});
 

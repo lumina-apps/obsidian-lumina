@@ -181,6 +181,14 @@ describe('readHandlers', () => {
 			expect(text).toContain('startLine exceeds total lines');
 		});
 
+		it('startLine과 endLine이 문자열 숫자로 전달되어도 정상 파싱하여 부분 읽기를 수행한다', async () => {
+			const res = await readNoteHandler({ path: 'Note1.md', startLine: '2', endLine: '4' }, ctx, pathGuard);
+			expect(res.isError).toBeFalsy();
+			const text = res.content[0].type === 'text' ? res.content[0].text : '';
+			expect(text).toContain('[Note1.md (Lines 2-4 of 5)]:');
+			expect(text).toContain('Line 2\nLine 3\nLine 4');
+		});
+
 		it('agentMode에서 허용되지 않은 경로 접근 시 차단된다', async () => {
 			vi.spyOn(pathGuard, 'isAgentPathAllowed').mockReturnValue(false);
 			const res = await readNoteHandler({ path: 'Secret/Password.md' }, ctx, pathGuard);
@@ -223,6 +231,13 @@ describe('readHandlers', () => {
 			const text = res.content[0].type === 'text' ? res.content[0].text : '';
 			expect(text).toContain('No backlinks found');
 		});
+
+		it('path 인자가 비어있으면 에러를 반환한다', async () => {
+			const res = await getBacklinksHandler({ path: '' }, ctx, pathGuard);
+			expect(res.isError).toBe(true);
+			const text = res.content[0].type === 'text' ? res.content[0].text : '';
+			expect(text).toContain('path is required.');
+		});
 	});
 
 	describe('getNoteMetadataHandler', () => {
@@ -246,6 +261,13 @@ describe('readHandlers', () => {
 			expect(res.isError).toBe(true);
 			const text = res.content[0].type === 'text' ? res.content[0].text : '';
 			expect(text).toContain('File not found: Missing.md');
+		});
+
+		it('path 인자가 비어있으면 에러를 반환한다', async () => {
+			const res = await getNoteMetadataHandler({ path: '' }, ctx, pathGuard);
+			expect(res.isError).toBe(true);
+			const text = res.content[0].type === 'text' ? res.content[0].text : '';
+			expect(text).toContain('path is required.');
 		});
 	});
 

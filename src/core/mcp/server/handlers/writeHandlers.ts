@@ -281,6 +281,12 @@ export const updateFrontmatterHandler = async (
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
 	const key = getStringArg(args, 'key');
+	if (!key.trim()) {
+		return { isError: true, content: [{ type: 'text', text: 'key parameter is required.' }] };
+	}
+	if (args.value === undefined) {
+		return { isError: true, content: [{ type: 'text', text: 'value parameter is required.' }] };
+	}
 	const value = args.value;
 
 	const { path, file, errorResult } = getValidatedPathAndFile(args, ctx, pathGuard);
@@ -309,6 +315,9 @@ export const saveAttachmentHandler = async (
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
 	const base64Data = getStringArg(args, 'base64Data');
+	if (!base64Data.trim()) {
+		return { isError: true, content: [{ type: 'text', text: 'base64Data parameter is required.' }] };
+	}
 
 	const { path, file, errorResult } = getValidatedPathAndFile(args, ctx, pathGuard, 'path', false, false);
 	if (errorResult) return errorResult;

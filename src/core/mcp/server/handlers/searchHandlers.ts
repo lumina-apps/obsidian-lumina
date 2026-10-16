@@ -10,8 +10,14 @@ export const searchNotesHandler = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
-	const query = getStringArg(args, 'query').toLowerCase();
-	const tags = (args.tags as string[]) || [];
+	const rawQuery = getStringArg(args, 'query');
+	const query = rawQuery.trim().toLowerCase();
+	const rawTags = Array.isArray(args.tags)
+		? (args.tags as unknown[])
+		: typeof args.tags === 'string' && args.tags.trim()
+			? [args.tags]
+			: [];
+	const tags = rawTags.map(t => String(t).trim()).filter(Boolean);
 	const files = ctx.plugin.app.vault.getMarkdownFiles();
 	const results: string[] = [];
 

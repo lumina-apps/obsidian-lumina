@@ -21,7 +21,8 @@ export class SafeJsonSchemaValidator {
 						input === null ||
 						input === undefined ||
 						typeof input !== 'object' ||
-						!(key in input)
+						!(key in input) ||
+						(input as Record<string, unknown>)[key] === undefined
 					) {
 						return {
 							valid: false as const,

@@ -156,6 +156,12 @@ describe('fileUtils', () => {
 			expect(sanitizeFilePath('[[folder/file.md')).toBe('folder/file.md');
 			expect(sanitizeFilePath('folder/file.md]]')).toBe('folder/file.md');
 		});
+
+		it('빈 문자열이나 공백만 주어진 경우 빈 문자열을 반환한다', () => {
+			expect(sanitizeFilePath('')).toBe('');
+			expect(sanitizeFilePath('   ')).toBe('');
+			expect(sanitizeFilePath('', false)).toBe('');
+		});
 	});
 
 	describe('extractFileName', () => {

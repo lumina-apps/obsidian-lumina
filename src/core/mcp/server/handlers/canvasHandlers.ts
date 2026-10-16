@@ -8,8 +8,7 @@ export const createCanvasHandler = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
-	// Parse arguments
-	let rawPath = typeof args.path === 'string' ? args.path : '';
+	let rawPath = typeof args.path === 'string' ? args.path.trim() : '';
 	if (!rawPath) {
 		return { isError: true, content: [{ type: 'text', text: 'path is required' }] };
 	}

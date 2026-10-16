@@ -201,6 +201,71 @@ describe('CliMcpSync - 4대 CLI MCP 자동 동기화', () => {
 		expect(files.has('codex.json')).toBe(false);
 	});
 
+	it('Cursor: .cursor/mcp.json을 생성하고 Lumina SSE 설정을 등록한다', async () => {
+		await cliMcpSync.sync({ port: 8080, authToken: 'test-token' });
+
+		expect(dirs.has('.cursor')).toBe(true);
+		const raw = files.get('.cursor/mcp.json');
+		expect(raw).toBeDefined();
+		const parsed = JSON.parse(raw!);
+		expect(parsed.mcpServers.lumina).toEqual({
+			url: 'http://localhost:8080/sse',
+			headers: {
+				Authorization: 'Bearer test-token',
+			},
+		});
+	});
+
+	it('Cursor: 기존 다른 서버 설정이 있을 때 보존하며 lumina를 병합한다', async () => {
+		files.set(
+			'.cursor/mcp.json',
+			JSON.stringify({
+				mcpServers: {
+					other: { url: 'http://localhost:4000' },
+				},
+			}),
+		);
+
+		await cliMcpSync.sync({ port: 9090, authToken: 'token-2' });
+
+		const parsed = JSON.parse(files.get('.cursor/mcp.json')!);
+		expect(parsed.mcpServers.other).toEqual({ url: 'http://localhost:4000' });
+		expect(parsed.mcpServers.lumina.url).toBe('http://localhost:9090/sse');
+	});
+
+	it('Cursor: cleanup 시 다른 서버가 남아있으면 lumina만 제거한다', async () => {
+		files.set(
+			'.cursor/mcp.json',
+			JSON.stringify({
+				mcpServers: {
+					other: { url: 'http://localhost:4000' },
+					lumina: { url: 'http://localhost:9090/sse' },
+				},
+			}),
+		);
+
+		await cliMcpSync.cleanup();
+
+		const parsed = JSON.parse(files.get('.cursor/mcp.json')!);
+		expect(parsed.mcpServers.lumina).toBeUndefined();
+		expect(parsed.mcpServers.other).toBeDefined();
+	});
+
+	it('Cursor: cleanup 시 lumina만 있던 빈 파일은 완전히 삭제한다', async () => {
+		files.set(
+			'.cursor/mcp.json',
+			JSON.stringify({
+				mcpServers: {
+					lumina: { url: 'http://localhost:9090/sse' },
+				},
+			}),
+		);
+
+		await cliMcpSync.cleanup();
+
+		expect(files.has('.cursor/mcp.json')).toBe(false);
+	});
+
 	it('Antigravity: 전역 오염 방지를 위해 sync 시 agy mcp add를 호출하지 않는다', async () => {
 		await cliMcpSync.sync({ port: 8080, authToken: 'test-token' });
 

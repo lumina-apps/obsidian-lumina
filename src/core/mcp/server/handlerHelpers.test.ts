@@ -43,9 +43,17 @@ describe('handlerHelpers', () => {
 			expect(getNumberArg({ count: 42 }, 'count')).toBe(42);
 		});
 
-		it('숫자가 아니면 undefined를 반환한다', () => {
+		it('숫자형 문자열 인수를 숫자로 파싱하여 반환한다', () => {
+			expect(getNumberArg({ count: '42' }, 'count')).toBe(42);
+			expect(getNumberArg({ count: '3.14' }, 'count')).toBe(3.14);
+		});
+
+		it('숫자가 아니거나 빈 문자열이면 undefined를 반환한다', () => {
 			expect(getNumberArg({}, 'count')).toBeUndefined();
-			expect(getNumberArg({ count: '42' }, 'count')).toBeUndefined();
+			expect(getNumberArg({ count: 'abc' }, 'count')).toBeUndefined();
+			expect(getNumberArg({ count: '' }, 'count')).toBeUndefined();
+			expect(getNumberArg({ count: '   ' }, 'count')).toBeUndefined();
+			expect(getNumberArg({ count: NaN }, 'count')).toBeUndefined();
 		});
 	});
 

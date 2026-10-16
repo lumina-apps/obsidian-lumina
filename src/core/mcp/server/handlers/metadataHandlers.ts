@@ -1,5 +1,5 @@
 import { TFile, normalizePath, getAllTags, type CachedMetadata } from 'obsidian';
-import { applyReadLimit } from '../handlerHelpers';
+import { applyReadLimit, getNumberArg } from '../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
 import type { PathGuard } from '../pathGuard';
 
@@ -37,6 +37,15 @@ function extractFrontmatterValue(cache: CachedMetadata | null, key: string): unk
 	return frontmatter[key];
 }
 
+function getNoteFieldValue(file: TFile, cache: CachedMetadata | null, key: string): unknown {
+	if (key === 'basename') return file.basename;
+	if (key === 'path') return file.path;
+	if (key === 'ctime') return file.stat.ctime;
+	if (key === 'mtime') return file.stat.mtime;
+	if (key === 'size') return file.stat.size;
+	return extractFrontmatterValue(cache, key);
+}
+
 function evaluateFilter(actualValue: unknown, filter: Filter): boolean {
 	if (actualValue === undefined || actualValue === null) {
 		return filter.operator === '!=' || filter.operator === 'not_contains';
@@ -46,7 +55,9 @@ function evaluateFilter(actualValue: unknown, filter: Filter): boolean {
 	let targetValue: unknown = filter.value;
 	if (targetValue === 'true') targetValue = true;
 	else if (targetValue === 'false') targetValue = false;
-	else if (!isNaN(Number(targetValue))) targetValue = Number(targetValue);
+	else if (typeof targetValue === 'string' && targetValue.trim() !== '' && !isNaN(Number(targetValue))) {
+		targetValue = Number(targetValue);
+	}
 
 	// Convert actualValue for comparison if necessary
 	const actualStr = String(actualValue).toLowerCase();
@@ -90,7 +101,8 @@ export const queryMetadataHandler = async (
 	const filters = Array.isArray(args.filters) ? (args.filters as Filter[]) : [];
 	const sort = typeof args.sort === 'object' && args.sort !== null ? (args.sort as Sort) : undefined;
 	const returnFields = Array.isArray(args.returnFields) ? (args.returnFields as string[]) : [];
-	const limit = typeof args.limit === 'number' && args.limit > 0 ? Math.min(args.limit, 200) : 50;
+	const rawLimit = getNumberArg(args, 'limit');
+	const limit = typeof rawLimit === 'number' && rawLimit > 0 ? Math.min(rawLimit, 200) : 50;
 
 	const allFiles = ctx.plugin.app.vault.getMarkdownFiles();
 	const results: { file: TFile; fields: Record<string, unknown> }[] = [];
@@ -126,10 +138,10 @@ export const queryMetadataHandler = async (
 			if (!hasAllTags) continue;
 		}
 
-		// 4. Frontmatter filters check
+		// 4. Frontmatter & built-in properties filters check
 		let passesFilters = true;
 		for (const filter of filters) {
-			const actualValue = extractFrontmatterValue(cache, filter.key);
+			const actualValue = getNoteFieldValue(file, cache, filter.key);
 			if (!evaluateFilter(actualValue, filter)) {
 				passesFilters = false;
 				break;
@@ -141,11 +153,12 @@ export const queryMetadataHandler = async (
 		// 5. Collect return fields
 		const fields: Record<string, unknown> = {};
 		for (const field of returnFields) {
-			fields[field] = extractFrontmatterValue(cache, field);
+			fields[field] = getNoteFieldValue(file, cache, field);
 		}
 		
 		// Add built-in properties for sorting/display
 		fields['basename'] = file.basename;
+		fields['path'] = file.path;
 		fields['ctime'] = file.stat.ctime;
 		fields['mtime'] = file.stat.mtime;
 
@@ -158,17 +171,20 @@ export const queryMetadataHandler = async (
 			let valA = a.fields[sort.key];
 			let valB = b.fields[sort.key];
 			
-			// Fallback to frontmatter if not collected
-			if (valA === undefined && sort.key !== 'basename' && sort.key !== 'ctime' && sort.key !== 'mtime') {
-				valA = extractFrontmatterValue(ctx.plugin.app.metadataCache.getFileCache(a.file), sort.key);
+			// Fallback to field value if not collected in fields
+			if (valA === undefined) {
+				valA = getNoteFieldValue(a.file, ctx.plugin.app.metadataCache.getFileCache(a.file), sort.key);
 			}
-			if (valB === undefined && sort.key !== 'basename' && sort.key !== 'ctime' && sort.key !== 'mtime') {
-				valB = extractFrontmatterValue(ctx.plugin.app.metadataCache.getFileCache(b.file), sort.key);
+			if (valB === undefined) {
+				valB = getNoteFieldValue(b.file, ctx.plugin.app.metadataCache.getFileCache(b.file), sort.key);
 			}
 
 			if (valA === valB) return 0;
-			if (valA === undefined) return sort.dir === 'asc' ? 1 : -1;
-			if (valB === undefined) return sort.dir === 'asc' ? -1 : 1;
+			const isMissingA = valA === undefined || valA === null;
+			const isMissingB = valB === undefined || valB === null;
+			if (isMissingA && isMissingB) return 0;
+			if (isMissingA) return sort.dir === 'asc' ? 1 : -1;
+			if (isMissingB) return sort.dir === 'asc' ? -1 : 1;
 
 			let comparison = 0;
 			if (typeof valA === 'string' && typeof valB === 'string') {

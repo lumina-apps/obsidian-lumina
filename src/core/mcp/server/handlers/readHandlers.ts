@@ -1,7 +1,7 @@
 import { TFile } from 'obsidian';
 import { t } from '../../../../shared/locales/helpers';
 import { sanitizeFilePath } from '../../../../shared/utils/fileUtils';
-import { applyReadLimit, getStringArg, blockIfPathNotAllowed, getDailyNotePath } from '../handlerHelpers';
+import { applyReadLimit, getStringArg, getNumberArg, blockIfPathNotAllowed, getDailyNotePath } from '../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
 import type { PathGuard } from '../pathGuard';
 
@@ -47,8 +47,10 @@ export const readNoteHandler = async (
 		return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.read_note.notFound', { path }) }] };
 	}
 
-	const startLine = typeof args.startLine === 'number' && args.startLine > 0 ? Math.floor(args.startLine) : undefined;
-	const endLine = typeof args.endLine === 'number' && args.endLine > 0 ? Math.floor(args.endLine) : undefined;
+	const parsedStart = getNumberArg(args, 'startLine');
+	const parsedEnd = getNumberArg(args, 'endLine');
+	const startLine = typeof parsedStart === 'number' && parsedStart > 0 ? Math.floor(parsedStart) : undefined;
+	const endLine = typeof parsedEnd === 'number' && parsedEnd > 0 ? Math.floor(parsedEnd) : undefined;
 
 	if (startLine !== undefined && endLine !== undefined && startLine > endLine) {
 		return { isError: true, content: [{ type: 'text', text: `startLine (${startLine}) cannot be greater than endLine (${endLine}).` }] };
@@ -95,6 +97,9 @@ export const getBacklinksHandler = async (
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
 	const rawPath = getStringArg(args, 'path');
+	if (!rawPath.trim()) {
+		return { isError: true, content: [{ type: 'text', text: 'path is required.' }] };
+	}
 	let path = sanitizeFilePath(rawPath, false, ctx.plugin.app);
 	let file = ctx.plugin.app.vault.getAbstractFileByPath(path);
 	if (!(file instanceof TFile) && !path.toLowerCase().endsWith('.md')) {
@@ -133,6 +138,9 @@ export const getNoteMetadataHandler = async (
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
 	const rawPath = getStringArg(args, 'path');
+	if (!rawPath.trim()) {
+		return { isError: true, content: [{ type: 'text', text: 'path is required.' }] };
+	}
 	let path = sanitizeFilePath(rawPath, false, ctx.plugin.app);
 	let file = ctx.plugin.app.vault.getAbstractFileByPath(path);
 	if (!(file instanceof TFile) && !path.toLowerCase().endsWith('.md')) {

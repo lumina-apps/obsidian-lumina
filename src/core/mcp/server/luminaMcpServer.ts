@@ -18,7 +18,7 @@ import type { ToolArguments, ToolHandlerContext, McpLimits } from './toolTypes';
 export class LuminaMcpServer {
 	private server: McpServer;
 	private httpTransport: HttpTransport;
-	private pathGuard: PathGuard;
+	public readonly pathGuard: PathGuard;
 	private plugin: LuminaPlugin;
 	public port: number;
 	public authToken: string;

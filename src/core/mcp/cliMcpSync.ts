@@ -30,6 +30,7 @@ export class CliMcpSync {
 	public async sync(params: CliMcpSyncParams): Promise<void> {
 		const results = await Promise.allSettled([
 			this.syncClaudeCode(params),
+			this.syncCursor(params),
 			this.syncOpenCode(params),
 			this.syncCodex(params),
 		]);
@@ -47,6 +48,7 @@ export class CliMcpSync {
 	public async cleanup(): Promise<void> {
 		const results = await Promise.allSettled([
 			this.cleanupClaudeCode(),
+			this.cleanupCursor(),
 			this.cleanupOpenCode(),
 			this.cleanupCodex(),
 			this.cleanupAntigravity(),
@@ -171,7 +173,84 @@ export class CliMcpSync {
 		}
 	}
 
-	// ─── 2. OpenCode (opencode.json) ───────────────────────────────────────
+	// ─── 2. Cursor (.cursor/mcp.json) ──────────────────────────────────────
+
+	private async syncCursor(params: CliMcpSyncParams): Promise<void> {
+		try {
+			const dirPath = '.cursor';
+			const filePath = '.cursor/mcp.json';
+
+			if (!(await this.app.vault.adapter.exists(dirPath))) {
+				await this.app.vault.adapter.mkdir(dirPath);
+			}
+
+			let config: { mcpServers?: Record<string, unknown> } = {};
+			if (await this.app.vault.adapter.exists(filePath)) {
+				try {
+					const raw = await this.app.vault.adapter.read(filePath);
+					const parsed: unknown = JSON.parse(raw);
+					if (parsed && typeof parsed === 'object') {
+						config = parsed;
+					}
+				} catch {
+					config = {};
+				}
+			}
+
+			config.mcpServers = config.mcpServers || {};
+			config.mcpServers['lumina'] = {
+				url: `http://localhost:${params.port}/sse`,
+				headers: {
+					Authorization: `Bearer ${params.authToken}`,
+				},
+			};
+
+			await this.app.vault.adapter.write(filePath, JSON.stringify(config, null, 2));
+			debugLogger.logSystem('mcp', `[CliMcpSync] Cursor MCP synced to ${filePath}`);
+		} catch (e) {
+			debugLogger.logWarn('mcp', `[CliMcpSync] Failed to sync Cursor MCP: ${e}`);
+		}
+	}
+
+	private async cleanupCursor(): Promise<void> {
+		try {
+			const filePath = '.cursor/mcp.json';
+			if (await this.app.vault.adapter.exists(filePath)) {
+				const raw = await this.app.vault.adapter.read(filePath);
+				let config: { mcpServers?: Record<string, unknown> } | null = null;
+				try {
+					const parsed: unknown = JSON.parse(raw);
+					if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+						config = parsed;
+					}
+				} catch {
+					config = null;
+				}
+
+				if (config && config.mcpServers && 'lumina' in config.mcpServers) {
+					delete config.mcpServers['lumina'];
+
+					const remainingServers = Object.keys(config.mcpServers);
+					const remainingKeys = Object.keys(config).filter((k) => k !== 'mcpServers');
+					if (remainingServers.length === 0 && remainingKeys.length === 0) {
+						if (typeof this.app.vault.adapter.remove === 'function') {
+							await this.app.vault.adapter.remove(filePath);
+						} else {
+							await this.app.vault.adapter.write(filePath, JSON.stringify({}, null, 2));
+						}
+						debugLogger.logSystem('mcp', `[CliMcpSync] Cleaned up and removed empty ${filePath}`);
+					} else {
+						await this.app.vault.adapter.write(filePath, JSON.stringify(config, null, 2));
+						debugLogger.logSystem('mcp', `[CliMcpSync] Cursor MCP lumina removed in ${filePath}`);
+					}
+				}
+			}
+		} catch (e) {
+			debugLogger.logWarn('mcp', `[CliMcpSync] Failed to clean up .cursor/mcp.json: ${e}`);
+		}
+	}
+
+	// ─── 3. OpenCode (opencode.json) ───────────────────────────────────────
 
 	private async syncOpenCode(params: CliMcpSyncParams): Promise<void> {
 		try {

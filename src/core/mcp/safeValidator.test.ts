@@ -54,7 +54,16 @@ describe('SafeJsonSchemaValidator', () => {
 			const validate = validator.getValidator<any>(schema);
 			expect(validate(null)).toHaveProperty('valid', false);
 			expect(validate(undefined)).toHaveProperty('valid', false);
-			});
+		});
+
+		it('should fail if required property value is undefined', () => {
+			const schema = {
+				required: ['field'],
+			};
+
+			const validate = validator.getValidator<any>(schema);
+			expect(validate({ field: undefined })).toHaveProperty('valid', false);
+		});
 
 		it('should skip non-string required keys', () => {
 			const schema = {
