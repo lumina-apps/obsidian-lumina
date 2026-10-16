@@ -990,6 +990,122 @@ async function run() {
 		} catch (err) {
 			reporter.record('Chat History Session Restore & Bubble Attachment Fallback Click', false, err.message, Date.now() - tHistoryRestore);
 		}
+
+		// 6. Chat Bubble Document Link & Wikilink Click-to-Open
+		const tDocLink = Date.now();
+		try {
+			const linkResult = await client.evaluate(`(async () => {
+				const files = app.vault.getMarkdownFiles().filter(f => !f.path.startsWith('chatHistory'));
+				if (files.length === 0) return { success: false, reason: 'No markdown files' };
+				const targetNote = files[0];
+
+				const lumina = app.plugins.plugins['lumina'];
+				const historyDir = lumina.settings.chat.historyPath || 'chatHistory';
+				const testSessionId = 'e2e-link-test-' + Date.now();
+				const basePath = app.vault.adapter.basePath;
+				const fileUrl = 'file://' + basePath + '/' + encodeURI(targetNote.path);
+
+				const sessionData = {
+					id: testSessionId,
+					title: 'E2E Document Link Test',
+					createdAt: Date.now(),
+					updatedAt: Date.now(),
+					providerId: 'google',
+					modelId: 'gemini-2.5-flash',
+					messages: [
+						{
+							id: 'link-msg-1',
+							role: 'user',
+							content: '문서 링크 열기 테스트',
+							timestamp: Date.now()
+						},
+						{
+							id: 'link-msg-2',
+							role: 'assistant',
+							content: '참고 문서: [[' + targetNote.basename + ']] 및 [직접 링크](' + fileUrl + ')',
+							timestamp: Date.now() + 100,
+							isStreaming: false
+						}
+					]
+				};
+
+				const jsonStr = JSON.stringify(sessionData);
+				const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
+				const mdContent = [
+					'---',
+					'id: ' + testSessionId,
+					'title: "E2E Document Link Test"',
+					'created: ' + new Date().toISOString(),
+					'updated: ' + new Date().toISOString(),
+					'---',
+					'',
+					'**👤 You**',
+					'',
+					'문서 링크 열기 테스트',
+					'',
+					'---',
+					'',
+					'**✦ Lumina**',
+					'',
+					'참고 문서: [[' + targetNote.basename + ']] 및 [직접 링크](' + fileUrl + ')',
+					'',
+					'<!-- LUMINA_HISTORY_DATA_V2: ' + b64 + ' -->'
+				].join('\\n');
+
+				const filePath = historyDir + '/' + testSessionId + '.md';
+				await app.vault.create(filePath, mdContent);
+
+				try {
+					const histBtn = document.querySelector('.lumina-chat__header .lumina-chat__icon-btn[aria-label*="기록"], .lumina-chat__header .lumina-chat__icon-btn[aria-label*="History"]');
+					histBtn?.click();
+					await new Promise(r => setTimeout(r, 400));
+
+					const refreshBtn = document.querySelector('.lumina-history__header button[aria-label*="새로고침"], .lumina-history__header button[aria-label*="Refresh"]');
+					refreshBtn?.click();
+					await new Promise(r => setTimeout(r, 500));
+
+					const items = Array.from(document.querySelectorAll('.lumina-history__item'));
+					const targetItem = items.find(el => el.textContent.includes('E2E Document Link Test'));
+					if (!targetItem) return { success: false, reason: 'History item not rendered' };
+
+					targetItem.click();
+					await new Promise(r => setTimeout(r, 600));
+
+					const messageEls = document.querySelectorAll('.lumina-message__content');
+					const lastMsg = messageEls[messageEls.length - 1];
+					const links = Array.from(lastMsg?.querySelectorAll('a') || []);
+
+					if (links.length === 0) return { success: false, reason: 'No links rendered in message' };
+
+					// Click the link inside the assistant message bubble
+					const wikiLink = links.find(a => a.textContent.includes(targetNote.basename)) || links[0];
+					wikiLink.click();
+					await new Promise(r => setTimeout(r, 500));
+
+					const activeAfter = app.workspace.getActiveFile()?.path;
+					const opened = activeAfter === targetNote.path;
+
+					return {
+						success: opened,
+						targetPath: targetNote.path,
+						openedPath: activeAfter,
+						linksFound: links.length
+					};
+				} finally {
+					const f = app.vault.getAbstractFileByPath(filePath);
+					if (f) await app.vault.delete(f, true);
+				}
+			})()`);
+
+			reporter.record(
+				'Chat Bubble Document Link & Wikilink Click-to-Open',
+				linkResult.success,
+				`Target: "${linkResult.targetPath}", Opened: ${linkResult.openedPath} (Links: ${linkResult.linksFound})`,
+				Date.now() - tDocLink
+			);
+		} catch (err) {
+			reporter.record('Chat Bubble Document Link & Wikilink Click-to-Open', false, err.message, Date.now() - tDocLink);
+		}
 	} finally {
 		// Cleanup chat leaf
 		await client.evaluate(`(() => {

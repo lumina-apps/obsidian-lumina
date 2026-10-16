@@ -22,6 +22,9 @@ vi.mock('obsidian', () => {
 		delete: vi.fn(),
 		getAbstractFileByPath: vi.fn(),
 		getMarkdownFiles: vi.fn(),
+		adapter: {
+			getBasePath: vi.fn(() => ''),
+		},
 		on: vi.fn(),
 		offref: vi.fn(),
 	};
@@ -30,6 +33,10 @@ vi.mock('obsidian', () => {
 		getActiveViewOfType: vi.fn(),
 		getActiveFile: vi.fn(),
 		getLeaf: vi.fn(),
+		openLinkText: vi.fn(),
+		trigger: vi.fn(),
+		revealLeaf: vi.fn(),
+		getLeavesOfType: vi.fn(() => []),
 		onLayoutReady: vi.fn((cb: () => void) => cb()),
 		on: vi.fn(),
 		offref: vi.fn(),
@@ -68,7 +75,12 @@ vi.mock('obsidian', () => {
 			isIosApp: false,
 			isAndroidApp: false,
 		},
-		App: vi.fn(() => mockApp),
+		App: class App {
+			vault = mockVault;
+			workspace = mockWorkspace;
+			keymap = { pushScope: vi.fn(() => mockScope), popScope: vi.fn() };
+			secretStorage = mockSecretStorage;
+		},
 		Plugin: class {
 			app = mockApp;
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -126,6 +138,9 @@ vi.mock('obsidian', () => {
 			noticeEl = mockNotice.noticeEl;
 			messageEl = document.createElement('div');
 			constructor(_message?: string, _timeout?: number) {}
+		},
+		Keymap: {
+			isModEvent: vi.fn((e: MouseEvent | KeyboardEvent) => Boolean(e?.ctrlKey || e?.metaKey)),
 		},
 		MarkdownRenderer: {
 			render: vi.fn(),
