@@ -4,7 +4,7 @@
  * Feature manager encapsulating Canvas visualization commands, context menu events, and exports.
  */
 
-import { Menu, MenuItem, TFile, TFolder, type EventRef } from 'obsidian';
+import { TFile, TFolder, type EventRef } from 'obsidian';
 import type LuminaPlugin from '../../main';
 import { t } from '../../shared/locales/helpers';
 import { debugLogger } from '../../shared/debugLogger';
