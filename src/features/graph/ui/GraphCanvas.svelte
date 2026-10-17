@@ -31,7 +31,7 @@
 	const colorMap = new Map<string, string>();
 
 	function getGroupColor(group: string): string {
-		if (group === '__root__') return '#9ca3af'; // gray for root
+		if (!group || group === '__root__' || group === '/') return '#9ca3af'; // gray for root
 		if (!colorMap.has(group)) {
 			colorMap.set(group, FOLDER_COLORS[colorMap.size % FOLDER_COLORS.length]);
 		}

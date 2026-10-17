@@ -24,9 +24,15 @@ function getTimestamp(): string {
 }
 
 async function resolveOutputPath(app: App, baseName: string, outputFolder: string): Promise<string> {
-	const sanitizedBase = sanitizeFilename(baseName);
+	const sanitizedBase = sanitizeFilename(baseName) || 'canvas';
 	const trimmedFolder = outputFolder.trim();
-	const cleanFolder = trimmedFolder === '/' || trimmedFolder === '' ? '' : normalizePath(trimmedFolder);
+	const cleanFolder = trimmedFolder === '/' || trimmedFolder === ''
+		? ''
+		: normalizePath(trimmedFolder)
+			.split('/')
+			.map(seg => sanitizeFilename(seg))
+			.filter(seg => seg && seg !== '.' && seg !== '..')
+			.join('/');
 
 	const candidateBase = cleanFolder ? `${cleanFolder}/${sanitizedBase}` : sanitizedBase;
 	const candidate = normalizePath(`${candidateBase}.canvas`);
@@ -71,8 +77,7 @@ export async function generateCanvasForFile(
 		const roots = [file];
 		const collected = collectGraph(app, roots, opts);
 		const nodeCount = collected.nodeMap.size;
-
-		const truncated = collected.nodeMap.size >= opts.maxNodes;
+		const truncated = Boolean(collected.truncated);
 
 		let canvasData = buildCanvasData(collected, roots, opts);
 
@@ -109,7 +114,7 @@ export async function generateCanvasForFile(
 
 /**
  * 폴더 내 파일들을 루트로 Canvas 파일을 생성합니다.
- * folderDepth에 따라 하위 폴더는 별도 캔버스로 분리 생성합니다.
+ * folderDepth에 따라 하위 폴더의 마크다운 파일까지 재귀적으로 수집하여 단일 캔버스로 생성합니다.
  */
 function getFilesRecursively(folder: TFolder, maxDepth: number, currentDepth: number = 0): TFile[] {
 	let files: TFile[] = [];
@@ -145,7 +150,7 @@ export async function generateCanvasForFolder(
 
 		const collected = collectGraph(app, allFiles, opts);
 		const nodeCount = collected.nodeMap.size;
-		const truncated = collected.nodeMap.size >= opts.maxNodes;
+		const truncated = Boolean(collected.truncated);
 
 		let canvasData = buildCanvasData(collected, allFiles, opts);
 		if (showGroups) {
@@ -153,7 +158,8 @@ export async function generateCanvasForFolder(
 		}
 
 		const json = JSON.stringify(canvasData, null, 2);
-		const baseName = `${folder.name}-canvas-${getTimestamp()}`;
+		const folderLabel = folder.name || 'vault';
+		const baseName = `${folderLabel}-canvas-${getTimestamp()}`;
 		const outputPath = await resolveOutputPath(app, baseName, outputFolder);
 		const canvasFile = await app.vault.create(outputPath, json);
 
@@ -164,11 +170,11 @@ export async function generateCanvasForFolder(
 
 		if (truncated) {
 			new Notice(t('canvas.noticeTruncated', { max: opts.maxNodes }), 5000);
-		} else {
-			new Notice(t('canvas.noticeFolderCreated', { name: folder.name, count: 1 }), 3000);
 		}
 
 		await openCanvasFile(app, canvasFile);
+
+		new Notice(t('canvas.noticeFolderCreated', { name: folderLabel, count: 1 }), 3000);
 	} catch (e) {
 		debugLogger.logError('canvas', new Error(`Failed to generate canvas for folder ${folder.path}: ${e instanceof Error ? e.message : String(e)}`));
 		new Notice(t('canvas.noticeError'), 5000);

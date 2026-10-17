@@ -68,6 +68,18 @@ export class EventManager {
 						});
 					}
 
+					if (activeFile && activeFile.extension === 'md') {
+						target.addItem((subItem) => {
+							subItem
+								.setTitle('🗺️ ' + t('canvas.menuItem'))
+								.setIcon('map')
+								.onClick(async () => {
+									debugLogger.logSystem('events', `context-menu: canvas generate triggered (file=${activeFile.path})`);
+									await this.plugin.canvasManager?.generateForFile(activeFile);
+								});
+						});
+					}
+
 					if (selection.trim() && (this.plugin.settings.chat.quickActions?.length ?? 0) > 0) {
 						target.addSeparator();
 						for (const qa of (this.plugin.settings.chat.quickActions ?? [])) {

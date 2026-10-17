@@ -74,10 +74,12 @@ function getLinkId(endpoint: GraphNode | string): string {
 
 /**
  * 간소화된 force-directed 알고리즘으로 노드 2D 좌표를 계산합니다.
+ * 황금각 나선 초기 배치와 박스 겹침 해소 후처리를 통해 결정론적이고 가독성 높은 배치를 제공합니다.
  */
 function computeForceLayout(
   nodes: GraphNode[],
   links: GraphEdge[],
+  nodeSizes: Map<string, { width: number; height: number }>,
 ): Map<string, { x: number; y: number }> {
   const n = nodes.length;
   if (n === 0) return new Map();
@@ -91,16 +93,31 @@ function computeForceLayout(
   const DAMPING = 0.65; // 마찰력 (빠른 안정화)
   const ITERATIONS = Math.max(150, Math.floor(100 * scaleFactor));
 
-  // 빅뱅(Big Bang) 초기 배치: 모두 중앙에 모아두고 반발력으로 자연스럽게 팽창시킵니다.
-  // 이렇게 하면 링 모양으로 겉돌며 중앙이 텅 비는 현상이 원천적으로 해결됩니다.
+  // 그룹별 정렬 기반 황금각(Golden Angle) 나선 초기 배치 (결정론적 & 균일 분포)
+  const sortedNodes = [...nodes].sort((a, b) => {
+    const grpA = !a.group || a.group === '/' || a.group === '__root__' ? '' : a.group;
+    const grpB = !b.group || b.group === '/' || b.group === '__root__' ? '' : b.group;
+    const cmp = grpA.localeCompare(grpB);
+    return cmp !== 0 ? cmp : a.id.localeCompare(b.id);
+  });
+
+  const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5)); // ~137.5度
+  const SPIRAL_C = 60;
+
   const positions = new Map<string, NodePos>();
-  nodes.forEach((node) => {
-    positions.set(node.id, {
-      x: (Math.random() - 0.5) * 400,
-      y: (Math.random() - 0.5) * 400,
-      vx: 0,
-      vy: 0,
-    });
+  sortedNodes.forEach((node, i) => {
+    if (i === 0) {
+      positions.set(node.id, { x: 0, y: 0, vx: 0, vy: 0 });
+    } else {
+      const r = SPIRAL_C * Math.sqrt(i);
+      const theta = i * GOLDEN_ANGLE;
+      positions.set(node.id, {
+        x: Math.round(Math.cos(theta) * r),
+        y: Math.round(Math.sin(theta) * r),
+        vx: 0,
+        vy: 0,
+      });
+    }
   });
 
   // adjacency map
@@ -164,7 +181,7 @@ function computeForceLayout(
       pos.vx *= DAMPING;
       pos.vy *= DAMPING;
       
-      // 속도 클램핑 (노드가 무한대로 튕겨나가는 현상 방지)
+      // 속도 클램핑
       const speed = Math.sqrt(pos.vx * pos.vx + pos.vy * pos.vy);
       if (speed > MAX_VELOCITY) {
         pos.vx = (pos.vx / speed) * MAX_VELOCITY;
@@ -174,9 +191,51 @@ function computeForceLayout(
       pos.x += pos.vx;
       pos.y += pos.vy;
       
-      // 혹시 모를 연산 오류 방어
       if (!Number.isFinite(pos.x)) pos.x = 0;
       if (!Number.isFinite(pos.y)) pos.y = 0;
+    }
+  }
+
+  // 겹침 해소 후처리 (직사각형 노드 충돌 패스)
+  const PADDING_X = 50;
+  const PADDING_Y = 30;
+  for (let pass = 0; pass < 15; pass++) {
+    for (let i = 0; i < nodeIds.length; i++) {
+      const idA = nodeIds[i];
+      const posA = positions.get(idA)!;
+      const sizeA = nodeSizes.get(idA) ?? { width: BASE_NODE_WIDTH, height: BASE_NODE_HEIGHT };
+
+      for (let j = i + 1; j < nodeIds.length; j++) {
+        const idB = nodeIds[j];
+        const posB = positions.get(idB)!;
+        const sizeB = nodeSizes.get(idB) ?? { width: BASE_NODE_WIDTH, height: BASE_NODE_HEIGHT };
+
+        const minW = (sizeA.width + sizeB.width) / 2 + PADDING_X;
+        const minH = (sizeA.height + sizeB.height) / 2 + PADDING_Y;
+
+        const dx = posB.x - posA.x;
+        const dy = posB.y - posA.y;
+
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+
+        if (absDx < minW && absDy < minH) {
+          const overlapX = minW - absDx;
+          const overlapY = minH - absDy;
+
+          if (overlapX < overlapY) {
+            const shift = overlapX / 2;
+            const sign = dx >= 0 ? 1 : -1;
+            posA.x -= shift * sign;
+            posB.x += shift * sign;
+          } else {
+            const shift = overlapY / 2;
+            const sign = dy >= 0 ? 1 : -1;
+            posA.y -= shift * sign;
+            posB.y += shift * sign;
+          }
+        }
+      }
     }
   }
 
@@ -226,14 +285,22 @@ export function buildRagGraphCanvasData(
   graphData: GraphData,
   opts: RagGraphCanvasOptions,
 ): CanvasData {
-  let { nodes, links } = graphData;
+  const { nodes, links } = graphData;
 
   if (nodes.length === 0) {
     return { nodes: [], edges: [] };
   }
 
+  // 0. 유효한 노드 쌍에 대해서만 링크 필터링 (미존재 노드 및 셀프 루프 제거)
+  const validNodeIds = new Set(nodes.map(n => n.id));
+  const validLinks = links.filter(l => {
+    const s = getLinkId(l.source);
+    const t = getLinkId(l.target);
+    return s !== t && validNodeIds.has(s) && validNodeIds.has(t);
+  });
+
   // 1. 임베딩 모델 파편화 대응: 백분위수 임계값 계산
-  const sortedWeights = links.map(l => l.weight).sort((a, b) => b - a);
+  const sortedWeights = validLinks.map(l => l.weight).sort((a, b) => b - a);
   const threshold95 = sortedWeights[Math.floor(sortedWeights.length * 0.05)] ?? 1;
   const threshold80 = sortedWeights[Math.floor(sortedWeights.length * 0.20)] ?? 1;
 
@@ -242,7 +309,7 @@ export function buildRagGraphCanvasData(
   
   // 2-1. Maximum Spanning Tree (MST) 구성하여 연결성 보장
   const uf = new UnionFind(nodes.map(n => n.id));
-  const sortedLinks = [...links].sort((a, b) => b.weight - a.weight);
+  const sortedLinks = [...validLinks].sort((a, b) => b.weight - a.weight);
   
   for (const link of sortedLinks) {
     const srcId = getLinkId(link.source);
@@ -276,23 +343,27 @@ export function buildRagGraphCanvasData(
 
   const prunedLinks = Array.from(prunedLinksSet);
 
-  // 3. Force-directed 레이아웃 (정제된 핵심 엣지만을 기반으로 배치 계산)
-  const positions = computeForceLayout(nodes, prunedLinks);
+  // 노드별 크기 맵 계산
+  const maxDegree = Math.max(1, ...nodes.map(nd => nd.degree));
+  const nodeSizes = new Map<string, { width: number; height: number }>();
+  nodes.forEach(node => {
+    const normalizedDegree = maxDegree > 1 ? (node.degree / maxDegree) * 10 : node.degree;
+    nodeSizes.set(node.id, getNodeSize(normalizedDegree));
+  });
 
-  // 2. 노드 빌드 (CanvasTextNode)
+  // 3. Force-directed 레이아웃 (정제된 핵심 엣지만을 기반으로 배치 계산)
+  const positions = computeForceLayout(nodes, prunedLinks, nodeSizes);
+
+  // 4. 노드 빌드 (CanvasTextNode)
   const idMap = new Map<string, string>();
   const canvasNodes: CanvasTextNode[] = [];
-  const maxDegree = Math.max(1, ...nodes.map(nd => nd.degree));
 
   nodes.forEach((node, index) => {
     const canvasId = `rag-node-${index.toString().padStart(4, '0')}`;
     idMap.set(node.id, canvasId);
 
     const pos = positions.get(node.id) ?? { x: 0, y: 0 };
-    // degree를 maxDegree로 정규화하여 스케일 편차를 줄임
-    const normalizedDegree = maxDegree > 1 ? (node.degree / maxDegree) * 10 : node.degree;
-    const { width, height } = getNodeSize(normalizedDegree);
-
+    const { width, height } = nodeSizes.get(node.id) ?? { width: BASE_NODE_WIDTH, height: BASE_NODE_HEIGHT };
     const baseName = normalizePath(node.id).split('/').pop()?.replace(/\.md$/, '') ?? node.id;
 
     canvasNodes.push({
@@ -345,10 +416,12 @@ export function buildRagGraphCanvasData(
     canvasEdges.push(edge);
   }
 
-  // 4. 폴더 그룹 노드 빌드 (옵션)
+  // 6. 폴더 그룹 노드 빌드 (옵션)
   const groupNodes: CanvasGroupNode[] = [];
   if (opts.showGroups) {
     const GROUP_PADDING = 40;
+    const CLUSTER_DISTANCE_THRESHOLD = 800;
+    const GROUP_COLORS = ['6', '4', '2', '5', '3', '1'];
     const folderMap = new Map<string, CanvasTextNode[]>();
 
     nodes.forEach(node => {
@@ -356,29 +429,67 @@ export function buildRagGraphCanvasData(
       const textNode = canvasNodes.find(cn => cn.id === canvasId);
       if (!textNode) return;
 
-      const groupName = node.group || '__root__';
+      const rawGroup = node.group;
+      const isRoot = !rawGroup || rawGroup === '/' || rawGroup === '__root__';
+      const groupName = isRoot ? '__root__' : rawGroup;
+
       if (!folderMap.has(groupName)) folderMap.set(groupName, []);
       folderMap.get(groupName)!.push(textNode);
     });
 
     let groupCounter = 0;
+    let colorIndex = 0;
+
     for (const [groupName, gNodes] of folderMap) {
       if (gNodes.length === 0) continue;
-      const minX = Math.min(...gNodes.map(n => n.x)) - GROUP_PADDING;
-      const minY = Math.min(...gNodes.map(n => n.y)) - GROUP_PADDING;
-      const maxX = Math.max(...gNodes.map(n => n.x + n.width)) + GROUP_PADDING;
-      const maxY = Math.max(...gNodes.map(n => n.y + n.height)) + GROUP_PADDING;
 
-      groupNodes.push({
-        type: 'group',
-        id: `rag-group-${groupCounter++}`,
-        x: minX,
-        y: minY,
-        width: maxX - minX,
-        height: maxY - minY,
-        label: groupName === '__root__' ? t('canvas.rootGroup') : groupName,
-        color: '6',
-      });
+      // 거리 기반 클러스터링으로 거대 바운딩 박스 겹침 방지
+      const clusters: CanvasTextNode[][] = [];
+      const visited = new Set<string>();
+
+      for (const n of gNodes) {
+        if (visited.has(n.id)) continue;
+        const cluster: CanvasTextNode[] = [];
+        const q = [n];
+        visited.add(n.id);
+
+        while (q.length > 0) {
+          const cur = q.shift()!;
+          cluster.push(cur);
+
+          for (const other of gNodes) {
+            if (!visited.has(other.id)) {
+              const dist = Math.hypot(cur.x - other.x, cur.y - other.y);
+              if (dist <= CLUSTER_DISTANCE_THRESHOLD) {
+                visited.add(other.id);
+                q.push(other);
+              }
+            }
+          }
+        }
+        clusters.push(cluster);
+      }
+
+      const color = GROUP_COLORS[colorIndex % GROUP_COLORS.length];
+      colorIndex++;
+
+      for (const cluster of clusters) {
+        const minX = Math.min(...cluster.map(n => n.x)) - GROUP_PADDING;
+        const minY = Math.min(...cluster.map(n => n.y)) - GROUP_PADDING;
+        const maxX = Math.max(...cluster.map(n => n.x + n.width)) + GROUP_PADDING;
+        const maxY = Math.max(...cluster.map(n => n.y + n.height)) + GROUP_PADDING;
+
+        groupNodes.push({
+          type: 'group',
+          id: `rag-group-${groupCounter++}`,
+          x: minX,
+          y: minY,
+          width: maxX - minX,
+          height: maxY - minY,
+          label: groupName === '__root__' ? t('canvas.rootGroup') : groupName,
+          color,
+        });
+      }
     }
   }
 

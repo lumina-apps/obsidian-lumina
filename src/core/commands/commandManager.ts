@@ -138,6 +138,22 @@ export class CommandManager {
 			},
 		});
 
+		this.plugin.addCommand({
+			id: 'visualize-canvas-current-note',
+			name: t('canvas.menuItem'),
+			checkCallback: (checking: boolean) => {
+				const activeFile = this.plugin.app.workspace.getActiveFile();
+				if (activeFile && activeFile.extension === 'md') {
+					if (!checking) {
+						debugLogger.logSystem('commands', `Command executed: visualize-canvas-current-note (file=${activeFile.path})`);
+						void this.plugin.canvasManager?.generateForFile(activeFile);
+					}
+					return true;
+				}
+				return false;
+			},
+		});
+
 		this.registerQuickActions();
 	}
 

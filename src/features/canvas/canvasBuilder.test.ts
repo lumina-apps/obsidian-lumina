@@ -197,6 +197,50 @@ describe('canvasBuilder', () => {
 			expect(mockApp.metadataCache.getFirstLinkpathDest).toHaveBeenCalledWith('child1', 'root.md');
 			expect(mockApp.metadataCache.getFirstLinkpathDest).toHaveBeenCalledWith('child2', 'root.md');
 		});
+
+		it('should exclude self-loop links where destination equals source', () => {
+			const root = { path: 'root.md', extension: 'md' } as TFile;
+			fixture.getFileCache.mockImplementation((file: TFile) => {
+				if (file.path === 'root.md') {
+					return { links: [{ link: 'root#Section' }] } as unknown as CachedMetadata;
+				}
+				return null;
+			});
+			fixture.getFirstLinkpathDest.mockImplementation((link: string) => {
+				if (link === 'root') return root;
+				return null;
+			});
+
+			const opts: CanvasBuildOptions = { layout: 'radial', depth: 1, folderDepth: 0, maxNodes: 10, bidirectional: false, includeAttachments: false };
+			const result = collectGraph(mockApp, [root], opts);
+			expect(result.nodeMap.size).toBe(1);
+			expect(result.edges.length).toBe(0);
+		});
+
+		it('should preserve edges between collected nodes even when maxNodes stops adding new nodes', () => {
+			const root1 = { path: 'root1.md', extension: 'md' } as TFile;
+			const root2 = { path: 'root2.md', extension: 'md' } as TFile;
+			const extra = { path: 'extra.md', extension: 'md' } as TFile;
+
+			fixture.getFileCache.mockImplementation((file: TFile) => {
+				if (file.path === 'root1.md') return { links: [{ link: 'root2' }, { link: 'extra' }] } as unknown as CachedMetadata;
+				if (file.path === 'root2.md') return { links: [{ link: 'root1' }] } as unknown as CachedMetadata;
+				return null;
+			});
+			fixture.getFirstLinkpathDest.mockImplementation((link: string) => {
+				if (link === 'root1') return root1;
+				if (link === 'root2') return root2;
+				if (link === 'extra') return extra;
+				return null;
+			});
+
+			// maxNodes: 2 -> root1, root2만 수집되고 extra는 제외되지만 root1-root2 간 엣지는 유지되어야 함
+			const opts: CanvasBuildOptions = { layout: 'radial', depth: 2, folderDepth: 0, maxNodes: 2, bidirectional: false, includeAttachments: false };
+			const result = collectGraph(mockApp, [root1, root2], opts);
+			expect(result.nodeMap.size).toBe(2);
+			expect(result.truncated).toBe(true);
+			expect(result.edges).toContainEqual(['root1.md', 'root2.md']);
+		});
 	});
 
 	describe('buildCanvasData', () => {
@@ -298,6 +342,69 @@ describe('canvasBuilder', () => {
 			const firstChild = childNodes[0];
 			const dist = Math.sqrt(firstChild.x * firstChild.x + firstChild.y * firstChild.y);
 			expect(dist).toBeGreaterThan(400);
+		});
+
+		it('should lay out multi-root radial nodes using hub without flattening to single horizontal line', () => {
+			const hub = { path: 'hub.md', extension: 'md' } as TFile;
+			const n1 = { path: 'n1.md', extension: 'md' } as TFile;
+			const n2 = { path: 'n2.md', extension: 'md' } as TFile;
+
+			const nodeMap = new Map<string, TFile>([
+				['hub.md', hub],
+				['n1.md', n1],
+				['n2.md', n2],
+			]);
+			const edges: Array<[string, string]> = [
+				['hub.md', 'n1.md'],
+				['hub.md', 'n2.md'],
+			];
+
+			const collected = { nodeMap, edges };
+			const opts: CanvasBuildOptions = { layout: 'radial', depth: 1, folderDepth: 0, maxNodes: 10, bidirectional: false, includeAttachments: false };
+			const data = buildCanvasData(collected, [hub, n1, n2], opts);
+
+			const hubNode = data.nodes.find((n): n is CanvasTextNode => n.type === 'text' && n.text.includes('hub.md'));
+			const leafNodes = data.nodes.filter((n): n is CanvasTextNode => n.type === 'text' && !n.text.includes('hub.md'));
+
+			expect(hubNode).toBeDefined();
+			expect(leafNodes.length).toBe(2);
+			// 허브 노드는 중심 (0, 0)에 위치하고 리프 노드들은 중심에서 떨어진 원에 위치해야 함
+			expect(hubNode!.x).toBe(0);
+			expect(hubNode!.y).toBe(0);
+			for (const leaf of leafNodes) {
+				const dist = Math.hypot(leaf.x, leaf.y);
+				expect(dist).toBeGreaterThan(200);
+			}
+		});
+
+		it('should center parent Y coordinate between multiple children in tree layout', () => {
+			const parent = { path: 'parent.md', extension: 'md' } as TFile;
+			const child1 = { path: 'child1.md', extension: 'md' } as TFile;
+			const child2 = { path: 'child2.md', extension: 'md' } as TFile;
+
+			const nodeMap = new Map([
+				['parent.md', parent],
+				['child1.md', child1],
+				['child2.md', child2],
+			]);
+			const edges: Array<[string, string]> = [
+				['parent.md', 'child1.md'],
+				['parent.md', 'child2.md'],
+			];
+
+			const collected = { nodeMap, edges };
+			const opts: CanvasBuildOptions = { layout: 'tree', depth: 1, folderDepth: 0, maxNodes: 10, bidirectional: false, includeAttachments: false };
+			const data = buildCanvasData(collected, [parent], opts);
+
+			const pNode = data.nodes.find((n): n is CanvasTextNode => n.type === 'text' && n.text.includes('parent.md'))!;
+			const c1Node = data.nodes.find((n): n is CanvasTextNode => n.type === 'text' && n.text.includes('child1.md'))!;
+			const c2Node = data.nodes.find((n): n is CanvasTextNode => n.type === 'text' && n.text.includes('child2.md'))!;
+
+			expect(pNode.x).toBeLessThan(c1Node.x);
+			expect(pNode.x).toBeLessThan(c2Node.x);
+			// 부모 Y는 자식들의 중간에 위치해야 함
+			const expectedMidY = Math.round((c1Node.y + c2Node.y) / 2);
+			expect(pNode.y).toBe(expectedMidY);
 		});
 	});
 

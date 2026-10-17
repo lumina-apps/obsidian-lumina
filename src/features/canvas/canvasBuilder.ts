@@ -58,40 +58,26 @@ function getOutlinks(app: App, file: TFile): TFile[] {
 	if (!cache) return [];
 
 	const result: TFile[] = [];
+	const seen = new Set<string>();
+
+	const addDest = (rawLink: string) => {
+		const cleanPath = cleanLinkpath(rawLink);
+		if (!cleanPath) return;
+		const resolved = app.metadataCache.getFirstLinkpathDest(cleanPath, file.path);
+		if (resolved && resolved.path !== file.path && !seen.has(resolved.path)) {
+			seen.add(resolved.path);
+			result.push(resolved);
+		}
+	};
+
 	if (cache.links) {
 		for (const link of cache.links) {
-			const cleanPath = cleanLinkpath(link.link);
-			if (!cleanPath) continue;
-			const resolved = app.metadataCache.getFirstLinkpathDest(cleanPath, file.path);
-			if (resolved) result.push(resolved);
+			addDest(link.link);
 		}
 	}
-	// 임베드 링크도 포함 (![[...]])
 	if (cache.embeds) {
 		for (const embed of cache.embeds) {
-			const cleanPath = cleanLinkpath(embed.link);
-			if (!cleanPath) continue;
-			const resolved = app.metadataCache.getFirstLinkpathDest(cleanPath, file.path);
-			if (resolved && !result.some((f) => f.path === resolved.path)) {
-				result.push(resolved);
-			}
-		}
-	}
-	return result;
-}
-
-/**
- * 단일 파일로의 백링크(incoming) 파일 목록을 반환합니다.
- */
-function getBacklinks(app: App, file: TFile): TFile[] {
-	const resolvedLinks = app.metadataCache.resolvedLinks;
-	const result: TFile[] = [];
-	for (const [sourcePath, links] of Object.entries(resolvedLinks)) {
-		if (links[file.path] !== undefined) {
-			const sourceFile = app.vault.getFileByPath(sourcePath);
-			if (sourceFile && !result.some((f) => f.path === sourceFile.path)) {
-				result.push(sourceFile);
-			}
+			addDest(embed.link);
 		}
 	}
 	return result;
@@ -99,11 +85,13 @@ function getBacklinks(app: App, file: TFile): TFile[] {
 
 // ─── BFS 기반 노드/엣지 수집 ──────────────────────────────────────────────────
 
-interface CollectedGraph {
+export interface CollectedGraph {
 	/** path → TFile */
 	nodeMap: Map<string, TFile>;
 	/** 방향 있는 엣지: [from path, to path] */
 	edges: Array<[string, string]>;
+	/** maxNodes 제한으로 인해 일부 노드가 제외되었는지 여부 */
+	truncated?: boolean;
 }
 
 /**
@@ -119,66 +107,98 @@ export function collectGraph(
 	const nodeMap = new Map<string, TFile>();
 	const edgeSet = new Set<string>(); // "from|to" dedup
 	const edges: Array<[string, string]> = [];
-
-	// 루트 노드 추가
-	for (const root of roots) {
-		nodeMap.set(root.path, root);
-	}
-
-	let frontier = [...roots];
 	let truncated = false;
 
+	// bidirectional 모드일 때 역방향 인덱스 1회 구축 (O(V + E))
+	let backlinkMap: Map<string, TFile[]> | null = null;
+	if (bidirectional) {
+		backlinkMap = new Map();
+		const resolvedLinks = app.metadataCache.resolvedLinks || {};
+		for (const [sourcePath, links] of Object.entries(resolvedLinks)) {
+			const sourceFile = app.vault.getFileByPath(sourcePath);
+			if (!sourceFile) continue;
+			for (const targetPath of Object.keys(links)) {
+				if (targetPath === sourcePath) continue; // self-loop 제외
+				if (!backlinkMap.has(targetPath)) backlinkMap.set(targetPath, []);
+				backlinkMap.get(targetPath)!.push(sourceFile);
+			}
+		}
+	}
+
+	// 루트 노드 추가 (maxNodes 상한 체크)
+	const frontier: TFile[] = [];
+	for (const root of roots) {
+		if (nodeMap.has(root.path)) continue;
+		if (nodeMap.size >= maxNodes) {
+			truncated = true;
+			break;
+		}
+		nodeMap.set(root.path, root);
+		frontier.push(root);
+	}
+
+	let currentFrontier = frontier;
+
 	for (let d = 0; d < depth; d++) {
-		if (truncated) break;
+		if (currentFrontier.length === 0) break;
 		const nextFrontier: TFile[] = [];
 
-		for (const file of frontier) {
-			if (truncated) break;
-
+		for (const file of currentFrontier) {
 			// 아웃링크
 			const outlinks = getOutlinks(app, file);
 			for (const target of outlinks) {
-				// 첨부파일 필터
+				if (target.path === file.path) continue; // 셀프 루프 제외
 				if (!includeAttachments && target.extension !== 'md') continue;
 
-				const edgeKey = `${file.path}|${target.path}`;
-				if (!edgeSet.has(edgeKey)) {
-					edgeSet.add(edgeKey);
-					edges.push([file.path, target.path]);
-				}
-
 				if (!nodeMap.has(target.path)) {
+					if (nodeMap.size >= maxNodes) {
+						truncated = true;
+						continue; // 신규 노드 추가만 스킵
+					}
 					nodeMap.set(target.path, target);
 					nextFrontier.push(target);
-					if (nodeMap.size >= maxNodes) { truncated = true; break; }
+				}
+
+				if (nodeMap.has(target.path)) {
+					const edgeKey = `${file.path}|${target.path}`;
+					if (!edgeSet.has(edgeKey)) {
+						edgeSet.add(edgeKey);
+						edges.push([file.path, target.path]);
+					}
 				}
 			}
 
 			// 백링크 (양방향 모드)
-			if (bidirectional && !truncated) {
-				const backlinks = getBacklinks(app, file);
+			if (bidirectional && backlinkMap) {
+				const backlinks = backlinkMap.get(file.path) ?? [];
 				for (const source of backlinks) {
+					if (source.path === file.path) continue;
 					if (!includeAttachments && source.extension !== 'md') continue;
 
-					const edgeKey = `${source.path}|${file.path}`;
-					if (!edgeSet.has(edgeKey)) {
-						edgeSet.add(edgeKey);
-						edges.push([source.path, file.path]);
-					}
-
 					if (!nodeMap.has(source.path)) {
+						if (nodeMap.size >= maxNodes) {
+							truncated = true;
+							continue;
+						}
 						nodeMap.set(source.path, source);
 						nextFrontier.push(source);
-						if (nodeMap.size >= maxNodes) { truncated = true; break; }
+					}
+
+					if (nodeMap.has(source.path)) {
+						const edgeKey = `${source.path}|${file.path}`;
+						if (!edgeSet.has(edgeKey)) {
+							edgeSet.add(edgeKey);
+							edges.push([source.path, file.path]);
+						}
 					}
 				}
 			}
 		}
 
-		frontier = nextFrontier;
+		currentFrontier = nextFrontier;
 	}
 
-	return { nodeMap, edges };
+	return { nodeMap, edges, truncated };
 }
 
 // ─── 레이아웃 계산: 방사형 ────────────────────────────────────────────────────
@@ -200,15 +220,52 @@ function computeRadialPositions(
 		adj.get(to)?.add(from);
 	}
 
-	// BFS 레이어링
+	// BFS 레이어링 시드 선정
 	const layerMap = new Map<string, number>();
 	const queue: string[] = [];
-	for (const r of roots) {
-		if (!layerMap.has(r)) {
-			layerMap.set(r, 0);
-			queue.push(r);
+
+	if (roots.length <= 1) {
+		for (const r of roots) {
+			if (!layerMap.has(r) && allPaths.includes(r)) {
+				layerMap.set(r, 0);
+				queue.push(r);
+			}
+		}
+	} else {
+		// 다중 루트 (폴더 모드): 연결 컴포넌트별로 가장 연결도(degree)가 높은 허브 노드를 layer 0 시드로 선정
+		const visitedPaths = new Set<string>();
+		const validRoots = roots.filter(r => allPaths.includes(r));
+
+		for (const r of validRoots) {
+			if (visitedPaths.has(r)) continue;
+
+			const component: string[] = [];
+			const compQueue = [r];
+			visitedPaths.add(r);
+
+			while (compQueue.length > 0) {
+				const cur = compQueue.shift()!;
+				component.push(cur);
+				for (const neighbor of (adj.get(cur) ?? [])) {
+					if (!visitedPaths.has(neighbor)) {
+						visitedPaths.add(neighbor);
+						compQueue.push(neighbor);
+					}
+				}
+			}
+
+			const componentRoots = component.filter(p => validRoots.includes(p));
+			const candidates = componentRoots.length > 0 ? componentRoots : component;
+			candidates.sort((a, b) => (adj.get(b)?.size ?? 0) - (adj.get(a)?.size ?? 0));
+			const hub = candidates[0];
+
+			if (hub && !layerMap.has(hub)) {
+				layerMap.set(hub, 0);
+				queue.push(hub);
+			}
 		}
 	}
+
 	let qi = 0;
 	while (qi < queue.length) {
 		const cur = queue[qi++];
@@ -221,6 +278,13 @@ function computeRadialPositions(
 		}
 	}
 
+	// 미방문 노드 폴백 (고립 노드 방어)
+	for (const path of allPaths) {
+		if (!layerMap.has(path)) {
+			layerMap.set(path, 0);
+		}
+	}
+
 	// 레이어별 노드 수집
 	const layers = new Map<number, string[]>();
 	for (const path of allPaths) {
@@ -229,22 +293,44 @@ function computeRadialPositions(
 		layers.get(layer)!.push(path);
 	}
 
-	// 좌표 할당
-	const positions = new Map<string, { x: number; y: number }>();
+	// 각 레이어 내 노드를 폴더 경로 순으로 정렬하여 동일 폴더 노드가 인접 각도에 모이도록 함
+	for (const nodes of layers.values()) {
+		nodes.sort((a, b) => {
+			const folderA = a.includes('/') ? a.substring(0, a.lastIndexOf('/')) : '';
+			const folderB = b.includes('/') ? b.substring(0, b.lastIndexOf('/')) : '';
+			return folderA.localeCompare(folderB);
+		});
+	}
 
-	for (const [layer, nodes] of layers) {
+	// 좌표 할당 (오름차순 레이어 순회 및 단조 증가 반지름 보장)
+	const positions = new Map<string, { x: number; y: number }>();
+	const sortedLayerNums = Array.from(layers.keys()).sort((a, b) => a - b);
+	let prevRadius = 0;
+
+	for (const layer of sortedLayerNums) {
+		const nodes = layers.get(layer)!;
 		if (layer === 0) {
-			// 루트가 여러 개면 가로 배치
-			const totalW = nodes.length * (NODE_WIDTH + 40);
-			nodes.forEach((path, i) => {
-				positions.set(path, {
-					x: i * (NODE_WIDTH + 40) - totalW / 2,
-					y: 0,
+			if (nodes.length === 1) {
+				positions.set(nodes[0], { x: 0, y: 0 });
+				prevRadius = 0;
+			} else {
+				// 다중 허브: 작은 중심 원으로 배치
+				const circumference = nodes.length * (NODE_WIDTH + 40);
+				const r0 = Math.max(160, Math.ceil(circumference / (2 * Math.PI)));
+				prevRadius = r0;
+				const angleStep = (2 * Math.PI) / nodes.length;
+				nodes.forEach((path, i) => {
+					const angle = i * angleStep - Math.PI / 2;
+					positions.set(path, {
+						x: Math.round(Math.cos(angle) * r0),
+						y: Math.round(Math.sin(angle) * r0),
+					});
 				});
-			});
+			}
 		} else {
 			const minRadius = Math.ceil((nodes.length * (NODE_WIDTH + 40)) / (2 * Math.PI));
-			const radius = Math.max(layer * RADIAL_LAYER_GAP, minRadius);
+			const radius = Math.max(prevRadius + RADIAL_LAYER_GAP, layer * RADIAL_LAYER_GAP, minRadius);
+			prevRadius = radius;
 			const angleStep = (2 * Math.PI) / nodes.length;
 			nodes.forEach((path, i) => {
 				const angle = i * angleStep - Math.PI / 2;
@@ -266,48 +352,66 @@ function computeTreePositions(
 	edges: Array<[string, string]>,
 	allPaths: string[],
 ): Map<string, { x: number; y: number }> {
-	// outgoing adjacency
 	const children = new Map<string, string[]>();
-	const parentSet = new Set<string>();
-	for (const path of allPaths) children.set(path, []);
+	const inDegree = new Map<string, number>();
+	for (const path of allPaths) {
+		children.set(path, []);
+		inDegree.set(path, 0);
+	}
 	for (const [from, to] of edges) {
-		children.get(from)?.push(to);
-		parentSet.add(to);
+		if (children.has(from) && children.has(to)) {
+			children.get(from)!.push(to);
+			inDegree.set(to, (inDegree.get(to) || 0) + 1);
+		}
 	}
 
-	// 루트 결정: 부모가 없는 노드 (or 사용자 지정 루트)
-	const treeRoots = roots.filter((r) => allPaths.includes(r));
+	// 자식 노드를 폴더명 순으로 정렬
+	for (const list of children.values()) {
+		list.sort((a, b) => a.localeCompare(b));
+	}
 
 	const positions = new Map<string, { x: number; y: number }>();
 	const visited = new Set<string>();
-
 	let currentY = 0;
 
-	// DFS로 트리 레이아웃
 	function dfs(path: string, depth: number): number {
-		if (visited.has(path)) return currentY;
 		visited.add(path);
-
 		const x = depth * TREE_X_GAP;
-		const y = currentY;
-		positions.set(path, { x, y });
-		currentY += NODE_HEIGHT + TREE_Y_GAP;
 
-		for (const child of (children.get(path) ?? [])) {
-			dfs(child, depth + 1);
+		const unvisitedChildren = (children.get(path) ?? []).filter(c => !visited.has(c));
+
+		if (unvisitedChildren.length === 0) {
+			const y = currentY;
+			positions.set(path, { x, y });
+			currentY += NODE_HEIGHT + TREE_Y_GAP;
+			return y;
 		}
+
+		const childYs: number[] = [];
+		for (const child of unvisitedChildren) {
+			childYs.push(dfs(child, depth + 1));
+		}
+
+		// 부모 Y 좌표를 자식들의 중간값에 정렬
+		const y = Math.round((childYs[0] + childYs[childYs.length - 1]) / 2);
+		positions.set(path, { x, y });
 		return y;
 	}
 
+	// roots 중 inDegree === 0인 노드를 우선 탐색
+	const treeRoots = roots.filter((r) => allPaths.includes(r));
+	treeRoots.sort((a, b) => (inDegree.get(a) || 0) - (inDegree.get(b) || 0));
+
 	for (const root of treeRoots) {
-		dfs(root, 0);
+		if (!visited.has(root)) {
+			dfs(root, 0);
+		}
 	}
 
-	// 방문 안 된 노드 (고립 노드 등)
+	// 미방문 노드
 	for (const path of allPaths) {
-		if (!positions.has(path)) {
-			positions.set(path, { x: 0, y: currentY });
-			currentY += NODE_HEIGHT + TREE_Y_GAP;
+		if (!visited.has(path)) {
+			dfs(path, 0);
 		}
 	}
 
@@ -345,7 +449,7 @@ export function buildCanvasData(
 			? computeRadialPositions(connectedRoots, edges, connectedPaths)
 			: computeTreePositions(connectedRoots, edges, connectedPaths);
 
-	// 2. 독립 노드들은 하단에 그리드 형태로 배치
+	// 2. 독립 노드들은 하단에 그리드 형태로 배치 (폴더 순 정렬)
 	let gridStartY = 0;
 	if (positions.size > 0) {
 		let maxY = -Infinity;
@@ -356,6 +460,7 @@ export function buildCanvasData(
 	}
 
 	if (isolatedNodes.length > 0) {
+		isolatedNodes.sort((a, b) => a.localeCompare(b));
 		const cols = Math.max(1, Math.ceil(Math.sqrt(isolatedNodes.length)));
 		const totalW = cols * (NODE_WIDTH + 40) - 40;
 		const gridStartX = -totalW / 2;
@@ -401,6 +506,8 @@ export function buildCanvasData(
 	const edgeIdSet = new Set<string>();
 
 	for (const [fromPath, toPath] of edges) {
+		if (fromPath === toPath) continue; // 셀프 루프 방어
+
 		const fromId = idMap.get(fromPath);
 		const toId = idMap.get(toPath);
 		if (!fromId || !toId) continue;
@@ -441,12 +548,15 @@ export function buildCanvasData(
 
 /**
  * 폴더별로 그룹 노드를 추가하고, 해당 파일 노드들의 좌표를 기반으로 그룹 범위를 계산합니다.
+ * 서로 멀리 떨어진 노드 클러스터는 분리하여 거대한 그룹 박스 겹침을 방지합니다.
  */
 export function addFolderGroups(
 	canvasData: CanvasData,
 	nodeMap: Map<string, TFile>,
 ): CanvasData {
 	const GROUP_PADDING = 40;
+	const CLUSTER_DISTANCE_THRESHOLD = 800; // 이 거리 이상 떨어져 있으면 별도 그룹으로 분리
+	const GROUP_COLORS = ['6', '4', '2', '5', '3', '1'];
 
 	// 폴더별 노드 수집
 	const folderNodes = new Map<string, CanvasTextNode[]>();
@@ -467,25 +577,60 @@ export function addFolderGroups(
 
 	const groupNodes: CanvasGroupNode[] = [];
 	let groupCounter = 0;
+	let colorIndex = 0;
 
 	for (const [folder, nodes] of folderNodes) {
 		if (nodes.length === 0) continue;
 
-		const minX = Math.min(...nodes.map((n) => n.x)) - GROUP_PADDING;
-		const minY = Math.min(...nodes.map((n) => n.y)) - GROUP_PADDING;
-		const maxX = Math.max(...nodes.map((n) => n.x + n.width)) + GROUP_PADDING;
-		const maxY = Math.max(...nodes.map((n) => n.y + n.height)) + GROUP_PADDING;
+		// 거리 기반 클러스터링으로 고립 노드와 연결 노드가 화면 전체를 덮지 않도록 분리
+		const clusters: CanvasTextNode[][] = [];
+		const visited = new Set<string>();
 
-		groupNodes.push({
-			type: 'group',
-			id: `group-${groupCounter++}`,
-			x: minX,
-			y: minY,
-			width: maxX - minX,
-			height: maxY - minY,
-			label: !folder || folder === '/' ? t('canvas.rootGroup') : folder,
-			color: '6', // 보라색 그룹
-		});
+		for (const n of nodes) {
+			if (visited.has(n.id)) continue;
+			const cluster: CanvasTextNode[] = [];
+			const q = [n];
+			visited.add(n.id);
+
+			while (q.length > 0) {
+				const cur = q.shift()!;
+				cluster.push(cur);
+
+				for (const other of nodes) {
+					if (!visited.has(other.id)) {
+						const dist = Math.hypot(cur.x - other.x, cur.y - other.y);
+						if (dist <= CLUSTER_DISTANCE_THRESHOLD) {
+							visited.add(other.id);
+							q.push(other);
+						}
+					}
+				}
+			}
+			clusters.push(cluster);
+		}
+
+		const color = GROUP_COLORS[colorIndex % GROUP_COLORS.length];
+		colorIndex++;
+
+		for (const cluster of clusters) {
+			const minX = Math.min(...cluster.map((n) => n.x)) - GROUP_PADDING;
+			const minY = Math.min(...cluster.map((n) => n.y)) - GROUP_PADDING;
+			const maxX = Math.max(...cluster.map((n) => n.x + n.width)) + GROUP_PADDING;
+			const maxY = Math.max(...cluster.map((n) => n.y + n.height)) + GROUP_PADDING;
+
+			const labelText = !folder || folder === '/' ? t('canvas.rootGroup') : folder;
+
+			groupNodes.push({
+				type: 'group',
+				id: `group-${groupCounter++}`,
+				x: minX,
+				y: minY,
+				width: maxX - minX,
+				height: maxY - minY,
+				label: labelText,
+				color,
+			});
+		}
 	}
 
 	return {

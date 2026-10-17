@@ -134,5 +134,61 @@ describe('ragGraphCanvasExporter', () => {
 
 		expect(result.edges.length).toBe(0);
 	});
+
+	it('should normalize "/" group to rootGroup label when showGroups is true', () => {
+		const nodes: GraphNode[] = [
+			{ id: 'root_note.md', name: 'root_note', degree: 1, group: '/' },
+		];
+		const links: GraphEdge[] = [];
+
+		const result = buildRagGraphCanvasData({ nodes, links }, {
+			showSimilarityLabel: false,
+			showGroups: true,
+		});
+
+		const groupNode = result.nodes.find((n): n is CanvasGroupNode => n.type === 'group');
+		expect(groupNode).toBeDefined();
+		expect(groupNode!.label).not.toBe('/');
+		expect(groupNode!.label!.length).toBeGreaterThan(0);
+	});
+
+	it('should produce deterministic node positions for identical graph data', () => {
+		const graphData = createSampleGraphData();
+		const result1 = buildRagGraphCanvasData(graphData, { showSimilarityLabel: false, showGroups: false });
+		const result2 = buildRagGraphCanvasData(graphData, { showSimilarityLabel: false, showGroups: false });
+
+		const nodes1 = result1.nodes.filter((n): n is CanvasTextNode => n.type === 'text');
+		const nodes2 = result2.nodes.filter((n): n is CanvasTextNode => n.type === 'text');
+
+		expect(nodes1.length).toBe(nodes2.length);
+		for (let i = 0; i < nodes1.length; i++) {
+			expect(nodes1[i].x).toBe(nodes2[i].x);
+			expect(nodes1[i].y).toBe(nodes2[i].y);
+		}
+	});
+
+	it('should maintain separation between nodes to prevent overlapping', () => {
+		const nodes: GraphNode[] = [
+			{ id: 'a.md', name: 'a', degree: 2, group: 'g' },
+			{ id: 'b.md', name: 'b', degree: 2, group: 'g' },
+		];
+		const links: GraphEdge[] = [
+			{ source: 'a.md', target: 'b.md', weight: 0.99 },
+		];
+
+		const result = buildRagGraphCanvasData({ nodes, links }, { showSimilarityLabel: false, showGroups: false });
+		const textNodes = result.nodes.filter((n): n is CanvasTextNode => n.type === 'text');
+		expect(textNodes.length).toBe(2);
+
+		const nA = textNodes[0];
+		const nB = textNodes[1];
+
+		const overlapX = (nA.width + nB.width) / 2 - Math.abs((nA.x + nA.width / 2) - (nB.x + nB.width / 2));
+		const overlapY = (nA.height + nB.height) / 2 - Math.abs((nA.y + nA.height / 2) - (nB.y + nB.height / 2));
+
+		// 가로와 세로가 동시에 겹치는 완전한 바운딩 박스 충돌이 없어야 함
+		const isColliding = overlapX > 0 && overlapY > 0;
+		expect(isColliding).toBe(false);
+	});
 });
 

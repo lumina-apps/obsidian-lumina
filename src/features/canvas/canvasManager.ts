@@ -17,10 +17,6 @@ import type { CanvasBuildOptions } from './canvasTypes';
 import type { RagGraphCanvasOptions } from './ragGraphCanvasExporter';
 import type { GraphData } from '../../shared/types/graph.types';
 
-interface MenuItemWithSubmenu extends MenuItem {
-	setSubmenu?: () => Menu;
-}
-
 export class CanvasManager {
 	private plugin: LuminaPlugin;
 	private eventRefs: EventRef[] = [];
@@ -30,35 +26,10 @@ export class CanvasManager {
 	}
 
 	registerEvents(): void {
-		// 1. Editor Context Menu
-		const editorMenuRef = this.plugin.app.workspace.on('editor-menu', (menu, _editor, view) => {
-			if (!this.plugin.settings.misc.contextMenuEnabled) return;
-			const activeFile = view?.file ?? this.plugin.app.workspace.getActiveFile();
-			if (!activeFile || activeFile.extension !== 'md') return;
-
-			menu.addItem((item) => {
-				item.setTitle('✨ Lumina').setIcon('bot');
-				const itemWithSubmenu = item as MenuItemWithSubmenu;
-				const submenu = itemWithSubmenu.setSubmenu ? itemWithSubmenu.setSubmenu() : null;
-				const target = submenu || menu;
-
-				target.addItem((subItem) => {
-					subItem
-						.setTitle('🗺️ ' + t('canvas.menuItem'))
-						.setIcon('map')
-						.setSection('action')
-						.onClick(async () => {
-							debugLogger.logSystem('canvas', `editor-menu: canvas generate triggered (file=${activeFile.path})`);
-							await this.generateForFile(activeFile);
-						});
-				});
-			});
-		});
-		this.plugin.registerEvent(editorMenuRef);
-		this.eventRefs.push(editorMenuRef);
-
-		// 2. File Explorer File Context Menu (file-menu)
+		// File Explorer Context Menu (file-menu)
 		const fileMenuRef = this.plugin.app.workspace.on('file-menu', (menu, abstractFile) => {
+			if (!this.plugin.settings.misc.contextMenuEnabled) return;
+
 			if (abstractFile instanceof TFile && abstractFile.extension === 'md') {
 				menu.addItem((item) => {
 					item

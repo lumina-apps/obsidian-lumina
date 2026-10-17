@@ -31,16 +31,7 @@
 					showGroups: plugin.settings.canvas.showFolderGroups,
 				});
 			} else {
-				const { generateCanvasForRagGraph } = await import('../../canvas/canvasGenerator');
-				await generateCanvasForRagGraph(
-					plugin.app,
-					graphData,
-					{
-						showSimilarityLabel: false,
-						showGroups: plugin.settings.canvas.showFolderGroups,
-					},
-					plugin.settings.canvas.outputPath,
-				);
+				debugLogger.logWarn('graph', 'CanvasManager is not initialized yet.');
 			}
 		} catch (e) {
 			debugLogger.logError('graph', normalizeError(e, `Canvas export failed: ${e}`));
