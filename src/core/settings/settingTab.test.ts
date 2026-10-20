@@ -167,6 +167,31 @@ describe('LuminaSettingTab scroll preservation', () => {
 			expect(visibleItemsKo.length).toBeGreaterThan(0);
 		});
 
+		it('matches system prompt cards by prompt name or content and hides them on unrelated queries', () => {
+			mockPlugin.settings.chat.systemPrompts = [
+				{ id: 'sp-1', name: 'UniquePersonaAlpha', content: 'Specialized prompt instructions' },
+			];
+			tab.display();
+
+			// 1. Search matching the system prompt name
+			tab.searchQuery = 'uniquepersonaalpha';
+			tab.refreshDisplay();
+
+			const visibleCardsMatch = Array.from(
+				container.querySelectorAll<HTMLElement>('.lumina-prompt-card')
+			).filter(el => el.style.display !== 'none');
+			expect(visibleCardsMatch.length).toBe(1);
+
+			// 2. Search unrelated term ("debug") -> prompt card should be hidden
+			tab.searchQuery = 'debug';
+			tab.refreshDisplay();
+
+			const visibleCardsUnrelated = Array.from(
+				container.querySelectorAll<HTMLElement>('.lumina-prompt-card')
+			).filter(el => el.style.display !== 'none');
+			expect(visibleCardsUnrelated.length).toBe(0);
+		});
+
 		it('shows no results message for unmatched query', () => {
 			tab.display();
 			tab.searchQuery = 'xyznonexistentquery999';

@@ -8,6 +8,7 @@ import { getActiveProject } from "../../core/store/projectStore";
 import type { ChatMessage } from '../../shared/types/llm.types';
 import type { UIChatMessage } from '../../shared/types/chat.types';
 import type { ChatSettings } from '../../core/settings/settings.types';
+import type { SystemPromptPreset } from '../../shared/types/settings.types';
 import { t } from '../../shared/locales/helpers';
 import { debugLogger } from '../../shared/debugLogger';
 import { stripThinkTags } from '../../shared/utils/llmTextSanitizer';
@@ -15,14 +16,34 @@ import { estimateTokens } from '../../shared/utils/tokenEstimator';
 
 export { estimateTokens };
 
+/**
+ * 프로젝트에 설정된 systemPromptId를 기반으로 실제 적용할 시스템 프롬프트 프리셋을 결정합니다.
+ * - preferredId가 지정되어 있고 목록에 존재하면 해당 프리셋 반환
+ * - 빈 문자열('' = 자동 선택)이거나 삭제된 ID이면 첫 번째 시스템 프롬프트로 폴백
+ */
+export function resolveActiveSystemPrompt(
+	systemPrompts: SystemPromptPreset[] | undefined,
+	preferredId?: string,
+): SystemPromptPreset | undefined {
+	if (!systemPrompts || systemPrompts.length === 0) return undefined;
+	if (preferredId) {
+		const matched = systemPrompts.find(p => p.id === preferredId);
+		if (matched) return matched;
+	}
+	return systemPrompts[0];
+}
+
 const LANGUAGE_HINTS: Record<string, string> = {
 	ko: 'Always respond in Korean (한국어).',
 	en: 'Always respond in English.',
 	ja: 'Always respond in Japanese (日本語).',
-	zh: 'Always respond in Chinese (中文).',
+	zh: 'Always respond in Simplified Chinese (简体中文).',
+	'zh-tw': 'Always respond in Traditional Chinese (繁體中文).',
 	fr: 'Always respond in French (Français).',
 	de: 'Always respond in German (Deutsch).',
 	es: 'Always respond in Spanish (Español).',
+	pt: 'Always respond in Portuguese (Português).',
+	ru: 'Always respond in Russian (Русский).',
 	it: 'Always respond in Italian (Italiano).',
 };
 
@@ -57,31 +78,35 @@ export function buildMessages(
 
 	// ── 1. 시스템 프롬프트 구성 ───────────────────────────────────────────────
 	const project = getActiveProject();
-	const activePresetId = project.systemPromptId || 'default';
-	const activePreset = chat.systemPrompts.find(p => p.id === activePresetId) || chat.systemPrompts[0];
+	const activePreset = resolveActiveSystemPrompt(chat.systemPrompts, project?.systemPromptId);
 	
 	let systemContent = activePreset?.content || '';
 
 	if (systemContent) {
 		let dateStr: string;
 		let timeStr: string;
-		if (typeof window.moment !== 'undefined') {
+		if (typeof window !== 'undefined' && typeof window.moment !== 'undefined') {
 			const m = window.moment() as { format: (fmt: string) => string };
 			dateStr = m.format('YYYY-MM-DD');
 			timeStr = m.format('HH:mm');
 		} else {
 			const now = new Date();
-			dateStr = now.toISOString().split('T')[0];
-			timeStr = `${now.getHours()}:${now.getMinutes()}`;
+			const yyyy = String(now.getFullYear());
+			const mm = String(now.getMonth() + 1).padStart(2, '0');
+			const dd = String(now.getDate()).padStart(2, '0');
+			const hh = String(now.getHours()).padStart(2, '0');
+			const min = String(now.getMinutes()).padStart(2, '0');
+			dateStr = `${yyyy}-${mm}-${dd}`;
+			timeStr = `${hh}:${min}`;
 		}
 		const activePathStr = opts.activeFilePath ?? 'No active file';
 		const activeTitleStr = opts.activeFileTitle ?? 'No active file';
 
 		systemContent = systemContent
-			.replace(/\{\{date\}\}/g, dateStr)
-			.replace(/\{\{time\}\}/g, timeStr)
-			.replace(/\{\{activeFile\}\}/g, activePathStr)
-			.replace(/\{\{title\}\}/g, activeTitleStr);
+			.replace(/\{\{date\}\}/g, () => dateStr)
+			.replace(/\{\{time\}\}/g, () => timeStr)
+			.replace(/\{\{activeFile\}\}/g, () => activePathStr)
+			.replace(/\{\{title\}\}/g, () => activeTitleStr);
 	}
 
 	// 응답 언어 지정

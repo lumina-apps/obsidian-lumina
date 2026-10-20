@@ -7,6 +7,7 @@
 	import QuickSettingsGroup from "./lib/quickSettings/QuickSettingsGroup.svelte";
 	import { TEMPERATURE_PRESETS, TOKEN_PRESETS } from "./lib/quickSettings/constants";
 	import type { PresetItem } from "./lib/quickSettings/QuickSettingsGroup.svelte";
+	import { resolveActiveSystemPrompt } from "../promptBuilder";
 
 	let { plugin, isOpen = $bindable(false) } = $props<{ plugin: LuminaPlugin; isOpen: boolean }>();
 
@@ -14,7 +15,9 @@
 	let systemPrompts = $derived($settingsStore?.chat.systemPrompts ?? []);
 	let activeProjectId = $derived($settingsStore?.projects.activeProjectId ?? "default");
 	let activeProject = $derived($settingsStore?.projects.list.find(p => p.id === activeProjectId));
-	let activePromptId = $derived(activeProject?.systemPromptId || "default");
+	let activePromptId = $derived(
+		resolveActiveSystemPrompt(systemPrompts, activeProject?.systemPromptId)?.id ?? ""
+	);
 	let temperature = $derived($settingsStore?.chat.temperature ?? 0.7);
 	let maxTokens = $derived($settingsStore?.chat.maxOutputTokens ?? 4000);
 

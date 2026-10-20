@@ -124,7 +124,7 @@ export interface EmbeddingConfig {
 // ─── Chat ─────────────────────────────────────────
 
 export type SendKeyMode = 'enter' | 'ctrl_enter';
-export type ResponseLanguage = 'auto' | 'ko' | 'en' | 'ja' | 'zh' | 'fr' | 'de' | 'es';
+export type ResponseLanguage = 'auto' | 'ko' | 'en' | 'ja' | 'zh' | 'zh-tw' | 'es' | 'pt' | 'de' | 'fr' | 'ru' | 'it';
 
 export interface SystemPromptPreset {
 	id: string;

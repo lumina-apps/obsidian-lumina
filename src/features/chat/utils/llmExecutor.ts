@@ -160,18 +160,25 @@ export async function executeCliAgentCall(
 		return acc + estimateTokens(c);
 	}, 0);
 
+	const systemMsg = ctx.llmMessages.find((m) => m.role === 'system');
+	const resolvedSystemPrompt =
+		typeof systemMsg?.content === 'string' && systemMsg.content.trim()
+			? systemMsg.content
+			: `CLI Agent Execution (${agentExecutionMode})`;
+
 	const requestId = debugLogger.logRequest({
 		provider: providerConfig.type,
 		model: resolvedModelId,
 		temperature: chatSettings?.temperature ?? 0.7,
 		maxTokens: chatSettings?.maxOutputTokens ?? 4096,
 		stream: true,
-		systemPrompt: `CLI Agent Execution (${agentExecutionMode})`,
+		systemPrompt: resolvedSystemPrompt,
 		messages: ctx.llmMessages.map((m) => ({
 			role: m.role,
 			content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
 		})),
 		estimatedInputTokens,
+		...(ctx.ragChunksForLog ? { ragChunks: ctx.ragChunksForLog } : {}),
 	});
 
 	debugLogger.logSystem(

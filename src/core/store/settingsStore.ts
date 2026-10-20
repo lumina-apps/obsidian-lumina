@@ -76,7 +76,11 @@ export function syncSettingsStore(settings: LuminaSettings): void {
 			embedding: { ...settings.connections.embedding },
 			favoriteModels: [...(settings.connections.favoriteModels ?? [])],
 		},
-		chat: { ...settings.chat, quickActions: [...(settings.chat.quickActions ?? [])] },
+		chat: {
+			...settings.chat,
+			systemPrompts: (settings.chat.systemPrompts ?? []).map(p => ({ ...p })),
+			quickActions: (settings.chat.quickActions ?? []).map(a => ({ ...a })),
+		},
 		rag: { ...settings.rag },
 		misc: { ...settings.misc },
 		mcp: { ...settings.mcp, servers: [...settings.mcp.servers] },

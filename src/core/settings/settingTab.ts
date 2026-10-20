@@ -286,13 +286,16 @@ export class LuminaSettingTab extends PluginSettingTab {
 				debugLogger.logError('settings', err instanceof Error ? err : new Error(String(err)));
 			}
 
-			// Hide info boxes and advanced labels in search view
-			tabContent.querySelectorAll<HTMLElement>('.lumina-settings__info-box, .lumina-settings__advanced-label')
-				.forEach(item => { item.setCssStyles({ display: 'none' }); });
+			// Hide info boxes, advanced labels, and add-prompt containers in search view
+			tabContent.querySelectorAll<HTMLElement>(
+				'.lumina-settings__info-box, .lumina-settings__advanced-label, .lumina-settings-add-prompt-container'
+			).forEach(item => { item.setCssStyles({ display: 'none' }); });
 
-			// Filter settings by section & item
+			// Filter settings by section & item (include standalone prompt cards that don't use .setting-item internally)
 			let tabMatchCount = 0;
-			const allSettingItems = Array.from(tabContent.querySelectorAll<HTMLElement>('.setting-item'));
+			const allSettingItems = Array.from(
+				tabContent.querySelectorAll<HTMLElement>('.setting-item, .lumina-prompt-card')
+			).filter(item => !item.classList.contains('lumina-prompt-card') || item.querySelectorAll('.setting-item').length === 0);
 
 			interface SectionGroup {
 				heading: HTMLElement | null;
@@ -356,7 +359,9 @@ export class LuminaSettingTab extends PluginSettingTab {
 			);
 			for (const card of Array.from(cards)) {
 				const cardItems = Array.from(card.querySelectorAll<HTMLElement>('.setting-item'));
-				const hasVisibleItem = cardItems.length === 0 || cardItems.some(i => i.style.display !== 'none');
+				const hasVisibleItem = cardItems.length === 0
+					? card.style.display !== 'none'
+					: cardItems.some(i => i.style.display !== 'none');
 				if (hasVisibleItem) {
 					// Reveal all sibling items so the card isn't shown partially
 					for (const item of cardItems) {

@@ -18,6 +18,7 @@
 	import { activeProject } from "../../../core/store/projectStore";
 	import { settingsStore } from "../../../core/store/settingsStore";
 	import { estimateInputTokensDetails, calculateFolderSize } from "../utils/inputUtils";
+	import { resolveActiveSystemPrompt } from "../promptBuilder";
 	import {
 		createKeydownHandler,
 		createInputHandler,
@@ -119,7 +120,10 @@
 
 	// ── 시스템 프롬프트 파생 값 ──────────────────────────────────────────────
 	const systemPrompts = $derived($settingsStore?.chat.systemPrompts ?? []);
-	const activePromptId = $derived($activeProject?.systemPromptId || "default");
+	const activeSystemPrompt = $derived(
+		resolveActiveSystemPrompt(systemPrompts, $activeProject?.systemPromptId)
+	);
+	const activePromptId = $derived(activeSystemPrompt?.id ?? "");
 
 	// ── 활성 파일 추적 (실시간 토큰 계산용 Composable) ───────────────────────
 	const activeTracker = useActiveFileTracker(
@@ -131,13 +135,13 @@
 	let activeFileInfo = $state<ActiveFileInfo | null>(activeTracker.getInitialActiveFile());
 
 	// ── 실시간 입력 예상 토큰 계산 ────────────────────────────────────────────
-	// ── 실시간 입력 예상 토큰 계산 ────────────────────────────────────────────
 	const tokenEstimation = $derived.by(() => {
 		return estimateInputTokensDetails({
 			inputText,
 			attachments,
 			includeActiveNote,
 			activeFileInfo,
+			systemPrompt: activeSystemPrompt?.content,
 			getFileSize: (path) => {
 				const file = plugin.app.vault.getAbstractFileByPath(path);
 				return file && "stat" in file && typeof file.stat.size === "number"

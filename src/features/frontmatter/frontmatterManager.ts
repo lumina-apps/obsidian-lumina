@@ -226,14 +226,16 @@ export class FrontmatterManager {
 			const contentWithoutFm = fullContent.replace(/^---[\s\S]+?---\n/, '').trim();
 			if (contentWithoutFm.length < 50) return; // 내용이 너무 짧으면 무시
 
-			const prompt = `다음 마크다운 문서를 분석하여 핵심 태그 3개 이내와 1문장 요약(description)을 JSON 형식으로 반환해.
-반드시 아래 JSON 포맷을 지키고 다른 말은 하지 마.
+			const prompt = `Analyze the following markdown document and return up to 3 core tags and a 1-sentence summary (description) in JSON format.
+CRITICAL RULES:
+1. Write the tags and description in the EXACT SAME LANGUAGE as the document content (e.g., Korean for Korean notes, English for English notes).
+2. Output ONLY the valid JSON object below with no additional text or markdown fences.
 {
-  "tags": ["태그1", "태그2"],
-  "description": "문서의 핵심 내용 1문장 요약"
+  "tags": ["tag1", "tag2"],
+  "description": "One-sentence summary of the document's core content"
 }
 
-문서 내용:
+Document Content:
 ${contentWithoutFm.substring(0, 3000)}`;
 
 			const provider = createProvider(providerConfig);

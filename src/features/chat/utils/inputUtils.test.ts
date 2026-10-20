@@ -325,6 +325,26 @@ describe("inputUtils", () => {
 			expect(result.tokens).toBe(2000);
 			expect(result.displayText).toBe("~2,000 tokens");
 		});
+
+		it("should include systemPrompt tokens only when user input or attachments are present", () => {
+			const emptyResult = estimateInputTokensDetails({
+				inputText: "",
+				attachments: [],
+				systemPrompt: "You are a helpful assistant.",
+			});
+			expect(emptyResult.tokens).toBe(0);
+
+			const withoutSys = estimateInputTokensDetails({
+				inputText: "Hello world",
+				attachments: [],
+			});
+			const withSys = estimateInputTokensDetails({
+				inputText: "Hello world",
+				attachments: [],
+				systemPrompt: "You are a helpful assistant.",
+			});
+			expect(withSys.tokens).toBeGreaterThan(withoutSys.tokens);
+		});
 	});
 
 	describe("calculateFolderSize", () => {

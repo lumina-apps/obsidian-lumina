@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildMessages, estimateTokens } from './promptBuilder';
+import { buildMessages, estimateTokens, resolveActiveSystemPrompt } from './promptBuilder';
 import type { UIChatMessage } from '../../shared/types/chat.types';
 import type { ChatSettings } from '../../core/settings/settings.types';
 
@@ -225,6 +225,65 @@ describe('promptBuilder', () => {
 		const messages = buildMessages(historyWithAtt, 'What about section 3?', { chat: mockChatSettings });
 		const historyUserMsg = messages.find(m => m.role === 'user' && m.content.toString().includes('Summarize this file'));
 		expect(historyUserMsg?.content).toContain('[Attachments: Q3_Report.pdf]\nSummarize this file please');
+	});
+
+	it('should preserve literal $ characters in {{activeFile}} and {{title}}', () => {
+		mockChatSettings.systemPrompts = [
+			{ id: '1', name: 'Default', content: 'Path: {{activeFile}} | Title: {{title}}' }
+		];
+		const messages = buildMessages([], 'Check note', {
+			chat: mockChatSettings,
+			activeFilePath: 'Notes/$&/Price_$100.md',
+			activeFileTitle: 'Price_$100_$&'
+		});
+		expect(messages[0].content).toContain('Path: Notes/$&/Price_$100.md | Title: Price_$100_$&');
+	});
+
+	it('should format {{date}} and {{time}} as local YYYY-MM-DD and zero-padded HH:mm without window.moment', () => {
+		mockChatSettings.systemPrompts = [
+			{ id: '1', name: 'Default', content: 'Now: {{date}} {{time}}' }
+		];
+		const messages = buildMessages([], 'Time check', { chat: mockChatSettings });
+		expect(messages[0].content).toMatch(/Now: \d{4}-\d{2}-\d{2} \d{2}:\d{2}/);
+	});
+
+	it('should append language hint for newly added response languages (zh-tw, pt, ru)', () => {
+		mockChatSettings.responseLanguage = 'zh-tw';
+		const messagesZhTw = buildMessages([], 'Hello', { chat: mockChatSettings });
+		expect(messagesZhTw[0].content).toContain('Traditional Chinese (繁體中文)');
+
+		mockChatSettings.responseLanguage = 'pt';
+		const messagesPt = buildMessages([], 'Hello', { chat: mockChatSettings });
+		expect(messagesPt[0].content).toContain('Portuguese (Português)');
+
+		mockChatSettings.responseLanguage = 'ru';
+		const messagesRu = buildMessages([], 'Hello', { chat: mockChatSettings });
+		expect(messagesRu[0].content).toContain('Russian (Русский)');
+	});
+});
+
+describe('resolveActiveSystemPrompt', () => {
+	const prompts = [
+		{ id: 'first', name: 'First', content: 'First content' },
+		{ id: 'second', name: 'Second', content: 'Second content' },
+	];
+
+	it('returns matching prompt when preferredId exists', () => {
+		expect(resolveActiveSystemPrompt(prompts, 'second')).toEqual(prompts[1]);
+	});
+
+	it('falls back to first prompt when preferredId is empty string (auto) or undefined', () => {
+		expect(resolveActiveSystemPrompt(prompts, '')).toEqual(prompts[0]);
+		expect(resolveActiveSystemPrompt(prompts, undefined)).toEqual(prompts[0]);
+	});
+
+	it('falls back to first prompt when preferredId references a deleted prompt', () => {
+		expect(resolveActiveSystemPrompt(prompts, 'deleted-id')).toEqual(prompts[0]);
+	});
+
+	it('returns undefined when systemPrompts array is empty or undefined', () => {
+		expect(resolveActiveSystemPrompt([], 'first')).toBeUndefined();
+		expect(resolveActiveSystemPrompt(undefined, 'first')).toBeUndefined();
 	});
 });
 

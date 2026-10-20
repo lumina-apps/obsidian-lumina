@@ -324,17 +324,36 @@ export default class LuminaPlugin extends Plugin {
 	private cleanupLegacyRibbonItems(): void {
 		try {
 			const ribbon = (this.app.workspace as unknown as {
-				leftRibbon?: { items?: Array<{ id: string; buttonEl?: HTMLElement }> };
+				leftRibbon?: {
+					items?: Array<{ id: string; buttonEl?: HTMLElement }>;
+					removeRibbonAction?: (id: string) => void;
+					onChange?: (save: boolean) => void;
+				};
 			}).leftRibbon;
 			if (ribbon && Array.isArray(ribbon.items)) {
+				let changed = false;
 				for (let i = ribbon.items.length - 1; i >= 0; i--) {
 					const item = ribbon.items[i];
-					if (item.id.startsWith(`${this.manifest.id}:`)) {
-						if (!item.buttonEl || !item.buttonEl.isConnected) {
-							ribbon.items.splice(i, 1);
+					if (item && item.id.startsWith(`${this.manifest.id}:`)) {
+						item.buttonEl?.detach();
+						if (typeof ribbon.removeRibbonAction === 'function' && item.id) {
+							ribbon.removeRibbonAction(item.id);
 						}
+						const remainingIdx = ribbon.items.indexOf(item);
+						if (remainingIdx !== -1) {
+							ribbon.items.splice(remainingIdx, 1);
+						}
+						changed = true;
 					}
 				}
+				if (changed) {
+					ribbon.onChange?.(false);
+				}
+			}
+			if (typeof document !== 'undefined') {
+				document
+					.querySelectorAll<HTMLElement>(".side-dock-ribbon-action[aria-label*='Lumina']")
+					.forEach((el) => el.detach());
 			}
 		} catch {
 			// ignore leftRibbon not ready
@@ -358,7 +377,10 @@ export default class LuminaPlugin extends Plugin {
 					if (typeof ribbon.removeRibbonAction === 'function' && item.id) {
 						ribbon.removeRibbonAction(item.id);
 					}
-					ribbon.items.splice(idx, 1);
+					const remainingIdx = ribbon.items.indexOf(item);
+					if (remainingIdx !== -1) {
+						ribbon.items.splice(remainingIdx, 1);
+					}
 					ribbon.onChange?.(false);
 				}
 			}

@@ -796,47 +796,22 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 	box-shadow: none;
 }
 
-.lumina-prompt-card__status {
-	font-size: 0.85em;
-	padding: 2px 8px;
-	border-radius: 4px;
-	background-color: rgba(16, 185, 129, 0.1);
-	color: #10b981;
-	font-weight: 600;
-	white-space: nowrap;
-}
-
 .lumina-prompt-card__actions {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 }
 
-.lumina-settings .lumina-prompt-card__btn-activate {
-	background-color: var(--background-primary);
-	border: 1px solid var(--background-modifier-border);
-	color: var(--text-normal);
-	font-size: 0.85em;
-	padding: 4px 10px;
-	border-radius: 6px;
-	cursor: pointer;
-	transition: all 0.2s;
-}
-
-.lumina-settings .lumina-prompt-card__btn-activate:hover {
-	background-color: var(--interactive-accent);
-	border-color: var(--interactive-accent);
-	color: #ffffff;
-}
-
 .lumina-settings .lumina-prompt-card__btn-delete {
+	display: flex;
+	align-items: center;
+	justify-content: center;
 	background: transparent;
 	border: none;
 	padding: 6px;
 	cursor: pointer;
 	border-radius: 6px;
-	font-size: 1.1em;
-	transition: background-color 0.2s;
+	transition: background-color 0.2s, color 0.2s;
 	color: var(--text-muted);
 }
 

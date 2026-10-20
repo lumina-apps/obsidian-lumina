@@ -1631,16 +1631,30 @@ async function run() {
 			const toggleResult = await client.evaluate(`(() => {
 				const lumina = app.plugins.plugins['lumina'];
 				const orig = lumina.settings.misc.showRibbonIcon;
+				const origGraph = lumina.settings.misc.showGraphRibbonIcon;
 
-				// 1. Turn off ribbon icon
+				// Clean up any pre-existing orphan ribbon elements not tracked by current plugin instance
+				document.querySelectorAll(".side-dock-ribbon-action[aria-label*='Lumina']").forEach(el => {
+					if (el !== lumina.ribbonEl && el !== lumina.graphRibbonEl) {
+						el.detach();
+					}
+				});
+
+				// 1. Turn off ribbon icons
 				lumina.settings.misc.showRibbonIcon = false;
+				lumina.settings.misc.showGraphRibbonIcon = false;
 				lumina.updateRibbonIcon();
 				const off = !document.querySelector(".side-dock-ribbon-action[aria-label*='Lumina']");
 
-				// 2. Restore original setting
-				lumina.settings.misc.showRibbonIcon = orig;
+				// 2. Turn on chat ribbon icon
+				lumina.settings.misc.showRibbonIcon = true;
 				lumina.updateRibbonIcon();
 				const on = !!document.querySelector(".side-dock-ribbon-action[aria-label*='Lumina']");
+
+				// 3. Restore original settings
+				lumina.settings.misc.showRibbonIcon = orig;
+				lumina.settings.misc.showGraphRibbonIcon = origGraph;
+				lumina.updateRibbonIcon();
 
 				return { offWorked: off, restoreWorked: on };
 			})()`);
@@ -1653,6 +1667,124 @@ async function run() {
 			);
 		} catch (err) {
 			reporter.record('Settings Reactive UI Update (Ribbon Toggle)', false, err.message, Date.now() - t2);
+		}
+
+		// 4. System Prompt Management & Settings Search Verification
+		const t3 = Date.now();
+		try {
+			await client.evaluate(`(() => {
+				app.setting.open();
+				app.setting.openTabById('lumina');
+			})()`);
+			await sleep(400);
+
+			const promptTestResult = await client.evaluate(`(async () => {
+				const lumina = app.plugins.plugins['lumina'];
+				const origPrompts = JSON.parse(JSON.stringify(lumina.settings.chat.systemPrompts || []));
+				const origProjects = JSON.parse(JSON.stringify(lumina.settings.projects.list || []));
+				const realTab = lumina.settingTab?.realTab;
+				if (!realTab) return { success: false, reason: 'realTab not loaded' };
+
+				try {
+					// 1. Switch to Chat tab
+					realTab.activeTab = 'chat';
+					realTab.searchQuery = '';
+					realTab.refreshDisplay(false);
+
+					const container = realTab.containerEl;
+					const getSysPromptCards = () => Array.from(
+						container.querySelectorAll('.lumina-prompt-card')
+					).filter(c => !!c.querySelector('input.lumina-prompt-card__name'));
+
+					const initialCards = getSysPromptCards().length;
+
+					// 2. Click "+ Add System Prompt" button -> verify auto-open
+					const addBtn = container.querySelector('.lumina-settings-add-prompt-container button');
+					if (!addBtn) return { success: false, reason: 'addBtn not found' };
+					addBtn.click();
+					await new Promise(r => setTimeout(r, 120));
+
+					const cardsAfterAdd = getSysPromptCards();
+					const newCard = cardsAfterAdd[cardsAfterAdd.length - 1];
+					const autoOpened = cardsAfterAdd.length === initialCards + 1 && newCard?.open === true;
+
+					// 3. Space key in summary nameInput should NOT toggle <details> closed & should live-sync dropdown
+					const nameInput = newCard?.querySelector('input.lumina-prompt-card__name');
+					if (!nameInput) return { success: false, reason: 'nameInput not found' };
+
+					nameInput.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+					nameInput.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true, cancelable: true }));
+					const stayedOpenOnSpace = newCard.open === true;
+
+					const testName = 'E2E Space Persona';
+					nameInput.value = testName;
+					nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+					const selectEl = container.querySelector('select[data-role="default-system-prompt-select"]');
+					const dropdownSynced = selectEl
+						? Array.from(selectEl.options).some(o => o.text === testName)
+						: false;
+
+					// 4. Settings search should match the system prompt card by name
+					realTab.searchQuery = 'e2e space persona';
+					realTab.refreshDisplay();
+					const visibleCardsOnMatch = getSysPromptCards()
+						.filter(c => c.style.display !== 'none');
+					const searchMatched = visibleCardsOnMatch.length === 1;
+
+					realTab.searchQuery = '';
+					realTab.refreshDisplay();
+
+					// 5. Delete all prompts -> verify default prompt auto-restored & project reference cleaned
+					const addedId = lumina.settings.chat.systemPrompts[lumina.settings.chat.systemPrompts.length - 1]?.id;
+					if (lumina.settings.projects.list[0] && addedId) {
+						lumina.settings.projects.list[0].systemPromptId = addedId;
+					}
+					for (let guard = 0; guard < 10; guard++) {
+						const sysCards = getSysPromptCards();
+						const delBtn = sysCards[sysCards.length - 1]?.querySelector('.lumina-prompt-card__btn-delete');
+						if (!delBtn) break;
+						delBtn.click();
+						await new Promise(r => setTimeout(r, 100));
+						if (lumina.settings.chat.systemPrompts.length === 1 && lumina.settings.chat.systemPrompts[0].id === 'default') {
+							break;
+						}
+					}
+					const fallbackRestored = lumina.settings.chat.systemPrompts.length >= 1;
+					const orphanCleaned = lumina.settings.projects.list[0]?.systemPromptId === '';
+
+					return {
+						success: autoOpened && stayedOpenOnSpace && dropdownSynced && searchMatched && fallbackRestored && orphanCleaned,
+						autoOpened,
+						stayedOpenOnSpace,
+						dropdownSynced,
+						searchMatched,
+						fallbackRestored,
+						orphanCleaned
+					};
+				} finally {
+					lumina.settings.chat.systemPrompts = origPrompts;
+					lumina.settings.projects.list = origProjects;
+					await lumina.saveSettings();
+					realTab.activeTab = 'connections';
+					realTab.searchQuery = '';
+					realTab.refreshDisplay(false);
+				}
+			})()`);
+
+			await input.pressEscape();
+			await sleep(250);
+
+			reporter.record(
+				'System Prompt Management & Settings Search',
+				promptTestResult.success,
+				promptTestResult.success
+					? `AutoOpen: ${promptTestResult.autoOpened}, SpaceSafe: ${promptTestResult.stayedOpenOnSpace}, LiveSync: ${promptTestResult.dropdownSynced}, Search: ${promptTestResult.searchMatched}, Fallback: ${promptTestResult.fallbackRestored}`
+					: `Failed: ${JSON.stringify(promptTestResult)}`,
+				Date.now() - t3
+			);
+		} catch (err) {
+			reporter.record('System Prompt Management & Settings Search', false, err.message, Date.now() - t3);
 		}
 		await sleep(200);
 	}

@@ -37,5 +37,6 @@ export function renderDefaultSystemPromptSection(tab: LuminaSettingTab, el: HTML
 			});
 
 			dropdown.selectEl.classList.add('lumina-dropdown-ellipsis');
+			dropdown.selectEl.dataset.role = 'default-system-prompt-select';
 		});
 }

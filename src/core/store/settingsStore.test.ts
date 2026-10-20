@@ -43,4 +43,32 @@ describe('settingsStore', () => {
 		expect(current).not.toBeNull();
 		expect(current?.chat.quickActions).toEqual([]);
 	});
+
+	it('should clone systemPrompts items for reactivity and handle undefined systemPrompts safely', () => {
+		const originalPrompt = { id: 'sp-1', name: 'Original', content: 'Content' };
+		const customSettings: LuminaSettings = {
+			...DEFAULT_SETTINGS,
+			chat: {
+				...DEFAULT_SETTINGS.chat,
+				systemPrompts: [originalPrompt],
+			},
+		};
+
+		syncSettingsStore(customSettings);
+		const current = get(settingsStore);
+		expect(current?.chat.systemPrompts).toHaveLength(1);
+		expect(current?.chat.systemPrompts[0]).toEqual(originalPrompt);
+		expect(current?.chat.systemPrompts[0]).not.toBe(originalPrompt);
+
+		const brokenSettings = {
+			...DEFAULT_SETTINGS,
+			chat: {
+				...DEFAULT_SETTINGS.chat,
+				systemPrompts: undefined as unknown as typeof DEFAULT_SETTINGS.chat.systemPrompts,
+			},
+		} as LuminaSettings;
+
+		expect(() => syncSettingsStore(brokenSettings)).not.toThrow();
+		expect(get(settingsStore)?.chat.systemPrompts).toEqual([]);
+	});
 });

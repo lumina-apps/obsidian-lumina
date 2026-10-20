@@ -16,6 +16,9 @@ function applyWarningStyle(btn: ButtonComponent): void {
 	}
 }
 
+const openActionIds = new Set<string>();
+let newlyAddedActionId: string | null = null;
+
 export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement): void {
 	const s = tab.plugin.settings.chat;
 
@@ -66,6 +69,20 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 
 	for (const action of s.quickActions || []) {
 		const card = el.createEl('details', { cls: 'lumina-prompt-card' });
+		card.dataset.actionId = action.id;
+
+		const isNewlyAdded = newlyAddedActionId === action.id;
+		if (openActionIds.has(action.id) || isNewlyAdded) {
+			card.open = true;
+			openActionIds.add(action.id);
+		}
+		card.addEventListener('toggle', () => {
+			if (card.open) {
+				openActionIds.add(action.id);
+			} else {
+				openActionIds.delete(action.id);
+			}
+		});
 
 		// Header row
 		const header = card.createEl('summary', { cls: 'lumina-prompt-card__header' });
@@ -100,6 +117,15 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 						header.setText(`✨ ${val || t('settings.chat.quickActions.newAction')}`);
 						await tab.saveAndSync();
 					});
+				if (isNewlyAdded) {
+					newlyAddedActionId = null;
+					if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+						window.requestAnimationFrame(() => {
+							nameInputEl.focus();
+							nameInputEl.select();
+						});
+					}
+				}
 			});
 
 		// Action Type Dropdown
@@ -147,6 +173,7 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 				btn.setButtonText(t('settings.chat.quickActions.deleteAction'));
 				applyWarningStyle(btn);
 				btn.onClick(async () => {
+					openActionIds.delete(action.id);
 					s.quickActions = (s.quickActions || []).filter(a => a.id !== action.id);
 					await tab.saveAndSync();
 					if (tab.plugin.commandManager.registerQuickActions) {
@@ -165,8 +192,10 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 	const addActionBtn = addActionBtnContainer.createEl('button', { text: t('settings.chat.quickActions.add') });
 	addActionBtn.addEventListener('click', wrapAsync(async () => {
 		if (!s.quickActions) s.quickActions = [];
+		const newId = `qa-${crypto.randomUUID()}`;
+		newlyAddedActionId = newId;
 		s.quickActions.push({
-			id: `qa-${crypto.randomUUID()}`,
+			id: newId,
 			name: t('settings.chat.quickActions.newAction'),
 			prompt: '',
 			actionType: 'replace',

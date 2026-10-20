@@ -28,6 +28,7 @@ import { ChatHistoryController } from './chatHistoryController';
 import { resolveAttachmentsWithActiveNote, buildLlmContext } from './utils/contextBuilder';
 import { resolveModelId, executeLlmCall } from './utils/llmExecutor';
 import { handleLlmResponse } from './utils/responseFormatter';
+import { isCliProvider } from '../../shared/types/settings.types';
 
 export class ChatController {
 	private app: App;
@@ -208,36 +209,38 @@ export class ChatController {
 			});
 		}
 
-		// ── 8. 디버그: LLM 요청/응답 로그 ─────────────────────────────────
-		const systemMessage = ctx.llmMessages.find(m => m.role === 'system');
-		const systemPromptText = typeof systemMessage?.content === 'string' 
-			? systemMessage.content 
-			: (systemMessage?.content ? JSON.stringify(systemMessage.content) : '');
-		const estimatedInputTokens = ctx.llmMessages.reduce((acc, m) => {
-			const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
-			return acc + estimateTokens(c);
-		}, 0);
+		// ── 8. 디버그: LLM 요청/응답 로그 (CLI 에이전트는 executeCliAgentCall 내부에서 이미 기록됨) ──
+		if (!isCliProvider(providerConfig.type)) {
+			const systemMessage = ctx.llmMessages.find(m => m.role === 'system');
+			const systemPromptText = typeof systemMessage?.content === 'string' 
+				? systemMessage.content 
+				: (systemMessage?.content ? JSON.stringify(systemMessage.content) : '');
+			const estimatedInputTokens = ctx.llmMessages.reduce((acc, m) => {
+				const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
+				return acc + estimateTokens(c);
+			}, 0);
 
-		const requestId = debugLogger.logRequest({
-			provider: providerConfig.type,
-			model: resolvedModelId,
-			temperature: chat.temperature,
-			maxTokens: chat.maxOutputTokens,
-			stream: chat.streaming,
-			systemPrompt: systemPromptText,
-			messages: ctx.llmMessages.map(m => ({
-				role: m.role,
-				content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
-			})),
-			estimatedInputTokens,
-			...(ctx.ragChunksForLog ? { ragChunks: ctx.ragChunksForLog } : {}),
-		});
-		debugLogger.logResponse(requestId, {
-			model: resolvedModelId,
-			content: fullResponse,
-			durationMs: Date.now() - reqStart,
-			usage: tokenUsage,
-		});
+			const requestId = debugLogger.logRequest({
+				provider: providerConfig.type,
+				model: resolvedModelId,
+				temperature: chat.temperature,
+				maxTokens: chat.maxOutputTokens,
+				stream: chat.streaming,
+				systemPrompt: systemPromptText,
+				messages: ctx.llmMessages.map(m => ({
+					role: m.role,
+					content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+				})),
+				estimatedInputTokens,
+				...(ctx.ragChunksForLog ? { ragChunks: ctx.ragChunksForLog } : {}),
+			});
+			debugLogger.logResponse(requestId, {
+				model: resolvedModelId,
+				content: fullResponse,
+				durationMs: Date.now() - reqStart,
+				usage: tokenUsage,
+			});
+		}
 	}
 
 	/**

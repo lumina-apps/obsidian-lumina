@@ -154,10 +154,14 @@ export function renderAdvancedSection(tab: LuminaSettingTab, el: HTMLElement): v
 				.addOption('ko', t('settings.connections.language.option.ko'))
 				.addOption('en', t('settings.connections.language.option.en'))
 				.addOption('ja', t('settings.connections.language.option.ja'))
-				.addOption('zh', '中文')
-				.addOption('fr', 'Français')
-				.addOption('de', 'Deutsch')
-				.addOption('es', 'Español')
+				.addOption('zh', t('settings.connections.language.option.zh') || '简体中文')
+				.addOption('zh-tw', t('settings.connections.language.option.zh-tw') || '繁體中文')
+				.addOption('es', t('settings.connections.language.option.es') || 'Español')
+				.addOption('pt', t('settings.connections.language.option.pt') || 'Português')
+				.addOption('de', t('settings.connections.language.option.de') || 'Deutsch')
+				.addOption('fr', t('settings.connections.language.option.fr') || 'Français')
+				.addOption('ru', t('settings.connections.language.option.ru') || 'Русский')
+				.addOption('it', t('settings.connections.language.option.it') || 'Italiano')
 				.setValue(s.responseLanguage)
 				.onChange(wrapAsync(async (val) => {
 					s.responseLanguage = val as typeof s.responseLanguage;

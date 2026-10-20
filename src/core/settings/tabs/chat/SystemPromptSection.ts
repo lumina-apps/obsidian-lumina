@@ -1,9 +1,13 @@
-import { wrapAsync } from '../../../../shared/utils/settingHelpers';
+import { wrapAsync, createComposingSafeTextHandler } from '../../../../shared/utils/settingHelpers';
 import type { LuminaSettingTab } from '../../settingTab';
 import { t } from '../../../../shared/locales/helpers';
 import { createButtonContainer } from '../../../../shared/utils/domUtils';
+import { DEFAULT_SETTINGS } from '../../defaultSettings';
 
 import { setIcon } from 'obsidian';
+
+const openPromptIds = new Set<string>();
+let newlyAddedPromptId: string | null = null;
 
 export function renderSystemPromptSection(tab: LuminaSettingTab, el: HTMLElement): void {
 	const s = tab.plugin.settings.chat;
@@ -12,6 +16,20 @@ export function renderSystemPromptSection(tab: LuminaSettingTab, el: HTMLElement
 
 	for (const prompt of s.systemPrompts) {
 		const card = el.createEl('details', { cls: 'lumina-prompt-card' });
+		card.dataset.promptId = prompt.id;
+
+		const isNewlyAdded = newlyAddedPromptId === prompt.id;
+		if (openPromptIds.has(prompt.id) || isNewlyAdded) {
+			card.open = true;
+			openPromptIds.add(prompt.id);
+		}
+		card.addEventListener('toggle', () => {
+			if (card.open) {
+				openPromptIds.add(prompt.id);
+			} else {
+				openPromptIds.delete(prompt.id);
+			}
+		});
 
 		// Header row
 		const header = card.createEl('summary', { cls: 'lumina-prompt-card__header' });
@@ -25,27 +43,81 @@ export function renderSystemPromptSection(tab: LuminaSettingTab, el: HTMLElement
 			value: prompt.name,
 			cls: 'lumina-prompt-card__name'
 		});
+		nameInput.type = 'text';
+		nameInput.value = prompt.name;
 		nameInput.placeholder = t('settings.chat.systemPrompt.name');
 		nameInput.addEventListener('click', (e) => e.stopPropagation());
-		nameInput.addEventListener('change', () => {
-			prompt.name = nameInput.value;
-			void tab.saveAndSync();
+		nameInput.addEventListener('keydown', (e) => {
+			if (e.key === ' ' || e.key === 'Enter') {
+				e.stopPropagation();
+			}
+			if (e.key === 'Enter') {
+				e.preventDefault();
+				nameInput.blur();
+			}
+		});
+		nameInput.addEventListener('keyup', (e) => {
+			if (e.key === ' ' || e.key === 'Enter') {
+				e.stopPropagation();
+			}
 		});
 
+		const syncPromptName = (val: string) => {
+			prompt.name = val;
+			const selectEl = el.querySelector<HTMLSelectElement>('select[data-role="default-system-prompt-select"]');
+			const opt = selectEl ? Array.from(selectEl.options).find(o => o.value === prompt.id) : undefined;
+			if (opt) {
+				opt.text = val;
+			}
+			void tab.saveAndSync();
+		};
+		createComposingSafeTextHandler(nameInput, syncPromptName);
+		nameInput.addEventListener('change', () => {
+			syncPromptName(nameInput.value);
+		});
 
+		if (isNewlyAdded) {
+			newlyAddedPromptId = null;
+			if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+				window.requestAnimationFrame(() => {
+					nameInput.focus();
+					nameInput.select();
+				});
+			}
+		}
 
 		// Actions
 		const actions = header.createDiv({ cls: 'lumina-prompt-card__actions' });
 
-
 		// Delete button
 		const delBtn = actions.createEl('button', {
-			text: '🗑',
-			cls: 'lumina-prompt-card__btn-delete'
+			cls: 'lumina-prompt-card__btn-delete',
+			attr: {
+				type: 'button',
+				'aria-label': t('common.delete') || 'Delete',
+			}
 		});
+		setIcon(delBtn, 'trash-2');
 		delBtn.addEventListener('click', wrapAsync(async (e) => {
 			e.stopPropagation();
+			openPromptIds.delete(prompt.id);
 			s.systemPrompts = s.systemPrompts.filter(p => p.id !== prompt.id);
+
+			// 모든 시스템 프롬프트가 삭제된 경우 기본 프롬프트를 자동 복원하여 빈 상태 방지
+			if (s.systemPrompts.length === 0) {
+				const fallbackDefault = DEFAULT_SETTINGS.chat.systemPrompts[0];
+				if (fallbackDefault) {
+					s.systemPrompts = [{ ...fallbackDefault }];
+				}
+			}
+
+			// 삭제된 프롬프트 ID를 참조하던 프로젝트의 systemPromptId 정리
+			for (const proj of tab.plugin.settings.projects.list) {
+				if (proj.systemPromptId === prompt.id && !s.systemPrompts.some(p => p.id === prompt.id)) {
+					proj.systemPromptId = '';
+				}
+			}
+
 			await tab.saveAndSync();
 			tab.refreshDisplay();
 		}));
@@ -58,6 +130,10 @@ export function renderSystemPromptSection(tab: LuminaSettingTab, el: HTMLElement
 		textarea.value = prompt.content;
 		textarea.rows = 3;
 		textarea.placeholder = t('settings.chat.systemPrompt.desc');
+		createComposingSafeTextHandler(textarea, (val) => {
+			prompt.content = val;
+			void tab.saveAndSync();
+		});
 		textarea.addEventListener('change', wrapAsync(async () => {
 			prompt.content = textarea.value;
 			await tab.saveAndSync();
@@ -96,8 +172,10 @@ export function renderSystemPromptSection(tab: LuminaSettingTab, el: HTMLElement
 
 	const addBtn = addBtnContainer.createEl('button', { text: t('settings.chat.systemPrompt.addPrompt') });
 	addBtn.addEventListener('click', wrapAsync(async () => {
+		const newId = crypto.randomUUID();
+		newlyAddedPromptId = newId;
 		s.systemPrompts.push({
-			id: crypto.randomUUID(),
+			id: newId,
 			name: `${t('settings.chat.systemPrompt.defaultName')} ${s.systemPrompts.length + 1}`,
 			content: '',
 		});

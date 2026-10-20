@@ -44,6 +44,7 @@ export interface EstimateInputTokensOptions {
 	attachments: ContextAttachment[];
 	includeActiveNote?: boolean;
 	activeFileInfo?: { path: string; size: number } | null;
+	systemPrompt?: string;
 	getFileSize?: (path: string) => number | undefined;
 	getFolderSize?: (path: string, maxBytes?: number) => { size: number; isOverLimit: boolean } | number | undefined;
 	maxTokenThreshold?: number;
@@ -106,6 +107,7 @@ export function estimateInputTokensDetails(options: EstimateInputTokensOptions):
 		attachments,
 		includeActiveNote,
 		activeFileInfo,
+		systemPrompt,
 		getFileSize,
 		getFolderSize,
 		maxTokenThreshold = 100_000,
@@ -173,6 +175,10 @@ export function estimateInputTokensDetails(options: EstimateInputTokensOptions):
 				tokens += Math.ceil(activeFileInfo.size / 3);
 			}
 		}
+	}
+
+	if (tokens > 0 && systemPrompt?.trim()) {
+		tokens += estimateTokens(systemPrompt);
 	}
 
 	if (tokens >= maxTokenThreshold) {
