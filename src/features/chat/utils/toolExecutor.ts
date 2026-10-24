@@ -36,7 +36,7 @@ export async function executeToolCall(
 		let toolResult: unknown;
 		if (resolvedServerId === '__web_search__') {
 			if (!webSearchSettings) throw new Error('Web search settings not provided.');
-			const resStr = await executeWebSearch(cleanArgs, webSearchSettings);
+			const resStr = await executeWebSearch(cleanArgs, webSearchSettings, signal);
 			toolResult = { content: [{ type: 'text', text: resStr }] };
 		} else if (resolvedServerId && mcpManager) {
 			toolResult = await mcpManager.callTool(resolvedServerId, tc.name, cleanArgs, signal);

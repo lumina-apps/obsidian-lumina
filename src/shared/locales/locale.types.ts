@@ -608,6 +608,7 @@ export interface TranslationSettingsWebSearch {
   desc: string;
   enable: { name: string; desc: string; };
   privacyWarning: string;
+  notConfigured: string;
   provider: { name: string; desc: string; };
   apiKey: { name: string; desc: string; };
   baseUrl: { name: string; desc: string; };
@@ -942,6 +943,7 @@ export interface TranslationUiMessages {
   webSearchEnabled: string;
   webSearchDisabled: string;
   webSearchNotNeededForCli: string;
+  webSearchNotConfigured: string;
   noMessagesToExport: string;
   noMessagesToRegenerate: string;
   contextCompressed: string;

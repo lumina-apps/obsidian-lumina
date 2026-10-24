@@ -208,6 +208,7 @@
         "desc": "Allow AI models to use the web search tool."
       },
       "privacyWarning": "🔒 Privacy Notice: When web search is enabled, parts of your prompt (search queries) may be sent to external search services (e.g., Tavily, Brave).",
+      "notConfigured": "⚠️ The selected search provider is not fully configured. Enter the required API key or URL, otherwise web search will fail.",
       "provider": {
         "name": "Search Provider",
         "desc": "Select the search provider to use."
@@ -832,6 +833,7 @@
     "webSearchEnabled": "✅ Web search enabled.",
     "webSearchDisabled": "🛑 Web search disabled.",
     "webSearchNotNeededForCli": "ℹ️ CLI agents use their own built-in web search tools.",
+    "webSearchNotConfigured": "⚠️ The search provider is not configured. Set the API key or URL in Settings → Web Search.",
     "noMessagesToExport": "No messages to export.",
     "noMessagesToRegenerate": "No assistant response to regenerate.",
     "contextCompressed": "📋 Context compressed: {{messages}} messages → 1 summary (~{{tokens}} tokens freed).",

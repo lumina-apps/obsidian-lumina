@@ -348,5 +348,51 @@ describe('LuminaSettingTab scroll preservation', () => {
 				expect(invokeIsSettingItemMatch(item, 'gemini')).toBe(true);
 			});
 		});
+
+		describe('WebSearchTab warning banner live sync', () => {
+			it('hides and restores the notConfigured warning immediately when typing the API key', async () => {
+				const { Setting } = await import('obsidian');
+				let capturedOnChange: ((val: string) => unknown) | undefined;
+				const addTextSpy = vi.spyOn(Setting.prototype, 'addText').mockImplementation(function (this: InstanceType<typeof Setting>, cb) {
+					const inputEl = document.createElement('input');
+					const text = {
+						inputEl,
+						setValue: vi.fn().mockReturnThis(),
+						onChange: vi.fn((fn: (val: string) => unknown) => {
+							if (!capturedOnChange) capturedOnChange = fn;
+							return text;
+						}),
+						setPlaceholder: vi.fn().mockReturnThis(),
+						setDisabled: vi.fn().mockReturnThis(),
+					};
+					cb(text as never);
+					return this;
+				});
+
+				try {
+					mockPlugin.settings.webSearch.enabled = true;
+					mockPlugin.settings.webSearch.activeProviderId = 'tavily';
+					const tavily = mockPlugin.settings.webSearch.providers.find(p => p.type === 'tavily')!;
+					tavily.apiKey = '';
+
+					tab.activeTab = 'webSearch';
+					tab.display();
+
+					// Initially 2 warning boxes: privacyWarning + notConfigured
+					expect(container.querySelectorAll('.lumina-settings__info-box--warning')).toHaveLength(2);
+					expect(capturedOnChange).toBeDefined();
+
+					// Simulate typing a valid API key
+					await capturedOnChange?.('tvly-key');
+					expect(container.querySelectorAll('.lumina-settings__info-box--warning')).toHaveLength(1);
+
+					// Simulate clearing the API key
+					await capturedOnChange?.('   ');
+					expect(container.querySelectorAll('.lumina-settings__info-box--warning')).toHaveLength(2);
+				} finally {
+					addTextSpy.mockRestore();
+				}
+			});
+		});
 	});
 });

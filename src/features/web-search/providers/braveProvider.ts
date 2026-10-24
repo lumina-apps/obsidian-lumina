@@ -1,6 +1,7 @@
 import { requestUrl } from 'obsidian';
 import type { WebSearchProviderConfig } from '../../../shared/types/settings.types';
 import type { IWebSearchProvider, SearchResult } from '../webSearchService';
+import { formatSearchError } from './providerErrors';
 
 interface BraveWebResult {
 	title?: string;
@@ -15,7 +16,8 @@ interface BraveSearchResponse {
 }
 
 export function createBraveProvider(config: WebSearchProviderConfig): IWebSearchProvider {
-	if (!config.apiKey?.trim()) {
+	const apiKey = config.apiKey?.trim();
+	if (!apiKey) {
 		throw new Error('Brave API key is missing.');
 	}
 
@@ -32,25 +34,26 @@ export function createBraveProvider(config: WebSearchProviderConfig): IWebSearch
 					headers: {
 						'Accept': 'application/json',
 						'Accept-Encoding': 'gzip',
-						'X-Subscription-Token': config.apiKey || '',
+						'X-Subscription-Token': apiKey,
 					},
 				});
 
 				const data = response.json as unknown as BraveSearchResponse;
-				if (!data || !data.web || !data.web.results || !Array.isArray(data.web.results)) {
-					// Results may be empty
-					if (data && !data.web) return [];
+				if (!data || typeof data !== 'object') {
 					throw new Error('Invalid response from Brave API');
 				}
 
-				return data.web.results.map((r: BraveWebResult) => ({
+				// 결과가 없으면 web 키 또는 results 키가 생략될 수 있음
+				const results = data.web?.results;
+				if (!Array.isArray(results)) return [];
+
+				return results.map((r: BraveWebResult) => ({
 					title: r.title || '',
 					url: r.url || '',
 					content: r.description || '',
 				})).slice(0, maxResults);
 			} catch (error) {
-				const errorMsg = error instanceof Error ? error.message : String(error);
-				throw new Error(`Brave search failed: ${errorMsg}`);
+				throw new Error(formatSearchError('Brave search', error));
 			}
 		}
 	};

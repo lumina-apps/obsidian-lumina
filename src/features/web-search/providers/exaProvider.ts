@@ -1,6 +1,10 @@
 import { requestUrl } from 'obsidian';
 import type { WebSearchProviderConfig } from '../../../shared/types/settings.types';
 import type { IWebSearchProvider, SearchResult } from '../webSearchService';
+import { formatSearchError } from './providerErrors';
+
+/** 결과당 요청할 본문 최대 길이 (전문 수신으로 인한 응답/비용 낭비 방지) */
+const EXA_MAX_CHARACTERS = 2000;
 
 interface ExaResult {
 	title?: string;
@@ -16,7 +20,8 @@ interface ExaSearchResponse {
 export function createExaProvider(config: WebSearchProviderConfig): IWebSearchProvider {
 	return {
 		search: async (query: string, maxResults: number): Promise<SearchResult[]> => {
-			if (!config.apiKey) {
+			const apiKey = config.apiKey?.trim();
+			if (!apiKey) {
 				throw new Error('Exa API key is not configured.');
 			}
 
@@ -26,13 +31,13 @@ export function createExaProvider(config: WebSearchProviderConfig): IWebSearchPr
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
-						'x-api-key': config.apiKey,
+						'x-api-key': apiKey,
 					},
 					body: JSON.stringify({
 						query,
 						numResults: maxResults,
 						contents: {
-							text: true
+							text: { maxCharacters: EXA_MAX_CHARACTERS }
 						}
 					}),
 				});
@@ -48,8 +53,7 @@ export function createExaProvider(config: WebSearchProviderConfig): IWebSearchPr
 					content: item.text || item.summary || '',
 				}));
 			} catch (error) {
-				const errorMsg = error instanceof Error ? error.message : String(error);
-				throw new Error(`Exa search failed: ${errorMsg}`);
+				throw new Error(formatSearchError('Exa search', error));
 			}
 		},
 	};

@@ -7,6 +7,7 @@ import { settingsStore } from "../../../../core/store/settingsStore";
 import { toVaultRelativePath } from "../../utils/llmExecutor";
 import { toggleFavoriteModel } from "../../../../shared/utils/modelUtils";
 import { t } from "../../../../shared/locales/helpers";
+import { isWebSearchProviderConfigured } from "../../../../shared/utils/webSearchConfig";
 
 export interface ChatActionsContext {
 	getPlugin: () => LuminaPlugin;
@@ -90,6 +91,14 @@ export function useChatActions(ctx: ChatActionsContext) {
 				? t("uiMessages.webSearchEnabled") || "✅ Web search enabled."
 				: t("uiMessages.webSearchDisabled") || "🛑 Web search disabled.",
 		);
+
+		const { webSearch } = plugin.settings;
+		if (webSearch.enabled) {
+			const activeConfig = webSearch.providers.find((p) => p.type === webSearch.activeProviderId);
+			if (!isWebSearchProviderConfigured(activeConfig)) {
+				new Notice(t("uiMessages.webSearchNotConfigured"));
+			}
+		}
 	}
 
 	async function exportChat(): Promise<void> {

@@ -205,6 +205,7 @@
         "desc": "Permet aux LLM locaux d'utiliser l'outil de recherche web."
       },
       "privacyWarning": "🔒 Avis de confidentialité : Lorsque la recherche web est activée, des parties de vos requêtes peuvent être envoyées à des services de recherche externes (ex. Tavily, Brave).",
+      "notConfigured": "⚠️ Le fournisseur de recherche sélectionné n'est pas entièrement configuré. Saisissez la clé API ou l'URL requise, sinon la recherche web échouera.",
       "provider": {
         "name": "Fournisseur de recherche",
         "desc": "Sélectionnez le fournisseur de recherche à utiliser."
@@ -829,6 +830,7 @@
     "webSearchEnabled": "✅ Recherche web activée.",
     "webSearchDisabled": "🛑 Recherche web désactivée.",
     "webSearchNotNeededForCli": "ℹ️ Les agents CLI utilisent leurs propres outils de recherche web intégrés.",
+    "webSearchNotConfigured": "⚠️ Le fournisseur de recherche n'est pas configuré. Renseignez la clé API ou l'URL dans Paramètres → Recherche web.",
     "noMessagesToExport": "Aucun message à exporter.",
     "noMessagesToRegenerate": "Aucune réponse à régénérer.",
     "contextCompressed": "📋 Contexte compressé : {{messages}} messages → 1 résumé (~{{tokens}} jetons libérés).",

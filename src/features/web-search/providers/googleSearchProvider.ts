@@ -1,6 +1,7 @@
 import { requestUrl } from 'obsidian';
 import type { WebSearchProviderConfig } from '../../../shared/types/settings.types';
 import type { IWebSearchProvider, SearchResult } from '../webSearchService';
+import { formatSearchError } from './providerErrors';
 
 interface GoogleSearchResultItem {
 	title?: string;
@@ -15,7 +16,9 @@ interface GoogleSearchResponse {
 export function createGoogleSearchProvider(config: WebSearchProviderConfig): IWebSearchProvider {
 	return {
 		search: async (query: string, maxResults: number): Promise<SearchResult[]> => {
-			if (!config.apiKey || !config.googleSearchEngineId) {
+			const apiKey = config.apiKey?.trim();
+			const cx = config.googleSearchEngineId?.trim();
+			if (!apiKey || !cx) {
 				throw new Error('Google Custom Search requires both an API Key and a Search Engine ID (CX).');
 			}
 
@@ -23,8 +26,8 @@ export function createGoogleSearchProvider(config: WebSearchProviderConfig): IWe
 				// Google Custom Search API는 헤더 인증을 지원하지 않아 key/cx가 URL 쿼리 파라미터에 포함됩니다.
 				// URL 전체를 외부 로그/프록시에 노출하지 않도록 주의하세요.
 				const url = new URL('https://www.googleapis.com/customsearch/v1');
-				url.searchParams.append('key', config.apiKey);
-				url.searchParams.append('cx', config.googleSearchEngineId);
+				url.searchParams.append('key', apiKey);
+				url.searchParams.append('cx', cx);
 				url.searchParams.append('q', query);
 				url.searchParams.append('num', maxResults.toString());
 
@@ -44,8 +47,7 @@ export function createGoogleSearchProvider(config: WebSearchProviderConfig): IWe
 					content: item.snippet || '',
 				}));
 			} catch (error) {
-				const errorMsg = error instanceof Error ? error.message : String(error);
-				throw new Error(`Google Custom Search failed: ${errorMsg}`);
+				throw new Error(formatSearchError('Google Custom Search', error));
 			}
 		},
 	};

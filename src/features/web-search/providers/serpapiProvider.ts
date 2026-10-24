@@ -1,6 +1,7 @@
 import { requestUrl } from 'obsidian';
 import type { WebSearchProviderConfig } from '../../../shared/types/settings.types';
 import type { IWebSearchProvider, SearchResult } from '../webSearchService';
+import { formatSearchError } from './providerErrors';
 
 interface SerpapiOrganicResult {
 	title?: string;
@@ -15,7 +16,8 @@ interface SerpapiSearchResponse {
 export function createSerpapiProvider(config: WebSearchProviderConfig): IWebSearchProvider {
 	return {
 		search: async (query: string, maxResults: number): Promise<SearchResult[]> => {
-			if (!config.apiKey) {
+			const apiKey = config.apiKey?.trim();
+			if (!apiKey) {
 				throw new Error('SerpApi key is not configured.');
 			}
 
@@ -24,7 +26,7 @@ export function createSerpapiProvider(config: WebSearchProviderConfig): IWebSear
 				// URL 전체를 외부 로그/프록시에 노출하지 않도록 주의하세요.
 				const url = new URL('https://serpapi.com/search');
 				url.searchParams.append('engine', 'google');
-				url.searchParams.append('api_key', config.apiKey);
+				url.searchParams.append('api_key', apiKey);
 				url.searchParams.append('q', query);
 				url.searchParams.append('num', maxResults.toString());
 
@@ -44,8 +46,7 @@ export function createSerpapiProvider(config: WebSearchProviderConfig): IWebSear
 					content: item.snippet || '',
 				}));
 			} catch (error) {
-				const errorMsg = error instanceof Error ? error.message : String(error);
-				throw new Error(`SerpApi search failed: ${errorMsg}`);
+				throw new Error(formatSearchError('SerpApi search', error));
 			}
 		},
 	};

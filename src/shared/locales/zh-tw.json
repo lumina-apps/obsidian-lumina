@@ -205,6 +205,7 @@
         "desc": "允許本地LLM使用搜尋工具。"
       },
       "privacyWarning": "🔒 隱私注意：啟用網路搜尋後，您的部分提示詞（搜尋查詢）可能會發送到外部搜尋服務（如Tavily, Brave等）。",
+      "notConfigured": "⚠️ 所選搜尋提供者尚未設定完整。請輸入所需的 API 金鑰或 URL，否則網路搜尋將會失敗。",
       "provider": {
         "name": "搜尋服務提供商",
         "desc": "選擇要使用的搜尋提供商。"
@@ -829,6 +830,7 @@
     "webSearchEnabled": "✅ 網路搜尋已啟用。",
     "webSearchDisabled": "🛑 網路搜尋已停用。",
     "webSearchNotNeededForCli": "ℹ️ CLI 代理使用其自帶的內建網頁搜尋工具。",
+    "webSearchNotConfigured": "⚠️ 搜尋提供者尚未設定。請在 設定 → 網路搜尋 中填寫 API 金鑰或 URL。",
     "noMessagesToExport": "沒有可匯出的訊息。",
     "noMessagesToRegenerate": "沒有可重新生成的回覆。",
     "contextCompressed": "📋 上下文已壓縮：{{messages}} 條訊息 → 1 條摘要（約釋放 {{tokens}} tokens）。",

@@ -205,6 +205,7 @@
         "desc": "Permite que LLMs locais usem a ferramenta de pesquisa na web."
       },
       "privacyWarning": "🔒 Aviso de privacidade: Quando a pesquisa na web está ativada, partes de suas consultas podem ser enviadas para serviços de pesquisa externos (ex., Tavily, Brave).",
+      "notConfigured": "⚠️ O provedor de pesquisa selecionado não está totalmente configurado. Informe a chave de API ou a URL necessária; caso contrário, a pesquisa web falhará.",
       "provider": {
         "name": "Provedor de pesquisa",
         "desc": "Selecione o provedor de pesquisa a ser usado."
@@ -829,6 +830,7 @@
     "webSearchEnabled": "✅ Pesquisa web habilitada.",
     "webSearchDisabled": "🛑 Pesquisa web desabilitada.",
     "webSearchNotNeededForCli": "ℹ️ Os agentes CLI utilizam suas próprias ferramentas de pesquisa na web integradas.",
+    "webSearchNotConfigured": "⚠️ O provedor de pesquisa não está configurado. Defina a chave de API ou a URL em Configurações → Pesquisa web.",
     "noMessagesToExport": "Nenhuma mensagem para exportar.",
     "noMessagesToRegenerate": "Nenhuma resposta para regenerar.",
     "contextCompressed": "📋 Contexto comprimido: {{messages}} mensagens → 1 resumo (~{{tokens}} tokens liberados).",

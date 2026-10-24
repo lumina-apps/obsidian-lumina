@@ -4,6 +4,7 @@ import { t } from '../../../../shared/locales/helpers';
 import { WEB_SEARCH_PROVIDER_LABELS } from '../../../../shared/types/settings.types';
 import type { WebSearchProviderType } from '../../../../shared/types/settings.types';
 import { addSliderWithInput } from '../../../../shared/utils/settingHelpers';
+import { isWebSearchProviderConfigured } from '../../../../shared/utils/webSearchConfig';
 
 export function renderWebSearchTab(tab: LuminaSettingTab, el: HTMLElement): void {
 	const { plugin } = tab;
@@ -42,6 +43,14 @@ export function renderWebSearchTab(tab: LuminaSettingTab, el: HTMLElement): void
 		});
 
 	const activeConfig = webSearch.providers.find((p) => p.type === webSearch.activeProviderId);
+	let warningContainer: HTMLElement | null = null;
+	const syncNotConfiguredWarning = () => {
+		if (!warningContainer) return;
+		warningContainer.empty();
+		if (!isWebSearchProviderConfigured(activeConfig)) {
+			tab.infoBox(warningContainer, t('settings.webSearch.notConfigured'), 'warning');
+		}
+	};
 
 	if (activeConfig) {
 		if (webSearch.activeProviderId === 'searxng') {
@@ -54,6 +63,7 @@ export function renderWebSearchTab(tab: LuminaSettingTab, el: HTMLElement): void
 						.setValue(activeConfig.baseUrl || '')
 						.onChange(async (value) => {
 							activeConfig.baseUrl = value;
+							syncNotConfiguredWarning();
 							await tab.saveAndSync(false);
 						}),
 				);
@@ -68,6 +78,7 @@ export function renderWebSearchTab(tab: LuminaSettingTab, el: HTMLElement): void
 						.setValue(activeConfig.apiKey || '')
 						.onChange(async (value) => {
 							activeConfig.apiKey = value;
+							syncNotConfiguredWarning();
 							await tab.saveAndSync(false);
 						});
 				});
@@ -83,12 +94,16 @@ export function renderWebSearchTab(tab: LuminaSettingTab, el: HTMLElement): void
 							.setValue(activeConfig.googleSearchEngineId || '')
 							.onChange(async (value) => {
 								activeConfig.googleSearchEngineId = value;
+								syncNotConfiguredWarning();
 								await tab.saveAndSync(false);
 							});
 					});
 			}
 		}
 	}
+
+	warningContainer = el.createDiv();
+	syncNotConfiguredWarning();
 
 	addSliderWithInput(
 		new Setting(el)

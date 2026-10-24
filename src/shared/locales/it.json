@@ -205,6 +205,7 @@
         "desc": "Consente agli LLM locali di utilizzare lo strumento di ricerca web."
       },
       "privacyWarning": "🔒 Informativa sulla privacy: Quando la ricerca web è abilitata, parti delle tue query potrebbero essere inviate a servizi di ricerca esterni (es. Tavily, Brave).",
+      "notConfigured": "⚠️ Il provider di ricerca selezionato non è completamente configurato. Inserisci la chiave API o l'URL richiesti, altrimenti la ricerca web non funzionerà.",
       "provider": {
         "name": "Provider di ricerca",
         "desc": "Seleziona il provider di ricerca da utilizzare."
@@ -829,6 +830,7 @@
     "webSearchEnabled": "✅ Ricerca web attivata.",
     "webSearchDisabled": "🛑 Ricerca web disattivata.",
     "webSearchNotNeededForCli": "ℹ️ Gli agenti CLI utilizzano i propri strumenti di ricerca web integrati.",
+    "webSearchNotConfigured": "⚠️ Il provider di ricerca non è configurato. Imposta la chiave API o l'URL in Impostazioni → Ricerca web.",
     "noMessagesToExport": "Nessun messaggio da esportare.",
     "noMessagesToRegenerate": "Nessuna risposta da rigenerare.",
     "contextCompressed": "📋 Contesto compresso: {{messages}} messaggi → 1 riepilogo (~{{tokens}} token liberati).",

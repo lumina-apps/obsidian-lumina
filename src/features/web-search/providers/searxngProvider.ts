@@ -1,6 +1,7 @@
 import { requestUrl } from 'obsidian';
 import type { WebSearchProviderConfig } from '../../../shared/types/settings.types';
 import type { IWebSearchProvider, SearchResult } from '../webSearchService';
+import { formatSearchError } from './providerErrors';
 
 interface SearxngResult {
 	title?: string;
@@ -14,11 +15,12 @@ interface SearxngSearchResponse {
 }
 
 export function createSearxngProvider(config: WebSearchProviderConfig): IWebSearchProvider {
-	if (!config.baseUrl?.trim()) {
+	const rawBaseUrl = config.baseUrl?.trim();
+	if (!rawBaseUrl) {
 		throw new Error('SearXNG base URL is missing.');
 	}
 
-	const baseUrl = config.baseUrl.replace(/\/$/, ''); // remove trailing slash
+	const baseUrl = rawBaseUrl.replace(/\/+$/, ''); // remove trailing slash
 
 	return {
 		async search(query: string, maxResults: number): Promise<SearchResult[]> {
@@ -43,8 +45,11 @@ export function createSearxngProvider(config: WebSearchProviderConfig): IWebSear
 					content: r.content || r.snippet || '',
 				})).slice(0, maxResults);
 			} catch (error) {
-				const errorMsg = error instanceof Error ? error.message : String(error);
-				throw new Error(`SearXNG search failed: ${errorMsg}`);
+				throw new Error(
+					formatSearchError('SearXNG search', error, {
+						403: 'The JSON format may be disabled on this SearXNG instance. Add "json" to search.formats in settings.yml.',
+					}),
+				);
 			}
 		}
 	};

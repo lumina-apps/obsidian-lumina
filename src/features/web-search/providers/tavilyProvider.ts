@@ -1,6 +1,7 @@
 import { requestUrl } from 'obsidian';
 import type { WebSearchProviderConfig } from '../../../shared/types/settings.types';
 import type { IWebSearchProvider, SearchResult } from '../webSearchService';
+import { formatSearchError } from './providerErrors';
 
 interface TavilyResult {
 	title?: string;
@@ -13,7 +14,8 @@ interface TavilySearchResponse {
 }
 
 export function createTavilyProvider(config: WebSearchProviderConfig): IWebSearchProvider {
-	if (!config.apiKey?.trim()) {
+	const apiKey = config.apiKey?.trim();
+	if (!apiKey) {
 		throw new Error('Tavily API key is missing.');
 	}
 
@@ -26,7 +28,7 @@ export function createTavilyProvider(config: WebSearchProviderConfig): IWebSearc
 					headers: {
 						'Content-Type': 'application/json',
 						// API 키를 Authorization 헤더로 전송 (body 노출 방지)
-						'Authorization': `Bearer ${config.apiKey}`,
+						'Authorization': `Bearer ${apiKey}`,
 					},
 					body: JSON.stringify({
 						query: query,
@@ -49,8 +51,7 @@ export function createTavilyProvider(config: WebSearchProviderConfig): IWebSearc
 					content: r.content || '',
 				}));
 			} catch (error) {
-				const errorMsg = error instanceof Error ? error.message : String(error);
-				throw new Error(`Tavily search failed: ${errorMsg}`);
+				throw new Error(formatSearchError('Tavily search', error));
 			}
 		}
 	};

@@ -205,6 +205,7 @@
         "desc": "ローカルLLMが検索ツールを使用できるようにします。"
       },
       "privacyWarning": "🔒 プライバシーに関する注意: ウェブ検索が有効になっている場合、プロンプトの一部（検索クエリ）が外部の検索サービス（Tavily、Braveなど）に送信される可能性があります。",
+      "notConfigured": "⚠️ 選択した検索プロバイダーの設定が完了していません。必要なAPIキーまたはURLを入力しないとWeb検索は失敗します。",
       "provider": {
         "name": "検索プロバイダー",
         "desc": "使用する検索プロバイダーを選択します。"
@@ -829,6 +830,7 @@
     "webSearchEnabled": "✅ Web検索が有効になりました。",
     "webSearchDisabled": "🛑 Web検索が無効になりました。",
     "webSearchNotNeededForCli": "ℹ️ CLIプロバイダーは独自の内蔵Web検索ツールを使用します。",
+    "webSearchNotConfigured": "⚠️ 検索プロバイダーが設定されていません。設定 → Web検索でAPIキーまたはURLを入力してください。",
     "noMessagesToExport": "エクスポートするメッセージがありません。",
     "noMessagesToRegenerate": "再生成する回答がありません。",
     "contextCompressed": "📋 コンテキスト圧縮完了: メッセージ{{messages}}件 → 要約1件 (約{{tokens}}トークン確保)。",

@@ -205,6 +205,7 @@
         "desc": "Erlaubt lokalen LLMs die Nutzung des Websuch-Tools."
       },
       "privacyWarning": "🔒 Datenschutzhinweis: Wenn die Websuche aktiviert ist, können Teile Ihrer Suchanfragen an externe Suchdienste (z. B. Tavily, Brave) gesendet werden.",
+      "notConfigured": "⚠️ Der ausgewählte Suchanbieter ist nicht vollständig konfiguriert. Gib den erforderlichen API-Schlüssel oder die URL ein, sonst schlägt die Websuche fehl.",
       "provider": {
         "name": "Suchanbieter",
         "desc": "Wählen Sie den zu verwendenden Suchanbieter aus."
@@ -837,6 +838,7 @@
     "webSearchEnabled": "✅ Websuche aktiviert.",
     "webSearchDisabled": "🛑 Websuche deaktiviert.",
     "webSearchNotNeededForCli": "ℹ️ CLI-Agenten verwenden ihre eigenen integrierten Websuch-Tools.",
+    "webSearchNotConfigured": "⚠️ Der Suchanbieter ist nicht konfiguriert. Lege den API-Schlüssel oder die URL unter Einstellungen → Websuche fest.",
     "noMessagesToExport": "Keine Nachrichten zum Exportieren vorhanden.",
     "noMessagesToRegenerate": "Keine Antwort zum Neu generieren vorhanden.",
     "contextCompressed": "📋 Kontext komprimiert: {{messages}} Nachrichten → 1 Zusammenfassung (~{{tokens}} Tokens freigegeben).",
