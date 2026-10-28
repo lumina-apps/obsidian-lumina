@@ -194,6 +194,13 @@ describe('writeHandlers', () => {
 				content: 'hello',
 			}, ctx, pathGuard);
 			expect(noteRes.isError).toBe(true);
+
+			(ctx.plugin.app.vault as { configDir?: string }).configDir = 'custom-config';
+			const customConfigRes = await createNoteHandler({
+				path: 'custom-config/plugins/x/note.md',
+				content: 'hello',
+			}, ctx, pathGuard);
+			expect(customConfigRes.isError).toBe(true);
 			expect(ctx.plugin.app.vault.createBinary).not.toHaveBeenCalled();
 		});
 

@@ -48,7 +48,7 @@ export function isProtectedWritePath(path: string, app?: App): boolean {
 	const clean = path.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
 	if (!clean) return false;
 
-	const configDir = (app?.vault?.configDir || '.obsidian')
+	const configDir = (app?.vault?.configDir ?? '')
 		.replace(/\\/g, '/')
 		.replace(/^\/+|\/+$/g, '')
 		.toLowerCase();
