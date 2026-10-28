@@ -85,7 +85,7 @@ class DiffBannerWidget extends WidgetType {
 							const state = view.getState();
 							state.mode = 'source';
 							state.source = true;
-							view.setState(state, { history: false });
+							void view.setState(state, { history: false });
 							break;
 						}
 					}

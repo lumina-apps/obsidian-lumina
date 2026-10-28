@@ -18,7 +18,7 @@ function buildTermRegex(term: string) {
 }
 
 export function applyAutoLink(content: string, terms: { originalTerm: string, path: string }[]): { newContent: string; linksAdded: number } {
-	const protectedRegex = /(^---\r?\n[\s\S]*?\r?\n---(?:$|\r?\n)|```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\r\n]+`|\[\[[\s\S]*?\]\]|\[[\s\S]*?\]\([\s\S]*?\)|<https?:\/\/[^\s>]+>|https?:\/\/[^\s)]+|(?:\r?\n|^)#{1,6}\s+[^\r\n]*|(?:\s|^)#[a-zA-Z0-9_\-\/]+)/g;
+	const protectedRegex = /(^---\r?\n[\s\S]*?\r?\n---(?:$|\r?\n)|```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\r\n]+`|\[\[[\s\S]*?\]\]|\[[\s\S]*?\]\([\s\S]*?\)|<https?:\/\/[^\s>]+>|https?:\/\/[^\s)]+|(?:\r?\n|^)#{1,6}\s+[^\r\n]*|(?:\s|^)#[a-zA-Z0-9_\-/]+)/g;
 
 	const parts = content.split(protectedRegex);
 	let textTokens: { text: string; isProtected: boolean }[] = [];
