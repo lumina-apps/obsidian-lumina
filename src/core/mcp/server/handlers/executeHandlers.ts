@@ -12,7 +12,7 @@ const APPROVAL_TIMEOUT_MS = 5 * 60 * 1000;
 
 export const executeCodeHandler = async (
 	args: ToolArguments,
-	_ctx: ToolHandlerContext,
+	ctx: ToolHandlerContext,
 	_pathGuard: PathGuard,
 ): Promise<ToolResult> => {
 	const code = getStringArg(args, 'code');
@@ -20,7 +20,12 @@ export const executeCodeHandler = async (
 		return { isError: true, content: [{ type: 'text', text: 'code parameter is required.' }] };
 	}
 
-	const approved = await approvalManager.requestActionApproval('execute', 'Code Sandbox', { code }, { timeoutMs: APPROVAL_TIMEOUT_MS });
+	const approved = await approvalManager.requestActionApproval(
+		'execute',
+		'Code Sandbox',
+		{ code },
+		{ timeoutMs: APPROVAL_TIMEOUT_MS, ...(ctx.signal ? { signal: ctx.signal } : {}) },
+	);
 	if (!approved) {
 		return { isError: true, content: [{ type: 'text', text: 'User explicitly rejected code execution. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.' }] };
 	}
@@ -70,7 +75,12 @@ export const runNoteCodeBlockHandler = async (
 
 	const code = matches[blockIndex][1];
 
-	const approved = await approvalManager.requestActionApproval('execute', `Code Block [${blockIndex}] in ${path}`, { code }, { timeoutMs: APPROVAL_TIMEOUT_MS });
+	const approved = await approvalManager.requestActionApproval(
+		'execute',
+		`Code Block [${blockIndex}] in ${path}`,
+		{ code },
+		{ timeoutMs: APPROVAL_TIMEOUT_MS, ...(ctx.signal ? { signal: ctx.signal } : {}) },
+	);
 	if (!approved) {
 		return { isError: true, content: [{ type: 'text', text: 'User explicitly rejected code block execution. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.' }] };
 	}
@@ -151,7 +161,7 @@ export const runShellCommandHandler = async (
 		'shell',
 		'Terminal Command',
 		{ code: command, ...(finalCwd ? { cwd: finalCwd } : {}) },
-		{ timeoutMs: APPROVAL_TIMEOUT_MS },
+		{ timeoutMs: APPROVAL_TIMEOUT_MS, ...(ctx.signal ? { signal: ctx.signal } : {}) },
 	);
 	if (!approved) {
 		return { isError: true, content: [{ type: 'text', text: 'User explicitly rejected the shell command execution. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.' }] };

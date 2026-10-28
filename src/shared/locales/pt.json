@@ -113,9 +113,22 @@
     "mcp": {
       "title": "Agente\n& MCP",
       "desc": "Conecte servidores externos do Model Context Protocol (MCP) para usar ferramentas locais, ou ative o servidor integrado para permitir que outros aplicativos controlem o Lumina.",
+      "agentMode": {
+        "name": "Modo Agente (Agent Mode)",
+        "desc": "O LLM executa tarefas de forma autônoma com ferramentas MCP. ⚠️ O desempenho pode degradar com modelos pequenos.",
+        "maxSteps": "Número máximo de execuções automáticas",
+        "maxStepsDesc": "O número máximo de vezes que o agente pode executar ferramentas consecutivamente em uma única resposta. (Padrão: 15)",
+        "respectRagExclusions": "Aplicar exclusões/inclusões de caminho RAG ao Agente",
+        "respectRagExclusionsDesc": "Aplica as regras de exclusão RAG às operações de arquivo do Agente.",
+        "readMode": "Modo de leitura",
+        "editMode": "Modo de edição"
+      },
       "addServer": "+ Adicionar novo servidor MCP",
       "serverName": "Nome do Servidor",
       "transport": "Transporte",
+      "transportDesc": "Selecione o protocolo de transporte para este servidor MCP.",
+      "transportSse": "SSE (GET → URL da sessão → POST)",
+      "transportStreamableHttp": "Streamable HTTP (POST direto)",
       "enableDesc": "Ativar (Injetar ferramentas no chat)",
       "deleteServer": "Excluir este servidor",
       "emptyServers": "Nenhum servidor registrado.",
@@ -138,19 +151,19 @@
         },
         "guide": "http://localhost:{{port}}/sse\nAuth: Cabeçalho \"Authorization: Bearer <token>\"",
         "maxRead": {
-          "name": "Read - Máx. de Caracteres",
+          "name": "Leitura - Máx. de Caracteres",
           "desc": "Máx. caracteres retornados por leitura de arquivo (Padrão: 20000)"
         },
         "searchSnippet": {
-          "name": "Search - Tamanho do Snippet",
+          "name": "Pesquisa - Tamanho do Trecho",
           "desc": "Caracteres mostrados ao redor dos termos encontrados (Padrão: 300)"
         },
         "searchMaxResults": {
-          "name": "Search - Máx. de Resultados",
+          "name": "Pesquisa - Máx. de Resultados",
           "desc": "Máx. resultados retornados por pesquisa (Padrão: 10)"
         },
         "maxAppend": {
-          "name": "Append - Máx. de Caracteres",
+          "name": "Anexar - Máx. de Caracteres",
           "desc": "Máx. caracteres por operação de anexação (Padrão: 10000)"
         },
         "enableShellCommands": {
@@ -159,7 +172,7 @@
         },
         "syncCliMcp": {
           "name": "Gerar configuração MCP para CLI de terminal externo (Claude Code, OpenCode, etc.)",
-          "desc": "Gera automaticamente arquivos de configuração (.claude/mcp.json, etc.) no seu cofre para que as ferramentas CLI ejecutadas em um terminal externo possam usar as ferramentas MCP do Lumina (RAG, notas). (Aviso: grava o token de autenticação MCP em texto simples em arquivos do cofre — exclua-os se sincronizar via Git/nuvem; pode causar erros de conexão quando o Obsidian estiver fechado).",
+          "desc": "Gera automaticamente arquivos de configuração (.claude/mcp.json, etc.) no seu cofre para que as ferramentas CLI executadas em um terminal externo possam usar as ferramentas MCP do Lumina (RAG, notas). (Aviso: grava o token de autenticação MCP em texto simples em arquivos do cofre — exclua-os se sincronizar via Git/nuvem; pode causar erros de conexão quando o Obsidian estiver fechado).",
           "confirmTitle": "Gerar configurações MCP para CLI externo",
           "confirmDesc": "Ativar esta opção grava o token Bearer do servidor MCP local em texto simples em arquivos de configuração no seu cofre (.claude/mcp.json, .cursor/mcp.json, opencode.json, .codex/config.toml).\nSe o seu cofre for sincronizado ou compartilhado via Git, iCloud ou Obsidian Sync, o token poderá ficar exposto — exclua esses arquivos no .gitignore.\nDeseja continuar?"
         },
@@ -173,7 +186,7 @@
         "sectionTitle": "Servidores MCP Externos (Conexão de Cliente)",
         "desc": "Conecte servidores externos do Model Context Protocol (MCP) para usar ferramentas adicionais no chat.",
         "sseUrl": {
-          "name": "Server URL",
+          "name": "URL do Servidor",
           "desc": "ex: http://localhost:8080/sse"
         },
         "token": {
@@ -187,16 +200,6 @@
         "args": "Argumentos:",
         "approve": "Aprovar",
         "reject": "Rejeitar"
-      },
-      "agentMode": {
-        "name": "Modo Agente (Agent Mode)",
-        "desc": "O LLM executa tarefas de forma autônoma com ferramentas MCP. ⚠️ O desempenho pode degradar com modelos pequenos.",
-        "maxSteps": "Número máximo de execuções automáticas",
-        "maxStepsDesc": "O número máximo de vezes que o agente pode executar ferramentas consecutivamente em uma única resposta. (Padrão: 15)",
-        "respectRagExclusions": "Aplicar exclusões/inclusões de caminho RAG ao Agente",
-        "respectRagExclusionsDesc": "Aplica as regras de exclusão RAG às operações de arquivo do Agente.",
-        "readMode": "Modo de leitura",
-        "editMode": "Modo de edição"
       },
       "experimental": "Recursos experimentais"
     },
@@ -262,7 +265,7 @@
         "desc": "Salve automaticamente o histórico do chat.",
         "pathPlaceholder": "ex: /chatHistory",
         "savePath": "Caminho de Salvamento",
-        "savePathDesc": "Salve automaticamente o histórico do chat em um caminho especificado. (Default: chatHistory)",
+        "savePathDesc": "Salve automaticamente o histórico do chat em um caminho especificado. (Padrão: chatHistory)",
         "saveFail": "⚠️ Falha ao salvar o histórico de chat: {{error}}",
         "loadFail": "⚠️ Falha ao carregar a sessão.",
         "deleteSuccess": "✅ Histórico de chat excluído.",
@@ -279,9 +282,31 @@
         "renameSuccess": "Chat renomeado.",
         "renameFail": "Falha ao renomear o chat."
       },
+      "context": {
+        "activeNote": "Incluir nota atual: {{name}}",
+        "selectedText": "Texto selecionado ({{length}} caracteres)",
+        "folderFiles": "[Arquivos na pasta: {{name}}]",
+        "activeNotePrefix": "[Nota ativa: {{name}}]",
+        "canvasFile": "[Arquivo Canvas: {{name}}]",
+        "tagFiles": "[Arquivos com tag: {{name}} (Máx. 5)]",
+        "activeNotePrompt": "Nota ativa",
+        "categoryActiveNote": "📄 Incluir nota atual",
+        "categorySelection": "✂️ Texto selecionado",
+        "categoryFolder": "📁 Adicionar pasta",
+        "categoryFile": "📝 Adicionar arquivo",
+        "categoryTag": "🏷️ Adicionar tag",
+        "categoryUrl": "🔗 Inserir URL",
+        "categoryCanvas": "🎨 Adicionar Canvas",
+        "categoryBack": "Voltar",
+        "categoryTitle": "Selecionar tipo de contexto",
+        "urlInputPlaceholder": "Inserir URL (ex. https://...)",
+        "urlInputPrompt": "Pressione Enter para adicionar URL",
+        "includeNote": "Incluir Nota",
+        "excludeNote": "Excluir Nota"
+      },
       "sendMode": {
         "name": "Modo de Envio de Mensagem",
-        "desc": "Escolha como enviar mensagens no chat. (Default: Send on Enter)",
+        "desc": "Escolha como enviar mensagens no chat. (Padrão: Enter para enviar)",
         "enter": "Enter para enviar",
         "ctrlEnter": "Ctrl + Enter para enviar"
       },
@@ -314,7 +339,7 @@
       },
       "inlineTrigger": {
         "name": "Acionador de Comando Inline",
-        "desc": "Palavra-chave para invocar o popup de autocompletar ação rápida no editor. (Default: /ai)"
+        "desc": "Palavra-chave para invocar o popup de autocompletar ação rápida no editor. (Padrão: /ai)"
       },
       "enableAutocomplete": {
         "name": "Ativar preenchimento automático embutido (Ghost Text)",
@@ -329,16 +354,16 @@
         "turns": "Limite de Turnos",
         "tokens": "Limite de Tokens",
         "turnsLabel": "Turnos a Lembrar",
-        "turnsDesc": "Turnos a lembrar (1 turno = mensagem do usuário + resposta da IA) (Default: 10)",
-        "maxTokens": "Máximo de Tokens de Contexto (Default: 8000)"
+        "turnsDesc": "Turnos a lembrar (1 turno = mensagem do usuário + resposta da IA) (Padrão: 10)",
+        "maxTokens": "Máximo de Tokens de Contexto (Padrão: 8000)"
       },
       "modelParams": {
         "name": "Parâmetros do Modelo",
         "desc": "Ajuste a criatividade e o comprimento da resposta.",
         "tempLabel": "Temperatura",
-        "tempDesc": "Mais perto de 0 = preciso, mais perto de 2 = criativo (Default: 0.7)",
+        "tempDesc": "Mais perto de 0 = preciso, mais perto de 2 = criativo (Padrão: 0.7)",
         "maxOutput": "Máx. de Tokens de Saída",
-        "maxOutputDesc": "Limita o número máximo de tokens gerados por resposta. (Default: 4000)",
+        "maxOutputDesc": "Limita o número máximo de tokens gerados por resposta. (Padrão: 4000)",
         "responseLang": "Especificar Idioma de Resposta",
         "responseLangDesc": "Força as respostas da IA a um idioma específico. \"Auto\" responde no idioma da consulta do usuário.",
         "responseLangAuto": "Automático"
@@ -347,35 +372,13 @@
         "name": "Streaming",
         "desc": "Ative respostas em streaming."
       },
-      "emptyResponseFallback": "⚠️ O modelo retornou uma resposta vazia. (Isso pode ser devido a um idioma/formato não suportado, filtragem de prompts ou exceder o limite de contexto.)",
-      "context": {
-        "activeNote": "Incluir nota atual: {{name}}",
-        "selectedText": "Texto selecionado ({{length}} caracteres)",
-        "folderFiles": "[Arquivos na pasta: {{name}}]",
-        "activeNotePrefix": "[Nota ativa: {{name}}]",
-        "canvasFile": "[Arquivo Canvas: {{name}}]",
-        "tagFiles": "[Arquivos com tag: {{name}} (Máx. 5)]",
-        "activeNotePrompt": "Nota ativa",
-        "categoryActiveNote": "📄 Incluir nota atual",
-        "categorySelection": "✂️ Texto selecionado",
-        "categoryFolder": "📁 Adicionar pasta",
-        "categoryFile": "📝 Adicionar arquivo",
-        "categoryTag": "🏷️ Adicionar tag",
-        "categoryUrl": "🔗 Inserir URL",
-        "categoryCanvas": "🎨 Adicionar Canvas",
-        "categoryBack": "Voltar",
-        "categoryTitle": "Selecionar tipo de contexto",
-        "urlInputPlaceholder": "Inserir URL (ex. https://...)",
-        "urlInputPrompt": "Pressione Enter para adicionar URL",
-        "includeNote": "Incluir Nota",
-        "excludeNote": "Excluir Nota"
-      },
       "timeout": {
         "ttftLabel": "Tempo de espera para a primeira resposta (ms)",
         "ttftDesc": "Tempo máximo de espera até receber a primeira palavra após a solicitação. Defina como 0 para ilimitado.. (Padrão: 0)",
         "interTokenLabel": "Tempo de espera entre fragmentos (ms)",
         "interTokenDesc": "Tempo máximo de espera até receber a próxima frase durante a transmissão. Defina como 0 para ilimitado.. (Padrão: 0)"
-      }
+      },
+      "emptyResponseFallback": "⚠️ O modelo retornou uma resposta vazia. (Isso pode ser devido a um idioma/formato não suportado, filtragem de prompts ou exceder o limite de contexto.)"
     },
     "rag": {
       "toggleTooltip": "Quando ativado, a IA lerá e referenciará as notas no seu vault para responder.",
@@ -384,7 +387,7 @@
       "disabledWarning": "⚪ RAG está desativado. Ative o motor RAG na guia Conexões e Modelos.",
       "dataScope": {
         "name": "Escopo de Dados Padrão",
-        "desc": "Escolha quais notas incluir na pesquisa RAG. (Default: Entire Vault)",
+        "desc": "Escolha quais notas incluir na pesquisa RAG. (Padrão: Vault Inteiro)",
         "vaultWide": "Vault Inteiro",
         "activeNote": "Apenas a Nota Ativa",
         "manual": "Arquivos Selecionados Manualmente"
@@ -399,7 +402,7 @@
       },
       "ignorePaths": {
         "name": "Caminhos a Ignorar",
-        "desc": "Separados por vírgula. Tem prioridade sobre os caminhos incluídos. (Default: templates, chatHistory, etc.)"
+        "desc": "Separados por vírgula. Tem prioridade sobre os caminhos incluídos. (Padrão: templates, chatHistory, etc.)"
       },
       "chunking": {
         "name": "Chunking",
@@ -415,18 +418,18 @@
       },
       "topK": {
         "name": "Recuperação Top-K",
-        "desc": "Número de documentos principais a passar para o LLM. (Default: 5)"
+        "desc": "Número de documentos principais a passar para o LLM. (Padrão: 5)"
       },
       "syncMode": {
         "name": "Sincronização de Índice",
-        "desc": "Como o índice se atualiza quando as notas mudam. (Default: Watch)",
+        "desc": "Como o índice se atualiza quando as notas mudam. (Padrão: Observar alterações)",
         "watch": "Observar alterações (recomendado)",
         "manual": "Manual",
         "startup": "Na Inicialização do App"
       },
       "minSimilarity": {
         "name": "Similaridade Mín",
-        "desc": "Excluir resultados abaixo desta pontuação (0~1) (Default: 0.0)"
+        "desc": "Excluir resultados abaixo desta pontuação (0~1) (Padrão: 0.0)"
       },
       "maxFileSize": {
         "name": "Tamanho máx. do arquivo (MB)",
@@ -725,7 +728,11 @@
       "chunkRejected": "Bloco rejeitado",
       "chunkRejectedShort": "Rejeitado",
       "chunkRejectedDesc": "Esta alteração será ignorada.",
-      "pendingChangesBanner": "Alterações pendentes — revise no chat do Lumina"
+      "pendingChangesBanner": "Alterações pendentes — revise no chat do Lumina",
+      "tableNotice": "📊 Modificações em tabelas detetadas. Na Pré-visualização ao vivo, os diffs em linha podem ser ocultados por widgets de tabela.",
+      "switchToSourceMode": "Mudar para modo fonte",
+      "viewInEditor": "Ver no editor",
+      "tableBadge": "Tabela"
     },
     "emptyResponseTokenLimit": "⚠️ O modelo retornou uma resposta vazia. A geração foi interrompida porque o limite de Tokens Máximos de Saída foi atingido. Aumente o limite de \"Tokens Máximos de Saída\" nas configurações.",
     "tokenLimitHitWarning": "\n\n⚠️ (A geração foi interrompida porque o limite de Tokens Máximos de Saída foi atingido. Aumente o valor de \"Tokens Máximos de Saída\" nas configurações.)",
@@ -750,6 +757,22 @@
     "modalCancel": "Cancelar",
     "modalProceed": "Prosseguir",
     "modelPlaceholder": "Digite o nome do modelo... (ex: claude, gpt-4)",
+    "searchModelShort": "Buscar modelos...",
+    "favorites": "Favoritos",
+    "allModels": "Todos os modelos",
+    "addToFavorites": "Adicionar aos favoritos",
+    "removeFromFavorites": "Remover dos favoritos",
+    "searchPromptShort": "Buscar prompts...",
+    "noSearchResults": "Nenhum resultado encontrado.",
+    "unsupportedFileType": "Tipo de arquivo não suportado: {{ext}}",
+    "attachFileFailed": "Falha ao anexar arquivo: {{file}}",
+    "attachWorkerNotReady": "O worker do analisador de documentos ainda não está pronto. Tente novamente em um momento.",
+    "attachFileEmpty": "O conteúdo do arquivo está vazio e não foi anexado: {{file}}",
+    "attachmentsSkipped": "Alguns anexos não puderam ser lidos e foram ignorados: {{files}}",
+    "cliImageNotSupported": "O agente CLI não suporta análise de imagens. Apenas o contexto de texto foi incluído.",
+    "attachFileTooLarge": "O arquivo é muito grande (máx. {{max}}): {{file}}",
+    "attachDuplicate": "O arquivo já está anexado: {{file}}",
+    "attachProcessing": "Processando anexos...",
     "fsAdapterErr": "FileSystemAdapter não encontrado. Suportado apenas em ambiente desktop.",
     "searchSource": "Fonte",
     "debugDelAllMsg": "Tem certeza de que deseja excluir todos os logs de depuração?",
@@ -759,7 +782,7 @@
     "debugNoLogs": "Sem logs",
     "debugWaitLlm": "Exibido aqui ao solicitar LLM",
     "debugTurnOn": "Ative o Modo de Depuração em Configurações › Avançado",
-    "debugChunks": "chunks",
+    "debugChunks": "blocos",
     "debugExpandAll": "Expandir Todos",
     "debugCollapseAll": "Recolher Todos",
     "ragTooLong": "[Lumina] Contexto RAG muito longo, truncado para {{max}} caracteres.",
@@ -790,27 +813,11 @@
     "errNoProvider": "Configuração do provedor de incorporação selecionado não encontrada.",
     "errMobileAuto": "Incorporação local (Modo Automático) não é suportada em dispositivos móveis. Selecione uma incorporação em nuvem nas configurações.",
     "mcpTokenCopied": "Token de autenticação copiado para a área de transferência.",
+    "mcpManagerNotInitialized": "⚠️ O MCP Manager não está inicializado.",
     "mcpConnectFailed": "Falha na conexão com o Servidor MCP \"{{name}}\". Desativado.",
     "mcpLocalServerStartFailed": "Falha ao iniciar servidor MCP integrado: {{error}}",
     "mcpDisconnectedDuringExecution": "O Servidor MCP \"{{name}}\" se desconectou durante a execução da ferramenta e foi desativado.",
     "mcpToolExecutionFailed": "Falha ao executar ferramenta no Servidor MCP \"{{name}}\". O servidor foi desativado. Verifique suas configurações.",
-    "searchModelShort": "Buscar modelos...",
-    "favorites": "Favoritos",
-    "allModels": "Todos os modelos",
-    "addToFavorites": "Adicionar aos favoritos",
-    "removeFromFavorites": "Remover dos favoritos",
-    "searchPromptShort": "Buscar prompts...",
-    "noSearchResults": "Nenhum resultado encontrado.",
-    "unsupportedFileType": "Tipo de arquivo não suportado: {{ext}}",
-    "attachFileFailed": "Falha ao anexar arquivo: {{file}}",
-    "attachWorkerNotReady": "O worker do analisador de documentos ainda não está pronto. Tente novamente em um momento.",
-    "attachFileEmpty": "O conteúdo do arquivo está vazio e não foi anexado: {{file}}",
-    "attachmentsSkipped": "Alguns anexos não puderam ser lidos e foram ignorados: {{files}}",
-    "cliImageNotSupported": "O agente CLI não suporta análise de imagens. Apenas o contexto de texto foi incluído.",
-    "attachFileTooLarge": "O arquivo é muito grande (máx. {{max}}): {{file}}",
-    "attachDuplicate": "O arquivo já está anexado: {{file}}",
-    "attachProcessing": "Processando anexos...",
-    "mcpManagerNotInitialized": "⚠️ O MCP Manager não está inicializado.",
     "mcpSyncError": "⚠️ Erro ao sincronizar servidores MCP.",
     "mcpLocalServerRestarted": "✅ Servidor MCP integrado reiniciado (Porta: {{port}})",
     "mcpLocalServerStarted": "✅ Servidor MCP integrado iniciado (Porta: {{port}})",
@@ -957,6 +964,77 @@
       "successUpdate": "MOC atualizado em {{path}} ({{count}} notas)",
       "emptyWarning": "Nenhuma nota foi encontrada correspondendo ao escopo fornecido. Este MOC está atualmente vazio.",
       "noScope": "Pelo menos um entre folder, tags ou files deve ser fornecido."
+    },
+    "replace_note": {
+      "desc": "Substitui todo o conteúdo de uma nota existente."
+    },
+    "patch_note": {
+      "desc": "Aplica uma ou mais substituições de texto a uma nota. Prefira usar o array patches para agrupar várias alterações em uma única chamada de ferramenta — isso é mais eficiente e apresenta todas as alterações ao usuário de uma só vez como um diff unificado."
+    },
+    "delete_note": {
+      "desc": "Exclui uma nota."
+    },
+    "move_note": {
+      "desc": "Move ou renomeia uma nota."
+    },
+    "get_backlinks": {
+      "desc": "Obtém uma lista de notas que possuem links para a nota especificada."
+    },
+    "update_frontmatter": {
+      "desc": "Atualiza uma propriedade do frontmatter em uma nota."
+    },
+    "get_note_metadata": {
+      "desc": "Obtém metadados (frontmatter, tags, data de criação, etc.) de uma nota."
+    },
+    "list_attachments": {
+      "desc": "Lista todos os arquivos de anexo (imagens, PDFs) dentro do cofre ou vinculados em uma nota."
+    },
+    "save_attachment": {
+      "desc": "Salva um arquivo de anexo binário a partir de uma string base64."
+    },
+    "execute_code": {
+      "desc": "Executa código JavaScript/TypeScript em uma sandbox segura."
+    },
+    "run_shell_command": {
+      "desc": "Executa um comando de shell do terminal no sistema operacional de desktop. Use com cautela."
+    },
+    "run_note_code_block": {
+      "desc": "Executa um bloco de código específico de uma nota na sandbox."
+    },
+    "list_tags": {
+      "desc": "Lista todas as tags usadas no cofre."
+    },
+    "create_canvas": {
+      "desc": "Cria um arquivo Obsidian Canvas (.canvas) com nós e conexões."
+    },
+    "auto_link_note": {
+      "desc": "Encontra automaticamente menções não vinculadas (títulos de notas ou aliases) em uma nota e as substitui por links internos Markdown ([[Title|Alias]]). CRÍTICO: SEMPRE use esta ferramenta quando o usuário pedir para adicionar backlinks ou vincular automaticamente uma nota. NUNCA tente ler manualmente a nota e usar patch_note ou replace_note para adicionar links por conta própria, pois isso travará o sistema."
+    },
+    "query_metadata": {
+      "desc": "Consulta e filtra notas do cofre por suas propriedades de frontmatter, tags ou pastas. Retorna uma tabela Markdown com os resultados. Use esta ferramenta quando o usuário pedir para listar ou agregar notas com base em seus metadados (ex.: status, autor, classificação, datas)."
+    },
+    "show_notice": {
+      "desc": "Exibe uma mensagem de notificação para o usuário.",
+      "argMessage": "A mensagem a ser exibida na notificação.",
+      "argDuration": "Opcional. A duração em milissegundos para a notificação ficar visível. (Padrão: 5000)"
+    },
+    "open_note": {
+      "desc": "Abre uma nota ou arquivo na área de trabalho do editor do Obsidian."
+    },
+    "grep_search": {
+      "desc": "Pesquisa texto exato ou padrões regex nos arquivos do cofre. Retorna as linhas correspondentes com números de linha."
+    },
+    "glob_files": {
+      "desc": "Encontra arquivos no cofre que correspondem a um padrão glob (ex.: \"**/*.md\", \"Daily/*\", \"*.canvas\")."
+    },
+    "list_folders": {
+      "desc": "Lista as pastas no cofre, opcionalmente filtradas sob uma pasta pai específica."
+    },
+    "get_outgoing_links": {
+      "desc": "Obtém todos os links de saída e incorporações de uma nota específica, incluindo o caminho de destino e o status de resolução."
+    },
+    "list_tasks": {
+      "desc": "Lista as tarefas markdown (- [ ] / - [x]) em todo o cofre ou em uma nota específica, com filtro de conclusão opcional."
     }
   },
   "graph": {
@@ -1044,6 +1122,14 @@
       "ragExcludedFolders": "Pastas Excluídas do RAG",
       "ragExcludedFoldersDesc": "Marque as pastas para excluir da indexação.",
       "ragExcludedFoldersEmpty": "Nenhuma pasta excluída.",
+      "defaultModel": "Modelo de chat padrão",
+      "defaultModelDesc": "O modelo padrão a ser usado ao iniciar um novo chat neste projeto.",
+      "defaultModelAuto": "Seleção automática (Primeiro modelo disponível)",
+      "systemPrompt": "Prompt de sistema padrão",
+      "systemPromptDesc": "O prompt de sistema a ser usado ao iniciar um novo chat neste projeto.",
+      "systemPromptAuto": "Seleção automática (Primeiro prompt de sistema)",
+      "deletedModel": "[Excluído] Modelo",
+      "deletedPrompt": "[Excluído] Prompt",
       "save": "Salvar",
       "saveSuccess": "Configurações do projeto salvas",
       "nameRequired": "O nome do projeto é obrigatório e não pode ser 'default'.",
@@ -1061,14 +1147,6 @@
       "add": "Adicionar",
       "duplicateName": "Já existe um projeto com este nome.",
       "defaultProjectName": "Padrão",
-      "defaultModel": "Modelo de chat padrão",
-      "defaultModelDesc": "O modelo padrão a ser usado ao iniciar um novo chat neste projeto.",
-      "defaultModelAuto": "Seleção automática (Primeiro modelo disponível)",
-      "systemPrompt": "Prompt de sistema padrão",
-      "systemPromptDesc": "O prompt de sistema a ser usado ao iniciar um novo chat neste projeto.",
-      "systemPromptAuto": "Seleção automática (Primeiro prompt de sistema)",
-      "deletedModel": "[Excluído] Modelo",
-      "deletedPrompt": "[Excluído] Prompt",
       "modalTitleActive": "Configurações do projeto (Atual: {{projectName}})",
       "activeProjectModelDesc": "Define o modelo de chat padrão para o projeto ativo (<strong>{{projectName}}</strong>). Você também pode alterar isso nas Configurações do Projeto (Guia RAG).",
       "chatHistoryRootPlaceholder": "(Padrão) Usar raiz chatHistory",

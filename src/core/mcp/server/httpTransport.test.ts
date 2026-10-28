@@ -187,6 +187,31 @@ describe('HttpTransport security & lifecycle', () => {
 		expect(res.status).toBe(200);
 	});
 
+	it('supports McpServer factory function for multi-session support', async () => {
+		let factoryCallCount = 0;
+		const transport = new HttpTransport(19470, 'secret-token-123');
+		activeTransports.push(transport);
+
+		await transport.start(() => {
+			factoryCallCount++;
+			return mockMcpServer;
+		});
+
+		expect(factoryCallCount).toBe(0);
+		// Simulate init SSE request
+		const res = await dispatchRequest(transport, {
+			method: 'POST',
+			url: '/sse',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: 'Bearer secret-token-123',
+			},
+			chunks: [JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} })],
+		});
+
+		expect(factoryCallCount).toBe(1);
+	});
+
 	it('authenticateRequest rejects empty authToken', () => {
 		const fakeReq = {
 			headers: { authorization: 'Bearer ' },

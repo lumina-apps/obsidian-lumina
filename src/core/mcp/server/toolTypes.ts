@@ -37,7 +37,10 @@ export type ToolName =
 	| 'show_notice'
 	| 'open_note'
 	| 'grep_search'
-	| 'glob_files';
+	| 'glob_files'
+	| 'list_folders'
+	| 'get_outgoing_links'
+	| 'list_tasks';
 
 export interface RunShellCommandArguments extends ToolArguments {
 	command: string;
@@ -61,6 +64,8 @@ export interface ToolHandlerContext {
 	snippetLen: number;
 	/** 검색 최대 결과 수 */
 	maxResults: number;
+	/** 클라이언트 요청 취소 시그널 */
+	signal?: AbortSignal;
 }
 
 /** 설정에서 추출한 제한 값 모음 */

@@ -32,7 +32,12 @@ export async function autoLinkNoteHandler(
 	}
 
 	const currentContent = await ctx.plugin.app.vault.read(file);
-	const { newContent, linksAdded } = calculateAutoLinks(ctx.plugin.app, file, currentContent);
+	const { newContent, linksAdded } = calculateAutoLinks(
+		ctx.plugin.app,
+		file,
+		currentContent,
+		(p) => pathGuard.isAgentPathAllowed(p, ctx.plugin),
+	);
 
 	if (linksAdded === 0) {
 		return {

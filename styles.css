@@ -2422,6 +2422,37 @@ html body .modal-container.lumina-settings-modal-container {
 	color: var(--text-normal);
 }
 
+.lumina-diff-banner-table-notice {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin-left: 8px;
+	padding: 2px 8px;
+	border-radius: 4px;
+	background: rgba(245, 158, 11, 0.1);
+	border: 1px solid rgba(245, 158, 11, 0.25);
+	font-size: 11px;
+}
+
+.lumina-diff-banner-table-text {
+	color: var(--text-warning, #f59e0b);
+}
+
+.lumina-diff-banner-btn.source-mode {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border: none;
+	padding: 2px 8px;
+	font-size: 10px;
+	border-radius: 3px;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.lumina-diff-banner-btn.source-mode:hover {
+	opacity: 0.85;
+}
+
 .lumina-diff-added-widget {
 	background: rgba(0, 150, 0, 0.06);
 	border-left: 3px solid var(--interactive-success);

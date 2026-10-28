@@ -96,6 +96,36 @@ describe('applyAutoLink', () => {
 			expect(result.newContent).toBe('---\ntitle: Obsidian notes\n---\n[[Obsidian.md|Obsidian]] is great.');
 		});
 
+		it('should not replace inside CRLF frontmatter', () => {
+			const content = '---\r\ntitle: Obsidian notes\r\n---\r\nObsidian is great.';
+			const terms = [
+				{ originalTerm: 'Obsidian', path: 'Obsidian.md' }
+			];
+			const result = applyAutoLink(content, terms);
+			expect(result.linksAdded).toBe(1);
+			expect(result.newContent).toBe('---\r\ntitle: Obsidian notes\r\n---\r\n[[Obsidian.md|Obsidian]] is great.');
+		});
+
+		it('should not replace inside markdown headings', () => {
+			const content = '# Welcome to Obsidian\nObsidian is great.';
+			const terms = [
+				{ originalTerm: 'Obsidian', path: 'Obsidian.md' }
+			];
+			const result = applyAutoLink(content, terms);
+			expect(result.linksAdded).toBe(1);
+			expect(result.newContent).toBe('# Welcome to Obsidian\n[[Obsidian.md|Obsidian]] is great.');
+		});
+
+		it('should not replace inside inline hashtags', () => {
+			const content = 'Check out #Obsidian and Obsidian note.';
+			const terms = [
+				{ originalTerm: 'Obsidian', path: 'Obsidian.md' }
+			];
+			const result = applyAutoLink(content, terms);
+			expect(result.linksAdded).toBe(1);
+			expect(result.newContent).toBe('Check out #Obsidian and [[Obsidian.md|Obsidian]] note.');
+		});
+
 		it('should not replace raw URLs', () => {
 			const content = 'Visit https://obsidian.md/test for more info.';
 			const terms = [

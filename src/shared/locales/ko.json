@@ -186,7 +186,7 @@
         "sectionTitle": "외부 MCP 서버 (클라이언트 연결)",
         "desc": "Model Context Protocol (MCP)을 통해 외부 도구를 연결하여 대화 시 사용할 수 있도록 설정합니다.",
         "sseUrl": {
-          "name": "Server URL",
+          "name": "서버 URL",
           "desc": "예: http://localhost:8080/sse"
         },
         "token": {
@@ -216,11 +216,11 @@
         "desc": "사용할 검색 제공자를 선택합니다."
       },
       "apiKey": {
-        "name": "API Key",
+        "name": "API 키",
         "desc": "검색 서비스의 API 키를 입력하세요."
       },
       "baseUrl": {
-        "name": "Base URL",
+        "name": "기본 URL (Base URL)",
         "desc": "로컬 검색 인스턴스의 URL을 입력합니다. (예: http://localhost:8080)"
       },
       "googleSearchEngineId": {
@@ -728,7 +728,11 @@
       "chunkRejected": "청크 거절됨",
       "chunkRejectedShort": "거절됨",
       "chunkRejectedDesc": "이 변경사항은 건너뜁니다.",
-      "pendingChangesBanner": "수정 대기 중 — Lumina 채팅에서 검토하세요"
+      "pendingChangesBanner": "수정 대기 중 — Lumina 채팅에서 검토하세요",
+      "tableNotice": "📊 표(Table) 변경점이 포함되어 있습니다. 라이브 프리뷰에서는 표 위젯에 의해 인라인 Diff가 가려질 수 있습니다.",
+      "switchToSourceMode": "소스 모드로 전환",
+      "viewInEditor": "에디터에서 보기",
+      "tableBadge": "표"
     },
     "emptyResponseTokenLimit": "⚠️ 모델이 빈 응답을 반환했습니다. 최대 출력 토큰(Max Output Tokens) 제한에 도달하여 생성이 중단되었습니다. 설정의 [최대 출력 토큰] 제한을 늘려주세요.",
     "tokenLimitHitWarning": "\n\n⚠️ (최대 출력 토큰 제한에 도달하여 답변이 도중에 끊겼습니다. 설정의 [최대 출력 토큰] 값을 늘려주세요.)",
@@ -822,7 +826,7 @@
     "mcpLocalServerDisconnectAgentDisabled": "⚠️ 내장 서버 연결 오류로 에이전트 기능이 해제되었습니다.",
     "mcpClientDisconnected": "🔌 MCP Server \"{{name}}\" 연결이 해제되었습니다.",
     "mcpClientConnected": "✅ MCP Server \"{{name}}\" 연결에 성공했습니다.",
-    "mcpClientToolExecutionFailedStatusError": "⚠️ MCP Server \"{{name}}\" tool execution failed. Status set to error.",
+    "mcpClientToolExecutionFailedStatusError": "⚠️ MCP 서버 \"{{name}}\" 도구 실행에 실패하여 상태가 오류로 변경되었습니다.",
     "mcpClientToolExecuteFailedTryReconnect": "MCP 서버 \"{{name}}\"에서 툴을 실행하지 못했습니다. 연결을 다시 확인해주세요.",
     "toolExecutionBlockedReadMode": "에러: 현재 읽기 모드입니다. 쓰기 또는 수정 권한이 필요한 툴({{toolName}})을 실행하려면 '수정 모드'로 전환해주세요.",
     "agentModeLlmRequired": "⚠️ 에이전트를 사용하려면 먼저 LLM 제공자를 설정하고 검증(Verify)해야 합니다.",
@@ -965,7 +969,7 @@
       "desc": "기존 노트의 전체 내용을 바꿉니다."
     },
     "patch_note": {
-      "desc": "노트에 하나 이상의 텍스트 변경 사항을 적용합니다. 여러 변경 사항을 한 번에 일괄 처리하려면 patches 배열을 사용하는 것이 좋습니다."
+      "desc": "노트에 하나 이상의 텍스트 변경 사항을 적용합니다. 여러 변경 사항을 한 번의 도구 호출로 일괄 처리하려면 patches 배열을 사용하는 것이 좋습니다 — 더 효율적이며 모든 변경 사항을 통합 Diff로 한 번에 사용자에게 보여줍니다."
     },
     "delete_note": {
       "desc": "노트를 삭제합니다."
@@ -1004,15 +1008,33 @@
       "desc": "노드와 에지가 포함된 Obsidian Canvas 파일(.canvas)을 생성합니다."
     },
     "auto_link_note": {
-      "desc": "노트 내에서 연결되지 않은 멘션(노트 제목 또는 별칭)을 자동으로 찾아 내부 마크다운 링크로 바꿉니다."
+      "desc": "노트 내에서 연결되지 않은 멘션(노트 제목 또는 별칭)을 자동으로 찾아 내부 마크다운 링크([[Title|Alias]])로 바꿉니다. 중요: 사용자가 백링크 추가나 노트 자동 링크를 요청할 때는 반드시 이 도구를 사용하세요. 직접 노트를 읽고 patch_note나 replace_note로 링크를 수동 추가하려고 시도하지 마세요(시스템 오류가 발생할 수 있습니다)."
     },
     "query_metadata": {
-      "desc": "프론트매터 속성, 태그 또는 폴더를 기준으로 볼트 노트를 필터링하고 검색합니다. 결과를 마크다운 테이블로 반환합니다."
+      "desc": "프론트매터 속성, 태그 또는 폴더를 기준으로 볼트 노트를 필터링하고 검색합니다. 결과를 마크다운 테이블로 반환합니다. 상태, 작성자, 평점, 날짜 등 메타데이터를 기반으로 노트를 나열하거나 집계할 때 이 도구를 사용하세요."
     },
     "show_notice": {
       "desc": "사용자에게 알림 메시지를 표시합니다.",
       "argMessage": "알림에 표시할 메시지 내용입니다.",
       "argDuration": "선택 사항. 알림이 화면에 유지되는 시간(밀리초)입니다. (기본값: 5000)"
+    },
+    "open_note": {
+      "desc": "옵시디언 에디터 작업 영역에서 노트나 파일을 엽니다."
+    },
+    "grep_search": {
+      "desc": "보관함 내 파일들을 대상으로 텍스트 또는 정규식 패턴을 검색하여 일치하는 라인과 라인 번호를 반환합니다."
+    },
+    "glob_files": {
+      "desc": "Glob 패턴(예: \"**/*.md\", \"Daily/*\", \"*.canvas\")과 일치하는 보관함 내 파일 경로 목록을 찾습니다."
+    },
+    "list_folders": {
+      "desc": "보관함 내 폴더 목록을 조회하며, 특정 상위 폴더 경로를 지정하여 필터링할 수 있습니다."
+    },
+    "get_outgoing_links": {
+      "desc": "지정된 노트에서 외부로 나가는 모든 링크 및 임베드 목록과 대상 파일 연결 상태를 조회합니다."
+    },
+    "list_tasks": {
+      "desc": "보관함 전체 또는 특정 노트 내의 마크다운 할 일 항목(- [ ] / - [x]) 목록을 완료 상태 필터와 함께 조회합니다."
     }
   },
   "graph": {

@@ -1,7 +1,8 @@
 import { StateField, StateEffect, RangeSetBuilder } from '@codemirror/state';
 import { EditorView, Decoration, WidgetType, ViewPlugin, ViewUpdate } from '@codemirror/view';
 import type { DecorationSet } from '@codemirror/view';
-import { editorInfoField } from 'obsidian';
+import { editorInfoField, MarkdownView } from 'obsidian';
+import type { App } from 'obsidian';
 import { approvalStore, approvalManager, type ApprovalRequest, type ApprovalState } from '../chat/utils/approvalManager';
 import { get } from 'svelte/store';
 import { t } from '../../shared/locales/helpers';
@@ -44,10 +45,16 @@ class DiffActionWidget extends WidgetType {
 }
 
 /**
- * Action bar at the top of the editor with Accept All / Reject All buttons.
+ * Action bar at the top of the editor with Accept All / Reject All buttons
+ * and an optional notice to switch to Source Mode when table diffs are present.
  */
 class DiffBannerWidget extends WidgetType {
-	constructor(public requestId: string) { super(); }
+	constructor(
+		public requestId: string,
+		public hasTableChanges: boolean = false,
+		public app?: App,
+		public filePath?: string
+	) { super(); }
 	toDOM() {
 		const div = createDiv({ cls: 'lumina-diff-banner' });
 		
@@ -56,6 +63,35 @@ class DiffBannerWidget extends WidgetType {
 		
 		const acceptBtn = div.createEl('button', { cls: 'lumina-diff-banner-btn accept', text: t('uiMessages.actionApproval.acceptAll') });
 		acceptBtn.onclick = () => approvalManager.acceptAll(this.requestId);
+
+		if (this.hasTableChanges) {
+			const notice = div.createDiv({ cls: 'lumina-diff-banner-table-notice' });
+			notice.createSpan({
+				cls: 'lumina-diff-banner-table-text',
+				text: t('uiMessages.actionApproval.tableNotice') || '📊 Table modifications detected.'
+			});
+			if (this.app) {
+				const switchBtn = notice.createEl('button', {
+					cls: 'lumina-diff-banner-btn source-mode',
+					text: t('uiMessages.actionApproval.switchToSourceMode') || 'Switch to Source Mode'
+				});
+				switchBtn.onclick = (e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					const leaves = this.app?.workspace.getLeavesOfType('markdown') ?? [];
+					for (const leaf of leaves) {
+						const view = leaf.view as MarkdownView;
+						if (view.file?.path === this.filePath || leaf === this.app?.workspace.activeLeaf) {
+							const state = view.getState();
+							state.mode = 'source';
+							state.source = true;
+							view.setState(state, { history: false });
+							break;
+						}
+					}
+				};
+			}
+		}
 		
 		return div;
 	}
@@ -78,11 +114,13 @@ export const diffDecorationField = StateField.define<DecorationSet>({
 				
 				let docLine = 1;
 				const processedChunks = new Set<string>();
+				const hasTableChanges = Boolean(request.chunks.some(c => c.isTable));
+				const editorInfo = tr.state.field(editorInfoField, false) as { app?: App; file?: { path: string } } | null | undefined;
 
 				// Add banner widget at the very top of the document
 				if (doc.length > 0) {
 					builder.add(0, 0, Decoration.widget({
-						widget: new DiffBannerWidget(request.id),
+						widget: new DiffBannerWidget(request.id, hasTableChanges, editorInfo?.app, request.filePath),
 						block: true,
 						side: -10
 					}));
@@ -90,13 +128,16 @@ export const diffDecorationField = StateField.define<DecorationSet>({
 
 				for (const change of request.allChanges) {
 					const lines = change.value.split('\n');
-					const numLines = change.value.endsWith('\n') ? lines.length - 1 : lines.length;
+					const numLines = change.count !== undefined
+						? change.count
+						: (change.value.endsWith('\n') ? lines.length - 1 : lines.length);
 
 					if (change.chunkId && !processedChunks.has(change.chunkId)) {
 						const chunk = request.chunks.find(c => c.id === change.chunkId);
 						if (chunk && chunk.status === 'pending') {
 							// Place action widget before the change block
-							const pos = Math.min(doc.length, docLine <= doc.lines ? doc.line(docLine).from : doc.length);
+							const targetLine = Math.min(doc.lines, Math.max(1, docLine));
+							const pos = doc.line(targetLine).from;
 							builder.add(pos, pos, Decoration.widget({
 								widget: new DiffActionWidget(request.id, change.chunkId),
 								block: true,
@@ -111,8 +152,13 @@ export const diffDecorationField = StateField.define<DecorationSet>({
 						const shouldShow = !chunk || chunk.status === 'pending';
 						if (shouldShow) {
 							for (let i = 0; i < numLines; i++) {
-								if (docLine + i <= doc.lines) {
-									const lineObj = doc.line(docLine + i);
+								const lineIdx = docLine + i;
+								if (lineIdx <= doc.lines) {
+									const lineObj = doc.line(lineIdx);
+									builder.add(lineObj.from, lineObj.from, removedLineDeco);
+								} else if (lineIdx === doc.lines + 1 && numLines === 1) {
+									// Fallback for EOF boundary edge case
+									const lineObj = doc.line(doc.lines);
 									builder.add(lineObj.from, lineObj.from, removedLineDeco);
 								}
 							}
@@ -121,7 +167,8 @@ export const diffDecorationField = StateField.define<DecorationSet>({
 					} else if (change.added) {
 						const chunk = request.chunks.find(c => c.id === change.chunkId);
 						if (chunk && chunk.status === 'pending') {
-							const pos = Math.min(doc.length, docLine <= doc.lines ? doc.line(docLine).from : doc.length);
+							const targetLine = Math.min(doc.lines, Math.max(1, docLine));
+							const pos = docLine <= doc.lines ? doc.line(targetLine).from : doc.length;
 							builder.add(pos, pos, Decoration.widget({
 								widget: new DiffAddedWidget(change.value),
 								block: true,

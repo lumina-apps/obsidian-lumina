@@ -508,7 +508,7 @@
 		/>
 
 		{#if $approvalStore.queue.length > 0}
-			<InlineApprovalQueue {tStore} />
+			<InlineApprovalQueue {tStore} {plugin} />
 		{/if}
 
 		<ChatInputArea

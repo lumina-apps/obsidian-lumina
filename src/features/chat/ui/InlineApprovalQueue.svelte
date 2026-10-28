@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { approvalStore, approvalManager } from "../utils/approvalManager";
 	import type { ApprovalRequest } from "../utils/approvalManager";
+	import { MarkdownView } from "obsidian";
 
-	// We receive tStore as a prop or context.
-	let { tStore } = $props<{ tStore: any }>();
+	// We receive tStore and plugin as props
+	let { tStore, plugin } = $props<{ tStore: any; plugin?: any }>();
 
 	function accept(id: string) {
 		approvalManager.acceptAll(id);
@@ -19,6 +20,42 @@
 
 	function rejectChunk(requestId: string, chunkId: string) {
 		approvalManager.rejectChunk(requestId, chunkId);
+	}
+
+	function scrollToChunk(filePath: string, line?: number) {
+		if (!plugin?.app || typeof line !== 'number') return;
+		const leaves = plugin.app.workspace.getLeavesOfType("markdown") ?? [];
+		for (const leaf of leaves) {
+			const view = leaf.view as MarkdownView;
+			if (view.file?.path === filePath) {
+				plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
+				if (view.editor) {
+					const lineIdx = Math.max(0, line - 1);
+					view.editor.setCursor({ line: lineIdx, ch: 0 });
+					view.editor.scrollIntoView({
+						from: { line: lineIdx, ch: 0 },
+						to: { line: lineIdx, ch: 0 }
+					}, true);
+				}
+				return;
+			}
+		}
+	}
+
+	function switchToSourceMode(filePath: string) {
+		if (!plugin?.app) return;
+		const leaves = plugin.app.workspace.getLeavesOfType("markdown") ?? [];
+		for (const leaf of leaves) {
+			const view = leaf.view as MarkdownView;
+			if (view.file?.path === filePath || leaf === plugin.app.workspace.activeLeaf) {
+				plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
+				const state = view.getState();
+				state.mode = 'source';
+				state.source = true;
+				view.setState(state, { history: false });
+				return;
+			}
+		}
 	}
 
 	function getActionTitle(req: ApprovalRequest): string {
@@ -70,6 +107,23 @@
 					{#each req.chunks as chunk (chunk.id)}
 						{#if chunk.status === 'pending'}
 							<div class="lumina-diff-chunk">
+								<div class="lumina-diff-chunk-header">
+									{#if chunk.startLine}
+										<button
+											type="button"
+											class="lumina-diff-chunk-line-btn"
+											title={$tStore("uiMessages.actionApproval.viewInEditor") || "View in Editor"}
+											onclick={() => scrollToChunk(req.filePath, chunk.startLine)}
+										>
+											📍 L{chunk.startLine}
+										</button>
+									{/if}
+									{#if chunk.isTable}
+										<span class="lumina-diff-chunk-table-badge">
+											📊 {$tStore("uiMessages.actionApproval.tableBadge") || "Table"}
+										</span>
+									{/if}
+								</div>
 								<div class="lumina-diff-chunk-lines">
 									{#each chunk.changes as change}
 										<div
@@ -100,6 +154,20 @@
 						{/if}
 					{/each}
 					</div>
+					{#if req.chunks.some(c => c.isTable && c.status === 'pending')}
+						<div class="lumina-inline-approval-table-hint">
+							<span>{$tStore("uiMessages.actionApproval.tableNotice") || "📊 Table modifications detected."}</span>
+							{#if plugin?.app}
+								<button
+									type="button"
+									class="lumina-inline-approval-btn-source-mode"
+									onclick={() => switchToSourceMode(req.filePath)}
+								>
+									{$tStore("uiMessages.actionApproval.switchToSourceMode") || "Switch to Source Mode"}
+								</button>
+							{/if}
+						</div>
+					{/if}
 				</div>
 				<div class="lumina-inline-approval-footer">
 					<button
@@ -261,6 +329,70 @@
 		border-radius: var(--radius-s);
 		overflow: hidden;
 		background: var(--background-primary);
+	}
+
+	.lumina-diff-chunk-header {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 8px;
+		background: var(--background-secondary);
+		border-bottom: 1px solid var(--background-modifier-border);
+	}
+
+	.lumina-diff-chunk-line-btn {
+		background: var(--background-primary);
+		border: 1px solid var(--background-modifier-border);
+		color: var(--text-muted);
+		font-size: 10px;
+		padding: 1px 6px;
+		border-radius: 3px;
+		cursor: pointer;
+		line-height: 1.4;
+	}
+
+	.lumina-diff-chunk-line-btn:hover {
+		color: var(--text-normal);
+		border-color: var(--interactive-accent);
+	}
+
+	.lumina-diff-chunk-table-badge {
+		background: rgba(245, 158, 11, 0.12);
+		color: var(--text-warning, #f59e0b);
+		font-size: 10px;
+		padding: 1px 6px;
+		border-radius: 3px;
+		border: 1px solid rgba(245, 158, 11, 0.3);
+		line-height: 1.4;
+	}
+
+	.lumina-inline-approval-table-hint {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		padding: 6px 10px;
+		margin-top: 8px;
+		background: rgba(245, 158, 11, 0.08);
+		border: 1px solid rgba(245, 158, 11, 0.25);
+		border-radius: 4px;
+		font-size: 11px;
+		color: var(--text-normal);
+	}
+
+	.lumina-inline-approval-btn-source-mode {
+		padding: 3px 8px;
+		font-size: 11px;
+		background: var(--interactive-accent);
+		color: var(--text-on-accent);
+		border: none;
+		border-radius: 3px;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+
+	.lumina-inline-approval-btn-source-mode:hover {
+		opacity: 0.85;
 	}
 
 	.lumina-diff-chunk-lines {

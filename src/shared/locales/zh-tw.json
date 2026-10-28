@@ -113,9 +113,22 @@
     "mcp": {
       "title": "代理與\nMCP",
       "desc": "連接 Model Context Protocol (MCP) 伺服器以允許 AI 使用本地工具。",
+      "agentMode": {
+        "name": "代理模式 (Agent Mode)",
+        "desc": "LLM 利用 MCP 工具自主執行任務.⚠️ 小型模型可能導致效能下降。",
+        "maxSteps": "最大自動執行次數",
+        "maxStepsDesc": "代理在單次回應中可以連續執行工具的最大次數。（預設值：15）",
+        "respectRagExclusions": "將 RAG 路徑排除/包含設定套用至代理",
+        "respectRagExclusionsDesc": "將 RAG 頁籤的排除規則套用至代理的檔案操作。",
+        "readMode": "讀取模式",
+        "editMode": "編輯模式"
+      },
       "addServer": "+ 新增 MCP 伺服器",
       "serverName": "伺服器名稱",
       "transport": "傳輸方式",
+      "transportDesc": "選擇此 MCP 伺服器的傳輸協定。",
+      "transportSse": "SSE (GET → 工作階段 URL → POST)",
+      "transportStreamableHttp": "Streamable HTTP (直接 POST)",
       "enableDesc": "啟用 (將工具注入聊天)",
       "deleteServer": "刪除此伺服器",
       "emptyServers": "未註冊伺服器。",
@@ -138,19 +151,19 @@
         },
         "guide": "http://localhost:{{port}}/sse\n認證: 請求頭加入 \"Authorization: Bearer <token>\" ",
         "maxRead": {
-          "name": "Read 最大字元數",
+          "name": "讀取最大字元數",
           "desc": "單次讀取檔案回傳的最大字元數 (預設: 20000)"
         },
         "searchSnippet": {
-          "name": "Search 片段長度",
+          "name": "搜尋片段長度",
           "desc": "符合字詞前後顯示的字元數 (預設: 300)"
         },
         "searchMaxResults": {
-          "name": "Search 最大結果數",
+          "name": "搜尋最大結果數",
           "desc": "單次搜尋回傳的最大結果數 (預設: 10)"
         },
         "maxAppend": {
-          "name": "Append 最大字元數",
+          "name": "附加最大字元數",
           "desc": "單次附加操作的最大字元數 (預設: 10000)"
         },
         "enableShellCommands": {
@@ -173,7 +186,7 @@
         "sectionTitle": "外部 MCP 伺服器 (用戶端連線)",
         "desc": "連接外部 Model Context Protocol (MCP) 伺服器以在對話中使用其他工具。",
         "sseUrl": {
-          "name": "Server URL",
+          "name": "伺服器 URL",
           "desc": "例如 http://localhost:8080/sse"
         },
         "token": {
@@ -187,16 +200,6 @@
         "args": "參數:",
         "approve": "批准",
         "reject": "拒絕"
-      },
-      "agentMode": {
-        "name": "代理模式 (Agent Mode)",
-        "desc": "LLM 利用 MCP 工具自主執行任務.⚠️ 小型模型可能導致效能下降。",
-        "maxSteps": "最大自動執行次數",
-        "maxStepsDesc": "代理在單次回應中可以連續執行工具的最大次數。（預設值：15）",
-        "respectRagExclusions": "將 RAG 路徑排除/包含設定套用至代理",
-        "respectRagExclusionsDesc": "將 RAG 頁籤的排除規則套用至代理的檔案操作。",
-        "readMode": "讀取模式",
-        "editMode": "編輯模式"
       },
       "experimental": "實驗性功能"
     },
@@ -217,7 +220,7 @@
         "desc": "請輸入搜尋服務的API金鑰。"
       },
       "baseUrl": {
-        "name": "Base URL",
+        "name": "基礎 URL",
         "desc": "請輸入本地搜尋實例的URL。(例如: http://localhost:8080)"
       },
       "googleSearchEngineId": {
@@ -262,7 +265,7 @@
         "desc": "自動儲存聊天記錄。",
         "pathPlaceholder": "例：/chatHistory",
         "savePath": "儲存路徑",
-        "savePathDesc": "將聊天記錄自動儲存到指定路徑。 (Default: chatHistory)",
+        "savePathDesc": "將聊天記錄自動儲存到指定路徑。（預設：chatHistory）",
         "saveFail": "⚠️ 儲存聊天記錄失敗：{{error}}",
         "loadFail": "⚠️ 預載入會話失敗。",
         "deleteSuccess": "✅ 聊天記錄已刪除。",
@@ -279,9 +282,31 @@
         "renameSuccess": "聊天已重新命名。",
         "renameFail": "重新命名聊天失敗。"
       },
+      "context": {
+        "activeNote": "包含目前筆記：{{name}}",
+        "selectedText": "選取的文字 ({{length}} 個字元)",
+        "folderFiles": "[資料夾內的檔案: {{name}}]",
+        "activeNotePrefix": "[目前筆記: {{name}}]",
+        "canvasFile": "[白板檔案: {{name}}]",
+        "tagFiles": "[含標籤的檔案: {{name}} (最多 5 個)]",
+        "activeNotePrompt": "目前活動筆記",
+        "categoryActiveNote": "📄 包含當前筆記",
+        "categorySelection": "✂️ 選取的文字",
+        "categoryFolder": "📁 新增資料夾",
+        "categoryFile": "📝 新增檔案",
+        "categoryTag": "🏷️ 新增標籤",
+        "categoryUrl": "🔗 輸入網址",
+        "categoryCanvas": "🎨 新增 白板",
+        "categoryBack": "返回",
+        "categoryTitle": "選擇上下文類型",
+        "urlInputPlaceholder": "輸入網址（例：https://...）",
+        "urlInputPrompt": "按 Enter 新增網址",
+        "includeNote": "包含筆記",
+        "excludeNote": "排除筆記"
+      },
       "sendMode": {
         "name": "訊息發送方式",
-        "desc": "選擇聊天訊息的發送方式。 (Default: Send on Enter)",
+        "desc": "選擇聊天訊息的發送方式。（預設：按 Enter 發送）",
         "enter": "按 Enter 發送",
         "ctrlEnter": "按 Ctrl + Enter 發送"
       },
@@ -314,7 +339,7 @@
       },
       "inlineTrigger": {
         "name": "內嵌命令觸發字元",
-        "desc": "在編輯器中呼叫快速操作自動完成 pop-up 時使用的關鍵字。 (Default: /ai)"
+        "desc": "在編輯器中呼叫快速操作自動完成彈出視窗時使用的關鍵字。（預設：/ai）"
       },
       "enableAutocomplete": {
         "name": "啟用內聯自動補全 (Ghost Text)",
@@ -329,16 +354,16 @@
         "turns": "輪數限制",
         "tokens": "Token 數限制",
         "turnsLabel": "要記住的輪數",
-        "turnsDesc": "要記住的輪數（1輪 = 用戶訊息 + AI 回答） (Default: 10)",
-        "maxTokens": "最大上下文 Token (Default: 8000)"
+        "turnsDesc": "要記住的輪數（1輪 = 用戶訊息 + AI 回答）（預設：10）",
+        "maxTokens": "最大上下文 Token（預設：8000）"
       },
       "modelParams": {
         "name": "模型參數",
         "desc": "調整回答的創造性與輸出長度。",
         "tempLabel": "溫度 (Temperature)",
-        "tempDesc": "越接近 0 = 精確，越接近 2 = 創造性 (Default: 0.7)",
+        "tempDesc": "越接近 0 = 精確，越接近 2 = 創造性（預設：0.7）",
         "maxOutput": "最大輸出 Token",
-        "maxOutputDesc": "限制單次生成最大輸出 Token 數量。 (Default: 4000)",
+        "maxOutputDesc": "限制單次生成最大輸出 Token 數量。（預設：4000）",
         "responseLang": "指定回應語言",
         "responseLangDesc": "強制 AI 使用指定語言回答。「自動」將根據用戶提問的語言進行回答。",
         "responseLangAuto": "自動"
@@ -347,35 +372,13 @@
         "name": "串流輸出",
         "desc": "啟用串流回應。"
       },
-      "emptyResponseFallback": "⚠️ 模組傳回了空回應。（這可能是因為不支援的語言/格式、提示詞過濾或超過了上下文限制。）",
-      "context": {
-        "activeNote": "包含目前筆記：{{name}}",
-        "selectedText": "選取的文字 ({{length}} 個字元)",
-        "folderFiles": "[資料夾內的檔案: {{name}}]",
-        "activeNotePrefix": "[目前筆記: {{name}}]",
-        "canvasFile": "[白板檔案: {{name}}]",
-        "tagFiles": "[含標籤的檔案: {{name}} (最多 5 個)]",
-        "activeNotePrompt": "目前活動筆記",
-        "categoryActiveNote": "📄 包含當前筆記",
-        "categorySelection": "✂️ 選取的文字",
-        "categoryFolder": "📁 新增資料夾",
-        "categoryFile": "📝 新增檔案",
-        "categoryTag": "🏷️ 新增標籤",
-        "categoryUrl": "🔗 輸入網址",
-        "categoryCanvas": "🎨 新增 白板",
-        "categoryBack": "返回",
-        "categoryTitle": "選擇上下文類型",
-        "urlInputPlaceholder": "輸入網址（例：https://...）",
-        "urlInputPrompt": "按 Enter 新增網址",
-        "includeNote": "包含筆記",
-        "excludeNote": "排除筆記"
-      },
       "timeout": {
         "ttftLabel": "首次回應超時時間 (ms)",
         "ttftDesc": "請求後等待第一個單詞接收的最大時間。設置為0表示無限制。. (預設值: 0)",
         "interTokenLabel": "區塊間超時時間 (ms)",
         "interTokenDesc": "流式傳輸期間等待下一句話接收的最大時間。設置為0表示無限制。. (預設值: 0)"
-      }
+      },
+      "emptyResponseFallback": "⚠️ 模組傳回了空回應。（這可能是因為不支援的語言/格式、提示詞過濾或超過了上下文限制。）"
     },
     "rag": {
       "toggleTooltip": "開啟後，AI 將讀取並參考您庫中的筆記來回答。",
@@ -384,7 +387,7 @@
       "disabledWarning": "⚪ RAG 目前已停用。請先在 [連線與模型設定] 索引標籤中啟用 RAG 引擎。",
       "dataScope": {
         "name": "預設資料範圍設定",
-        "desc": "選擇 RAG 搜尋要包含的筆記。 (Default: Entire Vault)",
+        "desc": "選擇 RAG 搜尋要包含的筆記。（預設：整個庫）",
         "vaultWide": "整個庫",
         "activeNote": "僅目前活動筆記",
         "manual": "僅手動選擇的檔案"
@@ -399,7 +402,7 @@
       },
       "ignorePaths": {
         "name": "忽略的路徑",
-        "desc": "逗號分隔。優先於包含的路徑。 (Default: templates, chatHistory, etc.)"
+        "desc": "逗號分隔。優先於包含的路徑。（預設：templates, chatHistory 等）"
       },
       "chunking": {
         "name": "分塊設定",
@@ -415,18 +418,18 @@
       },
       "topK": {
         "name": "Top-K 檢索",
-        "desc": "向 LLM 傳遞的排名最高文件數量。 (Default: 5)"
+        "desc": "向 LLM 傳遞的排名最高文件數量。（預設：5）"
       },
       "syncMode": {
         "name": "索引同步",
-        "desc": "筆記變更時索引的更新方式。 (Default: Watch)",
-        "watch": "監控檔案變更 (Watch)（推薦）",
+        "desc": "筆記變更時索引的更新方式。（預設：監控檔案變更）",
+        "watch": "監控檔案變更（推薦）",
         "manual": "手動同步",
         "startup": "應用啟動時執行一次"
       },
       "minSimilarity": {
         "name": "最小相似度",
-        "desc": "排除低於此相關性分數的結果（0~1） (Default: 0.0)"
+        "desc": "排除低於此相關性分數的結果（0~1）（預設：0.0）"
       },
       "maxFileSize": {
         "name": "最大檔案大小 (MB)",
@@ -581,7 +584,7 @@
       "rateLimit": "⚠️ 超出 API 配額或請求頻率限制。請稍後再試。若為免費套餐，請檢查分鐘/日度額度或帳戶帳單狀態。",
       "unauthorized": "⚠️ API 金鑰無效或已過期。請在「連接與模型」設定中檢查您的 API 金鑰。",
       "forbidden": "⚠️ 拒絕存取或請求被禁止。請檢查您的 API 金鑰權限、服務計劃或地區限制。",
-      "notFound": "⚠️ 未找到所請求的模型或 API 終點 URL 不正確。請檢查設定中選定的模型 and 連接 URL。",
+      "notFound": "⚠️ 未找到所請求的模型或 API 終點 URL 不正確。請檢查設定中選定的模型與連接 URL。",
       "serviceUnavailable": "⚠️ 由於目前需求較高，模型暫時無法使用。這通常是暫時性現象，請稍後再試。",
       "networkError": "⚠️ 網路連線失敗。請檢查您的網際網路連線，或者確認您的本地 LLM 伺服器是否正常運行。",
       "notReadable": "無法讀取回應本文"
@@ -725,7 +728,11 @@
       "chunkRejected": "區塊已拒絕",
       "chunkRejectedShort": "已拒絕",
       "chunkRejectedDesc": "此更改將被跳過。",
-      "pendingChangesBanner": "待修改 — 請在Lumina聊天中查看"
+      "pendingChangesBanner": "待修改 — 請在Lumina聊天中查看",
+      "tableNotice": "📊 偵測到表格修改。在即時預覽模式下，行內 Diff 可能會被表格元件遮蔽。",
+      "switchToSourceMode": "切換至原始碼模式",
+      "viewInEditor": "在編輯器中檢視",
+      "tableBadge": "表格"
     },
     "emptyResponseTokenLimit": "⚠️ 模組傳回了空回應。由於達到最大輸出 Token 限制，生成已停止。請在設定中增加「最大輸出 Token」限制。",
     "tokenLimitHitWarning": "\n\n⚠️ (由於達到最大輸出 Token 限制，生成已中斷。請在設定中增加「最大輸出 Token」值。)",
@@ -736,10 +743,6 @@
     "inlineEmpty": "目前列上找不到套用目標文字。請撰寫或選取文字。",
     "qaEmptySel": "未選取文字。",
     "qaNotConfigured": "快速操作模型尚未設定。請在設定中選擇專用模型。",
-    "qaWaitingAI": "⏳ 等待 AI 回應...",
-    "qaEmptyResponse": "⚠️ 模型回傳了空白文字。（無限迴圈或提示詞相容性問題）",
-    "qaUnknownError": "未知錯誤",
-    "qaReasoningDetected": "🚫 偵測到推理型模型的思考過程（<think>）。已強制終止快速操作。請在設定中更換為一般 Instruct 模型。",
     "qaNoProvider": "未配置 LLM 提供者。",
     "qaInvalidProvider": "無效或未經認證的 LLM 提供者。",
     "qaNoModel": "沒有可用的模型。",
@@ -747,9 +750,29 @@
     "qaExecuting": "正在執行 {{name}}...",
     "qaCompleted": "{{name}} 完成",
     "qaError": "發生錯誤：{{msg}}",
+    "qaWaitingAI": "⏳ 等待 AI 回應...",
+    "qaEmptyResponse": "⚠️ 模型回傳了空白文字。（無限迴圈或提示詞相容性問題）",
+    "qaUnknownError": "未知錯誤",
+    "qaReasoningDetected": "🚫 偵測到推理型模型的思考過程（<think>）。已強制終止快速操作。請在設定中更換為一般 Instruct 模型。",
     "modalCancel": "取消",
     "modalProceed": "進行",
     "modelPlaceholder": "輸入要搜尋的模型名稱...（例如：claude, gpt-4）",
+    "searchModelShort": "搜尋模型...",
+    "favorites": "我的最愛",
+    "allModels": "所有模型",
+    "addToFavorites": "新增至我的最愛",
+    "removeFromFavorites": "從我的最愛移除",
+    "searchPromptShort": "搜尋提示詞...",
+    "noSearchResults": "沒有搜尋結果。",
+    "unsupportedFileType": "不支援的檔案類型：{{ext}}",
+    "attachFileFailed": "附加檔案失敗：{{file}}",
+    "attachWorkerNotReady": "文件解析器工作執行緒尚未就緒，請稍後重試。",
+    "attachFileEmpty": "檔案內容為空，未加入附件：{{file}}",
+    "attachmentsSkipped": "部分附件無法讀取已被跳過：{{files}}",
+    "cliImageNotSupported": "CLI 代理不支援圖像分析，僅包含文字上下文。",
+    "attachFileTooLarge": "檔案過大（最大 {{max}}）：{{file}}",
+    "attachDuplicate": "檔案已附加：{{file}}",
+    "attachProcessing": "正在處理附件...",
     "fsAdapterErr": "找不到 FileSystemAdapter。僅支援桌面環境。",
     "searchSource": "來源",
     "debugDelAllMsg": "您確定要刪除所有除錯日誌嗎？",
@@ -790,27 +813,11 @@
     "errNoProvider": "找不到所選的嵌入提供者設定。",
     "errMobileAuto": "行動端不支援本地嵌入（自動模式）。請在設定中選擇雲端嵌入。",
     "mcpTokenCopied": "認證權杖已複製到剪貼簿。",
+    "mcpManagerNotInitialized": "⚠️ MCP Manager 未初始化。",
     "mcpConnectFailed": "MCP 伺服器 \"{{name}}\" 連線失敗，已停用。",
     "mcpLocalServerStartFailed": "啟動內建 MCP 伺服器失敗：{{error}}",
     "mcpDisconnectedDuringExecution": "執行工具時 MCP 伺服器 \"{{name}}\" 連線中斷，已停用該伺服器。",
     "mcpToolExecutionFailed": "在 MCP 伺服器 \"{{name}}\" 上執行工具失敗。該伺服器已被停用。請檢查您的設定。",
-    "searchModelShort": "搜尋模型...",
-    "favorites": "我的最愛",
-    "allModels": "所有模型",
-    "addToFavorites": "新增至我的最愛",
-    "removeFromFavorites": "從我的最愛移除",
-    "searchPromptShort": "搜尋提示詞...",
-    "noSearchResults": "沒有搜尋結果。",
-    "unsupportedFileType": "不支援的檔案類型：{{ext}}",
-    "attachFileFailed": "附加檔案失敗：{{file}}",
-    "attachWorkerNotReady": "文件解析器工作執行緒尚未就緒，請稍後重試。",
-    "attachFileEmpty": "檔案內容為空，未加入附件：{{file}}",
-    "attachmentsSkipped": "部分附件無法讀取已被跳過：{{files}}",
-    "cliImageNotSupported": "CLI 代理不支援圖像分析，僅包含文字上下文。",
-    "attachFileTooLarge": "檔案過大（最大 {{max}}）：{{file}}",
-    "attachDuplicate": "檔案已附加：{{file}}",
-    "attachProcessing": "正在處理附件...",
-    "mcpManagerNotInitialized": "⚠️ MCP Manager 未初始化。",
     "mcpSyncError": "⚠️ 同步 MCP 伺服器時出錯。",
     "mcpLocalServerRestarted": "✅ 內建 MCP 伺服器已重新啟動（連接埠：{{port}}）",
     "mcpLocalServerStarted": "✅ 內建 MCP 伺服器已啟動（連接埠：{{port}}）",
@@ -957,6 +964,77 @@
       "successUpdate": "已更新 MOC：{{path}} ({{count}} 個筆記)",
       "emptyWarning": "找不到符合指定範圍的筆記。此 MOC 目前為空。",
       "noScope": "必須提供 folder、tags 或 files 中的至少一個。"
+    },
+    "replace_note": {
+      "desc": "替換現有筆記的全部內容。"
+    },
+    "patch_note": {
+      "desc": "對筆記套用一處或多處文字替換。建議優先使用 patches 陣列在單次工具呼叫中批次處理多處變更——這樣更高效，並能以統一差異（Diff）的形式一次性向使用者展示所有變更。"
+    },
+    "delete_note": {
+      "desc": "刪除筆記。"
+    },
+    "move_note": {
+      "desc": "移動或重新命名筆記。"
+    },
+    "get_backlinks": {
+      "desc": "取得連結至指定筆記的所有筆記清單。"
+    },
+    "update_frontmatter": {
+      "desc": "更新筆記中的 Frontmatter 屬性。"
+    },
+    "get_note_metadata": {
+      "desc": "取得筆記的詮釋資料（Frontmatter、標籤、建立日期等）。"
+    },
+    "list_attachments": {
+      "desc": "列出儲存庫中的所有附件檔案（圖片、PDF 等）或特定筆記中連結的附件。"
+    },
+    "save_attachment": {
+      "desc": "將 Base64 字串儲存為二進位附件檔案。"
+    },
+    "execute_code": {
+      "desc": "在安全沙盒中執行 JavaScript/TypeScript 程式碼。"
+    },
+    "run_shell_command": {
+      "desc": "在桌面作業系統上執行終端機 Shell 命令。請謹慎使用。"
+    },
+    "run_note_code_block": {
+      "desc": "在沙盒中執行筆記中的特定程式碼區塊。"
+    },
+    "list_tags": {
+      "desc": "列出儲存庫中使用的所有標籤。"
+    },
+    "create_canvas": {
+      "desc": "建立包含節點與連線的 Obsidian Canvas 檔案（.canvas）。"
+    },
+    "auto_link_note": {
+      "desc": "自動尋找筆記中未連結的提及（筆記標題或別名），並將其替換為內部 Markdown 連結（[[Title|Alias]]）。重要提示：當使用者要求新增反向連結或自動連結筆記時，請務必使用此工具。切勿嘗試手動讀取筆記並使用 patch_note 或 replace_note 自行新增連結，否則會導致系統當機。"
+    },
+    "query_metadata": {
+      "desc": "根據 Frontmatter 屬性、標籤或資料夾查詢與篩選儲存庫筆記，並以 Markdown 表格形式傳回結果。當使用者要求基於詮釋資料（如狀態、作者、評分、日期）列出或彙整筆記時使用此工具。"
+    },
+    "show_notice": {
+      "desc": "向使用者顯示通知訊息。",
+      "argMessage": "要在通知中顯示的訊息內容。",
+      "argDuration": "選填。通知顯示的持續時間（毫秒）。（預設：5000）"
+    },
+    "open_note": {
+      "desc": "在 Obsidian 編輯器工作區中開啟筆記或檔案。"
+    },
+    "grep_search": {
+      "desc": "在儲存庫檔案中搜尋精確文字或正規表示式，傳回相符行及行號。"
+    },
+    "glob_files": {
+      "desc": "尋找儲存庫中與 Glob 模式（例如 \"**/*.md\", \"Daily/*\", \"*.canvas\"）相符的檔案路徑。"
+    },
+    "list_folders": {
+      "desc": "列出儲存庫中的資料夾，可選擇指定特定父資料夾進行篩選。"
+    },
+    "get_outgoing_links": {
+      "desc": "取得指定筆記的所有外連連結和嵌入內容，包含目標路徑與解析狀態。"
+    },
+    "list_tasks": {
+      "desc": "列出儲存庫中或指定筆記中的 Markdown 任務項目（- [ ] / - [x]），支援完成狀態篩選。"
     }
   },
   "graph": {
@@ -1044,6 +1122,14 @@
       "ragExcludedFolders": "RAG 排除資料夾",
       "ragExcludedFoldersDesc": "勾選要從索引中排除的資料夾。",
       "ragExcludedFoldersEmpty": "沒有排除的資料夾。",
+      "defaultModel": "預設聊天模型",
+      "defaultModelDesc": "在此專案中開始新聊天時使用的預設模型。",
+      "defaultModelAuto": "自動選擇 (第一個可用模型)",
+      "systemPrompt": "預設系統提示詞",
+      "systemPromptDesc": "在此專案中開始新聊天時使用的系統提示詞。",
+      "systemPromptAuto": "自動選擇 (第一個系統提示詞)",
+      "deletedModel": "[已刪除] 模型",
+      "deletedPrompt": "[已刪除] 提示詞",
       "save": "儲存",
       "saveSuccess": "專案設定已儲存",
       "nameRequired": "專案名稱為必填項目，且不能為 'default'。",
@@ -1061,14 +1147,6 @@
       "add": "新增",
       "duplicateName": "已有相同名稱的專案存在。",
       "defaultProjectName": "預設",
-      "defaultModel": "預設聊天模型",
-      "defaultModelDesc": "在此專案中開始新聊天時使用的預設模型。",
-      "defaultModelAuto": "自動選擇 (第一個可用模型)",
-      "systemPrompt": "預設系統提示詞",
-      "systemPromptDesc": "在此專案中開始新聊天時使用的系統提示詞。",
-      "systemPromptAuto": "自動選擇 (第一個系統提示詞)",
-      "deletedModel": "[已刪除] 模型",
-      "deletedPrompt": "[已刪除] 提示詞",
       "modalTitleActive": "專案設定 (目前: {{projectName}})",
       "activeProjectModelDesc": "設定目前活動專案 (<strong>{{projectName}}</strong>) 的預設聊天模型。您也可以在專案設定（RAG標籤）中更改此設定。",
       "chatHistoryRootPlaceholder": "(預設) 使用 chatHistory 根目錄",

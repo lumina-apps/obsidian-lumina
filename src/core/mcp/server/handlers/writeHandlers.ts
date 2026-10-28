@@ -2,7 +2,7 @@ import { TFile } from 'obsidian';
 import { t } from '../../../../shared/locales/helpers';
 import { ensureFolderExists, getFileExtension } from '../../../../shared/utils/fileUtils';
 import { MCP_MAX_FILE_LENGTH } from '../../../../shared/utils/mcpUtils';
-import { getStringArg, getDailyNotePath } from '../handlerHelpers';
+import { getStringArg, getStringOptArg, blockIfPathNotAllowed, getDailyNotePath } from '../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
 import type { PathGuard } from '../pathGuard';
 import {
@@ -73,7 +73,11 @@ export const appendToDailyNoteHandler = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard,
 ): Promise<ToolResult> => {
-	const path = await getDailyNotePath(ctx.plugin.app);
+	const date = getStringOptArg(args, 'date');
+	const path = await getDailyNotePath(ctx.plugin.app, date);
+	const blocked = blockIfPathNotAllowed(path, ctx, pathGuard);
+	if (blocked) return blocked;
+
 	const newContent = getStringArg(args, 'content');
 
 	if (newContent.length > ctx.limitAppend) {
@@ -135,6 +139,17 @@ export const replaceNoteHandler = async (
 	);
 };
 
+function findOccurrenceLines(text: string, target: string): number[] {
+	const lines: number[] = [];
+	let index = text.indexOf(target);
+	while (index !== -1) {
+		const lineNumber = text.substring(0, index).split('\n').length;
+		lines.push(lineNumber);
+		index = text.indexOf(target, index + target.length);
+	}
+	return lines;
+}
+
 export const patchNoteHandler = async (
 	args: ToolArguments,
 	ctx: ToolHandlerContext,
@@ -146,7 +161,7 @@ export const patchNoteHandler = async (
 	const currentContent = await ctx.plugin.app.vault.read(file!);
 
 	// Normalize to a patches array — supports both batch (patches: [...]) and single (target/replacement)
-	type PatchItem = { target: string; replacement: string };
+	type PatchItem = { target: string; replacement: string; replaceAll?: boolean };
 	let patches: PatchItem[];
 
 	if (Array.isArray(args.patches) && args.patches.length > 0) {
@@ -160,6 +175,8 @@ export const patchNoteHandler = async (
 		patches = [{ target, replacement }];
 	}
 
+	const topLevelReplaceAll = Boolean(args.replaceAll);
+
 	// Apply patches sequentially to build the final proposed content
 	let proposedContent = currentContent;
 	const isCrlf = currentContent.includes('\r\n');
@@ -170,6 +187,8 @@ export const patchNoteHandler = async (
 		if (!target) {
 			return { isError: true, content: [{ type: 'text', text: 'Target text cannot be empty.' }] };
 		}
+
+		const itemReplaceAll = patch.replaceAll !== undefined ? Boolean(patch.replaceAll) : topLevelReplaceAll;
 
 		// 개행 일치: 원본 파일이 CRLF인데 패치가 LF인 경우 (또는 그 반대)
 		if (isCrlf) {
@@ -194,7 +213,20 @@ export const patchNoteHandler = async (
 			const normTarget = patch.target.replace(/\r\n/g, '\n');
 			if (normProposed.includes(normTarget)) {
 				const normReplacement = patch.replacement.replace(/\r\n/g, '\n');
-				const replacedNorm = normProposed.replace(normTarget, () => normReplacement);
+				const occurrences = normProposed.split(normTarget).length - 1;
+				if (!itemReplaceAll && occurrences > 1) {
+					const lineNumbers = findOccurrenceLines(normProposed, normTarget);
+					return {
+						isError: true,
+						content: [{
+							type: 'text',
+							text: `Target text appears ${occurrences} times in ${path} (lines: ${lineNumbers.join(', ')}). Provide more surrounding context to disambiguate, or set 'replaceAll: true'.`,
+						}],
+					};
+				}
+				const replacedNorm = itemReplaceAll
+					? normProposed.split(normTarget).join(normReplacement)
+					: normProposed.replace(normTarget, () => normReplacement);
 				proposedContent = isCrlf ? replacedNorm.replace(/\n/g, '\r\n') : replacedNorm;
 				continue;
 			}
@@ -204,7 +236,26 @@ export const patchNoteHandler = async (
 				content: [{ type: 'text', text: `Target text not found in ${path}: "${patch.target.substring(0, 80)}${patch.target.length > 80 ? '...' : ''}". Ensure whitespace matches exactly.` }]
 			};
 		}
-		proposedContent = proposedContent.replace(target, () => replacement);
+
+		const occurrences = proposedContent.split(target).length - 1;
+		if (!itemReplaceAll && occurrences > 1) {
+			const lineNumbers = findOccurrenceLines(proposedContent, target);
+			return {
+				isError: true,
+				content: [{
+					type: 'text',
+					text: `Target text appears ${occurrences} times in ${path} (lines: ${lineNumbers.join(', ')}). Provide more surrounding context to disambiguate, or set 'replaceAll: true'.`,
+				}],
+			};
+		}
+
+		proposedContent = itemReplaceAll
+			? proposedContent.split(target).join(replacement)
+			: proposedContent.replace(target, () => replacement);
+	}
+
+	if (proposedContent.length > MCP_MAX_FILE_LENGTH) {
+		return { isError: true, content: [{ type: 'text', text: t('mcpServerTools.append_to_note.maxLengthExceeded') }] };
 	}
 
 	return safeModifyFile(
@@ -284,10 +335,39 @@ export const updateFrontmatterHandler = async (
 	if (!key.trim()) {
 		return { isError: true, content: [{ type: 'text', text: 'key parameter is required.' }] };
 	}
-	if (args.value === undefined) {
+	if (args.value === undefined && args.deleteKey !== true) {
 		return { isError: true, content: [{ type: 'text', text: 'value parameter is required.' }] };
 	}
-	const value = args.value;
+	const rawValue = args.value;
+	const shouldDelete = args.deleteKey === true || rawValue === null;
+
+	let parsedValue: unknown = rawValue;
+	if (typeof rawValue === 'string') {
+		const trimmed = rawValue.trim();
+		if (trimmed === 'null') {
+			parsedValue = null;
+		} else if (trimmed === 'true') {
+			parsedValue = true;
+		} else if (trimmed === 'false') {
+			parsedValue = false;
+		} else if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+			try {
+				parsedValue = JSON.parse(trimmed);
+			} catch {
+				parsedValue = rawValue;
+			}
+		} else if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+			const n = Number(trimmed);
+			if (!isNaN(n)) parsedValue = n;
+		}
+	}
+
+	const isDeleting = shouldDelete || parsedValue === null;
+	const displayValue = isDeleting
+		? '(deleted)'
+		: typeof parsedValue === 'object' && parsedValue !== null
+			? JSON.stringify(parsedValue)
+			: String(parsedValue ?? '');
 
 	const { path, file, errorResult } = getValidatedPathAndFile(args, ctx, pathGuard);
 	if (errorResult) return errorResult;
@@ -295,13 +375,19 @@ export const updateFrontmatterHandler = async (
 	return safeActionFile(
 		'frontmatter',
 		path,
-		{ key, value },
+		{ key, value: displayValue },
 		async () => {
 			await ctx.plugin.app.fileManager.processFrontMatter(file!, (fm) => {
 				const record = fm as Record<string, unknown>;
-				record[key] = value;
+				if (isDeleting) {
+					delete record[key];
+				} else {
+					record[key] = parsedValue;
+				}
 			});
-			return `Successfully updated frontmatter key ${key} in ${path}`;
+			return isDeleting
+				? `Successfully removed frontmatter key ${key} from ${path}`
+				: `Successfully updated frontmatter key ${key} in ${path}`;
 		},
 		ctx,
 		pathGuard,
@@ -370,7 +456,12 @@ export const saveAttachmentHandler = async (
 	}
 	const sizeBytes = binaryString.length;
 
-	const approved = await approvalManager.requestActionApproval('attachment', path, { sizeBytes }, { timeoutMs: APPROVAL_TIMEOUT_MS });
+	const approved = await approvalManager.requestActionApproval(
+		'attachment',
+		path,
+		{ sizeBytes },
+		{ timeoutMs: APPROVAL_TIMEOUT_MS, ...(ctx.signal ? { signal: ctx.signal } : {}) },
+	);
 	if (!approved) {
 		return getRejectionResult('User explicitly rejected attachment saving. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.');
 	}

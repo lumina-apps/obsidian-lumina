@@ -6,6 +6,8 @@ export interface DiffChunk {
 	id: string;
 	changes: Change[];
 	status: 'pending' | 'accepted' | 'rejected';
+	startLine?: number;
+	isTable?: boolean;
 }
 
 export type ActionType = 'edit' | 'create_note' | 'delete' | 'rename' | 'frontmatter' | 'attachment' | 'execute' | 'shell' | 'mcp_tool';
@@ -160,21 +162,42 @@ export const approvalManager = {
 				const changes = diffLines(baseContent, normalizedProposed);
 				const allChanges = parseIntoChunks(changes);
 
-				// Extract just the chunks for easy UI iteration
-				const chunkMap = new Map<string, Change[]>();
+				// Extract just the chunks for easy UI iteration with startLine and isTable metadata
+				let currentLine = 1;
+				const chunkMap = new Map<string, { changes: Change[]; startLine: number; isTable: boolean }>();
 				for (const change of allChanges) {
+					const lines = change.value.split('\n');
+					const count = change.count !== undefined
+						? change.count
+						: (change.value.endsWith('\n') ? lines.length - 1 : lines.length);
+
 					if (change.chunkId) {
 						if (!chunkMap.has(change.chunkId)) {
-							chunkMap.set(change.chunkId, []);
+							chunkMap.set(change.chunkId, {
+								changes: [],
+								startLine: currentLine,
+								isTable: false
+							});
 						}
-						chunkMap.get(change.chunkId)!.push(change);
+						const chunkData = chunkMap.get(change.chunkId)!;
+						chunkData.changes.push(change);
+						if (change.value.includes('|')) {
+							chunkData.isTable = true;
+						}
+						if (change.removed) {
+							currentLine += count;
+						}
+					} else {
+						currentLine += count;
 					}
 				}
 
-				const chunks: DiffChunk[] = Array.from(chunkMap.entries()).map(([id, changes]) => ({
+				const chunks: DiffChunk[] = Array.from(chunkMap.entries()).map(([id, data]) => ({
 					id,
-					changes,
-					status: 'pending'
+					changes: data.changes,
+					status: 'pending',
+					startLine: data.startLine,
+					isTable: data.isTable
 				}));
 
 				// If there are no actual differences, just auto-resolve

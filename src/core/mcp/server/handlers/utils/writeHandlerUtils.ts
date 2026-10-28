@@ -132,7 +132,12 @@ export const safeModifyFile = async (
 	// so the diff decorations are visible in the editor.
 	await openFileInWorkspace(ctx.plugin.app, path);
 
-	const result = await approvalManager.requestApproval(path, currentContent, proposedContent, { timeoutMs: APPROVAL_TIMEOUT_MS });
+	const result = await approvalManager.requestApproval(
+		path,
+		currentContent,
+		proposedContent,
+		{ timeoutMs: APPROVAL_TIMEOUT_MS, ...(ctx.signal ? { signal: ctx.signal } : {}) },
+	);
 	if (!result.approved) {
 		return getRejectionResult(DEFAULT_REJECTION_MESSAGE);
 	}
@@ -163,7 +168,12 @@ export const safeCreateFile = async (
 			content: [{ type: 'text', text: `Writing to hidden or configuration paths is not allowed: ${path}` }],
 		};
 	}
-	const approved = await approvalManager.requestActionApproval('create_note', path, { content }, { timeoutMs: APPROVAL_TIMEOUT_MS });
+	const approved = await approvalManager.requestActionApproval(
+		'create_note',
+		path,
+		{ content },
+		{ timeoutMs: APPROVAL_TIMEOUT_MS, ...(ctx.signal ? { signal: ctx.signal } : {}) },
+	);
 	if (!approved) {
 		return getRejectionResult('User explicitly rejected the file creation. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.');
 	}
@@ -224,7 +234,12 @@ export const safeActionFile = async (
 	pathGuard: PathGuard,
 	rejectionMessage: string = DEFAULT_REJECTION_MESSAGE
 ): Promise<ToolResult> => {
-	const approved = await approvalManager.requestActionApproval(actionName, path, actionParams, { timeoutMs: APPROVAL_TIMEOUT_MS });
+	const approved = await approvalManager.requestActionApproval(
+		actionName,
+		path,
+		actionParams,
+		{ timeoutMs: APPROVAL_TIMEOUT_MS, ...(ctx.signal ? { signal: ctx.signal } : {}) },
+	);
 	if (!approved) {
 		return getRejectionResult(rejectionMessage);
 	}

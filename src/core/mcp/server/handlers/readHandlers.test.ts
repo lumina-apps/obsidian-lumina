@@ -6,10 +6,12 @@ import {
 	getBacklinksHandler,
 	getNoteMetadataHandler,
 	listAttachmentsHandler,
+	listFoldersHandler,
+	getOutgoingLinksHandler,
 } from './readHandlers';
 import { PathGuard } from '../pathGuard';
 import type { ToolHandlerContext } from '../toolTypes';
-import { TFile } from 'obsidian';
+import { TFile, TFolder } from 'obsidian';
 
 vi.mock('../handlerHelpers', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('../handlerHelpers')>();
@@ -54,6 +56,11 @@ describe('readHandlers', () => {
 		addFile('image.png', 'binary_png_data');
 		addFile('doc.pdf', 'binary_pdf_data');
 
+		const folderDaily = new TFolder();
+		folderDaily.path = 'Daily';
+		const folderSub = new TFolder();
+		folderSub.path = 'Daily/Sub';
+
 		const mockVault = {
 			getAbstractFileByPath: vi.fn((path: string) => mockFiles.get(path)?.file || null),
 			read: vi.fn(async (file: TFile) => mockFiles.get(file.path)?.content || ''),
@@ -63,6 +70,11 @@ describe('readHandlers', () => {
 					.map(v => v.file)
 					.filter(f => f.extension === 'md'),
 			),
+			getAllLoadedFiles: vi.fn(() => [
+				...Array.from(mockFiles.values()).map(v => v.file),
+				folderDaily,
+				folderSub,
+			]),
 		};
 
 		const mockWorkspace = {
@@ -78,10 +90,14 @@ describe('readHandlers', () => {
 							aliases: ['First Note'],
 						},
 						tags: [{ tag: '#bodyTag' }],
+						headings: [{ heading: 'Heading 1', level: 1, position: { start: { line: 0 } } }],
+						links: [{ link: 'Note2.md', displayText: 'Second Note' }],
+						embeds: [{ link: 'image.png' }],
 					};
 				}
 				return null;
 			}),
+			getFirstLinkpathDest: vi.fn((link: string) => mockFiles.get(link)?.file || null),
 			resolvedLinks: {
 				'Note1.md': {
 					'Note2.md': 1,
@@ -196,6 +212,14 @@ describe('readHandlers', () => {
 			const text = res.content[0].type === 'text' ? res.content[0].text : '';
 			expect(text).toContain('restricted');
 		});
+
+		it('바이너리 이미지 파일 읽기 시 가드가 동작하여 안내 문구를 반환한다', async () => {
+			const res = await readNoteHandler({ path: 'image.png' }, ctx, pathGuard);
+			expect(res.isError).toBeFalsy();
+			const text = res.content[0].type === 'text' ? res.content[0].text : '';
+			expect(text).toContain('[Binary file: image.png (PNG)');
+			expect(text).toContain('Binary reading not supported');
+		});
 	});
 
 	describe('readDailyNoteHandler', () => {
@@ -205,6 +229,12 @@ describe('readHandlers', () => {
 			const text = res.content[0].type === 'text' ? res.content[0].text : '';
 			expect(text).toContain('# Today');
 			expect(text).toContain('Task 1');
+		});
+
+		it('특정 date 인자 전달 시 해당 날짜의 데일리 노트를 조회한다', async () => {
+			const { getDailyNotePath } = await import('../handlerHelpers');
+			await readDailyNoteHandler({ date: '2026-12-25' }, ctx, pathGuard);
+			expect(getDailyNotePath).toHaveBeenCalledWith(expect.anything(), '2026-12-25');
 		});
 
 		it('데일리 노트 파일이 없으면 에러를 반환한다', async () => {
@@ -254,6 +284,10 @@ describe('readHandlers', () => {
 			expect(meta.tags).toContain('#tag2');
 			expect(meta.tags).toContain('#bodyTag');
 			expect(meta.aliases).toContain('First Note');
+			expect(meta.headings).toHaveLength(1);
+			expect(meta.headings[0].line).toBe(1);
+			expect(meta.links).toHaveLength(1);
+			expect(meta.embeds).toHaveLength(1);
 		});
 
 		it('존재하지 않는 노트 메타데이터 요청 시 에러를 반환한다', async () => {
@@ -289,6 +323,41 @@ describe('readHandlers', () => {
 			expect(text).toContain('image.png');
 			expect(text).toContain('doc.pdf');
 			expect(text).not.toContain('Note1.md');
+		});
+	});
+
+	describe('listFoldersHandler', () => {
+		it('볼트 루트 폴더 목록을 조회한다 (비재귀)', async () => {
+			const res = await listFoldersHandler({}, ctx, pathGuard);
+			expect(res.isError).toBeFalsy();
+			const text = res.content[0].type === 'text' ? res.content[0].text : '';
+			expect(text).toContain('Folders in vault root (1):');
+			expect(text).toContain('Daily');
+			expect(text).not.toContain('Daily/Sub');
+		});
+
+		it('recursive 옵션 전달 시 하위 폴더까지 재귀 조회한다', async () => {
+			const res = await listFoldersHandler({ recursive: true }, ctx, pathGuard);
+			expect(res.isError).toBeFalsy();
+			const text = res.content[0].type === 'text' ? res.content[0].text : '';
+			expect(text).toContain('Daily');
+			expect(text).toContain('Daily/Sub');
+		});
+	});
+
+	describe('getOutgoingLinksHandler', () => {
+		it('노트에서 외부로 향하는 링크 및 임베드 목록을 조회한다', async () => {
+			const res = await getOutgoingLinksHandler({ path: 'Note1.md' }, ctx, pathGuard);
+			expect(res.isError).toBeFalsy();
+			const text = res.content[0].type === 'text' ? res.content[0].text : '';
+			expect(text).toContain('Outgoing links from Note1.md');
+			expect(text).toContain('[LINK] Note2.md (display: "Second Note") [resolved]');
+			expect(text).toContain('[EMBED] image.png');
+		});
+
+		it('빈 path 전달 시 에러를 반환한다', async () => {
+			const res = await getOutgoingLinksHandler({ path: '' }, ctx, pathGuard);
+			expect(res.isError).toBe(true);
 		});
 	});
 });

@@ -11,6 +11,9 @@ import { authenticateRequest } from './auth';
  */
 export const MAX_MCP_BODY_BYTES = 80 * 1024 * 1024;
 
+/** McpServer 인스턴스 또는 새 인스턴스를 생성하는 팩토리 함수 */
+export type McpServerOrFactory = McpServer | (() => McpServer);
+
 class PayloadTooLargeError extends Error {
 	constructor() {
 		super('Payload Too Large');
@@ -27,6 +30,7 @@ export class HttpTransport {
 	private ipv6Server: http.Server | null = null;
 	private transports = new Map<string, StreamableHTTPServerTransport>();
 	private isRunning = false;
+	private mcpServerOrFactory: McpServerOrFactory | null = null;
 	public port: number;
 	public authToken: string;
 
@@ -42,14 +46,15 @@ export class HttpTransport {
 
 	/**
 	 * HTTP 서버를 시작하고 루프백 인터페이스(127.0.0.1 및 가능한 경우 ::1)의 지정된 포트에 바인딩합니다.
-	 * @param mcpServer McpServer 인스턴스 (connect 용)
+	 * @param mcpServerOrFactory McpServer 인스턴스 또는 새 세션마다 인스턴스를 생성하는 팩토리
 	 */
-	async start(mcpServer: McpServer): Promise<void> {
+	async start(mcpServerOrFactory: McpServerOrFactory): Promise<void> {
 		if (this.isRunning) return;
 		this.isRunning = true;
+		this.mcpServerOrFactory = mcpServerOrFactory;
 
 		const requestListener: http.RequestListener = (req, res) => {
-			void this.handleRequest(req, res, mcpServer);
+			void this.handleRequest(req, res);
 		};
 
 		const tryListenOnPort = (portToTry: number): Promise<{ v4: http.Server; v6: http.Server | null }> => {
@@ -222,7 +227,6 @@ export class HttpTransport {
 	private async handleRequest(
 		req: http.IncomingMessage,
 		res: http.ServerResponse,
-		mcpServer: McpServer,
 	): Promise<void> {
 		try {
 			this.setCorsHeaders(req, res);
@@ -285,7 +289,7 @@ export class HttpTransport {
 
 			// SSE 엔드포인트
 			if (isSseRoute) {
-				await this.handleSseRequest(req, res, parsedBody, isInit, mcpServer);
+				await this.handleSseRequest(req, res, parsedBody, isInit);
 				return;
 			}
 
@@ -308,7 +312,6 @@ export class HttpTransport {
 		res: http.ServerResponse,
 		parsedBody: unknown,
 		isInit: boolean,
-		mcpServer: McpServer,
 	): Promise<void> {
 		// 인증
 		if (!authenticateRequest(req, this.authToken)) {
@@ -321,11 +324,25 @@ export class HttpTransport {
 
 		if (isInit) {
 			debugLogger.logSystem('mcp', 'POST /sse: 새로운 SSE 연결 초기화 시작');
-			// Local MCP Server는 single-client: 기존 연결 모두 해제
-			for (const oldTransport of this.transports.values()) {
-				try { await oldTransport.close(); } catch { /* ignore */ }
+			const isFactory = typeof this.mcpServerOrFactory === 'function';
+
+			if (isFactory) {
+				// 동시 활성 세션 상한 (최대 20개): 오래된 세션부터 정리
+				if (this.transports.size >= 20) {
+					const oldestKey = this.transports.keys().next().value;
+					if (oldestKey) {
+						const oldTransport = this.transports.get(oldestKey);
+						try { await oldTransport?.close(); } catch { /* ignore */ }
+						this.transports.delete(oldestKey);
+					}
+				}
+			} else {
+				// 단일 McpServer 인스턴스 모드: 기존 세션 전체 해제
+				for (const oldTransport of this.transports.values()) {
+					try { await oldTransport.close(); } catch { /* ignore */ }
+				}
+				this.transports.clear();
 			}
-			this.transports.clear();
 
 			const newTransport = new StreamableHTTPServerTransport({
 				sessionIdGenerator: () => crypto.randomUUID(),
@@ -343,7 +360,15 @@ export class HttpTransport {
 				}
 			};
 
-			await mcpServer.connect(newTransport);
+			const serverInstance = typeof this.mcpServerOrFactory === 'function'
+				? this.mcpServerOrFactory()
+				: this.mcpServerOrFactory;
+
+			if (!serverInstance) {
+				throw new Error('McpServer instance not configured');
+			}
+
+			await serverInstance.connect(newTransport);
 			await newTransport.handleRequest(req, res, parsedBody);
 			return;
 		}

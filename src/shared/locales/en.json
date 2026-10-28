@@ -728,7 +728,11 @@
       "chunkRejected": "Chunk rejected",
       "chunkRejectedShort": "Rejected",
       "chunkRejectedDesc": "This change will be skipped.",
-      "pendingChangesBanner": "Pending changes — review in Lumina chat"
+      "pendingChangesBanner": "Pending changes — review in Lumina chat",
+      "tableNotice": "📊 Table modifications detected. In Live Preview, inline diffs may be hidden by table widgets.",
+      "switchToSourceMode": "Switch to Source Mode",
+      "viewInEditor": "View in Editor",
+      "tableBadge": "Table"
     },
     "emptyResponseTokenLimit": "⚠️ The model returned an empty response. Generation was stopped because the Max Output Tokens limit was reached. Please increase the \"Max Output Tokens\" limit in settings.",
     "tokenLimitHitWarning": "\n\n⚠️ (Generation was interrupted because the Max Output Tokens limit was reached. Please increase the \"Max Output Tokens\" value in settings.)",
@@ -1013,6 +1017,24 @@
       "desc": "Shows a notification message to the user.",
       "argMessage": "The message to display in the notification.",
       "argDuration": "Optional. The duration in milliseconds for the notice to be visible. (Default: 5000)"
+    },
+    "open_note": {
+      "desc": "Opens a note or file in the Obsidian editor workspace."
+    },
+    "grep_search": {
+      "desc": "Searches for exact text or regex patterns across files in the vault. Returns matching lines with line numbers."
+    },
+    "glob_files": {
+      "desc": "Finds files across the vault matching a glob pattern (e.g. \"**/*.md\", \"Daily/*\", \"*.canvas\")."
+    },
+    "list_folders": {
+      "desc": "Lists folders in the vault, optionally filtered under a specific parent folder."
+    },
+    "get_outgoing_links": {
+      "desc": "Gets all outgoing links and embeds from a specific note, including target path and resolution status."
+    },
+    "list_tasks": {
+      "desc": "Lists markdown task items (- [ ] / - [x]) across the vault or in a specific note, with optional completion filter."
     }
   },
   "graph": {

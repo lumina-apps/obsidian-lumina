@@ -117,10 +117,10 @@ Lumina는 여러분의 숙련도에 맞춰 두 가지 모드를 제공합니다.
 - **서버 모드 (외부 AI가 주도):**
   - 외부 AI(Claude, Cursor 등) 또는 에이전트모드의 AI가 내 볼트와 인터넷에 직접 접근할 수 있도록 다양한 도구 제공
   - **웹 검색:** \`lumina_web_search\` (Tavily, Exa, Google 등 다양한 검색 엔진을 활용해 실시간 인터넷 정보 검색, 스마트 자르기 지원)
-  - **조회 및 검색:** `read_active_note`, `read_note`(라인 범위 `startLine`/`endLine` 지정 읽기 지원), `search_notes`(태그 필터 지원), `grep_search`(볼트 전체 정규식/텍스트 라인 검색), `glob_files`(와일드카드 파일 경로 탐색, 예: `**/*.md`), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags`, `query_metadata` 등 방대한 문맥을 AI에게 제공
-  - **작성 및 수정:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (노트/캔버스 생성 및 수정, MOC 허브 노트 생성, 자동 백링크 연결, 바이너리 파일 저장)
+  - **조회 및 검색:** `read_active_note`, `read_note`(라인 범위 `startLine`/`endLine` 지정 읽기 지원), `search_notes`(태그 필터 지원), `grep_search`(볼트 전체 정규식/텍스트 라인 검색), `glob_files`(와일드카드 파일 경로 탐색, 예: `**/*.md`), `list_folders`(폴더 및 하위 폴더 목록 조회), `get_outgoing_links`(외부 링크/임베드 및 해결 상태 조회), `list_tasks`(할 일 항목 집계 및 완료 필터), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`(목차 헤딩, 링크, 임베드 포함), `list_attachments`, `list_tags`, `query_metadata` 등 방대한 문맥을 AI에게 제공
+  - **작성 및 수정:** `create_note`, `append_to_note`, `replace_note`, `patch_note`(원자적 일괄 패치 및 `replaceAll` 지원), `update_frontmatter`(스마트 값 파싱 및 키 삭제 지원), `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (노트/캔버스 생성 및 수정, MOC 허브 노트 생성, 자동 백링크 연결, 바이너리 파일 저장)
   - **관리 및 실행:** `open_note`(에디터 탭으로 파일/노트 즉시 열기), `delete_note`, `move_note`(이동/이름 변경), `execute_code`, `run_note_code_block`(샌드박스 내 코드 실행), `run_shell_command`(데스크톱 OS 터미널 쉘 명령어 실행), `show_notice`(옵시디언 알림 표시)
-  - **데일리 노트:** `read_daily_note`, `append_to_daily_note` (오늘 날짜 노트 연동)
+  - **데일리 노트:** `read_daily_note`, `append_to_daily_note` (지정 일자 `date` 지원 데일리 노트 연동)
   - **외부 터미널용 CLI MCP 설정 연동:** 외부 터미널 CLI에서도 Lumina의 볼트 도구를 활용할 수 있도록 설정 파일(`.claude/mcp.json`, `opencode.json`, `codex.json`)을 선택적으로 동기화하여 일관된 작업 환경 제공
   - **볼트 보호 및 사용자 제어 (Human-in-the-Loop):** 민감한 작업에 대한 인라인 승인 카드, 파일 수정 시 에디터 인라인 Diff 검토, 덮어쓰기 방지 자동 백업 및 샌드박스 격리 코드 실행을 제공합니다.
 - **사용 방법:** 플러그인 설정 메뉴에서 MCP 기능을 켜고, 클라이언트/서버 전송 방식(SSE)을 구성하세요.

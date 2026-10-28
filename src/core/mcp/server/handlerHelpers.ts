@@ -46,10 +46,11 @@ interface DailyNotesConfig {
 }
 
 /**
- * Obsidian Daily Notes 플러그인 설정을 기반으로 오늘의 데일리 노트 경로를 반환합니다.
+ * Obsidian Daily Notes 플러그인 설정을 기반으로 데일리 노트 경로를 반환합니다.
+ * targetDate가 전달되면 해당 일자의 노트를 찾고, 생략 시 오늘의 노트를 반환합니다.
  * 코어 플러그인이 비활성화되었거나 설정을 읽지 못하면 vault 루트의 YYYY-MM-DD.md로 폴백합니다.
  */
-export async function getDailyNotePath(app: import('obsidian').App): Promise<string> {
+export async function getDailyNotePath(app: import('obsidian').App, targetDate?: string): Promise<string> {
 	let folder = '';
 	let format = 'YYYY-MM-DD';
 
@@ -68,18 +69,66 @@ export async function getDailyNotePath(app: import('obsidian').App): Promise<str
 		// 설정 파일을 읽지 못하면 기본값 사용
 	}
 
-	let filename = getTodayString();
-	if (typeof window !== 'undefined' && typeof (window as unknown as { moment?: () => { format: (fmt: string) => string } }).moment === 'function') {
+	let filename = targetDate || getTodayString();
+	const winMoment = typeof window !== 'undefined'
+		? (window as unknown as { moment?: (date?: unknown, fmt?: unknown) => { isValid?: () => boolean; format: (f: string) => string } }).moment
+		: undefined;
+
+	if (typeof winMoment === 'function') {
 		try {
-			const m = (window as unknown as { moment: () => { format: (fmt: string) => string } }).moment();
-			filename = m.format(format);
+			const m = targetDate ? winMoment(targetDate) : winMoment();
+			if (m && typeof m.format === 'function' && (!m.isValid || m.isValid())) {
+				filename = m.format(format);
+			}
 		} catch {
-			filename = getTodayString();
+			filename = targetDate || getTodayString();
 		}
 	}
 
 	const path = folder ? normalizePath(`${folder}/${filename}.md`) : `${filename}.md`;
 	return path;
+}
+
+/**
+ * 파일 캐시에서 본문 및 프론트매터의 모든 태그를 '#' 접두사와 소문자로 정규화하여 중복 없이 추출합니다.
+ */
+export function getNormalizedFileTags(cache: import('obsidian').CachedMetadata | null | undefined): string[] {
+	if (!cache) return [];
+	const allTags: string[] = [];
+
+	if (cache.tags && Array.isArray(cache.tags)) {
+		for (const t of cache.tags) {
+			if (t?.tag && typeof t.tag === 'string') {
+				const lower = t.tag.trim().toLowerCase();
+				allTags.push(lower.startsWith('#') ? lower : `#${lower}`);
+			}
+		}
+	}
+
+	const fm = cache.frontmatter;
+	const fmTags = fm?.tags ?? fm?.tag;
+	if (fmTags) {
+		const rawList = Array.isArray(fmTags) ? fmTags : [fmTags];
+		for (const t of rawList) {
+			if (typeof t === 'string' && t.trim()) {
+				const lower = t.trim().toLowerCase();
+				allTags.push(lower.startsWith('#') ? lower : `#${lower}`);
+			}
+		}
+	}
+
+	return Array.from(new Set(allTags));
+}
+
+/**
+ * 파일에 존재하는 태그 목록이 요청된 모든 태그를 포함하는지 대소문자 구분 없이 검사합니다.
+ */
+export function fileMatchesTags(fileTags: string[], requestedTags: string[]): boolean {
+	return requestedTags.every((req) => {
+		const clean = req.trim().toLowerCase();
+		const target = clean.startsWith('#') ? clean : `#${clean}`;
+		return fileTags.includes(target);
+	});
 }
 
 /** 경로 접근 가능 여부를 확인하고 거부 시 오류 결과를 반환합니다. */

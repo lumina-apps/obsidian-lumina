@@ -838,6 +838,10 @@ export interface TranslationUiMessages {
     reject: string;
     acceptAll: string;
     rejectAll: string;
+    tableNotice?: string;
+    switchToSourceMode?: string;
+    viewInEditor?: string;
+    tableBadge?: string;
   };
   errorLoadingSettings: string;
   emptyResponseTokenLimit: string;
@@ -1095,6 +1099,12 @@ export interface TranslationMcpServerTools {
     argMessage: string;
     argDuration: string;
   };
+  open_note: { desc: string };
+  grep_search: { desc: string };
+  glob_files: { desc: string };
+  list_folders: { desc: string };
+  get_outgoing_links: { desc: string };
+  list_tasks: { desc: string };
 }
 
 export interface TranslationProjectsSettings {

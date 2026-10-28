@@ -16,7 +16,6 @@ import { PathGuard } from './pathGuard';
 import type { ToolArguments, ToolHandlerContext, McpLimits } from './toolTypes';
 
 export class LuminaMcpServer {
-	private server: McpServer;
 	private httpTransport: HttpTransport;
 	public readonly pathGuard: PathGuard;
 	private plugin: LuminaPlugin;
@@ -30,21 +29,6 @@ export class LuminaMcpServer {
 
 		this.httpTransport = new HttpTransport(port, authToken);
 		this.pathGuard = new PathGuard();
-
-		this.server = new McpServer(
-			{
-				name: 'Lumina-MCP-Server',
-				version: '1.0.0',
-			},
-			{
-				capabilities: {
-					tools: {},
-				},
-				jsonSchemaValidator: new SafeJsonSchemaValidator(),
-			},
-		);
-
-		this.registerTools();
 	}
 
 	// ─── 설정에서 제한값 추출 ────────────────────────────────────────────────
@@ -59,29 +43,43 @@ export class LuminaMcpServer {
 		};
 	}
 
-	private buildContext(): ToolHandlerContext {
+	private buildContext(signal?: AbortSignal): ToolHandlerContext {
 		const limits = this.getLimits();
 		return {
 			plugin: this.plugin,
+			signal,
 			...limits,
 		};
 	}
 
-	// ─── MCP 핸들러 등록 ─────────────────────────────────────────────────────
+	// ─── MCP 인스턴스 생성 및 핸들러 등록 ─────────────────────────────────────
 
-	private registerTools(): void {
+	public createMcpServer(): McpServer {
+		const server = new McpServer(
+			{
+				name: 'Lumina-MCP-Server',
+				version: '1.0.0',
+			},
+			{
+				capabilities: {
+					tools: {},
+				},
+				jsonSchemaValidator: new SafeJsonSchemaValidator(),
+			},
+		);
+
 		// ListTools 핸들러
-		this.server.server.setRequestHandler(ListToolsRequestSchema, async () => {
+		server.server.setRequestHandler(ListToolsRequestSchema, async () => {
 			return {
 				tools: getToolDefinitions(this.plugin.settings),
 			};
 		});
 
 		// CallTool 핸들러
-		this.server.server.setRequestHandler(CallToolRequestSchema, async (request): Promise<CallToolResult> => {
+		server.server.setRequestHandler(CallToolRequestSchema, async (request, extra): Promise<CallToolResult> => {
 			const { name, arguments: rawArgs } = request.params;
 			const args: ToolArguments = (rawArgs as Record<string, unknown>) ?? {};
-			const ctx = this.buildContext();
+			const ctx = this.buildContext(extra?.signal);
 
 			try {
 				const result = await dispatchToolHandler(name, args, ctx, this.pathGuard);
@@ -95,12 +93,14 @@ export class LuminaMcpServer {
 				};
 			}
 		});
+
+		return server;
 	}
 
 	// ─── 수명주기 ────────────────────────────────────────────────────────────
 
 	async start(): Promise<void> {
-		await this.httpTransport.start(this.server);
+		await this.httpTransport.start(() => this.createMcpServer());
 		this.port = this.httpTransport.port; // 실제 바인딩된 포트 반영
 	}
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { searchNotesHandler } from './searchHandlers';
+import { searchNotesHandler, listTasksHandler, globToRegex } from './searchHandlers';
 import type { ToolHandlerContext } from '../toolTypes';
 import type { PathGuard } from '../pathGuard';
 import type { TFile } from 'obsidian';
@@ -98,8 +98,6 @@ describe('searchNotesHandler', () => {
 	});
 });
 
-import { globToRegex } from './searchHandlers';
-
 describe('globToRegex', () => {
 	it('matches root files with **/*.md', () => {
 		const regex = globToRegex('**/*.md');
@@ -121,5 +119,43 @@ describe('globToRegex', () => {
 		const regex = globToRegex('Daily/*');
 		expect(regex.test('Daily/2026-09-23.md')).toBe(true);
 		expect(regex.test('Daily/sub/2026-09-23.md')).toBe(false);
+	});
+});
+
+describe('listTasksHandler', () => {
+	it('마크다운 할 일 목록을 파싱하여 조회한다', async () => {
+		const files = [
+			{ path: 'tasks.md', basename: 'tasks' } as TFile,
+		];
+		const contents: Record<string, string> = {
+			'tasks.md': '# Todo\n- [ ] Unfinished task\n- [x] Finished task\nSome plain text',
+		};
+		const ctx = {
+			plugin: {
+				app: {
+					vault: {
+						getMarkdownFiles: vi.fn().mockReturnValue(files),
+						read: vi.fn(async (f: TFile) => contents[f.path] || ''),
+					},
+				},
+			},
+			limitRead: 5000,
+		} as unknown as ToolHandlerContext;
+		const pathGuard = {
+			isAgentPathAllowed: vi.fn(() => true),
+		} as unknown as PathGuard;
+
+		const res = await listTasksHandler({}, ctx, pathGuard);
+		expect(res.isError).toBeFalsy();
+		const text = res.content[0].type === 'text' ? res.content[0].text : '';
+		expect(text).toContain('Tasks (2):');
+		expect(text).toContain('- [ ] Unfinished task (tasks.md:2)');
+		expect(text).toContain('- [x] Finished task (tasks.md:3)');
+
+		const completedOnly = await listTasksHandler({ completed: true }, ctx, pathGuard);
+		const completedText = completedOnly.content[0].type === 'text' ? completedOnly.content[0].text : '';
+		expect(completedText).toContain('Tasks (1):');
+		expect(completedText).toContain('- [x] Finished task');
+		expect(completedText).not.toContain('Unfinished task');
 	});
 });

@@ -164,16 +164,40 @@ export class LuminaMcpClient {
 	}
 
 	async callTool(name: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<unknown> {
-		return await this.client.callTool(
-			{ name, arguments: args ?? {} },
-			undefined,
-			{
-				// MCP 툴 실행 타임아웃: 5분 (1시간 → 5분으로 축소)
-				// abort signal이 주어지면 취소 시 즉시 AbortError 발생
-				timeout: 5 * 60 * 1000,
-				...(signal ? { signal } : {}),
+		const execute = () =>
+			this.client.callTool(
+				{ name, arguments: args ?? {} },
+				undefined,
+				{
+					// MCP 툴 실행 타임아웃: 5분 (1시간 → 5분으로 축소)
+					// abort signal이 주어지면 취소 시 즉시 AbortError 발생
+					timeout: 5 * 60 * 1000,
+					...(signal ? { signal } : {}),
+				},
+			);
+
+		try {
+			return await execute();
+		} catch (error) {
+			const errStr = String(error);
+			const isSessionError =
+				errStr.includes('Session not found') ||
+				errStr.includes('404') ||
+				errStr.includes('Connection closed') ||
+				errStr.includes('not connected');
+
+			if (isSessionError && !signal?.aborted) {
+				debugLogger.logSystem('mcp', `LuminaMcpClient: Session lost for ${this.config.name}. Attempting reconnect...`);
+				try {
+					await this.disconnect();
+					await this.connect();
+					return await execute();
+				} catch (reconnectErr) {
+					debugLogger.logError('mcp', normalizeError(reconnectErr, `Reconnect failed for ${this.config.name}: ${reconnectErr}`));
+				}
 			}
-		);
+			throw error;
+		}
 	}
 
 	async disconnect(): Promise<void> {

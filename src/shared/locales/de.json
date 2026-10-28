@@ -113,9 +113,22 @@
     "mcp": {
       "title": "Agent\n& MCP",
       "desc": "Verbinden Sie externe Model Context Protocol (MCP)-Server, um lokale Tools zu verwenden, oder aktivieren Sie den integrierten Server, damit andere Apps Lumina steuern können.",
+      "agentMode": {
+        "name": "Agenten-Modus (Agent Mode)",
+        "desc": "LLM führt Aufgaben autonom mit MCP-Tools aus. ⚠️ Leistung kann bei kleineren Modellen nachlassen.",
+        "maxSteps": "Maximale Anzahl automatischer Ausführungen",
+        "maxStepsDesc": "Die maximale Anzahl der aufeinanderfolgenden Tool-Ausführungen durch den Agenten in einer einzigen Antwort. (Standard: 15)",
+        "respectRagExclusions": "RAG-Pfadausschlüsse/-einschlüsse auf Agent anwenden",
+        "respectRagExclusionsDesc": "RAG-Tab-Ausschlussregeln auf Agent-Dateioperationen anwenden.",
+        "readMode": "Lesemodus",
+        "editMode": "Bearbeitungsmodus"
+      },
       "addServer": "+ Neuen MCP-Server hinzufügen",
       "serverName": "Servername",
       "transport": "Transport",
+      "transportDesc": "Wählen Sie das Transportprotokoll für diesen MCP-Server aus.",
+      "transportSse": "SSE (GET → Sitzungs-URL → POST)",
+      "transportStreamableHttp": "Streamable HTTP (Direktes POST)",
       "enableDesc": "Aktivieren (Tools in Chat einfügen)",
       "deleteServer": "Diesen Server löschen",
       "emptyServers": "Keine Server registriert.",
@@ -138,19 +151,19 @@
         },
         "guide": "http://localhost:{{port}}/sse\nAuth: Header \"Authorization: Bearer <token>\"",
         "maxRead": {
-          "name": "Read Max. Zeichen",
+          "name": "Lesen – Max. Zeichen",
           "desc": "Max. Zeichen pro Datei-Lesevorgang (Standard: 20000)"
         },
         "searchSnippet": {
-          "name": "Search Snippet-Länge",
+          "name": "Suche – Textausschnitt-Länge",
           "desc": "Zeichen um gefundene Begriffe (Standard: 300)"
         },
         "searchMaxResults": {
-          "name": "Search Max. Ergebnisse",
+          "name": "Suche – Max. Ergebnisse",
           "desc": "Max. Ergebnisse pro Suche (Standard: 10)"
         },
         "maxAppend": {
-          "name": "Append Max. Zeichen",
+          "name": "Anhängen – Max. Zeichen",
           "desc": "Max. Zeichen pro Anhänge-Vorgang (Standard: 10000)"
         },
         "enableShellCommands": {
@@ -173,7 +186,7 @@
         "sectionTitle": "Externe MCP-Server (Client-Verbindung)",
         "desc": "Verbinden Sie externe Model Context Protocol (MCP)-Server, um zusätzliche Tools im Chat zu verwenden.",
         "sseUrl": {
-          "name": "Server URL",
+          "name": "Server-URL",
           "desc": "z. B. http://localhost:8080/sse"
         },
         "token": {
@@ -187,16 +200,6 @@
         "args": "Argumente:",
         "approve": "Genehmigen",
         "reject": "Ablehnen"
-      },
-      "agentMode": {
-        "name": "Agenten-Modus (Agent Mode)",
-        "desc": "LLM führt Aufgaben autonom mit MCP-Tools aus. ⚠️ Leistung kann bei kleineren Modellen nachlassen.",
-        "maxSteps": "Maximale Anzahl automatischer Ausführungen",
-        "maxStepsDesc": "Die maximale Anzahl der aufeinanderfolgenden Tool-Ausführungen durch den Agenten in einer einzigen Antwort. (Standard: 15)",
-        "respectRagExclusions": "RAG-Pfadausschlüsse/-einschlüsse auf Agent anwenden",
-        "respectRagExclusionsDesc": "RAG-Tab-Ausschlussregeln auf Agent-Dateioperationen anwenden.",
-        "readMode": "Lesemodus",
-        "editMode": "Bearbeitungsmodus"
       },
       "experimental": "Experimentelle Funktionen"
     },
@@ -262,7 +265,7 @@
         "desc": "Speichert den Chat-Verlauf automatisch.",
         "pathPlaceholder": "z. B. /chatHistory",
         "savePath": "Speicherpfad",
-        "savePathDesc": "Speichert den Chat-Verlauf automatisch im angegebenen Pfad. (Default: chatHistory)",
+        "savePathDesc": "Speichert den Chat-Verlauf automatisch im angegebenen Pfad. (Standard: chatHistory)",
         "saveFail": "⚠️ Fehler beim Speichern des Chat-Verlaufs: {{error}}",
         "loadFail": "⚠️ Sitzung konnte nicht geladen werden.",
         "deleteSuccess": "✅ Chat-Verlauf gelöscht.",
@@ -279,9 +282,31 @@
         "renameSuccess": "Chat umbenannt.",
         "renameFail": "Fehler beim Umbenennen des Chats."
       },
+      "context": {
+        "activeNote": "Aktuelle Notiz einbeziehen: {{name}}",
+        "selectedText": "Ausgewählter Text ({{length}} Zeichen)",
+        "folderFiles": "[Dateien im Ordner: {{name}}]",
+        "activeNotePrefix": "[Aktive Notiz: {{name}}]",
+        "canvasFile": "[Canvas-Datei: {{name}}]",
+        "tagFiles": "[Dateien mit Tag: {{name}} (Max. 5)]",
+        "activeNotePrompt": "Aktive Notiz",
+        "categoryActiveNote": "📄 Aktuelle Notiz einfügen",
+        "categorySelection": "✂️ Ausgewählter Text",
+        "categoryFolder": "📁 Ordner hinzufügen",
+        "categoryFile": "📝 Datei hinzufügen",
+        "categoryTag": "🏷️ Tag hinzufügen",
+        "categoryUrl": "🔗 URL eingeben",
+        "categoryCanvas": "🎨 Canvas hinzufügen",
+        "categoryBack": "Zurück",
+        "categoryTitle": "Kontexttyp auswählen",
+        "urlInputPlaceholder": "URL eingeben (z. B. https://...)",
+        "urlInputPrompt": "Enter drücken, um URL hinzuzufügen",
+        "includeNote": "Notiz einschließen",
+        "excludeNote": "Notiz ausschließen"
+      },
       "sendMode": {
         "name": "Nachrichtensende-Modus",
-        "desc": "Wählen Sie, wie Nachrichten im Chat gesendet werden sollen. (Default: Send on Enter)",
+        "desc": "Wählen Sie, wie Nachrichten im Chat gesendet werden sollen. (Standard: Enter zum Senden)",
         "enter": "Enter zum Senden",
         "ctrlEnter": "Strg + Enter zum Senden"
       },
@@ -314,7 +339,7 @@
       },
       "inlineTrigger": {
         "name": "Inline-Befehlstrigger",
-        "desc": "Stichwort, um das Quick-Aktion-Autovervollständigungspopup im Editor aufzurufen. (Default: /ai)"
+        "desc": "Stichwort, um das Quick-Aktion-Autovervollständigungspopup im Editor aufzurufen. (Standard: /ai)"
       },
       "enableAutocomplete": {
         "name": "Inline-Autovervollständigung (Ghost Text) aktivieren",
@@ -329,16 +354,16 @@
         "turns": "Turn-Limit",
         "tokens": "Token-Limit",
         "turnsLabel": "Zu speichernde Turns",
-        "turnsDesc": "Zu speichernde Turns (1 Turn = Benutzer-Nachricht + KI-Antwort) (Default: 10)",
-        "maxTokens": "Maximale Kontext-Tokens (Default: 8000)"
+        "turnsDesc": "Zu speichernde Turns (1 Turn = Benutzer-Nachricht + KI-Antwort) (Standard: 10)",
+        "maxTokens": "Maximale Kontext-Tokens (Standard: 8000)"
       },
       "modelParams": {
         "name": "Modellparameter",
         "desc": "Kreativität und Ausgabelänge der Antwort anpassen.",
         "tempLabel": "Temperatur",
-        "tempDesc": "Näher an 0 = präzise, näher an 2 = kreativ (Default: 0.7)",
+        "tempDesc": "Näher an 0 = präzise, näher an 2 = kreativ (Standard: 0.7)",
         "maxOutput": "Max. Ausgabe-Tokens",
-        "maxOutputDesc": "Begrenzt die maximale Anzahl der pro Antwort generierten Tokens. (Default: 4000)",
+        "maxOutputDesc": "Begrenzt die maximale Anzahl der pro Antwort generierten Tokens. (Standard: 4000)",
         "responseLang": "Antwortsprache festlegen",
         "responseLangDesc": "Erzwingt KI-Antworten in einer bestimmten Sprache. \"Auto\" antwortet in der Sprache der Benutzeranfrage.",
         "responseLangAuto": "Automatisch"
@@ -347,35 +372,13 @@
         "name": "Streaming",
         "desc": "Aktiviert gestreamte Antworten."
       },
-      "emptyResponseFallback": "⚠️ Das Modell hat eine leere Antwort zurückgegeben. (Dies kann auf eine nicht unterstützte Sprache/ein nicht unterstütztes Format, Prompt-Filterung oder das Überschreiten des Kontextlimits zurückzuführen sein.)",
-      "context": {
-        "activeNote": "Aktuelle Notiz einbeziehen: {{name}}",
-        "selectedText": "Ausgewählter Text ({{length}} Zeichen)",
-        "folderFiles": "[Dateien im Ordner: {{name}}]",
-        "activeNotePrefix": "[Aktive Notiz: {{name}}]",
-        "canvasFile": "[Canvas-Datei: {{name}}]",
-        "tagFiles": "[Dateien mit Tag: {{name}} (Max. 5)]",
-        "activeNotePrompt": "Aktive Notiz",
-        "categoryActiveNote": "📄 Aktuelle Notiz einfügen",
-        "categorySelection": "✂️ Ausgewählter Text",
-        "categoryFolder": "📁 Ordner hinzufügen",
-        "categoryFile": "📝 Datei hinzufügen",
-        "categoryTag": "🏷️ Tag hinzufügen",
-        "categoryUrl": "🔗 URL eingeben",
-        "categoryCanvas": "🎨 Canvas hinzufügen",
-        "categoryBack": "Zurück",
-        "categoryTitle": "Kontexttyp auswählen",
-        "urlInputPlaceholder": "URL eingeben (z. B. https://...)",
-        "urlInputPrompt": "Enter drücken, um URL hinzuzufügen",
-        "includeNote": "Notiz einschließen",
-        "excludeNote": "Notiz ausschließen"
-      },
       "timeout": {
         "ttftLabel": "Zeitlimit für die erste Antwort (ms)",
         "ttftDesc": "Maximale Wartezeit bis zum Empfang des ersten Wortes nach der Anfrage. Auf 0 setzen für unbegrenzt.. (Standard: 0)",
         "interTokenLabel": "Zeitlimit zwischen den Blöcken (ms)",
         "interTokenDesc": "Maximale Wartezeit bis zum Empfang des nächsten Satzes während des Streamings. Auf 0 setzen für unbegrenzt.. (Standard: 0)"
-      }
+      },
+      "emptyResponseFallback": "⚠️ Das Modell hat eine leere Antwort zurückgegeben. (Dies kann auf eine nicht unterstützte Sprache/ein nicht unterstütztes Format, Prompt-Filterung oder das Überschreiten des Kontextlimits zurückzuführen sein.)"
     },
     "rag": {
       "toggleTooltip": "Wenn aktiviert, liest und referenziert die KI Notizen in Ihrem Vault, um zu antworten.",
@@ -384,7 +387,7 @@
       "disabledWarning": "⚪ RAG ist deaktiviert. Bitte aktivieren Sie die RAG-Engine unter \"Verbindungen & Modelle\".",
       "dataScope": {
         "name": "Standard-Datenbereich",
-        "desc": "Wählen Sie, welche Notizen in die RAG-Suche einbezogen werden. (Default: Entire Vault)",
+        "desc": "Wählen Sie, welche Notizen in die RAG-Suche einbezogen werden. (Standard: Gesamter Vault)",
         "vaultWide": "Gesamter Vault",
         "activeNote": "Nur aktive Notiz",
         "manual": "Manuell ausgewählte Dateien"
@@ -399,7 +402,7 @@
       },
       "ignorePaths": {
         "name": "Auszuschließende Pfade",
-        "desc": "Kommagetrennt. Hat Vorrang vor eingeschlossenen Pfaden. (Default: templates, chatHistory, etc.)"
+        "desc": "Kommagetrennt. Hat Vorrang vor eingeschlossenen Pfaden. (Standard: templates, chatHistory usw.)"
       },
       "chunking": {
         "name": "Chunking",
@@ -414,19 +417,19 @@
         "childOverlapDesc": "Anzahl der überlappenden Zeichen zwischen untergeordneten Chunks (Standard: 40)"
       },
       "topK": {
-        "name": "Top-K Retrieval",
-        "desc": "Anzahl der relevantesten Dokumente, die an das LLM übergeben werden. (Default: 5)"
+        "name": "Top-K-Abruf",
+        "desc": "Anzahl der relevantesten Dokumente, die an das LLM übergeben werden. (Standard: 5)"
       },
       "syncMode": {
         "name": "Index-Sync",
-        "desc": "Wie der Index bei Notizänderungen aktualisiert wird. (Default: Watch)",
+        "desc": "Wie der Index bei Notizänderungen aktualisiert wird. (Standard: Änderungen überwachen)",
         "watch": "Änderungen überwachen (Empfohlen)",
         "manual": "Manuell",
         "startup": "Beim App-Start"
       },
       "minSimilarity": {
         "name": "Min. Ähnlichkeit",
-        "desc": "Ergebnisse unterhalb dieses Relevanzwerts ausschließen (0~1) (Default: 0.0)"
+        "desc": "Ergebnisse unterhalb dieses Relevanzwerts ausschließen (0~1) (Standard: 0.0)"
       },
       "maxFileSize": {
         "name": "Max. Dateigröße (MB)",
@@ -466,9 +469,7 @@
         "ready": "✅ Lumina: RAG-Engine bereit",
         "indexFail": "❌ Lumina: Indexierung fehlgeschlagen\n{{error}}",
         "readyManual": "✅ Lumina: RAG-Engine bereit (Manueller Indexierungsmodus)",
-        "initFail": "❌ Lumina: RAG-Worker-Initialisierung fehlgeschlagen\n{{error}}",
-        "downloading": "Lade RAG-Modell herunter...",
-        "indexingNotes": "Indiziere meine Notizen..."
+        "initFail": "❌ Lumina: RAG-Worker-Initialisierung fehlgeschlagen\n{{error}}"
       },
       "reset": {
         "name": "Index zurücksetzen",
@@ -656,12 +657,6 @@
       "editModeTooltip": "Bearbeitungsmodus: Der CLI-Agent darf Notizen direkt erstellen und bearbeiten.",
       "readModeNotice": "👁️ CLI-Agent: Lesemodus (Notizänderungen blockiert)",
       "editModeNotice": "✏️ CLI-Agent: Bearbeitungsmodus (Notizen erstellen und bearbeiten erlaubt)"
-    },
-    "timeout": {
-      "ttftLabel": "Time-To-First-Token Timeout (ms)",
-      "ttftDesc": "Wait time for the very first token to arrive. Set to 0 to disable.. (Standard: 0)",
-      "interTokenLabel": "Inter-Token Timeout (ms)",
-      "interTokenDesc": "Wait time between subsequent streaming chunks. Set to 0 to disable.. (Standard: 0)"
     }
   },
   "common": {
@@ -733,7 +728,11 @@
       "chunkRejected": "Block abgelehnt",
       "chunkRejectedShort": "Abgelehnt",
       "chunkRejectedDesc": "Diese Änderung wird übersprungen.",
-      "pendingChangesBanner": "Ausstehende Änderungen — im Lumina-Chat prüfen"
+      "pendingChangesBanner": "Ausstehende Änderungen — im Lumina-Chat prüfen",
+      "tableNotice": "📊 Tabellenänderungen erkannt. In der Live-Vorschau können Inline-Diffs durch Tabellen-Widgets verdeckt werden.",
+      "switchToSourceMode": "In den Quellmodus wechseln",
+      "viewInEditor": "Im Editor anzeigen",
+      "tableBadge": "Tabelle"
     },
     "emptyResponseTokenLimit": "⚠️ Das Modell hat eine leere Antwort zurückgegeben. Die Generierung wurde gestoppt, da das Limit für maximale Ausgabe-Token erreicht wurde. Bitte erhöhen Sie das Limit für \"Maximale Ausgabe-Token\" in den Einstellungen.",
     "tokenLimitHitWarning": "\n\n⚠️ (Die Generierung wurde unterbrochen, da das Limit für maximale Ausgabetoken erreicht wurde. Bitte erhöhen Sie den Wert \"Max Output Tokens\" in den Einstellungen.)",
@@ -758,6 +757,22 @@
     "modalCancel": "Abbrechen",
     "modalProceed": "Fortfahren",
     "modelPlaceholder": "Modellnamen eingeben... (z. B. claude, gpt-4)",
+    "searchModelShort": "Modelle suchen...",
+    "favorites": "Favoriten",
+    "allModels": "Alle Modelle",
+    "addToFavorites": "Zu Favoriten hinzufügen",
+    "removeFromFavorites": "Aus Favoriten entfernen",
+    "searchPromptShort": "Prompts suchen...",
+    "noSearchResults": "Keine Suchergebnisse.",
+    "unsupportedFileType": "Nicht unterstützter Dateityp: {{ext}}",
+    "attachFileFailed": "Datei konnte nicht angehängt werden: {{file}}",
+    "attachWorkerNotReady": "Dokument-Parser-Worker ist noch nicht bereit. Bitte versuchen Sie es gleich erneut.",
+    "attachFileEmpty": "Dateiinhalt ist leer und wurde nicht angehängt: {{file}}",
+    "attachmentsSkipped": "Einige Anhänge konnten nicht gelesen werden und wurden übersprungen: {{files}}",
+    "cliImageNotSupported": "CLI-Agenten unterstützen keine Bildanalyse. Nur Textkontext wurde einbezogen.",
+    "attachFileTooLarge": "Datei ist zu groß (max. {{max}}): {{file}}",
+    "attachDuplicate": "Datei ist bereits angehängt: {{file}}",
+    "attachProcessing": "Anhänge werden verarbeitet...",
     "fsAdapterErr": "FileSystemAdapter nicht gefunden. Nur in Desktop-Umgebung unterstützt.",
     "searchSource": "Quelle",
     "debugDelAllMsg": "Möchten Sie wirklich alle Debug-Logs löschen?",
@@ -798,27 +813,11 @@
     "errNoProvider": "Konfiguration des ausgewählten Embedding-Anbieters nicht gefunden.",
     "errMobileAuto": "Lokale Embeddings (Auto-Modus) werden auf Mobilgeräten nicht unterstützt. Bitte wählen Sie ein Cloud-Embedding in den Einstellungen.",
     "mcpTokenCopied": "Auth-Token in die Zwischenablage kopiert.",
+    "mcpManagerNotInitialized": "⚠️ MCP Manager ist nicht initialisiert.",
     "mcpConnectFailed": "Verbindung zum MCP-Server \"{{name}}\" fehlgeschlagen. Deaktiviert.",
     "mcpLocalServerStartFailed": "Integrierter MCP-Server konnte nicht gestartet werden: {{error}}",
     "mcpDisconnectedDuringExecution": "MCP-Server \"{{name}}\" während der Tool-Ausführung getrennt und deaktiviert.",
     "mcpToolExecutionFailed": "Tool-Ausführung auf MCP-Server \"{{name}}\" fehlgeschlagen. Server wurde deaktiviert. Bitte überprüfen Sie Ihre Einstellungen.",
-    "searchModelShort": "Modelle suchen...",
-    "favorites": "Favoriten",
-    "allModels": "Alle Modelle",
-    "addToFavorites": "Zu Favoriten hinzufügen",
-    "removeFromFavorites": "Aus Favoriten entfernen",
-    "searchPromptShort": "Prompts suchen...",
-    "noSearchResults": "Keine Suchergebnisse.",
-    "unsupportedFileType": "Nicht unterstützter Dateityp: {{ext}}",
-    "attachFileFailed": "Datei konnte nicht angehängt werden: {{file}}",
-    "attachWorkerNotReady": "Dokument-Parser-Worker ist noch nicht bereit. Bitte versuchen Sie es gleich erneut.",
-    "attachFileEmpty": "Dateiinhalt ist leer und wurde nicht angehängt: {{file}}",
-    "attachmentsSkipped": "Einige Anhänge konnten nicht gelesen werden und wurden übersprungen: {{files}}",
-    "cliImageNotSupported": "CLI-Agenten unterstützen keine Bildanalyse. Nur Textkontext wurde einbezogen.",
-    "attachFileTooLarge": "Datei ist zu groß (max. {{max}}): {{file}}",
-    "attachDuplicate": "Datei ist bereits angehängt: {{file}}",
-    "attachProcessing": "Anhänge werden verarbeitet...",
-    "mcpManagerNotInitialized": "⚠️ MCP Manager ist nicht initialisiert.",
     "mcpSyncError": "⚠️ Fehler beim Synchronisieren der MCP-Server.",
     "mcpLocalServerRestarted": "✅ Integrierter MCP-Server neu gestartet (Port: {{port}})",
     "mcpLocalServerStarted": "✅ Integrierter MCP-Server gestartet (Port: {{port}})",
@@ -878,7 +877,7 @@
     "openReferenceNote": "Referenznotiz öffnen",
     "ragProgress": {
       "searching": "🔍 Suchen...",
-      "reranking": "⚖️ Reranking...",
+      "reranking": "⚖️ Neuordnung (Reranking)...",
       "compressing": "🗜️ Kontext komprimieren...",
       "generating": "💡 Antwort generieren..."
     }
@@ -965,6 +964,77 @@
       "successUpdate": "MOC aktualisiert in {{path}} ({{count}} Notizen)",
       "emptyWarning": "Es wurden keine Notizen gefunden, die dem angegebenen Bereich entsprechen. Dieses MOC ist derzeit leer.",
       "noScope": "Es muss mindestens folder, tags oder files angegeben werden."
+    },
+    "replace_note": {
+      "desc": "Ersetzt den gesamten Inhalt einer bestehenden Notiz."
+    },
+    "patch_note": {
+      "desc": "Wendet eine oder mehrere Textersetzungen auf eine Notiz an. Verwenden Sie vorzugsweise das Array patches, um mehrere Änderungen in einem einzigen Tool-Aufruf zu bündeln – dies ist effizienter und präsentiert dem Benutzer alle Änderungen auf einmal als einheitliches Diff."
+    },
+    "delete_note": {
+      "desc": "Löscht eine Notiz."
+    },
+    "move_note": {
+      "desc": "Verschiebt eine Notiz oder benennt sie um."
+    },
+    "get_backlinks": {
+      "desc": "Ruft eine Liste aller Notizen ab, die auf die angegebene Notiz verlinken."
+    },
+    "update_frontmatter": {
+      "desc": "Aktualisiert eine Frontmatter-Eigenschaft in einer Notiz."
+    },
+    "get_note_metadata": {
+      "desc": "Ruft Metadaten (Frontmatter, Tags, Erstellungsdatum usw.) für eine Notiz ab."
+    },
+    "list_attachments": {
+      "desc": "Listet alle Anhangsdateien (Bilder, PDFs) im Vault oder die in einer Notiz verlinkten Anhänge auf."
+    },
+    "save_attachment": {
+      "desc": "Speichert eine binäre Anhangsdatei aus einem Base64-String."
+    },
+    "execute_code": {
+      "desc": "Führt JavaScript-/TypeScript-Code in einer sicheren Sandbox aus."
+    },
+    "run_shell_command": {
+      "desc": "Führt einen Terminal-Shell-Befehl auf dem Desktop-Betriebssystem aus. Mit Vorsicht verwenden."
+    },
+    "run_note_code_block": {
+      "desc": "Führt einen bestimmten Codeblock aus einer Notiz in der Sandbox aus."
+    },
+    "list_tags": {
+      "desc": "Listet alle im Vault verwendeten Tags auf."
+    },
+    "create_canvas": {
+      "desc": "Erstellt eine Obsidian-Canvas-Datei (.canvas) mit Knoten und Kanten."
+    },
+    "auto_link_note": {
+      "desc": "Sucht automatisch nach nicht verlinkten Erwähnungen (Notiztiteln oder Aliasen) in einer Notiz und ersetzt sie durch interne Markdown-Links ([[Title|Alias]]). WICHTIG: Verwenden Sie IMMER dieses Tool, wenn der Benutzer darum bittet, Backlinks hinzuzufügen oder eine Notiz automatisch zu verlinken. Versuchen Sie NIEMALS, die Notiz manuell zu lesen und Links über patch_note oder replace_note selbst hinzuzufügen, da dies zum Systemabsturz führt."
+    },
+    "query_metadata": {
+      "desc": "Durchsucht und filtert Vault-Notizen nach Frontmatter-Eigenschaften, Tags oder Ordnern. Gibt eine Markdown-Tabelle der Ergebnisse zurück. Verwenden Sie dieses Tool, wenn der Benutzer Notizen anhand ihrer Metadaten (z. B. Status, Autor, Bewertung, Datum) auflisten oder aggregieren möchte."
+    },
+    "show_notice": {
+      "desc": "Zeigt dem Benutzer eine Benachrichtigung an.",
+      "argMessage": "Die in der Benachrichtigung anzuzeigende Nachricht.",
+      "argDuration": "Optional. Die Anzeigedauer der Benachrichtigung in Millisekunden. (Standard: 5000)"
+    },
+    "open_note": {
+      "desc": "Öffnet eine Notiz oder Datei im Obsidian-Editor-Arbeitsbereich."
+    },
+    "grep_search": {
+      "desc": "Sucht nach genauem Text oder Regex-Mustern in Dateien des Vaults. Gibt übereinstimmende Zeilen mit Zeilennummern zurück."
+    },
+    "glob_files": {
+      "desc": "Findet Dateien im Vault, die einem Glob-Muster entsprechen (z. B. \"**/*.md\", \"Daily/*\", \"*.canvas\")."
+    },
+    "list_folders": {
+      "desc": "Listet Ordner im Vault auf, optional gefiltert unter einem bestimmten übergeordneten Ordner."
+    },
+    "get_outgoing_links": {
+      "desc": "Ruft alle ausgehenden Links und Einbettungen aus einer bestimmten Notiz ab, einschließlich Zielpfad und Auflösungsstatus."
+    },
+    "list_tasks": {
+      "desc": "Listet Markdown-Aufgaben (- [ ] / - [x]) im gesamten Vault oder in einer bestimmten Notiz auf, mit optionalem Abschlussfilter."
     }
   },
   "graph": {
@@ -1052,6 +1122,14 @@
       "ragExcludedFolders": "Von RAG ausgeschlossene Ordner",
       "ragExcludedFoldersDesc": "Markieren Sie die Ordner, die von der Indizierung ausgeschlossen werden sollen.",
       "ragExcludedFoldersEmpty": "Keine ausgeschlossenen Ordner.",
+      "defaultModel": "Standard-Chatmodell",
+      "defaultModelDesc": "Das Standardmodell, das beim Starten eines neuen Chats in diesem Projekt verwendet wird.",
+      "defaultModelAuto": "Automatisch auswählen (Erstes verfügbares Modell)",
+      "systemPrompt": "Standard-System-Prompt",
+      "systemPromptDesc": "Der System-Prompt, der beim Starten eines neuen Chats in diesem Projekt verwendet wird.",
+      "systemPromptAuto": "Automatisch auswählen (Erster System-Prompt)",
+      "deletedModel": "[Gelöscht] Modell",
+      "deletedPrompt": "[Gelöscht] Prompt",
       "save": "Speichern",
       "saveSuccess": "Projekteinstellungen gespeichert",
       "nameRequired": "Der Projektname ist erforderlich und darf nicht 'default' sein.",
@@ -1069,14 +1147,6 @@
       "add": "Hinzufügen",
       "duplicateName": "Ein Projekt mit diesem Namen existiert bereits.",
       "defaultProjectName": "Standard",
-      "defaultModel": "Standard-Chatmodell",
-      "defaultModelDesc": "Das Standardmodell, das beim Starten eines neuen Chats in diesem Projekt verwendet wird.",
-      "defaultModelAuto": "Automatisch auswählen (Erstes verfügbares Modell)",
-      "systemPrompt": "Standard-System-Prompt",
-      "systemPromptDesc": "Der System-Prompt, der beim Starten eines neuen Chats in diesem Projekt verwendet wird.",
-      "systemPromptAuto": "Automatisch auswählen (Erster System-Prompt)",
-      "deletedModel": "[Gelöscht] Modell",
-      "deletedPrompt": "[Gelöscht] Prompt",
       "modalTitleActive": "Projekteinstellungen (Aktuell: {{projectName}})",
       "activeProjectModelDesc": "Legt das Standard-Chatmodell für das aktive Projekt (<strong>{{projectName}}</strong>) fest. Sie können dies auch in den Projekteinstellungen (RAG-Tab) ändern.",
       "chatHistoryRootPlaceholder": "(Standard) chatHistory-Stammverzeichnis verwenden",
@@ -1091,10 +1161,6 @@
       "default": "Standard",
       "manage": "In den Einstellungen verwalten"
     }
-  },
-  "providerErrors": {
-    "timeoutTTFT": "Timeout: First token response took too long. ({{fallback}})",
-    "timeoutInterToken": "Timeout: Stream interrupted or hung. ({{fallback}})"
   },
   "modal": {
     "errorProcessing": "Fehler beim Ausführen der Aktion: {{message}}"

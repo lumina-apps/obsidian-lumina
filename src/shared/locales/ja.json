@@ -113,9 +113,22 @@
     "mcp": {
       "title": "エージェント\n& MCP",
       "desc": "Model Context Protocol (MCP) を通じて外部ツールを接続するか、内蔵サーバーを通じて他のアプリがLuminaを制御できるように設定します。",
+      "agentMode": {
+        "name": "エージェントモード",
+        "desc": "LLMがMCPツールを使って自律的にタスクを実行します。⚠️ 小型モデルではパフォーマンスが低下する可能性があります。",
+        "maxSteps": "最大自動実行回数",
+        "maxStepsDesc": "エージェントが1回の応答でツールを連続して実行できる最大回数。(デフォルト: 15)",
+        "respectRagExclusions": "RAGの除外/包含パスをエージェントに適用",
+        "respectRagExclusionsDesc": "RAGタブの除外ルールをエージェントのファイル操作に適用します。",
+        "readMode": "読み取りモード",
+        "editMode": "編集モード"
+      },
       "addServer": "+ 新しい MCP サーバーを追加",
       "serverName": "サーバー名",
       "transport": "転送方式",
+      "transportDesc": "このMCPサーバーのトランスポートプロトコルを選択します。",
+      "transportSse": "SSE (GET → セッションURL → POST)",
+      "transportStreamableHttp": "Streamable HTTP (直接POST)",
       "enableDesc": "有効化 (チャットにツールを挿入)",
       "deleteServer": "このサーバーを削除",
       "emptyServers": "登録されたサーバーがありません。",
@@ -138,19 +151,19 @@
         },
         "guide": "http://localhost:{{port}}/sse\n認証: ヘッダーに Authorization: Bearer <トークン>",
         "maxRead": {
-          "name": "Read 最大文字数",
+          "name": "読み取り最大文字数",
           "desc": "ファイル読み取り時の最大返却文字数 (デフォルト: 20000)"
         },
         "searchSnippet": {
-          "name": "Search スニペット長",
+          "name": "検索スニペット長",
           "desc": "一致語の前後に表示する文字数 (デフォルト: 300)"
         },
         "searchMaxResults": {
-          "name": "Search 最大結果数",
+          "name": "検索最大結果数",
           "desc": "1回の検索での最大返却結果数 (デフォルト: 10)"
         },
         "maxAppend": {
-          "name": "Append 最大文字数",
+          "name": "追記最大文字数",
           "desc": "1回の追加操作での最大文字数 (デフォルト: 10000)"
         },
         "enableShellCommands": {
@@ -173,7 +186,7 @@
         "sectionTitle": "外部MCPサーバー（クライアント接続）",
         "desc": "Model Context Protocol (MCP) を通じて外部ツールを接続し、チャットで追加のツールを使用できるように設定します。",
         "sseUrl": {
-          "name": "Server URL",
+          "name": "サーバーURL",
           "desc": "例: http://localhost:8080/sse"
         },
         "token": {
@@ -187,16 +200,6 @@
         "args": "引数 (Arguments):",
         "approve": "承認",
         "reject": "拒否"
-      },
-      "agentMode": {
-        "name": "エージェントモード",
-        "desc": "LLMがMCPツールを使って自律的にタスクを実行します。⚠️ 小型モデルではパフォーマンスが低下する可能性があります。",
-        "maxSteps": "最大自動実行回数",
-        "maxStepsDesc": "エージェントが1回の応答でツールを連続して実行できる最大回数。(デフォルト: 15)",
-        "respectRagExclusions": "RAGの除外/包含パスをエージェントに適用",
-        "respectRagExclusionsDesc": "RAGタブの除外ルールをエージェントのファイル操作に適用します。",
-        "readMode": "読み取りモード",
-        "editMode": "編集モード"
       },
       "experimental": "実験的機能"
     },
@@ -217,7 +220,7 @@
         "desc": "検索サービスのAPIキーを入力します。"
       },
       "baseUrl": {
-        "name": "Base URL",
+        "name": "ベースURL",
         "desc": "ローカル検索インスタンスのURLを入力します。(例: http://localhost:8080)"
       },
       "googleSearchEngineId": {
@@ -262,7 +265,7 @@
         "desc": "チャット履歴を自動的に保存します。",
         "pathPlaceholder": "例: /chatHistory",
         "savePath": "保存パス",
-        "savePathDesc": "チャット履歴を指定したパスに自動的に保存します。 (Default: chatHistory)",
+        "savePathDesc": "チャット履歴を指定したパスに自動的に保存します。（デフォルト: chatHistory）",
         "saveFail": "⚠️ チャット履歴の保存に失敗しました: {{error}}",
         "loadFail": "⚠️ セッションの読み込みに失敗しました。",
         "deleteSuccess": "✅ チャット履歴が削除されました。",
@@ -279,9 +282,31 @@
         "renameSuccess": "チャット名を変更しました。",
         "renameFail": "チャット名の変更に失敗しました。"
       },
+      "context": {
+        "activeNote": "現在のノートを含める: {{name}}",
+        "selectedText": "選択されたテキスト ({{length}}文字)",
+        "folderFiles": "[フォルダ: {{name}} 内のファイル群]",
+        "activeNotePrefix": "[現在のノート: {{name}}]",
+        "canvasFile": "[キャンバスファイル: {{name}}]",
+        "tagFiles": "[タグ: {{name}} が含まれるファイル群 (最大5件)]",
+        "activeNotePrompt": "現在の有効なノート",
+        "categoryActiveNote": "📄 現在のノートを含める",
+        "categorySelection": "✂️ 選択テキスト",
+        "categoryFolder": "📁 フォルダを追加",
+        "categoryFile": "📝 ファイルを追加",
+        "categoryTag": "🏷️ タグを追加",
+        "categoryUrl": "🔗 URLを入力",
+        "categoryCanvas": "🎨 キャンバスを追加",
+        "categoryBack": "戻る",
+        "categoryTitle": "コンテキストタイプを選択",
+        "urlInputPlaceholder": "URLを入力（例: https://...）",
+        "urlInputPrompt": "EnterでURLを追加",
+        "includeNote": "ノートを含める",
+        "excludeNote": "ノートを除外"
+      },
       "sendMode": {
         "name": "メッセージ送信モード",
-        "desc": "チャットでのメッセージ送信方法を選択します。 (Default: Send on Enter)",
+        "desc": "チャットでのメッセージ送信方法を選択します。（デフォルト: Enterで送信）",
         "enter": "Enterで送信",
         "ctrlEnter": "Ctrl + Enterで送信"
       },
@@ -314,7 +339,7 @@
       },
       "inlineTrigger": {
         "name": "インラインコマンドトリガー",
-        "desc": "エディターでクイックアクションの自動補完ポップアップを表示するためのキーワードです。 (Default: /ai)"
+        "desc": "エディターでクイックアクションの自動補完ポップアップを表示するためのキーワードです。（デフォルト: /ai）"
       },
       "enableAutocomplete": {
         "name": "インライン自動補完 (Ghost Text) を有効にする",
@@ -329,16 +354,16 @@
         "turns": "ターン数制限",
         "tokens": "トークン数制限",
         "turnsLabel": "記憶するターン数",
-        "turnsDesc": "1〜15ターン。1ターン = ユーザーメッセージ + AI回答 1セット (Default: 10)",
-        "maxTokens": "最大コンテキストトークン (Default: 8000)"
+        "turnsDesc": "1〜15ターン。1ターン = ユーザーメッセージ + AI回答 1セット（デフォルト: 10）",
+        "maxTokens": "最大コンテキストトークン（デフォルト: 8000）"
       },
       "modelParams": {
         "name": "モデルパラメータ",
         "desc": "Temperature（創造性/正確性の調整）、最大出力長などを設定します。",
         "tempLabel": "温度 (Temperature)",
-        "tempDesc": "低いほど正確、高いほど創造的になります（0.0〜2.0） (Default: 0.7)",
+        "tempDesc": "低いほど正確、高いほど創造的になります（0.0〜2.0）（デフォルト: 0.7）",
         "maxOutput": "最大出力トークン (Max Output Tokens)",
-        "maxOutputDesc": "1回の生成での最大出力トークン数を制限します。 (Default: 4000)",
+        "maxOutputDesc": "1回の生成での最大出力トークン数を制限します。（デフォルト: 4000）",
         "responseLang": "応答言語を指定",
         "responseLangDesc": "AIが回答する言語を固定します。「自動」はユーザーの質問言語に合わせます。",
         "responseLangAuto": "自動"
@@ -347,35 +372,13 @@
         "name": "ストリーミング",
         "desc": "ストリーミング応答を有効にします。"
       },
-      "emptyResponseFallback": "⚠️ モデルが空の応答を返しました。（サポートされていない言語/フォーマット、プロンプトのフィルタリング、またはコンテキスト制限の超過が原因である可能性があります。）",
-      "context": {
-        "activeNote": "現在のノートを含める: {{name}}",
-        "selectedText": "選択されたテキスト ({{length}}文字)",
-        "folderFiles": "[フォルダ: {{name}} 内のファイル群]",
-        "activeNotePrefix": "[現在のノート: {{name}}]",
-        "canvasFile": "[キャンバスファイル: {{name}}]",
-        "tagFiles": "[タグ: {{name}} が含まれるファイル群 (最大5件)]",
-        "activeNotePrompt": "現在の有効なノート",
-        "categoryActiveNote": "📄 現在のノートを含める",
-        "categorySelection": "✂️ 選択テキスト",
-        "categoryFolder": "📁 フォルダを追加",
-        "categoryFile": "📝 ファイルを追加",
-        "categoryTag": "🏷️ タグを追加",
-        "categoryUrl": "🔗 URLを入力",
-        "categoryCanvas": "🎨 キャンバスを追加",
-        "categoryBack": "戻る",
-        "categoryTitle": "コンテキストタイプを選択",
-        "urlInputPlaceholder": "URLを入力（例: https://...）",
-        "urlInputPrompt": "EnterでURLを追加",
-        "includeNote": "ノートを含める",
-        "excludeNote": "ノートを除外"
-      },
       "timeout": {
         "ttftLabel": "最初の応答制限時間 (ms)",
         "ttftDesc": "リクエスト後、最初の単語を受信するまでの最大待機時間です。0に設定すると無制限になります。. (デフォルト: 0)",
         "interTokenLabel": "チャンク間の制限時間 (ms)",
         "interTokenDesc": "ストリーミング中、次の文章を受信するまでの最大待機時間です。0に設定すると無制限になります。. (デフォルト: 0)"
-      }
+      },
+      "emptyResponseFallback": "⚠️ モデルが空の応答を返しました。（サポートされていない言語/フォーマット、プロンプトのフィルタリング、またはコンテキスト制限の超過が原因である可能性があります。）"
     },
     "rag": {
       "toggleTooltip": "オンにすると、AIがVault内のノートを読み取り、参照して回答します。",
@@ -384,7 +387,7 @@
       "disabledWarning": "⚪ RAGが無効化されています。「接続とモデル」タブでRAGエンジンを有効にしてください。",
       "dataScope": {
         "name": "デフォルトのデータ範囲",
-        "desc": "RAG検索に含めるノートを選択します。 (Default: Entire Vault)",
+        "desc": "RAG検索に含めるノートを選択します。（デフォルト: Vault全体）",
         "vaultWide": "Vault全体",
         "activeNote": "アクティブなノートのみの場合",
         "manual": "手動で選択したファイルのみ"
@@ -399,7 +402,7 @@
       },
       "ignorePaths": {
         "name": "除外パス",
-        "desc": "カンマ区切り。含めるパスより優先 (Default: templates, chatHistory, etc.)"
+        "desc": "カンマ区切り。含めるパスより優先（デフォルト: templates, chatHistory など）"
       },
       "chunking": {
         "name": "テキストチャンキング設定",
@@ -415,18 +418,18 @@
       },
       "topK": {
         "name": "Top-K検索数",
-        "desc": "LLMに渡す最も関連性の高いドキュメントの数を設定します。 (Default: 5)"
+        "desc": "LLMに渡す最も関連性の高いドキュメントの数を設定します。（デフォルト: 5）"
       },
       "syncMode": {
         "name": "インデックス同期モード",
-        "desc": "RAGインデックスの同期タイミングを選択します。 (Default: Watch)",
+        "desc": "RAGインデックスの同期タイミングを選択します。（デフォルト: 変更検知）",
         "watch": "変更検知（推奨）",
         "manual": "手動同期",
         "startup": "アプリ起動時に一度"
       },
       "minSimilarity": {
         "name": "最小類似度閾値",
-        "desc": "この値以下の関連性スコアを検索結果から除外します (0~1) (Default: 0.0)"
+        "desc": "この値以下の関連性スコアを検索結果から除外します (0~1)（デフォルト: 0.0）"
       },
       "maxFileSize": {
         "name": "最大ファイルサイズ (MB)",
@@ -725,7 +728,11 @@
       "chunkRejected": "チャンク拒否済み",
       "chunkRejectedShort": "拒否済み",
       "chunkRejectedDesc": "この変更はスキップされます。",
-      "pendingChangesBanner": "修正待ち — Luminaチャットで確認してください"
+      "pendingChangesBanner": "修正待ち — Luminaチャットで確認してください",
+      "tableNotice": "📊 テーブル変更が含まれています。ライブプレビューでは表ウィジェットによってインラインDiffが隠れる場合があります。",
+      "switchToSourceMode": "ソースモードに切替",
+      "viewInEditor": "エディタで表示",
+      "tableBadge": "表"
     },
     "emptyResponseTokenLimit": "⚠️ モデルが空の応答を返しました。最大出力トークン（Max Output Tokens）制限に達したため、生成が中断されました。設定の「最大出力トークン」制限を増やしてください。",
     "tokenLimitHitWarning": "\n\n⚠️ （最大出力トークン制限に達したため、回答が途中で途切れました。設定の「最大出力トークン」の値を増やしてください。）",
@@ -750,6 +757,22 @@
     "modalCancel": "キャンセル",
     "modalProceed": "実行",
     "modelPlaceholder": "モデル名を入力...（例: claude, gpt-4）",
+    "searchModelShort": "モデルを検索...",
+    "favorites": "お気に入り",
+    "allModels": "すべてのモデル",
+    "addToFavorites": "お気に入りに追加",
+    "removeFromFavorites": "お気に入りから削除",
+    "searchPromptShort": "プロンプトを検索...",
+    "noSearchResults": "検索結果がありません。",
+    "unsupportedFileType": "サポートされていないファイル形式です: {{ext}}",
+    "attachFileFailed": "ファイルの添付に失敗しました: {{file}}",
+    "attachWorkerNotReady": "ドキュメントパーサーワーカーの準備ができていません。しばらくしてから再試行してください。",
+    "attachFileEmpty": "ファイルの内容が空のため添付されませんでした: {{file}}",
+    "attachmentsSkipped": "一部の添付ファイルを読み込めなかったためスキップしました: {{files}}",
+    "cliImageNotSupported": "CLIエージェントは画像分析をサポートしていません。テキストコンテキストのみ送信されました。",
+    "attachFileTooLarge": "ファイルサイズが大きすぎます (最大 {{max}}): {{file}}",
+    "attachDuplicate": "既に添付されているファイルです: {{file}}",
+    "attachProcessing": "ファイルを添付処理中...",
     "fsAdapterErr": "FileSystemAdapterが見つかりません。デスクトップ環境でのみサポートされています。",
     "searchSource": "出典",
     "debugDelAllMsg": "すべてのデバッグログを削除してもよろしいですか？",
@@ -790,27 +813,11 @@
     "errNoProvider": "選択した埋め込みプロバイダーの設定が見つかりません。",
     "errMobileAuto": "モバイルデバイスではローカル埋め込み(Autoモード)はサポートされていません。設定でクラウド埋め込みを選択してください。",
     "mcpTokenCopied": "認証トークンがクリップボードにコピーされました。",
+    "mcpManagerNotInitialized": "⚠️ MCP Managerが初期化されていません。",
     "mcpConnectFailed": "MCPサーバー「{{name}}」への接続に失敗したため無効化されました。",
     "mcpLocalServerStartFailed": "内蔵MCPサーバーの起動に失敗しました: {{error}}",
     "mcpDisconnectedDuringExecution": "ツール実行中にMCPサーバー「{{name}}」との接続が切断されたため、無効化されました。",
     "mcpToolExecutionFailed": "MCPサーバー「{{name}}」でツールの実行に失敗しました。サーバーが無効化されました。設定を確認してください。",
-    "searchModelShort": "モデルを検索...",
-    "favorites": "お気に入り",
-    "allModels": "すべてのモデル",
-    "addToFavorites": "お気に入りに追加",
-    "removeFromFavorites": "お気に入りから削除",
-    "searchPromptShort": "プロンプトを検索...",
-    "noSearchResults": "検索結果がありません。",
-    "unsupportedFileType": "サポートされていないファイル形式です: {{ext}}",
-    "attachFileFailed": "ファイルの添付に失敗しました: {{file}}",
-    "attachWorkerNotReady": "ドキュメントパーサーワーカーの準備ができていません。しばらくしてから再試行してください。",
-    "attachFileEmpty": "ファイルの内容が空のため添付されませんでした: {{file}}",
-    "attachmentsSkipped": "一部の添付ファイルを読み込めなかったためスキップしました: {{files}}",
-    "cliImageNotSupported": "CLIエージェントは画像分析をサポートしていません。テキストコンテキストのみ送信されました。",
-    "attachFileTooLarge": "ファイルサイズが大きすぎます (最大 {{max}}): {{file}}",
-    "attachDuplicate": "既に添付されているファイルです: {{file}}",
-    "attachProcessing": "ファイルを添付処理中...",
-    "mcpManagerNotInitialized": "⚠️ MCP Managerが初期化されていません。",
     "mcpSyncError": "⚠️ MCPサーバーの同期中にエラーが発生しました。",
     "mcpLocalServerRestarted": "✅ 内蔵MCPサーバーが再起動しました (ポート: {{port}})",
     "mcpLocalServerStarted": "✅ 内蔵MCPサーバーが起動しました (ポート: {{port}})",
@@ -957,6 +964,77 @@
       "successUpdate": "MOCが更新されました: {{path}} (ノート{{count}}個)",
       "emptyWarning": "指定された範囲に一致するノートが見つかりませんでした。このMOCは現在空です。",
       "noScope": "folder, tags, files のいずれかを指定する必要があります。"
+    },
+    "replace_note": {
+      "desc": "既存のノートの全内容を置き換えます。"
+    },
+    "patch_note": {
+      "desc": "ノートに1つ以上のテキスト置換を適用します。複数の変更を1回のツール呼び出しで一括処理するには、patches配列の使用を推奨します。これにより効率が向上し、すべての変更が統合された差分（Diff）として一度にユーザーに表示されます。"
+    },
+    "delete_note": {
+      "desc": "ノートを削除します。"
+    },
+    "move_note": {
+      "desc": "ノートを移動または名前変更します。"
+    },
+    "get_backlinks": {
+      "desc": "指定されたノートにリンクしているノートの一覧を取得します。"
+    },
+    "update_frontmatter": {
+      "desc": "ノートのフロントマター（Frontmatter）プロパティを更新します。"
+    },
+    "get_note_metadata": {
+      "desc": "ノートのメタデータ（フロントマター、タグ、作成日など）を取得します。"
+    },
+    "list_attachments": {
+      "desc": "保管庫内のすべての添付ファイル（画像、PDFなど）、または特定のノートにリンクされている添付ファイルを一覧表示します。"
+    },
+    "save_attachment": {
+      "desc": "Base64文字列からバイナリ添付ファイルを保存します。"
+    },
+    "execute_code": {
+      "desc": "安全なサンドボックス内でJavaScript/TypeScriptコードを実行します。"
+    },
+    "run_shell_command": {
+      "desc": "デスクトップOS上でターミナルのシェルコマンドを実行します。注意して使用してください。"
+    },
+    "run_note_code_block": {
+      "desc": "ノート内の特定のコードブロックをサンドボックス内で実行します。"
+    },
+    "list_tags": {
+      "desc": "保管庫内で使用されているすべてのタグを一覧表示します。"
+    },
+    "create_canvas": {
+      "desc": "ノードとエッジを含むObsidian Canvasファイル（.canvas）を作成します。"
+    },
+    "auto_link_note": {
+      "desc": "ノート内の未リンクの言及（ノートタイトルやエイリアス）を自動的に検出し、内部Markdownリンク（[[Title|Alias]]）に置き換えます。重要: ユーザーからバックリンクの追加やノートの自動リンクを求められた場合は、必ずこのツールを使用してください。手動でノートを読み取ってpatch_noteやreplace_noteでリンクを追加しようとしないでください（システムがクラッシュする原因となります）。"
+    },
+    "query_metadata": {
+      "desc": "フロントマターのプロパティ、タグ、またはフォルダに基づいて保管庫のノートを検索・フィルタリングし、結果をMarkdownテーブルで返します。メタデータ（ステータス、作成者、評価、日付など）に基づいてノートを一覧表示または集計する場合にこのツールを使用してください。"
+    },
+    "show_notice": {
+      "desc": "ユーザーに通知メッセージを表示します。",
+      "argMessage": "通知に表示するメッセージ内容。",
+      "argDuration": "オプション。通知を表示するミリ秒単位の期間。（デフォルト: 5000）"
+    },
+    "open_note": {
+      "desc": "Obsidianエディタのワークスペースでノートまたはファイルを開きます。"
+    },
+    "grep_search": {
+      "desc": "保管庫内のファイルを対象にテキストまたは正規表現パターンを検索し、一致した行を行番号付きで返します。"
+    },
+    "glob_files": {
+      "desc": "Globパターン（例: \"**/*.md\", \"Daily/*\", \"*.canvas\"）に一致する保管庫内のファイルパス一覧を検索します。"
+    },
+    "list_folders": {
+      "desc": "保管庫内のフォルダー一覧を取得します。特定の親フォルダーを指定して絞り込むこともできます。"
+    },
+    "get_outgoing_links": {
+      "desc": "指定されたノートからのすべての発信リンクと埋め込み、およびリンク先ファイルの解決状態を取得します。"
+    },
+    "list_tasks": {
+      "desc": "保管庫全体または特定のノート内のMarkdownタスク項目（- [ ] / - [x]）を、完了状態フィルター付きで一覧表示します。"
     }
   },
   "graph": {

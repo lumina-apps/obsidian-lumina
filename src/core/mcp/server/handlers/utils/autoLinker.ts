@@ -18,7 +18,7 @@ function buildTermRegex(term: string) {
 }
 
 export function applyAutoLink(content: string, terms: { originalTerm: string, path: string }[]): { newContent: string; linksAdded: number } {
-	const protectedRegex = /(^---\n[\s\S]*?\n---(?:$|\n)|```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]+`|\[\[.*?\]\]|\[.*?\]\(.*?\)|<https?:\/\/[^\s>]+>|https?:\/\/[^\s)]+)/g;
+	const protectedRegex = /(^---\r?\n[\s\S]*?\r?\n---(?:$|\r?\n)|```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\r\n]+`|\[\[[\s\S]*?\]\]|\[[\s\S]*?\]\([\s\S]*?\)|<https?:\/\/[^\s>]+>|https?:\/\/[^\s)]+|(?:\r?\n|^)#{1,6}\s+[^\r\n]*|(?:\s|^)#[a-zA-Z0-9_\-\/]+)/g;
 
 	const parts = content.split(protectedRegex);
 	let textTokens: { text: string; isProtected: boolean }[] = [];
@@ -72,13 +72,19 @@ export function applyAutoLink(content: string, terms: { originalTerm: string, pa
 	return { newContent: textTokens.map(t => t.text).join(''), linksAdded };
 }
 
-export function calculateAutoLinks(app: App, file: TFile, content: string): { newContent: string; linksAdded: number } {
+export function calculateAutoLinks(
+	app: App,
+	file: TFile,
+	content: string,
+	isPathAllowed?: (path: string) => boolean,
+): { newContent: string; linksAdded: number } {
 	// 1. Vault 내 모든 노트 제목 및 별명(aliases) 수집
 	const allFiles = app.vault.getMarkdownFiles();
 	const termsMap = new Map<string, string>(); // key: term lower, value: original file basename
 
 	for (const f of allFiles) {
 		if (f.path === file.path) continue; // 자기 자신 제외
+		if (isPathAllowed && !isPathAllowed(f.path)) continue;
 
 		const normalizedBasename = f.basename.normalize('NFC');
 		const basenameLower = normalizedBasename.toLowerCase();

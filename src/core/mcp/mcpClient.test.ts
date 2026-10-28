@@ -50,5 +50,35 @@ describe('LuminaMcpClient', () => {
 		expect((client as any).transport).toBeNull();
 		expect(mockTransport.close).toHaveBeenCalledTimes(1);
 	});
+
+	it('callTool 실행 중 Session not found 발생 시 자동 재연결 후 1회 재시도한다', async () => {
+		const config: McpServerConfig = {
+			id: 'test-server',
+			name: 'Test Server',
+			transport: 'streamable-http',
+			url: 'http://localhost:3000/sse',
+			enabled: true,
+			status: 'connected',
+		};
+
+		const client = new LuminaMcpClient(config);
+
+		const mockClientSdk = {
+			callTool: vi.fn()
+				.mockRejectedValueOnce(new Error('Session not found: invalid session'))
+				.mockResolvedValueOnce({ content: [{ type: 'text', text: 'success' }] }),
+		};
+		(client as any).client = mockClientSdk;
+
+		const disconnectSpy = vi.spyOn(client, 'disconnect').mockResolvedValue(undefined);
+		const connectSpy = vi.spyOn(client, 'connect').mockResolvedValue(undefined);
+
+		const result = await client.callTool('read_note', { path: 'test.md' });
+
+		expect(disconnectSpy).toHaveBeenCalledTimes(1);
+		expect(connectSpy).toHaveBeenCalledTimes(1);
+		expect(mockClientSdk.callTool).toHaveBeenCalledTimes(2);
+		expect(result).toEqual({ content: [{ type: 'text', text: 'success' }] });
+	});
 });
 

@@ -1,7 +1,8 @@
 import { TFile, normalizePath } from 'obsidian';
 import * as obsidian from 'obsidian';
 import { t } from '../../../../shared/locales/helpers';
-import { applyReadLimit, getStringArg, getStringOptArg } from '../handlerHelpers';
+import { sanitizeFilePath } from '../../../../shared/utils/fileUtils';
+import { applyReadLimit, getStringArg, getStringOptArg, getNumberArg, blockIfPathNotAllowed, getNormalizedFileTags, fileMatchesTags } from '../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
 import type { PathGuard } from '../pathGuard';
 
@@ -33,20 +34,8 @@ export const searchNotesHandler = async (
 
 		if (tags.length > 0) {
 			const cache = ctx.plugin.app.metadataCache.getFileCache(file);
-			const allTags = obsidian.getAllTags(cache || {}) || [];
-			const frontmatter = cache?.frontmatter;
-			const fmTags: unknown = frontmatter?.tags ?? frontmatter?.tag;
-			const normalizedFm: string[] = fmTags
-				? (Array.isArray(fmTags) ? (fmTags as unknown[]) : [fmTags]).map(t => String(t).startsWith('#') ? String(t) : '#' + String(t))
-				: [];
-			const fileTags = Array.from(new Set([...allTags, ...normalizedFm]));
-
-			// check if all requested tags exist in fileTags
-			const hasAllTags = tags.every(tag => {
-				const searchTag = tag.startsWith('#') ? tag : '#' + tag;
-				return fileTags.includes(searchTag);
-			});
-			if (!hasAllTags) continue;
+			const fileTags = getNormalizedFileTags(cache);
+			if (!fileMatchesTags(fileTags, tags)) continue;
 		}
 
 		const content = await ctx.plugin.app.vault.read(file);
@@ -291,4 +280,77 @@ export const globFilesHandler = async (
 
 	const resultText = `Found ${matchedFiles.length} files matching "${pattern}" (max: ${maxResults}):\n\n` + matchedFiles.join('\n');
 	return { content: [{ type: 'text', text: applyReadLimit(resultText, ctx.limitRead) }] };
+};
+
+export const listTasksHandler = async (
+	args: ToolArguments,
+	ctx: ToolHandlerContext,
+	pathGuard: PathGuard,
+): Promise<ToolResult> => {
+	const rawPath = getStringOptArg(args, 'path');
+	const completedFilter = typeof args.completed === 'boolean' ? args.completed : undefined;
+	const maxResults = getNumberArg(args, 'maxResults') ?? 100;
+
+	const targetScope = rawPath ? sanitizeFilePath(rawPath, false, ctx.plugin.app) : undefined;
+	if (targetScope) {
+		const blocked = blockIfPathNotAllowed(targetScope, ctx, pathGuard);
+		if (blocked) return blocked;
+	}
+
+	const files = ctx.plugin.app.vault.getMarkdownFiles().filter(f => {
+		if (!pathGuard.isAgentPathAllowed(f.path, ctx.plugin)) return false;
+		if (targetScope) {
+			if (f.path === targetScope || f.path.startsWith(`${targetScope}/`)) return true;
+			if (!targetScope.endsWith('.md') && f.path === `${targetScope}.md`) return true;
+			return false;
+		}
+		return true;
+	});
+
+	interface TaskItem {
+		file: string;
+		line: number;
+		completed: boolean;
+		text: string;
+	}
+	const tasks: TaskItem[] = [];
+
+	// Task regex: matches '- [ ] ...' or '- [x] ...' or '* [ ]' etc.
+	const taskRegex = /^[\t ]*[-*+]\s+\[([ xX])\]\s+(.*)$/;
+
+	for (const file of files) {
+		if (tasks.length >= maxResults) break;
+		const content = await ctx.plugin.app.vault.read(file);
+		const lines = content.split('\n');
+
+		for (let i = 0; i < lines.length; i++) {
+			const line = lines[i];
+			const match = taskRegex.exec(line);
+			if (match) {
+				const isCompleted = match[1].toLowerCase() === 'x';
+				if (completedFilter !== undefined && isCompleted !== completedFilter) {
+					continue;
+				}
+				tasks.push({
+					file: file.path,
+					line: i + 1,
+					completed: isCompleted,
+					text: match[2].trim(),
+				});
+				if (tasks.length >= maxResults) break;
+			}
+		}
+	}
+
+	if (tasks.length === 0) {
+		return { content: [{ type: 'text', text: 'No matching tasks found.' }] };
+	}
+
+	const formatted = tasks.map(t => {
+		const checkbox = t.completed ? '[x]' : '[ ]';
+		return `- ${checkbox} ${t.text} (${t.file}:${t.line})`;
+	}).join('\n');
+
+	const header = `Tasks (${tasks.length}${tasks.length >= maxResults ? ' - limit reached' : ''}):\n`;
+	return { content: [{ type: 'text', text: header + applyReadLimit(formatted, ctx.limitRead) }] };
 };

@@ -1,5 +1,5 @@
 import { TFile, normalizePath, getAllTags, type CachedMetadata } from 'obsidian';
-import { applyReadLimit, getNumberArg } from '../handlerHelpers';
+import { applyReadLimit, getNumberArg, getNormalizedFileTags, fileMatchesTags } from '../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
 import type { PathGuard } from '../pathGuard';
 
@@ -123,19 +123,8 @@ export const queryMetadataHandler = async (
 
 		// 3. Tags check
 		if (tags.length > 0) {
-			const allTags = getAllTags(cache || {}) || [];
-			const frontmatter = cache?.frontmatter;
-			const fmTags: unknown = frontmatter?.tags ?? frontmatter?.tag;
-			const normalizedFm: string[] = fmTags
-				? (Array.isArray(fmTags) ? (fmTags as unknown[]) : [fmTags]).map(t => String(t).startsWith('#') ? String(t) : '#' + String(t))
-				: [];
-			const fileTags = Array.from(new Set([...allTags, ...normalizedFm]));
-
-			const hasAllTags = tags.every(tag => {
-				const searchTag = tag.startsWith('#') ? tag : '#' + tag;
-				return fileTags.includes(searchTag);
-			});
-			if (!hasAllTags) continue;
+			const fileTags = getNormalizedFileTags(cache);
+			if (!fileMatchesTags(fileTags, tags)) continue;
 		}
 
 		// 4. Frontmatter & built-in properties filters check

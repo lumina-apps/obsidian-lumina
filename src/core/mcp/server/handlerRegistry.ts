@@ -1,9 +1,9 @@
 import { t } from '../../../shared/locales/helpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult, ToolName } from './toolTypes';
 import type { PathGuard } from './pathGuard';
-import { readActiveNoteHandler, readNoteHandler, readDailyNoteHandler, getBacklinksHandler, getNoteMetadataHandler, listAttachmentsHandler } from './handlers/readHandlers';
+import { readActiveNoteHandler, readNoteHandler, readDailyNoteHandler, getBacklinksHandler, getNoteMetadataHandler, listAttachmentsHandler, listFoldersHandler, getOutgoingLinksHandler } from './handlers/readHandlers';
 import { createNoteHandler, appendToNoteHandler, appendToDailyNoteHandler, replaceNoteHandler, patchNoteHandler, deleteNoteHandler, moveNoteHandler, updateFrontmatterHandler, saveAttachmentHandler } from './handlers/writeHandlers';
-import { searchNotesHandler, listNotesHandler, listTagsHandler, grepSearchHandler, globFilesHandler } from './handlers/searchHandlers';
+import { searchNotesHandler, listNotesHandler, listTagsHandler, grepSearchHandler, globFilesHandler, listTasksHandler } from './handlers/searchHandlers';
 import { ragSearchHandler } from './handlers/ragHandlers';
 import { executeCodeHandler, runNoteCodeBlockHandler, runShellCommandHandler } from './handlers/executeHandlers';
 import { createCanvasHandler } from './handlers/canvasHandlers';
@@ -49,6 +49,9 @@ const handlerMap: Record<ToolName, ToolHandlerImpl> = {
 	open_note: openNoteHandler,
 	grep_search: grepSearchHandler,
 	glob_files: globFilesHandler,
+	list_folders: listFoldersHandler,
+	get_outgoing_links: getOutgoingLinksHandler,
+	list_tasks: listTasksHandler,
 };
 
 /**

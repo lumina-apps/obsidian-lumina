@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createNoteHandler, patchNoteHandler, moveNoteHandler, saveAttachmentHandler, updateFrontmatterHandler } from './writeHandlers';
+import { createNoteHandler, appendToDailyNoteHandler, patchNoteHandler, moveNoteHandler, saveAttachmentHandler, updateFrontmatterHandler } from './writeHandlers';
 import { autoLinkNoteHandler } from './autoLinkHandlers';
 import { PathGuard } from '../pathGuard';
 import type { ToolHandlerContext } from '../toolTypes';
@@ -44,6 +44,7 @@ describe('writeHandlers', () => {
 				const f = mockFiles.get(file.path);
 				if (f) f.content = newContent;
 			}),
+			create: vi.fn().mockResolvedValue(undefined),
 			createBinary: vi.fn().mockResolvedValue(undefined),
 			getMarkdownFiles: vi.fn(() => Array.from(mockFiles.values()).map(v => v.file)),
 		};
@@ -115,6 +116,69 @@ describe('writeHandlers', () => {
 			expect(res.isError).toBeFalsy();
 			const modifiedContent = mockFiles.get('test.md')?.content;
 			expect(modifiedContent).toContain('$100');
+		});
+
+		it('returns error when target appears multiple times without replaceAll', async () => {
+			mockFiles.get('test.md')!.content = 'item line\nitem line\n';
+			const res = await patchNoteHandler({
+				path: 'test.md',
+				target: 'item line',
+				replacement: 'new line',
+			}, ctx, pathGuard);
+
+			expect(res.isError).toBe(true);
+			const text = res.content[0].type === 'text' ? res.content[0].text : '';
+			expect(text).toContain('appears 2 times');
+			expect(text).toContain('replaceAll: true');
+		});
+
+		it('replaces all occurrences when replaceAll is true', async () => {
+			mockFiles.get('test.md')!.content = 'item line\nitem line\n';
+			vi.mocked(approvalManager.requestApproval).mockImplementation(async (_path, _cur, proposed) => {
+				return { approved: true, content: proposed };
+			});
+
+			const res = await patchNoteHandler({
+				path: 'test.md',
+				target: 'item line',
+				replacement: 'new line',
+				replaceAll: true,
+			}, ctx, pathGuard);
+
+			expect(res.isError).toBeFalsy();
+			const modified = mockFiles.get('test.md')?.content;
+			expect(modified).toBe('new line\nnew line\n');
+		});
+
+		it('패치 후 파일 크기가 MCP_MAX_FILE_LENGTH를 초과하면 에러를 반환한다', async () => {
+			mockFiles.get('test.md')!.content = 'target line';
+			const res = await patchNoteHandler({
+				path: 'test.md',
+				target: 'target line',
+				replacement: 'A'.repeat(100001),
+			}, ctx, pathGuard);
+
+			expect(res.isError).toBe(true);
+			const text = res.content[0].type === 'text' ? res.content[0].text : '';
+			expect(text).toContain('100,000');
+		});
+
+		it('ctx.signal이 제공되면 approvalManager.requestApproval에 전달된다', async () => {
+			const controller = new AbortController();
+			const ctxWithSignal = { ...ctx, signal: controller.signal };
+
+			await patchNoteHandler({
+				path: 'test.md',
+				target: 'placeholder',
+				replacement: 'replaced',
+			}, ctxWithSignal, pathGuard);
+
+			expect(approvalManager.requestApproval).toHaveBeenCalledWith(
+				'test.md',
+				expect.anything(),
+				expect.anything(),
+				expect.objectContaining({ signal: controller.signal }),
+			);
 		});
 	});
 
@@ -228,6 +292,56 @@ describe('writeHandlers', () => {
 			const res2 = await updateFrontmatterHandler({ path: 'test.md', key: 'status' }, ctx, pathGuard);
 			expect(res2.isError).toBe(true);
 			expect(res2.content[0].type === 'text' ? res2.content[0].text : '').toContain('value parameter is required');
+		});
+
+		it('processes JSON array strings into arrays and handles key deletion', async () => {
+			const processedFm: Record<string, unknown> = {};
+			vi.mocked(ctx.plugin.app.fileManager.processFrontMatter).mockImplementation(async (_f, fn) => {
+				fn(processedFm);
+			});
+
+			const res = await updateFrontmatterHandler({
+				path: 'test.md',
+				key: 'aliases',
+				value: '["alias1", "alias2"]',
+			}, ctx, pathGuard);
+
+			expect(res.isError).toBeFalsy();
+			expect(processedFm.aliases).toEqual(['alias1', 'alias2']);
+
+			// Delete key test
+			const delRes = await updateFrontmatterHandler({
+				path: 'test.md',
+				key: 'aliases',
+				deleteKey: true,
+			}, ctx, pathGuard);
+
+			expect(delRes.isError).toBeFalsy();
+			expect(processedFm.aliases).toBeUndefined();
+
+			// Smart parsing for boolean and number
+			await updateFrontmatterHandler({ path: 'test.md', key: 'published', value: 'true' }, ctx, pathGuard);
+			expect(processedFm.published).toBe(true);
+
+			await updateFrontmatterHandler({ path: 'test.md', key: 'score', value: '98.5' }, ctx, pathGuard);
+			expect(processedFm.score).toBe(98.5);
+		});
+	});
+
+	describe('appendToDailyNoteHandler', () => {
+		it('특정 date 인자 전달 시 해당 일자의 데일리 노트를 생성하거나 추가한다', async () => {
+			const res = await appendToDailyNoteHandler({
+				date: '2026-11-15',
+				content: 'New log entry',
+			}, ctx, pathGuard);
+
+			expect(res.isError).toBeFalsy();
+			expect(approvalManager.requestActionApproval).toHaveBeenCalledWith(
+				'create_note',
+				'2026-11-15.md',
+				expect.objectContaining({ content: 'New log entry' }),
+				expect.anything(),
+			);
 		});
 	});
 

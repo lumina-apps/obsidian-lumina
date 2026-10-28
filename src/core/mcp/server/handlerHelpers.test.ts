@@ -7,6 +7,8 @@ import {
 	getTodayString,
 	getDailyNotePath,
 	blockIfPathNotAllowed,
+	getNormalizedFileTags,
+	fileMatchesTags,
 } from './handlerHelpers';
 import type { App } from 'obsidian';
 import type { PathGuard } from './pathGuard';
@@ -143,6 +145,37 @@ describe('handlerHelpers', () => {
 
 			const path = await getDailyNotePath(mockApp);
 			expect(path).toMatch(/^\d{4}-\d{2}-\d{2}\.md$/);
+		});
+
+		it('targetDate 인자가 주어지면 해당 일자의 데일리 노트 경로를 반환한다', async () => {
+			const path = await getDailyNotePath(mockApp, '2026-12-25');
+			expect(path).toBe('2026-12-25.md');
+		});
+	});
+
+	describe('getNormalizedFileTags and fileMatchesTags', () => {
+		it('본문 해시태그와 프론트매터 태그를 소문자 # 접두사로 중복 없이 정규화한다', () => {
+			const cache = {
+				tags: [{ tag: '#Obsidian' }, { tag: '#AI/LLM' }],
+				frontmatter: {
+					tags: ['markdown', '#ai/llm', 'Productivity'],
+				},
+			} as any;
+
+			const tags = getNormalizedFileTags(cache);
+			expect(tags).toContain('#obsidian');
+			expect(tags).toContain('#ai/llm');
+			expect(tags).toContain('#markdown');
+			expect(tags).toContain('#productivity');
+			expect(tags.filter(t => t === '#ai/llm')).toHaveLength(1);
+		});
+
+		it('fileMatchesTags는 대소문자 및 # 접두사 유무와 무관하게 정확히 매칭한다', () => {
+			const fileTags = ['#obsidian', '#ai/llm', '#notes'];
+
+			expect(fileMatchesTags(fileTags, ['obsidian', '#AI/LLM'])).toBe(true);
+			expect(fileMatchesTags(fileTags, ['#OBSIDIAN'])).toBe(true);
+			expect(fileMatchesTags(fileTags, ['obsidian', 'missingTag'])).toBe(false);
 		});
 	});
 

@@ -77,7 +77,12 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		{
 			name: 'read_daily_note',
 			description: t('mcpServerTools.read_daily_note.desc'),
-			inputSchema: { type: 'object', properties: {} },
+			inputSchema: {
+				type: 'object',
+				properties: {
+					date: { type: 'string', description: 'Optional target date in YYYY-MM-DD format. If omitted, today is used.' },
+				},
+			},
 		},
 		{
 			name: 'append_to_daily_note',
@@ -86,6 +91,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 				type: 'object',
 				properties: {
 					content: { type: 'string', description: t('mcpServerTools.append_to_daily_note.argContent') },
+					date: { type: 'string', description: 'Optional target date in YYYY-MM-DD format. If omitted, today is used.' },
 				},
 				required: ['content'],
 			},
@@ -140,13 +146,15 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 							type: 'object',
 							properties: {
 								target: { type: 'string', description: 'Exact string to find. Must match exactly including whitespace.' },
-								replacement: { type: 'string', description: 'String to replace the target with.' }
+								replacement: { type: 'string', description: 'String to replace the target with.' },
+								replaceAll: { type: 'boolean', description: 'Whether to replace all occurrences for this specific patch item. (default: false)' }
 							},
 							required: ['target', 'replacement']
 						}
 					},
 					target: { type: 'string', description: 'Single patch: exact string to find and replace. Must match exactly including whitespace.' },
-					replacement: { type: 'string', description: 'Single patch: string to replace the target with.' }
+					replacement: { type: 'string', description: 'Single patch: string to replace the target with.' },
+					replaceAll: { type: 'boolean', description: 'Whether to replace all occurrences of target. If false (default) and target appears multiple times, returns an error.' }
 				},
 				required: ['path']
 			}
@@ -193,9 +201,10 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 				properties: {
 					path: { type: 'string', description: 'Path to the note' },
 					key: { type: 'string', description: 'Frontmatter key to update' },
-					value: { type: 'string', description: 'New value for the frontmatter key' }
+					value: { type: 'string', description: 'New value for the frontmatter key (supports strings, numbers, booleans, and JSON array strings like ["tag1", "tag2"]). Pass "null" or use deleteKey to delete the key.' },
+					deleteKey: { type: 'boolean', description: 'Optional: if true, removes the specified frontmatter key entirely.' }
 				},
-				required: ['path', 'key', 'value']
+				required: ['path', 'key']
 			}
 		},
 		{
@@ -409,7 +418,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'open_note',
-			description: 'Opens a note or file in the Obsidian editor workspace.',
+			description: t('mcpServerTools.open_note.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -421,7 +430,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'grep_search',
-			description: 'Searches for exact text or regex patterns across files in the vault. Returns matching lines with line numbers.',
+			description: t('mcpServerTools.grep_search.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -436,7 +445,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		},
 		{
 			name: 'glob_files',
-			description: 'Finds files across the vault matching a glob pattern (e.g. "**/*.md", "Daily/*", "*.canvas").',
+			description: t('mcpServerTools.glob_files.desc'),
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -445,6 +454,42 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 					maxResults: { type: 'number', description: 'Maximum number of file paths to return. (default: 100)' },
 				},
 				required: ['pattern'],
+			},
+		},
+		{
+			name: 'list_folders',
+			description: t('mcpServerTools.list_folders.desc'),
+			inputSchema: {
+				type: 'object',
+				properties: {
+					folderPath: { type: 'string', description: 'Optional parent folder path to list subfolders from. If empty, lists top-level vault folders.' },
+					recursive: { type: 'boolean', description: 'Whether to list subfolders recursively. (default: false)' },
+				},
+				required: [],
+			},
+		},
+		{
+			name: 'get_outgoing_links',
+			description: t('mcpServerTools.get_outgoing_links.desc'),
+			inputSchema: {
+				type: 'object',
+				properties: {
+					path: { type: 'string', description: 'Path to the note to get outgoing links and embeds from.' },
+				},
+				required: ['path'],
+			},
+		},
+		{
+			name: 'list_tasks',
+			description: t('mcpServerTools.list_tasks.desc'),
+			inputSchema: {
+				type: 'object',
+				properties: {
+					path: { type: 'string', description: 'Optional specific note or folder path to gather tasks from. If omitted, searches across the vault.' },
+					completed: { type: 'boolean', description: 'Optional filter: true for completed tasks only (- [x]), false for uncompleted tasks only (- [ ]), omitted for both.' },
+					maxResults: { type: 'number', description: 'Maximum number of tasks to return. (default: 100)' },
+				},
+				required: [],
 			},
 		}
 	];

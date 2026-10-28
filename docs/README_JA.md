@@ -116,7 +116,7 @@ Luminaは、あなたのスキルレベルに合わせた2つのトラックを�
 - **サーバーモード（外部AI主導）:**
   - 外部のAIアシスタント（Claude、Cursorなど）またはエージェントモードのAIがあなたのボルトに直接アクセスできる多数のツールを提供します。
   - **ウェブ検索:** `lumina_web_search` (Tavily、Exa、Googleなどのさまざまな検索エンジンを活用したリアルタイムのインターネット情報検索、スマート切り詰めサポート)
-  - **読み取りと検索:** `read_active_note`, `read_note`（行範囲 `startLine`/`endLine` 指定対応）, `search_notes` (タグフィルター対応), `grep_search`（ボルト全体の正規表現/テキスト行検索）, `glob_files`（ワイルドカードファイルパス検索、例: `**/*.md`）, `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`, `list_attachments`, `list_tags`, `query_metadata` を提供し、広範な文脈をAIに提供します。
+  - **読み取りと検索:** `read_active_note`, `read_note`（行範囲 `startLine`/`endLine` 指定対応）, `search_notes` (タグフィルター対応), `grep_search`（ボルト全体の正規表現/テキスト行検索）, `glob_files`（ワイルドカードファイルパス検索、例: `**/*.md`）, `list_folders`（フォルダー一覧）, `get_outgoing_links`（発信リンク・埋め込み一覧）, `list_tasks`（タスク項目集計・完了フィルター）, `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata`（見出し・リンク・埋め込み含む）, `list_attachments`, `list_tags`, `query_metadata` を提供し、広範な文脈をAIに提供します。
   - **作成と修正:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` （ノートおよびキャンバスの作成・修正、MOCノートの生成、バイナリファイルの保存）。
   - **管理と実行:** `open_note`（エディタタブでファイル/ノートを即座に開く）, `delete_note`, `move_note`（移動・名前変更）, `execute_code`, `run_note_code_block` （サンドボックス内でのコード実行）, `run_shell_command` (デスクトップOSのターミナルシェルコマンドの実行), `show_notice`（Obsidian通知の表示）。
   - **デイリーノート:** `read_daily_note`, `append_to_daily_note` （今日のノートへの読み書き統合）。

@@ -41,4 +41,45 @@ describe('approvalManager', () => {
 		expect(result.content).toContain('modified line 2');
 		unsubscribe();
 	});
+
+	it('should calculate accurate startLine and detect isTable for chunks', async () => {
+		const baseContent = [
+			'line 1',
+			'line 2',
+			'target 1',
+			'line 4',
+			'| col 1 | col 2 |',
+			'| --- | --- |',
+			'| target 2 in table | desc |',
+			'line 8',
+		].join('\n');
+
+		const proposedContent = baseContent
+			.replace('target 1', 'replacement 1')
+			.replace('target 2 in table', 'replacement 2 in table');
+
+		void approvalManager.requestApproval('test-table.md', baseContent, proposedContent);
+
+		let queuedRequest: ApprovalRequest | undefined;
+		const unsubscribe = approvalStore.subscribe((state) => {
+			if (state.queue.length > 0) {
+				queuedRequest = state.queue.find((r) => r.filePath === 'test-table.md');
+			}
+		});
+
+		expect(queuedRequest).toBeDefined();
+		if (!queuedRequest) throw new Error('queuedRequest is undefined');
+
+		expect(queuedRequest.chunks.length).toBe(2);
+		// Chunk 1: target 1 is on line 3
+		expect(queuedRequest.chunks[0].startLine).toBe(3);
+		expect(queuedRequest.chunks[0].isTable).toBe(false);
+
+		// Chunk 2: target 2 is on line 7 and is in a table
+		expect(queuedRequest.chunks[1].startLine).toBe(7);
+		expect(queuedRequest.chunks[1].isTable).toBe(true);
+
+		approvalManager.rejectAll(queuedRequest.id);
+		unsubscribe();
+	});
 });

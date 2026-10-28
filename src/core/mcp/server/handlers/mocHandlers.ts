@@ -1,7 +1,7 @@
 import * as obsidian from 'obsidian';
 import { TFile, normalizePath } from 'obsidian';
 import { sanitizeFilePath } from '../../../../shared/utils/fileUtils';
-import { getStringArg, getStringOptArg } from '../handlerHelpers';
+import { getStringArg, getStringOptArg, getNormalizedFileTags, fileMatchesTags } from '../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
 import type { PathGuard } from '../pathGuard';
 import { getValidatedPathAndFile, safeCreateFile, safeModifyFile } from './utils/writeHandlerUtils';
@@ -82,12 +82,8 @@ export const generateMocHandler = async (
 			// 태그 필터
 			if (tagsRaw.length > 0) {
 				const cache = ctx.plugin.app.metadataCache.getFileCache(f);
-				const fileTags = obsidian.getAllTags(cache || {}) || [];
-				const hasAllTags = tagsRaw.every(tag => {
-					const searchTag = tag.startsWith('#') ? tag : '#' + tag;
-					return fileTags.includes(searchTag);
-				});
-				if (!hasAllTags) return false;
+				const fileTags = getNormalizedFileTags(cache);
+				if (!fileMatchesTags(fileTags, tagsRaw)) return false;
 			}
 
 			return true;

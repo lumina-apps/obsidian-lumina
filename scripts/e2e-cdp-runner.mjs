@@ -2103,32 +2103,44 @@ async function run() {
 					return { skipped: true, reason: 'Google provider has no stored API key' };
 				}
 
+				const req = window.requestUrl || (typeof require !== 'undefined' ? require('obsidian').requestUrl : null);
+				if (!req) {
+					return { success: false, providerType: 'google', error: 'Obsidian requestUrl API not available' };
+				}
+
 				const start = Date.now();
 				try {
-					// 1. Test listModels endpoint via fetch
-					const listRes = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + apiKey);
-					const listData = await listRes.json();
-					const models = listData.models || [];
+					// 1. Test listModels endpoint via requestUrl (bypasses browser CORS & net restrictions)
+					const listRes = await req({
+						url: 'https://generativelanguage.googleapis.com/v1beta/models',
+						method: 'GET',
+						headers: { 'x-goog-api-key': apiKey }
+					});
+					const listData = listRes.json;
+					const models = listData?.models || [];
 					const geminiModels = models.filter(m => m.name && m.name.includes('gemini'));
 
 					// 2. Test short prompt completion
 					const candidateModel = geminiModels.find(m => m.name.includes('gemini-2.5-flash') || m.name.includes('gemini-2.0-flash') || m.name.includes('flash'))?.name || geminiModels[0]?.name || 'models/gemini-2.5-flash';
 					const modelEndpoint = candidateModel.startsWith('models/') ? candidateModel.replace('models/', '') : candidateModel;
 
-					const promptRes = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + modelEndpoint + ':generateContent?key=' + apiKey, {
+					const promptRes = await req({
+						url: 'https://generativelanguage.googleapis.com/v1beta/models/' + modelEndpoint + ':generateContent',
 						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
+						headers: {
+							'Content-Type': 'application/json',
+							'x-goog-api-key': apiKey
+						},
 						body: JSON.stringify({
 							contents: [{ role: 'user', parts: [{ text: 'Say "PONG" and nothing else.' }] }],
 							generationConfig: {
-								maxOutputTokens: 100,
-								thinkingConfig: { thinkingBudget: 0 }
+								maxOutputTokens: 100
 							}
 						})
 					});
 
-					const promptData = await promptRes.json();
-					const text = promptData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+					const promptData = promptRes.json;
+					const text = promptData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
 
 					return {
 						success: true,
@@ -2146,7 +2158,7 @@ async function run() {
 						duration: Date.now() - start
 					};
 				}
-			})()`);
+			})()`, 45000);
 
 			if (llmResult.skipped) {
 				reporter.record('Live LLM Provider Completion', true, `Skipped: ${llmResult.reason}`, Date.now() - t0);

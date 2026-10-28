@@ -113,9 +113,22 @@
     "mcp": {
       "title": "代理与\nMCP",
       "desc": "连接外部 Model Context Protocol (MCP) 服务器以使用本地工具，或启用内置服务器以允许其他应用控制 Lumina。",
+      "agentMode": {
+        "name": "代理模式 (Agent Mode)",
+        "desc": "LLM 利用 MCP 工具自主执行任务。⚠️ 小型模型可能导致性能下降。",
+        "maxSteps": "最大自动执行次数",
+        "maxStepsDesc": "代理在单次响应中可以连续执行工具的最大次数。（默认值：15）",
+        "respectRagExclusions": "将 RAG 路径排除/包含设置应用于代理",
+        "respectRagExclusionsDesc": "将 RAG 选项卡的排除规则应用于代理的文件操作。",
+        "readMode": "读取模式",
+        "editMode": "编辑模式"
+      },
       "addServer": "+ 添加新 MCP 服务器",
       "serverName": "服务器名称",
       "transport": "传输方式",
+      "transportDesc": "选择此 MCP 服务器的传输协议。",
+      "transportSse": "SSE (GET → 会话 URL → POST)",
+      "transportStreamableHttp": "Streamable HTTP (直接 POST)",
       "enableDesc": "启用（注入工具到聊天）",
       "deleteServer": "删除此服务器",
       "emptyServers": "未注册服务器。",
@@ -138,19 +151,19 @@
         },
         "guide": "http://localhost:{{port}}/sse\n认证: 请求头添加 \"Authorization: Bearer <token>\" ",
         "maxRead": {
-          "name": "Read 最大字符数",
+          "name": "读取最大字符数",
           "desc": "单次读取文件返回的最大字符数 (默认: 20000)"
         },
         "searchSnippet": {
-          "name": "Search 片段长度",
+          "name": "搜索片段长度",
           "desc": "匹配词前后显示的字符数 (默认: 300)"
         },
         "searchMaxResults": {
-          "name": "Search 最大结果数",
+          "name": "搜索最大结果数",
           "desc": "单次搜索返回的最大结果数 (默认: 10)"
         },
         "maxAppend": {
-          "name": "Append 最大字符数",
+          "name": "追加最大字符数",
           "desc": "单次追加操作的最大字符数 (默认: 10000)"
         },
         "enableShellCommands": {
@@ -173,7 +186,7 @@
         "sectionTitle": "外部 MCP 服务器（客户端连接）",
         "desc": "连接外部 Model Context Protocol (MCP) 服务器以在对话中使用其他工具。",
         "sseUrl": {
-          "name": "Server URL",
+          "name": "服务器 URL",
           "desc": "例如 http://localhost:8080/sse"
         },
         "token": {
@@ -187,16 +200,6 @@
         "args": "参数:",
         "approve": "批准",
         "reject": "拒绝"
-      },
-      "agentMode": {
-        "name": "代理模式 (Agent Mode)",
-        "desc": "LLM 利用 MCP 工具自主执行任务。⚠️ 小型模型可能导致性能下降。",
-        "maxSteps": "最大自动执行次数",
-        "maxStepsDesc": "代理在单次响应中可以连续执行工具的最大次数。（默认值：15）",
-        "respectRagExclusions": "将 RAG 路径排除/包含设置应用于代理",
-        "respectRagExclusionsDesc": "将 RAG 选项卡的排除规则应用于代理的文件操作。",
-        "readMode": "读取模式",
-        "editMode": "编辑模式"
       },
       "experimental": "实验性功能"
     },
@@ -217,7 +220,7 @@
         "desc": "请输入搜索服务的API密钥。"
       },
       "baseUrl": {
-        "name": "Base URL",
+        "name": "基础 URL",
         "desc": "请输入本地搜索实例的URL。(例如: http://localhost:8080)"
       },
       "googleSearchEngineId": {
@@ -262,7 +265,7 @@
         "desc": "自动保存聊天记录。",
         "pathPlaceholder": "例：/chatHistory",
         "savePath": "保存路径",
-        "savePathDesc": "将聊天记录自动保存到指定路径。 (Default: chatHistory)",
+        "savePathDesc": "将聊天记录自动保存到指定路径。（默认：chatHistory）",
         "saveFail": "⚠️ 保存聊天记录失败：{{error}}",
         "loadFail": "⚠️ 无法加载会话。",
         "deleteSuccess": "✅ 聊天记录已删除。",
@@ -279,9 +282,31 @@
         "renameSuccess": "聊天已重命名。",
         "renameFail": "重命名聊天失败。"
       },
+      "context": {
+        "activeNote": "包含当前笔记：{{name}}",
+        "selectedText": "选中的文本 ({{length}} 个字符)",
+        "folderFiles": "[文件夹内的文件: {{name}}]",
+        "activeNotePrefix": "[当前笔记: {{name}}]",
+        "canvasFile": "[白板文件: {{name}}]",
+        "tagFiles": "[含标签的文件: {{name}} (最多 5 个)]",
+        "activeNotePrompt": "当前活动笔记",
+        "categoryActiveNote": "📄 包含当前笔记",
+        "categorySelection": "✂️ 选中的文本",
+        "categoryFolder": "📁 添加文件夹",
+        "categoryFile": "📝 添加文件",
+        "categoryTag": "🏷️ 添加标签",
+        "categoryUrl": "🔗 输入网址",
+        "categoryCanvas": "🎨 添加 白板",
+        "categoryBack": "返回",
+        "categoryTitle": "选择上下文类型",
+        "urlInputPlaceholder": "输入网址（例：https://...）",
+        "urlInputPrompt": "按 Enter 添加网址",
+        "includeNote": "包含笔记",
+        "excludeNote": "排除笔记"
+      },
       "sendMode": {
         "name": "消息发送方式",
-        "desc": "选择聊天消息的发送方式。 (Default: Send on Enter)",
+        "desc": "选择聊天消息的发送方式。（默认：按 Enter 发送）",
         "enter": "按 Enter 发送",
         "ctrlEnter": "按 Ctrl + Enter 发送"
       },
@@ -314,7 +339,7 @@
       },
       "inlineTrigger": {
         "name": "行内命令触发词",
-        "desc": "在编辑器中调用快捷操作自动完成弹出窗口的关键词。 (Default: /ai)"
+        "desc": "在编辑器中调用快捷操作自动完成弹出窗口的关键词。（默认：/ai）"
       },
       "enableAutocomplete": {
         "name": "启用内联自动补全 (Ghost Text)",
@@ -329,16 +354,16 @@
         "turns": "轮数限制",
         "tokens": "Token 数限制",
         "turnsLabel": "要记住的轮数",
-        "turnsDesc": "要记住的轮数（1轮 = 用户消息 + AI 回答） (Default: 10)",
-        "maxTokens": "最大上下文 Token (Default: 8000)"
+        "turnsDesc": "要记住的轮数（1轮 = 用户消息 + AI 回答）（默认：10）",
+        "maxTokens": "最大上下文 Token（默认：8000）"
       },
       "modelParams": {
         "name": "模型参数",
         "desc": "调整回答的创造性和输出长度。",
         "tempLabel": "温度 (Temperature)",
-        "tempDesc": "越接近 0 = 精确，越接近 2 = 创造性 (Default: 0.7)",
+        "tempDesc": "越接近 0 = 精确，越接近 2 = 创造性（默认：0.7）",
         "maxOutput": "最大输出 Token",
-        "maxOutputDesc": "限制单次生成最大输出 Token 数量。 (Default: 4000)",
+        "maxOutputDesc": "限制单次生成最大输出 Token 数量。（默认：4000）",
         "responseLang": "指定响应语言",
         "responseLangDesc": "强制 AI 使用指定语言回答。\"自动\"将根据用户提问的语言进行回答。",
         "responseLangAuto": "自动"
@@ -347,35 +372,13 @@
         "name": "流式输出",
         "desc": "启用流式响应。"
       },
-      "emptyResponseFallback": "⚠️ 模型返回了空响应。（这可能是因为不支持的语言/格式、提示词过滤或超过了上下文限制。）",
-      "context": {
-        "activeNote": "包含当前笔记：{{name}}",
-        "selectedText": "选中的文本 ({{length}} 个字符)",
-        "folderFiles": "[文件夹内的文件: {{name}}]",
-        "activeNotePrefix": "[当前笔记: {{name}}]",
-        "canvasFile": "[白板文件: {{name}}]",
-        "tagFiles": "[含标签的文件: {{name}} (最多 5 个)]",
-        "activeNotePrompt": "当前活动笔记",
-        "categoryActiveNote": "📄 包含当前笔记",
-        "categorySelection": "✂️ 选中的文本",
-        "categoryFolder": "📁 添加文件夹",
-        "categoryFile": "📝 添加文件",
-        "categoryTag": "🏷️ 添加标签",
-        "categoryUrl": "🔗 输入网址",
-        "categoryCanvas": "🎨 添加 白板",
-        "categoryBack": "返回",
-        "categoryTitle": "选择上下文类型",
-        "urlInputPlaceholder": "输入网址（例：https://...）",
-        "urlInputPrompt": "按 Enter 添加网址",
-        "includeNote": "包含笔记",
-        "excludeNote": "排除笔记"
-      },
       "timeout": {
         "ttftLabel": "首次响应超时时间 (ms)",
         "ttftDesc": "请求后等待第一个单词接收的最大时间。设置为0表示无限制。. (默认值: 0)",
         "interTokenLabel": "区块间超时时间 (ms)",
         "interTokenDesc": "流式传输期间等待下一句话接收的最大时间。设置为0表示无限制。. (默认值: 0)"
-      }
+      },
+      "emptyResponseFallback": "⚠️ 模型返回了空响应。（这可能是因为不支持的语言/格式、提示词过滤或超过了上下文限制。）"
     },
     "rag": {
       "toggleTooltip": "开启后，AI 将读取并参考您库中的笔记来回答。",
@@ -384,7 +387,7 @@
       "disabledWarning": "⚪ RAG 目前已禁用。请先在 [连接与模型设置] 选项卡中启用 RAG 引擎。",
       "dataScope": {
         "name": "默认数据范围设置",
-        "desc": "选择 RAG 搜索要包含的笔记。 (Default: Entire Vault)",
+        "desc": "选择 RAG 搜索要包含的笔记。（默认：整个库）",
         "vaultWide": "整个库",
         "activeNote": "仅当前活动笔记",
         "manual": "仅手动选择的文件"
@@ -399,7 +402,7 @@
       },
       "ignorePaths": {
         "name": "忽略的路径",
-        "desc": "逗号分隔。优先于包含的路径。 (Default: templates, chatHistory, etc.)"
+        "desc": "逗号分隔。优先于包含的路径。（默认：templates, chatHistory 等）"
       },
       "chunking": {
         "name": "分块设置",
@@ -415,18 +418,18 @@
       },
       "topK": {
         "name": "Top-K 检索",
-        "desc": "向 LLM 传递的排名最高文档数量。 (Default: 5)"
+        "desc": "向 LLM 传递的排名最高文档数量。（默认：5）"
       },
       "syncMode": {
         "name": "索引同步",
-        "desc": "笔记变更时索引的更新方式。 (Default: Watch)",
-        "watch": "监听文件变更（Watch）（推荐）",
+        "desc": "笔记变更时索引的更新方式。（默认：监听文件变更）",
+        "watch": "监听文件变更（推荐）",
         "manual": "手动同步",
         "startup": "应用启动时执行一次"
       },
       "minSimilarity": {
         "name": "最小相似度",
-        "desc": "排除低于此相关性分数的结果（0~1） (Default: 0.0)"
+        "desc": "排除低于此相关性分数的结果（0~1）（默认：0.0）"
       },
       "maxFileSize": {
         "name": "最大文件大小 (MB)",
@@ -725,7 +728,11 @@
       "chunkRejected": "区块已拒绝",
       "chunkRejectedShort": "已拒绝",
       "chunkRejectedDesc": "此更改将被跳过。",
-      "pendingChangesBanner": "待修改 — 请在Lumina聊天中查看"
+      "pendingChangesBanner": "待修改 — 请在Lumina聊天中查看",
+      "tableNotice": "📊 检测到表格修改。在实时预览模式下，内联 Diff 可能会被表格组件遮挡。",
+      "switchToSourceMode": "切换到源码模式",
+      "viewInEditor": "在编辑器中查看",
+      "tableBadge": "表格"
     },
     "emptyResponseTokenLimit": "⚠️ 模型返回了空响应。由于达到最大输出 Token 限制，生成已停止。请在设置中增加“最大输出 Token”限制。",
     "tokenLimitHitWarning": "\n\n⚠️ (由于达到最大输出 Token 限制，生成已中断。请在设置中增加“最大输出 Token”值。)",
@@ -750,6 +757,22 @@
     "modalCancel": "取消",
     "modalProceed": "继续",
     "modelPlaceholder": "输入模型名称... (例如, claude, gpt-4)",
+    "searchModelShort": "搜索模型...",
+    "favorites": "收藏",
+    "allModels": "所有模型",
+    "addToFavorites": "添加到收藏",
+    "removeFromFavorites": "从收藏中移除",
+    "searchPromptShort": "搜索提示词...",
+    "noSearchResults": "没有搜索结果。",
+    "unsupportedFileType": "不支持的文件类型：{{ext}}",
+    "attachFileFailed": "附加文件失败：{{file}}",
+    "attachWorkerNotReady": "文档解析器工作线程尚未就绪，请稍后重试。",
+    "attachFileEmpty": "文件内容为空，未添加附件：{{file}}",
+    "attachmentsSkipped": "部分附件无法读取已被跳过：{{files}}",
+    "cliImageNotSupported": "CLI 智能体不支持图像分析，仅包含文本上下文。",
+    "attachFileTooLarge": "文件过大（最大 {{max}}）：{{file}}",
+    "attachDuplicate": "文件已附加：{{file}}",
+    "attachProcessing": "正在处理附件...",
     "fsAdapterErr": "未找到 FileSystemAdapter。仅在桌面环境中支持。",
     "searchSource": "来源",
     "debugDelAllMsg": "确定要删除所有调试日志吗？",
@@ -790,27 +813,11 @@
     "errNoProvider": "未找到所选的嵌入提供程序配置。",
     "errMobileAuto": "移动端不支持本地嵌入（自动模式）。请在设置中选择云端嵌入。",
     "mcpTokenCopied": "认证令牌已复制到剪贴板。",
+    "mcpManagerNotInitialized": "⚠️ MCP Manager 未初始化。",
     "mcpConnectFailed": "MCP 服务器 \"{{name}}\" 连接失败。已禁用。",
     "mcpLocalServerStartFailed": "启动内置 MCP 服务器失败: {{error}}",
     "mcpDisconnectedDuringExecution": "在执行工具时 MCP 服务器 \"{{name}}\" 连接断开，已禁用该服务器。",
     "mcpToolExecutionFailed": "在 MCP 服务器 \"{{name}}\" 上执行工具失败。该服务器已被禁用。请检查您的设置。",
-    "searchModelShort": "搜索模型...",
-    "favorites": "收藏",
-    "allModels": "所有模型",
-    "addToFavorites": "添加到收藏",
-    "removeFromFavorites": "从收藏中移除",
-    "searchPromptShort": "搜索提示词...",
-    "noSearchResults": "没有搜索结果。",
-    "unsupportedFileType": "不支持的文件类型：{{ext}}",
-    "attachFileFailed": "附加文件失败：{{file}}",
-    "attachWorkerNotReady": "文档解析器工作线程尚未就绪，请稍后重试。",
-    "attachFileEmpty": "文件内容为空，未添加附件：{{file}}",
-    "attachmentsSkipped": "部分附件无法读取已被跳过：{{files}}",
-    "cliImageNotSupported": "CLI 智能体不支持图像分析，仅包含文本上下文。",
-    "attachFileTooLarge": "文件过大（最大 {{max}}）：{{file}}",
-    "attachDuplicate": "文件已附加：{{file}}",
-    "attachProcessing": "正在处理附件...",
-    "mcpManagerNotInitialized": "⚠️ MCP Manager 未初始化。",
     "mcpSyncError": "⚠️ 同步 MCP 服务器时出错。",
     "mcpLocalServerRestarted": "✅ 内置 MCP 服务器已重启（端口：{{port}}）",
     "mcpLocalServerStarted": "✅ 内置 MCP 服务器已启动（端口：{{port}}）",
@@ -957,6 +964,77 @@
       "successUpdate": "已更新 MOC：{{path}} ({{count}} 个笔记)",
       "emptyWarning": "未找到匹配指定范围的笔记。此 MOC 目前为空。",
       "noScope": "必须提供 folder、tags 或 files 中的至少一个。"
+    },
+    "replace_note": {
+      "desc": "替换现有笔记的全部内容。"
+    },
+    "patch_note": {
+      "desc": "对笔记应用一处或多处文本替换。建议优先使用 patches 数组在单次工具调用中批量处理多处更改——这样更高效，并能以统一差异（Diff）的形式一次性向用户展示所有更改。"
+    },
+    "delete_note": {
+      "desc": "删除笔记。"
+    },
+    "move_note": {
+      "desc": "移动或重命名笔记。"
+    },
+    "get_backlinks": {
+      "desc": "获取链接到指定笔记的所有笔记列表。"
+    },
+    "update_frontmatter": {
+      "desc": "更新笔记中的 Frontmatter 属性。"
+    },
+    "get_note_metadata": {
+      "desc": "获取笔记的元数据（Frontmatter、标签、创建日期等）。"
+    },
+    "list_attachments": {
+      "desc": "列出保管库中的所有附件文件（图片、PDF 等）或特定笔记中链接的附件。"
+    },
+    "save_attachment": {
+      "desc": "将 Base64 字符串保存为二进制附件文件。"
+    },
+    "execute_code": {
+      "desc": "在安全沙盒中执行 JavaScript/TypeScript 代码。"
+    },
+    "run_shell_command": {
+      "desc": "在桌面操作系统上执行终端 Shell 命令。请谨慎使用。"
+    },
+    "run_note_code_block": {
+      "desc": "在沙盒中运行笔记中的特定代码块。"
+    },
+    "list_tags": {
+      "desc": "列出保管库中使用的所有标签。"
+    },
+    "create_canvas": {
+      "desc": "创建包含节点和连线的 Obsidian Canvas 文件（.canvas）。"
+    },
+    "auto_link_note": {
+      "desc": "自动查找笔记中未链接的提及（笔记标题或别名），并将其替换为内部 Markdown 链接（[[Title|Alias]]）。重要提示：当用户要求添加反向链接或自动链接笔记时，请务必使用此工具。切勿尝试手动读取笔记并使用 patch_note 或 replace_note 自行添加链接，否则会导致系统崩溃。"
+    },
+    "query_metadata": {
+      "desc": "根据 Frontmatter 属性、标签或文件夹查询和筛选保管库笔记，并以 Markdown 表格形式返回结果。当用户要求基于元数据（如状态、作者、评分、日期）列出或汇总笔记时使用此工具。"
+    },
+    "show_notice": {
+      "desc": "向用户显示通知消息。",
+      "argMessage": "要在通知中显示的消息内容。",
+      "argDuration": "可选。通知显示的持续时间（毫秒）。（默认：5000）"
+    },
+    "open_note": {
+      "desc": "在 Obsidian 编辑器工作区中打开笔记或文件。"
+    },
+    "grep_search": {
+      "desc": "在保管库文件中搜索精确文本或正则表达式，返回匹配行及行号。"
+    },
+    "glob_files": {
+      "desc": "查找保管库中与 Glob 模式（例如 \"**/*.md\", \"Daily/*\", \"*.canvas\"）匹配的文件路径。"
+    },
+    "list_folders": {
+      "desc": "列出保管库中的文件夹，可选择指定特定父文件夹进行筛选。"
+    },
+    "get_outgoing_links": {
+      "desc": "获取指定笔记的所有传出链接和嵌入内容，包括目标路径和解析状态。"
+    },
+    "list_tasks": {
+      "desc": "列出保管库中或指定笔记中的 Markdown 任务项（- [ ] / - [x]），支持完成状态筛选。"
     }
   },
   "graph": {
@@ -1044,6 +1122,14 @@
       "ragExcludedFolders": "RAG 排除文件夹",
       "ragExcludedFoldersDesc": "选中要从索引中排除的文件夹。",
       "ragExcludedFoldersEmpty": "没有排除的文件夹。",
+      "defaultModel": "默认聊天模型",
+      "defaultModelDesc": "在此项目中开始新聊天时使用的默认模型。",
+      "defaultModelAuto": "自动选择 (第一个可用模型)",
+      "systemPrompt": "默认系统提示词",
+      "systemPromptDesc": "在此项目中开始新聊天时使用的系统提示词。",
+      "systemPromptAuto": "自动选择 (第一个系统提示词)",
+      "deletedModel": "[已删除] 模型",
+      "deletedPrompt": "[已删除] 提示词",
       "save": "保存",
       "saveSuccess": "项目设置已保存",
       "nameRequired": "项目名称为必填项，且不能为 'default'。",
@@ -1061,14 +1147,6 @@
       "add": "添加",
       "duplicateName": "已存在同名的项目。",
       "defaultProjectName": "默认",
-      "defaultModel": "默认聊天模型",
-      "defaultModelDesc": "在此项目中开始新聊天时使用的默认模型。",
-      "defaultModelAuto": "自动选择 (第一个可用模型)",
-      "systemPrompt": "默认系统提示词",
-      "systemPromptDesc": "在此项目中开始新聊天时使用的系统提示词。",
-      "systemPromptAuto": "自动选择 (第一个系统提示词)",
-      "deletedModel": "[已删除] 模型",
-      "deletedPrompt": "[已删除] 提示词",
       "modalTitleActive": "项目设置 (当前: {{projectName}})",
       "activeProjectModelDesc": "设置当前活动项目 (<strong>{{projectName}}</strong>) 的默认聊天模型。您也可以在项目设置（RAG选项卡）中更改此设置。",
       "chatHistoryRootPlaceholder": "(默认) 使用 chatHistory 根目录",
