@@ -159,7 +159,9 @@
         },
         "syncCliMcp": {
           "name": "Générer la config MCP pour CLI de terminal externe (Claude Code, OpenCode, etc.)",
-          "desc": "Génère automatiquement les fichiers de configuration (.claude/mcp.json, etc.) dans votre coffre pour permettre aux outils CLI exécutés dans un terminal externe d'utiliser les outils MCP de Lumina (RAG, notes). (Remarque : N'affecte pas le chat interne de Lumina ; peut provoquer des erreurs de connexion dans le terminal si Obsidian est fermé)."
+          "desc": "Génère automatiquement les fichiers de configuration (.claude/mcp.json, etc.) dans votre coffre pour permettre aux outils CLI exécutés dans un terminal externe d'utiliser les outils MCP de Lumina (RAG, notes). (Attention : écrit le jeton d'authentification MCP en clair dans des fichiers du coffre — excluez-les en cas de synchronisation Git/cloud ; peut provoquer des erreurs de connexion si Obsidian est fermé).",
+          "confirmTitle": "Générer les configurations MCP pour CLI externe",
+          "confirmDesc": "L'activation de cette option écrit le jeton Bearer du serveur MCP local en clair dans des fichiers de votre coffre (.claude/mcp.json, .cursor/mcp.json, opencode.json, .codex/config.toml).\nSi votre coffre est synchronisé ou partagé via Git, iCloud ou Obsidian Sync, le jeton peut être exposé — veuillez exclure ces fichiers dans .gitignore.\nVoulez-vous continuer ?"
         },
         "cleanupCliMcp": {
           "name": "Nettoyer les configurations de CLI de terminal externe",

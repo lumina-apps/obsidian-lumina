@@ -6,6 +6,7 @@ import {
 	createFeatureCard,
 	createImePasswordBinding,
 } from '../../../../shared/utils/settingHelpers';
+import { ConfirmModal } from '../../../../shared/utils/modal';
 import type { McpSettings } from '../../../../shared/types/settings.types';
 
 export function renderLocalServerSection(tab: LuminaSettingTab, el: HTMLElement, s: McpSettings): void {
@@ -98,7 +99,22 @@ export function renderLocalServerSection(tab: LuminaSettingTab, el: HTMLElement,
 		.setDesc(t('settings.mcp.localServer.syncCliMcp.desc'))
 		.addToggle(toggle => {
 			toggle.setValue(s.syncCliMcp ?? false).onChange(async (val) => {
-				s.syncCliMcp = val;
+				if (val) {
+					toggle.setValue(false);
+					new ConfirmModal(
+						tab.app,
+						t('settings.mcp.localServer.syncCliMcp.confirmTitle'),
+						t('settings.mcp.localServer.syncCliMcp.confirmDesc'),
+						() => {
+							s.syncCliMcp = true;
+							void tab.saveAndSync(true).then(() => {
+								tab.refreshDisplay();
+							});
+						},
+					).open();
+					return;
+				}
+				s.syncCliMcp = false;
 				await tab.saveAndSync(true);
 				tab.refreshDisplay();
 			});

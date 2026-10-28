@@ -149,6 +149,9 @@
 					{/if}
 
 					{#if req.actionType === 'shell' && req.metadata?.code}
+						{#if req.metadata?.cwd}
+							<p class="lumina-inline-approval-cwd">cwd: {req.metadata.cwd}</p>
+						{/if}
 						<pre class="lumina-inline-approval-code lumina-inline-approval-code--danger">{req.metadata.code}</pre>
 					{/if}
 
@@ -223,6 +226,12 @@
 	}
 	.lumina-inline-approval-code--danger {
 		color: var(--text-error);
+	}
+	.lumina-inline-approval-cwd {
+		font-family: var(--font-monospace);
+		font-size: var(--font-ui-smaller);
+		color: var(--text-muted);
+		word-break: break-all;
 	}
 	.lumina-inline-approval-footer {
 		display: flex;

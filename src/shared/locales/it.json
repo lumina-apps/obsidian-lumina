@@ -159,7 +159,9 @@
         },
         "syncCliMcp": {
           "name": "Genera configurazione MCP per CLI da terminale esterno (Claude Code, OpenCode, etc.)",
-          "desc": "Genera automaticamente i file di configurazione (.claude/mcp.json, ecc.) nel vault affinché le CLI eseguite in un terminale esterno possano usare gli strumenti MCP di Lumina (RAG, note). (Nota: non influisce sulla chat interna di Lumina; potrebbe causare errori di connessione nel terminale quando Obsidian è chiuso)."
+          "desc": "Genera automaticamente i file di configurazione (.claude/mcp.json, ecc.) nel vault affinché le CLI eseguite in un terminale esterno possano usare gli strumenti MCP di Lumina (RAG, note). (Attenzione: scrive il token di autenticazione MCP in chiaro nei file del vault — escludili se sincronizzi tramite Git/cloud; potrebbe causare errori di connessione quando Obsidian è chiuso).",
+          "confirmTitle": "Genera configurazioni MCP per CLI esterna",
+          "confirmDesc": "Abilitando questa opzione, il token Bearer del server MCP locale verrà scritto in chiaro nei file di configurazione del vault (.claude/mcp.json, .cursor/mcp.json, opencode.json, .codex/config.toml).\nSe il vault è sincronizzato o condiviso tramite Git, iCloud o Obsidian Sync, il token potrebbe essere esposto — escludi questi file in .gitignore.\nVuoi continuare?"
         },
         "cleanupCliMcp": {
           "name": "Pulisci configurazioni CLI da terminale esterno",

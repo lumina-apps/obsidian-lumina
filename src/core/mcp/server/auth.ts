@@ -11,6 +11,9 @@ import { timingSafeEqual } from 'crypto';
  * @returns 인증 성공 시 true
  */
 export function authenticateRequest(req: http.IncomingMessage, authToken: string): boolean {
+	if (!authToken) {
+		return false;
+	}
 	const authHeader = req.headers['authorization'];
 	if (authHeader && authHeader.startsWith('Bearer ')) {
 		const token = authHeader.substring(7);

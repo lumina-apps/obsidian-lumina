@@ -82,7 +82,7 @@ describe('GoogleProvider', () => {
 			expect(models).toContain('text-embedding-004');
 		});
 
-		it('should call Google API with correct URL and key parameter', async () => {
+		it('should call Google API with x-goog-api-key header and without key in URL', async () => {
 			mockRequestUrl.mockResolvedValue({
 				json: { models: [] },
 			} as RequestUrlResponse);
@@ -90,8 +90,11 @@ describe('GoogleProvider', () => {
 			await provider.listModels();
 
 			expect(mockRequestUrl).toHaveBeenCalledWith({
-				url: `https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`,
+				url: 'https://generativelanguage.googleapis.com/v1beta/models',
 				method: 'GET',
+				headers: {
+					'x-goog-api-key': API_KEY,
+				},
 			});
 		});
 
@@ -204,6 +207,14 @@ describe('GoogleProvider', () => {
 			expect(result.toolCalls).toHaveLength(1);
 			expect(result.toolCalls![0].name).toBe('searchVault');
 			expect(result.toolCalls![0].arguments).toEqual({ query: 'test' });
+			expect(window.fetch).toHaveBeenCalledWith(
+				'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent',
+				expect.objectContaining({
+					headers: expect.objectContaining({
+						'x-goog-api-key': API_KEY,
+					}),
+				}),
+			);
 		});
 	});
 
@@ -214,9 +225,11 @@ describe('GoogleProvider', () => {
 			expect(mockRequestUrl).not.toHaveBeenCalled();
 		});
 
-		it('should chunk requests when texts exceed 100 items', async () => {
+		it('should chunk requests when texts exceed 100 items and pass x-goog-api-key header', async () => {
 			const texts = Array.from({ length: 150 }, (_, i) => `chunk ${i}`);
-			mockRequestUrl.mockImplementation(async (params: { body: string }) => {
+			mockRequestUrl.mockImplementation(async (params: { url: string; headers?: Record<string, string>; body: string }) => {
+				expect(params.url).not.toContain('key=');
+				expect(params.headers?.['x-goog-api-key']).toBe(API_KEY);
 				const body = JSON.parse(params.body) as { requests: { content: { parts: { text: string }[] } }[] };
 				expect(body.requests.length).toBeLessThanOrEqual(100);
 				return {

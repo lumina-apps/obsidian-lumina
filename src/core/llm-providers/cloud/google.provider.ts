@@ -20,8 +20,11 @@ export class GoogleProvider implements ILLMProvider {
 	async listModels(): Promise<string[]> {
 		try {
 			const res = await requestUrl({
-				url: `https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`,
+				url: 'https://generativelanguage.googleapis.com/v1beta/models',
 				method: 'GET',
+				headers: {
+					'x-goog-api-key': this.apiKey,
+				},
 			});
 			const data = res.json as {
 				models?: { name: string; supportedGenerationMethods?: string[] }[]
@@ -94,7 +97,7 @@ export class GoogleProvider implements ILLMProvider {
 		if (texts.length === 0) return [];
 		try {
 			const modelName = options.model.startsWith('models/') ? options.model : `models/${options.model}`;
-			const url = `https://generativelanguage.googleapis.com/v1beta/${modelName}:batchEmbedContents?key=${this.apiKey}`;
+			const url = `https://generativelanguage.googleapis.com/v1beta/${modelName}:batchEmbedContents`;
 			const BATCH_SIZE = 100;
 			const allEmbeddings: number[][] = [];
 
@@ -112,6 +115,7 @@ export class GoogleProvider implements ILLMProvider {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
+						'x-goog-api-key': this.apiKey,
 					},
 					body: JSON.stringify({ requests }),
 				});
@@ -138,10 +142,11 @@ export class GoogleProvider implements ILLMProvider {
 		includeTools: boolean,
 	): { url: string; headers: Record<string, string>; payload: Record<string, unknown> } {
 		const cleanModel = options.model.replace(/^models\//, '');
-		const url = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:${method}?key=${this.apiKey}`;
+		const url = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:${method}`;
 
 		const headers: Record<string, string> = {
 			'Content-Type': 'application/json',
+			'x-goog-api-key': this.apiKey,
 		};
 
 		const formattedContents = formatGeminiMessages(messages);

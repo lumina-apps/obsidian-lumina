@@ -1,6 +1,6 @@
 import { TFile } from 'obsidian';
 import { t } from '../../../../shared/locales/helpers';
-import { ensureFolderExists } from '../../../../shared/utils/fileUtils';
+import { ensureFolderExists, getFileExtension } from '../../../../shared/utils/fileUtils';
 import { MCP_MAX_FILE_LENGTH } from '../../../../shared/utils/mcpUtils';
 import { getStringArg, getDailyNotePath } from '../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
@@ -309,6 +309,21 @@ export const updateFrontmatterHandler = async (
 	);
 };
 
+/** 첨부 파일로 저장을 차단할 플랫폼 실행 파일 확장자 목록 */
+const BLOCKED_ATTACHMENT_EXTENSIONS = new Set([
+	'exe',
+	'bat',
+	'cmd',
+	'ps1',
+	'vbs',
+	'sh',
+	'command',
+	'jar',
+	'msi',
+	'dll',
+	'scr',
+]);
+
 export const saveAttachmentHandler = async (
 	args: ToolArguments,
 	ctx: ToolHandlerContext,
@@ -321,6 +336,15 @@ export const saveAttachmentHandler = async (
 
 	const { path, file, errorResult } = getValidatedPathAndFile(args, ctx, pathGuard, 'path', false, false);
 	if (errorResult) return errorResult;
+
+	const fileName = path.split('/').pop() ?? '';
+	const ext = getFileExtension(fileName);
+	if (BLOCKED_ATTACHMENT_EXTENSIONS.has(ext)) {
+		return {
+			isError: true,
+			content: [{ type: 'text', text: `Saving executable file extension (.${ext}) is not allowed: ${path}` }],
+		};
+	}
 
 	if (file) {
 		return { isError: true, content: [{ type: 'text', text: `File already exists at ${path}` }] };

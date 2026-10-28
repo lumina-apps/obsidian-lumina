@@ -185,6 +185,8 @@ export interface TranslationSettingsMcpLocalServerEnableShellCommands {
 export interface TranslationSettingsMcpLocalServerSyncCliMcp {
   name: string;
   desc: string;
+  confirmTitle: string;
+  confirmDesc: string;
 }
 
 export interface TranslationSettingsMcpLocalServerCleanupCliMcp {

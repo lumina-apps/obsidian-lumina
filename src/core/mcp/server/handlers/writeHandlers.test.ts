@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { patchNoteHandler, moveNoteHandler, saveAttachmentHandler, updateFrontmatterHandler } from './writeHandlers';
+import { createNoteHandler, patchNoteHandler, moveNoteHandler, saveAttachmentHandler, updateFrontmatterHandler } from './writeHandlers';
 import { autoLinkNoteHandler } from './autoLinkHandlers';
 import { PathGuard } from '../pathGuard';
 import type { ToolHandlerContext } from '../toolTypes';
@@ -175,6 +175,40 @@ describe('writeHandlers', () => {
 			expect(res.isError).toBe(true);
 			const text = res.content[0].type === 'text' ? res.content[0].text : '';
 			expect(text).toContain('base64Data parameter is required');
+		});
+
+		it('blocks writing to .obsidian, .git, or hidden dotfolders', async () => {
+			for (const blockedPath of ['.obsidian/plugins/x/main.js', '.git/hooks/pre-commit', 'Sub/.hidden/a.md']) {
+				const res = await saveAttachmentHandler({
+					path: blockedPath,
+					base64Data: 'SVRlc3Q=',
+				}, ctx, pathGuard);
+
+				expect(res.isError).toBe(true);
+				const text = res.content[0].type === 'text' ? res.content[0].text : '';
+				expect(text).toContain('hidden or configuration paths is not allowed');
+			}
+
+			const noteRes = await createNoteHandler({
+				path: 'Sub/.hidden/note.md',
+				content: 'hello',
+			}, ctx, pathGuard);
+			expect(noteRes.isError).toBe(true);
+			expect(ctx.plugin.app.vault.createBinary).not.toHaveBeenCalled();
+		});
+
+		it('blocks executable attachment extensions (.exe, .sh, .bat, etc.) case-insensitively', async () => {
+			for (const blockedFile of ['payload.EXE', 'scripts/install.sh', 'autorun.bat']) {
+				const res = await saveAttachmentHandler({
+					path: blockedFile,
+					base64Data: 'SVRlc3Q=',
+				}, ctx, pathGuard);
+
+				expect(res.isError).toBe(true);
+				const text = res.content[0].type === 'text' ? res.content[0].text : '';
+				expect(text).toContain('executable file extension');
+			}
+			expect(ctx.plugin.app.vault.createBinary).not.toHaveBeenCalled();
 		});
 	});
 

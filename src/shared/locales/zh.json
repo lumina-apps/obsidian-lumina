@@ -159,7 +159,9 @@
         },
         "syncCliMcp": {
           "name": "自动生成外部终端 CLI 的 MCP 配置 (Claude Code, OpenCode 等)",
-          "desc": "在 Obsidian 外部终端直接运行 Claude Code 等 CLI 时，为了能够调用 Lumina 的内置工具（RAG 检索、笔记操作等），在仓库中自动生成配置文件（.claude/mcp.json 等）。（※ 不影响 Lumina 插件应用内聊天的工具调用；在 Obsidian 关闭时于终端运行 CLI 可能会出现连接错误。）"
+          "desc": "在 Obsidian 外部终端直接运行 Claude Code 等 CLI 时，为了能够调用 Lumina 的内置工具（RAG 检索、笔记操作等），在仓库中自动生成配置文件（.claude/mcp.json 等）。（※ 注意：MCP 认证令牌将以明文写入仓库配置文件，若通过 Git/云端同步请将其排除；在 Obsidian 关闭时于终端运行 CLI 可能会出现连接错误。）",
+          "confirmTitle": "自动生成外部终端 CLI 的 MCP 配置",
+          "confirmDesc": "启用此选项会将本地 MCP 服务器的 Bearer 认证令牌以明文写入仓库根目录下的配置文件（.claude/mcp.json、.cursor/mcp.json、opencode.json、.codex/config.toml）。\n如果您的仓库通过 Git、iCloud 或 Obsidian Sync 同步或共享，令牌可能会泄露，请将其添加到 .gitignore。\n是否继续？"
         },
         "cleanupCliMcp": {
           "name": "一键清理外部终端 CLI 联动配置",

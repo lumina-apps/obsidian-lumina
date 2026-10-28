@@ -40,6 +40,28 @@ export interface ValidatedFileResult {
 	errorResult?: ToolResult;
 }
 
+/**
+ * 숨김 폴더/파일(점(.)으로 시작하는 경로 세그먼트) 또는 Obsidian 설정 폴더(configDir)로의
+ * 에이전트 쓰기·수정·삭제·이동을 차단합니다.
+ */
+export function isProtectedWritePath(path: string, app?: App): boolean {
+	const clean = path.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+	if (!clean) return false;
+
+	const configDir = (app?.vault?.configDir || '.obsidian')
+		.replace(/\\/g, '/')
+		.replace(/^\/+|\/+$/g, '')
+		.toLowerCase();
+
+	const lowerClean = clean.toLowerCase();
+	if (configDir && (lowerClean === configDir || lowerClean.startsWith(`${configDir}/`))) {
+		return true;
+	}
+
+	const segments = clean.split('/').filter(Boolean);
+	return segments.some((seg) => seg.startsWith('.'));
+}
+
 export const getValidatedPathAndFile = (
 	args: ToolArguments,
 	ctx: ToolHandlerContext,
@@ -56,6 +78,16 @@ export const getValidatedPathAndFile = (
 		};
 	}
 	const path = sanitizeFilePath(raw, enforceMd, ctx.plugin.app);
+
+	if (isProtectedWritePath(path, ctx.plugin.app)) {
+		return {
+			path,
+			errorResult: {
+				isError: true,
+				content: [{ type: 'text', text: `Writing to hidden or configuration paths is not allowed: ${path}` }],
+			},
+		};
+	}
 
 	const blocked = blockIfPathNotAllowed(path, ctx, pathGuard);
 	if (blocked) return { path, errorResult: blocked };
@@ -90,6 +122,12 @@ export const safeModifyFile = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard
 ): Promise<ToolResult> => {
+	if (isProtectedWritePath(path, ctx.plugin.app)) {
+		return {
+			isError: true,
+			content: [{ type: 'text', text: `Writing to hidden or configuration paths is not allowed: ${path}` }],
+		};
+	}
 	// Open and focus the target file before asking for approval,
 	// so the diff decorations are visible in the editor.
 	await openFileInWorkspace(ctx.plugin.app, path);
@@ -119,6 +157,12 @@ export const safeCreateFile = async (
 	ctx: ToolHandlerContext,
 	pathGuard: PathGuard
 ): Promise<ToolResult> => {
+	if (isProtectedWritePath(path, ctx.plugin.app)) {
+		return {
+			isError: true,
+			content: [{ type: 'text', text: `Writing to hidden or configuration paths is not allowed: ${path}` }],
+		};
+	}
 	const approved = await approvalManager.requestActionApproval('create_note', path, { content }, { timeoutMs: APPROVAL_TIMEOUT_MS });
 	if (!approved) {
 		return getRejectionResult('User explicitly rejected the file creation. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.');

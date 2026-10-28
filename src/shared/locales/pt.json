@@ -159,7 +159,9 @@
         },
         "syncCliMcp": {
           "name": "Gerar configuração MCP para CLI de terminal externo (Claude Code, OpenCode, etc.)",
-          "desc": "Gera automaticamente arquivos de configuração (.claude/mcp.json, etc.) no seu cofre para que as ferramentas CLI executadas em um terminal externo possam usar as ferramentas MCP do Lumina (RAG, notas). (Nota: Não afeta o chat interno do Lumina; pode causar erros de conexão no terminal quando o Obsidian estiver fechado)."
+          "desc": "Gera automaticamente arquivos de configuração (.claude/mcp.json, etc.) no seu cofre para que as ferramentas CLI ejecutadas em um terminal externo possam usar as ferramentas MCP do Lumina (RAG, notas). (Aviso: grava o token de autenticação MCP em texto simples em arquivos do cofre — exclua-os se sincronizar via Git/nuvem; pode causar erros de conexão quando o Obsidian estiver fechado).",
+          "confirmTitle": "Gerar configurações MCP para CLI externo",
+          "confirmDesc": "Ativar esta opção grava o token Bearer do servidor MCP local em texto simples em arquivos de configuração no seu cofre (.claude/mcp.json, .cursor/mcp.json, opencode.json, .codex/config.toml).\nSe o seu cofre for sincronizado ou compartilhado via Git, iCloud ou Obsidian Sync, o token poderá ficar exposto — exclua esses arquivos no .gitignore.\nDeseja continuar?"
         },
         "cleanupCliMcp": {
           "name": "Limpar configurações de CLI de terminal externo",

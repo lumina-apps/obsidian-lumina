@@ -159,7 +159,9 @@
         },
         "syncCliMcp": {
           "name": "自動生成外部終端機 CLI 的 MCP 設定 (Claude Code, OpenCode 等)",
-          "desc": "在 Obsidian 外部終端機直接執行 Claude Code 等 CLI 時，為了能夠呼叫 Lumina 的內建工具（RAG 檢索、筆記操作等），在儲存庫中自動生成設定檔案（.claude/mcp.json 等）。（※ 不影響 Lumina 插件應用程式內聊天的工具調用；在 Obsidian 關閉時於終端機執行 CLI 可能會出現連線錯誤。）"
+          "desc": "在 Obsidian 外部終端機直接執行 Claude Code 等 CLI 時，為了能夠呼叫 Lumina 的內建工具（RAG 檢索、筆記操作等），在儲存庫中自動生成設定檔案（.claude/mcp.json 等）。（※ 注意：MCP 認證權杖將以明文寫入儲存庫設定檔，若透過 Git/雲端同步請將其排除；在 Obsidian 關閉時於終端機執行 CLI 可能會出現連線錯誤。）",
+          "confirmTitle": "自動生成外部終端機 CLI 的 MCP 設定",
+          "confirmDesc": "啟用此選項會將本機 MCP 伺服器的 Bearer 認證權杖以明文寫入儲存庫根目錄下的設定檔（.claude/mcp.json、.cursor/mcp.json、opencode.json、.codex/config.toml）。\n如果您的儲存庫透過 Git、iCloud 或 Obsidian Sync 同步或共用，權杖可能會外洩，請將其加入 .gitignore。\n是否繼續？"
         },
         "cleanupCliMcp": {
           "name": "一鍵清理外部終端機 CLI 連動設定",

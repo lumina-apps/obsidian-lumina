@@ -109,7 +109,7 @@ export const runShellCommandHandler = async (
 	const basePath = isFileSystemAdapter ? ((adapter as { getBasePath: () => string }).getBasePath() || '') : '';
 	const finalCwd = cwd || basePath;
 
-	// ── 위험 패턴 사전 차단 ────────────────────────────────────────────
+	// ── 위험 패턴 사전 차단 (오류 방지용 보조 필터이며 보안 경계가 아님 — 실질적 보안 통제는 아래 사용자 승인(HITL)에 의존) ──
 	const BLOCKED_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
 		{ pattern: new RegExp('rm\\s+-[a-z]*r[a-z]*f?\\s+(/|~[/\\s]|\\.\\./)', 'i'), reason: 'Recursive deletion of root/home directory is not allowed.' },
 		{ pattern: new RegExp(':\\(\\)\\s*\\{'),                                reason: 'Fork bomb pattern is not allowed.' },
@@ -147,7 +147,12 @@ export const runShellCommandHandler = async (
 	}
 	// ── 위험 패턴 차단 끝 ──────────────────────────────────────────────
 
-	const approved = await approvalManager.requestActionApproval('shell', 'Terminal Command', { code: command }, { timeoutMs: APPROVAL_TIMEOUT_MS });
+	const approved = await approvalManager.requestActionApproval(
+		'shell',
+		'Terminal Command',
+		{ code: command, ...(finalCwd ? { cwd: finalCwd } : {}) },
+		{ timeoutMs: APPROVAL_TIMEOUT_MS },
+	);
 	if (!approved) {
 		return { isError: true, content: [{ type: 'text', text: 'User explicitly rejected the shell command execution. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.' }] };
 	}

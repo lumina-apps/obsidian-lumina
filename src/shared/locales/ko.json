@@ -172,7 +172,9 @@
         },
         "syncCliMcp": {
           "name": "외부 터미널 CLI용 MCP 설정 자동 생성 (Claude Code, OpenCode 등)",
-          "desc": "옵시디언 외부 터미널에서 Claude Code 등의 CLI를 직접 실행할 때 Lumina의 내장 도구(RAG 검색, 노트 제어 등)를 호출할 수 있도록 볼트에 설정 파일(.claude/mcp.json 등)을 자동 생성합니다. (※ Lumina 내부 채팅창 도구 사용에는 영향이 없으며, 옵시디언이 꺼진 상태에서 터미널 CLI를 실행하면 연결 오류가 발생할 수 있습니다.)"
+          "desc": "옵시디언 외부 터미널에서 Claude Code 등의 CLI를 직접 실행할 때 Lumina의 내장 도구(RAG 검색, 노트 제어 등)를 호출할 수 있도록 볼트에 설정 파일(.claude/mcp.json 등)을 자동 생성합니다. (※ 주의: 볼트 내 설정 파일에 MCP 인증 토큰이 평문으로 기록되므로, 볼트를 Git/클라우드로 공유 중이라면 해당 파일을 제외하세요. 옵시디언이 꺼진 상태에서 터미널 CLI를 실행하면 연결 오류가 발생할 수 있습니다.)",
+          "confirmTitle": "외부 터미널 CLI용 MCP 설정 자동 생성",
+          "confirmDesc": "이 옵션을 켜면 볼트 루트(.claude/mcp.json, .cursor/mcp.json, opencode.json, .codex/config.toml)에 로컬 MCP 서버의 Bearer 인증 토큰이 평문으로 기록됩니다.\n볼트를 Git, iCloud, Obsidian Sync 등으로 외부와 동기화하거나 공유하는 경우 토큰이 노출될 수 있으니 .gitignore 등에 추가해 주세요.\n계속하시겠습니까?"
         },
         "cleanupCliMcp": {
           "name": "외부 터미널 CLI 연동 설정 일괄 정리",

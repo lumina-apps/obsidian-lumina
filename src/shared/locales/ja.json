@@ -159,7 +159,9 @@
         },
         "syncCliMcp": {
           "name": "外部ターミナルCLI用MCP設定の自動生成 (Claude Code, OpenCodeなど)",
-          "desc": "Obsidian外部のターミナルでClaude CodeなどのCLIを直接実行する際、Luminaの内蔵ツール(RAG検索、ノート制御など)を呼び出せるよう、保管庫内に設定ファイル(.claude/mcp.jsonなど)を自動生成します。(※Luminaアプリ内チャットでのツール使用には影響せず、Obsidianが終了している状態でターミナルCLIを実行すると接続エラーが発生する可能性があります。)"
+          "desc": "Obsidian外部のターミナルでClaude CodeなどのCLIを直接実行する際、Luminaの内蔵ツール(RAG検索、ノート制御など)を呼び出せるよう、保管庫内に設定ファイル(.claude/mcp.jsonなど)を自動生成します。(※注意: 保管庫内の設定ファイルにMCP認証トークンが平文で書き込まれるため、Gitやクラウドで共有する場合は除外してください。Obsidian終了時にターミナルCLIを実行すると接続エラーが発生する可能性があります。)",
+          "confirmTitle": "外部ターミナルCLI用MCP設定の自動生成",
+          "confirmDesc": "このオプションを有効にすると、保管庫内(.claude/mcp.json、.cursor/mcp.json、opencode.json、.codex/config.toml)にローカルMCPサーバーのBearer認証トークンが平文で保存されます。\n保管庫をGit、iCloud、Obsidian Syncなどで同期・共有している場合、トークンが露出する可能性があるため、.gitignore等で除外してください。\n続行しますか？"
         },
         "cleanupCliMcp": {
           "name": "外部ターミナルCLI連携設定の一括削除",

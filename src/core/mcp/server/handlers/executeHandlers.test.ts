@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 describe('executeHandlers code block regex', () => {
 	// executeHandlers.ts의 blockRegex와 동일한 정규식
@@ -71,6 +71,7 @@ describe('executeHandlers code block regex', () => {
 import { runShellCommandHandler, runNoteCodeBlockHandler, executeCodeHandler } from './executeHandlers';
 import { PathGuard } from '../pathGuard';
 import type { ToolHandlerContext } from '../toolTypes';
+import { approvalManager } from '../../../../features/chat/utils/approvalManager';
 
 describe('executeHandlers settings & validation', () => {
 	const pathGuard = new PathGuard();
@@ -146,6 +147,43 @@ describe('executeHandlers settings & validation', () => {
 		const res = await executeCodeHandler({ code: '   ' }, ctx, pathGuard);
 		expect(res.isError).toBe(true);
 		expect(res.content[0].type === 'text' ? res.content[0].text : '').toContain('code parameter is required');
+	});
+
+	it('run_shell_command passes resolved cwd in approval metadata', async () => {
+		const spy = vi.spyOn(approvalManager, 'requestActionApproval').mockResolvedValueOnce(false);
+		try {
+			const ctx: ToolHandlerContext = {
+				plugin: {
+					settings: {
+						mcp: {
+							serverEnableShellCommands: true,
+						},
+					},
+					app: {
+						vault: {
+							adapter: {
+								getBasePath: () => '/mock/vault/root',
+							},
+						},
+					},
+				} as any,
+				limitRead: 20000,
+				limitAppend: 10000,
+				snippetLen: 300,
+				maxResults: 50,
+			};
+
+			const res = await runShellCommandHandler({ command: 'echo hello', cwd: '/custom/workdir' }, ctx, pathGuard);
+			expect(res.isError).toBe(true);
+			expect(spy).toHaveBeenCalledWith(
+				'shell',
+				'Terminal Command',
+				{ code: 'echo hello', cwd: '/custom/workdir' },
+				expect.any(Object),
+			);
+		} finally {
+			spy.mockRestore();
+		}
 	});
 });
 
