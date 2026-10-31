@@ -105,7 +105,7 @@ export function getNormalizedFileTags(cache: import('obsidian').CachedMetadata |
 		}
 	}
 
-	const fm = cache.frontmatter as Record<string, unknown> | undefined;
+	const fm: Record<string, unknown> | undefined = cache.frontmatter;
 	const fmTags: unknown = fm?.tags ?? fm?.tag;
 	if (fmTags) {
 		const rawList = Array.isArray(fmTags) ? fmTags : [fmTags];

@@ -1,5 +1,4 @@
 import { TFile, normalizePath } from 'obsidian';
-import * as obsidian from 'obsidian';
 import { t } from '../../../../shared/locales/helpers';
 import { sanitizeFilePath } from '../../../../shared/utils/fileUtils';
 import { applyReadLimit, getStringArg, getStringOptArg, getNumberArg, blockIfPathNotAllowed, getNormalizedFileTags, fileMatchesTags } from '../handlerHelpers';

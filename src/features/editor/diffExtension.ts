@@ -78,10 +78,11 @@ class DiffBannerWidget extends WidgetType {
 				switchBtn.onclick = (e) => {
 					e.preventDefault();
 					e.stopPropagation();
+					const activeView = this.app?.workspace.getActiveViewOfType(MarkdownView);
 					const leaves = this.app?.workspace.getLeavesOfType('markdown') ?? [];
 					for (const leaf of leaves) {
 						const view = leaf.view as MarkdownView;
-						if (view.file?.path === this.filePath || leaf === this.app?.workspace.activeLeaf) {
+						if (view.file?.path === this.filePath || (activeView && view === activeView)) {
 							const state = view.getState();
 							state.mode = 'source';
 							state.source = true;
