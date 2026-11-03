@@ -21,7 +21,7 @@ export function getGeminiSystemInstruction(messages: ChatMessage[]) {
  * - system role은 getGeminiSystemInstruction으로 분리했으므로 제외
  * - user role은 text + image_url multimodal 지원
  * - assistant role은 model role로 매핑 (text + functionCall parts)
- * - tool role은 function role로 매핑 (functionResponse parts)
+ * - tool role은 user role로 매핑 (functionResponse parts)
  */
 export function formatGeminiMessages(messages: ChatMessage[]) {
 	const filtered = messages.filter(m => m.role !== 'system');
@@ -38,12 +38,30 @@ export function formatGeminiMessages(messages: ChatMessage[]) {
 		}
 	});
 
-	// Gemini API 제약: 첫 메시지는 반드시 'user' 역할이어야 함
-	while (formatted.length > 0 && formatted[0].role !== 'user') {
-		formatted.shift();
+	// 연속된 tool(functionResponse) 메시지를 단일 user 메시지로 병합 (병렬 함수 호출 대응)
+	const merged: typeof formatted = [];
+	for (const msg of formatted) {
+		const prev = merged[merged.length - 1];
+		if (
+			prev && prev.role === 'user' && msg.role === 'user'
+			&& prev.parts.every(p => 'functionResponse' in p)
+			&& msg.parts.every(p => 'functionResponse' in p)
+		) {
+			(prev.parts as unknown[]).push(...(msg.parts as unknown[]));
+		} else {
+			merged.push(msg);
+		}
 	}
 
-	return formatted;
+	// Gemini API 제약: 첫 메시지는 반드시 일반 'user' 역할이어야 함 (model이나 단독 functionResponse로 시작 불가)
+	while (
+		merged.length > 0 &&
+		(merged[0].role !== 'user' || merged[0].parts.some(p => 'functionResponse' in p))
+	) {
+		merged.shift();
+	}
+
+	return merged;
 }
 
 /**
@@ -108,6 +126,10 @@ function formatAssistantMessage(m: ChatMessage) {
 		}
 	}
 
+	if (parts.length === 0 && contentText) {
+		parts.push({ text: contentText });
+	}
+
 	return { role: 'model', parts };
 }
 
@@ -116,7 +138,7 @@ function formatToolMessage(m: ChatMessage) {
 	try {
 		if (typeof m.content === 'string') {
 			const parsed = JSON.parse(m.content) as unknown;
-			if (typeof parsed === 'object' && parsed !== null) {
+			if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
 				responseObj = parsed as Record<string, unknown>;
 			}
 		}
@@ -125,7 +147,7 @@ function formatToolMessage(m: ChatMessage) {
 	}
 
 	return {
-		role: 'function',
+		role: 'user',
 		parts: [
 			{
 				functionResponse: {

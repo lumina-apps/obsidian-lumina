@@ -102,9 +102,10 @@ describe('anthropic-message-formatter', () => {
 		expect(formatAnthropicTools([])).toBeUndefined();
 	});
 
-	it('should strip leading assistant messages so first message is always user', () => {
+	it('should strip leading assistant and orphan tool_result messages so first message is always a normal user message', () => {
 		const messages: ChatMessage[] = [
 			{ role: 'assistant', content: 'Orphan assistant message from truncated history' },
+			{ role: 'tool', tool_call_id: 'orphan_1', content: 'Orphan tool result' },
 			{ role: 'user', content: 'Hello' },
 			{ role: 'assistant', content: 'Hi there' },
 		];

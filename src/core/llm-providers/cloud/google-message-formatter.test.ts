@@ -32,9 +32,10 @@ describe('google-message-formatter', () => {
 		});
 	});
 
-	it('should strip leading assistant/model messages so first message is always user', () => {
+	it('should strip leading assistant/model and orphan tool messages so first message is always a normal user message', () => {
 		const messages: ChatMessage[] = [
 			{ role: 'assistant', content: 'Orphan assistant message from truncated history' },
+			{ role: 'tool', name: 'read_note', content: 'Orphan tool result' },
 			{ role: 'user', content: 'Hello' },
 			{ role: 'assistant', content: 'Hi there' },
 		];
@@ -44,6 +45,108 @@ describe('google-message-formatter', () => {
 		expect(formatted[0].role).toBe('user');
 		expect(formatted[0].parts).toEqual([{ text: 'Hello' }]);
 		expect(formatted[1].role).toBe('model');
+	});
+
+	it('should format tool messages with role "user" and functionResponse parts', () => {
+		const messages: ChatMessage[] = [
+			{ role: 'user', content: 'Write one line into a test note' },
+			{
+				role: 'assistant',
+				content: 'Calling tool: write_note',
+				tool_calls: [
+					{
+						id: 'call_1',
+						name: 'write_note',
+						arguments: { path: 'test.md', content: 'hello' },
+						thoughtSignature: 'sig-123',
+					},
+				],
+			},
+			{
+				role: 'tool',
+				tool_call_id: 'call_1',
+				name: 'write_note',
+				content: '{"status":"ok"}',
+				thoughtSignature: 'sig-123',
+			},
+		];
+
+		const formatted = formatGeminiMessages(messages);
+
+		expect(formatted).toEqual([
+			{ role: 'user', parts: [{ text: 'Write one line into a test note' }] },
+			{
+				role: 'model',
+				parts: [
+					{
+						functionCall: {
+							name: 'write_note',
+							args: { path: 'test.md', content: 'hello' },
+						},
+						thoughtSignature: 'sig-123',
+					},
+				],
+			},
+			{
+				role: 'user',
+				parts: [
+					{
+						functionResponse: {
+							name: 'write_note',
+							response: { status: 'ok' },
+						},
+						thoughtSignature: 'sig-123',
+					},
+				],
+			},
+		]);
+	});
+
+	it('should coalesce consecutive tool messages into a single user message for parallel function calling', () => {
+		const messages: ChatMessage[] = [
+			{ role: 'user', content: 'Read both notes' },
+			{
+				role: 'assistant',
+				content: '',
+				tool_calls: [
+					{ id: 'call_1', name: 'read_note', arguments: { path: 'Note1.md' } },
+					{ id: 'call_2', name: 'read_note', arguments: { path: 'Note2.md' } },
+				],
+			},
+			{
+				role: 'tool',
+				tool_call_id: 'call_1',
+				name: 'read_note',
+				content: 'Content of Note 1',
+			},
+			{
+				role: 'tool',
+				tool_call_id: 'call_2',
+				name: 'read_note',
+				content: 'Content of Note 2',
+			},
+		];
+
+		const formatted = formatGeminiMessages(messages);
+
+		expect(formatted).toHaveLength(3);
+		expect(formatted[0].role).toBe('user');
+		expect(formatted[1].role).toBe('model');
+		expect(formatted[2].role).toBe('user');
+		expect(formatted[2].parts).toEqual([
+			{
+				functionResponse: {
+					name: 'read_note',
+					response: { content: 'Content of Note 1' },
+				},
+			},
+			{
+				functionResponse: {
+					name: 'read_note',
+					response: { content: 'Content of Note 2' },
+				},
+			},
+		]);
 	});
 });
 

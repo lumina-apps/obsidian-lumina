@@ -115,11 +115,15 @@ export class AnthropicProvider implements ILLMProvider {
 		const payload: Record<string, unknown> = {
 			model: options.model,
 			messages: formattedMessages,
-			temperature: options.temperature ?? 0.7,
 			max_tokens: options.maxOutputTokens ?? 4096,
 			tools: formattedTools,
 			stream,
 		};
+
+		// Claude 4.7+ 및 Claude 5+ 모델은 temperature 파라미터가 deprecated 되어 전송 시 HTTP 400 발생
+		if (!/^claude-(?:(?:opus|sonnet|haiku)-)?(?:4-(?:[7-9]|\d{2})|[5-9])/i.test(options.model)) {
+			payload.temperature = options.temperature ?? 0.7;
+		}
 
 		if (options.stop && options.stop.length > 0) {
 			payload.stop_sequences = options.stop;

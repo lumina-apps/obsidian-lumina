@@ -189,6 +189,25 @@ describe('AnthropicProvider', () => {
 			expect(result.content).toContain('<think>\nAnalyzing the request...\n</think>\nHere is the answer.');
 			expect(chunks.join('')).toBe('<think>\nAnalyzing the request...\n</think>\nHere is the answer.');
 		});
+
+		it('should omit deprecated temperature parameter for Claude 4.7+ and Claude 5+ models', async () => {
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					content: [{ type: 'text', text: 'Hello' }],
+					stop_reason: 'end_turn',
+				},
+			} as RequestUrlResponse);
+
+			await provider.chat(
+				[{ role: 'user', content: 'hello' }],
+				{ model: 'claude-opus-4-7', temperature: 0.7 },
+			);
+
+			const callArg = mockRequestUrl.mock.calls[0][0] as { body: string };
+			const parsedBody = JSON.parse(callArg.body) as Record<string, unknown>;
+			expect(parsedBody.temperature).toBeUndefined();
+		});
 	});
 });
 

@@ -17,7 +17,22 @@ export function isMockToolText(content: string): boolean {
  * ChatMessage 배열을 OpenAI 호환 messages 배열로 변환합니다.
  */
 export function formatOpenAIMessages(messages: ChatMessage[]): Record<string, unknown>[] {
-	return messages.map((m) => {
+	const sanitized: ChatMessage[] = [];
+	let seenNonToolAfterSystem = false;
+	for (const m of messages) {
+		if (m.role === 'system') {
+			sanitized.push(m);
+			continue;
+		}
+		// 히스토리 절단 시 선두에 남은 고아 tool 메시지 제거 (선행 assistant tool_calls 없이 시작 불가)
+		if (!seenNonToolAfterSystem && m.role === 'tool') {
+			continue;
+		}
+		seenNonToolAfterSystem = true;
+		sanitized.push(m);
+	}
+
+	return sanitized.map((m) => {
 		if (m.role === 'system') {
 			return { role: 'system', content: m.content };
 		}

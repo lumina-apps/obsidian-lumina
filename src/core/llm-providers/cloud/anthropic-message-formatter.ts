@@ -64,6 +64,9 @@ export function formatAnthropicMessages(messages: ChatMessage[]) {
 					});
 				}
 			}
+			if (contentArray.length === 0 && contentText) {
+				contentArray.push({ type: 'text', text: contentText });
+			}
 			return { role: 'assistant', content: contentArray };
 		}
 		if (m.role === 'tool') {
@@ -97,8 +100,15 @@ export function formatAnthropicMessages(messages: ChatMessage[]) {
 		}
 	}
 
-	// Anthropic API 제약: 첫 메시지는 반드시 'user' 역할이어야 함
-	while (merged.length > 0 && merged[0].role !== 'user') {
+	// Anthropic API 제약: 첫 메시지는 반드시 일반 'user' 역할이어야 함 (assistant나 단독 tool_result로 시작 불가)
+	while (
+		merged.length > 0 &&
+		(
+			merged[0].role !== 'user' ||
+			(Array.isArray(merged[0].content) &&
+				(merged[0].content as { type: string }[]).some(c => c.type === 'tool_result'))
+		)
+	) {
 		merged.shift();
 	}
 

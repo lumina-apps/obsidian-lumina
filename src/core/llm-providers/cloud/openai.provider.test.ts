@@ -130,4 +130,26 @@ describe('OpenAIProvider', () => {
 			expect(models).toContain('o3-mini');
 				});
 		});
+
+	describe('chat payload compatibility', () => {
+		it('should use max_completion_tokens and omit temperature for gpt-5 and o-series models', async () => {
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					choices: [{ message: { content: 'Hi' }, finish_reason: 'stop' }],
+				},
+			} as RequestUrlResponse);
+
+			await provider.chat(
+				[{ role: 'user', content: 'hello' }],
+				{ model: 'gpt-5', maxOutputTokens: 2048, temperature: 0.7 },
+			);
+
+			const callArg = mockRequestUrl.mock.calls[0][0] as { body: string };
+			const parsedBody = JSON.parse(callArg.body) as Record<string, unknown>;
+			expect(parsedBody.max_completion_tokens).toBe(2048);
+			expect(parsedBody.max_tokens).toBeUndefined();
+			expect(parsedBody.temperature).toBeUndefined();
+		});
+	});
 	});
