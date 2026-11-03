@@ -36,6 +36,7 @@ export class AntigravityProvider extends BaseCliAgent {
 				command: binary,
 				args: ['models'],
 				cwd: getDefaultCwd(),
+				env: this.config.env,
 				timeoutMs: 15000,
 			});
 

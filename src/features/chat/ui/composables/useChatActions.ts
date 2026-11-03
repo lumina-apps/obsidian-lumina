@@ -125,9 +125,9 @@ export function useChatActions(ctx: ChatActionsContext) {
 					"Not enough conversation to compress.",
 			);
 		} else {
-			new Notice(
-				t("uiMessages.compressFailed") || "⚠️ Failed to compress context.",
-			);
+			const baseMsg = t("uiMessages.compressFailed") || "⚠️ Failed to compress context.";
+			const details = [result.modelLabel, result.reason].filter(Boolean).join(" — ");
+			new Notice(details ? `${baseMsg}\n(${details})` : baseMsg, 6000);
 		}
 	}
 

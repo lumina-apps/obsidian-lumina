@@ -142,7 +142,7 @@
 					plugin.indexer.oramaDb,
 					texts => plugin.indexer!.embed(texts),
 					15,
-					0.65,
+					0.68,
 					0.5,
 					allowedPaths
 				);

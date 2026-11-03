@@ -10,6 +10,8 @@ import { t } from '../../../shared/locales/helpers';
 import { debugLogger } from '../../../shared/debugLogger';
 import { resizeImageDataUrl } from './imageUtils';
 import { TEXT_EXTS } from './fileAttachmentUtils';
+import { getActiveProject } from '../../../core/store/projectStore';
+import { isExcluded, isIncluded } from '../../rag/exclusions';
 
 export const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif']);
 const MAX_TEXT_LENGTH = 2000000; // 물리적 텍스트 안전 상한선 (약 50만 토큰, OOM 힙 크래시 방지)
@@ -182,12 +184,17 @@ export class ChatAttachmentHandler {
 		const visitedFolders = new Set<string>();
 		const MAX_DEPTH = 15;
 
+		const project = getActiveProject();
+		const excludedPaths = project?.ragExcludedPaths ?? [];
+
 		const collectFiles = (f: TFolder, depth: number) => {
 			if (depth > MAX_DEPTH || visitedFolders.has(f.path)) return;
+			if (depth > 1 && isExcluded(f.path, excludedPaths)) return;
 			visitedFolders.add(f.path);
 
 			for (const child of f.children) {
 				if (child instanceof TFile) {
+					if (depth > 1 && isExcluded(child.path, excludedPaths)) continue;
 					const childExt = child.extension?.toLowerCase() ?? '';
 					if (childExt === 'md' || TEXT_EXTS.has(childExt) || SUPPORTED_EXTENSIONS.has(childExt)) {
 						textFiles.push(child);
@@ -323,7 +330,14 @@ export class ChatAttachmentHandler {
 		const targetTag = att.name.startsWith('#') ? att.name : `#${att.name}`;
 		let readCount = 0;
 
+		const project = getActiveProject();
+		const includedPaths = project?.ragIncludedPaths ?? [];
+		const excludedPaths = project?.ragExcludedPaths ?? [];
+
 		for (const file of files) {
+			if (!isIncluded(file.path, includedPaths) || isExcluded(file.path, excludedPaths)) {
+				continue;
+			}
 			const cache = app.metadataCache.getFileCache(file);
 			const allTags = cache ? (getAllTags(cache) || []) : [];
 			const hasTag = allTags.some(tg => tg === targetTag || tg.startsWith(targetTag + '/'));

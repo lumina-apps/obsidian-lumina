@@ -259,4 +259,70 @@ describe('llmExecutor - CLI Agent Execution & Debug Logging', () => {
 		expect(passedPrompt).not.toContain('[Attached Content: Selection]');
 		expect(passedPrompt).toContain('<context>');
 	});
+
+	it('CLI 스트림에서 실시간 델타 출력 후 동일한 최종 result 스냅샷이 오면 중복 출력하지 않는다', async () => {
+		const cliConfig: LLMProviderConfig = {
+			id: 'cli-claude',
+			type: 'cli-claude-code',
+			credential: '',
+			availableModels: ['claude-3-7-sonnet'],
+			isVerified: true,
+			autoApprove: false,
+		};
+
+		vi.spyOn(CliAgentProvider.prototype, 'executeRaw').mockReturnValue({
+			events: (async function* () {
+				yield { type: 'text', content: '안녕하세요! ', raw: { type: 'stream_event' } };
+				yield { type: 'text', content: '반갑습니다.', raw: { type: 'stream_event' } };
+				yield { type: 'text', content: '안녕하세요! 반갑습니다.', raw: { type: 'result', result: '안녕하세요! 반갑습니다.' } };
+			})(),
+			waitForExit: vi.fn().mockResolvedValue({ exitCode: 0 }),
+			writeStdin: vi.fn(),
+			kill: vi.fn(),
+		});
+
+		const res = await executeCliAgentCall(
+			mockPlugin,
+			mockContext,
+			cliConfig,
+			'claude-3-7-sonnet',
+			mockPlugin.settings.chat,
+			undefined,
+			'assistant-no-dup',
+		);
+
+		expect(res.fullResponse).toBe('안녕하세요! 반갑습니다.');
+	});
+
+	it('CLI 스트림에서 error 이벤트가 방출되면 에러 메시지를 응답에 반영하고 로그를 남긴다', async () => {
+		const cliConfig: LLMProviderConfig = {
+			id: 'cli-agy',
+			type: 'cli-antigravity',
+			credential: '',
+			availableModels: ['gemini-3.8-flash-medium'],
+			isVerified: true,
+			autoApprove: false,
+		};
+
+		vi.spyOn(CliAgentProvider.prototype, 'executeRaw').mockReturnValue({
+			events: (async function* () {
+				yield { type: 'error', content: 'Quota exceeded for model' };
+			})(),
+			waitForExit: vi.fn().mockResolvedValue({ exitCode: 0 }),
+			writeStdin: vi.fn(),
+			kill: vi.fn(),
+		});
+
+		const res = await executeCliAgentCall(
+			mockPlugin,
+			mockContext,
+			cliConfig,
+			'gemini-3.8-flash-medium',
+			mockPlugin.settings.chat,
+			undefined,
+			'assistant-err-event',
+		);
+
+		expect(res.fullResponse).toContain('Quota exceeded for model');
+	});
 });

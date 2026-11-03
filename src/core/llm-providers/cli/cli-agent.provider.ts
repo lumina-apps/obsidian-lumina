@@ -8,6 +8,7 @@ import { OpenCodeProvider } from './agents/opencode.provider';
 import { AntigravityProvider } from './agents/antigravity.provider';
 import type { BaseCliAgent } from './base-cli-agent';
 import { getDefaultCwd } from './process-manager';
+import { isDuplicateCliSnapshotText } from './ndjson-parser';
 
 /**
  * 멀티턴 대화 메시지 배열을 CLI 에이전트에 전달할 단일 프롬프트 문자열로 변환합니다.
@@ -137,28 +138,19 @@ export class CliAgentProvider implements ILLMProvider {
 
         const execution = this.agent.execute(prompt, execOptions);
         let usage: TokenUsage | undefined;
-        let isThinking = false;
-
+        let accumulatedText = '';
         let hasProducedAnyText = false;
 
-        // Consume the event stream
+        // Consume the event stream (순수 텍스트 LLM 어댑터이므로 thinking 이벤트는 제외하고 본문 텍스트만 전달)
         for await (const event of execution.events) {
             if (options.signal?.aborted) break;
 
-            if (event.type === 'thinking' && event.content) {
-                if (!isThinking) {
-                    isThinking = true;
-                    onChunk('<think>\n');
-                }
-                onChunk(event.content);
-            }
-
             if (event.type === 'text' && event.content) {
-                hasProducedAnyText = true;
-                if (isThinking) {
-                    isThinking = false;
-                    onChunk('\n</think>\n');
+                if (isDuplicateCliSnapshotText(accumulatedText, event)) {
+                    continue;
                 }
+                hasProducedAnyText = true;
+                accumulatedText += event.content;
                 onChunk(event.content);
             }
 
@@ -173,10 +165,6 @@ export class CliAgentProvider implements ILLMProvider {
             if (event.type === 'error' && event.content) {
                 throw new Error(event.content);
             }
-        }
-
-        if (isThinking) {
-            onChunk('\n</think>\n');
         }
 
         const exitResult = await execution.waitForExit();

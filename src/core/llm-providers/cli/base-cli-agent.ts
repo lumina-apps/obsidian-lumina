@@ -105,6 +105,7 @@ export abstract class BaseCliAgent {
 				command: binary,
 				args: this.getVersionArgs(),
 				cwd: cwd || getDefaultCwd(),
+				env: this.config.env,
 				timeoutMs: 5000,
 			});
 

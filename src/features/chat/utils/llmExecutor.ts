@@ -6,7 +6,11 @@ import type {
 	CliFileEditLog,
 } from '../../../shared/types/cliAgent.types';
 import { CliAgentProvider, formatMessagesToPrompt } from '../../../core/llm-providers/cli/cli-agent.provider';
-import { stripAnsiCodes, extractTextFromUnknown } from '../../../core/llm-providers/cli/ndjson-parser';
+import {
+	stripAnsiCodes,
+	extractTextFromUnknown,
+	isDuplicateCliSnapshotText,
+} from '../../../core/llm-providers/cli/ndjson-parser';
 import { runAgentLoop, isTokenLimitReached } from '../agentLoop';
 import { debugLogger } from '../../../shared/debugLogger';
 import { estimateTokens } from '../../../shared/utils/tokenEstimator';
@@ -33,6 +37,8 @@ import { TFile } from 'obsidian';
 import * as path from 'path';
 import { IMAGE_EXTENSIONS } from './ChatAttachmentHandler';
 import { t } from '../../../shared/locales/helpers';
+import { getActiveProject } from '../../../core/store/projectStore';
+import { DEFAULT_EXCLUDED_PATHS } from '../../rag/exclusions';
 
 /**
  * 볼트 파일 시스템 절대 경로를 반환합니다.
@@ -131,15 +137,6 @@ export async function executeCliAgentCall(
 		}
 	}
 
-	// 현재 열린 활성 파일이 있고 아직 목록에 없으면 추가
-	const activeFile = plugin.app.workspace.getActiveFile();
-	if (activeFile) {
-		const activeAbsPath = path.join(cwd, activeFile.path);
-		if (!contextFiles.includes(activeAbsPath)) {
-			contextFiles.push(activeAbsPath);
-		}
-	}
-
 	if (inlineContexts.length > 0) {
 		prompt = `${inlineContexts.join('\n\n')}\n\n${prompt}`;
 	}
@@ -153,6 +150,27 @@ export async function executeCliAgentCall(
 	if (imageFiles.length > 0) {
 		const imageListStr = imageFiles.map((f) => `- ${f}`).join('\n');
 		prompt = `[Attached Image Files]:\n${imageListStr}\n(The user has attached the above local image files. Please inspect and analyze them.)\n\n${prompt}`;
+	}
+
+	// CLI 에이전트가 자체 파일 시스템 도구(find, grep, read_file 등)로 컨텍스트 제외 폴더를 읽지 못하도록 경로 정책 주입
+	const respectExclusions = plugin.settings?.mcp?.agentRespectRagExclusions ?? true;
+	if (respectExclusions) {
+		const activeProject = getActiveProject();
+		const excludedDirs = Array.from(
+			new Set([
+				...DEFAULT_EXCLUDED_PATHS,
+				...(activeProject?.ragExcludedPaths ?? []),
+				plugin.settings?.chat?.historyPath || 'chatHistory',
+				'.obsidian',
+			]),
+		).filter(Boolean);
+		const includedDirs = (activeProject?.ragIncludedPaths ?? []).filter(Boolean);
+
+		let policyBlock = `[VAULT PATH ACCESS POLICY - STRICTLY ENFORCED]:\n- Excluded directories/paths (NEVER read, list, search, grep, or access any files inside these paths under any circumstances): ${excludedDirs.join(', ')}`;
+		if (includedDirs.length > 0) {
+			policyBlock += `\n- Allowed directories/paths whitelist (ONLY access files inside these paths): ${includedDirs.join(', ')}`;
+		}
+		prompt = `${policyBlock}\n\n${prompt}`;
 	}
 
 	const startTime = Date.now();
@@ -198,6 +216,7 @@ export async function executeCliAgentCall(
 	let fullResponse = '';
 	let toolCallCounter = 0;
 	let tokenUsage: TokenUsage | undefined;
+	const cliErrors: string[] = [];
 
 	const execution = provider.executeRaw(prompt, {
 		cwd,
@@ -218,7 +237,7 @@ export async function executeCliAgentCall(
 
 			switch (event.type) {
 				case 'text':
-					if (event.content) {
+					if (event.content && !isDuplicateCliSnapshotText(fullResponse, event)) {
 						fullResponse += event.content;
 						appendChunk(assistantId, event.content);
 					}
@@ -363,6 +382,16 @@ export async function executeCliAgentCall(
 				case 'status':
 					setActivityStatus(assistantId, event.content);
 					break;
+
+				case 'error':
+					if (event.content) {
+						const errText = stripAnsiCodes(event.content).trim();
+						if (errText && !cliErrors.includes(errText)) {
+							cliErrors.push(errText);
+						}
+						debugLogger.logError('cli-agent', `CLI Error Event: ${errText || event.content}`);
+					}
+					break;
 			}
 		}
 
@@ -402,6 +431,23 @@ export async function executeCliAgentCall(
 						updateCliFileEdit(assistantId, fe.id, { afterContent: current });
 					}
 				}
+			}
+		}
+
+		// CLI 에러 이벤트가 명시적으로 수신된 경우 우선 반영
+		if (cliErrors.length > 0) {
+			const specificErrors = cliErrors.filter(
+				(msg) => !/^CLI process exited with code \d+$/.test(msg),
+			);
+			const displayErrors = specificErrors.length > 0 ? specificErrors : cliErrors;
+			if (!fullResponse) {
+				const errorMsg = `⚠️ CLI 실행 중 오류가 발생했습니다:\n\n\`\`\`\n${displayErrors.join('\n')}\n\`\`\``;
+				fullResponse = errorMsg;
+				appendChunk(assistantId, errorMsg);
+			} else if (specificErrors.length > 0) {
+				const errorNotice = `\n\n⚠️ CLI 실행 중 오류가 발생했습니다: ${specificErrors.join(' / ')}`;
+				fullResponse += errorNotice;
+				appendChunk(assistantId, errorNotice);
 			}
 		}
 

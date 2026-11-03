@@ -11,6 +11,7 @@ import { t } from '../../shared/locales/helpers';
 import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
 import { estimateTokens } from '../../shared/utils/tokenEstimator';
+import { getVaultBasePath } from '../../shared/utils/fileUtils';
 import type { ChatMessage, TokenUsage } from '../../shared/types/llm.types';
 import { activateView } from '../../core/views/viewHelper';
 import { CHAT_VIEW_TYPE } from '../chat/chatView';
@@ -159,6 +160,14 @@ export class QuickActionHandler {
 				estimatedInputTokens,
 			});
 
+			const vaultCwd = getVaultBasePath(this.plugin.app);
+			const qaChatOptions = {
+				model: modelId,
+				temperature: chat.temperature,
+				maxOutputTokens: chat.maxOutputTokens || undefined,
+				...(vaultCwd ? { cwd: vaultCwd } : {}),
+			};
+
 			if (chat.streaming) {
 				if (action.actionType === 'replace') {
 					editor.replaceRange(indicatorText, initialFrom, initialTo);
@@ -174,11 +183,7 @@ export class QuickActionHandler {
 				// 청크 단위로 UI에 점진적 출력
 				const streamRes = await provider.stream(
 					llmMessages,
-					{
-						model: modelId,
-						temperature: chat.temperature,
-						maxOutputTokens: chat.maxOutputTokens || undefined
-					},
+					qaChatOptions,
 					(chunk) => {
 						if (!chunk) return;
 						fullResponse += chunk;
@@ -209,11 +214,7 @@ export class QuickActionHandler {
 				if (chunkCount === 0) {
 					const response = await provider.chat(
 						llmMessages,
-						{
-							model: modelId,
-							temperature: chat.temperature,
-							maxOutputTokens: chat.maxOutputTokens || undefined
-						}
+						qaChatOptions
 					);
 					const resultText = response.content;
 					fullResponse = resultText;
@@ -243,11 +244,7 @@ export class QuickActionHandler {
 			} else {
 				const response = await provider.chat(
 					llmMessages,
-					{
-						model: modelId,
-						temperature: chat.temperature,
-						maxOutputTokens: chat.maxOutputTokens || undefined
-					}
+					qaChatOptions
 				);
 
 				const resultText = response.content;

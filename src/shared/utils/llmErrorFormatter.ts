@@ -34,7 +34,8 @@ export function formatLlmError(err: unknown): string {
 	if (
 		rawMessage.toLowerCase().includes('failed to fetch') ||
 		rawMessage.toLowerCase().includes('net::err') ||
-		rawMessage.toLowerCase().includes('connection refused')
+		rawMessage.toLowerCase().includes('connection refused') ||
+		rawMessage.toLowerCase().includes('econnrefused')
 	) {
 		return t('errors.llm.networkError');
 	}

@@ -4,7 +4,7 @@ import { get } from 'svelte/store';
 import { messages, sessionSummary, summaryUpToMessageId, currentSessionId, currentSessionTitle } from '../../../core/store/chatStore';
 import { getActiveProject } from '../../../core/store/projectStore';
 import { createProvider } from '../../../core/llm-providers';
-import { isCliProvider, type LLMProviderConfig } from '../../../shared/types/settings.types';
+import { isCliProvider, PROVIDER_LABELS, type LLMProviderConfig } from '../../../shared/types/settings.types';
 import type { ChatMessage, ChatOptions } from '../../../shared/types/llm.types';
 
 import { debugLogger } from '../../../shared/debugLogger';
@@ -12,6 +12,9 @@ import { saveSession } from '../history';
 import type { ChatSession, UIChatMessage } from '../../../shared/types/chat.types';
 import { t } from '../../../shared/locales/helpers';
 import { estimateTokens } from '../promptBuilder';
+import { stripThinkTags } from '../../../shared/utils/llmTextSanitizer';
+import { formatLlmError } from '../../../shared/utils/llmErrorFormatter';
+import { getVaultBasePath } from '../../../shared/utils/fileUtils';
 
 /** 디버그 로그에 남길 요약 본문 최대 길이 (과도한 메모리/표시 방지) */
 const SUMMARY_LOG_MAX = 2000;
@@ -41,15 +44,22 @@ function buildSummaryPrompt(currentSummary: string | null | undefined, targetMes
 	return prompt.trim();
 }
 
+interface SummaryLlmResult {
+	content: string | null;
+	modelLabel: string;
+	errorReason?: string;
+}
+
 /** 태스크 모델 우선 사용, 없으면 메인 모델로 요약 LLM 호출 */
 async function runSummaryLlm(
 	plugin: LuminaPlugin,
 	providerConfig: LLMProviderConfig,
 	modelId: string,
 	prompt: string,
-): Promise<string | null> {
+): Promise<SummaryLlmResult> {
 	let actualProviderConfig = providerConfig;
 	let actualModelId = modelId;
+	let isTaskModel = false;
 	const { taskProviderId, taskModelId, providers } = plugin.settings.connections;
 
 	if (taskProviderId && taskModelId) {
@@ -57,23 +67,75 @@ async function runSummaryLlm(
 		if (tpConfig) {
 			actualProviderConfig = tpConfig;
 			actualModelId = taskModelId;
+			isTaskModel = true;
 		}
 	}
 
+	const providerName =
+		PROVIDER_LABELS[actualProviderConfig.type] ||
+		actualProviderConfig.type;
+	const taskPrefix = (t('settings.connections.taskModel.name') || 'Task Model').replace(/\s*\(.*?\)\s*$/, '');
+	const modelLabel = isTaskModel
+		? `${taskPrefix}: ${providerName} / ${actualModelId}`
+		: `${providerName} / ${actualModelId}`;
+
+	const vaultCwd = getVaultBasePath(plugin.app);
 	const chatOptions: ChatOptions = {
 		model: actualModelId,
 		temperature: 0.3, // 요약은 비교적 정확성을 요구하므로 낮게 설정
 		maxOutputTokens: 2000,
+		...(vaultCwd ? { cwd: vaultCwd } : {}),
 	};
 
+	const llmMessages: ChatMessage[] = [{ role: 'user', content: prompt }];
+	const reqStart = Date.now();
+	const requestId = debugLogger.logRequest({
+		provider: actualProviderConfig.type,
+		model: actualModelId,
+		temperature: chatOptions.temperature ?? 0.3,
+		maxTokens: chatOptions.maxOutputTokens ?? 2000,
+		stream: false,
+		systemPrompt: `[Context Summarization — ${modelLabel}]`,
+		messages: [{ role: 'user', content: prompt }],
+		estimatedInputTokens: estimateTokens(prompt),
+	});
+
 	try {
-		const llmMessages: ChatMessage[] = [{ role: 'user', content: prompt }];
 		const provider = createProvider(actualProviderConfig);
 		const response = await provider.chat(llmMessages, chatOptions);
-		return response.content.trim() || null;
+		const trimmed = stripThinkTags(response.content).trim();
+		if (requestId) {
+			debugLogger.logResponse(requestId, {
+				model: actualModelId,
+				content: trimmed || '(empty response)',
+				durationMs: Date.now() - reqStart,
+				usage: response.usage,
+			});
+		}
+		if (!trimmed) {
+			return {
+				content: null,
+				modelLabel,
+				errorReason: 'Empty response from model',
+			};
+		}
+		return { content: trimmed, modelLabel };
 	} catch (error) {
-		debugLogger.logError('AutoSummary', error as Error);
-		return null;
+		const friendlyReason = formatLlmError(error);
+		const rawMsg = error instanceof Error ? error.message : String(error);
+		if (requestId) {
+			debugLogger.logResponse(requestId, {
+				model: actualModelId,
+				content: `❌ [Error: ${modelLabel}] ${rawMsg}`,
+				durationMs: Date.now() - reqStart,
+			});
+		}
+		debugLogger.logError('AutoSummary', new Error(`[${modelLabel}] ${rawMsg}`));
+		return {
+			content: null,
+			modelLabel,
+			errorReason: friendlyReason,
+		};
 	}
 }
 
@@ -170,7 +232,8 @@ export async function triggerAutoSummarization(
 		targetMessageCount: targetMessagesToSummarize.length
 	});
 
-	const newSummary = await runSummaryLlm(plugin, providerConfig, modelId, prompt);
+	const summaryRes = await runSummaryLlm(plugin, providerConfig, modelId, prompt);
+	const newSummary = summaryRes.content;
 	if (!newSummary) return;
 
 	debugLogger.logMcp('AutoSummary', 'Background summarization completed', {
@@ -189,7 +252,7 @@ export async function triggerAutoSummarization(
 export type SummarizeResult =
 	| { status: 'ok'; messages: number; tokens: number }
 	| { status: 'too-short' }
-	| { status: 'error' };
+	| { status: 'error'; modelLabel?: string; reason?: string };
 
 export async function summarizeConversation(
 	plugin: LuminaPlugin,
@@ -230,8 +293,15 @@ export async function summarizeConversation(
 		targetMessageCount: targetMessagesToSummarize.length
 	});
 
-	const newSummary = await runSummaryLlm(plugin, providerConfig, modelId, prompt);
-	if (!newSummary) return { status: 'error' };
+	const summaryRes = await runSummaryLlm(plugin, providerConfig, modelId, prompt);
+	const newSummary = summaryRes.content;
+	if (!newSummary) {
+		return {
+			status: 'error',
+			modelLabel: summaryRes.modelLabel,
+			reason: summaryRes.errorReason,
+		};
+	}
 
 	// 압축 통계 (배너/Notice 표시용)
 	const tokensSaved = targetMessagesToSummarize.reduce((acc, m) => acc + estimateTokens(m.content), 0);

@@ -10,6 +10,8 @@ import { VISION_UNSUPPORTED_PROVIDERS, PROVIDER_LABELS, isCliProvider } from '..
 import { isLocalProvider } from '../../../core/llm-providers/index';
 import { indexingState } from '../../../core/store/ragStore';
 import { sessionSummary, summaryUpToMessageId } from '../../../core/store/chatStore';
+import { getActiveProject } from '../../../core/store/projectStore';
+import { isExcluded, isIncluded } from '../../rag/exclusions';
 import { buildMessages } from '../promptBuilder';
 import { ChatAttachmentHandler, IMAGE_EXTENSIONS } from './ChatAttachmentHandler';
 import { resolveRagSearchFlag, performRagSearch } from './ragSearchHelper';
@@ -39,6 +41,14 @@ export async function resolveAttachmentsWithActiveNote(
 
 	const activeFile = app.workspace.getActiveFile();
 	if (!activeFile) return [...attachments];
+
+	const project = getActiveProject();
+	if (
+		!isIncluded(activeFile.path, project?.ragIncludedPaths ?? []) ||
+		isExcluded(activeFile.path, project?.ragExcludedPaths ?? [])
+	) {
+		return [...attachments];
+	}
 
 	const alreadyIncluded = attachments.some(
 		att => att.type === 'active_note' || (att.type === 'file' && att.path === activeFile.path),
@@ -219,8 +229,14 @@ export async function buildLlmContext(
 	}
 
 	const activeFile = plugin.app.workspace.getActiveFile();
-	const activeFilePath = activeFile?.path;
-	const activeFileTitle = activeFile?.basename;
+	const project = getActiveProject();
+	const isActiveFileAllowed =
+		!!activeFile &&
+		isIncluded(activeFile.path, project?.ragIncludedPaths ?? []) &&
+		!isExcluded(activeFile.path, project?.ragExcludedPaths ?? []);
+	const hasActiveNoteAttachment = updatedAttachments.some(a => a.type === 'active_note');
+	const activeFilePath = isActiveFileAllowed && hasActiveNoteAttachment ? activeFile?.path : undefined;
+	const activeFileTitle = isActiveFileAllowed && hasActiveNoteAttachment ? activeFile?.basename : undefined;
 
 	let llmMessages: ChatMessage[] = buildMessages(history, userText, {
 		chat: chatSettings,

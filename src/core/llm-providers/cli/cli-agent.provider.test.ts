@@ -925,6 +925,41 @@ claude-3-5-haiku
 				expect(capturedOptions?.agentExecutionMode).toBe('read');
 				expect(capturedOptions?.autoApprove).toBe(false);
 			});
+
+			it('stream() 호출 시 thinking 이벤트는 <think>로 감싸지 않고 제외하며, 중복 result 스냅샷을 건너뛴다', async () => {
+				const config: LLMProviderConfig = {
+					id: 'test-antigravity',
+					type: 'cli-antigravity',
+					credential: '',
+					availableModels: ['gemini-3.8-flash-medium'],
+					isVerified: true,
+					autoApprove: true,
+				};
+				const provider = new CliAgentProvider(config);
+				(provider as unknown as { agent: { execute: () => unknown } }).agent = {
+					execute: () => ({
+						events: (async function* () {
+							yield { type: 'thinking', content: 'Internal reasoning...' };
+							yield { type: 'text', content: 'Hello ', raw: { type: 'step_update' } };
+							yield { type: 'text', content: 'world', raw: { type: 'step_update' } };
+							yield { type: 'text', content: 'Hello world', raw: { type: 'result', result: 'Hello world' } };
+						})(),
+						cancel: () => {},
+						stdin: null,
+						waitForExit: async () => ({ exitCode: 0 }),
+					}),
+				};
+
+				let chunks = '';
+				await provider.stream(
+					[{ role: 'user', content: 'Hi' }],
+					{ model: 'gemini-3.8-flash-medium' },
+					(chunk) => { chunks += chunk; }
+				);
+
+				expect(chunks).toBe('Hello world');
+				expect(chunks).not.toContain('<think>');
+			});
 		});
 	});
 

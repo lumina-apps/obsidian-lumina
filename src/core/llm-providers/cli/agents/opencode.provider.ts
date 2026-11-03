@@ -35,6 +35,7 @@ export class OpenCodeProvider extends BaseCliAgent {
 				command: binary,
 				args: ['models'],
 				cwd: getDefaultCwd(),
+				env: this.config.env,
 				timeoutMs: 25000,
 			});
 

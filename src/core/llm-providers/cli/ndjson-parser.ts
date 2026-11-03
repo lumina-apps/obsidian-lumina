@@ -76,6 +76,32 @@ export function extractTextFromUnknown(val: unknown): string {
 }
 
 /**
+ * CLI가 실시간 스트리밍 조각(text_delta 등)을 먼저 방출한 뒤,
+ * 마지막에 동일한 전체 응답을 담은 스냅샷 이벤트(result, response, assistant, message)를
+ * 한 번 더 방출할 때 중복 출력을 방지하기 위한 판별 헬퍼입니다.
+ */
+export function isDuplicateCliSnapshotText(accumulatedText: string, event: CliEvent): boolean {
+	if (!accumulatedText || !event.content) return false;
+	if (!event.raw || typeof event.raw !== 'object') return false;
+
+	const rawObj = event.raw as Record<string, unknown>;
+	const rawType = (rawObj.type || rawObj.event) as string | undefined;
+	const isSnapshotEvent =
+		rawType === 'result' ||
+		rawType === 'response' ||
+		rawType === 'assistant' ||
+		rawType === 'message' ||
+		Array.isArray(rawObj.candidates);
+
+	if (!isSnapshotEvent) return false;
+
+	const trimmedIncoming = event.content.trim();
+	if (!trimmedIncoming) return true;
+
+	return accumulatedText.trimEnd().endsWith(trimmedIncoming);
+}
+
+/**
  * 일반 텍스트 라인에서 에이전트의 사고(Thinking), 파일 읽기, 편집, 명령어 실행을 자동 구조화합니다.
  */
 export function parseRawCliLine(line: string, raw: unknown): CliEvent | null {
