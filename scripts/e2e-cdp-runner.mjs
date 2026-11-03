@@ -745,7 +745,7 @@ async function run() {
 				// 3) Test native Obsidian note drop
 				const files = app.vault.getMarkdownFiles();
 				if (files.length === 0) return { success: false, reason: 'No markdown files in vault' };
-				const targetNote = files[0];
+				const targetNote = files.find(f => app.metadataCache.getFirstLinkpathDest(f.basename, '')?.path === f.path) || files[0];
 
 				const dropEvent = new DragEvent('drop', { bubbles: true, cancelable: true });
 				Object.defineProperty(dropEvent, 'dataTransfer', {
@@ -865,7 +865,7 @@ async function run() {
 			const historyResult = await client.evaluate(`(async () => {
 				const files = app.vault.getMarkdownFiles();
 				if (files.length === 0) return { success: false, reason: 'No markdown files in vault' };
-				const targetNote = files[0];
+				const targetNote = files.find(f => app.metadataCache.getFirstLinkpathDest(f.basename, '')?.path === f.path) || files[0];
 
 				const lumina = app.plugins.plugins['lumina'];
 				const historyDir = lumina.settings.chat.historyPath || 'chatHistory';
@@ -995,9 +995,9 @@ async function run() {
 		const tDocLink = Date.now();
 		try {
 			const linkResult = await client.evaluate(`(async () => {
-				const files = app.vault.getMarkdownFiles().filter(f => !f.path.startsWith('chatHistory'));
+				const files = app.vault.getMarkdownFiles().filter(f => !f.path.startsWith('chatHistory') && !f.path.startsWith('Lumina Exports'));
 				if (files.length === 0) return { success: false, reason: 'No markdown files' };
-				const targetNote = files[0];
+				const targetNote = files.find(f => app.metadataCache.getFirstLinkpathDest(f.basename, '')?.path === f.path) || files[0];
 
 				const lumina = app.plugins.plugins['lumina'];
 				const historyDir = lumina.settings.chat.historyPath || 'chatHistory';
