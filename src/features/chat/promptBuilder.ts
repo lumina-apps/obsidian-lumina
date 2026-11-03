@@ -148,8 +148,9 @@ export function buildMessages(
 			trimmedTurns = turns;
 		}
 
-		// 요약본이 있으면 시스템 프롬프트 맨 끝에 주입
+		// 요약본이 있으면 시스템 프롬프트 맨 끝에 주입 (합성 요약 메시지와 중복되지 않도록 필터링)
 		if (sessionSummary) {
+			trimmedTurns = trimmedTurns.filter(m => !m.isContextSummary);
 			const summaryInstruction = `\n\n[이전 대화 요약]\n${sessionSummary}\n\n* 지시사항: 위의 대화 요약을 배경 지식으로 삼아 자연스럽게 대화의 문맥을 유지하세요.`;
 			systemContent += summaryInstruction;
 			// 시스템 프롬프트가 이미 생성되었으므로 재할당 (아래에서 messages[0] 확인)
@@ -177,12 +178,29 @@ export function buildMessages(
 		trimmedTurns = turns.slice(-maxPairs * 2);
 	}
 
+	// turns / tokens 모드에서도 수동 압축 등으로 생성된 sessionSummary가 있고,
+	// 슬라이딩 윈도우(trimmedTurns) 내에 합성 요약 메시지(isContextSummary)가 포함되어 있지 않다면 시스템 프롬프트에 주입하여 맥락 유실 방지
+	if (
+		chat.memoryMethod !== 'auto_summary' &&
+		sessionSummary &&
+		!trimmedTurns.some(m => m.isContextSummary)
+	) {
+		const summaryInstruction = `\n\n[이전 대화 요약]\n${sessionSummary}\n\n* 지시사항: 위의 대화 요약을 배경 지식으로 삼아 자연스럽게 대화의 문맥을 유지하세요.`;
+		systemContent += summaryInstruction;
+		if (messages.length > 0 && messages[0].role === 'system') {
+			messages[0].content = systemContent;
+		} else if (systemContent) {
+			messages.push({ role: 'system', content: systemContent });
+		}
+	}
+
 	// ── 3. 이전 대화 추가 ─────────────────────────────────────────────────────
 	for (const m of trimmedTurns) {
 		let content = m.content;
 		// assistant 메시지의 경우 <think>/<thinking> 태그 내용 제거 (DeepSeek/Anthropic thinking 모델 에러 방지)
 		if (m.role === 'assistant') {
 			content = stripThinkTags(content);
+			if (!content.trim()) continue;
 		} else if (m.role === 'user' && m.attachments && m.attachments.length > 0) {
 			const attNames = m.attachments.map(a => a.name).filter(Boolean).join(', ');
 			if (attNames) {
@@ -203,11 +221,16 @@ export function buildMessages(
 		// RAG 컨텍스트 길이 최적화 (예: 최대 20000자, 약 5000토큰 분량)
 		const MAX_RAG_CHARS = 20000;
 		if (optimizedRag.length > MAX_RAG_CHARS) {
-			const chunks = optimizedRag.split('\n\n---\n\n');
+			const chunks = /^\[\d+\] \(/.test(optimizedRag)
+				? optimizedRag.split(/\n\n---\n\n(?=\[\d+\] \()/g)
+				: optimizedRag.split('\n\n---\n\n');
 			let currentLen = 0;
 			const validChunks: string[] = [];
 			for (const chunk of chunks) {
-				if (currentLen + chunk.length > MAX_RAG_CHARS && validChunks.length > 0) {
+				if (currentLen + chunk.length > MAX_RAG_CHARS) {
+					if (validChunks.length === 0) {
+						validChunks.push(chunk.slice(0, MAX_RAG_CHARS));
+					}
 					validChunks.push('... (Context truncated due to length limits)');
 					break;
 				}

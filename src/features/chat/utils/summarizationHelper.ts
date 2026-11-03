@@ -198,6 +198,7 @@ export async function summarizeConversation(
 ): Promise<SummarizeResult> {
 	const msgs = get(messages);
 	const currentSummary = get(sessionSummary);
+	const upToId = get(summaryUpToMessageId);
 	const conversation = msgs.filter(m => m.role !== 'system');
 
 	// 최소 2턴(4개 메시지) 이상일 때만 압축 가능
@@ -208,7 +209,21 @@ export async function summarizeConversation(
 	// 최신 2턴(4개 메시지)는 원문 유지
 	const targetMessagesToSummarize = conversation.slice(0, conversation.length - 4);
 
-	const prompt = buildSummaryPrompt(currentSummary, targetMessagesToSummarize);
+	// 이미 currentSummary에 반영된 메시지(upToId 이전 및 기존 합성 요약 메시지)는 요약 프롬프트 중복에서 제외
+	let promptTargetMessages = targetMessagesToSummarize;
+	if (upToId) {
+		const idx = targetMessagesToSummarize.findIndex(m => m.id === upToId);
+		if (idx !== -1) {
+			promptTargetMessages = targetMessagesToSummarize.slice(idx + 1);
+		}
+	}
+	promptTargetMessages = promptTargetMessages.filter(m => !m.isContextSummary);
+
+	if (promptTargetMessages.length === 0) {
+		return { status: 'too-short' };
+	}
+
+	const prompt = buildSummaryPrompt(currentSummary, promptTargetMessages);
 
 	debugLogger.logMcp('AutoSummary', 'Manual context compression started', {
 		currentSummaryExists: !!currentSummary,

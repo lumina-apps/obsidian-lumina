@@ -13,6 +13,7 @@ import { TEXT_EXTS } from './fileAttachmentUtils';
 
 export const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif']);
 const MAX_TEXT_LENGTH = 2000000; // 물리적 텍스트 안전 상한선 (약 50만 토큰, OOM 힙 크래시 방지)
+const MAX_URL_TEXT_LENGTH = 50000; // 외부 웹페이지 본문 최대 길이 (약 1.2만~1.5만 토큰)
 
 export interface ParsedAttachment {
 	type: 'text' | 'image';
@@ -155,6 +156,9 @@ export class ChatAttachmentHandler {
 		text = text.replace(/[ \t]+/g, ' ');      // 가로 공백(스페이스, 탭)은 1개로 압축
 		text = text.replace(/\n\s*\n/g, '\n\n');  // 빈 줄은 최대 1번만 연속되도록 정리
 		text = text.trim();
+		if (text.length > MAX_URL_TEXT_LENGTH) {
+			text = text.substring(0, MAX_URL_TEXT_LENGTH) + '\n\n... (웹페이지 내용이 너무 길어 일부 생략됨)';
+		}
 
 		const pageTitle = doc.title?.trim();
 		const headerLabel = pageTitle ? `[외부 웹페이지: ${pageTitle} (${att.path})]` : `[외부 웹페이지: ${att.path}]`;

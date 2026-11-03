@@ -38,9 +38,7 @@ export function collectMcpTools(params: {
 		}
 
 		const schema = tool.inputSchema ?? { type: 'object', properties: {} };
-		const properties: Record<string, unknown> & { _serverId?: unknown } = { ...(schema.properties ?? {}) };
-		// _serverId를 inputSchema에 숨겨서 LLM이 tool call 시 arguments에 포함하도록 함
-		properties._serverId = { type: 'string', description: 'DO NOT FILL - internal use' };
+		const properties: Record<string, unknown> = { ...(schema.properties ?? {}) };
 		mcpTools.push({
 			name: tool.name,
 			description: tool.description ?? '',

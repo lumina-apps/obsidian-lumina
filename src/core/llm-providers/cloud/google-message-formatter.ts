@@ -39,9 +39,9 @@ export function formatGeminiMessages(messages: ChatMessage[]) {
 	});
 
 	// 연속된 tool(functionResponse) 메시지를 단일 user 메시지로 병합 (병렬 함수 호출 대응)
-	const merged: typeof formatted = [];
+	const toolMerged: typeof formatted = [];
 	for (const msg of formatted) {
-		const prev = merged[merged.length - 1];
+		const prev = toolMerged[toolMerged.length - 1];
 		if (
 			prev && prev.role === 'user' && msg.role === 'user'
 			&& prev.parts.every(p => 'functionResponse' in p)
@@ -49,16 +49,30 @@ export function formatGeminiMessages(messages: ChatMessage[]) {
 		) {
 			(prev.parts as unknown[]).push(...(msg.parts as unknown[]));
 		} else {
-			merged.push(msg);
+			toolMerged.push(msg);
 		}
 	}
 
 	// Gemini API 제약: 첫 메시지는 반드시 일반 'user' 역할이어야 함 (model이나 단독 functionResponse로 시작 불가)
 	while (
-		merged.length > 0 &&
-		(merged[0].role !== 'user' || merged[0].parts.some(p => 'functionResponse' in p))
+		toolMerged.length > 0 &&
+		(toolMerged[0].role !== 'user' || toolMerged[0].parts.some(p => 'functionResponse' in p))
 	) {
-		merged.shift();
+		toolMerged.shift();
+	}
+
+	// 빈 model 파트 제거 및 연속된 동일 role(user->user, model->model) 안전 병합
+	const merged: typeof formatted = [];
+	for (const msg of toolMerged) {
+		if (msg.role === 'model' && msg.parts.length === 0) {
+			continue;
+		}
+		const prev = merged[merged.length - 1];
+		if (prev && prev.role === msg.role) {
+			(prev.parts as unknown[]).push(...(msg.parts as unknown[]));
+		} else {
+			merged.push(msg);
+		}
 	}
 
 	return merged;

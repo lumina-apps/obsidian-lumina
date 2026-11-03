@@ -11,7 +11,7 @@ import { isLocalProvider } from '../../../core/llm-providers/index';
 import { indexingState } from '../../../core/store/ragStore';
 import { sessionSummary, summaryUpToMessageId } from '../../../core/store/chatStore';
 import { buildMessages } from '../promptBuilder';
-import { ChatAttachmentHandler } from './ChatAttachmentHandler';
+import { ChatAttachmentHandler, IMAGE_EXTENSIONS } from './ChatAttachmentHandler';
 import { resolveRagSearchFlag, performRagSearch } from './ragSearchHelper';
 import { collectMcpTools, injectToolPrompts } from './mcpToolHelper';
 import { injectMultimodalImages } from './multimodalHelper';
@@ -78,21 +78,105 @@ export async function buildLlmContext(
 		ragEnabled,
 		useRagContext,
 	});
+	const isRagReady = shouldSearchRag && !!plugin.indexer && get(indexingState).status === 'ready';
+
+	// RAG 인덱서에 실제로 청크가 존재하는 폴더만 RAG 검색으로 위임하고, 미인덱싱 폴더는 직접 읽기로 폴백
+	const ragFilterFolders: string[] = [];
+	if (isRagReady && plugin.indexer) {
+		const indexedChunks = plugin.indexer.indexedParentChunks;
+		for (const att of updatedAttachments) {
+			if (
+				att.type === 'folder' &&
+				indexedChunks.some(c => c.path === att.path || c.path.startsWith(att.path + '/'))
+			) {
+				ragFilterFolders.push(att.path);
+			}
+		}
+	}
+	const ragFilterFolderSet = new Set(ragFilterFolders);
+	const attachmentsForDirectRead = updatedAttachments.filter(
+		att => !(att.type === 'folder' && ragFilterFolderSet.has(att.path)),
+	);
 
 	// 첨부파일 컨텍스트 빌드
-	const { attachmentContext, multimodalImages, failedAttachments } =
-		await ChatAttachmentHandler.buildAttachmentContext(plugin.app, updatedAttachments, plugin, { skipFolders: shouldSearchRag });
+	let { attachmentContext, multimodalImages, failedAttachments } =
+		await ChatAttachmentHandler.buildAttachmentContext(plugin.app, attachmentsForDirectRead, plugin, { skipFolders: false });
 
 	if (failedAttachments && failedAttachments.length > 0) {
 		new Notice(t('uiMessages.attachmentsSkipped', { files: failedAttachments.join(', ') }));
 	}
 
+	// 최근 대화 턴(요약 이후 최대 3턴)의 텍스트 기반 첨부파일 컨텍스트 복원
+	const currentSummaryUpToId = get(summaryUpToMessageId);
+	let effectiveHistory = history;
+	if (currentSummaryUpToId) {
+		const summaryIdx = history.findIndex(m => m.id === currentSummaryUpToId);
+		if (summaryIdx !== -1) {
+			effectiveHistory = history.slice(summaryIdx + 1);
+		}
+	}
+	const recentUserTurns = effectiveHistory
+		.filter(m => m.role === 'user' && !m.isContextSummary && m.attachments && m.attachments.length > 0)
+		.slice(-3)
+		.reverse();
+
+	const seenAttachmentKeys = new Set(
+		updatedAttachments.map(a => `${a.type}:${a.path || a.name}`),
+	);
+	const historyTextAttachments: ContextAttachment[] = [];
+	for (const turn of recentUserTurns) {
+		for (const att of turn.attachments ?? []) {
+			if (att.type !== 'file' && att.type !== 'selection' && att.type !== 'external_file' && att.type !== 'canvas') {
+				continue;
+			}
+			const ext = (att.path || att.name).split('.').pop()?.toLowerCase() ?? '';
+			if (IMAGE_EXTENSIONS.has(ext) || att.content?.startsWith('data:image/')) {
+				continue;
+			}
+			const key = `${att.type}:${att.path || att.name}`;
+			if (!seenAttachmentKeys.has(key)) {
+				seenAttachmentKeys.add(key);
+				historyTextAttachments.push(att);
+			}
+		}
+	}
+
+	if (historyTextAttachments.length > 0) {
+		const { attachmentContext: historyAttContext } = await ChatAttachmentHandler.buildAttachmentContext(
+			plugin.app,
+			historyTextAttachments,
+			plugin,
+			{ skipFolders: true },
+		);
+		if (historyAttContext.trim().length > 0) {
+			const MAX_HISTORY_ATTACHMENT_CHARS = 30000;
+			const trimmedHistoryAtt =
+				historyAttContext.length > MAX_HISTORY_ATTACHMENT_CHARS
+					? historyAttContext.slice(0, MAX_HISTORY_ATTACHMENT_CHARS) + '\n\n... (이전 턴 첨부 컨텍스트 일부 생략됨)'
+					: historyAttContext.trim();
+			attachmentContext = attachmentContext
+				? `${attachmentContext}[이전 턴 첨부 컨텍스트]\n${trimmedHistoryAtt}\n\n`
+				: `[이전 턴 첨부 컨텍스트]\n${trimmedHistoryAtt}\n\n`;
+		}
+	}
+
 	let ragContext: string | undefined;
 	let ragChunksForLog: RagChunkMeta[] | undefined;
 
-	if (shouldSearchRag && plugin.indexer && get(indexingState).status === 'ready') {
-		const filterPaths = updatedAttachments.filter(a => a.type === 'folder').map(a => a.path);
+	const failedSet = new Set(failedAttachments ?? []);
+	const attachedVaultPaths = [
+		...updatedAttachments.filter(a => !failedSet.has(a.name)),
+		...historyTextAttachments,
+	]
+		.filter(a => {
+			if (a.type !== 'file' && a.type !== 'active_note') return false;
+			if (!a.path) return false;
+			const ext = a.path.split('.').pop()?.toLowerCase() ?? '';
+			return !IMAGE_EXTENSIONS.has(ext);
+		})
+		.map(a => a.path);
 
+	if (isRagReady && plugin.indexer && (userText.trim().length > 0 || ragFilterFolders.length > 0)) {
 		const result = await performRagSearch({
 			userText,
 			rag: ragSettings,
@@ -100,7 +184,8 @@ export async function buildLlmContext(
 			existingContext: undefined,
 			assistantId,
 			indexer: plugin.indexer,
-			filterPaths: filterPaths.length > 0 ? filterPaths : undefined,
+			filterPaths: ragFilterFolders.length > 0 ? ragFilterFolders : undefined,
+			excludePaths: attachedVaultPaths.length > 0 ? attachedVaultPaths : undefined,
 			signal,
 		});
 		ragContext = result.ragContext;

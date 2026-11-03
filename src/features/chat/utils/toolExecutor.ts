@@ -27,7 +27,7 @@ export async function executeToolCall(
 		const cleanArgs = { ...tc.arguments } as Record<string, unknown> & { _serverId?: unknown };
 		delete cleanArgs._serverId;
 
-		const resolvedServerId = serverId || toolServerMap[tc.name];
+		const resolvedServerId = toolServerMap[tc.name] || serverId;
 		debugLogger.logMcp('Tool Execute', `▶️ 툴 실행: ${tc.name}`, {
 			serverId: resolvedServerId,
 			args: cleanArgs,

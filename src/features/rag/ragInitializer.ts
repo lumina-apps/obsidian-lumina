@@ -32,7 +32,8 @@ export async function initEmbeddingWorker(
 	isStartup: boolean = false,
 	isFirstRun: boolean = false,
 ): Promise<void> {
-	// 기존에 실행 중인 워커가 있으면 먼저 정리
+	// 기존에 실행 중인 워커 및 캐시된 인덱서가 있으면 먼저 정리
+	projectIndexCache.destroyAll();
 	if (plugin.indexer) {
 		plugin.indexer.destroy();
 		plugin.indexer = null;
@@ -171,8 +172,14 @@ export async function initEmbeddingWorker(
 					}
 				});
 		} else {
-			// manual 모드: 즉시 ready 상태로 설정
-			setIndexingStatus('ready');
+			// manual 모드: 디스크에 저장된 인덱스가 있으면 로드한 뒤 ready 상태로 설정
+			await plugin.indexer.loadExistingIndex().catch((err: unknown) => {
+				debugLogger.logError('rag', normalizeError(err, `manual 모드 기존 인덱스 로드 실패: ${err}`));
+			});
+			setIndexingStatus('ready', {
+				totalFiles: plugin.indexer.indexedFileCount,
+				processedFiles: plugin.indexer.indexedFileCount,
+			});
 			if (!isStartup) new Notice(t('settings.rag.init.readyManual'), 3000);
 		}
 	} catch (err) {

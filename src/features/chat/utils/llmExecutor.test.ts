@@ -212,4 +212,51 @@ describe('llmExecutor - CLI Agent Execution & Debug Logging', () => {
 			expect.stringContaining('exitCode: 1'),
 		);
 	});
+
+	it('CLI 실행 시 프롬프트에 이미 <context>가 있으면 인라인 텍스트 첨부파일을 중복 주입하지 않는다', async () => {
+		const cliConfig: LLMProviderConfig = {
+			id: 'cli-codex',
+			type: 'cli-codex',
+			credential: '',
+			availableModels: ['o3-mini'],
+			isVerified: true,
+			autoApprove: false,
+		};
+
+		const executeRawSpy = vi.spyOn(CliAgentProvider.prototype, 'executeRaw').mockReturnValue({
+			events: (async function* () {
+				yield { type: 'text', content: 'OK' };
+			})(),
+			waitForExit: vi.fn().mockResolvedValue({ exitCode: 0 }),
+			writeStdin: vi.fn(),
+			kill: vi.fn(),
+		});
+
+		const ctxWithContextBlock: ResolvedContext = {
+			...mockContext,
+			llmMessages: [
+				{
+					role: 'user',
+					content: '<context>\n[선택된 텍스트]\nSelected snippet\n</context>\n\nUser Question: Explain this',
+				},
+			],
+			attachments: [
+				{ type: 'selection', name: 'Selection', path: '', content: 'Selected snippet' },
+			],
+		};
+
+		await executeCliAgentCall(
+			mockPlugin,
+			ctxWithContextBlock,
+			cliConfig,
+			'claude-sonnet-4-5',
+			mockPlugin.settings.chat,
+			undefined,
+			'assistant-dedup',
+		);
+
+		const passedPrompt = executeRawSpy.mock.calls[0][0];
+		expect(passedPrompt).not.toContain('[Attached Content: Selection]');
+		expect(passedPrompt).toContain('<context>');
+	});
 });

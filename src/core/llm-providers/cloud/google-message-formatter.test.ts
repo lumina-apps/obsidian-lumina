@@ -148,5 +148,21 @@ describe('google-message-formatter', () => {
 			},
 		]);
 	});
+
+	it('should remove empty model messages and coalesce consecutive user messages', () => {
+		const messages: ChatMessage[] = [
+			{ role: 'user', content: 'First user message' },
+			{ role: 'assistant', content: '' },
+			{ role: 'user', content: 'Second user message' },
+		];
+
+		const formatted = formatGeminiMessages(messages);
+		expect(formatted).toHaveLength(1);
+		expect(formatted[0].role).toBe('user');
+		expect(formatted[0].parts).toEqual([
+			{ text: 'First user message' },
+			{ text: 'Second user message' },
+		]);
+	});
 });
 

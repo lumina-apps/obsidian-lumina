@@ -171,6 +171,23 @@ export class VaultIndexer {
 		}
 	}
 
+	/**
+	 * 디스크에 저장된 인덱스와 임베딩만 메모리에 로드하고(재인덱싱 없음) OramaStore를 초기화합니다.
+	 * syncMode === 'manual' 시작 시 저장된 인덱스를 즉시 사용할 수 있도록 합니다.
+	 */
+	async loadExistingIndex(): Promise<void> {
+		if (this.isLoaded || this.isIndexing) return;
+		const loadResult = await loadIndex(this.app, this.modelName, this.projectId);
+		if (!loadResult.needsFullReindex) {
+			this.state.loadFrom(loadResult);
+			await this.embeddingStore.loadEmbeddings(this.state.childChunks).catch((e) => {
+				debugLogger.logError('rag', normalizeError(e, `loadEmbeddings (loadExistingIndex) failed: ${e}`));
+			});
+			await this.initOramaStore();
+			this.isLoaded = true;
+		}
+	}
+
 	private async processSync(isUpdate: boolean): Promise<void> {
 		const files = getTargetFiles(this.app, this.settings, this.chatHistoryPath, this.includedPaths, this.excludedPaths);
 		debugLogger.logSystem('rag', `VaultIndexer.processSync (project=${this.projectId}): found ${files.length} target files. Included=${JSON.stringify(this.includedPaths)}, Excluded=${JSON.stringify(this.excludedPaths)}`);

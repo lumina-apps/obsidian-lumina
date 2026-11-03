@@ -175,5 +175,21 @@ describe('anthropic-message-formatter', () => {
 			},
 		]);
 	});
+
+	it('should remove empty assistant messages and coalesce consecutive user messages', () => {
+		const messages: ChatMessage[] = [
+			{ role: 'user', content: '📋 [Previous conversation compressed]\n\nSummary text' },
+			{ role: 'user', content: 'First question after compression' },
+			{ role: 'assistant', content: '' },
+			{ role: 'user', content: 'Retry question after empty assistant' },
+		];
+
+		const formatted = formatAnthropicMessages(messages);
+		expect(formatted).toHaveLength(1);
+		expect(formatted[0].role).toBe('user');
+		expect(formatted[0].content).toBe(
+			'📋 [Previous conversation compressed]\n\nSummary text\n\nFirst question after compression\n\nRetry question after empty assistant',
+		);
+	});
 });
 

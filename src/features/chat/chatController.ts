@@ -17,6 +17,8 @@ import {
 	messages,
 	sessionProviderId,
 	sessionModelId,
+	sessionSummary,
+	summaryUpToMessageId,
 } from '../../core/store/chatStore';
 import { get } from 'svelte/store';
 import type { UIChatMessage, ChatSession, ContextAttachment } from '../../shared/types/chat.types';
@@ -275,7 +277,13 @@ export class ChatController {
 			new Notice(t('uiMessages.attachmentsSkipped', { files: skipped.join(', ') }));
 		}
 
-		messages.set(msgs.slice(0, targetIndex));
+		const remainingMsgs = msgs.slice(0, targetIndex);
+		const currentUpToId = get(summaryUpToMessageId);
+		if (currentUpToId && !remainingMsgs.some((m) => m.id === currentUpToId)) {
+			sessionSummary.set(undefined);
+			summaryUpToMessageId.set(undefined);
+		}
+		messages.set(remainingMsgs);
 
 		await this.sendMessage(newContent, attachments, providerId, modelId, options, signal);
 	}

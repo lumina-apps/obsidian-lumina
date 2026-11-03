@@ -100,6 +100,10 @@ export async function executeCliAgentCall(
 	const isAgentEnabled = true;
 	const agentExecutionMode = chatSettings?.agentExecutionMode ?? 'read';
 
+	// 전체 대화 맥락(시스템 프롬프트, 이전 대화 등)을 온전히 보존하여 CLI에 전달
+	let prompt = formatMessagesToPrompt(ctx.llmMessages);
+	const hasContextBlockInPrompt = prompt.includes('<context>');
+
 	// 첨부 파일 중 이미지 및 컨텍스트 파일 절대 경로 수집
 	const contextFiles: string[] = [];
 	const imageFiles: string[] = [];
@@ -121,7 +125,7 @@ export async function executeCliAgentCall(
 		} else if (att.content) {
 			if (att.content.startsWith('data:image/')) {
 				inlineContexts.push(`[Attached Image: ${att.name} (image binary omitted for CLI agent)]`);
-			} else {
+			} else if (!hasContextBlockInPrompt) {
 				inlineContexts.push(`[Attached Content: ${att.name}]\n${att.content}`);
 			}
 		}
@@ -136,9 +140,6 @@ export async function executeCliAgentCall(
 		}
 	}
 
-	// 전체 대화 맥락(시스템 프롬프트, 이전 대화 등)을 온전히 보존하여 CLI에 전달
-	let prompt = formatMessagesToPrompt(ctx.llmMessages);
-
 	if (inlineContexts.length > 0) {
 		prompt = `${inlineContexts.join('\n\n')}\n\n${prompt}`;
 	}
@@ -146,7 +147,7 @@ export async function executeCliAgentCall(
 	const nonImageFiles = contextFiles.filter((f) => !imageFiles.includes(f));
 	if (nonImageFiles.length > 0) {
 		const fileListStr = nonImageFiles.map((f) => `- ${f}`).join('\n');
-		prompt = `[Active Note / Referenced Files]:\n${fileListStr}\n(The user may be referring to the active note or files above. Inspect and read them directly using your file tools if needed.)\n\n${prompt}`;
+		prompt = `[Active Note / Referenced Files]:\n${fileListStr}\n(The contents of attached files are already included in <context> below. Only use file tools if you need to edit them or inspect other files in the vault.)\n\n${prompt}`;
 	}
 
 	if (imageFiles.length > 0) {

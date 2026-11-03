@@ -145,5 +145,21 @@ describe('search module', () => {
 			expect(mockOramaStore.search).toHaveBeenCalledWith(expect.anything(), expect.any(Number), allowedPaths);
 			expect(mockOramaStore.searchFulltext).toHaveBeenCalledWith('query', expect.any(Number), allowedPaths);
 		});
+
+		it('should return empty array immediately when allowedPaths is an empty array', async () => {
+			const parentChunks: ParentChunk[] = [
+				{ id: 'p1', path: 'folderA/file1.md', text: 'Text in folder A', chunkIndex: 0 },
+			];
+			const mockOramaStore = {
+				search: vi.fn(),
+				searchFulltext: vi.fn(),
+			} as unknown as OramaStore;
+			const embedFn = vi.fn();
+
+			const results = await searchVault('query', parentChunks, mockOramaStore, embedFn, 5, 0.0, 0.5, []);
+			expect(results).toEqual([]);
+			expect(embedFn).not.toHaveBeenCalled();
+			expect(mockOramaStore.search).not.toHaveBeenCalled();
+		});
 	});
 });

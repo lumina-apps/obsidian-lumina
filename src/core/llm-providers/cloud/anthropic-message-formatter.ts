@@ -84,10 +84,10 @@ export function formatAnthropicMessages(messages: ChatMessage[]) {
 		return { role: 'user', content: String(m.content) };
 	});
 
-	// Anthropic API는 role이 반드시 교대해야 함 → 연속된 user(tool_result) 메시지 병합
-	const merged: typeof mapped = [];
+	// Anthropic API는 role이 반드시 교대해야 함 → 먼저 연속된 user(tool_result) 메시지 병합
+	const toolMerged: typeof mapped = [];
 	for (const msg of mapped) {
-		const prev = merged[merged.length - 1];
+		const prev = toolMerged[toolMerged.length - 1];
 		if (
 			prev && prev.role === 'user' && msg.role === 'user'
 			&& Array.isArray(prev.content) && Array.isArray(msg.content)
@@ -96,20 +96,44 @@ export function formatAnthropicMessages(messages: ChatMessage[]) {
 		) {
 			(prev.content as unknown[]).push(...(msg.content as unknown[]));
 		} else {
-			merged.push(msg);
+			toolMerged.push(msg);
 		}
 	}
 
 	// Anthropic API 제약: 첫 메시지는 반드시 일반 'user' 역할이어야 함 (assistant나 단독 tool_result로 시작 불가)
 	while (
-		merged.length > 0 &&
+		toolMerged.length > 0 &&
 		(
-			merged[0].role !== 'user' ||
-			(Array.isArray(merged[0].content) &&
-				(merged[0].content as { type: string }[]).some(c => c.type === 'tool_result'))
+			toolMerged[0].role !== 'user' ||
+			(Array.isArray(toolMerged[0].content) &&
+				(toolMerged[0].content as { type: string }[]).some(c => c.type === 'tool_result'))
 		)
 	) {
-		merged.shift();
+		toolMerged.shift();
+	}
+
+	// 빈 assistant 블록 제거 및 연속된 동일 role(user->user, assistant->assistant) 안전 병합
+	const merged: typeof mapped = [];
+	for (const msg of toolMerged) {
+		if (msg.role === 'assistant' && Array.isArray(msg.content) && msg.content.length === 0) {
+			continue;
+		}
+		const prev = merged[merged.length - 1];
+		if (prev && prev.role === msg.role) {
+			if (typeof prev.content === 'string' && typeof msg.content === 'string') {
+				prev.content = `${prev.content}\n\n${msg.content}`;
+			} else {
+				const prevArr = Array.isArray(prev.content)
+					? (prev.content as unknown[])
+					: [{ type: 'text' as const, text: String(prev.content) }];
+				const msgArr = Array.isArray(msg.content)
+					? (msg.content as unknown[])
+					: [{ type: 'text' as const, text: String(msg.content) }];
+				prev.content = [...prevArr, ...msgArr] as typeof prev.content;
+			}
+		} else {
+			merged.push(msg);
+		}
 	}
 
 	return merged;

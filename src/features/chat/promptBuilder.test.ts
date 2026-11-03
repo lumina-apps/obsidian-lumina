@@ -260,6 +260,51 @@ describe('promptBuilder', () => {
 		const messagesRu = buildMessages([], 'Hello', { chat: mockChatSettings });
 		expect(messagesRu[0].content).toContain('Russian (Русский)');
 	});
+
+	it('should skip empty assistant messages (including think-only messages) in history', () => {
+		mockHistory = [
+			{ id: '1', role: 'user', content: 'First question', isStreaming: false, timestamp: 1 },
+			{ id: '2', role: 'assistant', content: '<think>cancelled mid-thought</think>   ', isStreaming: false, timestamp: 2 },
+			{ id: '3', role: 'user', content: 'Second question', isStreaming: false, timestamp: 3 },
+			{ id: '4', role: 'assistant', content: 'Valid answer', isStreaming: false, timestamp: 4 },
+		];
+
+		const messages = buildMessages(mockHistory, 'Third question', { chat: mockChatSettings });
+		expect(messages.some(m => m.role === 'assistant' && String(m.content).trim() === '')).toBe(false);
+		expect(messages.filter(m => m.role === 'assistant')).toHaveLength(1);
+		expect(messages.find(m => m.role === 'assistant')?.content).toBe('Valid answer');
+	});
+
+	it('should truncate a single huge RAG chunk exceeding MAX_RAG_CHARS and respect [N] headers when splitting', () => {
+		const singleHugeChunk = `[1] (출처: huge.md)\nPart A\n\n---\n\n${'x'.repeat(25000)}`;
+		const messages = buildMessages([], 'Question', {
+			chat: mockChatSettings,
+			ragContext: singleHugeChunk,
+		});
+
+		const lastMessage = messages[messages.length - 1];
+		expect((lastMessage.content as string).length).toBeLessThan(22000);
+		expect(lastMessage.content).toContain('Part A\n\n---\n\n');
+		expect(lastMessage.content).toContain('... (Context truncated due to length limits)');
+	});
+
+	it('should inject sessionSummary into system prompt in turns mode when isContextSummary was scrolled out', () => {
+		mockChatSettings.memoryMethod = 'turns';
+		mockChatSettings.contextWindowTurns = 1;
+		mockHistory = [
+			{ id: 'sum-1', role: 'user', content: 'Compressed summary', isContextSummary: true, isStreaming: false, timestamp: 1 },
+			{ id: 'u1', role: 'user', content: 'Recent Q', isStreaming: false, timestamp: 2 },
+			{ id: 'a1', role: 'assistant', content: 'Recent A', isStreaming: false, timestamp: 3 },
+		];
+
+		const messages = buildMessages(mockHistory, 'Follow up', {
+			chat: mockChatSettings,
+			sessionSummary: 'Manual summary preserved across turns',
+		});
+
+		expect(messages[0].role).toBe('system');
+		expect(messages[0].content).toContain('Manual summary preserved across turns');
+	});
 });
 
 describe('resolveActiveSystemPrompt', () => {

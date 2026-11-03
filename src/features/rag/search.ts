@@ -46,6 +46,7 @@ export async function searchVault(
 ): Promise<SearchResult[]> {
 	if (!oramaDb) return [];
 	if (parentChunks.length === 0) return [];
+	if (Array.isArray(allowedPaths) && allowedPaths.length === 0) return [];
 
 	const parentMap = new Map<string, ParentChunk>();
 	for (const p of parentChunks) {
@@ -185,9 +186,19 @@ export async function searchVault(
 		r.score = (alpha * vScore) + ((1 - alpha) * bScore);
 	}
 
-	// 벡터 점수(순수 코사인 유사도) ≥ 임계값 또는 BM25 점수 > 0 인 결과만 필터링 후 정렬
+	// 벡터 점수(순수 코사인 유사도) ≥ 임계값 또는 유의미한 BM25 점수인 결과만 필터링 후 정렬
 	const finalResults = hybridResults
-		.filter(r => (r.rawVectorScore !== undefined ? r.rawVectorScore >= minSimilarity : (r.vectorScore !== undefined && r.vectorScore >= minSimilarity)) || (r.bm25Score !== undefined && r.bm25Score > 0))
+		.filter((r) => {
+			const hasSufficientVector =
+				r.rawVectorScore !== undefined
+					? r.rawVectorScore >= minSimilarity
+					: r.vectorScore !== undefined && r.vectorScore >= minSimilarity && r.vectorScore > 0;
+			if (hasSufficientVector) return true;
+			if (minSimilarity <= 0) {
+				return (r.bm25Score ?? 0) > 0;
+			}
+			return r.rawVectorScore === undefined && (r.bm25Score ?? 0) >= Math.max(1.5, maxBm25Score * 0.5);
+		})
 		.sort((a, b) => b.score - a.score)
 		.slice(0, topK);
 		

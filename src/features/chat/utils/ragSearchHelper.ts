@@ -30,6 +30,7 @@ export interface PerformRagSearchParams {
 	assistantId: string;
 	indexer: import('../../rag/indexer').VaultIndexer;
 	filterPaths?: string[];
+	excludePaths?: string[];
 	signal?: AbortSignal;
 }
 
@@ -43,7 +44,7 @@ export interface RagSearchResult {
  * 검색 결과가 있으면 assistantId 메시지에 RAG 소스도 설정한다.
  */
 export async function performRagSearch(params: PerformRagSearchParams): Promise<RagSearchResult> {
-	const { userText, rag, connections, existingContext, assistantId, indexer, filterPaths, signal } = params;
+	const { userText, rag, connections, existingContext, assistantId, indexer, filterPaths, excludePaths, signal } = params;
 
 	try {
 		let parentChunks = indexer.indexedParentChunks;
@@ -54,6 +55,14 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 				filterPaths.some(fp => c.path === fp || c.path.startsWith(fp + '/'))
 			);
 			allowedPaths = Array.from(new Set(parentChunks.map(c => c.path)));
+		}
+
+		if (excludePaths && excludePaths.length > 0) {
+			const excludeSet = new Set(excludePaths);
+			parentChunks = parentChunks.filter(c => !excludeSet.has(c.path));
+			if (allowedPaths) {
+				allowedPaths = allowedPaths.filter(p => !excludeSet.has(p));
+			}
 		}
 
 		const ragStart = Date.now();

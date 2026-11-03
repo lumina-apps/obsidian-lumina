@@ -101,10 +101,11 @@ export class OramaStore {
 			similarity: 0.0, // 필터링은 외부에서 수행
 		};
 
-		if (allowedPaths) {
+		if (allowedPaths !== undefined && allowedPaths !== null) {
 			if (typeof allowedPaths === 'string') {
 				searchParams.where = { path: { eq: allowedPaths } };
-			} else if (Array.isArray(allowedPaths) && allowedPaths.length > 0) {
+			} else if (Array.isArray(allowedPaths)) {
+				if (allowedPaths.length === 0) return [];
 				if (allowedPaths.length === 1) {
 					searchParams.where = { path: { eq: allowedPaths[0] } };
 				} else {
@@ -136,10 +137,11 @@ export class OramaStore {
 			properties: ['text'],
 		};
 
-		if (allowedPaths) {
+		if (allowedPaths !== undefined && allowedPaths !== null) {
 			if (typeof allowedPaths === 'string') {
 				searchParams.where = { path: { eq: allowedPaths } };
-			} else if (Array.isArray(allowedPaths) && allowedPaths.length > 0) {
+			} else if (Array.isArray(allowedPaths)) {
+				if (allowedPaths.length === 0) return [];
 				if (allowedPaths.length === 1) {
 					searchParams.where = { path: { eq: allowedPaths[0] } };
 				} else {
