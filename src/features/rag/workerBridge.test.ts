@@ -143,4 +143,30 @@ describe('EmbeddingWorkerBridge', () => {
 		// workerPool.init should only have been called once despite 2 concurrent requests
 		expect(initCallCount).toBe(1);
 	});
+
+	it('should not pass onProgress callback when reviving workers from idle state', async () => {
+		const onProgress = vi.fn();
+		await bridge.init('test-model', '/mock/cache', '/mock/plugin', onProgress);
+		expect(mockWorkerPoolInit).toHaveBeenLastCalledWith(
+			expect.any(Number),
+			expect.any(String),
+			expect.objectContaining({ modelName: 'test-model', cacheDir: '/mock/cache', pluginDir: '/mock/plugin' }),
+			onProgress
+		);
+
+		bridge.terminate();
+		mockWorkerPoolReady = false;
+		mockWorkerPoolInit.mockImplementationOnce(async () => {
+			mockWorkerPoolReady = true;
+		});
+
+		await bridge.embed(['query text']);
+
+		expect(mockWorkerPoolInit).toHaveBeenLastCalledWith(
+			expect.any(Number),
+			expect.any(String),
+			expect.objectContaining({ modelName: 'test-model', cacheDir: '/mock/cache', pluginDir: '/mock/plugin' }),
+			undefined
+		);
+	});
 });

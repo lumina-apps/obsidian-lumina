@@ -19,7 +19,7 @@ export class EmbeddingWorkerBridge {
 	private initPromiseReject: ((err: Error) => void) | null = null;
 
 	private idleTimer: number | null = null;
-	private initArgs: { modelName: string; cacheDir: string; pluginDir?: string; onProgress?: EmbeddingProgressCallback } | null = null;
+	private initArgs: { modelName: string; cacheDir: string; pluginDir?: string } | null = null;
 	private workerCodeUrl: string | null = null;
 	private reinitPromise: Promise<void> | null = null;
 
@@ -34,7 +34,7 @@ export class EmbeddingWorkerBridge {
 		pluginDir?: string,
 		onProgress?: EmbeddingProgressCallback,
 	): Promise<void> {
-		this.initArgs = { modelName, cacheDir, pluginDir, onProgress };
+		this.initArgs = { modelName, cacheDir, pluginDir };
 		this.terminate();
 
 		this.cacheManager.init(cacheDir, modelName);
@@ -126,7 +126,6 @@ export class EmbeddingWorkerBridge {
 					this.initArgs.modelName,
 					this.initArgs.cacheDir,
 					this.initArgs.pluginDir,
-					this.initArgs.onProgress
 				).finally(() => {
 					this.reinitPromise = null;
 				});
@@ -139,8 +138,7 @@ export class EmbeddingWorkerBridge {
 
 	/** 텍스트 배열 → 임베딩 벡터 변환 (라운드로빈 병렬 처리) */
 	async embed(texts: string[]): Promise<number[][]> {
-		await this.ensureReady();
-		if (!this.workerPool.ready || !this.isReady) {
+		if (!this.ready && !this.initArgs) {
 			throw new Error(t('uiMessages.ragWorkerNotReady'));
 		}
 		if (texts.length === 0) return [];
@@ -162,6 +160,11 @@ export class EmbeddingWorkerBridge {
 
 		if (toRequestTexts.length === 0) {
 			return results as number[][];
+		}
+
+		await this.ensureReady();
+		if (!this.workerPool.ready || !this.isReady) {
+			throw new Error(t('uiMessages.ragWorkerNotReady'));
 		}
 
 		const workerCount = this.workerPool.activeWorkerCount;

@@ -134,6 +134,14 @@ describe('VaultIndexer', () => {
 			expect(indexProcessing.processFiles).toHaveBeenCalled();
 			expect(indexPersistence.saveIndex).toHaveBeenCalled();
 		});
+
+		it('should set indexing status to error when processSync throws', async () => {
+			vi.mocked(fileFilter.getTargetFiles).mockReturnValue([{ path: 'test.md' } as TFile]);
+			vi.mocked(checkpointManager.restoreFromCheckpoint).mockRejectedValue(new Error('Embed failed'));
+
+			await expect(indexer.indexVault()).rejects.toThrow('Embed failed');
+			expect(ragStore.setIndexingStatus).toHaveBeenCalledWith('error', { errorMessage: 'Embed failed' });
+		});
 	});
 
 	describe('updateIndex', () => {

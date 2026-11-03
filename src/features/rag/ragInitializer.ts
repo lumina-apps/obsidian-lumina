@@ -98,16 +98,22 @@ export async function initEmbeddingWorker(
 			// 로컬에 WASM 파일 우선, 없으면 Worker에서 CDN 폴백
 			const pluginDir = plugin.app.vault.adapter.getResourcePath(plugin.manifest.dir || '');
 
-			await plugin.embeddingWorker.init(
-				modelName,
-				cacheDir,
-				pluginDir,
-				(progress, _status) => {
-					const pct = Math.round(progress * 100);
-					if (!isStartup) progressNotice?.setMessage(t('settings.rag.init.loadingProgress', { pct: pct }));
-					setIndexingStatus('loading-model', { progressPct: pct });
-				},
-			);
+			let isModelLoading = true;
+			try {
+				await plugin.embeddingWorker.init(
+					modelName,
+					cacheDir,
+					pluginDir,
+					(progress, _status) => {
+						if (!isModelLoading) return;
+						const pct = Math.round(progress * 100);
+						if (!isStartup) progressNotice?.setMessage(t('settings.rag.init.loadingProgress', { pct: pct }));
+						setIndexingStatus('loading-model', { progressPct: pct });
+					},
+				);
+			} finally {
+				isModelLoading = false;
+			}
 			const worker = plugin.embeddingWorker;
 			embedFn = (texts: string[]) => {
 				if (!worker) throw new Error('임베딩 워커가 종료되었습니다.');
@@ -162,6 +168,7 @@ export async function initEmbeddingWorker(
 					if (!isStartup || isFirstRun) new Notice(t('settings.rag.init.ready'), 3000);
 				})
 				.catch((err: Error) => {
+					setIndexingStatus('error', { errorMessage: err.message });
 					new Notice(t('settings.rag.init.indexFail', { error: err.message }), 5000);
 					debugLogger.logError('rag', normalizeError(err, `인덱싱 실패: ${err}`));
 				})
@@ -297,6 +304,7 @@ export async function switchProjectIndex(
 			new Notice(t('settings.rag.init.ready'), 3000);
 		})
 		.catch((err: Error) => {
+			setIndexingStatus('error', { errorMessage: err.message });
 			new Notice(t('settings.rag.init.indexFail', { error: err.message }), 5000);
 			debugLogger.logError('rag', err);
 		})

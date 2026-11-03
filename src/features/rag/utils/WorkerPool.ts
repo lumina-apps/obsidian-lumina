@@ -135,7 +135,9 @@ export class WorkerPool {
 				break;
 
 			case 'progress':
-				onProgress?.(msg.progress, msg.status);
+				if (!this.isReady && !inst.isReady) {
+					onProgress?.(msg.progress, msg.status);
+				}
 				break;
 
 			case 'result':

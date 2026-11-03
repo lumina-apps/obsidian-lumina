@@ -156,6 +156,11 @@ export class VaultIndexer {
 		this.isIndexing = true;
 		try {
 			await this.processSync(false);
+		} catch (err) {
+			if (!this.isDestroyed) {
+				setIndexingStatus('error', { errorMessage: err instanceof Error ? err.message : String(err) });
+			}
+			throw err;
 		} finally {
 			this.isIndexing = false;
 		}
@@ -166,6 +171,11 @@ export class VaultIndexer {
 		this.isIndexing = true;
 		try {
 			await this.processSync(true);
+		} catch (err) {
+			if (!this.isDestroyed) {
+				setIndexingStatus('error', { errorMessage: err instanceof Error ? err.message : String(err) });
+			}
+			throw err;
 		} finally {
 			this.isIndexing = false;
 		}
