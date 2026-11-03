@@ -39,12 +39,17 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 				drop.addOption(val, label);
 			}
 			drop.setValue(provider.type).onChange(async (val) => {
+				const prevCategory = PROVIDER_CATEGORIES[provider.type];
 				provider.type = val as ProviderType;
 
 				const isNewLocal = PROVIDER_CATEGORIES[provider.type] === 'local';
 				if (isNewLocal && PROVIDER_BASE_URLS[provider.type]) {
 					provider.baseUrl = PROVIDER_BASE_URLS[provider.type];
-				} else if (provider.type !== 'custom') {
+				} else if (provider.type === 'custom') {
+					if (prevCategory === 'local') {
+						provider.baseUrl = '';
+					}
+				} else {
 					provider.baseUrl = undefined;
 				}
 
@@ -57,6 +62,7 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 
 				for (const project of tab.plugin.settings.projects.list) {
 					if (project.defaultProviderId === provider.id) {
+						project.defaultProviderId = '';
 						project.defaultModelId = '';
 					}
 				}
@@ -72,21 +78,15 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 
 				// 퀵 액션/태스크/리랭커 전용 모델 정리
 				if (tab.plugin.settings.connections.quickActionProviderId === provider.id) {
-					if (isCliProvider(provider.type)) {
-						tab.plugin.settings.connections.quickActionProviderId = '';
-					}
+					tab.plugin.settings.connections.quickActionProviderId = '';
 					tab.plugin.settings.connections.quickActionModelId = '';
 				}
 				if (tab.plugin.settings.connections.taskProviderId === provider.id) {
-					if (isCliProvider(provider.type)) {
-						tab.plugin.settings.connections.taskProviderId = '';
-					}
+					tab.plugin.settings.connections.taskProviderId = '';
 					tab.plugin.settings.connections.taskModelId = '';
 				}
 				if (tab.plugin.settings.connections.rerankerProviderId === provider.id) {
-					if (isCliProvider(provider.type)) {
-						tab.plugin.settings.connections.rerankerProviderId = '';
-					}
+					tab.plugin.settings.connections.rerankerProviderId = '';
 					tab.plugin.settings.connections.rerankerModelId = '';
 				}
 

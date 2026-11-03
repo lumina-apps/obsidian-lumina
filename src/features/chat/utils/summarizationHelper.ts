@@ -50,38 +50,25 @@ interface SummaryLlmResult {
 	errorReason?: string;
 }
 
-/** 태스크 모델 우선 사용, 없으면 메인 모델로 요약 LLM 호출 */
-async function runSummaryLlm(
+/** 태스크 모델 우선 사용, 없으면(또는 실패 시) 메인 모델로 요약 LLM 호출 */
+async function executeSummaryRequest(
 	plugin: LuminaPlugin,
-	providerConfig: LLMProviderConfig,
-	modelId: string,
+	targetProviderConfig: LLMProviderConfig,
+	targetModelId: string,
 	prompt: string,
+	isTaskModel: boolean,
 ): Promise<SummaryLlmResult> {
-	let actualProviderConfig = providerConfig;
-	let actualModelId = modelId;
-	let isTaskModel = false;
-	const { taskProviderId, taskModelId, providers } = plugin.settings.connections;
-
-	if (taskProviderId && taskModelId) {
-		const tpConfig = providers.find(p => p.id === taskProviderId);
-		if (tpConfig) {
-			actualProviderConfig = tpConfig;
-			actualModelId = taskModelId;
-			isTaskModel = true;
-		}
-	}
-
 	const providerName =
-		PROVIDER_LABELS[actualProviderConfig.type] ||
-		actualProviderConfig.type;
+		PROVIDER_LABELS[targetProviderConfig.type] ||
+		targetProviderConfig.type;
 	const taskPrefix = (t('settings.connections.taskModel.name') || 'Task Model').replace(/\s*\(.*?\)\s*$/, '');
 	const modelLabel = isTaskModel
-		? `${taskPrefix}: ${providerName} / ${actualModelId}`
-		: `${providerName} / ${actualModelId}`;
+		? `${taskPrefix}: ${providerName} / ${targetModelId}`
+		: `${providerName} / ${targetModelId}`;
 
 	const vaultCwd = getVaultBasePath(plugin.app);
 	const chatOptions: ChatOptions = {
-		model: actualModelId,
+		model: targetModelId,
 		temperature: 0.3, // 요약은 비교적 정확성을 요구하므로 낮게 설정
 		maxOutputTokens: 2000,
 		...(vaultCwd ? { cwd: vaultCwd } : {}),
@@ -90,8 +77,8 @@ async function runSummaryLlm(
 	const llmMessages: ChatMessage[] = [{ role: 'user', content: prompt }];
 	const reqStart = Date.now();
 	const requestId = debugLogger.logRequest({
-		provider: actualProviderConfig.type,
-		model: actualModelId,
+		provider: targetProviderConfig.type,
+		model: targetModelId,
 		temperature: chatOptions.temperature ?? 0.3,
 		maxTokens: chatOptions.maxOutputTokens ?? 2000,
 		stream: false,
@@ -101,12 +88,12 @@ async function runSummaryLlm(
 	});
 
 	try {
-		const provider = createProvider(actualProviderConfig);
+		const provider = createProvider(targetProviderConfig);
 		const response = await provider.chat(llmMessages, chatOptions);
 		const trimmed = stripThinkTags(response.content).trim();
 		if (requestId) {
 			debugLogger.logResponse(requestId, {
-				model: actualModelId,
+				model: targetModelId,
 				content: trimmed || '(empty response)',
 				durationMs: Date.now() - reqStart,
 				usage: response.usage,
@@ -125,7 +112,7 @@ async function runSummaryLlm(
 		const rawMsg = error instanceof Error ? error.message : String(error);
 		if (requestId) {
 			debugLogger.logResponse(requestId, {
-				model: actualModelId,
+				model: targetModelId,
 				content: `❌ [Error: ${modelLabel}] ${rawMsg}`,
 				durationMs: Date.now() - reqStart,
 			});
@@ -137,6 +124,39 @@ async function runSummaryLlm(
 			errorReason: friendlyReason,
 		};
 	}
+}
+
+async function runSummaryLlm(
+	plugin: LuminaPlugin,
+	providerConfig: LLMProviderConfig,
+	modelId: string,
+	prompt: string,
+): Promise<SummaryLlmResult> {
+	const { taskProviderId, taskModelId, providers } = plugin.settings.connections;
+
+	if (taskProviderId && taskModelId) {
+		const tpConfig = providers.find(p => p.id === taskProviderId && p.isVerified);
+		if (tpConfig) {
+			const taskResult = await executeSummaryRequest(plugin, tpConfig, taskModelId, prompt, true);
+			if (taskResult.content) {
+				return taskResult;
+			}
+			// 태스크 모델 실패 시 메인 모델이 다르고 검증되어 있으면 폴백
+			if (
+				providerConfig.isVerified &&
+				(tpConfig.id !== providerConfig.id || taskModelId !== modelId)
+			) {
+				debugLogger.logWarn(
+					'AutoSummary',
+					`Task model (${taskResult.modelLabel}) failed (${taskResult.errorReason ?? 'unknown'}), falling back to chat model (${modelId}).`,
+				);
+				return executeSummaryRequest(plugin, providerConfig, modelId, prompt, false);
+			}
+			return taskResult;
+		}
+	}
+
+	return executeSummaryRequest(plugin, providerConfig, modelId, prompt, false);
 }
 
 /** 요약 완료 후 스토어/히스토리 반영 공통 처리 */

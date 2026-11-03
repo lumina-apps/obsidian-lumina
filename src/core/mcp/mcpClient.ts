@@ -1,6 +1,5 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { requestUrl } from 'obsidian';
 import { debugLogger } from '../../shared/debugLogger';
@@ -94,16 +93,8 @@ export class LuminaMcpClient {
 		// Step 2: Parse SSE text to get the session endpoint URL
 		const sessionUrl = this._parseSseEndpoint(response.text, urlObj);
 
-		// Step 3: Pass session URL directly to SSEClientTransport.
-		// SSEClientTransport will POST to this URL for all messages.
-		const opts: import('@modelcontextprotocol/sdk/client/sse.js').SSEClientTransportOptions = {
-			requestInit: {
-				headers: authHeaders,
-			},
-		};
-		// Fallback to legacy SSE transport when server does not support Streamable HTTP
-		this.transport = new SSEClientTransport(sessionUrl, opts);
-		await this.client.connect(this.transport);
+		// Step 3: Connect to the resolved session URL via StreamableHTTPClientTransport
+		await this._connectStreamableHttp(sessionUrl);
 	}
 
 	/**

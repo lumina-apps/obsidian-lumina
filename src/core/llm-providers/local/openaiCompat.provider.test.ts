@@ -199,4 +199,44 @@ describe('OpenAICompatProvider', () => {
 			).rejects.toThrow(/custom/);
 		});
 	});
+
+	describe('stop sequences and reasoning compatibility', () => {
+		it('should include local stop sequences for local custom endpoints but omit them for remote HTTPS custom endpoints', async () => {
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					choices: [{ message: { content: 'ok' }, finish_reason: 'stop' }],
+				},
+			} as RequestUrlResponse);
+
+			const localCustom = new OpenAICompatProvider('local-c', 'custom', 'http://localhost:8000');
+			await localCustom.chat([{ role: 'user', content: 'hi' }], { model: 'qwen2.5' });
+			const localBody = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(Array.isArray(localBody.stop)).toBe(true);
+
+			mockRequestUrl.mockClear();
+
+			const remoteCustom = new OpenAICompatProvider('remote-c', 'custom', 'https://api.together.xyz');
+			await remoteCustom.chat([{ role: 'user', content: 'hi' }], { model: 'meta-llama/Llama-3-70b' });
+			const remoteBody = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(remoteBody.stop).toBeUndefined();
+		});
+
+		it('should detect provider-prefixed reasoning models (e.g. openai/gpt-5) and omit stop/temperature', async () => {
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					choices: [{ message: { content: 'ok' }, finish_reason: 'stop' }],
+				},
+			} as RequestUrlResponse);
+
+			const localCustom = new OpenAICompatProvider('local-c', 'custom', 'http://localhost:8000');
+			await localCustom.chat([{ role: 'user', content: 'hi' }], { model: 'openai/gpt-5', temperature: 0.7, maxOutputTokens: 4096 });
+			const body = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(body.max_completion_tokens).toBe(4096);
+			expect(body.max_tokens).toBeUndefined();
+			expect(body.temperature).toBeUndefined();
+			expect(body.stop).toBeUndefined();
+		});
+	});
 });

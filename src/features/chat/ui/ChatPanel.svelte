@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { tick, onMount, onDestroy } from "svelte";
+	import { tick, onMount, onDestroy, untrack } from "svelte";
 	import { Notice } from "obsidian";
 	import type LuminaPlugin from "../../../main";
 	import { ChatController } from "../chatController";
@@ -132,7 +132,7 @@
 	const modelOptions = $derived(
 		$verifiedProviders.flatMap((p) =>
 			p.availableModels.map((m) => {
-				const shortLabel = PROVIDER_LABELS[p.type].replace(/\s*\(.*\)\s*/, "");
+				const shortLabel = (PROVIDER_LABELS[p.type] || p.type).replace(/\s*\(.*\)\s*/, "");
 				return { label: `[${shortLabel}] ${m}`, value: `${p.id}::${m}` };
 			}),
 		),
@@ -219,7 +219,7 @@
 		const sMid = $sessionModelId;
 		if (sPid && sMid) {
 			const isVerified = $verifiedProviders.some((p) => p.id === sPid && p.availableModels.includes(sMid));
-			if (isVerified && (selectedProviderId !== sPid || selectedModelId !== sMid)) {
+			if (isVerified && untrack(() => selectedProviderId !== sPid || selectedModelId !== sMid)) {
 				selectedProviderId = sPid;
 				selectedModelId = sMid;
 			}
@@ -535,6 +535,8 @@
 			onSelectModel={(providerId, modelId) => {
 				selectedProviderId = providerId;
 				selectedModelId = modelId;
+				sessionProviderId.set(providerId);
+				sessionModelId.set(modelId);
 			}}
 			onSendMessage={sendMessage}
 			onCancelStream={cancelStream}

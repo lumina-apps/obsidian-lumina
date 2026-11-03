@@ -196,6 +196,7 @@ export async function initEmbeddingWorker(
 		setIndexingStatus('error', { errorMessage: (err as Error).message });
 		new Notice(t('settings.rag.init.initFail', { error: (err as Error).message }), 5000);
 		debugLogger.logError('rag', normalizeError(err, `embedding worker init failed: ${err}`));
+		plugin.embeddingWorker?.terminate();
 		plugin.embeddingWorker = null;
 		// 초기화 실패 시 RAG 토글을 false로 되돌림
 		if (plugin.settings.connections.ragEnabled) {
@@ -227,7 +228,10 @@ export async function switchProjectIndex(
 	if (cached) {
 		// hot-swap: 캐시 히트
 		plugin.indexer = cached;
-		setIndexingStatus('ready');
+		setIndexingStatus('ready', {
+			totalFiles: cached.indexedFileCount,
+			processedFiles: cached.indexedFileCount,
+		});
 		debugLogger.logSystem('rag', `Project index hot-swap: ${newProjectId} (cached)`);
 
 		// watch 모드면 이벤트 재등록
@@ -296,6 +300,17 @@ export async function switchProjectIndex(
 	projectIndexCache.set(newProjectId, newIndexer, newProjectId);
 
 	const { syncMode } = plugin.settings.rag;
+	if (syncMode === 'manual') {
+		await newIndexer.loadExistingIndex().catch((err: unknown) => {
+			debugLogger.logError('rag', normalizeError(err, `manual 모드 기존 인덱스 로드 실패: ${err}`));
+		});
+		setIndexingStatus('ready', {
+			totalFiles: newIndexer.indexedFileCount,
+			processedFiles: newIndexer.indexedFileCount,
+		});
+		return;
+	}
+
 	new Notice(t('settings.rag.init.indexingVault'), 2000);
 
 	const indexPromise = newIndexer.updateIndex();

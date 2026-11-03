@@ -11,7 +11,7 @@ import { setLanguage, t } from './shared/locales/helpers';
 import { debugLogger } from './shared/debugLogger';
 import { registerLuminaIcons } from './shared/icons';
 import { normalizeError } from './shared/utils/errorUtils';
-import { runMigrations } from './core/settings/migrations';
+import { runMigrations, migrateRemovedProviders } from './core/settings/migrations';
 import { activateView, activateMainView } from './core/views/viewHelper';
 import { cleanupApprovalListener } from './features/chat/utils/approvalListener';
 import { SettingsManager } from './core/settings/settingsManager';
@@ -120,6 +120,9 @@ export default class LuminaPlugin extends Plugin {
 
 		await this.settingsManager.loadSettings();
 		await this.settingsManager.loadSecrets();
+		if (migrateRemovedProviders(this)) {
+			await this.settingsManager.saveSettings();
+		}
 
 		// 이전 세션이나 비정상 언로드로 남은 고아 리본 항목 정리
 		this.cleanupLegacyRibbonItems();

@@ -5,6 +5,7 @@ import { PROVIDER_CATEGORIES } from '../../../shared/types/settings.types';
 import { requestUrl } from 'obsidian';
 import { raiseApiError } from '../provider-helpers';
 import { BaseOpenAIProvider } from '../baseOpenAI.provider';
+import { isLocalEndpointUrl } from '../index';
 
 /** 로컬 모델에서 사용하는 기본 stop 시퀀스 */
 const LOCAL_STOP_SEQUENCES: string[] = [
@@ -33,7 +34,7 @@ export class OpenAICompatProvider extends BaseOpenAIProvider {
 			return options.stop;
 		}
 		const category = PROVIDER_CATEGORIES[this.type];
-		if (category === 'local' || this.type === 'custom') {
+		if (category === 'local' || (this.type === 'custom' && isLocalEndpointUrl(this.baseUrl))) {
 			return LOCAL_STOP_SEQUENCES;
 		}
 		return undefined;

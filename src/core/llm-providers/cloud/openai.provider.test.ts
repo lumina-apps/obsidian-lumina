@@ -150,6 +150,33 @@ describe('OpenAIProvider', () => {
 			expect(parsedBody.max_completion_tokens).toBe(2048);
 			expect(parsedBody.max_tokens).toBeUndefined();
 			expect(parsedBody.temperature).toBeUndefined();
+			expect(parsedBody.stop).toBeUndefined();
+		});
+
+		it('should omit empty assistant messages and orphan tool messages in payload', async () => {
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					choices: [{ message: { content: 'Done' }, finish_reason: 'stop' }],
+				},
+			} as RequestUrlResponse);
+
+			await provider.chat(
+				[
+					{ role: 'user', content: 'hi' },
+					{ role: 'assistant', content: '   ' },
+					{ role: 'tool', content: 'orphan output', tool_call_id: 'call_orphan' },
+					{ role: 'user', content: 'next question' },
+				],
+				{ model: 'gpt-4o' },
+			);
+
+			const callArg = mockRequestUrl.mock.calls[0][0] as { body: string };
+			const parsedBody = JSON.parse(callArg.body) as { messages: Array<{ role: string; content: unknown }> };
+			expect(parsedBody.messages).toEqual([
+				{ role: 'user', content: 'hi' },
+				{ role: 'user', content: 'next question' },
+			]);
 		});
 	});
-	});
+});

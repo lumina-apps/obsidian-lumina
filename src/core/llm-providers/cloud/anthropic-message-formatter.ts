@@ -125,10 +125,14 @@ export function formatAnthropicMessages(messages: ChatMessage[]) {
 			} else {
 				const prevArr = Array.isArray(prev.content)
 					? (prev.content as unknown[])
-					: [{ type: 'text' as const, text: String(prev.content) }];
+					: String(prev.content)
+						? [{ type: 'text' as const, text: String(prev.content) }]
+						: [];
 				const msgArr = Array.isArray(msg.content)
 					? (msg.content as unknown[])
-					: [{ type: 'text' as const, text: String(msg.content) }];
+					: String(msg.content)
+						? [{ type: 'text' as const, text: String(msg.content) }]
+						: [];
 				prev.content = [...prevArr, ...msgArr] as typeof prev.content;
 			}
 		} else {

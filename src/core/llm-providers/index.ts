@@ -19,9 +19,33 @@ import { CliAgentProvider } from './cli/cli-agent.provider';
 import { t } from '../../shared/locales/helpers';
 import { Platform } from 'obsidian';
 
+/** URL이 로컬/사설 네트워크 엔드포인트인지 판별 */
+export function isLocalEndpointUrl(baseUrl?: string): boolean {
+	if (!baseUrl || !baseUrl.trim()) return true;
+	try {
+		const url = new URL(baseUrl.trim());
+		const host = url.hostname.toLowerCase();
+		return (
+			host === 'localhost' ||
+			host === '127.0.0.1' ||
+			host === '0.0.0.0' ||
+			host === '::1' ||
+			host === '[::1]' ||
+			host.endsWith('.local') ||
+			host.startsWith('192.168.') ||
+			host.startsWith('10.') ||
+			/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)
+		);
+	} catch {
+		return true;
+	}
+}
+
 /** 로컬/커스텀 LLM 여부 */
-export function isLocalProvider(type: ProviderType): boolean {
-	return PROVIDER_CATEGORIES[type] === 'local' || type === 'custom';
+export function isLocalProvider(type: ProviderType, baseUrl?: string): boolean {
+	if (PROVIDER_CATEGORIES[type] === 'local') return true;
+	if (type === 'custom') return isLocalEndpointUrl(baseUrl);
+	return false;
 }
 
 import { isCliProvider } from '../../shared/types/settings.types';

@@ -67,11 +67,12 @@ export function buildProviderModelOptions(
 
 	for (const p of verified) {
 		const isLocal = PROVIDER_CATEGORIES[p.type] === 'local' || p.type === 'custom';
+		const providerLabel = PROVIDER_LABELS[p.type] || p.type;
 		for (const model of p.availableModels) {
 			if (!filter(p.type, model)) continue;
 			const label = isLocal
-				? `[${PROVIDER_LABELS[p.type]}] ${model}${localWarning}`
-				: `[${PROVIDER_LABELS[p.type]}] ${model}`;
+				? `[${providerLabel}] ${model}${localWarning}`
+				: `[${providerLabel}] ${model}`;
 			options.push({ value: `${p.id}::${model}`, label });
 		}
 	}

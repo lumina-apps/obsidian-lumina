@@ -10,6 +10,7 @@ describe('llmExecutor - CLI Agent Execution & Debug Logging', () => {
 	const mockPlugin = {
 		app: {
 			vault: {
+				configDir: '.obsidian',
 				adapter: {
 					getBasePath: () => '/test/vault',
 				},
@@ -324,5 +325,49 @@ describe('llmExecutor - CLI Agent Execution & Debug Logging', () => {
 		);
 
 		expect(res.fullResponse).toContain('Quota exceeded for model');
+	});
+
+	it('CLI 실행 시 사용자 정의 vault.configDir가 제외 경로 정책에 반영된다', async () => {
+		const cliConfig: LLMProviderConfig = {
+			id: 'cli-claude',
+			type: 'cli-claude-code',
+			credential: '',
+			availableModels: ['claude-3-7-sonnet'],
+			isVerified: true,
+			autoApprove: false,
+		};
+
+		const executeRawSpy = vi.spyOn(CliAgentProvider.prototype, 'executeRaw').mockReturnValue({
+			events: (async function* () {
+				yield { type: 'text', content: 'OK' };
+			})(),
+			waitForExit: vi.fn().mockResolvedValue({ exitCode: 0 }),
+			writeStdin: vi.fn(),
+			kill: vi.fn(),
+		});
+
+		const customPlugin = {
+			...mockPlugin,
+			app: {
+				...mockPlugin.app,
+				vault: {
+					...mockPlugin.app.vault,
+					configDir: '.custom-obsidian',
+				},
+			},
+		} as unknown as LuminaPlugin;
+
+		await executeCliAgentCall(
+			customPlugin,
+			mockContext,
+			cliConfig,
+			'claude-3-7-sonnet',
+			mockPlugin.settings.chat,
+			undefined,
+			'assistant-configdir',
+		);
+
+		const passedPrompt = executeRawSpy.mock.calls[0][0];
+		expect(passedPrompt).toContain('.custom-obsidian');
 	});
 });

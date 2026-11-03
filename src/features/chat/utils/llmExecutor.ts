@@ -161,7 +161,7 @@ export async function executeCliAgentCall(
 				...DEFAULT_EXCLUDED_PATHS,
 				...(activeProject?.ragExcludedPaths ?? []),
 				plugin.settings?.chat?.historyPath || 'chatHistory',
-				'.obsidian',
+				plugin.app.vault.configDir,
 			]),
 		).filter(Boolean);
 		const includedDirs = (activeProject?.ragIncludedPaths ?? []).filter(Boolean);

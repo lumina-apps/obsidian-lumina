@@ -36,23 +36,39 @@ export class QuickActionHandler {
 
 		const { connections, chat } = this.plugin.settings;
 		
-		let providerId = connections.quickActionProviderId;
-		let modelId = connections.quickActionModelId;
+		let providerId = '';
+		let modelId = '';
 
-		// 퀵 액션 전용 모델이 없거나 actionType이 chat인 경우: 활성 프로젝트 기본 모델 및 검증된 프로바이더로 자동 폴백
-		if (!providerId || !modelId || action.actionType === 'chat') {
+		const isValidVerifiedPair = (pid?: string, mid?: string): pid is string => {
+			if (!pid || !mid) return false;
+			const p = connections.providers.find(prov => prov.id === pid);
+			return Boolean(p && p.isVerified);
+		};
+
+		// 1. chat 액션이 아닐 때만 퀵 액션 전용 모델 우선 사용
+		if (
+			action.actionType !== 'chat' &&
+			isValidVerifiedPair(connections.quickActionProviderId, connections.quickActionModelId)
+		) {
+			providerId = connections.quickActionProviderId;
+			modelId = connections.quickActionModelId;
+		}
+
+		// 2. 퀵 액션 전용 모델이 없거나 유효하지 않거나 chat 액션인 경우: 활성 프로젝트 기본 모델 확인
+		if (!providerId || !modelId) {
 			const activeProject = getActiveProject();
-			if (action.actionType === 'chat' || !providerId || !modelId) {
-				providerId = activeProject.defaultProviderId || providerId;
-				modelId = activeProject.defaultModelId || modelId;
+			if (isValidVerifiedPair(activeProject.defaultProviderId, activeProject.defaultModelId)) {
+				providerId = activeProject.defaultProviderId!;
+				modelId = activeProject.defaultModelId!;
 			}
+		}
 
-			if (!providerId || !modelId) {
-				const verified = connections.providers.filter(p => p.isVerified && p.availableModels.length > 0);
-				if (verified.length > 0) {
-					providerId = verified[0].id;
-					modelId = verified[0].availableModels[0];
-				}
+		// 3. 여전히 없으면 첫 번째 검증된 프로바이더의 첫 번째 모델로 자동 폴백
+		if (!providerId || !modelId) {
+			const verified = connections.providers.filter(p => p.isVerified && p.availableModels.length > 0);
+			if (verified.length > 0) {
+				providerId = verified[0].id;
+				modelId = verified[0].availableModels[0];
 			}
 		}
 

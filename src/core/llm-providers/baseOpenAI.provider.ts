@@ -116,7 +116,7 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 		messages: ChatMessage[],
 		stream: boolean,
 	): Record<string, unknown> {
-		const isReasoning = /^(o\d|gpt-5)(-|\.|_|$)/i.test(options.model);
+		const isReasoning = /(?:^|\/)(o\d|gpt-5)(-|\.|_|$)/i.test(options.model);
 		const payload: Record<string, unknown> = {
 			model: options.model,
 			messages: formatOpenAIMessages(messages),
@@ -124,7 +124,7 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 			stream,
 		};
 
-		// Reasoning 및 GPT-5 계열 모델(o1/o3/o4/gpt-5 등)은 커스텀 temperature를 지원하지 않으며 max_completion_tokens를 사용
+		// Reasoning 및 GPT-5 계열 모델(o1/o3/o4/gpt-5 등)은 커스텀 temperature 및 stop을 지원하지 않으며 max_completion_tokens를 사용
 		if (!isReasoning) {
 			payload.temperature = options.temperature ?? 0.7;
 		}
@@ -134,9 +134,11 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 			payload.stream_options = { include_usage: true };
 		}
 
-		const stopSeq = this.getStopSequences(options);
-		if (stopSeq) {
-			payload.stop = stopSeq;
+		if (!isReasoning) {
+			const stopSeq = this.getStopSequences(options);
+			if (stopSeq) {
+				payload.stop = stopSeq;
+			}
 		}
 
 		return payload;
@@ -146,7 +148,7 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 		options: ChatOptions,
 		messages: ChatMessage[],
 	): Record<string, unknown> {
-		const isReasoning = /^(o\d|gpt-5)(-|\.|_|$)/i.test(options.model);
+		const isReasoning = /(?:^|\/)(o\d|gpt-5)(-|\.|_|$)/i.test(options.model);
 		const payload: Record<string, unknown> = {
 			model: options.model,
 			messages: formatOpenAIMessages(messages),
@@ -154,15 +156,17 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 			stream_options: { include_usage: true },
 		};
 
-		// Reasoning 및 GPT-5 계열 모델(o1/o3/o4/gpt-5 등)은 커스텀 temperature를 지원하지 않으며 max_completion_tokens를 사용
+		// Reasoning 및 GPT-5 계열 모델(o1/o3/o4/gpt-5 등)은 커스텀 temperature 및 stop을 지원하지 않으며 max_completion_tokens를 사용
 		if (!isReasoning) {
 			payload.temperature = options.temperature ?? 0.7;
 		}
 		payload[isReasoning ? 'max_completion_tokens' : 'max_tokens'] = options.maxOutputTokens;
 
-		const stopSeq = this.getStopSequences(options);
-		if (stopSeq) {
-			payload.stop = stopSeq;
+		if (!isReasoning) {
+			const stopSeq = this.getStopSequences(options);
+			if (stopSeq) {
+				payload.stop = stopSeq;
+			}
 		}
 
 		return payload;

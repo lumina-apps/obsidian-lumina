@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createProvider } from './index';
+import { createProvider, isLocalProvider, isLocalEndpointUrl } from './index';
 import { Platform } from 'obsidian';
 import type { LLMProviderConfig } from '../../shared/types/settings.types';
 
@@ -52,5 +52,15 @@ describe('createProvider factory', () => {
 			isVerified: true,
 		};
 		expect(() => createProvider(cloudConfig)).toThrow();
+	});
+
+	it('isLocalProvider는 custom 프로바이더의 baseUrl이 원격 클라우드 도메인인 경우 false를 반환한다', () => {
+		expect(isLocalProvider('ollama')).toBe(true);
+		expect(isLocalProvider('custom')).toBe(true);
+		expect(isLocalProvider('custom', 'http://localhost:8000')).toBe(true);
+		expect(isLocalProvider('custom', 'http://192.168.1.50:1234')).toBe(true);
+		expect(isLocalProvider('custom', 'https://api.together.xyz/v1')).toBe(false);
+		expect(isLocalProvider('custom', 'https://api.mistral.ai/v1')).toBe(false);
+		expect(isLocalEndpointUrl('https://api.moonshot.ai/v1')).toBe(false);
 	});
 });

@@ -18,17 +18,31 @@ export function isMockToolText(content: string): boolean {
  */
 export function formatOpenAIMessages(messages: ChatMessage[]): Record<string, unknown>[] {
 	const sanitized: ChatMessage[] = [];
-	let seenNonToolAfterSystem = false;
+	let canAcceptToolResult = false;
 	for (const m of messages) {
 		if (m.role === 'system') {
 			sanitized.push(m);
 			continue;
 		}
-		// 히스토리 절단 시 선두에 남은 고아 tool 메시지 제거 (선행 assistant tool_calls 없이 시작 불가)
-		if (!seenNonToolAfterSystem && m.role === 'tool') {
+		if (m.role === 'tool') {
+			// 선행 assistant tool_calls 없이 남은 고아 tool 메시지 제거
+			if (!canAcceptToolResult) {
+				continue;
+			}
+			sanitized.push(m);
 			continue;
 		}
-		seenNonToolAfterSystem = true;
+		if (m.role === 'assistant') {
+			const hasToolCalls = !!(m.tool_calls && m.tool_calls.length > 0);
+			const contentText = typeof m.content === 'string' ? m.content : '';
+			if (!hasToolCalls && !contentText.trim()) {
+				continue;
+			}
+			canAcceptToolResult = hasToolCalls;
+			sanitized.push(m);
+			continue;
+		}
+		canAcceptToolResult = false;
 		sanitized.push(m);
 	}
 
@@ -41,12 +55,19 @@ export function formatOpenAIMessages(messages: ChatMessage[]): Record<string, un
 		}
 		if (m.role === 'assistant') {
 			const contentText = typeof m.content === 'string' ? m.content : '';
+			const hasToolCalls = !!(m.tool_calls && m.tool_calls.length > 0);
+			const effectiveContent =
+				contentText && !isMockToolText(contentText)
+					? contentText
+					: !hasToolCalls && contentText
+						? contentText
+						: null;
 			const payload: Record<string, unknown> = {
 				role: 'assistant',
-				content: (contentText && !isMockToolText(contentText)) ? contentText : null,
+				content: effectiveContent,
 			};
-			if (m.tool_calls && m.tool_calls.length > 0) {
-				payload.tool_calls = m.tool_calls.map((tc) => ({
+			if (hasToolCalls) {
+				payload.tool_calls = m.tool_calls!.map((tc) => ({
 					id: tc.id,
 					type: 'function',
 					function: {

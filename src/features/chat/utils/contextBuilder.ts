@@ -212,7 +212,7 @@ export async function buildLlmContext(
 	});
 
 	// 프롬프트 빌드
-	const useLocal = isLocalProvider(providerConfig.type ?? 'custom');
+	const useLocal = isLocalProvider(providerConfig.type ?? 'custom', providerConfig.baseUrl);
 	const isCli = isCliProvider(providerConfig.type ?? 'custom');
 	const isCliAgent = isCli;
 	const modelName = resolvedModelId.toLowerCase();
@@ -266,7 +266,7 @@ export async function buildLlmContext(
 			}
 		} else {
 			if (VISION_UNSUPPORTED_PROVIDERS.has(providerConfig.type)) {
-				const providerLabel = PROVIDER_LABELS[providerConfig.type];
+				const providerLabel = PROVIDER_LABELS[providerConfig.type] || providerConfig.type;
 				throw new Error(t('settings.providerErrors.visionNotSupported', { provider: providerLabel }));
 			}
 			llmMessages = injectMultimodalImages(llmMessages, multimodalImages);
