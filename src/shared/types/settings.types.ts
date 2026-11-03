@@ -8,13 +8,8 @@ export type ProviderType =
 	| 'deepseek'
 	| 'groq'
 	| 'openrouter'
-	| 'togetherai'
-	| 'kimi'
-	| 'mistral'
 	| 'ollama'
 	| 'lmstudio'
-	| 'vllm'
-	| 'llamacpp'
 	| 'custom'
 	| 'cli-claude-code'
 	| 'cli-codex'
@@ -29,13 +24,8 @@ export const PROVIDER_LABELS: Record<ProviderType, string> = {
 	deepseek: 'DeepSeek',
 	groq: 'Groq',
 	openrouter: 'OpenRouter',
-	togetherai: 'Together AI',
-	kimi: 'Kimi (Moonshot)',
-	mistral: 'Mistral',
 	ollama: 'Ollama',
 	lmstudio: 'LM Studio',
-	vllm: 'vLLM',
-	llamacpp: 'llama.cpp',
 	custom: 'Custom (OpenAI Compatible)',
 	'cli-claude-code': 'Claude Code (CLI)',
 	'cli-codex': 'Codex (CLI)',
@@ -53,13 +43,8 @@ export const PROVIDER_CATEGORIES: Record<ProviderType, ProviderCategory> = {
 	deepseek: 'cloud',
 	groq: 'cloud',
 	openrouter: 'aggregator',
-	togetherai: 'aggregator',
-	kimi: 'cloud',
-	mistral: 'cloud',
 	ollama: 'local',
 	lmstudio: 'local',
-	vllm: 'local',
-	llamacpp: 'local',
 	custom: 'custom',
 	'cli-claude-code': 'cli',
 	'cli-codex': 'cli',
@@ -78,13 +63,8 @@ export const PROVIDER_BASE_URLS: Partial<Record<ProviderType, string>> = {
 	deepseek: 'https://api.deepseek.com',
 	groq: 'https://api.groq.com/openai',
 	openrouter: 'https://openrouter.ai/api',
-	togetherai: 'https://api.together.xyz',
-	kimi: 'https://api.moonshot.ai',
-	mistral: 'https://api.mistral.ai',
 	ollama: 'http://localhost:11434',
 	lmstudio: 'http://localhost:1234',
-	vllm: 'http://localhost:8000',
-	llamacpp: 'http://localhost:8080',
 };
 
 export interface LLMProviderConfig {

@@ -320,6 +320,37 @@ export function migrateGraphRibbonIcon(plugin: LuminaPlugin): boolean {
 	return false;
 }
 
+const LEGACY_PROVIDER_BASE_URLS: Readonly<Record<string, string>> = {
+	togetherai: 'https://api.together.xyz',
+	kimi: 'https://api.moonshot.ai',
+	mistral: 'https://api.mistral.ai',
+	vllm: 'http://localhost:8000',
+	llamacpp: 'http://localhost:8080',
+};
+
+/**
+ * 지원 목록에서 제거된 레거시 프로바이더(togetherai, kimi, mistral, vllm, llamacpp)를
+ * 기존 URL과 자격증명을 유지한 채 'custom' 프로바이더로 자동 전환합니다.
+ */
+export function migrateRemovedProviders(plugin: LuminaPlugin): boolean {
+	const providers = plugin.settings.connections?.providers;
+	if (!Array.isArray(providers)) return false;
+
+	let changed = false;
+	for (const provider of providers) {
+		const rawType = provider.type as string;
+		const defaultBaseUrl = LEGACY_PROVIDER_BASE_URLS[rawType];
+		if (defaultBaseUrl) {
+			if (!provider.baseUrl || !provider.baseUrl.trim()) {
+				provider.baseUrl = defaultBaseUrl;
+			}
+			provider.type = 'custom';
+			changed = true;
+		}
+	}
+	return changed;
+}
+
 /**
  * 모든 마이그레이션을 순차 실행하고 변경이 있으면 저장합니다.
  * @returns 저장이 필요하면 true
@@ -329,6 +360,7 @@ export function runMigrations(plugin: LuminaPlugin): boolean {
 	// projects 마이그레이션을 가장 먼저 수행하여 p.ragExcludedPaths 등을 보장
 	if (migrateProjects(plugin)) needsSave = true;
 	
+	if (migrateRemovedProviders(plugin)) needsSave = true;
 	if (migrateQuickActions(plugin)) needsSave = true;
 	if (migrateExcludedPaths(plugin)) needsSave = true;
 	if (migrateMinSimilarity(plugin)) needsSave = true;

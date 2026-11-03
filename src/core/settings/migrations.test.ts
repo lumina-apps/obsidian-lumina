@@ -3,6 +3,7 @@ import {
 	migrateQuickActions,
 	migrateExcludedPaths,
 	migrateProjects,
+	migrateRemovedProviders,
 	migrateMinSimilarity,
 	migrateMemoryMethod,
 	migrateContextWindowTurns,
@@ -444,5 +445,51 @@ describe('migrateGraphRibbonIcon', () => {
 		expect(mockPlugin.settings.misc.showGraphRibbonIcon).toBe(true);
 	});
 });
+
+describe('migrateRemovedProviders', () => {
+	it('제거된 클라우드/로컬 프로바이더를 기본 URL이 채워진 custom 타입으로 마이그레이션한다', () => {
+		const mockPlugin = {
+			settings: {
+				connections: {
+					providers: [
+						{ id: 'p1', type: 'togetherai', credential: 'key1', availableModels: ['m1'], isVerified: true },
+						{ id: 'p2', type: 'kimi', credential: 'key2', availableModels: [], isVerified: false },
+						{ id: 'p3', type: 'mistral', credential: 'key3', availableModels: [], isVerified: true },
+						{ id: 'p4', type: 'vllm', credential: '', baseUrl: 'http://192.168.0.10:8000', availableModels: [], isVerified: true },
+						{ id: 'p5', type: 'llamacpp', credential: '', availableModels: [], isVerified: false },
+						{ id: 'p6', type: 'openai', credential: 'key6', availableModels: ['gpt-4o'], isVerified: true },
+					],
+				},
+			},
+		} as unknown as LuminaPlugin;
+
+		const result = migrateRemovedProviders(mockPlugin);
+		expect(result).toBe(true);
+
+		const providers = mockPlugin.settings.connections.providers;
+		expect(providers[0]).toMatchObject({ id: 'p1', type: 'custom', baseUrl: 'https://api.together.xyz', credential: 'key1', isVerified: true });
+		expect(providers[1]).toMatchObject({ id: 'p2', type: 'custom', baseUrl: 'https://api.moonshot.ai', credential: 'key2' });
+		expect(providers[2]).toMatchObject({ id: 'p3', type: 'custom', baseUrl: 'https://api.mistral.ai', credential: 'key3' });
+		expect(providers[3]).toMatchObject({ id: 'p4', type: 'custom', baseUrl: 'http://192.168.0.10:8000' });
+		expect(providers[4]).toMatchObject({ id: 'p5', type: 'custom', baseUrl: 'http://localhost:8080' });
+		expect(providers[5]).toMatchObject({ id: 'p6', type: 'openai', credential: 'key6' });
+	});
+
+	it('제거 대상 프로바이더가 없으면 false를 반환한다', () => {
+		const mockPlugin = {
+			settings: {
+				connections: {
+					providers: [
+						{ id: 'p1', type: 'openai', credential: 'key1', availableModels: [], isVerified: true },
+						{ id: 'p2', type: 'ollama', credential: '', baseUrl: 'http://localhost:11434', availableModels: [], isVerified: true },
+					],
+				},
+			},
+		} as unknown as LuminaPlugin;
+
+		expect(migrateRemovedProviders(mockPlugin)).toBe(false);
+	});
+});
+
 
 

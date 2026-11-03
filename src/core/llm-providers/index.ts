@@ -75,10 +75,7 @@ export function createProvider(config: LLMProviderConfig): ILLMProvider {
 		case 'xai':
 		case 'deepseek':
 		case 'groq':
-		case 'openrouter':
-		case 'togetherai':
-		case 'kimi':
-		case 'mistral': {
+		case 'openrouter': {
 			const url = PROVIDER_BASE_URLS[type]!;
 			return new OpenAICompatProvider(id, type, url, credential);
 		}
@@ -86,8 +83,6 @@ export function createProvider(config: LLMProviderConfig): ILLMProvider {
 		// 로컬 및 커스텀
 		case 'ollama':
 		case 'lmstudio':
-		case 'vllm':
-		case 'llamacpp':
 		case 'custom': {
 			return new OpenAICompatProvider(id, type, baseUrl!, credential || 'ollama');
 		}
