@@ -7,6 +7,7 @@ import * as debugLoggerModule from '../../shared/debugLogger';
 vi.mock('../../shared/debugLogger', () => ({
 	debugLogger: {
 		logError: vi.fn(),
+		logWarn: vi.fn(),
 		logSystem: vi.fn()
 	}
 }));
@@ -78,6 +79,33 @@ describe('indexPersistence', () => {
 			expect(result.indexedPaths.has('a.md')).toBe(true);
 			expect(result.fileMtimes['a.md']).toBe(100);
 		});
+
+		it('should recover from .bak when primary index is corrupted', async () => {
+			const validBackup = JSON.stringify({
+				version: SCHEMA_VERSION,
+				modelName: 'model',
+				chunks: [{ path: 'recovered.md', content: 'backup' }],
+				childChunks: [],
+				fileMtimes: { 'recovered.md': 200 },
+				fileHashes: { 'recovered.md': 888 }
+			});
+			vi.mocked(mockApp.vault.adapter.exists).mockResolvedValue(true);
+			vi.mocked(mockApp.vault.adapter.read)
+				.mockResolvedValueOnce('{corrupted-json')
+				.mockResolvedValueOnce(validBackup);
+
+			const result = await loadIndex(mockApp, 'model', 'proj');
+			expect(result.needsFullReindex).toBe(false);
+			expect(result.indexedPaths.has('recovered.md')).toBe(true);
+		});
+
+		it('should return needsFullReindex if both primary and backup fail', async () => {
+			vi.mocked(mockApp.vault.adapter.exists).mockImplementation(async (p: string) => !p.endsWith('.bak'));
+			vi.mocked(mockApp.vault.adapter.read).mockResolvedValueOnce('{corrupted-json');
+
+			const result = await loadIndex(mockApp, 'model', 'proj');
+			expect(result.needsFullReindex).toBe(true);
+		});
 	});
 
 	describe('saveIndex', () => {
@@ -93,6 +121,21 @@ describe('indexPersistence', () => {
 			const writeCall = vi.mocked(mockApp.vault.adapter.write).mock.calls[0];
 			const writtenData = JSON.parse(writeCall[1] as string);
 			expect(writtenData.childChunks[0].embedding).toBeUndefined(); // Embedding removed
+		});
+
+		it('should perform atomic write via .tmp and rename when adapter.rename is available', async () => {
+			const renameMock = vi.fn().mockResolvedValue(undefined);
+			(mockApp.vault.adapter as unknown as { rename?: typeof renameMock }).rename = renameMock;
+			vi.mocked(mockApp.vault.adapter.exists).mockResolvedValue(true);
+
+			await saveIndex(mockApp, 'model', [], [], {}, {}, 'proj');
+
+			expect(mockApp.vault.adapter.write).toHaveBeenCalledWith(
+				expect.stringMatching(/\.tmp$/),
+				expect.any(String)
+			);
+			expect(renameMock).toHaveBeenCalled();
+			delete (mockApp.vault.adapter as unknown as { rename?: typeof renameMock }).rename;
 		});
 	});
 

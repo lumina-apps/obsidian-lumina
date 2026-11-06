@@ -27,20 +27,29 @@ export class EmbeddingStore {
 	private modelName: string | null = null;
 	private dbName: string = DB_NAME;
 	private projectId: string | undefined = undefined;
+	private vaultId: string | undefined = undefined;
+	private checkedLegacyDb = false;
 
-	constructor(projectId?: string) {
+	constructor(projectId?: string, vaultId?: string) {
 		this.projectId = projectId;
-		if (projectId) {
-			this.dbName = `${DB_NAME}-${projectId}`;
-		}
+		this.vaultId = vaultId;
+		this.dbName = this.buildDbName(this.vaultId, this.projectId);
+	}
+
+	private buildDbName(vaultId?: string, projectId?: string): string {
+		if (vaultId && projectId) return `${DB_NAME}-${vaultId}-${projectId}`;
+		if (vaultId) return `${DB_NAME}-${vaultId}`;
+		if (projectId) return `${DB_NAME}-${projectId}`;
+		return DB_NAME;
 	}
 
 	/** IndexedDB를 오픈하고 ObjectStore를 준비합니다. */
-	async init(modelName: string, projectId?: string): Promise<void> {
+	async init(modelName: string, projectId?: string, vaultId?: string): Promise<void> {
 		this.modelName = modelName;
-		// 프로젝트별 격리: 각 프로젝트의 임베딩 벡터를 독립된 IndexedDB에 저장
+		// 볼트 및 프로젝트별 격리: 각 볼트·프로젝트의 임베딩 벡터를 독립된 IndexedDB에 저장
 		this.projectId = projectId ?? this.projectId;
-		this.dbName = this.projectId ? `${DB_NAME}-${this.projectId}` : DB_NAME;
+		this.vaultId = vaultId ?? this.vaultId;
+		this.dbName = this.buildDbName(this.vaultId, this.projectId);
 
 		return new Promise((resolve, reject) => {
 			const request = indexedDB.open(this.dbName, DB_VERSION);
@@ -54,6 +63,9 @@ export class EmbeddingStore {
 
 			request.onsuccess = () => {
 				this.db = request.result;
+				this.db.onversionchange = () => {
+					this.close();
+				};
 				resolve();
 			};
 
@@ -92,7 +104,11 @@ export class EmbeddingStore {
 	/** 여러 청크의 임베딩을 벌크 저장합니다. */
 	async storeEmbeddings(chunks: Array<{ id: string; embedding?: number[] | Float32Array }>): Promise<void> {
 		if (!this.db && this.modelName) {
-			await this.init(this.modelName, this.projectId);
+			if (this.vaultId !== undefined) {
+				await this.init(this.modelName, this.projectId, this.vaultId);
+			} else {
+				await this.init(this.modelName, this.projectId);
+			}
 		}
 		if (!this.db) throw new Error('EmbeddingStore not initialized');
 
@@ -119,16 +135,16 @@ export class EmbeddingStore {
 	/** 여러 청크의 embedding 필드를 IndexedDB에서 로드하여 채웁니다. */
 	async loadEmbeddings(chunks: Array<{ id: string; embedding?: number[] | Float32Array }>): Promise<void> {
 		if (!this.db && this.modelName) {
-			await this.init(this.modelName, this.projectId);
+			if (this.vaultId !== undefined) {
+				await this.init(this.modelName, this.projectId, this.vaultId);
+			} else {
+				await this.init(this.modelName, this.projectId);
+			}
 		}
 		if (!this.db) throw new Error('EmbeddingStore not initialized');
 		if (chunks.length === 0) return;
 
-		const chunkMap = new Map<string, { id: string; embedding?: number[] | Float32Array }>();
-		for (const c of chunks) {
-			chunkMap.set(c.id, c);
-		}
-
+		let loadedCount = 0;
 		const BATCH_SIZE = 1000;
 		for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
 			const batch = chunks.slice(i, i + BATCH_SIZE);
@@ -147,6 +163,7 @@ export class EmbeddingStore {
 						const record = req.result as EmbeddingRecord | undefined;
 						if (record && record.modelName === this.modelName) {
 							chunk.embedding = this.bufferToFloat32(record.embedding);
+							loadedCount++;
 						}
 						remaining--;
 						if (remaining === 0 && !isResolved) {
@@ -173,6 +190,34 @@ export class EmbeddingStore {
 					reject(new Error(`loadEmbeddings transaction failed: ${tx.error?.message ?? 'unknown'}`));
 				};
 			});
+		}
+
+		// 볼트 격리 DB가 비어 있는 최초 전환 시 기존 레거시 DB에서 1회 마이그레이션 시도
+		if (loadedCount === 0 && this.vaultId && !this.checkedLegacyDb) {
+			this.checkedLegacyDb = true;
+			await this.tryMigrateFromLegacyDb(chunks);
+		}
+	}
+
+	private async tryMigrateFromLegacyDb(chunks: Array<{ id: string; embedding?: number[] | Float32Array }>): Promise<void> {
+		const legacyDbName = this.buildDbName(undefined, this.projectId);
+		if (legacyDbName === this.dbName || !this.modelName) return;
+
+		try {
+			const legacyStore = new EmbeddingStore(this.projectId);
+			await legacyStore.init(this.modelName, this.projectId);
+			try {
+				await legacyStore.loadEmbeddings(chunks);
+			} finally {
+				legacyStore.close();
+			}
+			const migrated = chunks.filter(c => c.embedding && c.embedding.length > 0);
+			if (migrated.length > 0) {
+				await this.storeEmbeddings(migrated);
+				debugLogger.logSystem('rag', `Migrated ${migrated.length} embeddings from legacy DB (${legacyDbName}) to ${this.dbName}`);
+			}
+		} catch {
+			// 레거시 DB가 없거나 열 수 없는 경우 무시 (C3 자가 복구가 재임베딩 수행)
 		}
 	}
 
@@ -202,24 +247,40 @@ export class EmbeddingStore {
 		}
 
 		await new Promise<void>((resolve, reject) => {
+			let settled = false;
+			let blockedTimer: ReturnType<typeof setTimeout> | null = null;
+			const finish = (cb: () => void) => {
+				if (settled) return;
+				settled = true;
+				if (blockedTimer) clearTimeout(blockedTimer);
+				cb();
+			};
+
 			const request = indexedDB.deleteDatabase(this.dbName);
 
 			request.onsuccess = () => {
-				resolve();
+				finish(() => resolve());
 			};
 
 			request.onerror = () => {
-				reject(new Error(`IndexedDB delete failed: ${request.error?.message ?? 'unknown'}`));
+				finish(() => reject(new Error(`IndexedDB delete failed: ${request.error?.message ?? 'unknown'}`)));
 			};
 
 			request.onblocked = () => {
-				// 다른 연결이 DB를 사용 중이면 차단됨 (트랜잭션이 끝날 때까지 대기)
+				// 다른 연결이 DB를 사용 중이면 차단됨 (일정 시간 대기 후에도 해제되지 않으면 진행)
 				debugLogger.logWarn('rag', 'IndexedDB delete blocked: waiting for other transactions to finish');
+				blockedTimer = setTimeout(() => {
+					finish(() => resolve());
+				}, 1500);
 			};
 		});
 
 		if (this.modelName) {
-			await this.init(this.modelName, this.projectId);
+			if (this.vaultId !== undefined) {
+				await this.init(this.modelName, this.projectId, this.vaultId);
+			} else {
+				await this.init(this.modelName, this.projectId);
+			}
 		}
 	}
 

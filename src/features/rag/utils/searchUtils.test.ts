@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
-import { filterParentChunks } from './searchUtils';
+import { filterParentChunks, getAdaptiveMinSimilarity, computeCentroidEmbedding } from './searchUtils';
 import type { App } from 'obsidian';
-import type { ParentChunk } from '../../../shared/types/rag.types';
+import type { ParentChunk, ChildChunk } from '../../../shared/types/rag.types';
 
 describe('searchUtils - filterParentChunks', () => {
 	const chunks: ParentChunk[] = [
@@ -47,5 +47,25 @@ describe('searchUtils - filterParentChunks', () => {
 		const matchedFrontend = filterParentChunks(mockApp, chunks, '#FRONTEND');
 		expect(matchedFrontend).toHaveLength(1);
 		expect(matchedFrontend[0].id).toBe('2');
+	});
+});
+
+describe('searchUtils - getAdaptiveMinSimilarity & computeCentroidEmbedding', () => {
+	it('getAdaptiveMinSimilarity adjusts threshold for OpenAI and custom models while respecting explicit overrides', () => {
+		expect(getAdaptiveMinSimilarity(0.55, 'text-embedding-3-small')).toBe(0.3);
+		expect(getAdaptiveMinSimilarity(0.68, 'text-embedding-3-small')).toBe(0.37);
+		expect(getAdaptiveMinSimilarity(0.55, 'ibm-granite/granite-embedding-97m-multilingual-r2')).toBe(0.55);
+		expect(getAdaptiveMinSimilarity(0.55, 'text-embedding-3-small', 0.45)).toBe(0.45);
+	});
+
+	it('computeCentroidEmbedding returns L2-normalized mean vector across child chunks', () => {
+		const children: ChildChunk[] = [
+			{ id: 'c1', parentId: 'p1', path: 'a.md', text: '1', chunkIndex: 0, embedding: [1, 0] },
+			{ id: 'c2', parentId: 'p1', path: 'a.md', text: '2', chunkIndex: 1, embedding: [0, 1] },
+		];
+		const centroid = computeCentroidEmbedding(children);
+		expect(centroid).not.toBeNull();
+		expect(centroid?.[0]).toBeCloseTo(Math.SQRT1_2, 5);
+		expect(centroid?.[1]).toBeCloseTo(Math.SQRT1_2, 5);
 	});
 });

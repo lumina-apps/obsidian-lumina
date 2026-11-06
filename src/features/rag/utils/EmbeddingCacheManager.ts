@@ -16,9 +16,9 @@ import { debugLogger } from '../../../shared/debugLogger';
 type CacheEntry = [string, number[] | undefined, number];
 
 export class EmbeddingCacheManager {
-	// 텍스트 → 임베딩 메모리 캐시 (Worker 간 공유)
+	// 텍스트 → 임베딩 메모리 캐시 (Worker 간 공유, 과도한 힙/직렬화 방지용 상한)
 	private embedCache = new Map<string, number[]>();
-	private readonly MAX_CACHE_ENTRIES = 100_000;
+	private readonly MAX_CACHE_ENTRIES = 5_000;
 
 	// LRU 접근 기록
 	private embedAccess = new Map<string, number>();

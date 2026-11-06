@@ -11,6 +11,9 @@ function isCJKCode(code: number): boolean {
 	);
 }
 
+const EMPTY_VECTOR_PLACEHOLDER: number[] = [];
+const ORAMA_INSERT_BATCH_SIZE = 2000;
+
 export class OramaStore {
 	private db: AnyOrama | null = null;
 	private dimension: number;
@@ -62,9 +65,12 @@ export class OramaStore {
 	async insertChunks(chunks: ChildChunk[]): Promise<void> {
 		if (!this.db) throw new Error('OramaStore not initialized');
 
-		const records = chunks
-			.filter((c) => c.embedding && c.embedding.length > 0)
-			.map((c) => ({
+		const validChunks = chunks.filter((c) => c.embedding && c.embedding.length > 0);
+		if (validChunks.length === 0) return;
+
+		for (let i = 0; i < validChunks.length; i += ORAMA_INSERT_BATCH_SIZE) {
+			const slice = validChunks.slice(i, i + ORAMA_INSERT_BATCH_SIZE);
+			const records = slice.map((c) => ({
 				id: c.id,
 				parentId: c.parentId,
 				path: c.path,
@@ -72,9 +78,13 @@ export class OramaStore {
 				embedding: Array.from(c.embedding!),
 			}));
 
-		if (records.length === 0) return;
+			await insertMultiple(this.db, records);
 
-		await insertMultiple(this.db, records);
+			// Orama 벡터 인덱스에 Float32Array로 복사된 후 documentsStore 내부의 중복 number[] 참조 해제
+			for (const r of records) {
+				r.embedding = EMPTY_VECTOR_PLACEHOLDER;
+			}
+		}
 	}
 
 	/** 특정 ID 목록에 해당하는 하위 청크들을 삭제합니다. */

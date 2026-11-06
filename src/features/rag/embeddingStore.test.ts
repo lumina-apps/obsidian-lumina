@@ -71,6 +71,18 @@ describe('EmbeddingStore', () => {
 			await store.init('test', 'proj-123');
 			expect(indexedDB.open).toHaveBeenCalledWith('lumina-embeddings-proj-123', 1);
 		});
+
+		it('should isolate dbName by both vaultId and projectId when vaultId is provided', async () => {
+			await store.init('test', 'proj-123', 'vault-xyz');
+			expect(indexedDB.open).toHaveBeenCalledWith('lumina-embeddings-vault-xyz-proj-123', 1);
+		});
+
+		it('should close db on onversionchange to prevent blocking other connections', async () => {
+			await store.init('test', 'proj-123', 'vault-xyz');
+			expect(typeof mockDb.onversionchange).toBe('function');
+			mockDb.onversionchange();
+			expect(mockDb.close).toHaveBeenCalled();
+		});
 	});
 
 	describe('storeEmbeddings', () => {

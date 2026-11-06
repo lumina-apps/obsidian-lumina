@@ -38,14 +38,19 @@ export async function restoreFromCheckpoint(
 	totalFiles: TFile[],
 	clearOnFullReindex: boolean,
 	projectId: string,
+	loadedChunkCount?: number,
 ): Promise<RestoreResult> {
 	let checkpoint = await loadCheckpoint(app, projectId);
-	const loadResult = await loadIndex(app, modelName, projectId);
+	const loadResult = loadedChunkCount !== undefined
+		? null
+		: await loadIndex(app, modelName, projectId);
 
-	if (loadResult.needsFullReindex) {
+	if (loadResult?.needsFullReindex) {
 		if (checkpoint) await deleteCheckpoint(app, projectId);
 		return { filesToProcess: totalFiles, alreadyProcessed: 0, indexRestored: false, startedAt: Date.now(), processedPaths: EMPTY_PATHS };
 	}
+
+	const existingChunkCount = loadedChunkCount ?? (loadResult?.chunks.length ?? 0);
 
 	// 100% 완료된 체크포인트가 남아있는 경우(Windows 파일락 등) 무시하고 삭제
 	if (checkpoint && checkpoint.totalFiles > 0 && checkpoint.processedPaths.length >= checkpoint.totalFiles) {
@@ -69,7 +74,7 @@ export async function restoreFromCheckpoint(
 			const alreadyProcessed = totalFiles.length - filesToProcess.length;
 
 			if (filesToProcess.length === 0) {
-				if (totalFiles.length === 0 || loadResult.chunks.length > 0) {
+				if (totalFiles.length === 0 || existingChunkCount > 0) {
 					setIndexingStatus('ready', { totalFiles: totalFiles.length, processedFiles: totalFiles.length });
 					await deleteCheckpoint(app, projectId);
 					return { filesToProcess: [], alreadyProcessed: totalFiles.length, indexRestored: true, startedAt: checkpoint.startedAt, processedPaths: validProcessedPaths };
@@ -93,7 +98,7 @@ export async function restoreFromCheckpoint(
 	}
 
 	setTotalFiles(totalFiles.length);
-	return { filesToProcess: totalFiles, alreadyProcessed: 0, indexRestored: loadResult.chunks.length > 0, startedAt: Date.now(), processedPaths: EMPTY_PATHS };
+	return { filesToProcess: totalFiles, alreadyProcessed: 0, indexRestored: existingChunkCount > 0, startedAt: Date.now(), processedPaths: EMPTY_PATHS };
 }
 
 export interface CheckpointSaveContext {

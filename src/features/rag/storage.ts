@@ -6,6 +6,7 @@
 import { normalizePath, type App, Platform } from 'obsidian';
 import { FileSystemAdapter } from 'obsidian';
 import { t } from '../../shared/locales/helpers';
+import { hashString } from '../../shared/utils/hash';
 
 let nodePath: typeof import('path') | null = null;
 if (Platform.isDesktop) {
@@ -67,4 +68,23 @@ export function getVectorDbDir(app: App): string {
 /** 채팅 기록 저장 경로 (볼트 내 상대 경로) */
 export function getHistoryVaultPath(relativePath: string): string {
 	return normalizePath(relativePath);
+}
+
+/** 볼트별 고유 식별자 반환 (IndexedDB 볼트 간 격리용) */
+export function getVaultId(app: App): string {
+	const rawAppId = (app as unknown as { appId?: unknown }).appId;
+	if (typeof rawAppId === 'string' && rawAppId.trim().length > 0) {
+		return rawAppId.trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+	}
+	const adapter = app.vault?.adapter;
+	if (adapter instanceof FileSystemAdapter) {
+		return hashString(adapter.getBasePath()).toString(36);
+	}
+	if (typeof app.vault?.getName === 'function') {
+		const name = app.vault.getName().trim();
+		if (name.length > 0) {
+			return hashString(name).toString(36);
+		}
+	}
+	return 'default-vault';
 }

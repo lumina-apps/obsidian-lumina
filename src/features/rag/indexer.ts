@@ -85,6 +85,10 @@ export class VaultIndexer {
 	private indexingStartedAt = 0;
 	/** 인덱싱 진행 중 여부 (중복 호출 방지 잠금) */
 	private isIndexing = false;
+	/** 실제 파일 처리 루프 진행 중 여부 */
+	private isProcessingFiles = false;
+	/** 인덱싱 중 발생한 증분 업데이트 대기 플래그 */
+	private pendingUpdate = false;
 	/** OramaStore 동시 초기화 방지 Promise */
 	private oramaInitPromise: Promise<void> | null = null;
 
@@ -116,6 +120,7 @@ export class VaultIndexer {
 	get fileMtimes(): Record<string, number> { return this.state.fileMtimes; }
 	get fileHashes(): Record<string, number> { return this.state.fileHashes; }
 	get oramaDb(): OramaStore | null { return this.oramaStore; }
+	get indexing(): boolean { return this.isIndexing; }
 	
 	async embed(texts: string[]): Promise<number[][]> { return this.embedFn(texts); }
 
@@ -163,11 +168,20 @@ export class VaultIndexer {
 			throw err;
 		} finally {
 			this.isIndexing = false;
+			if (this.pendingUpdate && !this.isDestroyed) {
+				this.pendingUpdate = false;
+				await this.updateIndex();
+			}
 		}
 	}
 
 	async updateIndex(): Promise<void> {
-		if (this.isIndexing) return;
+		if (this.isIndexing) {
+			if (this.isProcessingFiles) {
+				this.pendingUpdate = true;
+			}
+			return;
+		}
 		this.isIndexing = true;
 		try {
 			await this.processSync(true);
@@ -178,6 +192,10 @@ export class VaultIndexer {
 			throw err;
 		} finally {
 			this.isIndexing = false;
+			if (this.pendingUpdate && !this.isDestroyed) {
+				this.pendingUpdate = false;
+				await this.updateIndex();
+			}
 		}
 	}
 
@@ -193,6 +211,11 @@ export class VaultIndexer {
 			await this.embeddingStore.loadEmbeddings(this.state.childChunks).catch((e) => {
 				debugLogger.logError('rag', normalizeError(e, `loadEmbeddings (loadExistingIndex) failed: ${e}`));
 			});
+			const missingPaths = this.state.getPathsWithMissingEmbeddings();
+			if (missingPaths.size > 0) {
+				this.state.invalidatePathsForReembed(missingPaths);
+				debugLogger.logWarn('rag', `loadExistingIndex: ${missingPaths.size} paths have missing embeddings and will be re-embedded on next sync.`);
+			}
 			await this.initOramaStore();
 			this.isLoaded = true;
 		}
@@ -214,6 +237,13 @@ export class VaultIndexer {
 					await this.embeddingStore.loadEmbeddings(this.state.childChunks).catch((e) => {
 						debugLogger.logError('rag', normalizeError(e, `loadEmbeddings failed: ${e}`));
 					});
+					const currentPathSet = new Set(files.map(f => f.path));
+					const missingPaths = this.state.getPathsWithMissingEmbeddings();
+					const activeMissingPaths = [...missingPaths].filter(p => currentPathSet.has(p));
+					if (activeMissingPaths.length > 0) {
+						this.state.invalidatePathsForReembed(activeMissingPaths);
+						debugLogger.logSystem('rag', `updateIndex: invalidated ${activeMissingPaths.length} paths with missing embeddings for self-healing.`);
+					}
 					const withEmb = this.state.childChunks.filter(c => c.embedding && c.embedding.length > 0).length;
 					debugLogger.logSystem('rag', `updateIndex: childChunks=${this.state.childChunks.length}, with embedding=${withEmb}`);
 					await this.initOramaStore();
@@ -241,7 +271,14 @@ export class VaultIndexer {
 					return;
 				}
 
-				const restoreResult = await restoreFromCheckpoint(this.app, this.modelName, files, false, this.projectId);
+				const restoreResult = await restoreFromCheckpoint(
+					this.app,
+					this.modelName,
+					files,
+					false,
+					this.projectId,
+					this.state.parentChunks.length,
+				);
 				const changedSet = new Set(changedFiles.map(f => f.path));
 				const filesToProcess = restoreResult.filesToProcess.filter(f => changedSet.has(f.path));
 
@@ -266,6 +303,10 @@ export class VaultIndexer {
 			return; 
 		}
 
+		let filesToProcess = restoreResult.filesToProcess;
+		let processedPaths = restoreResult.processedPaths;
+		let alreadyProcessed = restoreResult.alreadyProcessed;
+
 		if (restoreResult.indexRestored) {
 			const loadResult = await loadIndex(this.app, this.modelName, this.projectId);
 			this.state.loadFrom(loadResult);
@@ -279,6 +320,19 @@ export class VaultIndexer {
 			if (pathsToDelete.size > 0) {
 				await this.removePaths(pathsToDelete);
 			}
+			const missingPaths = this.state.getPathsWithMissingEmbeddings();
+			if (missingPaths.size > 0) {
+				this.state.invalidatePathsForReembed(missingPaths);
+				const toProcessSet = new Set(filesToProcess.map(f => f.path));
+				for (const f of files) {
+					if (missingPaths.has(f.path) && !toProcessSet.has(f.path)) {
+						filesToProcess.push(f);
+						toProcessSet.add(f.path);
+					}
+				}
+				processedPaths = processedPaths.filter(p => !missingPaths.has(p));
+				alreadyProcessed = Math.max(0, files.length - filesToProcess.length);
+			}
 			const withEmb = this.state.childChunks.filter(c => c.embedding && c.embedding.length > 0).length;
 			debugLogger.logSystem('rag', `indexVault (restored): childChunks=${this.state.childChunks.length}, with embedding=${withEmb}`);
 		} else {
@@ -288,17 +342,18 @@ export class VaultIndexer {
 		
 		await this.initOramaStore();
 
-		this.indexingStartedAt = restoreResult.alreadyProcessed > 0 ? restoreResult.startedAt : Date.now();
+		this.indexingStartedAt = alreadyProcessed > 0 ? restoreResult.startedAt : Date.now();
 		await this.runProcessing(
 			files,
-			restoreResult.filesToProcess,
-			restoreResult.alreadyProcessed,
-			restoreResult.processedPaths,
+			filesToProcess,
+			alreadyProcessed,
+			processedPaths,
 		);
 	}
 
 	async resetIndex(): Promise<void> {
 		this.currentProcessId++;
+		this.pendingUpdate = false;
 		while (this.isIndexing) {
 			await new Promise<void>(resolve => window.setTimeout(resolve, 50));
 		}
@@ -347,6 +402,7 @@ export class VaultIndexer {
 		previousProcessedPaths: string[] = [],
 	): Promise<void> {
 		const processId = ++this.currentProcessId;
+		this.isProcessingFiles = true;
 		setTotalFiles(totalFiles.length, totalFiles.length - filesToProcess.length, this.indexingStartedAt);
 
 		try {
@@ -364,6 +420,7 @@ export class VaultIndexer {
 				embeddingStore: this.embeddingStore,
 			}, this.indexingStartedAt, previousProcessedPaths);
 		} finally {
+			this.isProcessingFiles = false;
 			if (this.currentProcessId === processId && !this.isDestroyed) {
 				await this.persist();
 			}
@@ -379,8 +436,5 @@ export class VaultIndexer {
 
 	private async persist(): Promise<void> {
 		await saveIndex(this.app, this.modelName, this.state.parentChunks, this.state.childChunks, this.state.fileMtimes, this.state.fileHashes, this.projectId);
-		await this.embeddingStore.storeEmbeddings(this.state.childChunks).catch((err) => {
-			debugLogger.logWarn('indexer', `embeddingStore.storeEmbeddings failed: ${err}`);
-		});
 	}
 }

@@ -36,7 +36,7 @@
 	import DiscoverySearchResults from './components/DiscoverySearchResults.svelte';
 
 	// Utils
-	import { filterParentChunks } from '../utils/searchUtils';
+	import { filterParentChunks, getAdaptiveMinSimilarity } from '../utils/searchUtils';
 	import { insertLinkToActiveEditor } from '../../../shared/utils/editorUtils';
 	import { Notice, Keymap, type TFile } from 'obsidian';
 	import { debugLogger } from '../../../shared/debugLogger';
@@ -52,6 +52,7 @@
 	let hasBeenReady = $state(false);
 	let contextTimer: ReturnType<typeof setTimeout> | null = null;
 	let searchTimer: ReturnType<typeof setTimeout> | null = null;
+	let contextAbortController: AbortController | null = null;
 
 	let lastContextKey = $state<string | null>(null);
 	let contextSeq = 0;
@@ -90,6 +91,7 @@
 		return () => {
 			if (contextTimer) clearTimeout(contextTimer);
 			if (searchTimer) clearTimeout(searchTimer);
+			contextAbortController?.abort();
 		};
 	});
 
@@ -103,14 +105,17 @@
 	// ── Context 갱신 (활성 노트 변경 / 필터 변경 시) ──
 	async function updateContext(file: TFile, currentFilter: string, key: string) {
 		if (!isActive || !$isRagEnabled) return;
+		contextAbortController?.abort();
+		const abortController = new AbortController();
+		contextAbortController = abortController;
 		const currentSeq = ++contextSeq;
 		lastContextKey = key;
 
 		try {
 			updateDiscoveryState({ isSearching: true });
-			const result = await buildContextFromActiveFile(plugin, file, currentFilter);
+			const result = await buildContextFromActiveFile(plugin, file, currentFilter, abortController.signal);
 			// 최신 요청이고 현재 활성 파일이 맞을 때만 상태 적용 (비동기 경쟁 방지)
-			if (currentSeq === contextSeq && $discoveryState.activeFile?.path === file.path) {
+			if (currentSeq === contextSeq && !abortController.signal.aborted && $discoveryState.activeFile?.path === file.path) {
 				applyContextResult(result, file.path);
 			}
 		} catch (err) {
@@ -136,13 +141,19 @@
 			if (plugin.indexer) {
 				const chunks = filterParentChunks(plugin.app, plugin.indexer.indexedParentChunks, currentFilter);
 				const allowedPaths = currentFilter ? Array.from(new Set(chunks.map(c => c.path))) : null;
+				const embConfig = plugin.settings.connections?.embedding;
+				const activeModelName =
+					embConfig?.mode === 'custom' && embConfig.modelId
+						? embConfig.modelId
+						: 'ibm-granite/granite-embedding-97m-multilingual-r2';
+				const minSim = getAdaptiveMinSimilarity(0.68, activeModelName, plugin.settings.rag?.minSimilarity);
 				const results = await searchVault(
 					queryToSearch,
 					chunks,
 					plugin.indexer.oramaDb,
 					texts => plugin.indexer!.embed(texts),
 					15,
-					0.68,
+					minSim,
 					0.5,
 					allowedPaths
 				);

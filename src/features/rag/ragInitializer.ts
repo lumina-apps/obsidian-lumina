@@ -8,9 +8,10 @@ import { Notice, Platform } from 'obsidian';
 import { t } from '../../shared/locales/helpers';
 import { createProvider } from '../../core/llm-providers';
 import { EmbeddingWorkerBridge } from './workerBridge';
-import { getModelCacheDir } from './storage';
+import { getModelCacheDir, getVaultId } from './storage';
 import { VaultIndexer } from './indexer';
 import { EmbeddingStore } from './embeddingStore';
+import { DocumentParserRouter } from './parsers/DocumentParserRouter';
 import { setIndexingStatus } from '../../core/store/ragStore';
 import { projectIndexCache } from './projectIndexCache';
 import { getActiveProject } from '../../core/store/projectStore';
@@ -127,9 +128,10 @@ export async function initEmbeddingWorker(
 		const ragSettings = plugin.settings.rag;
 		const activeProject = getActiveProject();
 
-		// IndexedDB 임베딩 저장소 초기화 (프로젝트별 격리)
-		const embeddingStore = new EmbeddingStore();
-		await embeddingStore.init(modelName, activeProject.id);
+		// IndexedDB 임베딩 저장소 초기화 (볼트 및 프로젝트별 격리)
+		const vaultId = getVaultId(plugin.app);
+		const embeddingStore = new EmbeddingStore(activeProject.id, vaultId);
+		await embeddingStore.init(modelName, activeProject.id, vaultId);
 
 		debugLogger.logSystem('rag', `initEmbeddingWorker: Creating VaultIndexer for project '${activeProject.id}'. Included: ${JSON.stringify(activeProject.ragIncludedPaths)}, Excluded: ${JSON.stringify(activeProject.ragExcludedPaths)}`);
 
@@ -137,9 +139,16 @@ export async function initEmbeddingWorker(
 		plugin.indexer = new VaultIndexer({
 			app: plugin.app,
 			embedFn,
-			parseBinaryFn: (buffer, ext) => plugin.embeddingWorker
-				? plugin.embeddingWorker.parse(buffer, ext)
-				: Promise.resolve(''),
+			parseBinaryFn: async (buffer, ext) => {
+				if (plugin.embeddingWorker) {
+					try {
+						return await plugin.embeddingWorker.parse(buffer.slice(0), ext);
+					} catch {
+						return await DocumentParserRouter.parseBinary(buffer, ext);
+					}
+				}
+				return await DocumentParserRouter.parseBinary(buffer, ext);
+			},
 			settings: ragSettings,
 			includedPaths: activeProject.ragIncludedPaths,
 			excludedPaths: activeProject.ragExcludedPaths,
@@ -276,16 +285,24 @@ export async function switchProjectIndex(
 
 	debugLogger.logSystem('rag', `switchProjectIndex: Cache miss for '${newProjectId}'. Current active project in store is '${project.id}'. Included: ${JSON.stringify(project.ragIncludedPaths)}, Excluded: ${JSON.stringify(project.ragExcludedPaths)}`);
 
-	// IndexedDB 임베딩 저장소 초기화 (프로젝트별 격리)
-	const embeddingStore = new EmbeddingStore();
-	await embeddingStore.init(modelName, newProjectId);
+	// IndexedDB 임베딩 저장소 초기화 (볼트 및 프로젝트별 격리)
+	const vaultId = getVaultId(plugin.app);
+	const embeddingStore = new EmbeddingStore(newProjectId, vaultId);
+	await embeddingStore.init(modelName, newProjectId, vaultId);
 
 	const newIndexer = new VaultIndexer({
 		app: plugin.app,
 		embedFn,
-		parseBinaryFn: (buffer, ext) => plugin.embeddingWorker
-			? plugin.embeddingWorker.parse(buffer, ext)
-			: Promise.resolve(''),
+		parseBinaryFn: async (buffer, ext) => {
+			if (plugin.embeddingWorker) {
+				try {
+					return await plugin.embeddingWorker.parse(buffer.slice(0), ext);
+				} catch {
+					return await DocumentParserRouter.parseBinary(buffer, ext);
+				}
+			}
+			return await DocumentParserRouter.parseBinary(buffer, ext);
+		},
 		settings: plugin.settings.rag,
 		includedPaths: project.ragIncludedPaths,
 		excludedPaths: project.ragExcludedPaths,

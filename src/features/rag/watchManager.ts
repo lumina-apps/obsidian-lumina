@@ -59,6 +59,10 @@ export class RagWatchManager {
 			this.watchDebounceTimer = window.setTimeout(() => {
 				void (async () => {
 					if (!this.plugin.indexer) return;
+					if (this.plugin.indexer.indexing) {
+						scheduleUpdate();
+						return;
+					}
 					try {
 						await this.plugin.indexer.updateIndex();
 					} catch (err) {

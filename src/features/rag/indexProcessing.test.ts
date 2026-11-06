@@ -119,8 +119,9 @@ describe('indexProcessing', () => {
 
 		await processFiles(files, ctx, 0, []);
 
-		// Processed normally, mtime updated for rejected file too
-		expect(ctx.fileMtimes['file10.md']).toBe(1000);
+		// 읽기 실패한 파일은 mtime을 기록하지 않아 다음 증분 인덱싱 시 재시도 가능해야 함
+		expect(ctx.fileMtimes['file10.md']).toBeUndefined();
+		expect(ctx.fileMtimes['file0.md']).toBe(1000);
 		expect(ragStore.incrementProcessedBy).toHaveBeenCalledTimes(2);
 	});
 
@@ -139,30 +140,37 @@ describe('indexProcessing', () => {
 		expect(ctx.fileMtimes['empty.md']).toBe(1000);
 	});
 
-	it('should handle embedFn error in sequential mode and continue', async () => {
+	it('should handle embedFn error in sequential mode, preserve existing chunks, and continue', async () => {
 		const files = [
-			{ path: 'err.md', stat: { mtime: 1000 } } as TFile,
+			{ path: 'err.md', stat: { mtime: 2000 } } as TFile,
 			{ path: 'ok.md', stat: { mtime: 1000 } } as TFile
 		];
 		
+		// err.md가 이전에 인덱싱되어 있던 상태 시뮬레이션
+		ctx.parentChunks = [{ id: 'old_p', path: 'err.md', text: 'old text', chunkIndex: 0 }];
+		ctx.childChunks = [{ id: 'old_c', path: 'err.md', text: 'old text', parentId: 'old_p', chunkIndex: 0 }];
+		ctx.fileMtimes['err.md'] = 1000;
+
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		vi.mocked(fileProcessor.readAndPrepareFile).mockResolvedValue({
-			parentChunks: [{ id: 'p', path: 'any', text: 't' } as any],
-			childChunks: [{ id: 'c', path: 'any', text: 't', parentId: 'p', embedding: null as any } as any],
+		vi.mocked(fileProcessor.readAndPrepareFile).mockImplementation(async (f) => ({
+			parentChunks: [{ id: `p_${f.path}`, path: f.path, text: 't' } as any],
+			childChunks: [{ id: `c_${f.path}`, path: f.path, text: 't', parentId: `p_${f.path}`, embedding: null as any } as any],
 			contentHash: 1, skip: false
-		});
+		}));
 		
 		vi.mocked(ctx.embedFn).mockRejectedValueOnce(new Error('API Error')).mockResolvedValueOnce([[0.2]]);
 
 		await processFiles(files, ctx, 0, []);
 
 		expect(Notice).toHaveBeenCalledWith(expect.stringContaining('API Error'));
-		expect(ctx.fileMtimes['err.md']).toBe(1000); // Saved mtime despite error
+		// 실패한 err.md는 새 mtime(2000)으로 덮어쓰지 않고 이전 mtime(1000)과 기존 청크를 유지해야 함
+		expect(ctx.fileMtimes['err.md']).toBe(1000);
 		expect(ctx.fileMtimes['ok.md']).toBe(1000);
-		expect(ctx.childChunks.length).toBe(1); // Only ok.md's chunk was added
+		expect(ctx.childChunks.map(c => c.id)).toEqual(['old_c', 'c_ok.md']);
+		expect(mockOramaStore.deleteByIds).not.toHaveBeenCalledWith(['old_c']);
 	});
 
-	it('should handle embedFn error in batch mode', async () => {
+	it('should handle embedFn error in batch mode without marking failed files as indexed', async () => {
 		const files = Array.from({ length: 55 }).map((_, i) => ({ path: `file${i}.md`, stat: { mtime: 1000 } } as TFile));
 		
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -176,9 +184,10 @@ describe('indexProcessing', () => {
 
 		await processFiles(files, ctx, 0, []);
 
+		expect(Notice).toHaveBeenCalledTimes(1);
 		expect(Notice).toHaveBeenCalledWith(expect.stringContaining('Batch Embed Error'));
 		expect(ctx.childChunks.length).toBe(0); // Nothing inserted due to error
-		expect(ctx.fileMtimes['file0.md']).toBe(1000); // Mtimes updated so we don't infinitely retry
+		expect(ctx.fileMtimes['file0.md']).toBeUndefined(); // 실패한 파일은 mtime을 기록하지 않음
 	});
 
 	it('should stop processing if cancelled (getIsDestroyed)', async () => {

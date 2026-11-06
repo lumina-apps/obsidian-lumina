@@ -52,6 +52,37 @@ export class IndexState {
 		});
 	}
 
+	/** 임베딩 벡터가 누락된 청크를 보유한 파일 경로 집합을 반환합니다 (자가 복구용). */
+	public getPathsWithMissingEmbeddings(): Set<string> {
+		const missingPaths = new Set<string>();
+		const pathsWithValidChild = new Set<string>();
+
+		for (const c of this.childChunks) {
+			if (!c.embedding || c.embedding.length === 0) {
+				missingPaths.add(c.path);
+			} else {
+				pathsWithValidChild.add(c.path);
+			}
+		}
+
+		for (const p of this.parentChunks) {
+			if (p.text && p.text.trim().length > 0 && !pathsWithValidChild.has(p.path)) {
+				missingPaths.add(p.path);
+			}
+		}
+
+		return missingPaths;
+	}
+
+	/** 지정된 경로들의 mtime/hash/indexedPaths 기록을 무효화하여 다음 증분 업데이트에서 재임베딩되도록 합니다. */
+	public invalidatePathsForReembed(paths: Iterable<string>): void {
+		for (const p of paths) {
+			this.indexedPaths.delete(p);
+			delete this.fileMtimes[p];
+			delete this.fileHashes[p];
+		}
+	}
+
 	public get indexedFileCount(): number {
 		return Object.keys(this.fileMtimes).length;
 	}

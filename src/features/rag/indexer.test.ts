@@ -258,6 +258,31 @@ describe('VaultIndexer', () => {
 			expect(indexPersistence.saveIndex).toHaveBeenCalled(); // via persist()
 			expect(ragStore.setIndexingStatus).toHaveBeenCalledWith('ready', { totalFiles: 1, processedFiles: 1 });
 		});
+
+		it('should invalidate fileMtimes for active files with missing embeddings after loadEmbeddings (self-healing)', async () => {
+			const targetFile = { path: 'missing_emb.md', stat: { mtime: 1000 } } as TFile;
+			vi.mocked(fileFilter.getTargetFiles).mockReturnValue([targetFile]);
+			vi.mocked(indexPersistence.loadIndex).mockResolvedValue({
+				needsFullReindex: false,
+				chunks: [{ id: 'p1', path: 'missing_emb.md', text: 'txt', chunkIndex: 0 }],
+				childChunks: [{ id: 'c1', path: 'missing_emb.md', text: 'txt', parentId: 'p1', chunkIndex: 0 }],
+				fileMtimes: { 'missing_emb.md': 1000 },
+				fileHashes: { 'missing_emb.md': 999 },
+				indexedPaths: new Set(['missing_emb.md'])
+			});
+			vi.mocked(indexDiff.calculateIndexDiff).mockImplementation(async (_app, files, mtimes) => {
+				// missing_emb.md should have been removed from mtimes before calculateIndexDiff
+				expect(mtimes['missing_emb.md']).toBeUndefined();
+				return { pathsToDelete: new Set(), changedFiles: files };
+			});
+			vi.mocked(checkpointManager.restoreFromCheckpoint).mockResolvedValue({
+				filesToProcess: [targetFile], alreadyProcessed: 0, indexRestored: false, processedPaths: [], startedAt: 0
+			});
+
+			await indexer.updateIndex();
+
+			expect(indexProcessing.processFiles).toHaveBeenCalled();
+		});
 	});
 
 	describe('resetIndex', () => {

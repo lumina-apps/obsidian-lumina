@@ -100,7 +100,7 @@ export class WorkerPool {
 	}
 
 	public get ready(): boolean {
-		return this.isReady;
+		return this.isReady && this.activeWorkerCount > 0;
 	}
 
 	public get activeWorkerCount(): number {
@@ -118,7 +118,11 @@ export class WorkerPool {
 	}
 
 	public getAnyReadyWorker(): WorkerInstance | undefined {
-		return this.workers.find((w) => w.isReady);
+		const ready = this.workers.filter((w) => w.isReady);
+		if (ready.length === 0) return undefined;
+		const inst = ready[this.roundRobinIndex % ready.length];
+		this.roundRobinIndex++;
+		return inst;
 	}
 
 	private handleMessage(

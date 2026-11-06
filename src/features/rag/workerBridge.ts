@@ -48,11 +48,11 @@ export class EmbeddingWorkerBridge {
 			throw new Error(`워커 코드 압축 해제 실패: ${errMsg}`);
 		}
 
-		// Worker 수: 논리 코어 절반, 최소 1, 최대 4
+		// Worker 수: 논리 코어 절반, 최소 1, 최대 2 (ONNX fp32 모델 중복 메모리 과점유 방지)
 		const hwConcurrency = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
 			? navigator.hardwareConcurrency
 			: 4;
-		const workerCount = Math.max(1, Math.min(4, Math.floor(hwConcurrency / 2)));
+		const workerCount = Math.max(1, Math.min(2, Math.floor(hwConcurrency / 2)));
 
 		if (this.workerCodeUrl) {
 			URL.revokeObjectURL(this.workerCodeUrl);
@@ -213,13 +213,21 @@ export class EmbeddingWorkerBridge {
 		return results as number[][];
 	}
 
-	/** 특정 Worker에 embed 요청 전송 */
+	/** 특정 Worker에 embed 요청 전송 (120초 타임아웃 보호) */
 	private async sendEmbedToWorker(inst: WorkerInstance, texts: string[]): Promise<number[][]> {
 		const requestId = generateUUID();
-		return new Promise<number[][]>((resolve, reject) => {
-			inst.embedRequests.add(requestId, resolve, reject);
-			inst.worker.postMessage({ type: 'embed', requestId, texts });
-		});
+		let timeoutId: ReturnType<typeof setTimeout> | null = null;
+		try {
+			return await new Promise<number[][]>((resolve, reject) => {
+				timeoutId = setTimeout(() => {
+					inst.embedRequests.reject(requestId, new Error('Worker embed request timed out'));
+				}, 120_000);
+				inst.embedRequests.add(requestId, resolve, reject);
+				inst.worker.postMessage({ type: 'embed', requestId, texts });
+			});
+		} finally {
+			if (timeoutId) clearTimeout(timeoutId);
+		}
 	}
 
 	/** 메모리 캐시 → 디스크 영속화 */
@@ -227,7 +235,7 @@ export class EmbeddingWorkerBridge {
 		await this.cacheManager.persistCache();
 	}
 
-	/** ArrayBuffer 문서를 Worker에서 비동기 파싱합니다. */
+	/** ArrayBuffer 문서를 Worker에서 비동기 파싱합니다 (120초 타임아웃 보호). */
 	async parse(buffer: ArrayBuffer, ext: string): Promise<string> {
 		await this.ensureReady();
 		const inst = this.workerPool.getAnyReadyWorker();
@@ -235,13 +243,18 @@ export class EmbeddingWorkerBridge {
 			throw new Error(t('uiMessages.ragWorkerNotReady'));
 		}
 		const requestId = generateUUID();
+		let timeoutId: ReturnType<typeof setTimeout> | null = null;
 		try {
 			const result = await new Promise<string>((resolve, reject) => {
+				timeoutId = setTimeout(() => {
+					inst.parseRequests.reject(requestId, new Error('Worker parse request timed out'));
+				}, 120_000);
 				inst.parseRequests.add(requestId, resolve, reject);
 				inst.worker.postMessage({ type: 'parse', requestId, buffer, ext }, [buffer]);
 			});
 			return result;
 		} finally {
+			if (timeoutId) clearTimeout(timeoutId);
 			this.resetIdleTimer();
 		}
 	}

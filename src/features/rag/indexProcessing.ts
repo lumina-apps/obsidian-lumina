@@ -19,6 +19,33 @@ import type { EmbeddingStore } from './embeddingStore';
 
 const CHUNK_EMBED_BATCH = 512;
 const SMALL_VAULT_THRESHOLD = 50;
+const MAX_CONSECUTIVE_EMBED_FAILURES = 3;
+
+function isFatalEmbedError(err: unknown): boolean {
+	const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+	return (
+		msg.includes('401') ||
+		msg.includes('403') ||
+		msg.includes('invalid_api_key') ||
+		msg.includes('invalid api key') ||
+		msg.includes('insufficient_quota') ||
+		msg.includes('quota exceeded') ||
+		msg.includes('unauthorized')
+	);
+}
+
+function validateAndAssignEmbeddings(childChunks: ChildChunk[], embeddings: number[][]): void {
+	if (!Array.isArray(embeddings) || embeddings.length < childChunks.length) {
+		throw new Error(`임베딩 개수 불일치 (요청: ${childChunks.length}, 응답: ${embeddings?.length ?? 0})`);
+	}
+	for (let j = 0; j < childChunks.length; j++) {
+		const emb = embeddings[j];
+		if (!emb || emb.length === 0) {
+			throw new Error(`빈 임베딩 벡터 반환 (index: ${j})`);
+		}
+		childChunks[j].embedding = new Float32Array(emb);
+	}
+}
 
 export interface ProcessContext {
 	app: App;
@@ -103,6 +130,9 @@ async function processSequential(
 	checkpointCtx: CheckpointSaveContext, persistIndexCtx: IndexPersistContext,
 	checkCancel: () => boolean,
 ): Promise<void> {
+	let consecutiveEmbedFailures = 0;
+	let hasShownEmbedNotice = false;
+
 	for (const file of files) {
 		if (checkCancel()) return;
 		try {
@@ -110,19 +140,28 @@ async function processSequential(
 				ctx.parentChunkSize, ctx.parentChunkOverlap, ctx.childChunkSize, ctx.childChunkOverlap,
 				ctx.fileHashes, ctx.indexedPaths);
 			
-			if (result.skip || (result.parentChunks.length === 0 && result.childChunks.length === 0)) {
+			if (result.skip) {
 				ctx.fileMtimes[file.path] = file.stat.mtime;
-			} else {
+				processedPaths.push(file.path);
+			} else if (result.parentChunks.length === 0 && result.childChunks.length === 0) {
 				await removePathChunks(file.path, ctx);
 				ctx.indexedPaths.delete(file.path);
-				
+				delete ctx.fileHashes[file.path];
+				ctx.fileMtimes[file.path] = file.stat.mtime;
+				processedPaths.push(file.path);
+			} else {
 				try {
 					if (result.childChunks.length > 0) {
 						const embeddings = await ctx.embedFn(result.childChunks.map(c => c.text));
 						if (checkCancel()) return;
-						for (let j = 0; j < result.childChunks.length; j++) {
-							result.childChunks[j].embedding = new Float32Array(embeddings[j]);
-						}
+						validateAndAssignEmbeddings(result.childChunks, embeddings);
+					}
+
+					// 임베딩 성공 후에 기존 청크를 교체 (실패 시 기존 인덱스 데이터 보존)
+					await removePathChunks(file.path, ctx);
+					ctx.indexedPaths.delete(file.path);
+
+					if (result.childChunks.length > 0) {
 						await ctx.oramaStore.insertChunks(result.childChunks);
 						if (ctx.embeddingStore) {
 							await ctx.embeddingStore.storeEmbeddings(result.childChunks).catch((e) => {
@@ -140,16 +179,24 @@ async function processSequential(
 					ctx.indexedPaths.add(file.path);
 					ctx.fileHashes[file.path] = result.contentHash;
 					ctx.fileMtimes[file.path] = file.stat.mtime;
+					processedPaths.push(file.path);
+					consecutiveEmbedFailures = 0;
 				} catch (embedErr: unknown) {
 					if (checkCancel()) return;
 					const errMsg = embedErr instanceof Error ? embedErr.message : String(embedErr);
 					debugLogger.logError('rag', normalizeError(embedErr, `임베딩 실패: ${file.path}`));
-					new Notice(`[Lumina] 인덱싱 중 임베딩 에러 발생: ${errMsg}`);
-					ctx.fileMtimes[file.path] = file.stat.mtime;
+					if (!hasShownEmbedNotice) {
+						hasShownEmbedNotice = true;
+						new Notice(`[Lumina] 인덱싱 중 임베딩 에러 발생: ${errMsg}`);
+					}
+					consecutiveEmbedFailures++;
+					if (isFatalEmbedError(embedErr) || consecutiveEmbedFailures >= MAX_CONSECUTIVE_EMBED_FAILURES) {
+						incrementProcessed();
+						return;
+					}
 				}
 			}
 			incrementProcessed();
-			processedPaths.push(file.path);
 			
 			const prevLast = checkpointCtx.lastCheckpointAt;
 			checkpointCtx.lastCheckpointAt = await saveCheckpointIfNeeded(
@@ -159,8 +206,6 @@ async function processSequential(
 			}
 		} catch (err) {
 			debugLogger.logError('rag', normalizeError(err, `파일 인덱싱 실패: ${file.path}`));
-			ctx.fileMtimes[file.path] = file.stat.mtime;
-			processedPaths.push(file.path);
 			incrementProcessed();
 		}
 	}
@@ -180,6 +225,9 @@ async function processBatched(
 	checkpointCtx: CheckpointSaveContext, persistIndexCtx: IndexPersistContext,
 	checkCancel: () => boolean,
 ): Promise<void> {
+	let consecutiveEmbedFailures = 0;
+	let hasShownEmbedNotice = false;
+
 	for (let batchStart = 0; batchStart < files.length; batchStart += readConcurrency) {
 		if (checkCancel()) return;
 		const fileBatch = files.slice(batchStart, batchStart + readConcurrency);
@@ -199,19 +247,22 @@ async function processBatched(
 			const file = fileBatch[i];
 			const result = readResults[i];
 			if (result.status === 'rejected') {
-				ctx.fileMtimes[file.path] = file.stat.mtime;
-				processedPaths.push(file.path);
+				debugLogger.logError('rag', normalizeError(result.reason, `파일 읽기/파싱 실패: ${file.path}`));
 				skipCount++;
 			} else {
 				const { parentChunks, childChunks, contentHash, skip } = result.value;
-				if (skip || (parentChunks.length === 0 && childChunks.length === 0)) {
+				if (skip) {
+					ctx.fileMtimes[file.path] = file.stat.mtime;
+					processedPaths.push(file.path);
+					skipCount++;
+				} else if (parentChunks.length === 0 && childChunks.length === 0) {
+					await removePathChunks(file.path, ctx);
+					ctx.indexedPaths.delete(file.path);
+					delete ctx.fileHashes[file.path];
 					ctx.fileMtimes[file.path] = file.stat.mtime;
 					processedPaths.push(file.path);
 					skipCount++;
 				} else {
-					await removePathChunks(file.path, ctx);
-					ctx.indexedPaths.delete(file.path);
-					
 					toEmbedFiles.push(file);
 					toEmbedParentChunks.push(...parentChunks);
 					toEmbedChildChunks.push(...childChunks);
@@ -226,12 +277,16 @@ async function processBatched(
 					if (checkCancel()) break;
 					const batch = toEmbedChildChunks.slice(i, i + CHUNK_EMBED_BATCH);
 					const embeddings = await ctx.embedFn(batch.map(c => c.text));
-					for (let j = 0; j < batch.length; j++) {
-						batch[j].embedding = new Float32Array(embeddings[j]);
-					}
+					validateAndAssignEmbeddings(batch, embeddings);
 				}
 				
 				if (checkCancel()) return;
+
+				// 임베딩 성공 후 기존 청크 교체
+				for (const file of toEmbedFiles) {
+					await removePathChunks(file.path, ctx);
+					ctx.indexedPaths.delete(file.path);
+				}
 
 				await ctx.oramaStore.insertChunks(toEmbedChildChunks);
 				if (ctx.embeddingStore) {
@@ -253,17 +308,26 @@ async function processBatched(
 					ctx.fileMtimes[file.path] = file.stat.mtime;
 					processedPaths.push(file.path);
 				}
+				consecutiveEmbedFailures = 0;
 			} catch (embedErr: unknown) {
 				if (checkCancel()) return;
 				const errMsg = embedErr instanceof Error ? embedErr.message : String(embedErr);
 				debugLogger.logError('rag', normalizeError(embedErr, `배치 임베딩 실패`));
-				new Notice(`[Lumina] 인덱싱 중 임베딩 에러 발생: ${errMsg}`);
-				for (const file of toEmbedFiles) {
-					ctx.fileMtimes[file.path] = file.stat.mtime;
-					processedPaths.push(file.path);
+				if (!hasShownEmbedNotice) {
+					hasShownEmbedNotice = true;
+					new Notice(`[Lumina] 인덱싱 중 임베딩 에러 발생: ${errMsg}`);
+				}
+				consecutiveEmbedFailures++;
+				if (isFatalEmbedError(embedErr) || consecutiveEmbedFailures >= MAX_CONSECUTIVE_EMBED_FAILURES) {
+					incrementProcessedBy(skipCount + toEmbedFiles.length);
+					return;
 				}
 			}
 		} else if (toEmbedParentChunks.length > 0 && !checkCancel()) {
+			for (const file of toEmbedFiles) {
+				await removePathChunks(file.path, ctx);
+				ctx.indexedPaths.delete(file.path);
+			}
 			ctx.parentChunks.push(...toEmbedParentChunks);
 			persistIndexCtx.chunks = ctx.parentChunks;
 			
