@@ -248,11 +248,11 @@ export class EmbeddingStore {
 
 		await new Promise<void>((resolve, reject) => {
 			let settled = false;
-			let blockedTimer: ReturnType<typeof setTimeout> | null = null;
+			let blockedTimer: number | null = null;
 			const finish = (cb: () => void) => {
 				if (settled) return;
 				settled = true;
-				if (blockedTimer) clearTimeout(blockedTimer);
+				if (blockedTimer) window.clearTimeout(blockedTimer);
 				cb();
 			};
 
@@ -269,7 +269,7 @@ export class EmbeddingStore {
 			request.onblocked = () => {
 				// 다른 연결이 DB를 사용 중이면 차단됨 (일정 시간 대기 후에도 해제되지 않으면 진행)
 				debugLogger.logWarn('rag', 'IndexedDB delete blocked: waiting for other transactions to finish');
-				blockedTimer = setTimeout(() => {
+				blockedTimer = window.setTimeout(() => {
 					finish(() => resolve());
 				}, 1500);
 			};

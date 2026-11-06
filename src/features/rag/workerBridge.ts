@@ -216,17 +216,17 @@ export class EmbeddingWorkerBridge {
 	/** 특정 Worker에 embed 요청 전송 (120초 타임아웃 보호) */
 	private async sendEmbedToWorker(inst: WorkerInstance, texts: string[]): Promise<number[][]> {
 		const requestId = generateUUID();
-		let timeoutId: ReturnType<typeof setTimeout> | null = null;
+		let timeoutId: number | null = null;
 		try {
 			return await new Promise<number[][]>((resolve, reject) => {
-				timeoutId = setTimeout(() => {
+				timeoutId = window.setTimeout(() => {
 					inst.embedRequests.reject(requestId, new Error('Worker embed request timed out'));
 				}, 120_000);
 				inst.embedRequests.add(requestId, resolve, reject);
 				inst.worker.postMessage({ type: 'embed', requestId, texts });
 			});
 		} finally {
-			if (timeoutId) clearTimeout(timeoutId);
+			if (timeoutId) window.clearTimeout(timeoutId);
 		}
 	}
 
@@ -243,10 +243,10 @@ export class EmbeddingWorkerBridge {
 			throw new Error(t('uiMessages.ragWorkerNotReady'));
 		}
 		const requestId = generateUUID();
-		let timeoutId: ReturnType<typeof setTimeout> | null = null;
+		let timeoutId: number | null = null;
 		try {
 			const result = await new Promise<string>((resolve, reject) => {
-				timeoutId = setTimeout(() => {
+				timeoutId = window.setTimeout(() => {
 					inst.parseRequests.reject(requestId, new Error('Worker parse request timed out'));
 				}, 120_000);
 				inst.parseRequests.add(requestId, resolve, reject);
@@ -254,7 +254,7 @@ export class EmbeddingWorkerBridge {
 			});
 			return result;
 		} finally {
-			if (timeoutId) clearTimeout(timeoutId);
+			if (timeoutId) window.clearTimeout(timeoutId);
 			this.resetIdleTimer();
 		}
 	}
