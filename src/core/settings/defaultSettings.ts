@@ -1,6 +1,10 @@
 import type { LuminaSettings } from './settings.types';
 import { createDefaultProject } from '../../shared/types/project.types';
 
+export const DEFAULT_AUTOCOMPLETE_PROMPT =
+	'You are an inline autocomplete AI for a markdown editor. Based on the following text, provide only the exact continuation that should logically follow the cursor. Do not output any explanation, markdown blocks, or surrounding quotes. Only output the raw text to be appended. If the context ends mid-sentence, finish the sentence. If it ends at a sentence, provide the next logical sentence.';
+export const DEFAULT_AUTOCOMPLETE_CONTEXT_LENGTH = 1000;
+export const DEFAULT_AUTOCOMPLETE_WAIT_TIME_MS = 700;
 
 export const DEFAULT_SETTINGS: LuminaSettings = {
 	// ── Section 1: Connections & Models ──────────────────────────────────────
@@ -36,6 +40,9 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		sendKey: 'enter',
 		inlineTrigger: '/ai',
 		enableAutocomplete: false,
+		autocompletePrompt: DEFAULT_AUTOCOMPLETE_PROMPT,
+		autocompleteContextLength: DEFAULT_AUTOCOMPLETE_CONTEXT_LENGTH,
+		autocompleteWaitTimeMs: DEFAULT_AUTOCOMPLETE_WAIT_TIME_MS,
 		quickActions: [
 			{ id: 'qa-summarize', name: '요약하기', prompt: '다음 텍스트를 핵심만 요약해줘:\n\n', actionType: 'append' },
 			{ id: 'qa-translate', name: '한국어로 번역', prompt: '다음 텍스트를 자연스러운 한국어로 번역해줘:\n\n', actionType: 'replace' },

@@ -394,5 +394,25 @@ describe('LuminaSettingTab scroll preservation', () => {
 				}
 			});
 		});
+
+		describe('ChatTab inline autocomplete sub-settings visibility', () => {
+			it('shows prompt, context length, and wait time settings only when enableAutocomplete is true', () => {
+				mockPlugin.settings.connections.taskProviderId = 'prov-1';
+				mockPlugin.settings.connections.taskModelId = 'gpt-4o-mini';
+
+				tab.activeTab = 'chat';
+				mockPlugin.settings.chat.enableAutocomplete = false;
+				tab.display();
+				expect(container.textContent).not.toContain('Autocomplete Prompt');
+				expect(container.textContent).not.toContain('Autocomplete Context Length (chars)');
+				expect(container.textContent).not.toContain('Autocomplete Wait Time (ms)');
+
+				mockPlugin.settings.chat.enableAutocomplete = true;
+				tab.display();
+				expect(container.textContent).toContain('Autocomplete Prompt');
+				expect(container.textContent).toContain('Autocomplete Context Length (chars)');
+				expect(container.textContent).toContain('Autocomplete Wait Time (ms)');
+			});
+		});
 	});
 });

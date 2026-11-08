@@ -343,8 +343,14 @@
       },
       "enableAutocomplete": {
         "name": "Ativar preenchimento automático embutido (Ghost Text)",
-        "desc": "Quando você faz uma pausa na digitação, o Task LLM prevê a próxima frase e a exibe como texto fantasma (Pressione Tab para aceitar).",
-        "needsTaskModel": "Para usar este recurso, você deve primeiro especificar um modelo de Tarefa na guia Conexões."
+        "desc": "Quando você faz uma pausa na digitação, o Task LLM prevê a próxima frase e a exibe como texto fantasma (Tab: aceitar tudo, →: aceitar primeira palavra).",
+        "needsTaskModel": "Para usar este recurso, você deve primeiro especificar um modelo de Tarefa na guia Conexões.",
+        "promptName": "Prompt de Preenchimento Automático",
+        "promptDesc": "Instrução enviada ao LLM para preenchimento automático embutido. Deixe em branco para usar o prompt padrão.",
+        "contextLengthName": "Tamanho do Contexto de Preenchimento Automático (caracteres)",
+        "contextLengthDesc": "Número máximo de caracteres antes do cursor enviados como contexto ao LLM. (Padrão: 1000)",
+        "waitTimeName": "Tempo de Espera do Preenchimento Automático (ms)",
+        "waitTimeDesc": "Tempo de espera em milissegundos após parar de digitar antes de enviar a consulta. (Padrão: 700)"
       },
       "memoryLimit": {
         "name": "Limite de Memória de Conversa",

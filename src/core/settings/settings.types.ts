@@ -55,6 +55,12 @@ export interface ChatSettings {
 	inlineTrigger: string;
 	/** 인라인 고스트 텍스트 자동완성 사용 여부 */
 	enableAutocomplete: boolean;
+	/** 인라인 자동완성 프롬프트 지시문 */
+	autocompletePrompt: string;
+	/** 인라인 자동완성 시 전송할 커서 앞 컨텍스트 최대 글자 수 */
+	autocompleteContextLength: number;
+	/** 인라인 자동완성 요청 전 타이핑 대기 시간 (밀리초) */
+	autocompleteWaitTimeMs: number;
 
 	// ── Advanced ──
 	/** 대화 기억 방식: 자동 요약 / 턴 수 / 토큰 수 */

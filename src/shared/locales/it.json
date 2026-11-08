@@ -343,8 +343,14 @@
       },
       "enableAutocomplete": {
         "name": "Abilita completamento automatico in linea (Ghost Text)",
-        "desc": "Quando fai una pausa durante la digitazione, Task LLM prevederà la frase successiva e la mostrerà come testo fantasma (Premi Tab per accettare).",
-        "needsTaskModel": "Per utilizzare questa funzione, devi prima specificare un modello Task nella scheda Connessioni."
+        "desc": "Quando fai una pausa durante la digitazione, Task LLM prevederà la frase successiva e la mostrerà come testo fantasma (Tab: accetta tutto, →: accetta la prima parola).",
+        "needsTaskModel": "Per utilizzare questa funzione, devi prima specificare un modello Task nella scheda Connessioni.",
+        "promptName": "Prompt di completamento automatico",
+        "promptDesc": "Istruzione inviata all'LLM per il completamento automatico in linea. Lascia vuoto per usare il prompt predefinito.",
+        "contextLengthName": "Lunghezza contesto completamento automatico (caratteri)",
+        "contextLengthDesc": "Numero massimo di caratteri prima del cursore inviati come contesto all'LLM. (Predefinito: 1000)",
+        "waitTimeName": "Tempo di attesa completamento automatico (ms)",
+        "waitTimeDesc": "Tempo di attesa in millisecondi dopo aver smesso di digitare prima di inviare la richiesta. (Predefinito: 700)"
       },
       "memoryLimit": {
         "name": "Limite Memoria Conversazione",

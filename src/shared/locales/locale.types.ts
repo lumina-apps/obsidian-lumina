@@ -369,6 +369,12 @@ export interface TranslationSettingsChatEnableAutocomplete {
   name: string;
   desc: string;
   needsTaskModel: string;
+  promptName: string;
+  promptDesc: string;
+  contextLengthName: string;
+  contextLengthDesc: string;
+  waitTimeName: string;
+  waitTimeDesc: string;
 }
 
 export interface TranslationSettingsChatMemoryLimit {

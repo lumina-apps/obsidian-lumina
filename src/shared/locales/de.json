@@ -343,8 +343,14 @@
       },
       "enableAutocomplete": {
         "name": "Inline-Autovervollständigung (Ghost Text) aktivieren",
-        "desc": "Wenn Sie mit dem Tippen innehalten, sagt Task LLM den nächsten Satz voraus und zeigt ihn als Geistertext an (Drücken Sie Tab zum Akzeptieren).",
-        "needsTaskModel": "Um diese Funktion nutzen zu können, müssen Sie zuerst ein Task-Modell im Tab Verbindungen festlegen."
+        "desc": "Wenn Sie mit dem Tippen innehalten, sagt Task LLM den nächsten Satz voraus und zeigt ihn als Geistertext an (Tab: alles akzeptieren, →: erstes Wort akzeptieren).",
+        "needsTaskModel": "Um diese Funktion nutzen zu können, müssen Sie zuerst ein Task-Modell im Tab Verbindungen festlegen.",
+        "promptName": "Autovervollständigungs-Prompt",
+        "promptDesc": "Anweisung an das LLM für die Inline-Autovervollständigung. Leer lassen, um den Standard-Prompt zu verwenden.",
+        "contextLengthName": "Kontextlänge der Autovervollständigung (Zeichen)",
+        "contextLengthDesc": "Maximale Anzahl der Zeichen vor dem Cursor, die als Kontext an das LLM gesendet werden. (Standard: 1000)",
+        "waitTimeName": "Wartezeit für Autovervollständigung (ms)",
+        "waitTimeDesc": "Wartezeit in Millisekunden nach einer Tipp-Pause, bevor die Anfrage gesendet wird. (Standard: 700)"
       },
       "memoryLimit": {
         "name": "Konversations-Speicherlimit",

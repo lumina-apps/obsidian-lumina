@@ -1,5 +1,10 @@
 import { Setting, type ButtonComponent } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
+import {
+	DEFAULT_AUTOCOMPLETE_CONTEXT_LENGTH,
+	DEFAULT_AUTOCOMPLETE_PROMPT,
+	DEFAULT_AUTOCOMPLETE_WAIT_TIME_MS,
+} from '../../defaultSettings';
 import { wrapAsync } from '../../../../shared/utils/settingHelpers';
 import { t } from '../../../../shared/locales/helpers';
 import { createButtonContainer } from '../../../../shared/utils/domUtils';
@@ -63,9 +68,86 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 				.onChange(async (val) => {
 					s.enableAutocomplete = val;
 					await tab.saveAndSync();
-					// Toggle extension on/off dynamically if possible, or just require restart/re-focus
+					tab.refreshDisplay();
 				});
 		});
+
+	if (s.enableAutocomplete) {
+		const autocompletePromptSetting = new Setting(el)
+			.setName(t('settings.chat.enableAutocomplete.promptName'))
+			.setDesc(t('settings.chat.enableAutocomplete.promptDesc'))
+			.addTextArea(text => {
+				let composing = false;
+				text.inputEl.addClass('lumina-prompt-card__content');
+				text.inputEl.setCssStyles({ width: '100%', minWidth: '300px' });
+				text.inputEl.rows = 4;
+				text.inputEl.placeholder = DEFAULT_AUTOCOMPLETE_PROMPT;
+				text.inputEl.addEventListener('compositionstart', () => { composing = true; });
+				text.inputEl.addEventListener('compositionend', () => {
+					composing = false;
+					s.autocompletePrompt = text.inputEl.value;
+					void tab.saveAndSync();
+				});
+				text.setValue(s.autocompletePrompt ?? DEFAULT_AUTOCOMPLETE_PROMPT).onChange(async (val) => {
+					if (composing) return;
+					s.autocompletePrompt = val;
+					await tab.saveAndSync();
+				});
+			});
+		autocompletePromptSetting.settingEl.setCssStyles({ display: 'flex', alignItems: 'flex-start' });
+		autocompletePromptSetting.infoEl.setCssStyles({ flex: '0 0 auto', maxWidth: '45%', marginRight: '20px' });
+		autocompletePromptSetting.controlEl.setCssStyles({ flex: '1 1 auto', width: '100%', justifyContent: 'flex-end', display: 'flex' });
+
+		new Setting(el)
+			.setName(t('settings.chat.enableAutocomplete.contextLengthName'))
+			.setDesc(t('settings.chat.enableAutocomplete.contextLengthDesc'))
+			.addText(text => {
+				let composing = false;
+				const inputEl = text.inputEl;
+				inputEl.type = 'number';
+				inputEl.min = '100';
+				inputEl.step = '100';
+				inputEl.placeholder = String(DEFAULT_AUTOCOMPLETE_CONTEXT_LENGTH);
+				inputEl.addEventListener('compositionstart', () => { composing = true; });
+				inputEl.addEventListener('compositionend', () => {
+					composing = false;
+					const n = parseInt(inputEl.value, 10);
+					s.autocompleteContextLength = isNaN(n) ? DEFAULT_AUTOCOMPLETE_CONTEXT_LENGTH : Math.max(100, n);
+					void tab.saveAndSync();
+				});
+				text.setValue(String(s.autocompleteContextLength ?? DEFAULT_AUTOCOMPLETE_CONTEXT_LENGTH)).onChange(wrapAsync(async (val) => {
+					if (composing) return;
+					const n = parseInt(val, 10);
+					s.autocompleteContextLength = isNaN(n) ? DEFAULT_AUTOCOMPLETE_CONTEXT_LENGTH : Math.max(100, n);
+					await tab.saveAndSync();
+				}));
+			});
+
+		new Setting(el)
+			.setName(t('settings.chat.enableAutocomplete.waitTimeName'))
+			.setDesc(t('settings.chat.enableAutocomplete.waitTimeDesc'))
+			.addText(text => {
+				let composing = false;
+				const inputEl = text.inputEl;
+				inputEl.type = 'number';
+				inputEl.min = '100';
+				inputEl.step = '100';
+				inputEl.placeholder = String(DEFAULT_AUTOCOMPLETE_WAIT_TIME_MS);
+				inputEl.addEventListener('compositionstart', () => { composing = true; });
+				inputEl.addEventListener('compositionend', () => {
+					composing = false;
+					const n = parseInt(inputEl.value, 10);
+					s.autocompleteWaitTimeMs = isNaN(n) ? DEFAULT_AUTOCOMPLETE_WAIT_TIME_MS : Math.max(100, n);
+					void tab.saveAndSync();
+				});
+				text.setValue(String(s.autocompleteWaitTimeMs ?? DEFAULT_AUTOCOMPLETE_WAIT_TIME_MS)).onChange(wrapAsync(async (val) => {
+					if (composing) return;
+					const n = parseInt(val, 10);
+					s.autocompleteWaitTimeMs = isNaN(n) ? DEFAULT_AUTOCOMPLETE_WAIT_TIME_MS : Math.max(100, n);
+					await tab.saveAndSync();
+				}));
+			});
+	}
 
 	for (const action of s.quickActions || []) {
 		const card = el.createEl('details', { cls: 'lumina-prompt-card' });

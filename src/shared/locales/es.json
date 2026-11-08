@@ -343,8 +343,14 @@
       },
       "enableAutocomplete": {
         "name": "Habilitar autocompletado en línea (Ghost Text)",
-        "desc": "Cuando haces una pausa al escribir, Task LLM predecirá la siguiente oración y la mostrará como texto fantasma (Presiona Tab para aceptar).",
-        "needsTaskModel": "Para usar esta función, primero debe especificar un modelo de Tarea en la pestaña Conexiones."
+        "desc": "Cuando haces una pausa al escribir, Task LLM predecirá la siguiente oración y la mostrará como texto fantasma (Tab: aceptar todo, →: aceptar primera palabra).",
+        "needsTaskModel": "Para usar esta función, primero debe especificar un modelo de Tarea en la pestaña Conexiones.",
+        "promptName": "Prompt de autocompletado",
+        "promptDesc": "Instrucción enviada al LLM para el autocompletado en línea. Déjelo vacío para usar el prompt predeterminado.",
+        "contextLengthName": "Longitud del contexto de autocompletado (caracteres)",
+        "contextLengthDesc": "Número máximo de caracteres antes del cursor enviados como contexto al LLM. (Predeterminado: 1000)",
+        "waitTimeName": "Tiempo de espera de autocompletado (ms)",
+        "waitTimeDesc": "Tiempo de espera en milisegundos después de dejar de escribir antes de enviar la consulta. (Predeterminado: 700)"
       },
       "memoryLimit": {
         "name": "Límite de memoria de conversación",

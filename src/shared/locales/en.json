@@ -343,8 +343,14 @@
       },
       "enableAutocomplete": {
         "name": "Enable Inline Autocomplete (Ghost Text)",
-        "desc": "When you pause typing, Task LLM will predict the next sentence and show it as ghost text (Press Tab to accept).",
-        "needsTaskModel": "To use this feature, you must first specify a Task model in the Connections tab."
+        "desc": "When you pause typing, Task LLM will predict the next sentence and show it as ghost text (Tab: accept all, →: accept first word).",
+        "needsTaskModel": "To use this feature, you must first specify a Task model in the Connections tab.",
+        "promptName": "Autocomplete Prompt",
+        "promptDesc": "Instruction sent to the LLM for inline autocomplete. Leave empty to use the default prompt.",
+        "contextLengthName": "Autocomplete Context Length (chars)",
+        "contextLengthDesc": "Maximum number of characters before the cursor sent as context to the LLM. (Default: 1000)",
+        "waitTimeName": "Autocomplete Wait Time (ms)",
+        "waitTimeDesc": "Wait time in milliseconds after typing stops before sending the autocomplete query. (Default: 700)"
       },
       "memoryLimit": {
         "name": "Conversation Memory Limit",

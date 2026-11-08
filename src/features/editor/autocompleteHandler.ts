@@ -1,6 +1,11 @@
 import { sanitizeDisplayContent } from "../../shared/utils/llmTextSanitizer";
 
 import { createProvider } from '../../core/llm-providers';
+import {
+	DEFAULT_AUTOCOMPLETE_CONTEXT_LENGTH,
+	DEFAULT_AUTOCOMPLETE_PROMPT,
+	DEFAULT_AUTOCOMPLETE_WAIT_TIME_MS,
+} from '../../core/settings/defaultSettings';
 import type LuminaPlugin from '../../main';
 import { debugLogger } from '../../shared/debugLogger';
 
@@ -10,6 +15,22 @@ export class AutocompleteHandler {
 
 	constructor(plugin: LuminaPlugin) {
 		this.plugin = plugin;
+	}
+
+	getContextLength(): number {
+		const raw = this.plugin.settings?.chat?.autocompleteContextLength;
+		if (typeof raw !== 'number' || isNaN(raw) || raw <= 0) {
+			return DEFAULT_AUTOCOMPLETE_CONTEXT_LENGTH;
+		}
+		return Math.max(100, Math.floor(raw));
+	}
+
+	getWaitTimeMs(): number {
+		const raw = this.plugin.settings?.chat?.autocompleteWaitTimeMs;
+		if (typeof raw !== 'number' || isNaN(raw) || raw <= 0) {
+			return DEFAULT_AUTOCOMPLETE_WAIT_TIME_MS;
+		}
+		return Math.max(100, Math.floor(raw));
 	}
 
 	async fetchSuggestion(contextText: string): Promise<string | null> {
@@ -22,7 +43,8 @@ export class AutocompleteHandler {
 
 		if (!contextText.trim()) return null;
 
-		const prompt = `You are an inline autocomplete AI for a markdown editor. Based on the following text, provide only the exact continuation that should logically follow the cursor. Do not output any explanation, markdown blocks, or surrounding quotes. Only output the raw text to be appended. If the context ends mid-sentence, finish the sentence. If it ends at a sentence, provide the next logical sentence.\n\nContext text:\n${contextText}`;
+		const instruction = this.plugin.settings.chat.autocompletePrompt?.trim() || DEFAULT_AUTOCOMPLETE_PROMPT;
+		const prompt = `${instruction}\n\nContext text:\n${contextText}`;
 
 		if (this.abortController) {
 			this.abortController.abort();

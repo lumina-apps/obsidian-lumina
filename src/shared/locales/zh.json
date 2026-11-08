@@ -343,8 +343,14 @@
       },
       "enableAutocomplete": {
         "name": "启用内联自动补全 (Ghost Text)",
-        "desc": "当您暂停输入时，Task LLM将预测下一句并将其显示为幽灵文本（按Tab键接受）。",
-        "needsTaskModel": "要使用此功能，您必须先在“连接”选项卡中指定一个 Task 模型。"
+        "desc": "当您暂停输入时，Task LLM将预测下一句并将其显示为幽灵文本（Tab：全部接受，→：接受第一个词）。",
+        "needsTaskModel": "要使用此功能，您必须先在“连接”选项卡中指定一个 Task 模型。",
+        "promptName": "自动补全提示词",
+        "promptDesc": "内联自动补全时发送给 LLM 的指令。留空则使用默认提示词。",
+        "contextLengthName": "自动补全上下文长度（字符数）",
+        "contextLengthDesc": "光标前作为上下文发送给 LLM 的最大字符数。（默认：1000）",
+        "waitTimeName": "自动补全请求等待时间 (ms)",
+        "waitTimeDesc": "停止输入后发送自动补全请求前的等待时间（毫秒）。（默认：700）"
       },
       "memoryLimit": {
         "name": "对话记忆限制",

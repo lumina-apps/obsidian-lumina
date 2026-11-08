@@ -343,8 +343,14 @@
       },
       "enableAutocomplete": {
         "name": "Activer la saisie semi-automatique en ligne (Ghost Text)",
-        "desc": "Lorsque vous faites une pause dans la frappe, Task LLM prédit la phrase suivante et l'affiche sous forme de texte fantôme (Appuyez sur Tab pour accepter).",
-        "needsTaskModel": "Pour utiliser cette fonctionnalité, vous devez d'abord spécifier un modèle de Tâche dans l'onglet Connexions."
+        "desc": "Lorsque vous faites une pause dans la frappe, Task LLM prédit la phrase suivante et l'affiche sous forme de texte fantôme (Tab : tout accepter, → : accepter le premier mot).",
+        "needsTaskModel": "Pour utiliser cette fonctionnalité, vous devez d'abord spécifier un modèle de Tâche dans l'onglet Connexions.",
+        "promptName": "Prompt de saisie semi-automatique",
+        "promptDesc": "Instruction envoyée au LLM pour la saisie semi-automatique en ligne. Laisser vide pour utiliser le prompt par défaut.",
+        "contextLengthName": "Longueur du contexte de saisie semi-automatique (caractères)",
+        "contextLengthDesc": "Nombre maximum de caractères avant le curseur envoyés comme contexte au LLM. (Par défaut : 1000)",
+        "waitTimeName": "Délai d'attente de saisie semi-automatique (ms)",
+        "waitTimeDesc": "Temps d'attente en millisecondes après l'arrêt de la frappe avant l'envoi de la requête. (Par défaut : 700)"
       },
       "memoryLimit": {
         "name": "Limite de mémoire de conversation",

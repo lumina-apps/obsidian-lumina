@@ -42,6 +42,13 @@ export const autocompleteStateField = StateField.define<AutocompleteSuggestion |
 	})
 });
 
+export function splitFirstWord(text: string): { firstWord: string; remaining: string } {
+	const match = text.match(/^\s*\S+/);
+	const firstWord = match ? match[0] : text;
+	const remaining = text.slice(firstWord.length);
+	return { firstWord, remaining };
+}
+
 export const autocompleteKeymap = Prec.highest(keymap.of([
 	{
 		key: 'Tab',
@@ -56,6 +63,26 @@ export const autocompleteKeymap = Prec.highest(keymap.of([
 				return true;
 			}
 			return false;
+		}
+	},
+	{
+		key: 'ArrowRight',
+		run: (view: EditorView) => {
+			const suggestion = view.state.field(autocompleteStateField, false);
+			if (!suggestion || !suggestion.text) return false;
+			if (!view.state.selection.main.empty || view.state.selection.main.head !== suggestion.pos) {
+				return false;
+			}
+
+			const { firstWord, remaining } = splitFirstWord(suggestion.text);
+			const nextPos = suggestion.pos + firstWord.length;
+
+			view.dispatch({
+				changes: { from: suggestion.pos, insert: firstWord },
+				selection: { anchor: nextPos },
+				effects: setSuggestion.of(remaining ? { text: remaining, pos: nextPos } : null)
+			});
+			return true;
 		}
 	},
 	{
@@ -84,13 +111,24 @@ export const autocompletePlugin = (handler: AutocompleteHandler) => ViewPlugin.f
 	update(update: ViewUpdate) {
 		if (update.docChanged) {
 			if (this.timer) window.clearTimeout(this.timer);
+
+			// 제안 수락(Tab / ArrowRight)으로 인한 문서 변경 시에는 불필요한 재요청 타이머를 실행하지 않음
+			const hasSuggestionEffect = update.transactions.some(tr =>
+				tr.effects.some(e => e.is(setSuggestion))
+			);
+			if (hasSuggestionEffect) {
+				return;
+			}
+
+			const waitTimeMs = handler.getWaitTimeMs();
 			this.timer = window.setTimeout(() => {
 				void (async () => {
 					// Get current cursor
 					const pos = this.view.state.selection.main.head;
 					
-					// Extract context (up to 1000 chars before cursor)
-					const startOffset = Math.max(0, pos - 1000);
+					// Extract context before cursor
+					const contextLength = handler.getContextLength();
+					const startOffset = Math.max(0, pos - contextLength);
 					const contextText = this.view.state.doc.sliceString(startOffset, pos);
 					
 					const suggestion = await handler.fetchSuggestion(contextText);
@@ -104,7 +142,7 @@ export const autocompletePlugin = (handler: AutocompleteHandler) => ViewPlugin.f
 						}
 					}
 				})();
-			}, 700);
+			}, waitTimeMs);
 		}
 	}
 
