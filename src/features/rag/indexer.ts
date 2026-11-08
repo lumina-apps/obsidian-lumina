@@ -351,6 +351,17 @@ export class VaultIndexer {
 		);
 	}
 
+	/**
+	 * 콘텐츠 필터 설정 변경 시 파일 mtime을 0으로 초기화하여
+	 * 다음 updateIndex() 호출 시 모든 파일의 전처리 해시(contentHash)를 재검사하도록 합니다.
+	 * (실제 전처리 결과가 달라진 파일만 재임베딩되고 나머지는 해시 일치로 skip됩니다.)
+	 */
+	public invalidateMtimesForContentFilter(): void {
+		for (const key of Object.keys(this.state.fileMtimes)) {
+			this.state.fileMtimes[key] = 0;
+		}
+	}
+
 	async resetIndex(): Promise<void> {
 		this.currentProcessId++;
 		this.pendingUpdate = false;
@@ -418,6 +429,12 @@ export class VaultIndexer {
 				cachePersistCheckpointInterval: this.settings.cachePersistCheckpointInterval,
 				totalFileCount: totalFiles.length,
 				embeddingStore: this.embeddingStore,
+				filterOptions: {
+					excludeCodeBlocks: this.settings.excludeCodeBlocks,
+					excludeImages: this.settings.excludeImages,
+					excludeComments: this.settings.excludeComments,
+					excludeContentPatterns: this.settings.excludeContentPatterns,
+				},
 			}, this.indexingStartedAt, previousProcessedPaths);
 		} finally {
 			this.isProcessingFiles = false;

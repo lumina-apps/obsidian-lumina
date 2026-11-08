@@ -113,6 +113,14 @@ export interface RagSettings {
 	syncMode: RAGSyncMode;
 	/** 대용량 파일 제외 임계값 (MB). 0 = 제외 안 함. 이 값보다 큰 파일은 인덱싱 제외. 기본 50 */
 	maxFileSizeMB: number;
+	/** 마크다운 코드 블록 (```...```, ~~~...~~~) 인덱싱 제외 여부 */
+	excludeCodeBlocks: boolean;
+	/** 마크다운 인라인/외부 이미지 및 이미지 임베드 인덱싱 제외 여부 */
+	excludeImages: boolean;
+	/** 마크다운 주석 (%%...%%, <!--...-->) 인덱싱 제외 여부 */
+	excludeComments: boolean;
+	/** 마크다운 본문에서 제외할 사용자 정의 정규식 패턴 목록 */
+	excludeContentPatterns: string[];
 }
 
 // ─── Section 4: Misc & Extensions ────────────────────────────────────────────

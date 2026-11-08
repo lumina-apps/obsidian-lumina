@@ -1,5 +1,16 @@
 // ─── Document ────────────────────────────────────
 
+export interface MarkdownFilterOptions {
+	/** 펜스 코드 블록 (```...```, ~~~...~~~) 제거 여부 */
+	excludeCodeBlocks?: boolean;
+	/** 이미지 링크/임베드 (![...](...), ![[image.png]], <img>, [id]: data:image/...) 제거 여부 */
+	excludeImages?: boolean;
+	/** 옵시디언 주석 (%%...%%) 및 HTML 주석 (<!--...-->) 제거 여부 */
+	excludeComments?: boolean;
+	/** 사용자 정의 제외 정규식/문자열 패턴 목록 */
+	excludeContentPatterns?: string[];
+}
+
 export interface RawDocument {
 	path: string;
 	content: string;

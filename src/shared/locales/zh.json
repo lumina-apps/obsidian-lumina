@@ -435,6 +435,18 @@
         "name": "最大文件大小 (MB)",
         "desc": "排除大于此大小的文件。0 = 无限制。默认：50 MB"
       },
+      "contentFilter": {
+        "heading": "内容过滤器",
+        "excludeCodeBlocksName": "排除代码块",
+        "excludeCodeBlocksDesc": "建立索引前从 Markdown 笔记中移除代码块（```...```、~~~...~~~）。",
+        "excludeImagesName": "排除图片",
+        "excludeImagesDesc": "建立索引前移除 Markdown 图片（![...](...)）、Obsidian 图片嵌入（![[image.png]]）及 HTML <img> 标签。",
+        "excludeCommentsName": "排除注释",
+        "excludeCommentsDesc": "建立索引前移除 Obsidian 注释（%%...%%）和 HTML 注释（<!--...-->）。",
+        "excludePatternsName": "内容排除模式",
+        "excludePatternsDesc": "建立索引前从笔记正文中排除的正则表达式模式（每行一个）。",
+        "excludePatternsPlaceholder": "例如：\n^> \\[!note\\].*$\n```dataview[\\s\\S]*?```"
+      },
       "reindex": {
         "name": "完全重新索引",
         "desc": "从头开始对库中的所有笔记重新建立索引。",

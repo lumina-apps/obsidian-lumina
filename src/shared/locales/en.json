@@ -435,6 +435,18 @@
         "name": "Max File Size (MB)",
         "desc": "Exclude files larger than this size from indexing. 0 = no limit. Default: 50 MB"
       },
+      "contentFilter": {
+        "heading": "Content Filters",
+        "excludeCodeBlocksName": "Exclude Code Blocks",
+        "excludeCodeBlocksDesc": "Strip fenced code blocks (```...```, ~~~...~~~) from markdown notes before indexing.",
+        "excludeImagesName": "Exclude Images",
+        "excludeImagesDesc": "Strip inline/external markdown images (![...](...)), Obsidian image embeds (![[image.png]]), and HTML <img> tags before indexing.",
+        "excludeCommentsName": "Exclude Comments",
+        "excludeCommentsDesc": "Strip Obsidian comments (%%...%%) and HTML comments (<!--...-->) before indexing.",
+        "excludePatternsName": "Content Exclude Patterns",
+        "excludePatternsDesc": "Regular expression patterns to exclude from note content before indexing (one per line).",
+        "excludePatternsPlaceholder": "e.g.\n^> \\[!note\\].*$\n```dataview[\\s\\S]*?```"
+      },
       "reindex": {
         "name": "Full Re-index",
         "desc": "Re-index all vault files from scratch.",

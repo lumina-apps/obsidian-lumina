@@ -3,7 +3,7 @@
  */
 
 import { App, Notice, TFile } from 'obsidian';
-import type { ParentChunk, ChildChunk, EmbedFn, ParseBinaryFn } from '../../shared/types/rag.types';
+import type { ParentChunk, ChildChunk, EmbedFn, ParseBinaryFn, MarkdownFilterOptions } from '../../shared/types/rag.types';
 import { readAndPrepareFile } from './fileProcessor';
 import { incrementProcessed, incrementProcessedBy } from '../../core/store/ragStore';
 import { debugLogger } from '../../shared/debugLogger';
@@ -70,6 +70,7 @@ export interface ProcessContext {
 	/** vault 전체 파일 수 (체크포인트 totalFiles 용) */
 	totalFileCount: number;
 	embeddingStore?: EmbeddingStore;
+	filterOptions?: MarkdownFilterOptions;
 }
 
 export async function processFiles(files: TFile[], ctx: ProcessContext, startedAt: number, initialProcessedPaths: string[] = []): Promise<void> {
@@ -138,7 +139,7 @@ async function processSequential(
 		try {
 			const result = await readAndPrepareFile(file, ctx.app, ctx.parseBinaryFn,
 				ctx.parentChunkSize, ctx.parentChunkOverlap, ctx.childChunkSize, ctx.childChunkOverlap,
-				ctx.fileHashes, ctx.indexedPaths);
+				ctx.fileHashes, ctx.indexedPaths, ctx.filterOptions);
 			
 			if (result.skip) {
 				ctx.fileMtimes[file.path] = file.stat.mtime;
@@ -235,7 +236,7 @@ async function processBatched(
 		const readResults = await Promise.allSettled(fileBatch.map(file =>
 			readAndPrepareFile(file, ctx.app, ctx.parseBinaryFn, 
 				ctx.parentChunkSize, ctx.parentChunkOverlap, ctx.childChunkSize, ctx.childChunkOverlap,
-				ctx.fileHashes, ctx.indexedPaths)));
+				ctx.fileHashes, ctx.indexedPaths, ctx.filterOptions)));
 
 		const toEmbedFiles: TFile[] = [];
 		const toEmbedParentChunks: ParentChunk[] = [];

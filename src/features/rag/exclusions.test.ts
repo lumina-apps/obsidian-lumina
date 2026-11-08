@@ -50,4 +50,13 @@ describe('exclusions', () => {
 		expect(isIncluded('ProjectA/note.md', ['ProjectA/'])).toBe(true);
 		expect(isIncluded('ProjectA\\note.md', ['ProjectA'])).toBe(true);
 	});
+
+	it('should support wildcard glob patterns in excluded and included paths', () => {
+		expect(isExcluded('drawings/sketch.excalidraw.md', ['*.excalidraw.md'])).toBe(true);
+		expect(isExcluded('sketch.excalidraw.md', ['*.excalidraw.md'])).toBe(true);
+		expect(isExcluded('notes/regular.md', ['*.excalidraw.md'])).toBe(false);
+		expect(isExcluded('2026/archive/old.md', ['**/archive/**'])).toBe(true);
+		expect(isExcluded('archive/old.md', ['**/archive/**'])).toBe(true);
+		expect(isExcluded('notes/active.md', ['**/archive/**'])).toBe(false);
+	});
 });

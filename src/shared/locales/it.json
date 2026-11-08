@@ -435,6 +435,18 @@
         "name": "Dimensione max file (MB)",
         "desc": "Escludi i file più grandi di questa dimensione dall'indicizzazione. 0 = nessun limite. Predefinito: 50 MB"
       },
+      "contentFilter": {
+        "heading": "Filtri di contenuto",
+        "excludeCodeBlocksName": "Escludi blocchi di codice",
+        "excludeCodeBlocksDesc": "Rimuove i blocchi di codice (```...```, ~~~...~~~) dalle note Markdown prima dell'indicizzazione.",
+        "excludeImagesName": "Escludi immagini",
+        "excludeImagesDesc": "Rimuove immagini Markdown (![...](...)), immagini incorporate di Obsidian (![[image.png]]) e tag HTML <img> prima dell'indicizzazione.",
+        "excludeCommentsName": "Escludi commenti",
+        "excludeCommentsDesc": "Rimuove i commenti di Obsidian (%%...%%) e i commenti HTML (<!--...-->) prima dell'indicizzazione.",
+        "excludePatternsName": "Modelli di esclusione contenuto",
+        "excludePatternsDesc": "Espressioni regolari da escludere dal contenuto della nota prima dell'indicizzazione (una per riga).",
+        "excludePatternsPlaceholder": "es.\n^> \\[!note\\].*$\n```dataview[\\s\\S]*?```"
+      },
       "reindex": {
         "name": "Reindicizzazione Completa",
         "desc": "Reindicizza tutti i file del vault da zero.",

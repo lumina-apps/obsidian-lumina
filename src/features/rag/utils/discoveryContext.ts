@@ -92,7 +92,7 @@ export async function buildContextFromActiveFile(
 		} else {
 			const content = await plugin.app.vault.read(file);
 			if (signal?.aborted) return emptyResult;
-			const cleanContent = preprocessMarkdown(content);
+			const cleanContent = preprocessMarkdown(content, plugin.settings.rag);
 			const queryContext = cleanContent.substring(0, plugin.settings.rag.parentChunkSize || 2000);
 
 			if (queryContext.trim()) {

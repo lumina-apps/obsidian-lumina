@@ -2,7 +2,7 @@
  * 마크다운 문서를 상위/하위 overlap 청크로 분할합니다.
  */
 
-import type { ParentChunk, ChildChunk, RawDocument } from '../../shared/types/rag.types';
+import type { ParentChunk, ChildChunk, RawDocument, MarkdownFilterOptions } from '../../shared/types/rag.types';
 import { preprocessMarkdown } from '../../shared/utils/markdownPreprocessor';
 
 /**
@@ -14,8 +14,9 @@ export function chunkDocument(
 	parentChunkOverlap: number,
 	childChunkSize: number,
 	childChunkOverlap: number,
+	filterOptions?: MarkdownFilterOptions,
 ): { parentChunks: ParentChunk[]; childChunks: ChildChunk[] } {
-	const text = preprocessMarkdown(doc.content);
+	const text = preprocessMarkdown(doc.content, filterOptions);
 
 	if (!text.trim()) return { parentChunks: [], childChunks: [] };
 

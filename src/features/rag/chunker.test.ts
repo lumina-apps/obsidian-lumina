@@ -86,4 +86,22 @@ describe('chunkDocument', () => {
 		expect(result.parentChunks.length).toBeGreaterThan(0);
 		expect(result.childChunks.length).toBeGreaterThan(0);
 	});
+
+	it('filterOptions 전달 시 코드 블록과 이미지를 제외한 본문만 청킹해야 함', () => {
+		const content = [
+			'핵심 문서 텍스트입니다.',
+			'```ts',
+			'const secretCode = 42;',
+			'```',
+			'![image](https://example.com/banner.png)',
+			'![[diagram.png]]',
+		].join('\n');
+		const doc: RawDocument = { path: '/filtered.md', content, mtime: Date.now() };
+		const result = chunkDocument(doc, 200, 20, 100, 10, {
+			excludeCodeBlocks: true,
+			excludeImages: true,
+		});
+		expect(result.parentChunks).toHaveLength(1);
+		expect(result.parentChunks[0].text).toBe('핵심 문서 텍스트입니다.');
+	});
 });

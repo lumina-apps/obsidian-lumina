@@ -3,7 +3,7 @@
  */
 
 import { App, TFile } from 'obsidian';
-import type { ParentChunk, ChildChunk, ParseBinaryFn } from '../../shared/types/rag.types';
+import type { ParentChunk, ChildChunk, ParseBinaryFn, MarkdownFilterOptions } from '../../shared/types/rag.types';
 import { hashString } from '../../shared/utils/hash';
 import { preprocessMarkdown } from '../../shared/utils/markdownPreprocessor';
 import { DocumentParserRouter } from './parsers/DocumentParserRouter';
@@ -26,6 +26,7 @@ export interface ReadAndPrepareResult {
  * @param chunkOverlap 청크 겹침 크기 (문자 수)
  * @param fileHashes 기존 파일별 본문 해시 맵
  * @param indexedPaths 기존 인덱싱된 경로 Set
+ * @param filterOptions 마크다운 콘텐츠 필터 옵션
  * @returns skip=true: 해시 동일, skip=false chunks=[]: 빈 파일, chunks≠[]: 임베딩 필요
  */
 export async function readAndPrepareFile(
@@ -38,6 +39,7 @@ export async function readAndPrepareFile(
 	childChunkOverlap: number,
 	fileHashes: Record<string, number>,
 	indexedPaths: Set<string>,
+	filterOptions?: MarkdownFilterOptions,
 ): Promise<ReadAndPrepareResult> {
 	const ext = file.extension?.toLowerCase() ?? '';
 	let content = '';
@@ -54,7 +56,7 @@ export async function readAndPrepareFile(
 		return { parentChunks: [], childChunks: [], contentHash: 0, skip: false };
 	}
 
-	const preprocessedText = preprocessMarkdown(content);
+	const preprocessedText = preprocessMarkdown(content, filterOptions);
 	const contentHash = hashString(preprocessedText);
 
 	// 해시 동일 + 기존 청크 존재 → 재임베딩 불필요
@@ -68,6 +70,7 @@ export async function readAndPrepareFile(
 		parentChunkOverlap,
 		childChunkSize,
 		childChunkOverlap,
+		filterOptions,
 	);
 
 	return { parentChunks, childChunks, contentHash, skip: false };

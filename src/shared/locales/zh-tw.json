@@ -435,6 +435,18 @@
         "name": "最大檔案大小 (MB)",
         "desc": "排除大於此大小的檔案。0 = 無限制。預設：50 MB"
       },
+      "contentFilter": {
+        "heading": "內容過濾器",
+        "excludeCodeBlocksName": "排除程式碼區塊",
+        "excludeCodeBlocksDesc": "建立索引前從 Markdown 筆記中移除程式碼區塊（```...```、~~~...~~~）。",
+        "excludeImagesName": "排除圖片",
+        "excludeImagesDesc": "建立索引前移除 Markdown 圖片（![...](...)）、Obsidian 圖片嵌入（![[image.png]]）及 HTML <img> 標籤。",
+        "excludeCommentsName": "排除註解",
+        "excludeCommentsDesc": "建立索引前移除 Obsidian 註解（%%...%%）與 HTML 註解（<!--...-->）。",
+        "excludePatternsName": "內容排除模式",
+        "excludePatternsDesc": "建立索引前從筆記內文中排除的正規表示式模式（每行一個）。",
+        "excludePatternsPlaceholder": "例如：\n^> \\[!note\\].*$\n```dataview[\\s\\S]*?```"
+      },
       "reindex": {
         "name": "完全重新索引",
         "desc": "從頭開始對庫中的所有筆記重新建立索引。",

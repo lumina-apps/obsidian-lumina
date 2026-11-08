@@ -9,19 +9,28 @@ import { syncProjectStore } from '../../../core/store/projectStore';
 
 /** 경로 설정 변경 후 자동 재인덱싱 디바운스 타이머 */
 let pathChangeDebounceTimer: number | null = null;
+let pendingContentFilterInvalidation = false;
 const PATH_CHANGE_DEBOUNCE_MS = 1500;
 
 /**
- * 경로 설정(includedPaths / excludedPaths) 변경 시 호출.
- * 1.5초 디바운스 후 indexVault()를 실행하여 변경 사항을 즉시 반영합니다.
+ * 경로 설정(includedPaths / excludedPaths) 또는 콘텐츠 필터 변경 시 호출.
+ * 1.5초 디바운스 후 updateIndex()를 실행하여 변경 사항을 즉시 반영합니다.
  */
-function triggerReindexAfterPathChange(tab: LuminaSettingTab): void {
+function triggerReindexAfterPathChange(tab: LuminaSettingTab, invalidateContentFilter: boolean = false): void {
+	if (invalidateContentFilter) {
+		pendingContentFilterInvalidation = true;
+	}
 	if (pathChangeDebounceTimer !== null) {
 		window.clearTimeout(pathChangeDebounceTimer);
 	}
 	pathChangeDebounceTimer = window.setTimeout(() => {
 		pathChangeDebounceTimer = null;
+		const shouldInvalidateContent = pendingContentFilterInvalidation;
+		pendingContentFilterInvalidation = false;
 		if (!tab.plugin.indexer) return;
+		if (shouldInvalidateContent) {
+			tab.plugin.indexer.invalidateMtimesForContentFilter();
+		}
 		new Notice(t('settings.rag.reindex.started'), 2000);
 		tab.plugin.indexer.updateIndex()
 			.then(() => {
@@ -228,6 +237,67 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 							}
 						}
 					}));
+			});
+
+		// ── 콘텐츠 필터 ───────────────────────────────────────────────────
+		tab.sectionHeading(el, t('settings.rag.contentFilter.heading'));
+
+		new Setting(el)
+			.setName(t('settings.rag.contentFilter.excludeCodeBlocksName'))
+			.setDesc(t('settings.rag.contentFilter.excludeCodeBlocksDesc'))
+			.addToggle(toggle => {
+				toggle
+					.setValue(Boolean(s.excludeCodeBlocks))
+					.onChange(wrapAsync(async (val) => {
+						s.excludeCodeBlocks = val;
+						await tab.saveAndSync();
+						if (tab.plugin.indexer) triggerReindexAfterPathChange(tab, true);
+					}));
+			});
+
+		new Setting(el)
+			.setName(t('settings.rag.contentFilter.excludeImagesName'))
+			.setDesc(t('settings.rag.contentFilter.excludeImagesDesc'))
+			.addToggle(toggle => {
+				toggle
+					.setValue(Boolean(s.excludeImages))
+					.onChange(wrapAsync(async (val) => {
+						s.excludeImages = val;
+						await tab.saveAndSync();
+						if (tab.plugin.indexer) triggerReindexAfterPathChange(tab, true);
+					}));
+			});
+
+		new Setting(el)
+			.setName(t('settings.rag.contentFilter.excludeCommentsName'))
+			.setDesc(t('settings.rag.contentFilter.excludeCommentsDesc'))
+			.addToggle(toggle => {
+				toggle
+					.setValue(Boolean(s.excludeComments))
+					.onChange(wrapAsync(async (val) => {
+						s.excludeComments = val;
+						await tab.saveAndSync();
+						if (tab.plugin.indexer) triggerReindexAfterPathChange(tab, true);
+					}));
+			});
+
+		new Setting(el)
+			.setName(t('settings.rag.contentFilter.excludePatternsName'))
+			.setDesc(t('settings.rag.contentFilter.excludePatternsDesc'))
+			.addTextArea(text => {
+				text
+					.setPlaceholder(t('settings.rag.contentFilter.excludePatternsPlaceholder'))
+					.setValue((s.excludeContentPatterns ?? []).join('\n'))
+					.onChange(wrapAsync(async (val) => {
+						s.excludeContentPatterns = val
+							.split(/\r?\n/)
+							.map(line => line.trim())
+							.filter(line => line.length > 0);
+						await tab.saveAndSync();
+						if (tab.plugin.indexer) triggerReindexAfterPathChange(tab, true);
+					}));
+				text.inputEl.rows = 4;
+				text.inputEl.setCssStyles({ width: '100%', fontFamily: 'var(--font-monospace)' });
 			});
 
 		// ── 인덱싱 상태 표시 (실제 indexer 데이터 연결) ──────────────────

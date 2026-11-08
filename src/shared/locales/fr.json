@@ -435,6 +435,18 @@
         "name": "Taille max. des fichiers (Mo)",
         "desc": "Exclure les fichiers plus volumineux de l'indexation. 0 = pas de limite. Défaut : 50 Mo"
       },
+      "contentFilter": {
+        "heading": "Filtres de contenu",
+        "excludeCodeBlocksName": "Exclure les blocs de code",
+        "excludeCodeBlocksDesc": "Supprime les blocs de code (```...```, ~~~...~~~) des notes Markdown avant l'indexation.",
+        "excludeImagesName": "Exclure les images",
+        "excludeImagesDesc": "Supprime les images Markdown (![...](...)), les images intégrées Obsidian (![[image.png]]) et les balises HTML <img> avant l'indexation.",
+        "excludeCommentsName": "Exclure les commentaires",
+        "excludeCommentsDesc": "Supprime les commentaires Obsidian (%%...%%) et les commentaires HTML (<!--...-->) avant l'indexation.",
+        "excludePatternsName": "Motifs d'exclusion de contenu",
+        "excludePatternsDesc": "Expressions régulières à exclure du contenu de la note avant l'indexation (une par ligne).",
+        "excludePatternsPlaceholder": "ex.\n^> \\[!note\\].*$\n```dataview[\\s\\S]*?```"
+      },
       "reindex": {
         "name": "Réindexation complète",
         "desc": "Réindexez tous les fichiers du coffre à partir de zéro.",

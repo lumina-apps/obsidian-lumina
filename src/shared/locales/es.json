@@ -435,6 +435,18 @@
         "name": "Tamaño máx. de archivo (MB)",
         "desc": "Excluir archivos más grandes que este tamaño de la indexación. 0 = sin límite. Predeterminado: 50 MB"
       },
+      "contentFilter": {
+        "heading": "Filtros de contenido",
+        "excludeCodeBlocksName": "Excluir bloques de código",
+        "excludeCodeBlocksDesc": "Elimina los bloques de código (```...```, ~~~...~~~) de las notas Markdown antes de indexar.",
+        "excludeImagesName": "Excluir imágenes",
+        "excludeImagesDesc": "Elimina imágenes Markdown (![...](...)), incrustaciones de imágenes de Obsidian (![[image.png]]) y etiquetas HTML <img> antes de indexar.",
+        "excludeCommentsName": "Excluir comentarios",
+        "excludeCommentsDesc": "Elimina comentarios de Obsidian (%%...%%) y comentarios HTML (<!--...-->) antes de indexar.",
+        "excludePatternsName": "Patrones de exclusión de contenido",
+        "excludePatternsDesc": "Patrones de expresiones regulares para excluir del contenido de la nota antes de indexar (uno por línea).",
+        "excludePatternsPlaceholder": "p. ej.\n^> \\[!note\\].*$\n```dataview[\\s\\S]*?```"
+      },
       "reindex": {
         "name": "Reindexación completa",
         "desc": "Vuelve a indexar todos los archivos de la bóveda desde cero.",

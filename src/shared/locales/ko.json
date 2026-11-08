@@ -435,6 +435,18 @@
         "name": "최대 파일 크기 (MB)",
         "desc": "이 크기보다 큰 파일은 인덱싱에서 제외합니다. 0 = 제한 없음. 기본값: 50 MB"
       },
+      "contentFilter": {
+        "heading": "콘텐츠 필터",
+        "excludeCodeBlocksName": "코드 블록 제외",
+        "excludeCodeBlocksDesc": "인덱싱 전 마크다운 문서에서 펜스 코드 블록(```...```, ~~~...~~~)을 제거합니다.",
+        "excludeImagesName": "이미지 제외",
+        "excludeImagesDesc": "인덱싱 전 마크다운 이미지(![...](...)), 옵시디언 이미지 임베드(![[image.png]]), HTML <img> 태그를 제거합니다.",
+        "excludeCommentsName": "주석 제외",
+        "excludeCommentsDesc": "인덱싱 전 옵시디언 주석(%%...%%)과 HTML 주석(<!--...-->)을 제거합니다.",
+        "excludePatternsName": "본문 제외 패턴",
+        "excludePatternsDesc": "인덱싱 전 노트 본문에서 제거할 정규식 패턴을 줄바꿈으로 구분하여 입력합니다.",
+        "excludePatternsPlaceholder": "예:\n^> \\[!note\\].*$\n```dataview[\\s\\S]*?```"
+      },
       "reindex": {
         "name": "전체 재인덱싱",
         "desc": "보관소의 모든 노트를 처음부터 다시 인덱싱합니다.",

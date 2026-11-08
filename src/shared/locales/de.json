@@ -435,6 +435,18 @@
         "name": "Max. Dateigröße (MB)",
         "desc": "Dateien, die größer sind, werden von der Indizierung ausgeschlossen. 0 = kein Limit. Standard: 50 MB"
       },
+      "contentFilter": {
+        "heading": "Inhaltsfilter",
+        "excludeCodeBlocksName": "Codeblöcke ausschließen",
+        "excludeCodeBlocksDesc": "Entfernt Codeblöcke (```...```, ~~~...~~~) vor der Indizierung aus Markdown-Notizen.",
+        "excludeImagesName": "Bilder ausschließen",
+        "excludeImagesDesc": "Entfernt Markdown-Bilder (![...](...)), eingebettete Obsidian-Bilder (![[image.png]]) und HTML-<img>-Tags vor der Indizierung.",
+        "excludeCommentsName": "Kommentare ausschließen",
+        "excludeCommentsDesc": "Entfernt Obsidian-Kommentare (%%...%%) und HTML-Kommentare (<!--...-->) vor der Indizierung.",
+        "excludePatternsName": "Inhaltsausschlussmuster",
+        "excludePatternsDesc": "Reguläre Ausdrücke zum Ausschließen aus dem Notizinhalt vor der Indizierung (einer pro Zeile).",
+        "excludePatternsPlaceholder": "z. B.\n^> \\[!note\\].*$\n```dataview[\\s\\S]*?```"
+      },
       "reindex": {
         "name": "Vollständige Neuindexierung",
         "desc": "Indexiert alle Dateien im Vault von Grund auf neu.",

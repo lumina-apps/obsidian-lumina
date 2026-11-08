@@ -481,6 +481,19 @@ export interface TranslationSettingsRagMaxFileSize {
 	desc: string;
 }
 
+export interface TranslationSettingsRagContentFilter {
+	heading: string;
+	excludeCodeBlocksName: string;
+	excludeCodeBlocksDesc: string;
+	excludeImagesName: string;
+	excludeImagesDesc: string;
+	excludeCommentsName: string;
+	excludeCommentsDesc: string;
+	excludePatternsName: string;
+	excludePatternsDesc: string;
+	excludePatternsPlaceholder: string;
+}
+
 export interface TranslationSettingsRagReindex {
   name: string;
   desc: string;
@@ -543,6 +556,7 @@ export interface TranslationSettingsRag {
   syncMode: TranslationSettingsRagSyncMode;
 	minSimilarity: TranslationSettingsRagMinSimilarity;
 	maxFileSize: TranslationSettingsRagMaxFileSize;
+	contentFilter: TranslationSettingsRagContentFilter;
 	reindex: TranslationSettingsRagReindex;
   status: TranslationSettingsRagStatus;
   init: Partial<TranslationSettingsRagInit>;

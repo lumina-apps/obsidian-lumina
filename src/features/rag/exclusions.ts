@@ -11,6 +11,36 @@ export const DEFAULT_EXCLUDED_PATHS: readonly string[] = [
 	'backups',
 ];
 
+function globToRegExp(glob: string): RegExp {
+	let regexStr = '^';
+	let i = 0;
+	while (i < glob.length) {
+		const c = glob[i];
+		if (c === '*') {
+			if (glob[i + 1] === '*') {
+				if (glob[i + 2] === '/') {
+					regexStr += '(?:.+/)?';
+					i += 3;
+					continue;
+				}
+				regexStr += '.*';
+				i += 2;
+				continue;
+			}
+			regexStr += '[^/]*';
+		} else if (c === '?') {
+			regexStr += '[^/]';
+		} else if ('+^$()[]{}|.\\'.includes(c)) {
+			regexStr += '\\' + c;
+		} else {
+			regexStr += c;
+		}
+		i++;
+	}
+	regexStr += '$';
+	return new RegExp(regexStr);
+}
+
 function matchesPrefix(filePath: string, prefix: string): boolean {
 	let normalizedPrefix = prefix.trim().replace(/\\/g, '/');
 	if (normalizedPrefix.startsWith('/')) {
@@ -24,6 +54,16 @@ function matchesPrefix(filePath: string, prefix: string): boolean {
 	let normalizedFilePath = filePath.trim().replace(/\\/g, '/');
 	if (normalizedFilePath.startsWith('/')) {
 		normalizedFilePath = normalizedFilePath.slice(1);
+	}
+
+	if (normalizedPrefix.includes('*') || normalizedPrefix.includes('?')) {
+		const regex = globToRegExp(normalizedPrefix);
+		if (regex.test(normalizedFilePath)) return true;
+		if (!normalizedPrefix.includes('/')) {
+			const basename = normalizedFilePath.slice(normalizedFilePath.lastIndexOf('/') + 1);
+			return regex.test(basename);
+		}
+		return false;
 	}
 
 	return normalizedFilePath === normalizedPrefix || normalizedFilePath.startsWith(normalizedPrefix + '/');

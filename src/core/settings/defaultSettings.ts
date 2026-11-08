@@ -75,6 +75,10 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		minSimilarity: 0.0,
 		syncMode: 'watch',
 		maxFileSizeMB: 50,
+		excludeCodeBlocks: false,
+		excludeImages: false,
+		excludeComments: false,
+		excludeContentPatterns: [],
 	},
 
 	// ── Section 4: Misc & Extensions ─────────────────────────────────────────
