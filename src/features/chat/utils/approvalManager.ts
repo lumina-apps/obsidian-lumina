@@ -10,7 +10,7 @@ export interface DiffChunk {
 	isTable?: boolean;
 }
 
-export type ActionType = 'edit' | 'create_note' | 'delete' | 'rename' | 'frontmatter' | 'attachment' | 'execute' | 'shell' | 'mcp_tool';
+export type ActionType = 'edit' | 'create_note' | 'delete' | 'rename' | 'frontmatter' | 'attachment' | 'shell' | 'mcp_tool';
 
 export interface ApprovalRequest {
 	id: string;

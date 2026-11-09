@@ -734,7 +734,6 @@
       "renameNote": "✏️ 是否要將此筆記移動/重新命名為:",
       "updateFrontmatter": "🏷️ 是否要更新 Frontmatter 的鍵:",
       "saveAttachment": "📎 是否要儲存附件？ 大小: {{size}} 位元組",
-      "executeCode": "⚡ 是否要執行此程式碼？",
       "shellCommand": "💻 您要在桌面作業系統上執行此 Shell 指令嗎？",
       "accept": "批准",
       "reject": "拒絕",
@@ -1010,14 +1009,8 @@
     "save_attachment": {
       "desc": "將 Base64 字串儲存為二進位附件檔案。"
     },
-    "execute_code": {
-      "desc": "在安全沙盒中執行 JavaScript/TypeScript 程式碼。"
-    },
     "run_shell_command": {
       "desc": "在桌面作業系統上執行終端機 Shell 命令。請謹慎使用。"
-    },
-    "run_note_code_block": {
-      "desc": "在沙盒中執行筆記中的特定程式碼區塊。"
     },
     "list_tags": {
       "desc": "列出儲存庫中使用的所有標籤。"

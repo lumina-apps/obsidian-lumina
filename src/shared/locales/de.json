@@ -734,7 +734,6 @@
       "renameNote": "✏️ Möchten Sie diese Notiz VERSCHIEBEN/UMBENENNEN nach:",
       "updateFrontmatter": "🏷️ Möchten Sie das FRONTMATTER für folgenden Schlüssel AKTUALISIEREN:",
       "saveAttachment": "📎 Möchten Sie den ANHANG SPEICHERN? Größe: {{size}} Bytes",
-      "executeCode": "⚡ Möchten Sie diesen Code AUSFÜHREN?",
       "shellCommand": "💻 Möchten Sie diesen Shell-Befehl auf dem Desktop-Betriebssystem AUSFÜHREN?",
       "accept": "Akzeptieren",
       "reject": "Ablehnen",
@@ -1010,14 +1009,8 @@
     "save_attachment": {
       "desc": "Speichert eine binäre Anhangsdatei aus einem Base64-String."
     },
-    "execute_code": {
-      "desc": "Führt JavaScript-/TypeScript-Code in einer sicheren Sandbox aus."
-    },
     "run_shell_command": {
       "desc": "Führt einen Terminal-Shell-Befehl auf dem Desktop-Betriebssystem aus. Mit Vorsicht verwenden."
-    },
-    "run_note_code_block": {
-      "desc": "Führt einen bestimmten Codeblock aus einer Notiz in der Sandbox aus."
     },
     "list_tags": {
       "desc": "Listet alle im Vault verwendeten Tags auf."

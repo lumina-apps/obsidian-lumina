@@ -19,7 +19,7 @@
 | **RAG Sin Configuración** | Cuenta con incrustaciones locales 100% offline para evitar filtraciones de datos. Indexa automáticamente tu bóveda en tiempo real sin configuraciones complejas. |
 | **Descubrimiento Inteligente (Smart Discovery)** | Encuentra instantáneamente documentos altamente relevantes para la nota actual usando búsqueda semántica, detecta y advierte sobre posibles duplicados, e inserta etiquetas recomendadas y enlaces relacionados con un solo clic. |
 | **Acciones Rápidas de IA en Línea** | Resalta texto en el editor para resumir, traducir o corregir instantáneamente sin interrumpir tu flujo de escritura. |
-| **Modo de Agente Inteligente** | El LLM planifica y ejecuta tareas complejas como búsqueda, creación, modificación, eliminación/movimiento de notas y ejecución de código en un sandbox usando varias herramientas MCP integradas. |
+| **Modo de Agente Inteligente** | El LLM planifica y ejecuta tareas complejas como búsqueda, creación, modificación y eliminación/movimiento de notas usando varias herramientas MCP integradas. |
 | **Integración MCP (Cliente y Servidor)** | Integración bidireccional y completa que permite usar herramientas externas dentro de Obsidian (Cliente) o dejar que las IA externas interactúen con tus notas (Servidor). |
 
 ---
@@ -99,9 +99,9 @@ Lumina ofrece dos modos según tu nivel de experiencia. ¡Elige el que más te g
 <details>
 <summary><b>Modo de Agente Inteligente</b></summary>
 
-- **Descripción:** El LLM determina y coordina de forma autónoma varias herramientas MCP integradas (buscar, leer, escribir, RAG, código sandbox, notas diarias).
+- **Descripción:** El LLM determina y coordina de forma autónoma varias herramientas MCP integradas (buscar, leer, escribir, RAG, notas diarias).
 - **Soporte para LLM Local:** Parser dedicado para prompts basados en texto para modelos locales.
-- **Seguridad Robusta y Control del Usuario (Human-in-the-Loop):** Las operaciones destructivas como la modificación de contenido, eliminación de archivos o ejecución de código no pueden ser procesadas por el agente por sí solo. Las modificaciones de archivos requieren una **revisión Diff en línea** en el editor con aceptación/rechazo fragmento por fragmento, mientras que acciones sensibles como la creación, eliminación de archivos o ejecución de código requieren aprobación explícita mediante **tarjetas de aprobación en línea** en el panel de chat. (Copias de seguridad automáticas de protección contra sobreescritura incluidas)
+- **Seguridad Robusta y Control del Usuario (Human-in-the-Loop):** Las operaciones destructivas como la modificación de contenido, eliminación de archivos o ejecución de comandos de terminal no pueden ser procesadas por el agente por sí solo. Las modificaciones de archivos requieren una **revisión Diff en línea** en el editor con aceptación/rechazo fragmento por fragmento, mientras que acciones sensibles como la creación, eliminación de archivos o comandos de terminal requieren aprobación explícita mediante **tarjetas de aprobación en línea** en el panel de chat. (Copias de seguridad automáticas de protección contra sobreescritura incluidas)
 - **Límites de Uso:** Límites predeterminados para evitar bucles infinitos.
 - **Cómo usar:** Escribe `/mcp` en el chat o activa el Modo Agente desde el icono superior.
 </details>
@@ -118,12 +118,12 @@ Lumina ofrece dos modos según tu nivel de experiencia. ¡Elige el que más te g
   - **Búsqueda Web:** `lumina_web_search` (Búsqueda de información en Internet en tiempo real utilizando varios motores de búsqueda como Tavily, Exa, Google, con soporte de truncamiento inteligente)
   - **Lectura y Búsqueda:** `read_active_note`, `read_note` (admite rangos de líneas `startLine`/`endLine`), `search_notes` (admite filtrado de etiquetas), `grep_search` (búsqueda de líneas por texto/regex en toda la bóveda), `glob_files` (coincidencia de rutas de archivo con comodines, ej. `**/*.md`), `list_folders` (listar carpetas), `get_outgoing_links` (enlaces salientes e incrustaciones), `list_tasks` (listar tareas markdown con filtro), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata` (incluye encabezados, enlaces, incrustaciones), `list_attachments`, `list_tags`, `query_metadata` para proporcionar un contexto amplio a la IA.
   - **Escritura y Modificación:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (crear/modificar notas/lienzos, generar notas MOC y guardar archivos binarios).
-  - **Gestión y Ejecución:** `open_note` (abrir nota/archivo al instante en pestaña del editor), `delete_note`, `move_note` (mover/renombrar), `execute_code`, `run_note_code_block` (ejecutar código en sandbox), `run_shell_command` (ejecutar comandos shell de terminal en el SO de escritorio), `show_notice` (mostrar notificaciones de Obsidian).
+  - **Gestión y Ejecución:** `open_note` (abrir nota/archivo al instante en pestaña del editor), `delete_note`, `move_note` (mover/renombrar), `run_shell_command` (ejecutar comandos shell de terminal en el SO de escritorio), `show_notice` (mostrar notificaciones de Obsidian).
   - **Notas Diarias:** `read_daily_note`, `append_to_daily_note` (lectura/escritura para la nota diaria de hoy).
   - **Sincronización MCP para CLI de Terminal Externa:** Sincroniza opcionalmente archivos de configuración (`.claude/mcp.json`, `opencode.json`, `codex.json`) para que las herramientas de la bóveda de Lumina estén disponibles desde la terminal externa.
-  - **Seguridad de la Bóveda y Control del Usuario (Human-in-the-Loop):** Tarjetas de aprobación en línea para operaciones sensibles, revisión Diff en línea en el editor para modificación de archivos, copias de seguridad automáticas de protección contra sobreescritura y ejecución de código aislada en sandbox.
+  - **Seguridad de la Bóveda y Control del Usuario (Human-in-the-Loop):** Tarjetas de aprobación en línea para operaciones sensibles, revisión Diff en línea en el editor para modificación de archivos y copias de seguridad automáticas de protección contra sobreescritura.
 - **Cómo usar:** Habilita las características MCP en la configuración del plugin y configura el método de transporte cliente/servidor (SSE).
-- **Nota:** *Lumina cuenta con mecanismos de seguridad de múltiples capas, que incluyen la ejecución de código en sandbox, revisión Diff en línea y aprobación del usuario (Human-in-the-Loop), copias de seguridad automáticas durante las modificaciones de archivos (protección contra sobreescritura) y límites para evitar llamadas descontroladas a herramientas o bucles infinitos. Sin embargo, dado que el agente y la IA externa acceden directamente a tu bóveda, recomendamos inicialmente monitorear las operaciones de cerca.*
+- **Nota:** *Lumina cuenta con mecanismos de seguridad de múltiples capas, que incluyen la revisión Diff en línea y aprobación del usuario (Human-in-the-Loop), copias de seguridad automáticas durante las modificaciones de archivos (protección contra sobreescritura) y límites para evitar llamadas descontroladas a herramientas o bucles infinitos. Sin embargo, dado que el agente y la IA externa acceden directamente a tu bóveda, recomendamos inicialmente monitorear las operaciones de cerca.*
 </details>
 
 ---

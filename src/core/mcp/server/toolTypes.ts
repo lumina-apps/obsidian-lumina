@@ -26,8 +26,6 @@ export type ToolName =
 	| 'get_note_metadata'
 	| 'list_attachments'
 	| 'save_attachment'
-	| 'execute_code'
-	| 'run_note_code_block'
 	| 'list_tags'
 	| 'create_canvas'
 	| 'generate_moc'

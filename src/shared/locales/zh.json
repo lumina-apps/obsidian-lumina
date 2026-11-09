@@ -734,7 +734,6 @@
       "renameNote": "✏️ 是否要将此笔记移动/重命名为:",
       "updateFrontmatter": "🏷️ 是否要更新 Frontmatter 的键:",
       "saveAttachment": "📎 是否要保存附件？ 大小: {{size}} 字节",
-      "executeCode": "⚡ 是否要执行此代码？",
       "shellCommand": "💻 您要在桌面操作系统上执行此 Shell 命令吗？",
       "accept": "批准",
       "reject": "拒绝",
@@ -1010,14 +1009,8 @@
     "save_attachment": {
       "desc": "将 Base64 字符串保存为二进制附件文件。"
     },
-    "execute_code": {
-      "desc": "在安全沙盒中执行 JavaScript/TypeScript 代码。"
-    },
     "run_shell_command": {
       "desc": "在桌面操作系统上执行终端 Shell 命令。请谨慎使用。"
-    },
-    "run_note_code_block": {
-      "desc": "在沙盒中运行笔记中的特定代码块。"
     },
     "list_tags": {
       "desc": "列出保管库中使用的所有标签。"

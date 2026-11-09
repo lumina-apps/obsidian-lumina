@@ -734,7 +734,6 @@
       "renameNote": "✏️ ¿Quieres MOVER/RENOMBRAR esta nota a:",
       "updateFrontmatter": "🏷️ ¿Quieres ACTUALIZAR el FRONTMATTER de la clave:",
       "saveAttachment": "📎 ¿Quieres GUARDAR el ADJUNTO? Tamaño: {{size}} bytes",
-      "executeCode": "⚡ ¿Quieres EJECUTAR este código?",
       "shellCommand": "💻 ¿Deseas EJECUTAR este comando de shell en el sistema operativo de escritorio?",
       "accept": "Aceptar",
       "reject": "Rechazar",
@@ -1010,14 +1009,8 @@
     "save_attachment": {
       "desc": "Guarda un archivo adjunto binario a partir de una cadena en base64."
     },
-    "execute_code": {
-      "desc": "Ejecuta código JavaScript/TypeScript en un entorno seguro (sandbox)."
-    },
     "run_shell_command": {
       "desc": "Ejecuta un comando de terminal/shell en el sistema operativo de escritorio. Úselo con precaución."
-    },
-    "run_note_code_block": {
-      "desc": "Ejecuta un bloque de código específico de una nota en el entorno seguro (sandbox)."
     },
     "list_tags": {
       "desc": "Lista todas las etiquetas utilizadas en la bóveda."

@@ -852,7 +852,6 @@ export interface TranslationUiMessages {
     renameNote: string;
     updateFrontmatter: string;
     saveAttachment: string;
-    executeCode: string;
     shellCommand: string;
     accept: string;
     reject: string;
@@ -1106,9 +1105,7 @@ export interface TranslationMcpServerTools {
   get_note_metadata: { desc: string };
   list_attachments: { desc: string };
   save_attachment: { desc: string };
-  execute_code: { desc: string };
   run_shell_command: { desc: string };
-  run_note_code_block: { desc: string };
   list_tags: { desc: string };
   create_canvas: { desc: string };
   generate_moc: { desc: string };

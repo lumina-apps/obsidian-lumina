@@ -734,7 +734,6 @@
       "renameNote": "✏️ Voulez-vous DÉPLACER/RENOMMER cette note vers :",
       "updateFrontmatter": "🏷️ Voulez-vous METTRE À JOUR le FRONTMATTER pour la clé :",
       "saveAttachment": "📎 Voulez-vous ENREGISTRER la PIÈCE JOINTE ? Taille : {{size}} octets",
-      "executeCode": "⚡ Voulez-vous EXÉCUTER ce code ?",
       "shellCommand": "💻 Voulez-vous EXÉCUTER cette commande shell sur le système d'exploitation de bureau ?",
       "accept": "Accepter",
       "reject": "Rejeter",
@@ -1010,14 +1009,8 @@
     "save_attachment": {
       "desc": "Enregistre un fichier joint binaire à partir d'une chaîne base64."
     },
-    "execute_code": {
-      "desc": "Exécute du code JavaScript/TypeScript dans un bac à sable sécurisé."
-    },
     "run_shell_command": {
       "desc": "Exécute une commande shell de terminal sur le système d'exploitation de bureau. À utiliser avec précaution."
-    },
-    "run_note_code_block": {
-      "desc": "Exécute un bloc de code spécifique d'une note dans le bac à sable."
     },
     "list_tags": {
       "desc": "Liste tous les tags utilisés dans le coffre."

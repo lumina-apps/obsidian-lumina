@@ -71,7 +71,6 @@
 		if (req.actionType === 'rename') return $tStore("uiMessages.actionApproval.renameNote") || "Rename note";
 		if (req.actionType === 'frontmatter') return $tStore("uiMessages.actionApproval.updateFrontmatter") || "Update frontmatter";
 		if (req.actionType === 'attachment') return $tStore("uiMessages.actionApproval.saveAttachment", { size: req.metadata?.sizeBytes?.toString() || '0' }) || "Save attachment";
-		if (req.actionType === 'execute') return $tStore("uiMessages.actionApproval.executeCode") || "Execute code";
 		if (req.actionType === 'shell') return $tStore("uiMessages.actionApproval.shellCommand") || "Execute shell command";
 		if (req.actionType === 'mcp_tool') return $tStore("uiMessages.actionApproval.mcpToolDesc") || "The agent wants to use an external tool.";
 		return "Unknown action";
@@ -210,10 +209,6 @@
 
 					{#if req.actionType === 'frontmatter'}
 						<p><strong>{req.metadata?.key} &rarr; {req.metadata?.value}</strong></p>
-					{/if}
-
-					{#if req.actionType === 'execute' && req.metadata?.code}
-						<pre class="lumina-inline-approval-code">{req.metadata.code}</pre>
 					{/if}
 
 					{#if req.actionType === 'shell' && req.metadata?.code}

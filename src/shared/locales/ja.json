@@ -734,7 +734,6 @@
       "renameNote": "✏️ このノートを以下のパスに移動/名前変更しますか:",
       "updateFrontmatter": "🏷️ フロントマターを更新しますか:",
       "saveAttachment": "📎 添付ファイルを保存しますか？ サイズ: {{size}} バイト",
-      "executeCode": "⚡ このコードを実行しますか？",
       "shellCommand": "💻 デスクトップOSでこのシェルコマンドを実行しますか？",
       "accept": "承認",
       "reject": "拒否",
@@ -1010,14 +1009,8 @@
     "save_attachment": {
       "desc": "Base64文字列からバイナリ添付ファイルを保存します。"
     },
-    "execute_code": {
-      "desc": "安全なサンドボックス内でJavaScript/TypeScriptコードを実行します。"
-    },
     "run_shell_command": {
       "desc": "デスクトップOS上でターミナルのシェルコマンドを実行します。注意して使用してください。"
-    },
-    "run_note_code_block": {
-      "desc": "ノート内の特定のコードブロックをサンドボックス内で実行します。"
     },
     "list_tags": {
       "desc": "保管庫内で使用されているすべてのタグを一覧表示します。"

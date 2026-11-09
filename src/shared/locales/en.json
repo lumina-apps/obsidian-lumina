@@ -734,7 +734,6 @@
       "renameNote": "✏️ Do you want to MOVE/RENAME this note to:",
       "updateFrontmatter": "🏷️ Do you want to UPDATE FRONTMATTER for key:",
       "saveAttachment": "📎 Do you want to SAVE ATTACHMENT? Size: {{size}} bytes",
-      "executeCode": "⚡ Do you want to EXECUTE this code?",
       "shellCommand": "💻 Do you want to EXECUTE this shell command on the desktop OS?",
       "accept": "Accept",
       "reject": "Reject",
@@ -1010,14 +1009,8 @@
     "save_attachment": {
       "desc": "Save a binary attachment file from base64 string."
     },
-    "execute_code": {
-      "desc": "Execute javascript/typescript code in a secure sandbox."
-    },
     "run_shell_command": {
       "desc": "Execute a terminal shell command on the desktop OS. Use with caution."
-    },
-    "run_note_code_block": {
-      "desc": "Run a specific code block from a note in the sandbox."
     },
     "list_tags": {
       "desc": "List all tags used in the vault."

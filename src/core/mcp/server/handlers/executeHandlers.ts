@@ -1,101 +1,12 @@
-import { TFile, Platform } from 'obsidian';
-import { sanitizeFilePath } from '../../../../shared/utils/fileUtils';
-import { getStringArg, blockIfPathNotAllowed } from '../handlerHelpers';
+import { Platform } from 'obsidian';
+import { getStringArg } from '../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
 import type { PathGuard } from '../pathGuard';
 import { approvalManager } from '../../../../features/chat/utils/approvalManager';
-import { McpSandbox } from '../../mcpSandbox';
 import { getSpawnFunction, getEnhancedEnv, ProcessManager } from '../../../llm-providers/cli/process-manager';
 
-/** 실행/셸 승인 대기 최대 시간 (5분) */
+/** 셸 승인 대기 최대 시간 (5분) */
 const APPROVAL_TIMEOUT_MS = 5 * 60 * 1000;
-
-export const executeCodeHandler = async (
-	args: ToolArguments,
-	ctx: ToolHandlerContext,
-	_pathGuard: PathGuard,
-): Promise<ToolResult> => {
-	const code = getStringArg(args, 'code');
-	if (!code.trim()) {
-		return { isError: true, content: [{ type: 'text', text: 'code parameter is required.' }] };
-	}
-
-	const approved = await approvalManager.requestActionApproval(
-		'execute',
-		'Code Sandbox',
-		{ code },
-		{ timeoutMs: APPROVAL_TIMEOUT_MS, ...(ctx.signal ? { signal: ctx.signal } : {}) },
-	);
-	if (!approved) {
-		return { isError: true, content: [{ type: 'text', text: 'User explicitly rejected code execution. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.' }] };
-	}
-
-	try {
-		const result = await McpSandbox.executeCode(code, {}, { timeoutMs: 5000 });
-		if (result.success) {
-			return { content: [{ type: 'text', text: `Execution successful.\nResult:\n${JSON.stringify(result.data, null, 2)}` }] };
-		} else {
-			return { isError: true, content: [{ type: 'text', text: `Execution failed.\nError:\n${result.error}` }] };
-		}
-	} catch (e) {
-		return { isError: true, content: [{ type: 'text', text: `Sandbox Error: ${e}` }] };
-	}
-};
-
-export const runNoteCodeBlockHandler = async (
-	args: ToolArguments,
-	ctx: ToolHandlerContext,
-	pathGuard: PathGuard,
-): Promise<ToolResult> => {
-	const rawPath = getStringArg(args, 'path');
-	if (!rawPath.trim()) {
-		return { isError: true, content: [{ type: 'text', text: 'path is required.' }] };
-	}
-	const path = sanitizeFilePath(rawPath);
-	const blockIndex = typeof args.blockIndex === 'number' ? args.blockIndex : parseInt(String(args.blockIndex), 10);
-
-	const blocked = blockIfPathNotAllowed(path, ctx, pathGuard);
-	if (blocked) return blocked;
-
-	const file = ctx.plugin.app.vault.getAbstractFileByPath(path);
-	if (!(file instanceof TFile)) {
-		return { isError: true, content: [{ type: 'text', text: `File not found: ${path}` }] };
-	}
-
-	const content = await ctx.plugin.app.vault.read(file);
-	
-	// 간단한 코드블록 추출 (``` 언어 ... ```)
-	// 들여쓰기, 숫자/하이픈 포함 언어명(es2024, c-sharp), 언어 뒤 속성 등을 허용
-	const blockRegex = /^[\t ]*```[a-zA-Z0-9_-]*[^\n]*\r?\n([\s\S]*?)^[\t ]*```/gm;
-	const matches = [...content.matchAll(blockRegex)];
-	
-	if (isNaN(blockIndex) || blockIndex < 0 || blockIndex >= matches.length) {
-		return { isError: true, content: [{ type: 'text', text: `Code block index ${blockIndex} is invalid or out of bounds. Found ${matches.length} blocks.` }] };
-	}
-
-	const code = matches[blockIndex][1];
-
-	const approved = await approvalManager.requestActionApproval(
-		'execute',
-		`Code Block [${blockIndex}] in ${path}`,
-		{ code },
-		{ timeoutMs: APPROVAL_TIMEOUT_MS, ...(ctx.signal ? { signal: ctx.signal } : {}) },
-	);
-	if (!approved) {
-		return { isError: true, content: [{ type: 'text', text: 'User explicitly rejected code block execution. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.' }] };
-	}
-
-	try {
-		const result = await McpSandbox.executeCode(code, {}, { timeoutMs: 5000 });
-		if (result.success) {
-			return { content: [{ type: 'text', text: `Execution successful.\nResult:\n${JSON.stringify(result.data, null, 2)}` }] };
-		} else {
-			return { isError: true, content: [{ type: 'text', text: `Execution failed.\nError:\n${result.error}` }] };
-		}
-	} catch (e) {
-		return { isError: true, content: [{ type: 'text', text: `Sandbox Error: ${e}` }] };
-	}
-};
 
 export const runShellCommandHandler = async (
 	args: ToolArguments,

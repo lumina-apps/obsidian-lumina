@@ -242,17 +242,6 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 			}
 		},
 		{
-			name: 'execute_code',
-			description: t('mcpServerTools.execute_code.desc'),
-			inputSchema: {
-				type: 'object',
-				properties: {
-					code: { type: 'string', description: 'JavaScript/TypeScript code to execute' }
-				},
-				required: ['code']
-			}
-		},
-		{
 			name: 'run_shell_command',
 			description: t('mcpServerTools.run_shell_command.desc'),
 			inputSchema: {
@@ -262,18 +251,6 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 					cwd: { type: 'string', description: 'Optional. The working directory for the command' }
 				},
 				required: ['command']
-			}
-		},
-		{
-			name: 'run_note_code_block',
-			description: t('mcpServerTools.run_note_code_block.desc'),
-			inputSchema: {
-				type: 'object',
-				properties: {
-					path: { type: 'string', description: 'Path to the note containing the code block' },
-					blockIndex: { type: 'number', description: '0-based index of the code block in the note to execute' }
-				},
-				required: ['path', 'blockIndex']
 			}
 		},
 		{

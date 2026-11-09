@@ -734,7 +734,6 @@
       "renameNote": "✏️ Vuoi SPOSTARE/RINOMINARE questa nota in:",
       "updateFrontmatter": "🏷️ Vuoi AGGIORNARE il FRONTMATTER per la chiave:",
       "saveAttachment": "📎 Vuoi SALVARE l'ALLEGATO? Dimensioni: {{size}} byte",
-      "executeCode": "⚡ Vuoi ESEGUIRE questo codice?",
       "shellCommand": "💻 Vuoi ESEGUIRE questo comando shell sul sistema operativo desktop?",
       "accept": "Accetta",
       "reject": "Rifiuta",
@@ -1010,14 +1009,8 @@
     "save_attachment": {
       "desc": "Salva un file allegato binario da una stringa base64."
     },
-    "execute_code": {
-      "desc": "Esegue codice JavaScript/TypeScript in una sandbox sicura."
-    },
     "run_shell_command": {
       "desc": "Esegue un comando shell del terminale sul sistema operativo desktop. Usare con cautela."
-    },
-    "run_note_code_block": {
-      "desc": "Esegue uno specifico blocco di codice di una nota nella sandbox."
     },
     "list_tags": {
       "desc": "Elenca tutti i tag utilizzati nel vault."

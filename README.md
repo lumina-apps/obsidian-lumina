@@ -19,7 +19,7 @@
 | **Zero-Config RAG** | Features 100% offline local embeddings to prevent data leaks. Automatically indexes your vault in real-time without complex configurations. |
 | **Smart Discovery** | Instantly finds documents highly relevant to the note currently being written using semantic search, detects and warns about potential duplicates, and inserts recommended tags and related links with a single click. |
 | **Inline AI Quick Actions** | Highlight text in the editor to instantly summarize, translate, or proofread without interrupting your writing flow. |
-| **Smart Agent Mode** | LLMs autonomously plan and execute complex tasks such as note searching, creation, modification, deletion/move, and code execution in a sandbox using built-in MCP tools. |
+| **Smart Agent Mode** | LLMs autonomously plan and execute complex tasks such as note searching, creation, modification, deletion/move, and terminal management using built-in MCP tools. |
 | **MCP Integration (Client & Server)** | A bidirectional, full-stack integration that allows you to use external tools within Obsidian (Client), or let external AIs interact with your notes (Server). |
 
 ---
@@ -100,9 +100,9 @@ Lumina offers two tracks tailored to your skill level. Choose the one that suits
 <details>
 <summary><b>Smart Agent Mode</b></summary>
 
-- **Description:** When activated, the LLM autonomously determines and orchestrates various built-in MCP tools to perform tasks. It can complete complex, multi-step operations by combining note searching, reading, writing, RAG retrieval, sandbox code execution, and daily notes integration.
+- **Description:** When activated, the LLM autonomously determines and orchestrates various built-in MCP tools to perform tasks. It can complete complex, multi-step operations by combining note searching, reading, writing, RAG retrieval, and daily notes integration.
 - **Local LLM Support:** Implements a dedicated parser that supports text-based tool prompting, allowing the agent to function smoothly even in Local LLM environments, not just with high-performance cloud models.
-- **Robust Security & User Control (Human-in-the-Loop):** Destructive operations such as content modification, file deletion, or code execution cannot be processed by the agent alone. File modifications require **inline Diff review** in the editor with chunk-by-chunk accept/reject, while sensitive actions like file creation, deletion, or code execution require explicit approval via **inline approval cards** in the chat panel. (Automatic overwrite-protection backups included)
+- **Robust Security & User Control (Human-in-the-Loop):** Destructive operations such as content modification, file deletion, or terminal commands cannot be processed by the agent alone. File modifications require **inline Diff review** in the editor with chunk-by-chunk accept/reject, while sensitive actions like file creation, deletion, or terminal commands require explicit approval via **inline approval cards** in the chat panel. (Automatic overwrite-protection backups included)
 - **Cost Prevention & Limits:** Default limits on tool usage count and append character length are applied to prevent AI malfunctions or infinite loops. (These limits can be freely adjusted by the user in advanced settings.)
 - **How to use:** Type the `/mcp` command in the chat or use the top icon to open the quick popup and enable 'Agent Mode'. (The internal Lumina server will automatically start as needed to execute tools.)
 </details>
@@ -119,12 +119,12 @@ Lumina offers two tracks tailored to your skill level. Choose the one that suits
   - **Web Search:** \`lumina_web_search\` (Search the web using various providers like Tavily, Exa, Google with smart truncation to save API costs).
   - **Read & Search:** `read_active_note`, `read_note` (supports line ranges `startLine`/`endLine`), `search_notes` (supports tag filtering), `grep_search` (regex/text search with line numbers across vault files), `glob_files` (wildcard file pattern matching, e.g. `**/*.md`), `list_folders` (list folders and subfolders), `get_outgoing_links` (inspect outgoing links & embeds with resolution status), `list_tasks` (aggregate markdown task items with completion filter), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata` (includes outline headings, links, embeds), `list_attachments`, `list_tags`, `query_metadata` to provide extensive context to the AI.
   - **Write & Modify:** `create_note`, `append_to_note`, `replace_note`, `patch_note` (supports atomic batch patches and `replaceAll`), `update_frontmatter` (supports smart value parsing and key deletion), `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (create/modify notes/canvases, generate Map of Content notes, auto-link mentions, and save binary files).
-  - **Manage & Execute:** `open_note` (instantly open note/file in Obsidian editor tab), `delete_note`, `move_note` (move/rename), `execute_code`, `run_note_code_block` (execute code within a sandbox), `run_shell_command` (execute terminal shell commands on desktop OS), `show_notice` (display Obsidian UI notifications).
+  - **Manage & Execute:** `open_note` (instantly open note/file in Obsidian editor tab), `delete_note`, `move_note` (move/rename), `run_shell_command` (execute terminal shell commands on desktop OS), `show_notice` (display Obsidian UI notifications).
   - **Daily Notes:** `read_daily_note`, `append_to_daily_note` (read/write integration for daily notes with optional `date` support).
   - **External Terminal CLI MCP Sync:** Optionally generates local MCP server configs (`.claude/mcp.json`, `opencode.json`, `codex.json`) so CLI tools in external terminals can access Lumina's vault tools.
-  - **Vault Safety & User Control (Human-in-the-Loop):** Sensitive actions require explicit confirmation via inline approval cards, file edits feature editor inline Diff review, automatic backups are created during file modifications, and code execution is isolated within a secure sandbox environment.
+  - **Vault Safety & User Control (Human-in-the-Loop):** Sensitive actions require explicit confirmation via inline approval cards, file edits feature editor inline Diff review, and automatic backups are created during file modifications.
 - **How to use:** Enable MCP features in the plugin settings and configure the client/server transport method (SSE).
-- **Note:** *Lumina comes with multi-layered safety mechanisms including sandbox code execution, inline Diff review and user approval cards (Human-in-the-Loop), automatic backups during file modifications (overwrite protection), and limits to prevent infinite loops and runaway tool calls. However, since the agent and external AI directly access your vault, we recommend initially monitoring operations closely.*
+- **Note:** *Lumina comes with multi-layered safety mechanisms including inline Diff review and user approval cards (Human-in-the-Loop), automatic backups during file modifications (overwrite protection), and limits to prevent infinite loops and runaway tool calls. However, since the agent and external AI directly access your vault, we recommend initially monitoring operations closely.*
 </details>
 
 ---

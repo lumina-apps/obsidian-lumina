@@ -19,7 +19,7 @@
 | **Zero-Config-RAG** | Bietet 100% Offline-Lokale-Embeddings, um Datenlecks zu verhindern. Indiziert deinen Vault automatisch in Echtzeit ohne komplexe Konfigurationen. |
 | **Smart Discovery** | Findet semantisch relevante Dokumente zur aktuellen Notiz, warnt vor Duplikaten und fügt empfohlene Tags sowie Links mit einem Klick ein. |
 | **Inline-KI-Schnellaktionen** | Markiere Text im Editor, um ihn sofort zusammenzufassen, zu übersetzen oder Korrektur zu lesen, ohne deinen Schreibfluss zu unterbrechen. |
-| **Smart-Agent-Modus** | AI plant und führt komplexe Aufgaben wie Suchen, Erstellen, Ändern, Löschen/Verschieben von Notizen und Codeausführung im Sandbox-Modus mit verschiedenen integrierten MCP-Tools autonom aus. |
+| **Smart-Agent-Modus** | AI plant und führt komplexe Aufgaben wie Suchen, Erstellen, Ändern, Löschen/Verschieben von Notizen und Shell-Befehlsausführung mit verschiedenen integrierten MCP-Tools autonom aus. |
 | **MCP-Integration (Client & Server)** | Eine bidirektionale Full-Stack-Integration, mit der Sie externe Tools in Obsidian verwenden (Client) oder externe AIs mit Ihren Notizen interagieren lassen (Server) können. |
 
 ---
@@ -99,9 +99,9 @@ Lumina bietet zwei auf dein Können zugeschnittene Modi. Wähle die Methode, die
 <details>
 <summary><b>Smart-Agent-Modus</b></summary>
 
-- **Beschreibung:** Ermöglicht der KI, Aufgaben autonom mit integrierten MCP-Tools (Suchen, Lesen, Schreiben, RAG, Sandbox-Code, Tagesnotizen) auszuführen.
+- **Beschreibung:** Ermöglicht der KI, Aufgaben autonom mit integrierten MCP-Tools (Suchen, Lesen, Schreiben, RAG, Tagesnotizen) auszuführen.
 - **Lokaler LLM-Support:** Textbasierter Tool-Parser für reibungslose Funktion auch mit lokalen LLMs.
-- **Robuste Sicherheit & Benutzerkontrolle (Human-in-the-Loop):** Destruktive Vorgänge wie Dateiänderungen, Löschungen oder Codeausführung können vom Agenten nicht eigenständig verarbeitet werden. Dateiänderungen erfordern eine **Inline-Diff-Prüfung** im Editor mit abschnittsweiser Annahme/Ablehnung, während sensible Aktionen wie Dateierstellung, Löschung oder Codeausführung eine ausdrückliche Bestätigung über **Inline-Genehmigungskarten** im Chat-Panel erfordern. (Automatischer Überschreibschutz durch Backups inklusive)
+- **Robuste Sicherheit & Benutzerkontrolle (Human-in-the-Loop):** Destruktive Vorgänge wie Dateiänderungen, Löschungen oder Terminalbefehle können vom Agenten nicht eigenständig verarbeitet werden. Dateiänderungen erfordern eine **Inline-Diff-Prüfung** im Editor mit abschnittsweiser Annahme/Ablehnung, während sensible Aktionen wie Dateierstellung, Löschung oder Terminalbefehle eine ausdrückliche Bestätigung über **Inline-Genehmigungskarten** im Chat-Panel erfordern. (Automatischer Überschreibschutz durch Backups inklusive)
 - **Kosten- und Schleifenschutz:** Integrierte Limits für Tool-Nutzung und Zeichenlänge.
 - **Verwendung:** Gib `/mcp` im Chat ein oder aktiviere den Agentenmodus über das Symbol oben.
 </details>
@@ -118,12 +118,12 @@ Lumina bietet zwei auf dein Können zugeschnittene Modi. Wähle die Methode, die
   - **Websuche:** `lumina_web_search` (Echtzeit-Internetinformationssuche über verschiedene Suchmaschinen wie Tavily, Exa, Google mit intelligenter Kürzungsunterstützung)
   - **Lesen & Suchen:** `read_active_note`, `read_note` (unterstützt Zeilenbereich `startLine`/`endLine`), `search_notes` (unterstützt Tag-Filter), `grep_search` (Regex/Text-Zeilensuche im gesamten Vault), `glob_files` (Wildcard-Dateipfadabgleich, z. B. `**/*.md`), `list_folders` (Ordner auflisten), `get_outgoing_links` (ausgehende Links & Einbettungen), `list_tasks` (Markdown-Aufgaben mit Filter auflisten), `list_notes`, `rag_search`, `get_backlinks`, `get_note_metadata` (einschließlich Überschriften, Links, Einbettungen), `list_attachments`, `list_tags`, `query_metadata` um der KI umfangreichen Kontext bereitzustellen.
   - **Schreiben & Ändern:** `create_note`, `append_to_note`, `replace_note`, `patch_note`, `update_frontmatter`, `save_attachment`, `create_canvas`, `generate_moc`, `auto_link_note` (Notizen/Canvas-Dateien erstellen/ändern, Map of Content (MOC)-Notizen generieren und Binärdateien speichern).
-  - **Verwalten & Ausführen:** `open_note` (Notiz/Datei sofort im Editor-Tab öffnen), `delete_note`, `move_note` (verschieben/umbenennen), `execute_code`, `run_note_code_block` (Code in einer Sandbox ausführen), `run_shell_command` (Terminal-Shell-Befehle auf dem Desktop-OS ausführen), `show_notice` (Obsidian-Benachrichtigungen anzeigen).
+  - **Verwalten & Ausführen:** `open_note` (Notiz/Datei sofort im Editor-Tab öffnen), `delete_note`, `move_note` (verschieben/umbenennen), `run_shell_command` (Terminal-Shell-Befehle auf dem Desktop-OS ausführen), `show_notice` (Obsidian-Benachrichtigungen anzeigen).
   - **Tagesnotizen:** `read_daily_note`, `append_to_daily_note` (Lese-/Schreibintegration für die heutige Tagesnotiz).
   - **MCP-Synchronisierung für externe Terminal-CLIs:** Synchronisiert optional Konfigurationsdateien (`.claude/mcp.json`, `opencode.json`, `codex.json`), damit externe Terminal-CLIs Luminas Vault-Tools nutzen können.
-  - **Vault-Sicherheit & Benutzerkontrolle (Human-in-the-Loop):** Inline-Genehmigungskarten für sensible Aktionen, Inline-Diff-Prüfung im Editor bei Dateiänderungen, automatische Backups zum Schutz vor Überschreiben und isolierte Codeausführung in einer Sandbox.
+  - **Vault-Sicherheit & Benutzerkontrolle (Human-in-the-Loop):** Inline-Genehmigungskarten für sensible Aktionen, Inline-Diff-Prüfung im Editor bei Dateiänderungen und automatische Backups zum Schutz vor Überschreiben.
 - **Verwendung:** Aktiviere MCP-Funktionen in den Plugin-Einstellungen und konfiguriere die Client/Server-Transportmethode (SSE).
-- **Hinweis:** *Lumina verfügt über mehrschichtige Sicherheitsmechanismen wie Sandbox-Codeausführung, Inline-Diff-Prüfung und Benutzergenehmigungen (Human-in-the-Loop), automatische Backups bei Dateiänderungen (Überschreibschutz) und Limits zur Vermeidung von Endlosschleifen und unkontrollierten Tool-Aufrufen. Da der Agent und externe KIs jedoch direkt auf deinen Vault zugreifen, empfehlen wir, die Vorgänge anfangs aufmerksam zu beobachten.*
+- **Hinweis:** *Lumina verfügt über mehrschichtige Sicherheitsmechanismen wie Inline-Diff-Prüfung und Benutzergenehmigungen (Human-in-the-Loop), automatische Backups bei Dateiänderungen (Überschreibschutz) und Limits zur Vermeidung von Endlosschleifen und unkontrollierten Tool-Aufrufen. Da der Agent und externe KIs jedoch direkt auf deinen Vault zugreifen, empfehlen wir, die Vorgänge anfangs aufmerksam zu beobachten.*
 </details>
 
 ---

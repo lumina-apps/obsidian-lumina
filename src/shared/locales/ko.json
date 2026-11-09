@@ -734,7 +734,6 @@
       "renameNote": "✏️ 이 노트를 다음 경로로 이동/이름 변경하시겠습니까:",
       "updateFrontmatter": "🏷️ 프론트매터를 업데이트하시겠습니까:",
       "saveAttachment": "📎 첨부파일을 저장하시겠습니까? 크기: {{size}} bytes",
-      "executeCode": "⚡ 이 코드를 실행하시겠습니까?",
       "shellCommand": "💻 데스크탑 터미널 명령어를 실행하시겠습니까?",
       "accept": "승인",
       "reject": "거절",
@@ -1010,14 +1009,8 @@
     "save_attachment": {
       "desc": "Base64 문자열에서 바이너리 첨부 파일을 저장합니다."
     },
-    "execute_code": {
-      "desc": "보안 샌드박스에서 Javascript/Typescript 코드를 실행합니다."
-    },
     "run_shell_command": {
       "desc": "데스크톱 OS에서 터미널 쉘 명령을 실행합니다. 주의해서 사용하세요."
-    },
-    "run_note_code_block": {
-      "desc": "노트 내의 특정 코드 블록을 샌드박스에서 실행합니다."
     },
     "list_tags": {
       "desc": "볼트에서 사용된 모든 태그를 나열합니다."
