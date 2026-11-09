@@ -247,6 +247,7 @@ describe('ProcessManager Unit Tests', () => {
 		});
 
 		it('AbortSignal 수신 시 killProcess를 호출한다', () => {
+			vi.useFakeTimers();
 			const killSpy = vi.spyOn(ProcessManager, 'killProcess');
 			const controller = new AbortController();
 
@@ -259,6 +260,7 @@ describe('ProcessManager Unit Tests', () => {
 
 			controller.abort();
 			expect(killSpy).toHaveBeenCalledWith(mockChild);
+			vi.useRealTimers();
 		});
 	});
 
@@ -266,6 +268,7 @@ describe('ProcessManager Unit Tests', () => {
 		let mockChild: ChildProcess;
 
 		beforeEach(() => {
+			vi.useFakeTimers();
 			mockChild = {
 				pid: 99999,
 				killed: false,
@@ -274,6 +277,7 @@ describe('ProcessManager Unit Tests', () => {
 		});
 
 		afterEach(() => {
+			vi.useRealTimers();
 			ProcessManager.spawnFnOverride = null;
 		});
 

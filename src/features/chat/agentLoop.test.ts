@@ -45,7 +45,7 @@ describe('agentLoop', () => {
 				chat: vi.fn().mockResolvedValue({
 					content: 'Simple direct answer',
 					toolCalls: [],
-					usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+					usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
 					finishReason: 'stop',
 				}),
 			} as any;
@@ -63,7 +63,7 @@ describe('agentLoop', () => {
 
 			expect(result.fullResponse).toBe('Simple direct answer');
 			expect(result.hasTokenLimitBeenHit).toBe(false);
-			expect(result.tokenUsage).toEqual({ promptTokens: 10, completionTokens: 5, totalTokens: 15 });
+			expect(result.tokenUsage).toEqual({ inputTokens: 10, outputTokens: 5, totalTokens: 15 });
 			expect(mockProvider.chat).toHaveBeenCalledTimes(1);
 		});
 
@@ -78,7 +78,7 @@ describe('agentLoop', () => {
 				chat: vi.fn().mockResolvedValue({
 					content: 'Let me read the note',
 					toolCalls: [toolCall],
-					usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+					usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
 					finishReason: 'tool_calls',
 				}),
 			} as any;
@@ -96,7 +96,9 @@ describe('agentLoop', () => {
 
 			// 3회 반복 후 중복 감지되어 탈출해야 함
 			expect(mockProvider.chat).toHaveBeenCalledTimes(3);
-			expect(result.fullResponse).toBeDefined();
+			expect(result.tokenUsage).toEqual({ inputTokens: 30, outputTokens: 15, totalTokens: 45 });
+			// 반복 중 누적된 중간 추론 텍스트가 think 블록으로 포함되어 반환되어야 함
+			expect(result.fullResponse).toContain('<think>\nLet me read the note\n</think>');
 		});
 
 		it('A-B-A-B 교차 패턴 도구 호출 감지 시 루프를 조기 탈출한다', async () => {
@@ -111,7 +113,7 @@ describe('agentLoop', () => {
 					return {
 						content: `Calling ${tool.name}`,
 						toolCalls: [tool],
-						usage: { promptTokens: 5, completionTokens: 5, totalTokens: 10 },
+						usage: { inputTokens: 5, outputTokens: 5, totalTokens: 10 },
 						finishReason: 'tool_calls',
 					};
 				}),
@@ -130,7 +132,9 @@ describe('agentLoop', () => {
 
 			// 4회째(A-B-A-B) 패턴 감지되어 탈출해야 함
 			expect(callCount).toBe(4);
-			expect(result.fullResponse).toBeDefined();
+			expect(result.tokenUsage).toEqual({ inputTokens: 20, outputTokens: 20, totalTokens: 40 });
+			expect(result.fullResponse).toContain('<think>\nCalling toolA\n</think>');
+			expect(result.fullResponse).toContain('<think>\nCalling toolB\n</think>');
 		});
 
 		it('AbortSignal이 트리거되면 즉시 루프를 중단한다', async () => {

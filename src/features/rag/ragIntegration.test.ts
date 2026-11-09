@@ -30,15 +30,13 @@ class FakeEmbeddingStore {
 		}
 	}
 
-	async loadEmbeddings(chunkIds: string[]) {
-		const result = new Map<string, number[]>();
-		for (const id of chunkIds) {
-			const record = this.store.get(id);
+	async loadEmbeddings(chunks: Array<{ id: string; embedding?: number[] | Float32Array }>): Promise<void> {
+		for (const chunk of chunks) {
+			const record = this.store.get(chunk.id);
 			if (record) {
-				result.set(id, record.embedding);
+				chunk.embedding = record.embedding;
 			}
 		}
-		return result;
 	}
 
 	async deleteEmbeddings(chunkIds: string[]) {
@@ -75,11 +73,19 @@ describe('RAG Pipeline Integration', () => {
 		fakeMtimes.set('test_vault/note2.md', 1000);
 
 		mockEmbedFn = vi.fn().mockImplementation(async (texts: string[]) => {
-			// 각 텍스트에 대해 길이가 3인 더미 임베딩 리턴
+			// 의미적으로 구별 가능한 단위 직교 벡터 생성 (변별력 보장)
 			return texts.map(text => {
-				const charCodeSum = text.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-				const factor = charCodeSum % 100;
-				return [factor * 0.1, factor * 0.2, factor * 0.3];
+				const lower = text.toLowerCase();
+				if (lower.includes('rag') || lower.includes('integration')) {
+					return [0.1, 0.95, 0.1];
+				}
+				if (lower.includes('hello') || lower.includes('important')) {
+					return [0.95, 0.1, 0.1];
+				}
+				if (lower.includes('feature') || lower.includes('new')) {
+					return [0.1, 0.1, 0.95];
+				}
+				return [0.5, 0.5, 0.5];
 			});
 		});
 
@@ -216,5 +222,33 @@ describe('RAG Pipeline Integration', () => {
 
 		expect(indexer.indexedFileCount).toBe(3);
 		expect(indexer.indexedParentChunks.length).toBe(3);
+
+		// 5. 새로운 인덱서 인스턴스에서 디스크에 저장된 인덱스 및 EmbeddingStore 복원 검증
+		mockEmbedFn.mockClear();
+		const newIndexer = new VaultIndexer({
+			app: mockApp as unknown as App,
+			embedFn: mockEmbedFn,
+			parseBinaryFn: mockParseBinaryFn,
+			settings: mockSettings,
+			includedPaths: [],
+			excludedPaths: [],
+			chatHistoryPath: 'chat_history',
+			modelName: 'test-embedding-model',
+			projectId: 'test_project',
+			embeddingStore: fakeEmbeddingStore as unknown as EmbeddingStore,
+		});
+
+		await newIndexer.loadExistingIndex();
+
+		// 이미 저장된 3개 파일이 디스크에서 복원되고, FakeEmbeddingStore.loadEmbeddings가 실행되어 재임베딩이 발생하지 않음
+		expect(newIndexer.indexedFileCount).toBe(3);
+		expect(newIndexer.indexedParentChunks.length).toBe(3);
+		expect(mockEmbedFn).not.toHaveBeenCalled();
+
+		// 복원된 childChunks의 임베딩이 정상적으로 채워져 있는지 확인
+		for (const chunk of newIndexer.indexedChildChunks) {
+			expect(chunk.embedding).toBeDefined();
+			expect(Array.isArray(chunk.embedding) || chunk.embedding instanceof Float32Array).toBe(true);
+		}
 	});
 });

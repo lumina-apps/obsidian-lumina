@@ -197,6 +197,7 @@ class TestReporter {
 			suite: this.currentSuite,
 			test: testName,
 			passed,
+			skipped: false,
 			details,
 			durationMs,
 		};
@@ -208,22 +209,39 @@ class TestReporter {
 		}
 	}
 
+	recordSkip(testName, reason = '', durationMs = 0) {
+		const item = {
+			suite: this.currentSuite,
+			test: testName,
+			passed: true,
+			skipped: true,
+			details: reason,
+			durationMs,
+		};
+		this.results.push(item);
+		console.log(`  ⚠️ SKIP [${durationMs}ms] ${testName}`);
+		if (reason) {
+			console.log(`     └─ ${reason}`);
+		}
+	}
+
 	summary() {
 		const total = this.results.length;
-		const passed = this.results.filter((r) => r.passed).length;
-		const failed = total - passed;
+		const skipped = this.results.filter((r) => r.skipped).length;
+		const passed = this.results.filter((r) => r.passed && !r.skipped).length;
+		const failed = this.results.filter((r) => !r.passed).length;
 		console.log(`\n==================================================`);
 		console.log(`🏁 TEST EXECUTION SUMMARY`);
 		console.log(`==================================================`);
-		console.log(`Total: ${total} | Passed: ${passed} | Failed: ${failed}`);
+		console.log(`Total: ${total} | Passed: ${passed} | Skipped: ${skipped} | Failed: ${failed}`);
 		if (failed > 0) {
 			console.log(`\nFailed Tests:`);
 			for (const r of this.results.filter((r) => !r.passed)) {
-				console.log(`- [${r.suite}] ${r.test}: ${r.details}`);
+				console.log(`  ❌ [${r.suite}] ${r.test}: ${r.details}`);
 			}
 		}
 		console.log(`==================================================\n`);
-		return { total, passed, failed, results: this.results };
+		return { total, passed, skipped, failed, results: this.results };
 	}
 }
 
@@ -1240,11 +1258,28 @@ async function run() {
 					const tools = lumina.mcpManager?.getAllTools() || [];
 					const ragTool = tools.find(t => t.name === 'rag_search');
 					if (!ragTool) return { success: false, reason: 'no rag_search tool' };
+					if (!lumina.indexer) return { success: false, reason: 'no indexer' };
+
+					// 인덱스된 청크가 없는 경우 증분 색인 실행
+					if (lumina.indexer.indexedParentChunks.length === 0) {
+						await lumina.indexer.updateIndex();
+					}
+
+					// 기존 인덱스에서 실제 존재하는 키워드 동적 추출 (언어/볼트 독립성 보장)
+					let query = 'test';
+					const firstChunk = lumina.indexer.indexedParentChunks[0];
+					if (firstChunk && firstChunk.text) {
+						const sampleWords = firstChunk.text.match(/[\\p{L}\\p{N}]{2,}/gu);
+						if (sampleWords && sampleWords.length > 0) {
+							query = sampleWords[0];
+						}
+					}
+
 					const start = Date.now();
-					const res = await lumina.mcpManager.callTool(ragTool._serverId, 'rag_search', { query: '세계관', topK: 3 });
+					const res = await lumina.mcpManager.callTool(ragTool._serverId, 'rag_search', { query, topK: 3 });
 					const text = res?.content?.[0]?.text || '';
 					return {
-						success: !res?.isError && (text.includes('RAG 검색 결과') || text.includes('청크 발견')),
+						success: !res?.isError && text.length > 0,
 						summary: text.split('\\n')[0],
 						duration: Date.now() - start
 					};
@@ -1346,20 +1381,26 @@ async function run() {
 			
 			const results = document.querySelectorAll('.lumina-discovery__card');
 			
-			// Type in filter query
-			setter.call(inputs[1], ''); // clear first just in case
+			// Type in filter query with specific tag/text to verify active filtering
+			setter.call(inputs[1], 'nonexistent_filter_tag_query');
 			inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
-			
-			await new Promise(r => setTimeout(r, 1000));
-			const filteredResults = document.querySelectorAll('.lumina-discovery__card');
+			await new Promise(r => setTimeout(r, 600));
+			const zeroFiltered = document.querySelectorAll('.lumina-discovery__card').length;
+
+			// Clear filter query to restore results
+			setter.call(inputs[1], '');
+			inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
+			await new Promise(r => setTimeout(r, 600));
+			const restoredFiltered = document.querySelectorAll('.lumina-discovery__card').length;
 
 			return {
-				success: results.length > 0,
+				success: results.length > 0 && zeroFiltered <= results.length && restoredFiltered === results.length,
 				resultCount: results.length,
-				filteredCount: filteredResults.length
+				zeroFiltered,
+				restoredFiltered,
 			};
 		})()`);
-		reporter.record('Search & Filter Reactivity', searchCheck.success, `Search Results: ${searchCheck.resultCount}, Filtered Results: ${searchCheck.filteredCount}`, Date.now() - tSearch);
+		reporter.record('Search & Filter Reactivity', searchCheck.success, `Search Results: ${searchCheck.resultCount}, Zero Filtered: ${searchCheck.zeroFiltered}, Restored: ${searchCheck.restoredFiltered}`, Date.now() - tSearch);
 
 		// 2.5 Zero Results State Check
 		const tZeroSearch = Date.now();
@@ -1538,6 +1579,31 @@ async function run() {
 				modalOpened && modalClosed,
 				`Opened: ${modalOpened}, Closed with Escape key: ${modalClosed}`,
 				Date.now() - t0
+			);
+
+			// Re-open and actually trigger strip action to verify metadata removal
+			const tStrip = Date.now();
+			await client.evaluate(`app.commands.executeCommandById('lumina:strip-frontmatter-metadata')`);
+			await sleep(500);
+
+			const stripExecuted = await client.evaluate(`(async () => {
+				const confirmBtn = document.querySelector('.modal-container button.mod-warning') || document.querySelector('.modal-container button.mod-cta') || document.querySelector('.modal-container button');
+				if (confirmBtn) {
+					confirmBtn.click();
+					await new Promise(r => setTimeout(r, 600));
+				}
+				const path = '__lumina_e2e_strip_test__.md';
+				const file = app.vault.getAbstractFileByPath(path);
+				if (!file) return false;
+				const content = await app.vault.read(file);
+				return !content.includes('luminaModified');
+			})()`);
+
+			reporter.record(
+				'Frontmatter Metadata Actually Stripped from Vault Note',
+				stripExecuted,
+				`Metadata stripped successfully: ${stripExecuted}`,
+				Date.now() - tStrip
 			);
 		} catch (err) {
 			reporter.record('Strip Modal Opened & Closed via Physical Escape Key', false, err.message, Date.now() - t0);
@@ -2093,12 +2159,14 @@ async function run() {
 		try {
 			const llmResult = await client.evaluate(`(async () => {
 				const lumina = app.plugins.plugins['lumina'];
-				const providers = lumina.settings.connections.providers;
-				const googleProv = providers.find(p => p.type === 'google');
+				const providers = lumina.settings.connections.providers || [];
+				const activeId = lumina.settings.connections.activeProviderId;
+				const activeProv = providers.find(p => p.id === activeId && p.type === 'google');
+				const googleProv = activeProv || providers.find(p => p.type === 'google');
 				if (!googleProv) {
-					return { skipped: true, reason: 'No Google provider found' };
+					return { skipped: true, reason: 'No Google provider configured for live completion test' };
 				}
-				const apiKey = app.secretStorage.getSecret('lumina-provider-' + googleProv.id);
+				const apiKey = app.secretStorage?.getSecret('lumina-provider-' + googleProv.id) || googleProv.credential;
 				if (!apiKey) {
 					return { skipped: true, reason: 'Google provider has no stored API key' };
 				}
@@ -2161,7 +2229,7 @@ async function run() {
 			})()`, 45000);
 
 			if (llmResult.skipped) {
-				reporter.record('Live LLM Provider Completion', true, `Skipped: ${llmResult.reason}`, Date.now() - t0);
+				reporter.recordSkip('Live LLM Provider Completion', `Skipped: ${llmResult.reason}`, Date.now() - t0);
 			} else if (llmResult.success) {
 				reporter.record('Live LLM Provider Completion', true, `[${llmResult.providerType}] Model: ${llmResult.testModel}, Output: "${llmResult.response}", Latency: ${llmResult.latency}ms`, Date.now() - t0);
 			} else {

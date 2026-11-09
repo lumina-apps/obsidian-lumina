@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
 	migrateQuickActions,
 	migrateExcludedPaths,
@@ -13,10 +13,15 @@ import {
 	migrateGraphRibbonIcon,
 	runMigrations,
 } from './migrations';
-import { addDynamicLocale, setLanguage } from '../../shared/locales/helpers';
+import { addDynamicLocale, setLanguage, getEnLocale } from '../../shared/locales/helpers';
 import type LuminaPlugin from '../../main';
 
 describe('migrateQuickActions', () => {
+	afterEach(async () => {
+		addDynamicLocale('en', getEnLocale());
+		await setLanguage('en');
+	});
+
 	it('Spanish and French translate quick actions (case-insensitive) are correctly migrated', async () => {
 		// Set up dynamic translation keys for testing
 		addDynamicLocale('es', {

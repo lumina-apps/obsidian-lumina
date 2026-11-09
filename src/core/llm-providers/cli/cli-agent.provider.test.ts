@@ -1,9 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { CliAgentProvider, formatMessagesToPrompt } from './cli-agent.provider';
 import { AntigravityProvider } from './agents/antigravity.provider';
 import { OpenCodeProvider } from './agents/opencode.provider';
 import { CodexProvider } from './agents/codex.provider';
 import { ClaudeCodeProvider } from './agents/claude-code.provider';
+import { ProcessManager } from './process-manager';
 import type { LLMProviderConfig } from '../../../shared/types/settings.types';
 import type { ChatMessage } from '../../../shared/types/llm.types';
 import type { CliExecuteOptions } from '../../../shared/types/cliAgent.types';
@@ -36,10 +37,14 @@ describe('CliAgentProvider - All Agents Verification', () => {
 			});
 
 			it('listModels()가 배열을 반환한다', async () => {
+				const spawnSpy = vi.spyOn(ProcessManager, 'spawn').mockImplementation(() => {
+					throw new Error('Command not found in test sandbox');
+				});
 				const provider = new CliAgentProvider(config);
 				const models = await provider.listModels();
 				expect(Array.isArray(models)).toBe(true);
 				expect(models.length).toBeGreaterThan(0);
+				spawnSpy.mockRestore();
 			});
 
 			it('embed() 호출 시 미지원 에러를 던진다', async () => {
@@ -905,9 +910,9 @@ claude-3-5-haiku
 							events: (async function* () {
 								yield { type: 'text', content: 'Hello world' };
 							})(),
-							cancel: () => {},
+							kill: () => {},
 							stdin: null,
-							waitForExit: async () => 0,
+							waitForExit: async () => ({ exitCode: 0 }),
 						};
 					},
 				};

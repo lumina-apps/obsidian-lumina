@@ -126,6 +126,13 @@ describe('messageActions', () => {
 		});
 
 		it('파일을 찾지 못하면 Notice를 띄운다', async () => {
+			let capturedNotice = '';
+			const obsidian = await import('obsidian');
+			const noticeSpy = vi.spyOn(obsidian, 'Notice').mockImplementation(function (this: unknown, msg: string | DocumentFragment) {
+				capturedNotice = typeof msg === 'string' ? msg : 'fragment';
+				return {} as Notice;
+			});
+
 			mockVault.getAbstractFileByPath.mockReturnValue(null);
 			mockMetadataCache.getFirstLinkpathDest.mockReturnValue(null);
 
@@ -133,6 +140,8 @@ describe('messageActions', () => {
 			await openFile(mockApp, 'nonexistent.md', mouseEvt);
 
 			expect(mockLeaf.openFile).not.toHaveBeenCalled();
+			expect(capturedNotice).toBeTruthy();
+			noticeSpy.mockRestore();
 		});
 	});
 
@@ -270,6 +279,49 @@ describe('messageActions', () => {
 			expect(() => {
 				insertToNote(mockApp, 'Some text');
 			}).not.toThrow();
+		});
+	});
+
+	describe('AttachmentPreviewModal', () => {
+		it('이미지 첨부파일일 경우 h3 타이틀과 img 태그를 올바르게 렌더링하고 onClose 시 정리한다', () => {
+			const modal = new AttachmentPreviewModal(mockApp, {
+				type: 'external_file',
+				name: 'photo.png',
+				path: '',
+				content: 'data:image/png;base64,abcdef123456',
+			});
+
+			modal.onOpen();
+
+			const titleEl = modal.contentEl.querySelector('h3');
+			expect(titleEl?.textContent).toBe('photo.png');
+			const imgEl = modal.contentEl.querySelector('img');
+			expect(imgEl).not.toBeNull();
+			expect(imgEl?.src).toBe('data:image/png;base64,abcdef123456');
+			expect(imgEl?.alt).toBe('photo.png');
+
+			modal.onClose();
+			expect(modal.contentEl.children.length).toBe(0);
+		});
+
+		it('텍스트 첨부파일일 경우 h3 타이틀과 pre 태그에 내용을 렌더링한다', () => {
+			const modal = new AttachmentPreviewModal(mockApp, {
+				type: 'file',
+				name: 'snippet.txt',
+				path: 'snippet.txt',
+				content: 'Hello World Attachment Text Content',
+			});
+
+			modal.onOpen();
+
+			const titleEl = modal.contentEl.querySelector('h3');
+			expect(titleEl?.textContent).toBe('snippet.txt');
+			const preEl = modal.contentEl.querySelector('pre');
+			expect(preEl).not.toBeNull();
+			expect(preEl?.textContent).toBe('Hello World Attachment Text Content');
+
+			modal.onClose();
+			expect(modal.contentEl.children.length).toBe(0);
 		});
 	});
 });

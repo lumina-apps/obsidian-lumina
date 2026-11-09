@@ -20,5 +20,10 @@ export default defineConfig({
 		environment: 'jsdom',
 		setupFiles: ['./vitest.setup.ts'],
 		include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
+		coverage: {
+			provider: 'v8',
+			include: ['src/**/*.{ts,svelte}'],
+			exclude: ['src/**/*.test.ts', 'src/**/*.spec.ts', 'src/core/mocks/**', 'src/**/*.d.ts'],
+		},
 	},
 });

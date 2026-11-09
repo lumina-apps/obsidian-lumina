@@ -5,6 +5,8 @@ import type { ResolvedContext } from './contextBuilder';
 import type LuminaPlugin from '../../../main';
 import { debugLogger } from '../../../shared/debugLogger';
 import { CliAgentProvider } from '../../../core/llm-providers/cli/cli-agent.provider';
+import * as providerIndex from '../../../core/llm-providers/index';
+import * as agentLoopModule from '../agentLoop';
 
 describe('llmExecutor - CLI Agent Execution & Debug Logging', () => {
 	const mockPlugin = {
@@ -369,5 +371,105 @@ describe('llmExecutor - CLI Agent Execution & Debug Logging', () => {
 
 		const passedPrompt = executeRawSpy.mock.calls[0][0];
 		expect(passedPrompt).toContain('.custom-obsidian');
+	});
+
+	describe('Cloud / Local Provider (OpenAI, Anthropic, Ollama 등) 실행 검증', () => {
+		const cloudConfig: LLMProviderConfig = {
+			id: 'openai-main',
+			type: 'openai',
+			credential: 'sk-test',
+			availableModels: ['gpt-4o'],
+			isVerified: true,
+		};
+
+		it('도구가 없는 일반 스트리밍 호출 시 provider.stream을 통해 응답을 수신한다', async () => {
+			const mockProvider = {
+				stream: vi.fn(async (_msgs, _opts, onChunk) => {
+					onChunk('Hello ');
+					onChunk('from ');
+					onChunk('OpenAI!');
+					return {
+						usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+					};
+				}),
+				chat: vi.fn(),
+			};
+			vi.spyOn(providerIndex, 'createProvider').mockReturnValue(mockProvider as any);
+
+			const res = await executeLlmCall(
+				mockPlugin,
+				mockContext,
+				cloudConfig,
+				'gpt-4o',
+				{ ...mockPlugin.settings.chat, streaming: true },
+				undefined,
+				'asst-stream-1',
+			);
+
+			expect(mockProvider.stream).toHaveBeenCalled();
+			expect(res.fullResponse).toBe('Hello from OpenAI!');
+			expect(res.tokenUsage).toEqual({ inputTokens: 10, outputTokens: 5, totalTokens: 15 });
+		});
+
+		it('streaming: false 설정 시 provider.chat을 호출하여 응답을 수신한다', async () => {
+			const mockProvider = {
+				stream: vi.fn(),
+				chat: vi.fn().mockResolvedValue({
+					content: 'Non-streaming response from LLM',
+					usage: { inputTokens: 20, outputTokens: 10, totalTokens: 30 },
+				}),
+			};
+			vi.spyOn(providerIndex, 'createProvider').mockReturnValue(mockProvider as any);
+
+			const res = await executeLlmCall(
+				mockPlugin,
+				mockContext,
+				cloudConfig,
+				'gpt-4o',
+				{ ...mockPlugin.settings.chat, streaming: false },
+				undefined,
+				'asst-nonstream-1',
+			);
+
+			expect(mockProvider.chat).toHaveBeenCalled();
+			expect(res.fullResponse).toBe('Non-streaming response from LLM');
+			expect(res.tokenUsage).toEqual({ inputTokens: 20, outputTokens: 10, totalTokens: 30 });
+		});
+
+		it('mcpTools가 존재하는 경우 runAgentLoop로 도구 호출 루프를 위임한다', async () => {
+			const mockProvider = { stream: vi.fn(), chat: vi.fn() };
+			vi.spyOn(providerIndex, 'createProvider').mockReturnValue(mockProvider as any);
+
+			const agentLoopSpy = vi.spyOn(agentLoopModule, 'runAgentLoop').mockResolvedValue({
+				fullResponse: 'Final response after tool execution',
+				tokenUsage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
+				hasTokenLimitBeenHit: false,
+			});
+
+			const contextWithTools: ResolvedContext = {
+				...mockContext,
+				mcpTools: [
+					{
+						name: 'read_note',
+						description: 'Reads a note',
+						inputSchema: { type: 'object', properties: {} },
+					},
+				],
+			};
+
+			const res = await executeLlmCall(
+				mockPlugin,
+				contextWithTools,
+				cloudConfig,
+				'gpt-4o',
+				mockPlugin.settings.chat,
+				undefined,
+				'asst-loop-1',
+			);
+
+			expect(agentLoopSpy).toHaveBeenCalled();
+			expect(res.fullResponse).toBe('Final response after tool execution');
+			expect(res.tokenUsage?.totalTokens).toBe(150);
+		});
 	});
 });

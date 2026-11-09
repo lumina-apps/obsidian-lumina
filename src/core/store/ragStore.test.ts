@@ -22,6 +22,8 @@ describe('ragStore', () => {
 	});
 
 	afterEach(() => {
+		resetIndexing();
+		vi.useRealTimers();
 		vi.restoreAllMocks();
 	});
 

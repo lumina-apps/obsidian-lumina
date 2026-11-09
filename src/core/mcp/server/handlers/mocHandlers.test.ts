@@ -314,16 +314,15 @@ describe('generateMocHandler: pathGuard 필터링', () => {
 		setupMockFiles();
 
 		await generateMocHandler(
-			{ title: 'MOC', outputPath: 'out/MOC', folder: '' },
+			{ title: 'MOC', outputPath: 'out/MOC', files: ['allowed/a.md', 'blocked/b.md'] },
 			ctx,
 			pathGuard,
 		);
 
-		// scope 오류 없이 (folder='') allowed 파일만 포함
-		if (vi.mocked(safeCreateFile).mock.calls.length > 0) {
-			const [, content] = vi.mocked(safeCreateFile).mock.calls[0];
-			expect(content).not.toContain('[[b]]');
-		}
+		expect(safeCreateFile).toHaveBeenCalledOnce();
+		const [, content] = vi.mocked(safeCreateFile).mock.calls[0];
+		expect(content).toContain('[[a]]');
+		expect(content).not.toContain('[[b]]');
 	});
 });
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { TFile } from 'obsidian';
 import { ChatController } from './chatController';
 import { getMessages, resetChat, currentSessionId } from '../../core/store/chatStore';
 import { createProvider } from '../../core/llm-providers/index';
@@ -16,11 +17,11 @@ vi.mock('../../core/llm-providers/index', () => {
 			chunkCallback('this is a ');
 			await new Promise(resolve => setTimeout(resolve, 10));
 			chunkCallback('mocked stream response.');
-			return { usage: { promptTokens: 10, completionTokens: 15 }, finishReason: 'stop' };
+			return { usage: { inputTokens: 10, outputTokens: 15, totalTokens: 25 }, finishReason: 'stop' };
 		}),
 		chat: vi.fn().mockResolvedValue({
 			content: 'Mocked non-stream response.',
-			usage: { promptTokens: 10, completionTokens: 12 },
+			usage: { inputTokens: 10, outputTokens: 12, totalTokens: 22 },
 			finishReason: 'stop',
 		}),
 	};
@@ -37,17 +38,6 @@ vi.mock('./history', () => {
 		saveSession: vi.fn().mockResolvedValue(undefined),
 		generateTitle: vi.fn().mockReturnValue('Mocked Session Title'),
 		generateTitleWithLLM: vi.fn().mockResolvedValue('Mocked Session Title'),
-	};
-});
-
-// ─── 3. Obsidian App Mocking ─────────────────────────────────────────────────
-vi.mock('obsidian', () => {
-	return {
-		normalizePath: (p: string) => p,
-		Notice: vi.fn(),
-		FileSystemAdapter: class FileSystemAdapter {
-			getBasePath(): string { return ''; }
-		},
 	};
 });
 
@@ -168,12 +158,21 @@ describe('Chat Flow & Saving Integration', () => {
 		// 4. 타이머를 3초 앞으로 진전
 		await vi.advanceTimersByTimeAsync(3000);
 
-		// 히스토리 저장 호출 완료 확인
+		// 히스토리 저장 호출 완료 및 저장 내용 검증
 		expect(saveSession).toHaveBeenCalled();
+		const savedSession = vi.mocked(saveSession).mock.calls[0][1];
+		expect(savedSession.id).toBe('test-session-123');
+		expect(savedSession.messages.length).toBe(2);
+		expect(savedSession.messages[0].role).toBe('user');
+		expect(savedSession.messages[1].role).toBe('assistant');
+		expect(savedSession.messages[1].content).toBe('Hello this is a mocked stream response.');
 	});
 
 	it('should include active note when includeActiveNote is true even if ragEnabled is false', async () => {
-		const mockFile = { path: 'ActiveNote.md', basename: 'ActiveNote', extension: 'md' };
+		const mockFile = new TFile();
+		mockFile.path = 'ActiveNote.md';
+		mockFile.basename = 'ActiveNote';
+		mockFile.extension = 'md';
 		mockPlugin.app.workspace.getActiveFile = vi.fn().mockReturnValue(mockFile);
 		mockPlugin.app.vault.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
 		mockPlugin.app.vault.read = vi.fn().mockResolvedValue('Content of active note');
@@ -200,5 +199,12 @@ describe('Chat Flow & Saving Integration', () => {
 		expect(msgs[0].attachments?.length).toBe(1);
 		expect(msgs[0].attachments?.[0].type).toBe('active_note');
 		expect(msgs[0].attachments?.[0].path).toBe('ActiveNote.md');
+
+		// LLM에 전달된 메시지 프롬프트 안에 활성 노트 내용이 포함되었는지 검증
+		const provider = (createProvider as any)();
+		expect(provider.stream).toHaveBeenCalled();
+		const lastCallMessages = provider.stream.mock.calls[provider.stream.mock.calls.length - 1][0];
+		const messagesStr = JSON.stringify(lastCallMessages);
+		expect(messagesStr).toContain('Content of active note');
 	});
 });

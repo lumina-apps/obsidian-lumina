@@ -1,5 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createNoteHandler, appendToDailyNoteHandler, patchNoteHandler, moveNoteHandler, saveAttachmentHandler, updateFrontmatterHandler } from './writeHandlers';
+import {
+	createNoteHandler,
+	appendToDailyNoteHandler,
+	appendToNoteHandler,
+	replaceNoteHandler,
+	deleteNoteHandler,
+	patchNoteHandler,
+	moveNoteHandler,
+	saveAttachmentHandler,
+	updateFrontmatterHandler,
+} from './writeHandlers';
 import { autoLinkNoteHandler } from './autoLinkHandlers';
 import { PathGuard } from '../pathGuard';
 import type { ToolHandlerContext } from '../toolTypes';
@@ -52,6 +62,7 @@ describe('writeHandlers', () => {
 		const mockFileManager = {
 			renameFile: vi.fn().mockResolvedValue(undefined),
 			processFrontMatter: vi.fn().mockResolvedValue(undefined),
+			trashFile: vi.fn().mockResolvedValue(undefined),
 		};
 
 		const mockWorkspace = {
@@ -356,6 +367,128 @@ describe('writeHandlers', () => {
 			const res = await autoLinkNoteHandler({ path: 'test.md' }, ctx, pathGuard);
 			expect(res.isError).toBeFalsy();
 			expect(approvalManager.requestApproval).toHaveBeenCalled();
+		});
+	});
+
+	describe('appendToNoteHandler', () => {
+		it('기존 노트 끝에 줄바꿈과 함께 내용을 덧붙이고 승인 후 저장한다', async () => {
+			vi.mocked(approvalManager.requestApproval).mockImplementation(async (_p, _c, prop) => ({
+				approved: true,
+				content: prop,
+			}));
+
+			const res = await appendToNoteHandler({
+				path: 'test.md',
+				content: 'Appended line',
+			}, ctx, pathGuard);
+
+			expect(res.isError).toBeFalsy();
+			expect(approvalManager.requestApproval).toHaveBeenCalledWith(
+				'test.md',
+				'Initial equation: placeholder\nPrice: cost',
+				'Initial equation: placeholder\nPrice: cost\nAppended line',
+				expect.anything(),
+			);
+			expect(mockFiles.get('test.md')?.content).toBe('Initial equation: placeholder\nPrice: cost\nAppended line');
+		});
+
+		it('추가할 내용이 limitAppend를 초과하면 에러를 반환한다', async () => {
+			ctx.limitAppend = 10;
+			const res = await appendToNoteHandler({
+				path: 'test.md',
+				content: 'This content is longer than ten chars',
+			}, ctx, pathGuard);
+
+			expect(res.isError).toBe(true);
+			const text = res.content[0].type === 'text' ? res.content[0].text : '';
+			expect(text).toContain('10');
+		});
+	});
+
+	describe('replaceNoteHandler', () => {
+		it('노트 전체 내용을 새로운 내용으로 교체 승인 요청하고 저장한다', async () => {
+			vi.mocked(approvalManager.requestApproval).mockImplementation(async (_p, _c, prop) => ({
+				approved: true,
+				content: prop,
+			}));
+
+			const res = await replaceNoteHandler({
+				path: 'test.md',
+				content: '# Completely Brand New Note',
+			}, ctx, pathGuard);
+
+			expect(res.isError).toBeFalsy();
+			expect(approvalManager.requestApproval).toHaveBeenCalledWith(
+				'test.md',
+				'Initial equation: placeholder\nPrice: cost',
+				'# Completely Brand New Note',
+				expect.anything(),
+			);
+			expect(mockFiles.get('test.md')?.content).toBe('# Completely Brand New Note');
+		});
+	});
+
+	describe('deleteNoteHandler', () => {
+		it('사용자가 파일 삭제를 승인하면 휴지통(trashFile)으로 이동한다', async () => {
+			vi.mocked(approvalManager.requestActionApproval).mockResolvedValue(true);
+
+			const res = await deleteNoteHandler({ path: 'test.md' }, ctx, pathGuard);
+
+			expect(res.isError).toBeFalsy();
+			expect(approvalManager.requestActionApproval).toHaveBeenCalledWith(
+				'delete',
+				'test.md',
+				undefined,
+				expect.anything(),
+			);
+			expect(ctx.plugin.app.fileManager.trashFile).toHaveBeenCalledWith(mockFiles.get('test.md')?.file);
+		});
+
+		it('사용자가 파일 삭제를 거절하면 거절 메시지를 반환하고 파일을 삭제하지 않는다', async () => {
+			vi.mocked(approvalManager.requestActionApproval).mockResolvedValue(false);
+
+			const res = await deleteNoteHandler({ path: 'test.md' }, ctx, pathGuard);
+
+			expect(res.isError).toBe(true);
+			const text = res.content[0].type === 'text' ? res.content[0].text : '';
+			expect(text).toContain('User explicitly rejected deletion');
+			expect(ctx.plugin.app.fileManager.trashFile).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('safeModifyFile - TOCTOU (경쟁 상태 변경 감지) 방어', () => {
+		it('승인 대기 중 파일이 외부에서 변경된 경우 덮어쓰지 않고 에러를 반환한다', async () => {
+			// 사용자가 diff 승인을 누르는 시점에 디스크 내용이 제3자에 의해 변경된 상황 시뮬레이션
+			vi.mocked(approvalManager.requestApproval).mockImplementation(async () => {
+				mockFiles.get('test.md')!.content = 'Externally modified content in the background!';
+				return { approved: true, content: 'Proposed content from LLM' };
+			});
+
+			const res = await patchNoteHandler({
+				path: 'test.md',
+				target: 'placeholder',
+				replacement: 'new-val',
+			}, ctx, pathGuard);
+
+			expect(res.isError).toBe(true);
+			const text = res.content[0].type === 'text' ? res.content[0].text : '';
+			expect(text).toContain('File was modified while waiting for approval');
+			// 원래 내용이 보존되어야 함
+			expect(mockFiles.get('test.md')?.content).toBe('Externally modified content in the background!');
+		});
+	});
+
+	describe('isProtectedWritePath - 숨김 및 설정 경로 쓰기 차단', () => {
+		it('.obsidian 또는 점으로 시작하는 숨김 폴더에 쓰기를 시도하면 즉시 차단한다', async () => {
+			const res = await createNoteHandler({
+				path: '.obsidian/plugins/malicious.js',
+				content: 'console.log("bad");',
+			}, ctx, pathGuard);
+
+			expect(res.isError).toBe(true);
+			const text = res.content[0].type === 'text' ? res.content[0].text : '';
+			expect(text).toContain('Writing to hidden or configuration paths is not allowed');
+			expect(ctx.plugin.app.vault.create).not.toHaveBeenCalled();
 		});
 	});
 });

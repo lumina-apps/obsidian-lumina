@@ -117,16 +117,42 @@ vi.mock('obsidian', () => {
 			display() {}
 		},
 		Modal: class {
+			modalEl = document.createElement('div');
+			titleEl = document.createElement('div');
+			contentEl = document.createElement('div');
+			containerEl = document.createElement('div');
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			constructor(_app: any) {}
-			open() {}
-			close() {}
+			constructor(_app: any) {
+				this.modalEl.appendChild(this.titleEl);
+				this.modalEl.appendChild(this.contentEl);
+				this.containerEl.appendChild(this.modalEl);
+			}
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			open() { (this as any).onOpen?.(); }
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			close() { (this as any).onClose?.(); }
+			onOpen() {}
+			onClose() {}
 		},
 		FuzzySuggestModal: class {
+			modalEl = document.createElement('div');
+			titleEl = document.createElement('div');
+			contentEl = document.createElement('div');
+			containerEl = document.createElement('div');
+			inputEl = document.createElement('input');
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			constructor(_app: any) {}
-			open() {}
-			close() {}
+			constructor(_app: any) {
+				this.modalEl.appendChild(this.titleEl);
+				this.modalEl.appendChild(this.contentEl);
+				this.containerEl.appendChild(this.modalEl);
+			}
+			setPlaceholder(_placeholder: string) { return this; }
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			open() { (this as any).onOpen?.(); }
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			close() { (this as any).onClose?.(); }
+			onOpen() {}
+			onClose() {}
 		},
 		setTooltip: vi.fn(),
 		setIcon: vi.fn(),
@@ -165,11 +191,19 @@ vi.mock('obsidian', () => {
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		getAllTags: vi.fn((cache: any) => cache?.tags?.map((t: any) => t.tag) || []),
-		// normalizePath: path를 그대로 반환
-		normalizePath: (p: string) => p,
+		// normalizePath: Windows 역슬래시 및 중복 슬래시 정규화
+		normalizePath: (p: string) => {
+			if (!p) return p;
+			let norm = p.replace(/\\/g, '/').replace(/\/+/g, '/');
+			if (norm.startsWith('/') && norm.length > 1) norm = norm.slice(1);
+			if (norm.endsWith('/') && norm.length > 1) norm = norm.slice(0, -1);
+			return norm;
+		},
 		// requestUrl: 네트워크 요청 (테스트에서 필요하면 개별적으로 spy/mock)
 		requestUrl: vi.fn(),
 		request: vi.fn(),
+		getLanguage: vi.fn(() => 'en'),
+		moment: Object.assign(vi.fn(), { locale: vi.fn(() => 'en') }),
 		sanitizeHTMLToDom: (html: string) => {
 			const div = document.createElement('div');
 			div.innerHTML = html;
@@ -223,11 +257,12 @@ vi.mock('obsidian', () => {
 				const inputEl = document.createElement('input');
 				const text = {
 					inputEl,
-					setValue: vi.fn().mockReturnThis(),
+					setValue: vi.fn().mockImplementation((val: string) => { inputEl.value = val; return text; }),
 					onChange: vi.fn().mockReturnThis(),
 					setPlaceholder: vi.fn().mockReturnThis(),
 					setDisabled: vi.fn().mockReturnThis(),
 				};
+				this.controlEl.appendChild(inputEl);
 				cb(text);
 				return this;
 			}
@@ -236,46 +271,80 @@ vi.mock('obsidian', () => {
 				const inputEl = document.createElement('textarea');
 				const text = {
 					inputEl,
-					setValue: vi.fn().mockReturnThis(),
+					setValue: vi.fn().mockImplementation((val: string) => { inputEl.value = val; return text; }),
 					onChange: vi.fn().mockReturnThis(),
 					setPlaceholder: vi.fn().mockReturnThis(),
 					setDisabled: vi.fn().mockReturnThis(),
 				};
+				this.controlEl.appendChild(inputEl);
 				cb(text);
 				return this;
 			}
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			addToggle(cb: any) {
+				const toggleEl = document.createElement('div');
 				const toggle = {
-					toggleEl: document.createElement('div'),
+					toggleEl,
 					setValue: vi.fn().mockReturnThis(),
 					onChange: vi.fn().mockReturnThis(),
 					setTooltip: vi.fn().mockReturnThis(),
 					setDisabled: vi.fn().mockReturnThis(),
 				};
+				this.controlEl.appendChild(toggleEl);
 				cb(toggle);
 				return this;
 			}
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			addDropdown(cb: any) {
+				const selectEl = document.createElement('select');
 				const drop = {
-					selectEl: document.createElement('select'),
-					addOption: vi.fn().mockReturnThis(),
-					setValue: vi.fn().mockReturnThis(),
+					selectEl,
+					addOption: vi.fn().mockImplementation((val: string, display: string) => {
+						const opt = document.createElement('option');
+						opt.value = val;
+						opt.textContent = display;
+						selectEl.appendChild(opt);
+						return drop;
+					}),
+					addOptions: vi.fn().mockImplementation((options: Record<string, string>) => {
+						for (const [val, display] of Object.entries(options)) {
+							const opt = document.createElement('option');
+							opt.value = val;
+							opt.textContent = display;
+							selectEl.appendChild(opt);
+						}
+						return drop;
+					}),
+					setValue: vi.fn().mockImplementation((val: string) => { selectEl.value = val; return drop; }),
 					onChange: vi.fn().mockReturnThis(),
 					setDisabled: vi.fn().mockReturnThis(),
 				};
+				this.controlEl.appendChild(selectEl);
 				cb(drop);
 				return this;
 			}
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			addSlider(_cb: any) { return this; }
+			addSlider(cb: any) {
+				const sliderEl = document.createElement('input');
+				sliderEl.type = 'range';
+				const slider = {
+					sliderEl,
+					setLimits: vi.fn().mockReturnThis(),
+					setValue: vi.fn().mockImplementation((val: number) => { sliderEl.value = String(val); return slider; }),
+					setDynamicTooltip: vi.fn().mockReturnThis(),
+					onChange: vi.fn().mockReturnThis(),
+					setDisabled: vi.fn().mockReturnThis(),
+				};
+				this.controlEl.appendChild(sliderEl);
+				if (typeof cb === 'function') cb(slider);
+				return this;
+			}
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			addButton(cb: any) {
 				const buttonEl = document.createElement('button');
 				const btn = {
 					buttonEl,
-					setButtonText: vi.fn().mockReturnThis(),
+					setButtonText: vi.fn().mockImplementation((txt: string) => { buttonEl.textContent = txt; return btn; }),
 					setIcon: vi.fn().mockReturnThis(),
 					setCta: vi.fn().mockReturnThis(),
 					setTooltip: vi.fn().mockReturnThis(),
@@ -283,6 +352,7 @@ vi.mock('obsidian', () => {
 					setWarning: vi.fn().mockReturnThis(),
 					onClick: vi.fn((fn: any) => { buttonEl.addEventListener('click', fn); return btn; }),
 				};
+				this.controlEl.appendChild(buttonEl);
 				cb(btn);
 				return this;
 			}
@@ -296,6 +366,7 @@ vi.mock('obsidian', () => {
 					setDisabled: vi.fn().mockReturnThis(),
 					onClick: vi.fn((fn: any) => { extraSettingsEl.addEventListener('click', fn); return btn; }),
 				};
+				this.controlEl.appendChild(extraSettingsEl);
 				cb(btn);
 				return this;
 			}
@@ -309,6 +380,7 @@ vi.mock('obsidian', () => {
 		},
 		Component: class {
 			load() { return false; }
+			unload() {}
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			addChild(_component: any) {}
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -359,6 +431,24 @@ if (typeof (globalThis as any).createEl === 'undefined') {
 		if (o?.cls) el.className = o.cls;
 		if (o?.text) el.textContent = o.text;
 		return el;
+	};
+}
+
+// ── Obsidian createDiv / createSpan global ──
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+if (typeof (globalThis as any).createDiv === 'undefined') {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	(globalThis as any).createDiv = (o?: any) => {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		return (globalThis as any).createEl('div', o);
+	};
+}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+if (typeof (globalThis as any).createSpan === 'undefined') {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	(globalThis as any).createSpan = (o?: any) => {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		return (globalThis as any).createEl('span', o);
 	};
 }
 
@@ -472,4 +562,18 @@ if (typeof HTMLElement !== 'undefined') {
 			return this instanceof type;
 		};
 	}
+}
+
+// ── Obsidian global activeDocument stub ──
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+if (typeof (globalThis as any).activeDocument === 'undefined') {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	(globalThis as any).activeDocument = typeof document !== 'undefined' ? document : null;
+}
+
+// ── Obsidian global sleep stub ──
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+if (typeof (globalThis as any).sleep === 'undefined') {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	(globalThis as any).sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 }

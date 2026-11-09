@@ -80,39 +80,33 @@ async function runTest() {
 			
 			const testPath = '__lumina_tag_e2e__.md';
 			let file = app.vault.getAbstractFileByPath(testPath);
-			if (!file) {
-			    file = await app.vault.create(testPath, '---\\ntags:\\n  - e2etag\\n---\\n# 테스트 태그 문서\\n여기에는 #testTag가 있습니다.');
-            }
+			if (file) await app.vault.delete(file);
+			file = await app.vault.create(testPath, '---\\ntags:\\n  - e2etag\\n---\\n# 테스트 태그 문서\\n여기에는 #testTag가 있습니다.');
 			
-			// wait for metadata cache to update
-			await new Promise(r => setTimeout(r, 1000));
-			
-			const chunks = lumina.indexer.indexedParentChunks;
-            const filterParentChunks = lumina.searchUtils?.filterParentChunks;
-            if(!filterParentChunks) {
-                // If we can't access it, let's manually write the logic here to see if it matches any chunks.
-                const q = '#e2etag';
-                const targetTag = q.toLowerCase();
-                const targetPrefix = targetTag + '/';
-                const filtered = chunks.filter(c => {
-                    const cache = app.metadataCache.getCache(c.path);
-                    if (!cache) return false;
-                    
-                    let tags = [];
-                    if (cache.tags) {
-                        tags.push(...cache.tags.map(t => t.tag));
-                    }
-                    if (cache.frontmatter && cache.frontmatter.tags) {
-                        const fmTags = cache.frontmatter.tags;
-                        if (Array.isArray(fmTags)) tags.push(...fmTags.map(t => '#' + t));
-                        else if (typeof fmTags === 'string') tags.push('#' + fmTags);
-                    }
-                    
-                    return tags.some(t => t.toLowerCase() === targetTag || t.toLowerCase().startsWith(targetPrefix));
-                });
-                
-                return { totalChunks: chunks.length, filteredMatches: filtered.length, matchedPaths: filtered.map(f => f.path) };
-            }
+			try {
+				// wait for metadata cache to update
+				await new Promise(r => setTimeout(r, 1000));
+				
+				const chunks = lumina.indexer.indexedParentChunks || [];
+				const q = '#e2etag';
+				const targetTag = q.toLowerCase();
+				const targetPrefix = targetTag + '/';
+				
+				const filtered = chunks.filter(c => {
+					const cache = app.metadataCache.getCache(c.path);
+					if (!cache) return false;
+					const tags = (obsidian && typeof obsidian.getAllTags === 'function')
+						? (obsidian.getAllTags(cache) ?? [])
+						: [...(cache.tags?.map(t => t.tag) || []), ...(Array.isArray(cache.frontmatter?.tags) ? cache.frontmatter.tags.map(t => '#' + t) : [])];
+					
+					return tags.some(t => t.toLowerCase() === targetTag || t.toLowerCase().startsWith(targetPrefix));
+				});
+				
+				return { totalChunks: chunks.length, filteredMatches: filtered.length, matchedPaths: filtered.map(f => f.path) };
+			} finally {
+				const cleanupFile = app.vault.getAbstractFileByPath(testPath);
+				if (cleanupFile) await app.vault.delete(cleanupFile);
+			}
 		})()`);
 		
 		console.log(JSON.stringify(evalResult, null, 2));

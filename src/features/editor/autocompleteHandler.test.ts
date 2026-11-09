@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EditorState } from '@codemirror/state';
+import { EditorView } from '@codemirror/view';
 import { AutocompleteHandler } from './autocompleteHandler';
 import {
 	autocompleteStateField,
+	autocompleteKeymap,
 	setSuggestion,
 	splitFirstWord,
 } from './autocompleteExtension';
@@ -124,46 +126,48 @@ describe('AutocompleteHandler & Inline Autocomplete', () => {
 			});
 		});
 
-		it('updates autocompleteStateField with remaining suggestion on partial accept', () => {
-			let state = EditorState.create({
-				doc: 'Hello',
-				selection: { anchor: 5 },
-				extensions: [autocompleteStateField],
+		it('updates autocompleteStateField with remaining suggestion on partial accept via ArrowRight and Tab', () => {
+			const parent = document.createElement('div');
+			document.body.appendChild(parent);
+
+			const view = new EditorView({
+				state: EditorState.create({
+					doc: 'Hello',
+					selection: { anchor: 5 },
+					extensions: [autocompleteStateField, autocompleteKeymap],
+				}),
+				parent,
 			});
 
-			// Set initial suggestion at pos 5
-			state = state.update({
+			// 초기 제안 주입 (pos 5에 ' world again')
+			view.dispatch({
 				effects: setSuggestion.of({ text: ' world again', pos: 5 }),
-			}).state;
-			expect(state.field(autocompleteStateField)).toEqual({ text: ' world again', pos: 5 });
+			});
+			expect(view.state.field(autocompleteStateField)).toEqual({ text: ' world again', pos: 5 });
 
-			// Simulate partial accept of first word (' world')
-			const current = state.field(autocompleteStateField)!;
-			const { firstWord, remaining } = splitFirstWord(current.text);
-			const nextPos = current.pos + firstWord.length;
+			// 1. ArrowRight 키 입력으로 첫 번째 단어 (' world') 부분 수락
+			view.contentDOM.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
 
-			state = state.update({
-				changes: { from: current.pos, insert: firstWord },
-				selection: { anchor: nextPos },
-				effects: setSuggestion.of(remaining ? { text: remaining, pos: nextPos } : null),
-			}).state;
+			expect(view.state.doc.toString()).toBe('Hello world');
+			expect(view.state.field(autocompleteStateField)).toEqual({ text: ' again', pos: 11 });
 
-			expect(state.doc.toString()).toBe('Hello world');
-			expect(state.field(autocompleteStateField)).toEqual({ text: ' again', pos: 11 });
+			// 2. Tab 키 입력으로 나머지 전체 제안 (' again') 수락
+			view.contentDOM.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
 
-			// Simulate partial accept of last word (' again')
-			const second = state.field(autocompleteStateField)!;
-			const step2 = splitFirstWord(second.text);
-			const finalPos = second.pos + step2.firstWord.length;
+			expect(view.state.doc.toString()).toBe('Hello world again');
+			expect(view.state.field(autocompleteStateField)).toBeNull();
 
-			state = state.update({
-				changes: { from: second.pos, insert: step2.firstWord },
-				selection: { anchor: finalPos },
-				effects: setSuggestion.of(step2.remaining ? { text: step2.remaining, pos: finalPos } : null),
-			}).state;
+			// 3. Escape 키 입력으로 제안 취소
+			view.dispatch({
+				effects: setSuggestion.of({ text: ' cancel me', pos: 17 }),
+			});
+			expect(view.state.field(autocompleteStateField)).toEqual({ text: ' cancel me', pos: 17 });
 
-			expect(state.doc.toString()).toBe('Hello world again');
-			expect(state.field(autocompleteStateField)).toBeNull();
+			view.contentDOM.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+			expect(view.state.field(autocompleteStateField)).toBeNull();
+
+			view.destroy();
+			parent.remove();
 		});
 	});
 });

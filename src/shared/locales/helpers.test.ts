@@ -6,7 +6,7 @@ import {
 	t,
 	getSystemLocale,
 	getLangSuffix,
-
+	getEnLocale,
 } from './helpers';
 
 describe('Locale Helpers', () => {
@@ -39,8 +39,10 @@ describe('Locale Helpers', () => {
 		vi.stubGlobal('navigator', { language: 'ko-KR' });
 	});
 
-	afterEach(() => {
+	afterEach(async () => {
 		vi.unstubAllGlobals();
+		addDynamicLocale('en', getEnLocale());
+		await setLanguage('en');
 	});
 
 	describe('setLanguage & getLanguage', () => {
