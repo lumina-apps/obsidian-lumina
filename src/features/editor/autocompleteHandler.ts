@@ -1,4 +1,6 @@
 import { sanitizeDisplayContent } from "../../shared/utils/llmTextSanitizer";
+import { estimateTokens } from "../../shared/utils/tokenEstimator";
+import type { ChatMessage } from "../../shared/types/llm.types";
 
 import { createProvider } from '../../core/llm-providers';
 import {
@@ -43,22 +45,49 @@ export class AutocompleteHandler {
 
 		if (!contextText.trim()) return null;
 
-		const instruction = this.plugin.settings.chat.autocompletePrompt?.trim() || DEFAULT_AUTOCOMPLETE_PROMPT;
-		const prompt = `${instruction}\n\nContext text:\n${contextText}`;
+		const customPrompt = this.plugin.settings.chat.autocompletePrompt?.trim();
+		const instruction = customPrompt || DEFAULT_AUTOCOMPLETE_PROMPT;
+		const isCustomInstruction = Boolean(customPrompt && customPrompt !== DEFAULT_AUTOCOMPLETE_PROMPT);
+
+		const systemPrompt = isCustomInstruction
+			? `${DEFAULT_AUTOCOMPLETE_PROMPT}\n\nAdditional user instructions (MUST follow strictly):\n${instruction}`
+			: instruction;
+
+		const userPrompt = isCustomInstruction
+			? `Context text:\n${contextText}\n\n[Instruction reminder: ${instruction}. Output ONLY the raw continuation text.]`
+			: `Context text:\n${contextText}`;
+
+		const llmMessages: ChatMessage[] = [
+			{ role: 'system', content: systemPrompt },
+			{ role: 'user', content: userPrompt },
+		];
 
 		if (this.abortController) {
 			this.abortController.abort();
 		}
 		this.abortController = new AbortController();
 
+		const startTime = Date.now();
+		const estimatedInputTokens = estimateTokens(systemPrompt) + estimateTokens(userPrompt);
+		const requestId = debugLogger.logRequest({
+			provider: providerConfig.type,
+			model: taskModelId,
+			temperature: 0.2,
+			maxTokens: 500,
+			stream: false,
+			systemPrompt,
+			messages: llmMessages.map(m => ({ role: m.role, content: m.content as string })),
+			estimatedInputTokens,
+		});
+
 		try {
 			const provider = createProvider(providerConfig);
 			
-			// We only want a very short completion
-			const response = await provider.chat([{ role: 'user', content: prompt }], {
+			// 추론형(Thinking) 모델이 내부 사고 토큰으로 출력 한도를 소진하지 않도록 여유 토큰(500) 부여
+			const response = await provider.chat(llmMessages, {
 				model: taskModelId,
 				temperature: 0.2,
-				maxOutputTokens: 50,
+				maxOutputTokens: 500,
 				signal: this.abortController.signal,
 				ttftTimeoutMs: 10000,
 				interTokenTimeoutMs: 5000,
@@ -68,17 +97,29 @@ export class AutocompleteHandler {
 			
 			// 간단한 후처리: 
 			// LLM이 생각 과정(think tag)을 포함한 경우 제거
-			let cleanSuggestion = sanitizeDisplayContent(suggestion);
+			let rawContent = suggestion;
+			const thinkEndIdx = rawContent.lastIndexOf('</think>');
+			if (thinkEndIdx !== -1) {
+				rawContent = rawContent.substring(thinkEndIdx + 8).trim();
+			}
+			let cleanSuggestion = sanitizeDisplayContent(rawContent);
 			
 			// 문맥 끝에 맞춰 띄어쓰기 조절
 			if (cleanSuggestion && !contextText.endsWith(' ') && !contextText.endsWith('\n')) {
 				cleanSuggestion = ' ' + cleanSuggestion;
 			}
 
+			debugLogger.logResponse(requestId, {
+				model: taskModelId,
+				content: cleanSuggestion || '(empty)',
+				durationMs: Date.now() - startTime,
+				usage: response.usage,
+			});
+
 			return cleanSuggestion || null;
 		} catch (error) {
 			if (error instanceof Error && error.name === 'AbortError') {
-				// Ignored
+				debugLogger.logDebug('autocomplete', 'Autocomplete request aborted by newer input');
 				return null;
 			}
 			debugLogger.logError('llm', error as Error);

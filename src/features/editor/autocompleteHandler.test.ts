@@ -89,21 +89,32 @@ describe('AutocompleteHandler & Inline Autocomplete', () => {
 			expect(res).toBe(' continuation text.');
 			expect(mockChatFn).toHaveBeenCalledTimes(1);
 			const messages = mockChatFn.mock.calls[0][0];
-			expect(messages[0].content).toBe(`${DEFAULT_AUTOCOMPLETE_PROMPT}\n\nContext text:\nHello`);
+			expect(messages).toEqual([
+				{ role: 'system', content: DEFAULT_AUTOCOMPLETE_PROMPT },
+				{ role: 'user', content: 'Context text:\nHello' },
+			]);
 		});
 
-		it('uses custom autocompletePrompt when configured', async () => {
+		it('uses custom autocompletePrompt when configured and preserves base autocomplete rules', async () => {
 			mockPlugin.settings.chat.autocompletePrompt = 'Custom instruction for inline completion.';
 			await handler.fetchSuggestion('My note');
 			const messages = mockChatFn.mock.calls[0][0];
-			expect(messages[0].content).toBe('Custom instruction for inline completion.\n\nContext text:\nMy note');
+			expect(messages[0].role).toBe('system');
+			expect(messages[0].content).toContain(DEFAULT_AUTOCOMPLETE_PROMPT);
+			expect(messages[0].content).toContain('Custom instruction for inline completion.');
+			expect(messages[1].role).toBe('user');
+			expect(messages[1].content).toContain('Context text:\nMy note');
+			expect(messages[1].content).toContain('Custom instruction for inline completion.');
 		});
 
 		it('falls back to DEFAULT_AUTOCOMPLETE_PROMPT when autocompletePrompt is blank', async () => {
 			mockPlugin.settings.chat.autocompletePrompt = '   ';
 			await handler.fetchSuggestion('My note');
 			const messages = mockChatFn.mock.calls[0][0];
-			expect(messages[0].content).toBe(`${DEFAULT_AUTOCOMPLETE_PROMPT}\n\nContext text:\nMy note`);
+			expect(messages).toEqual([
+				{ role: 'system', content: DEFAULT_AUTOCOMPLETE_PROMPT },
+				{ role: 'user', content: 'Context text:\nMy note' },
+			]);
 		});
 	});
 
