@@ -99,7 +99,6 @@ async function findSessionFile(app: App, files: TFile[], sessionId: string): Pro
 // ─── Save ─────────────────────────────────────────────────────────────────────
 
 export async function saveSession(app: App, session: ChatSession, basePath: string): Promise<void> {
-	debugLogger.logSystem('history', `saveSession started (sessionId=${session.id}, title="${session.title}", basePath=${basePath})`);
 	const cleanBase = (basePath?.trim() || 'chatHistory').replace(/[/\\]+$/, '');
 	const normalBase = normalizePath(cleanBase);
 
@@ -157,7 +156,6 @@ export async function saveSession(app: App, session: ChatSession, basePath: stri
 // ─── Load & Delete ─────────────────────────────────────────────────────────────
 
 export async function loadSessionsList(app: App, basePath: string): Promise<ChatSession[]> {
-	debugLogger.logSystem('history', `loadSessionsList started (basePath=${basePath})`);
 	const cleanBase = (basePath?.trim() || 'chatHistory').replace(/[/\\]+$/, '');
 	const normalBase = normalizePath(cleanBase);
 	const folderExists = await app.vault.adapter.exists(normalBase);
@@ -221,7 +219,6 @@ export async function loadSessionsList(app: App, basePath: string): Promise<Chat
 
 /** 세션 파일에서 숨김 JSON을 파싱해 ChatSession(메시지 포함) 복원 */
 export async function loadSession(app: App, sessionId: string, basePath: string): Promise<ChatSession | null> {
-	debugLogger.logSystem('history', `loadSession started (sessionId=${sessionId}, basePath=${basePath})`);
 	const cleanBase = (basePath?.trim() || 'chatHistory').replace(/[/\\]+$/, '');
 	const normalBase = normalizePath(cleanBase);
 	const files = getHistoryFiles(app, normalBase);
@@ -240,6 +237,7 @@ export async function loadSession(app: App, sessionId: string, basePath: string)
 		try {
 			const cleanBase64 = matchV2[1].replace(/\s+/g, '');
 			const parsed = JSON.parse(base64ToUtf8(cleanBase64)) as ChatSession;
+			debugLogger.logSystem('history', `loadSession completed (sessionId=${sessionId}, file=${file.path})`);
 			return parsed;
 		} catch (e) {
 			debugLogger.logError('history', normalizeError(e, `Failed to parse V2 history data: ${e}`));
@@ -250,6 +248,7 @@ export async function loadSession(app: App, sessionId: string, basePath: string)
 	if (match && match[1]) {
 		try {
 			const parsed = JSON.parse(match[1]) as ChatSession;
+			debugLogger.logSystem('history', `loadSession completed (sessionId=${sessionId}, file=${file.path})`);
 			return parsed;
 		} catch (e) {
 			debugLogger.logError('history', normalizeError(e, `Failed to parse history JSON data: ${e}`));
@@ -283,9 +282,8 @@ export async function deleteSession(app: App, sessionId: string, basePath: strin
 	
 	const file = await findSessionFile(app, files, sessionId);
 	if (file) {
-		debugLogger.logSystem('history', `deleteSession: deleting session file (${file.path})`);
 		await app.fileManager.trashFile(file);
-		debugLogger.logSystem('history', `deleteSession: deleted (sessionId=${sessionId})`);
+		debugLogger.logSystem('history', `deleteSession: deleted (sessionId=${sessionId}, file=${file.path})`);
 		return true;
 	}
 	debugLogger.logSystem('history', `deleteSession: session file not found (sessionId=${sessionId})`);
@@ -295,7 +293,6 @@ export async function deleteSession(app: App, sessionId: string, basePath: strin
 // ─── Export ───────────────────────────────────────────────────────────────────
 
 export async function exportSessionToMarkdown(app: App, session: ChatSession): Promise<void> {
-	debugLogger.logSystem('history', `exportSessionToMarkdown started (sessionId=${session.id}, title="${session.title}")`);
 	const dateObj = new Date(session.createdAt);
 	const yy = String(dateObj.getFullYear()).slice(2);
 	const mm = String(dateObj.getMonth() + 1).padStart(2, '0');

@@ -23,12 +23,13 @@ export function collectMcpTools(params: {
 	const toolServerMap: Record<string, string> = {};
 
 	if (!agentEnabled || !mcpManager || !clientToolsEnabled) {
-		debugLogger.logMcp('Tools Init', 'MCP 툴 비활성화됨 (clientToolsEnabled=false 또는 mcpManager 없음)');
 		return { mcpTools, toolServerMap };
 	}
 
 	const rawTools = mcpManager.getAllTools();
-	debugLogger.logMcp('Tools Init', `MCP 툴 ${rawTools.length}개 수집`, rawTools.map((t: McpTool) => t.name));
+	if (rawTools.length > 0) {
+		debugLogger.logMcp('Tools Init', `MCP 툴 ${rawTools.length}개 수집 (mode=${agentExecutionMode})`, rawTools.map((t: McpTool) => t.name));
+	}
 
 	for (const tool of rawTools) {
 

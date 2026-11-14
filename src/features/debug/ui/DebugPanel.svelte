@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy, tick } from 'svelte';
 	import type LuminaPlugin from '../../../main';
-	import { debugLogger } from '../../../shared/debugLogger';
+	import { debugLogger, MAX_DEBUG_ENTRIES } from '../../../shared/debugLogger';
 	import { t } from '../../../shared/locales/helpers';
 	import type { DebugLogEntry, DebugLogType } from '../../../shared/types/debug.types';
 	import DebugHeader from './DebugHeader.svelte';
@@ -42,7 +42,7 @@
 
 		unsubLog = debugLogger.onLog((entry) => {
 			entries = [...entries, entry];
-			if (entries.length > 200) entries = entries.slice(-200);
+			if (entries.length > MAX_DEBUG_ENTRIES) entries = entries.slice(-MAX_DEBUG_ENTRIES);
 			if (autoScroll) scrollToBottom();
 		});
 

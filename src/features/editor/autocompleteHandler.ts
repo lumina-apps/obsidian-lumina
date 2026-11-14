@@ -68,17 +68,9 @@ export class AutocompleteHandler {
 		this.abortController = new AbortController();
 
 		const startTime = Date.now();
-		const estimatedInputTokens = estimateTokens(systemPrompt) + estimateTokens(userPrompt);
-		const requestId = debugLogger.logRequest({
-			provider: providerConfig.type,
-			model: taskModelId,
-			temperature: 0.2,
-			maxTokens: 500,
-			stream: false,
-			systemPrompt,
-			messages: llmMessages.map(m => ({ role: m.role, content: m.content as string })),
-			estimatedInputTokens,
-		});
+		const estimatedInputTokens = debugLogger.isEnabled
+			? estimateTokens(systemPrompt) + estimateTokens(userPrompt)
+			: undefined;
 
 		try {
 			const provider = createProvider(providerConfig);
@@ -109,20 +101,47 @@ export class AutocompleteHandler {
 				cleanSuggestion = ' ' + cleanSuggestion;
 			}
 
+			// 키 입력 중 취소(Abort)되지 않고 완료된 요청만 쌍으로 기록하여 링 버퍼 오염 및 미완결 로그 방지
+			const requestId = debugLogger.logRequest({
+				provider: providerConfig.type,
+				model: taskModelId,
+				temperature: 0.2,
+				maxTokens: 500,
+				stream: false,
+				systemPrompt,
+				messages: llmMessages.map(m => ({ role: m.role, content: m.content as string })),
+				...(estimatedInputTokens !== undefined ? { estimatedInputTokens } : {}),
+			});
 			debugLogger.logResponse(requestId, {
 				model: taskModelId,
 				content: cleanSuggestion || '(empty)',
 				durationMs: Date.now() - startTime,
 				usage: response.usage,
+				...(response.finishReason ? { stopReason: response.finishReason } : {}),
 			});
 
 			return cleanSuggestion || null;
 		} catch (error) {
 			if (error instanceof Error && error.name === 'AbortError') {
-				debugLogger.logDebug('autocomplete', 'Autocomplete request aborted by newer input');
 				return null;
 			}
-			debugLogger.logError('llm', error as Error);
+			const requestId = debugLogger.logRequest({
+				provider: providerConfig.type,
+				model: taskModelId,
+				temperature: 0.2,
+				maxTokens: 500,
+				stream: false,
+				systemPrompt,
+				messages: llmMessages.map(m => ({ role: m.role, content: m.content as string })),
+				...(estimatedInputTokens !== undefined ? { estimatedInputTokens } : {}),
+			});
+			debugLogger.logResponse(requestId, {
+				model: taskModelId,
+				content: `❌ [Error] ${error instanceof Error ? error.message : String(error)}`,
+				durationMs: Date.now() - startTime,
+				stopReason: 'error',
+			});
+			debugLogger.logError('llm', error instanceof Error ? error : new Error(String(error)));
 			return null;
 		}
 	}

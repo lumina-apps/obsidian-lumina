@@ -5,8 +5,8 @@ import { getStringArg, blockIfPathNotAllowed } from '../../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../../toolTypes';
 import type { PathGuard } from '../../pathGuard';
 import { createBackup } from '../../../../../features/backup/backupManager';
-import { approvalManager } from '../../../../../features/chat/utils/approvalManager';
-import type { ActionType } from '../../../../../features/chat/utils/approvalManager';
+import { approvalManager } from '../../../../store/approvalStore';
+import type { ActionType } from '../../../../store/approvalStore';
 
 export const DEFAULT_REJECTION_MESSAGE = 'User explicitly rejected the change. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.';
 

@@ -11,7 +11,7 @@ import { debugLogger } from '../../../shared/debugLogger';
 import { resizeImageDataUrl } from './imageUtils';
 import { TEXT_EXTS } from './fileAttachmentUtils';
 import { getActiveProject } from '../../../core/store/projectStore';
-import { isExcluded, isIncluded } from '../../rag/exclusions';
+import { isExcluded, isIncluded } from '../../../shared/utils/exclusions';
 
 export const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif']);
 const MAX_TEXT_LENGTH = 2000000; // 물리적 텍스트 안전 상한선 (약 50만 토큰, OOM 힙 크래시 방지)

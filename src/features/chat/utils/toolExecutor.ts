@@ -20,6 +20,7 @@ export async function executeToolCall(
 	signal?: AbortSignal,
 ): Promise<ChatMessage> {
 	const toolMsgRole = useTextTools ? 'user' : 'tool';
+	const toolStart = Date.now();
 
 	try {
 		// _serverId를 제거한 인자로 실행
@@ -52,10 +53,23 @@ export async function executeToolCall(
 			};
 		}
 
+		const durationMs = Date.now() - toolStart;
+		const isToolError = Boolean(
+			typeof toolResult === 'object' &&
+				toolResult !== null &&
+				'isError' in toolResult &&
+				(toolResult as { isError?: unknown }).isError,
+		);
 		const resultText = truncateToolResult(extractToolResultText(toolResult), tc.name);
-		debugLogger.logMcp('Tool Result', `◀️ 툴 결과: ${tc.name} → ${resultText.length}자`, {
-			result: resultText,
-		});
+		debugLogger.logMcp(
+			'Tool Result',
+			`◀️ 툴 결과: ${tc.name} → ${resultText.length}자 (${durationMs}ms${isToolError ? ', isError=true' : ''})`,
+			{
+				durationMs,
+				isError: isToolError,
+				result: resultText,
+			},
+		);
 
 		return {
 			role: toolMsgRole,
@@ -67,7 +81,9 @@ export async function executeToolCall(
 			thoughtSignature: tc.thoughtSignature,
 		};
 	} catch (e) {
-		debugLogger.logMcp('Tool Error', `❌ 툴 실행 오류 ${tc.name}`, {
+		const durationMs = Date.now() - toolStart;
+		debugLogger.logMcp('Tool Error', `❌ 툴 실행 오류 ${tc.name} (${durationMs}ms)`, {
+			durationMs,
 			error: (e as Error).message,
 		});
 

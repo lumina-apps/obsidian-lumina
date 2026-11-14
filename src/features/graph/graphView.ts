@@ -30,7 +30,6 @@ export class GraphView extends ItemView {
 	}
 
 	async onOpen(): Promise<void> {
-		debugLogger.logSystem('graph_view', 'GraphView opened');
 		this.contentEl.empty();
 		this.contentEl.addClass('lumina-graph-view');
 

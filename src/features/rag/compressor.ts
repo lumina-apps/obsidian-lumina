@@ -37,6 +37,17 @@ ${query}
 Document Chunk:
 ${c.chunk.text}`;
 
+			const reqStart = Date.now();
+			const requestId = debugLogger.logRequest({
+				provider: providerConfig.type,
+				model: modelId,
+				temperature: 0.3,
+				maxTokens: 500,
+				stream: false,
+				systemPrompt: `[RAG Context Compression — ${c.chunk.path}]`,
+				messages: [{ role: 'user', content: prompt }],
+			});
+
 			try {
 				const response = await provider.chat(
 					[{ role: 'user', content: prompt }],
@@ -51,6 +62,14 @@ ${c.chunk.text}`;
 				// 불필요한 생각 과정(추론 모델) 제거
 				const finalContent = sanitizeDisplayContent(response.content);
 
+				debugLogger.logResponse(requestId, {
+					model: modelId,
+					content: finalContent,
+					durationMs: Date.now() - reqStart,
+					usage: response.usage,
+					...(response.finishReason ? { stopReason: response.finishReason } : {}),
+				});
+
 				// 원본 객체를 복제하여 텍스트만 갱신
 				return {
 					...c,
@@ -60,7 +79,14 @@ ${c.chunk.text}`;
 					}
 				};
 			} catch (innerErr) {
-				if (innerErr instanceof Error && innerErr.name === 'AbortError') {
+				const isAborted = innerErr instanceof Error && innerErr.name === 'AbortError';
+				debugLogger.logResponse(requestId, {
+					model: modelId,
+					content: `❌ [Error] ${innerErr instanceof Error ? innerErr.message : String(innerErr)}`,
+					durationMs: Date.now() - reqStart,
+					stopReason: isAborted ? 'aborted' : 'error',
+				});
+				if (isAborted) {
 					throw innerErr;
 				}
 				debugLogger.logError('rag_compress_chunk', normalizeError(innerErr));

@@ -100,6 +100,11 @@ export default class LuminaPlugin extends Plugin {
 	/** 플러그인 언로드 여부 — 비동기 초기화 중 언로드되면 MCP 생성을 건너뛰기 위한 플래그 */
 	private _unloaded = false;
 
+	/** 플러그인이 언로드 과정에 있는지 반환 */
+	get isUnloaded(): boolean {
+		return this._unloaded;
+	}
+
 	// Managers
 	public settingsManager!: SettingsManager;
 	public commandManager!: CommandManager;

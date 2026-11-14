@@ -14,7 +14,7 @@ import { estimateTokens } from '../../shared/utils/tokenEstimator';
 import { getVaultBasePath } from '../../shared/utils/fileUtils';
 import type { ChatMessage, TokenUsage } from '../../shared/types/llm.types';
 import { activateView } from '../../core/views/viewHelper';
-import { CHAT_VIEW_TYPE } from '../chat/chatView';
+import { CHAT_VIEW_TYPE } from '../../shared/constants/viewTypes';
 
 export class QuickActionHandler {
 	private plugin: LuminaPlugin;
@@ -140,6 +140,12 @@ export class QuickActionHandler {
 			}
 		};
 
+		let llmStart = Date.now();
+		let requestId = '';
+		let tokenUsage: TokenUsage | undefined;
+		let fullResponse = '';
+		let finishReason: string | undefined;
+
 		try {
 			const provider = createProvider(providerConfig);
 
@@ -156,16 +162,14 @@ export class QuickActionHandler {
 				{ role: 'user', content: userPrompt }
 			];
 
-			const llmStart = Date.now();
-			let tokenUsage: TokenUsage | undefined;
-			let fullResponse = '';
+			llmStart = Date.now();
 
 			const estimatedInputTokens = llmMessages.reduce((acc, m) => {
 				const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
 				return acc + estimateTokens(c);
 			}, 0);
 
-			const requestId = debugLogger.logRequest({
+			requestId = debugLogger.logRequest({
 				provider: providerConfig.type,
 				model: modelId,
 				temperature: chat.temperature,
@@ -225,6 +229,7 @@ export class QuickActionHandler {
 					}
 				);
 				tokenUsage = streamRes?.usage;
+				finishReason = streamRes?.finishReason;
 
 				// 스트리밍 청크가 없으면 일반 chat 요청으로 폴백
 				if (chunkCount === 0) {
@@ -235,6 +240,7 @@ export class QuickActionHandler {
 					const resultText = response.content;
 					fullResponse = resultText;
 					tokenUsage = response?.usage;
+					finishReason = response?.finishReason;
 
 					if (fullResponse.includes('<think>') || fullResponse.includes('&lt;think&gt;')) {
 						throw new Error('REASONING_DETECTED');
@@ -266,6 +272,7 @@ export class QuickActionHandler {
 				const resultText = response.content;
 				fullResponse = resultText;
 				tokenUsage = response?.usage;
+				finishReason = response?.finishReason;
 
 				if (fullResponse.includes('<think>') || fullResponse.includes('&lt;think&gt;')) {
 					throw new Error('REASONING_DETECTED');
@@ -287,11 +294,21 @@ export class QuickActionHandler {
 				content: fullResponse,
 				durationMs: Date.now() - llmStart,
 				usage: tokenUsage,
+				...(finishReason ? { stopReason: finishReason } : {}),
 			});
 
 			new Notice(t('uiMessages.qaCompleted', { name: action.name }));
 		} catch (err: unknown) {
 			const msg = err instanceof Error ? err.message : t('uiMessages.qaUnknownError');
+			if (requestId) {
+				debugLogger.logResponse(requestId, {
+					model: modelId,
+					content: fullResponse || `❌ [Error] ${msg}`,
+					durationMs: Date.now() - llmStart,
+					usage: tokenUsage,
+					stopReason: msg === 'REASONING_DETECTED' ? 'reasoning_detected' : 'error',
+				});
+			}
 			if (msg === 'REASONING_DETECTED') {
 				new Notice(t('uiMessages.qaReasoningDetected'), 10000);
 				revertEditor();

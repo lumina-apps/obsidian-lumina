@@ -1,0 +1,108 @@
+/**
+ * 인덱싱 및 에이전트 접근 제외/포함 경로 관리 유틸리티.
+ */
+
+/** 기본 제외 경로 프리픽스 */
+export const DEFAULT_EXCLUDED_PATHS: readonly string[] = [
+	'templates',
+	'Templates',
+	'_templates',
+	'chatHistory',
+	'backups',
+];
+
+function globToRegExp(glob: string): RegExp {
+	let regexStr = '^';
+	let i = 0;
+	while (i < glob.length) {
+		const c = glob[i];
+		if (c === '*') {
+			if (glob[i + 1] === '*') {
+				if (glob[i + 2] === '/') {
+					regexStr += '(?:.+/)?';
+					i += 3;
+					continue;
+				}
+				regexStr += '.*';
+				i += 2;
+				continue;
+			}
+			regexStr += '[^/]*';
+		} else if (c === '?') {
+			regexStr += '[^/]';
+		} else if ('+^$()[]{}|.\\'.includes(c)) {
+			regexStr += '\\' + c;
+		} else {
+			regexStr += c;
+		}
+		i++;
+	}
+	regexStr += '$';
+	return new RegExp(regexStr);
+}
+
+function matchesPrefix(filePath: string, prefix: string): boolean {
+	let normalizedPrefix = prefix.trim().replace(/\\/g, '/');
+	if (normalizedPrefix.startsWith('/')) {
+		normalizedPrefix = normalizedPrefix.slice(1);
+	}
+	if (normalizedPrefix.endsWith('/')) {
+		normalizedPrefix = normalizedPrefix.slice(0, -1);
+	}
+	if (!normalizedPrefix) return false;
+
+	let normalizedFilePath = filePath.trim().replace(/\\/g, '/');
+	if (normalizedFilePath.startsWith('/')) {
+		normalizedFilePath = normalizedFilePath.slice(1);
+	}
+
+	if (normalizedPrefix.includes('*') || normalizedPrefix.includes('?')) {
+		const regex = globToRegExp(normalizedPrefix);
+		if (regex.test(normalizedFilePath)) return true;
+		if (!normalizedPrefix.includes('/')) {
+			const basename = normalizedFilePath.slice(normalizedFilePath.lastIndexOf('/') + 1);
+			return regex.test(basename);
+		}
+		return false;
+	}
+
+	return normalizedFilePath === normalizedPrefix || normalizedFilePath.startsWith(normalizedPrefix + '/');
+}
+
+/**
+ * 파일 경로가 제외 대상인지 확인합니다.
+ * @param filePath  볼트 내 상대 경로
+ * @param userPaths 사용자 설정 제외 경로 목록
+ */
+export function isExcluded(filePath: string, userPaths: string[]): boolean {
+	for (let i = 0; i < DEFAULT_EXCLUDED_PATHS.length; i++) {
+		if (matchesPrefix(filePath, DEFAULT_EXCLUDED_PATHS[i])) return true;
+	}
+	if (userPaths && userPaths.length > 0) {
+		for (let i = 0; i < userPaths.length; i++) {
+			const p = userPaths[i]?.trim();
+			if (!p || p === '/' || p === '\\') continue;
+			if (matchesPrefix(filePath, p)) return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * 파일 경로가 포함 대상인지 확인합니다. (White List)
+ * @param filePath  볼트 내 상대 경로
+ * @param includePaths 사용자 설정 포함 경로 목록
+ * @returns includePaths가 비어있으면 항상 true, 아니면 매칭 시 true
+ */
+export function isIncluded(filePath: string, includePaths: string[]): boolean {
+	if (!includePaths || includePaths.length === 0) {
+		return true; // 설정이 없으면 전체 포함
+	}
+
+	for (let i = 0; i < includePaths.length; i++) {
+		const p = includePaths[i]?.trim();
+		if (!p || p === '/' || p === '\\') return true; // 루트 포함은 전체 포함
+		if (matchesPrefix(filePath, p)) return true;
+	}
+	return false;
+}

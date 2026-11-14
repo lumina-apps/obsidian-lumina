@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { McpManager } from './mcpManager';
 import { Platform } from 'obsidian';
-import { approvalManager } from '../../features/chat/utils/approvalManager';
+import { approvalManager } from '../store/approvalStore';
 
 // ─── 1. Platform Mocking ────────────────────────────────────────────────────
 vi.mock('obsidian', () => {
@@ -16,7 +16,7 @@ vi.mock('obsidian', () => {
 });
 
 // ─── 2. approvalManager Mocking ──────────────────────────────────────────────
-vi.mock('../../features/chat/utils/approvalManager', () => {
+vi.mock('../store/approvalStore', () => {
 	return {
 		approvalManager: {
 			requestActionApproval: vi.fn().mockResolvedValue(true),

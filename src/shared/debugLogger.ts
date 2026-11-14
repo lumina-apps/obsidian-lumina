@@ -18,7 +18,37 @@ import type {
 
 export type { DebugLogEntry, LLMRequestLog, LLMResponseLog, RAGSearchLog, RagChunkMeta, SystemLog, ErrorLog, MCPLog };
 
-const MAX_ENTRIES = 200;
+/** 링 버퍼 최대 보관 엔트리 수 */
+export const MAX_DEBUG_ENTRIES = 200;
+
+const DATA_IMAGE_REGEX = /data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g;
+
+/** 문자열 내 base64 이미지 데이터 URL을 크기 요약 표기로 치환 */
+export function redactBase64Images(text: string): string {
+	if (!text.includes('data:image/')) return text;
+	return text.replace(DATA_IMAGE_REGEX, (match) => {
+		const commaIdx = match.indexOf(',');
+		const base64Len = commaIdx !== -1 ? match.length - commaIdx - 1 : match.length;
+		const approxKb = Math.max(1, Math.round((base64Len * 3) / 4 / 1024));
+		return `[image data: ~${approxKb}KB]`;
+	});
+}
+
+/**
+ * 디버그 로그 기록용 메시지 배열 직렬화 헬퍼.
+ * 멀티모달 메시지 내 base64 이미지 데이터를 크기 요약으로 치환한다.
+ */
+export function formatMessagesForDebugLog(
+	messages: ReadonlyArray<{ role: string; content: unknown }>,
+): Array<{ role: string; content: string }> {
+	return messages.map((m) => {
+		const rawContent = typeof m.content === 'string' ? m.content : JSON.stringify(m.content ?? '');
+		return {
+			role: m.role,
+			content: redactBase64Images(rawContent),
+		};
+	});
+}
 
 type LogListener = (entry: DebugLogEntry) => void;
 type ClearListener = () => void;
@@ -44,7 +74,7 @@ class DebugLogger {
 
 	/** 항목을 링 버퍼에 추가 (초과 시 가장 오래된 항목 제거) */
 	private push(entry: DebugLogEntry): void {
-		if (this.entries.length >= MAX_ENTRIES) {
+		if (this.entries.length >= MAX_DEBUG_ENTRIES) {
 			this.entries.shift();
 		}
 		this.entries.push(entry);
@@ -66,6 +96,11 @@ class DebugLogger {
 			type: 'llm-request',
 			timestamp: Date.now(),
 			...params,
+			systemPrompt: redactBase64Images(params.systemPrompt),
+			messages: params.messages.map((m) => ({
+				role: m.role,
+				content: redactBase64Images(m.content),
+			})),
 		});
 		return id;
 	}

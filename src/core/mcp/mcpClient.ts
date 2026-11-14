@@ -44,7 +44,11 @@ export class LuminaMcpClient {
 		// 1. Streamable HTTP 먼저 시도 (대부분의 최신 MCP 서버)
 		try {
 			await this._connectStreamableHttp(urlObj);
-		} catch {
+		} catch (streamErr) {
+			debugLogger.logDebug(
+				'mcp',
+				`Streamable HTTP connect failed for ${this.config.name}, falling back to SSE: ${streamErr instanceof Error ? streamErr.message : String(streamErr)}`,
+			);
 			// 2. 실패 시 SSE로 폴백 (레거시 SSE-only 서버 대응)
 			await this._connectSse(urlObj);
 		}

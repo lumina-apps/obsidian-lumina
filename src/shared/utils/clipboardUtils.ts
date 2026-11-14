@@ -1,4 +1,6 @@
 import { Notice } from 'obsidian';
+import { debugLogger } from '../debugLogger';
+import { normalizeError } from './errorUtils';
 
 /** 클립보드 복사 유틸 */
 export async function copyToClipboard(
@@ -9,6 +11,6 @@ export async function copyToClipboard(
 		await navigator.clipboard.writeText(text);
 		new Notice(successMessage);
 	} catch (err) {
-		console.error('[Lumina] Failed to copy to clipboard:', err);
+		debugLogger.logError('clipboard', normalizeError(err, `Failed to copy to clipboard: ${err}`));
 	}
 }

@@ -80,12 +80,25 @@ export class LuminaMcpServer {
 			const { name, arguments: rawArgs } = request.params;
 			const args: ToolArguments = (rawArgs as Record<string, unknown>) ?? {};
 			const ctx = this.buildContext(extra?.signal);
+			const callStart = Date.now();
 
 			try {
 				const result = await dispatchToolHandler(name, args, ctx, this.pathGuard);
+				const durationMs = Date.now() - callStart;
+				debugLogger.logMcp(
+					'Server Tool Call',
+					`MCP 서버 툴 처리: ${name} (${durationMs}ms${result.isError ? ', isError=true' : ''})`,
+					{ name, durationMs, isError: Boolean(result.isError) },
+				);
 				return result;
 			} catch (e) {
+				const durationMs = Date.now() - callStart;
 				const message = formatMcpError(e).message;
+				debugLogger.logMcp(
+					'Server Tool Error',
+					`MCP 서버 툴 예외: ${name} (${durationMs}ms) - ${message}`,
+					{ name, durationMs, error: message },
+				);
 				debugLogger.logError('mcp', formatMcpError(e));
 				return {
 					isError: true,

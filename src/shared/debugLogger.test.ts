@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { debugLogger } from './debugLogger';
+import { debugLogger, redactBase64Images, formatMessagesForDebugLog, MAX_DEBUG_ENTRIES } from './debugLogger';
 
 describe('debugLogger', () => {
 	beforeEach(() => {
@@ -70,5 +70,44 @@ describe('debugLogger', () => {
 
 		unsub1();
 		unsub2();
+	});
+
+	it('should redact base64 image data URLs in logRequest and formatMessagesForDebugLog', () => {
+		debugLogger.setEnabled(true);
+		const fakeBase64 = 'A'.repeat(4096);
+		const rawDataUrl = `data:image/png;base64,${fakeBase64}`;
+
+		expect(redactBase64Images(rawDataUrl)).toMatch(/^\[image data: ~\d+KB\]$/);
+
+		const formatted = formatMessagesForDebugLog([
+			{
+				role: 'user',
+				content: [
+					{ type: 'text', text: 'Describe this image' },
+					{ type: 'image_url', image_url: { url: rawDataUrl } },
+				],
+			},
+		]);
+		expect(formatted[0].content).not.toContain(fakeBase64);
+		expect(formatted[0].content).toContain('[image data: ~');
+
+		const reqId = debugLogger.logRequest({
+			provider: 'openai',
+			model: 'gpt-4o',
+			temperature: 0.7,
+			maxTokens: 1000,
+			stream: true,
+			systemPrompt: 'sys',
+			messages: [{ role: 'user', content: ` inline ${rawDataUrl} ` }],
+		});
+		expect(reqId).toBeTruthy();
+		expect(MAX_DEBUG_ENTRIES).toBe(200);
+
+		const entries = debugLogger.getEntries();
+		expect(entries).toHaveLength(1);
+		if (entries[0].type === 'llm-request') {
+			expect(entries[0].messages[0].content).not.toContain(fakeBase64);
+			expect(entries[0].messages[0].content).toContain('[image data: ~');
+		}
 	});
 });

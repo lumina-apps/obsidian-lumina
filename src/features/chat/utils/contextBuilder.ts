@@ -11,13 +11,14 @@ import { isLocalProvider } from '../../../core/llm-providers/index';
 import { indexingState } from '../../../core/store/ragStore';
 import { sessionSummary, summaryUpToMessageId } from '../../../core/store/chatStore';
 import { getActiveProject } from '../../../core/store/projectStore';
-import { isExcluded, isIncluded } from '../../rag/exclusions';
+import { isExcluded, isIncluded } from '../../../shared/utils/exclusions';
 import { buildMessages } from '../promptBuilder';
 import { ChatAttachmentHandler, IMAGE_EXTENSIONS } from './ChatAttachmentHandler';
 import { resolveRagSearchFlag, performRagSearch } from './ragSearchHelper';
 import { collectMcpTools, injectToolPrompts } from './mcpToolHelper';
 import { injectMultimodalImages } from './multimodalHelper';
 import { collectWebSearchTool } from './webSearchToolHelper';
+import { debugLogger } from '../../../shared/debugLogger';
 
 export interface ResolvedContext {
 	llmMessages: ChatMessage[];
@@ -272,6 +273,37 @@ export async function buildLlmContext(
 			llmMessages = injectMultimodalImages(llmMessages, multimodalImages);
 		}
 	}
+
+	const ragStatus = get(indexingState).status;
+	const ragSkipReason = !shouldSearchRag
+		? 'disabled'
+		: !plugin.indexer
+			? 'no_indexer'
+			: ragStatus !== 'ready'
+				? `indexing_${ragStatus}`
+				: (userText.trim().length === 0 && ragFilterFolders.length === 0)
+					? 'empty_query'
+					: null;
+
+	debugLogger.logSystem(
+		'chat-context',
+		`Context built (messages=${llmMessages.length}, tools=${mcpTools.length}, ragChunks=${ragChunksForLog?.length ?? 0}${ragSkipReason ? `, ragSkipped=${ragSkipReason}` : ''})`,
+		{
+			messagesCount: llmMessages.length,
+			historyTurnsUsed: effectiveHistory.length,
+			summaryApplied: Boolean(currentSummaryUpToId),
+			attachmentsCount: updatedAttachments.length,
+			historyAttachmentsRestored: historyTextAttachments.length,
+			...(failedAttachments && failedAttachments.length > 0 ? { failedAttachments } : {}),
+			multimodalImagesCount: multimodalImages.length,
+			ragSearched: ragSkipReason === null,
+			...(ragSkipReason ? { ragSkipReason } : {}),
+			ragChunksCount: ragChunksForLog?.length ?? 0,
+			mcpToolsCount: mcpTools.length,
+			useTextTools,
+			activeFilePath: activeFilePath ?? null,
+		},
+	);
 
 	return { llmMessages, ragChunksForLog, useTextTools, mcpTools, toolServerMap, attachments: updatedAttachments };
 }

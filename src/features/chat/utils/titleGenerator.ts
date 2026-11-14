@@ -43,12 +43,27 @@ export async function generateTitleWithLLM(
 		.replace(/"/g, '\\"');
 	const prompt = `Summarize the following user message into a very short title in 3-5 words. Output only the title text, no quotes, no explanations.\n\nUser message: "${safeContent}"`;
 
+	const systemPrompt = 'You are a title generator. Reply with ONLY the title in 3-5 words, in the same language as the user\'s message. No explanations, no thinking tags, no markdown. Just the title text.';
+	const reqStart = Date.now();
+	const requestId = debugLogger.logRequest({
+		provider: providerConfig.type,
+		model: modelId,
+		temperature: 0,
+		maxTokens: 2000,
+		stream: false,
+		systemPrompt,
+		messages: [
+			{ role: 'system', content: systemPrompt },
+			{ role: 'user', content: prompt },
+		],
+	});
+
 	try {
 		const { createProvider } = await import('../../../core/llm-providers/index');
 		const provider = createProvider(providerConfig);
 		const response = await provider.chat(
 			[
-				{ role: 'system', content: 'You are a title generator. Reply with ONLY the title in 3-5 words, in the same language as the user\'s message. No explanations, no thinking tags, no markdown. Just the title text.' },
+				{ role: 'system', content: systemPrompt },
 				{ role: 'user', content: prompt }
 			],
 			{
@@ -64,8 +79,21 @@ export async function generateTitleWithLLM(
 			rawContent = rawContent.substring(thinkEndIdx + 8).trim();
 		}
 		const title = sanitizeDisplayContent(rawContent).replace(/["']/g, '').trim();
+		debugLogger.logResponse(requestId, {
+			model: modelId,
+			content: title || '(empty)',
+			durationMs: Date.now() - reqStart,
+			usage: response.usage,
+			...(response.finishReason ? { stopReason: response.finishReason } : {}),
+		});
 		return title || generateTitle(messages);
 	} catch (e) {
+		debugLogger.logResponse(requestId, {
+			model: modelId,
+			content: `❌ [Error] ${e instanceof Error ? e.message : String(e)}`,
+			durationMs: Date.now() - reqStart,
+			stopReason: 'error',
+		});
 		debugLogger.logWarn('history', `Failed to generate title with LLM, falling back to text extraction: ${e}`);
 		return generateTitle(messages);
 	}

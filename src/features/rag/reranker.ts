@@ -24,9 +24,16 @@ export async function rerankChunks(
 
 		// 1. 네이티브 Rerank API 지원 여부 확인 및 시도
 		if (provider.rerank) {
+			const apiStart = Date.now();
 			try {
 				const documentTexts = chunks.map(c => c.chunk.text);
 				const results = await provider.rerank(query, documentTexts, { model: modelId, topN: topK });
+				debugLogger.logSystem('rag_rerank', `Native rerank completed (${results.length}/${chunks.length} chunks, ${Date.now() - apiStart}ms)`, {
+					model: modelId,
+					inputCount: chunks.length,
+					outputCount: results.length,
+					durationMs: Date.now() - apiStart,
+				});
 				
 				// 네이티브 API의 정렬 결과 및 점수를 반영하여 반환 (인덱스 범위 유효성 검증)
 				return results
@@ -40,7 +47,7 @@ export async function rerankChunks(
 					throw err;
 				}
 				// API 호출 실패(예: 지원하지 않는 모델) 시 프롬프트 기반으로 우회
-				debugLogger.logError('rag_rerank', new Error(`Native rerank API failed, falling back to prompt-based: ${err}`));
+				debugLogger.logError('rag_rerank', normalizeError(err, `Native rerank API failed, falling back to prompt-based: ${err}`));
 			}
 		}
 
@@ -59,15 +66,45 @@ Document Chunks:
 ${chunks.map((c, i) => `[${i}] ${c.chunk.text.slice(0, 300)}...`).join('\n\n')}
 `;
 
-		const response = await provider.chat(
-			[{ role: 'user', content: prompt }],
-			{
+		const reqStart = Date.now();
+		const requestId = debugLogger.logRequest({
+			provider: providerConfig.type,
+			model: modelId,
+			temperature: 0.1,
+			maxTokens: 150,
+			stream: false,
+			systemPrompt: `[RAG Listwise Rerank — ${chunks.length} chunks]`,
+			messages: [{ role: 'user', content: prompt }],
+		});
+
+		let response: import('../../shared/types/llm.types').ChatResponse;
+		try {
+			response = await provider.chat(
+				[{ role: 'user', content: prompt }],
+				{
+					model: modelId,
+					temperature: 0.1,
+					maxOutputTokens: 150,
+					signal
+				}
+			);
+			debugLogger.logResponse(requestId, {
 				model: modelId,
-				temperature: 0.1,
-				maxOutputTokens: 150,
-				signal
-			}
-		);
+				content: response.content.trim(),
+				durationMs: Date.now() - reqStart,
+				usage: response.usage,
+				...(response.finishReason ? { stopReason: response.finishReason } : {}),
+			});
+		} catch (chatErr) {
+			const isAborted = chatErr instanceof Error && chatErr.name === 'AbortError';
+			debugLogger.logResponse(requestId, {
+				model: modelId,
+				content: `❌ [Error] ${chatErr instanceof Error ? chatErr.message : String(chatErr)}`,
+				durationMs: Date.now() - reqStart,
+				stopReason: isAborted ? 'aborted' : 'error',
+			});
+			throw chatErr;
+		}
 
 		const resultText = response.content.trim();
 		let orderedIndices: number[] = [];

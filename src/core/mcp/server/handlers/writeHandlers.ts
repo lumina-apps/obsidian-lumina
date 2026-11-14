@@ -12,7 +12,7 @@ import {
 	safeCreateFile,
 	safeActionFile,
 } from './utils/writeHandlerUtils';
-import { approvalManager } from '../../../../features/chat/utils/approvalManager';
+import { approvalManager } from '../../../store/approvalStore';
 
 /** 첨부 파일 승인 대기 최대 시간 (5분) */
 const APPROVAL_TIMEOUT_MS = 5 * 60 * 1000;

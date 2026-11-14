@@ -3,9 +3,11 @@ import { EditorView, Decoration, WidgetType, ViewPlugin, ViewUpdate } from '@cod
 import type { DecorationSet } from '@codemirror/view';
 import { editorInfoField, MarkdownView } from 'obsidian';
 import type { App } from 'obsidian';
-import { approvalStore, approvalManager, type ApprovalRequest, type ApprovalState } from '../chat/utils/approvalManager';
+import { approvalStore, approvalManager, type ApprovalRequest, type ApprovalState } from '../../core/store/approvalStore';
 import { get } from 'svelte/store';
 import { t } from '../../shared/locales/helpers';
+import { debugLogger } from '../../shared/debugLogger';
+import { normalizeError } from '../../shared/utils/errorUtils';
 
 export const setDiffs = StateEffect.define<ApprovalRequest | null>();
 
@@ -184,7 +186,7 @@ export const diffDecorationField = StateField.define<DecorationSet>({
 				try {
 					newDecos = builder.finish();
 				} catch(e) {
-					console.error("Lumina: Error building diff decorations", e);
+					debugLogger.logError('editor_diff', normalizeError(e, `Error building diff decorations: ${e}`));
 				}
 				return newDecos;
 			}

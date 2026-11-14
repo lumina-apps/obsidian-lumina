@@ -8,6 +8,8 @@ import {
 } from '../../../../shared/utils/settingHelpers';
 import { ConfirmModal } from '../../../../shared/utils/modal';
 import type { McpSettings } from '../../../../shared/types/settings.types';
+import { debugLogger } from '../../../../shared/debugLogger';
+import { normalizeError } from '../../../../shared/utils/errorUtils';
 
 export function renderLocalServerSection(tab: LuminaSettingTab, el: HTMLElement, s: McpSettings): void {
 	tab.sectionHeading(el, t('settings.mcp.localServer.sectionTitle'));
@@ -88,7 +90,9 @@ export function renderLocalServerSection(tab: LuminaSettingTab, el: HTMLElement,
 				// 실시간으로 툴 목록 업데이트
 				const localClient = tab.plugin.mcpManager?.clients.get('__lumina_local__');
 				if (localClient) {
-					await localClient.refreshTools().catch(console.error);
+					await localClient.refreshTools().catch((err: unknown) => {
+						debugLogger.logError('mcp', normalizeError(err, `Failed to refresh local MCP tools: ${err}`));
+					});
 				}
 			});
 		});

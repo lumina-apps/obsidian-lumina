@@ -19,7 +19,6 @@ function sanitizeFileName(name: string): string {
  * Follows a retention policy to keep only the last MAX_BACKUPS_PER_FILE backups per file.
  */
 export async function createBackup(app: App, targetPath: string): Promise<void> {
-	debugLogger.logSystem('backup', `createBackup started (target=${targetPath})`);
 	try {
 		const vault = app.vault;
 		
@@ -63,10 +62,13 @@ export async function createBackup(app: App, targetPath: string): Promise<void> 
 		// 5. Save the backup
 		await vault.create(backupFilePath, content);
 
-		debugLogger.logSystem('backup', `createBackup completed (target=${targetPath}, backup=${backupFilePath})`);
-
 		// 6. Enforce Retention Policy
-		await enforceRetentionPolicy(app, flatOriginalPath);
+		const prunedCount = await enforceRetentionPolicy(app, flatOriginalPath);
+
+		debugLogger.logSystem(
+			'backup',
+			`createBackup completed (target=${targetPath}, backup=${backupFilePath}${prunedCount > 0 ? `, pruned=${prunedCount}` : ''})`,
+		);
 
 	} catch (error) {
 		debugLogger.logError('backup', normalizeError(error, `Failed to create backup for ${targetPath}: ${error}`));
@@ -74,10 +76,10 @@ export async function createBackup(app: App, targetPath: string): Promise<void> 
 	}
 }
 
-async function enforceRetentionPolicy(app: App, flatOriginalPath: string): Promise<void> {
+async function enforceRetentionPolicy(app: App, flatOriginalPath: string): Promise<number> {
 	const vault = app.vault;
 	const backupFolder = vault.getAbstractFileByPath(BACKUP_FOLDER);
-	if (!(backupFolder instanceof TFolder)) return;
+	if (!(backupFolder instanceof TFolder)) return 0;
 
 	// Find all backups for this specific flatOriginalPath
 	const suffix = `_${flatOriginalPath}`;
@@ -86,9 +88,8 @@ async function enforceRetentionPolicy(app: App, flatOriginalPath: string): Promi
 	});
 
 	if (backupFiles.length <= MAX_BACKUPS_PER_FILE) {
-		return;
+		return 0;
 	}
-	debugLogger.logSystem('backup', `enforceRetentionPolicy: ${backupFiles.length} backups found for ${flatOriginalPath} (max=${MAX_BACKUPS_PER_FILE}). Cleaning up...`);
 
 	// Sort backups by timestamp (which is at the beginning of the file name)
 	// Example: 20260620_114220_folder_note.md
@@ -97,13 +98,15 @@ async function enforceRetentionPolicy(app: App, flatOriginalPath: string): Promi
 	// Delete the oldest backups
 	const numToDelete = backupFiles.length - MAX_BACKUPS_PER_FILE;
 	const filesToDelete = backupFiles.slice(0, numToDelete);
+	let deletedCount = 0;
 
 	for (const file of filesToDelete) {
 		try {
 			await app.fileManager.trashFile(file); // Use system trash
-			debugLogger.logSystem('backup', `enforceRetentionPolicy: deleted old backup ${file.path}`);
+			deletedCount++;
 		} catch (e) {
 			debugLogger.logError('backup', normalizeError(e, `Failed to delete old backup ${file.path}`));
 		}
 	}
+	return deletedCount;
 }

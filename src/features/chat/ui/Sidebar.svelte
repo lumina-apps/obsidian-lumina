@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type LuminaPlugin from "../../../main";
-	import ChatPanel from "../../chat/ui/ChatPanel.svelte";
-	import DiscoveryPanel from "./DiscoveryPanel.svelte";
+	import ChatPanel from "./ChatPanel.svelte";
+	import DiscoveryPanel from "../../rag/ui/DiscoveryPanel.svelte";
 	import { tStore } from "../../../shared/locales/index";
 	import { activeSidebarTab } from "../../../core/store/chatStore";
 

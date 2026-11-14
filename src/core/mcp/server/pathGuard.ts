@@ -1,5 +1,5 @@
 import type LuminaPlugin from '../../../main';
-import { isExcluded, isIncluded } from '../../../features/rag/exclusions';
+import { isExcluded, isIncluded } from '../../../shared/utils/exclusions';
 import { getActiveProject } from '../../store/projectStore';
 
 /**

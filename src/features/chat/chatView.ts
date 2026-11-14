@@ -33,13 +33,12 @@ export class ChatView extends ItemView {
 	}
 
 	async onOpen(): Promise<void> {
-		debugLogger.logSystem('chat_view', 'ChatView opened');
 		this.contentEl.empty();
 		this.contentEl.addClass('lumina-chat-view');
 
 		// Svelte 컴포넌트를 비동기로 지연 로딩하여 플러그인 초기 로딩 속도 최적화
 		try {
-			const { default: Sidebar } = await import('../rag/ui/Sidebar.svelte');
+			const { default: Sidebar } = await import('./ui/Sidebar.svelte');
 			
 			this.component = mount(Sidebar, {
 				target: this.contentEl,
@@ -65,7 +64,6 @@ export class ChatView extends ItemView {
 					void unmount(comp);
 				} catch (e) {
 					debugLogger.logError('chat_view', normalizeError(e, `ChatView unmount error: ${e}`));
-					console.error('[Lumina] unmount error:', e);
 				}
 			}, 0);
 		}

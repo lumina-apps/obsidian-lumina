@@ -2,8 +2,9 @@ import { Platform } from 'obsidian';
 import { getStringArg } from '../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
 import type { PathGuard } from '../pathGuard';
-import { approvalManager } from '../../../../features/chat/utils/approvalManager';
+import { approvalManager } from '../../../store/approvalStore';
 import { getSpawnFunction, getEnhancedEnv, ProcessManager } from '../../../llm-providers/cli/process-manager';
+import { debugLogger } from '../../../../shared/debugLogger';
 
 /** 셸 승인 대기 최대 시간 (5분) */
 const APPROVAL_TIMEOUT_MS = 5 * 60 * 1000;
@@ -60,6 +61,7 @@ export const runShellCommandHandler = async (
 
 	for (const { pattern, reason } of BLOCKED_PATTERNS) {
 		if (pattern.test(command)) {
+			debugLogger.logWarn('mcp', `Shell command blocked by security policy (${reason}): ${command}`);
 			return {
 				isError: true,
 				content: [{ type: 'text', text: `Command blocked by security policy: ${reason}` }],
@@ -75,6 +77,7 @@ export const runShellCommandHandler = async (
 		{ timeoutMs: APPROVAL_TIMEOUT_MS, ...(ctx.signal ? { signal: ctx.signal } : {}) },
 	);
 	if (!approved) {
+		debugLogger.logSystem('mcp', `Shell command rejected by user or timeout: ${command}`);
 		return { isError: true, content: [{ type: 'text', text: 'User explicitly rejected the shell command execution. DO NOT retry this action. Acknowledge the rejection and ask the user how to proceed.' }] };
 	}
 
@@ -171,11 +174,14 @@ export const runShellCommandHandler = async (
 		if (errStr.length > MAX_LEN) errStr = errStr.substring(0, MAX_LEN) + '\n... (truncated)';
 
 		if (result.error) {
+			debugLogger.logWarn('mcp', `Shell command failed (${result.error.message}): ${command}`);
 			return { isError: true, content: [{ type: 'text', text: `Command failed with error: ${result.error.message}\n\nSTDOUT:\n${outStr}\n\nSTDERR:\n${errStr}` }] };
 		} else {
+			debugLogger.logSystem('mcp', `Shell command completed (stdout=${outStr.length} chars, stderr=${errStr.length} chars): ${command}`);
 			return { content: [{ type: 'text', text: `Command executed successfully.\n\nSTDOUT:\n${outStr}\n\nSTDERR:\n${errStr}` }] };
 		}
 	} catch (e) {
+		debugLogger.logError('mcp', e instanceof Error ? e : new Error(`Shell command error: ${String(e)}`));
 		return { isError: true, content: [{ type: 'text', text: `Failed to execute shell command: ${e instanceof Error ? e.message : String(e)}\nNote: Shell execution is only supported on Desktop.` }] };
 	}
 };

@@ -6,7 +6,6 @@ import { activateView, activateMainView } from '../views/viewHelper';
 import { CHAT_VIEW_TYPE, DEBUG_VIEW_TYPE, GRAPH_VIEW_TYPE } from '../../shared/constants/viewTypes';
 import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
-import { StripFrontmatterModal } from '../../features/frontmatter/stripFrontmatterModal';
 import { activeSidebarTab } from '../store/chatStore';
 
 interface ObsidianAppWithCommands extends App {
@@ -106,7 +105,7 @@ export class CommandManager {
 					return;
 				}
 
-				new StripFrontmatterModal(this.plugin.app, count, async () => {
+				fm.openStripMetadataModal(count, async () => {
 					const progressNotice = new Notice(`${t('uiMessages.stripMetadataProgress')} 0/0`, 0);
 					const stripped = await fm.stripLuminaMetadata(
 						(done, total) => progressNotice.messageEl.setText(
@@ -116,7 +115,7 @@ export class CommandManager {
 					progressNotice.hide();
 					debugLogger.logSystem('commands', `strip-frontmatter-metadata completed (stripped=${stripped})`);
 					new Notice(t('uiMessages.stripMetadataDone', { count: stripped }), 4000);
-				}).open();
+				});
 			},
 		});
 

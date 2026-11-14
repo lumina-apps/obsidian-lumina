@@ -2,6 +2,7 @@ import type { ChildChunk, ParentChunk } from '../../shared/types/rag.types';
 import { updateGraphState } from './graphStore';
 import { t } from '../../shared/locales/helpers';
 import { debugLogger } from '../../shared/debugLogger';
+import { normalizeError } from '../../shared/utils/errorUtils';
 
 import type { GraphNode, GraphEdge, GraphData } from '../../shared/types/graph.types';
 export type { GraphNode, GraphEdge, GraphData };
@@ -108,33 +109,25 @@ export async function buildGraphData(
 	localDepth: number = 2,
 	signal?: AbortSignal
 ): Promise<GraphData> {
-	debugLogger.logSystem(
-		'graph',
-		`buildGraphData started (parentChunks=${parentChunks.length}, childChunks=${childChunks.length}, minSimilarity=${minSimilarity}, maxK=${maxK}, mode=${mode}, focusPath=${focusPath ?? 'null'})`,
-	);
-
 	const cacheKey = computeGraphCacheKey(parentChunks, childChunks);
+	const isCacheHit = Boolean(cacheKey && cacheKey === lastCacheKey && edgeCache !== null);
 
 	// If chunks changed, we must rebuild the cache
-	if (!cacheKey || cacheKey !== lastCacheKey || edgeCache === null) {
+	if (!isCacheHit) {
 		updateGraphState({ isCalculating: true, errorMessage: null });
-		debugLogger.logSystem('graph', `buildGraphData: cache miss (lastCacheKey=${lastCacheKey}, newCacheKey=${cacheKey}). Recalculating edges...`);
+		debugLogger.logSystem('graph', `buildGraphData: cache miss (chunks=${childChunks.length}). Recalculating edges in worker...`);
 		
 		try {
 			edgeCache = await calculateEdgesInWorker(childChunks, 0.4, signal); // Calculate down to 0.4 for caching
 			lastCacheKey = cacheKey;
-			debugLogger.logSystem('graph', `buildGraphData: edge calculation completed (edges=${edgeCache.length})`);
 		} catch (e) {
 			if (signal?.aborted || (e instanceof DOMException && e.name === 'AbortError')) {
-				debugLogger.logSystem('graph', 'buildGraphData: calculation aborted');
 				throw e;
 			}
-			debugLogger.logError('graph', new Error(`워커 엣지 계산 실패: ${e instanceof Error ? e.message : String(e)}`));
+			debugLogger.logError('graph', normalizeError(e, `워커 엣지 계산 실패: ${e}`));
 			updateGraphState({ isCalculating: false, errorMessage: t('graph.calcError') });
 			return { nodes: [], links: [] };
 		}
-	} else {
-		debugLogger.logSystem('graph', `buildGraphData: cache hit (edges=${edgeCache.length})`);
 	}
 
 	updateGraphState({ isCalculating: false });
@@ -144,9 +137,7 @@ export async function buildGraphData(
 	}
 
 	// 1. Filter edges by similarity
-	let filteredEdges = edgeCache.filter(e => e.weight >= minSimilarity);
-
-	debugLogger.logSystem('graph', `buildGraphData: filtered edges (>=${minSimilarity}) = ${filteredEdges.length}`);
+	let filteredEdges = (edgeCache ?? []).filter(e => e.weight >= minSimilarity);
 
 	// 2. Filter edges by maxK (keep top K edges per node)
 	const edgeMap = new Map<string, GraphEdge[]>();
@@ -206,7 +197,10 @@ export async function buildGraphData(
 	// 5. Final edges filtered by valid nodes (in case of local mode)
 	const actualLinks = finalEdges.filter(e => validNodePaths.has(e.source) && validNodePaths.has(e.target));
 
-	debugLogger.logSystem('graph', `buildGraphData completed (nodes=${nodes.length}, links=${actualLinks.length})`);
+	debugLogger.logSystem(
+		'graph',
+		`buildGraphData completed (nodes=${nodes.length}, links=${actualLinks.length}, cacheHit=${isCacheHit}, mode=${mode}, minSim=${minSimilarity})`,
+	);
 
 	return { nodes, links: actualLinks };
 }

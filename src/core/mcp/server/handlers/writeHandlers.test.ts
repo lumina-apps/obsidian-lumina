@@ -14,9 +14,9 @@ import { autoLinkNoteHandler } from './autoLinkHandlers';
 import { PathGuard } from '../pathGuard';
 import type { ToolHandlerContext } from '../toolTypes';
 import { TFile } from 'obsidian';
-import { approvalManager } from '../../../../features/chat/utils/approvalManager';
+import { approvalManager } from '../../../store/approvalStore';
 
-vi.mock('../../../../features/chat/utils/approvalManager', () => ({
+vi.mock('../../../store/approvalStore', () => ({
 	approvalManager: {
 		requestApproval: vi.fn().mockResolvedValue({ approved: true, content: '' }),
 		requestActionApproval: vi.fn().mockResolvedValue(true),

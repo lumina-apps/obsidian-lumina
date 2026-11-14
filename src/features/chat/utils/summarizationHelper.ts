@@ -247,16 +247,11 @@ export async function triggerAutoSummarization(
 
 	const prompt = buildSummaryPrompt(currentSummary, targetMessagesToSummarize);
 
-	debugLogger.logMcp('AutoSummary', 'Background summarization started', {
-		currentSummaryExists: !!currentSummary,
-		targetMessageCount: targetMessagesToSummarize.length
-	});
-
 	const summaryRes = await runSummaryLlm(plugin, providerConfig, modelId, prompt);
 	const newSummary = summaryRes.content;
 	if (!newSummary) return;
 
-	debugLogger.logMcp('AutoSummary', 'Background summarization completed', {
+	debugLogger.logSystem('auto_summary', 'Background summarization completed', {
 		newSummaryLength: newSummary.length,
 		messagesCompressed: targetMessagesToSummarize.length,
 		summary: truncateSummary(newSummary),
@@ -308,11 +303,6 @@ export async function summarizeConversation(
 
 	const prompt = buildSummaryPrompt(currentSummary, promptTargetMessages);
 
-	debugLogger.logMcp('AutoSummary', 'Manual context compression started', {
-		currentSummaryExists: !!currentSummary,
-		targetMessageCount: targetMessagesToSummarize.length
-	});
-
 	const summaryRes = await runSummaryLlm(plugin, providerConfig, modelId, prompt);
 	const newSummary = summaryRes.content;
 	if (!newSummary) {
@@ -339,7 +329,7 @@ export async function summarizeConversation(
 		timestamp: targetMessagesToSummarize[0].timestamp,
 	};
 
-	debugLogger.logMcp('AutoSummary', 'Manual context compression completed', {
+	debugLogger.logSystem('auto_summary', 'Manual context compression completed', {
 		newSummaryLength: newSummary.length,
 		messagesCompressed: targetMessagesToSummarize.length,
 		tokensSaved,

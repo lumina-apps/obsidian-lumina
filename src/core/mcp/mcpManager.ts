@@ -10,7 +10,7 @@ import {
 import type { LuminaMcpServer } from './server/luminaMcpServer';
 import { LocalServerLifecycle } from './localServerLifecycle';
 import { ClientConnectionSync } from './clientConnectionSync';
-import { approvalManager } from '../../features/chat/utils/approvalManager';
+import { approvalManager } from '../store/approvalStore';
 
 const LOCAL_MCP_CLIENT_ID = '__lumina_local__';
 
@@ -85,7 +85,6 @@ export class McpManager {
 				}
 			}
 		}
-		debugLogger.logSystem('mcp', `getAllTools: ${this.clients.size}개 클라이언트에서 ${Array.from(toolsMap.values()).length}개 툴 수집`);
 		return Array.from(toolsMap.values());
 	}
 

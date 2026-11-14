@@ -223,7 +223,9 @@ export class VaultIndexer {
 
 	private async processSync(isUpdate: boolean): Promise<void> {
 		const files = getTargetFiles(this.app, this.settings, this.chatHistoryPath, this.includedPaths, this.excludedPaths);
-		debugLogger.logSystem('rag', `VaultIndexer.processSync (project=${this.projectId}): found ${files.length} target files. Included=${JSON.stringify(this.includedPaths)}, Excluded=${JSON.stringify(this.excludedPaths)}`);
+		if (!isUpdate) {
+			debugLogger.logSystem('rag', `VaultIndexer.processSync (project=${this.projectId}): found ${files.length} target files. Included=${JSON.stringify(this.includedPaths)}, Excluded=${JSON.stringify(this.excludedPaths)}`);
+		}
 
 		if (isUpdate) {
 			if (!this.isLoaded) {
@@ -259,6 +261,13 @@ export class VaultIndexer {
 
 				const { pathsToDelete, changedFiles } = await calculateIndexDiff(this.app, files, this.state.fileMtimes);
 				
+				if (pathsToDelete.size > 0 || changedFiles.length > 0) {
+					debugLogger.logSystem(
+						'rag',
+						`VaultIndexer.processSync (project=${this.projectId}): incremental diff (changed=${changedFiles.length}, deleted=${pathsToDelete.size}, totalTarget=${files.length})`,
+					);
+				}
+
 				if (pathsToDelete.size > 0) {
 					await this.removePaths(pathsToDelete);
 				}

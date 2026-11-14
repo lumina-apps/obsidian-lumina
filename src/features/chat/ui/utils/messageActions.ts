@@ -1,6 +1,7 @@
 import { Notice, TFile, MarkdownView, Modal, type App } from "obsidian";
 import { t } from "../../../../shared/locales/helpers";
 import type { ContextAttachment } from "../../../../shared/types/chat.types";
+import { debugLogger } from "../../../../shared/debugLogger";
 
 /**
  * 파일 경로로 Obsidian 노트를 연다.
@@ -45,7 +46,7 @@ export async function openFile(
 					lineNo = foundIdx;
 				}
 			} catch (err) {
-				console.warn('Lumina: Failed to read file for chunk search', err);
+				debugLogger.logWarn('chat', `Failed to read file for chunk search: ${err}`);
 			}
 		}
 		

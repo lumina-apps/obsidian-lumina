@@ -1,5 +1,7 @@
 import { App, TFile } from 'obsidian';
 import { approvalStore } from './approvalManager';
+import { debugLogger } from '../../../shared/debugLogger';
+import { normalizeError } from '../../../shared/utils/errorUtils';
 
 let unsubscribe: (() => void) | null = null;
 const openingFiles = new Set<string>();
@@ -25,12 +27,15 @@ export function setupApprovalListener(app: App) {
 
 						if (!isFileOpen && !openingFiles.has(file.path)) {
 							openingFiles.add(file.path);
-							// Open in a new tab if it's not open
-							const newLeaf = app.workspace.getLeaf('tab');
-							await newLeaf.openFile(file);
-							openingFiles.delete(file.path);
-						} else {
-							// Focus the existing leaf if needed? (optional, could be annoying if user is typing elsewhere)
+							try {
+								// Open in a new tab if it's not open
+								const newLeaf = app.workspace.getLeaf('tab');
+								await newLeaf.openFile(file);
+							} catch (e) {
+								debugLogger.logError('approval', normalizeError(e, `Failed to open file for edit approval (${file.path}): ${e}`));
+							} finally {
+								openingFiles.delete(file.path);
+							}
 						}
 					}
 				}

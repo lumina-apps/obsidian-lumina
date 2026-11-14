@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { runShellCommandHandler } from './executeHandlers';
 import { PathGuard } from '../pathGuard';
 import type { ToolHandlerContext } from '../toolTypes';
-import { approvalManager } from '../../../../features/chat/utils/approvalManager';
+import { approvalManager } from '../../../store/approvalStore';
 import { ProcessManager } from '../../../llm-providers/cli/process-manager';
 import { EventEmitter } from 'events';
 

@@ -9,7 +9,8 @@ import type { ChatMessage, ChatOptions, ToolCall, TokenUsage, ILLMProvider } fro
 import type { ChatSettings } from '../../core/settings/settings.types';
 import type { McpManager } from '../../core/mcp/mcpManager';
 import { appendChunk, syncMessageContent, addExecutingTool, removeExecutingTool } from '../../core/store/chatStore';
-import { debugLogger } from '../../shared/debugLogger';
+import { debugLogger, formatMessagesForDebugLog, type RagChunkMeta } from '../../shared/debugLogger';
+import { estimateTokens } from '../../shared/utils/tokenEstimator';
 import { parseTextToolCalls } from './utils/textToolParser';
 import { stripMaskTokens, stripThinkTags } from '../../shared/utils/llmTextSanitizer';
 import { buildToolCallKey } from '../../shared/utils/toolCallUtils';
@@ -25,6 +26,8 @@ export interface AgentLoopOptions {
 	messagesForLLM: ChatMessage[];
 	chatOptions: ChatOptions;
 	provider: ILLMProvider;
+	/** 디버그 로그 표시용 프로바이더 타입 */
+	providerType?: string;
 	chatSettings: ChatSettings;
 	mcpManager: McpManager | null;
 	/** toolName → serverId 매핑 */
@@ -33,6 +36,8 @@ export interface AgentLoopOptions {
 	useTextTools: boolean;
 	signal?: AbortSignal;
 	webSearchSettings?: import('../../core/settings/settings.types').WebSearchSettings;
+	/** 1라운드 요청 로그에 첨부할 RAG 청크 메타 */
+	ragChunksForLog?: RagChunkMeta[];
 }
 
 export interface AgentLoopResult {
@@ -116,6 +121,34 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 
 		debugLogger.logMcp('Loop Round', `🔄 툴 루프 라운드 ${toolRound}/${maxRounds} 시작`);
 
+		const roundStart = Date.now();
+		const modelLabel = chatOptions.model || 'unknown';
+		const systemMsg = messagesForLLM.find((m) => m.role === 'system');
+		const systemPromptText =
+			typeof systemMsg?.content === 'string'
+				? systemMsg.content
+				: systemMsg?.content
+					? JSON.stringify(systemMsg.content)
+					: '';
+		const estimatedInputTokens = debugLogger.isEnabled
+			? messagesForLLM.reduce((acc, m) => {
+					const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
+					return acc + estimateTokens(c);
+				}, 0)
+			: undefined;
+
+		const requestId = debugLogger.logRequest({
+			provider: opts.providerType ?? provider.providerId ?? 'unknown',
+			model: modelLabel,
+			temperature: chatOptions.temperature ?? chatSettings.temperature ?? 0.7,
+			maxTokens: chatOptions.maxOutputTokens ?? chatSettings.maxOutputTokens ?? 4096,
+			stream: Boolean(chatSettings.streaming),
+			systemPrompt: systemPromptText,
+			messages: formatMessagesForDebugLog(messagesForLLM),
+			...(estimatedInputTokens !== undefined ? { estimatedInputTokens } : {}),
+			...(toolRound === 1 && opts.ragChunksForLog ? { ragChunks: opts.ragChunksForLog } : {}),
+		});
+
 		// ── LLM 호출 ──────────────────────────────────────────────────────────
 		let rawResponse: import('../../shared/types/llm.types').ChatResponse;
 		try {
@@ -128,6 +161,13 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 			// 스트리밍 중 에러 발생 (컨텍스트 오버플로우, 토큰 한도, 네트워크 에러 등)
 			// 누적된 텍스트를 반환하고 루프 종료
 			const finalContent = accumulatedText || '';
+			const isAborted = (err instanceof Error && err.name === 'AbortError') || Boolean(signal?.aborted);
+			debugLogger.logResponse(requestId, {
+				model: modelLabel,
+				content: finalContent || `❌ [Error] ${err instanceof Error ? err.message : String(err)}`,
+				durationMs: Date.now() - roundStart,
+				stopReason: isAborted ? 'aborted' : 'error',
+			});
 			debugLogger.logMcp('Loop Error', `⚠️ 툴 루프 라운드 ${toolRound} 중 에러 발생`, err);
 			// 에러가 AbortError면 누적 텍스트만 반환하고 종료
 			if (err instanceof Error && err.name === 'AbortError') {
@@ -135,20 +175,6 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 			}
 			// 그 외 에러는 throw하여 상위에서 처리하도록 전파
 			throw err;
-		}
-
-		// ── 토큰 한도 체크 ────────────────────────────────────────────────────
-		if (isTokenLimitReached(rawResponse.finishReason)) {
-			hasTokenLimitBeenHit = true;
-			const finalContent = accumulatedText || (rawResponse.content || '');
-			const fullResponse = !useTextTools
-				? stripThinkTags(finalContent)
-				: finalContent;
-			return {
-				fullResponse,
-				tokenUsage,
-				hasTokenLimitBeenHit,
-			};
 		}
 
 		// ── 텍스트 기반 tool call 파싱 (로컬 모델) ───────────────────────────
@@ -169,6 +195,33 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 			}
 		}
 
+		const responseSummaryForLog =
+			rawResponse.content ||
+			(resolvedToolCalls && resolvedToolCalls.length > 0
+				? `[Tool Calls: ${resolvedToolCalls.map((tc) => tc.name).join(', ')}]`
+				: '');
+		debugLogger.logResponse(requestId, {
+			model: modelLabel,
+			content: responseSummaryForLog,
+			durationMs: Date.now() - roundStart,
+			usage: rawResponse.usage,
+			...(rawResponse.finishReason ? { stopReason: rawResponse.finishReason } : {}),
+		});
+
+		// ── 토큰 한도 체크 ────────────────────────────────────────────────────
+		if (isTokenLimitReached(rawResponse.finishReason)) {
+			hasTokenLimitBeenHit = true;
+			const finalContent = accumulatedText || (rawResponse.content || '');
+			const fullResponse = !useTextTools
+				? stripThinkTags(finalContent)
+				: finalContent;
+			return {
+				fullResponse,
+				tokenUsage,
+				hasTokenLimitBeenHit,
+			};
+		}
+
 		// ── 현재 라운드 텍스트 누적 ───────────────────────────────────────────
 		if (currentRoundText.trim()) {
 			let textToAdd = currentRoundText;
@@ -184,11 +237,6 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 		if (rawResponse.usage) {
 			tokenUsage = accumulateTokenUsage(tokenUsage, rawResponse.usage);
 		}
-
-		debugLogger.logMcp(
-			'LLM Output',
-			`LLM 응답: content=${currentRoundText?.length ?? 0}자, toolCalls=${resolvedToolCalls?.length ?? 0}개`,
-		);
 
 		// ── tool call이 없으면 종료 ───────────────────────────────────────────
 		if (!resolvedToolCalls || resolvedToolCalls.length === 0) {
@@ -241,12 +289,6 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 		}
 		
 		if (lastToolCallKeys.length > 4) lastToolCallKeys.shift();
-
-		debugLogger.logMcp(
-			'Tool Requested',
-			`🔧 LLM이 ${resolvedToolCalls.length}개 툴 호출 요청`,
-			resolvedToolCalls.map((tc: ToolCall) => tc.name),
-		);
 
 		// ── assistant tool call 메시지 추가 ──────────────────────────────────
 		messagesForLLM.push(buildAssistantToolMessage(resolvedToolCalls, currentRoundText, useTextTools));

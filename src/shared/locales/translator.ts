@@ -1,28 +1,32 @@
-import { getActiveProject } from "../../core/store/projectStore";
-
 import { App, Notice, Modal, normalizePath } from 'obsidian';
 import type { LLMProviderConfig } from '../types/settings.types';
-import type { LuminaSettings } from '../../core/settings/settings.types';
-import { createProvider } from '../../core/llm-providers/index';
+import type { ILLMProvider } from '../types/llm.types';
+import type { ProjectConfig } from '../types/project.types';
 import en from './en.json';
 import { ConfirmModal } from '../utils/modal';
 import { addDynamicLocale, removeDynamicLocale, setLanguage, t } from './helpers';
 import { debugLogger } from '../debugLogger';
 import { normalizeError } from '../utils/errorUtils';
 
+export interface TranslationDeps {
+    providers: LLMProviderConfig[];
+    activeProject?: Pick<ProjectConfig, 'defaultProviderId' | 'defaultModelId'>;
+    createProvider: (config: LLMProviderConfig) => ILLMProvider;
+}
+
 /** LLM 번역 플로우 시작. 사용자 확인 후 번역 실행 */
-export async function translatePluginLocales(app: App, settings: LuminaSettings): Promise<void> {
+export async function translatePluginLocales(app: App, deps: TranslationDeps): Promise<void> {
     let providerConfig: LLMProviderConfig | undefined;
     let modelName = '';
 
-    const activeProject = getActiveProject();
-    if (activeProject.defaultProviderId && activeProject.defaultModelId) {
-        providerConfig = settings.connections.providers.find((p: LLMProviderConfig) => p.id === activeProject.defaultProviderId);
+    const activeProject = deps.activeProject;
+    if (activeProject?.defaultProviderId && activeProject?.defaultModelId) {
+        providerConfig = deps.providers.find((p: LLMProviderConfig) => p.id === activeProject.defaultProviderId);
         modelName = activeProject.defaultModelId;
     }
 
     if (!providerConfig) {
-        providerConfig = settings.connections.providers.find((p: LLMProviderConfig) => p.isVerified && p.availableModels.length > 0);
+        providerConfig = deps.providers.find((p: LLMProviderConfig) => p.isVerified && p.availableModels.length > 0);
         modelName = providerConfig?.availableModels[0] || '';
     }
 
@@ -57,7 +61,7 @@ export async function translatePluginLocales(app: App, settings: LuminaSettings)
                 progressModal.open();
 
                 try {
-                    await executeTranslation(app, providerConfig!, modelName);
+                    await executeTranslation(app, deps.createProvider(providerConfig!), modelName);
                 } catch (e) {
                     new Notice(`${t('settings.translation.fail')}${(e as Error).message}`);
                 } finally {
@@ -71,8 +75,7 @@ export async function translatePluginLocales(app: App, settings: LuminaSettings)
 }
 
 /** LLM으로 번역 실행 후 캐시에 저장 */
-async function executeTranslation(app: App, providerConfig: LLMProviderConfig, model: string) {
-    const provider = createProvider(providerConfig);
+async function executeTranslation(app: App, provider: ILLMProvider, model: string) {
     const systemLocale = window.navigator.language;
 
     const sourceJson = JSON.stringify(en, null, 2);
@@ -84,10 +87,39 @@ Source JSON:
 ${sourceJson}
 `;
 
-    const response = await provider.chat([{ role: 'user', content: prompt }], {
+    const reqStart = Date.now();
+    const requestId = debugLogger.logRequest({
+        provider: provider.providerId || 'translator',
         model,
-        temperature: 0.1, // Low temp for more deterministic translation
+        temperature: 0.1,
+        maxTokens: 8192,
+        stream: false,
+        systemPrompt: `[Locale Translation — ${systemLocale}]`,
+        messages: [{ role: 'user', content: prompt }],
     });
+
+    let response: import('../types/llm.types').ChatResponse;
+    try {
+        response = await provider.chat([{ role: 'user', content: prompt }], {
+            model,
+            temperature: 0.1, // Low temp for more deterministic translation
+        });
+        debugLogger.logResponse(requestId, {
+            model,
+            content: response.content,
+            durationMs: Date.now() - reqStart,
+            usage: response.usage,
+            ...(response.finishReason ? { stopReason: response.finishReason } : {}),
+        });
+    } catch (err) {
+        debugLogger.logResponse(requestId, {
+            model,
+            content: `❌ [Error] ${err instanceof Error ? err.message : String(err)}`,
+            durationMs: Date.now() - reqStart,
+            stopReason: 'error',
+        });
+        throw err;
+    }
 
     // Parse response
     let jsonStr = response.content.trim();

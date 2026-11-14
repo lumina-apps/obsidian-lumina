@@ -55,7 +55,8 @@ export class DebugView extends ItemView {
 			}, 0);
 		}
 
-		if (this.plugin.settings.misc.debugMode) {
+		// 플러그인 언로드/리로드로 인한 뷰 종료가 아닐 때만(사용자가 직접 패널을 닫은 경우) debugMode 해제
+		if (!this.plugin.isUnloaded && this.plugin.settings.misc.debugMode) {
 			this.plugin.settings.misc.debugMode = false;
 			this.plugin.saveSettings().catch(e => {
 				debugLogger.logError('debug_view', normalizeError(e, `Failed to save settings on debug view close: ${e}`));

@@ -5,6 +5,7 @@ import { isMarkdownFile } from '../../shared/utils/fileUtils';
 import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
 import { createProvider } from '../../core/llm-providers';
+import { StripFrontmatterModal } from './stripFrontmatterModal';
 import type LuminaPlugin from '../../main';
 
 /** processFrontMatter용 프론트매터 구조 */
@@ -177,6 +178,11 @@ export class FrontmatterManager {
 		return count;
 	}
 
+	/** lumina 메타데이터 일괄 제거 확인 모달을 엽니다. */
+	openStripMetadataModal(count: number, onConfirm: () => void | Promise<void>): void {
+		new StripFrontmatterModal(this.app, count, onConfirm).open();
+	}
+
 	/** 볼트 전체 마크다운 파일에서 luminaCreated/luminaModified/luminaVersion 키를 제거한다. */
 	async stripLuminaMetadata(
 		onProgress?: (done: number, total: number) => void,
@@ -238,14 +244,43 @@ CRITICAL RULES:
 Document Content:
 ${contentWithoutFm.substring(0, 3000)}`;
 
-			const provider = createProvider(providerConfig);
-			const response = await provider.chat([{ role: 'user', content: prompt }], {
+			const reqStart = Date.now();
+			const requestId = debugLogger.logRequest({
+				provider: providerConfig.type,
 				model: taskModelId,
 				temperature: 0.1,
-				maxOutputTokens: 150,
-				ttftTimeoutMs: 15000,
-				interTokenTimeoutMs: 10000,
+				maxTokens: 150,
+				stream: false,
+				systemPrompt: `[Auto Frontmatter — ${file.path}]`,
+				messages: [{ role: 'user', content: prompt }],
 			});
+
+			const provider = createProvider(providerConfig);
+			let response: import('../../shared/types/llm.types').ChatResponse;
+			try {
+				response = await provider.chat([{ role: 'user', content: prompt }], {
+					model: taskModelId,
+					temperature: 0.1,
+					maxOutputTokens: 150,
+					ttftTimeoutMs: 15000,
+					interTokenTimeoutMs: 10000,
+				});
+				debugLogger.logResponse(requestId, {
+					model: taskModelId,
+					content: response.content,
+					durationMs: Date.now() - reqStart,
+					usage: response.usage,
+					...(response.finishReason ? { stopReason: response.finishReason } : {}),
+				});
+			} catch (chatErr) {
+				debugLogger.logResponse(requestId, {
+					model: taskModelId,
+					content: `❌ [Error] ${chatErr instanceof Error ? chatErr.message : String(chatErr)}`,
+					durationMs: Date.now() - reqStart,
+					stopReason: 'error',
+				});
+				throw chatErr;
+			}
 
 			const match = response.content.match(/\{[\s\S]*\}/);
 			if (match) {
@@ -263,7 +298,7 @@ ${contentWithoutFm.substring(0, 3000)}`;
 						tags: parsed.tags,
 						description: parsed.description
 					});
-					debugLogger.logMcp('Frontmatter', 'Generated LLM data cached for ' + file.path);
+					debugLogger.logSystem('frontmatter', `Generated LLM data cached for ${file.path}`);
 					
 					// 생성 완료 시점에 현재 파일이 비활성화 상태라면 대기열 처리를 놓쳤을 수 있으므로 즉시 반영
 					if (this.activeFilePath !== file.path) {
@@ -272,7 +307,7 @@ ${contentWithoutFm.substring(0, 3000)}`;
 				}
 			}
 		} catch (error) {
-			debugLogger.logError('system', new Error(`LLM 프론트매터 생성 실패: ${error}`));
+			debugLogger.logError('frontmatter', normalizeError(error, `LLM 프론트매터 생성 실패: ${error}`));
 		}
 	}
 

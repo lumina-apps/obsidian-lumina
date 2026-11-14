@@ -6,6 +6,8 @@ import { translatePluginLocales, loadSystemLocaleCache, deleteSystemLocaleCache 
 import { setLanguage, t } from '../../../../shared/locales/helpers';
 import { ConfirmModal } from '../../../../shared/utils/modal';
 import { migrateQuickActions } from '../../migrations';
+import { getActiveProject } from '../../../store/projectStore';
+import { createProvider } from '../../../llm-providers';
 import type { PluginLanguage } from '../../../../shared/types/settings.types';
 
 export function renderLanguageSection(tab: LuminaSettingTab, el: HTMLElement): void {
@@ -41,7 +43,11 @@ export function renderLanguageSection(tab: LuminaSettingTab, el: HTMLElement): v
 								return;
 							}
 							// LLM 번역 및 캐시 적용 실행 (내부에서 모달로 진행 여부 확인)
-							await translatePluginLocales(tab.app, tab.plugin.settings);
+							await translatePluginLocales(tab.app, {
+								providers: s.providers,
+								activeProject: getActiveProject(),
+								createProvider,
+							});
 						} else {
 							await setLanguage('system');
 						}

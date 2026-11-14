@@ -25,8 +25,6 @@ export class EventManager {
 				if (!this.plugin.settings.misc.contextMenuEnabled) return;
 				const selection = editor.getSelection();
 				const activeFile = view?.file ?? this.plugin.app.workspace.getActiveFile();
-
-				debugLogger.logSystem('events', `context-menu opened (hasSelection=${selection.trim().length > 0}, activeFile=${activeFile?.path ?? 'null'}, contextMenuEnabled=${this.plugin.settings.misc.contextMenuEnabled})`);
 				
 				menu.addItem((item) => {
 					item.setTitle('✨ Lumina').setIcon('bot');
@@ -100,7 +98,6 @@ export class EventManager {
 		// ── 활성 문서 감지 (스마트 탐색용) ──────────────────────────────
 		this.plugin.registerEvent(
 			this.plugin.app.workspace.on('file-open', (file) => {
-				debugLogger.logSystem('events', `file-open event (file=${file?.path ?? 'null'})`);
 				if (file && file.extension === 'md') {
 					updateDiscoveryState({ activeFile: file });
 				} else {

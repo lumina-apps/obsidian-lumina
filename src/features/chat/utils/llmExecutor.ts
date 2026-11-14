@@ -12,7 +12,7 @@ import {
 	isDuplicateCliSnapshotText,
 } from '../../../core/llm-providers/cli/ndjson-parser';
 import { runAgentLoop, isTokenLimitReached } from '../agentLoop';
-import { debugLogger } from '../../../shared/debugLogger';
+import { debugLogger, formatMessagesForDebugLog } from '../../../shared/debugLogger';
 import { estimateTokens } from '../../../shared/utils/tokenEstimator';
 import {
 	appendChunk,
@@ -38,7 +38,7 @@ import * as path from 'path';
 import { IMAGE_EXTENSIONS } from './ChatAttachmentHandler';
 import { t } from '../../../shared/locales/helpers';
 import { getActiveProject } from '../../../core/store/projectStore';
-import { DEFAULT_EXCLUDED_PATHS } from '../../rag/exclusions';
+import { DEFAULT_EXCLUDED_PATHS } from '../../../shared/utils/exclusions';
 
 /**
  * 볼트 파일 시스템 절대 경로를 반환합니다.
@@ -192,10 +192,7 @@ export async function executeCliAgentCall(
 		maxTokens: chatSettings?.maxOutputTokens ?? 4096,
 		stream: true,
 		systemPrompt: resolvedSystemPrompt,
-		messages: ctx.llmMessages.map((m) => ({
-			role: m.role,
-			content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
-		})),
+		messages: formatMessagesForDebugLog(ctx.llmMessages),
 		estimatedInputTokens,
 		...(ctx.ragChunksForLog ? { ragChunks: ctx.ragChunksForLog } : {}),
 	});
@@ -495,6 +492,15 @@ export async function executeCliAgentCall(
 			appendChunk(assistantId, errorMsg);
 		}
 	} catch (err) {
+		if (requestId) {
+			debugLogger.logResponse(requestId, {
+				model: resolvedModelId,
+				content: fullResponse || `❌ [CLI Error] ${err instanceof Error ? err.message : String(err)}`,
+				durationMs: Date.now() - startTime,
+				usage: tokenUsage,
+				stopReason: (err instanceof Error && err.name === 'AbortError') || signal?.aborted ? 'aborted' : 'error',
+			});
+		}
 		debugLogger.logError(
 			'cli-agent',
 			`CLI agent execution failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -562,46 +568,98 @@ export async function executeLlmCall(
 	let tokenUsage: TokenUsage | undefined;
 	let hasTokenLimitBeenHit = false;
 
-	debugLogger.logMcp('Loop Start', `MCP 툴 루프 시작`, {
-		hasTools,
-		streaming: chatSettings.streaming,
-		toolsCount: mcpTools.length,
-		useTextTools,
-		method: useTextTools ? '텍스트' : 'bindTools',
-	});
-
 	if (hasTools) {
-		// ── Tool calling 루프 ──────────────────────────────────────────
+		debugLogger.logMcp('Loop Start', `MCP 툴 루프 시작`, {
+			hasTools,
+			streaming: chatSettings.streaming,
+			toolsCount: mcpTools.length,
+			useTextTools,
+			method: useTextTools ? '텍스트' : 'bindTools',
+		});
+
+		// ── Tool calling 루프 (라운드별 LLM 요청/응답은 runAgentLoop 내부에서 기록) ──
 		const result = await runAgentLoop({
 			assistantId,
 			messagesForLLM: [...llmMessages],
 			chatOptions,
 			provider,
+			providerType: providerConfig.type,
 			chatSettings,
 			mcpManager: plugin.mcpManager ?? null,
 			toolServerMap,
 			useTextTools,
 			signal,
 			webSearchSettings: plugin.settings.webSearch,
+			ragChunksForLog: ctx.ragChunksForLog,
 		});
 		fullResponse = result.fullResponse;
 		tokenUsage = result.tokenUsage;
 		hasTokenLimitBeenHit = result.hasTokenLimitBeenHit;
-	} else if (chatSettings.streaming) {
-		// ── Streaming (no tools) ──────────────────────────────────────
-		const streamRes = await provider.stream(llmMessages, chatOptions, (chunk) => {
-			fullResponse += chunk;
-			appendChunk(assistantId, chunk);
-		});
-		tokenUsage = streamRes?.usage;
-		hasTokenLimitBeenHit = isTokenLimitReached(streamRes?.finishReason);
 	} else {
-		// ── Non-streaming (no tools) ──────────────────────────────────
-		const response = await provider.chat(llmMessages, chatOptions);
-		fullResponse = response.content;
-		tokenUsage = response?.usage;
-		appendChunk(assistantId, fullResponse);
-		hasTokenLimitBeenHit = isTokenLimitReached(response.finishReason);
+		const reqStart = Date.now();
+		const systemMessage = llmMessages.find((m) => m.role === 'system');
+		const systemPromptText =
+			typeof systemMessage?.content === 'string'
+				? systemMessage.content
+				: systemMessage?.content
+					? JSON.stringify(systemMessage.content)
+					: '';
+		const estimatedInputTokens = llmMessages.reduce((acc, m) => {
+			const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
+			return acc + estimateTokens(c);
+		}, 0);
+
+		const requestId = debugLogger.logRequest({
+			provider: providerConfig.type,
+			model: resolvedModelId,
+			temperature: chatSettings.temperature,
+			maxTokens: chatSettings.maxOutputTokens,
+			stream: chatSettings.streaming,
+			systemPrompt: systemPromptText,
+			messages: formatMessagesForDebugLog(llmMessages),
+			estimatedInputTokens,
+			...(ctx.ragChunksForLog ? { ragChunks: ctx.ragChunksForLog } : {}),
+		});
+
+		try {
+			let finishReason: string | undefined;
+			if (chatSettings.streaming) {
+				// ── Streaming (no tools) ──────────────────────────────────────
+				const streamRes = await provider.stream(llmMessages, chatOptions, (chunk) => {
+					fullResponse += chunk;
+					appendChunk(assistantId, chunk);
+				});
+				tokenUsage = streamRes?.usage;
+				finishReason = streamRes?.finishReason;
+				hasTokenLimitBeenHit = isTokenLimitReached(finishReason);
+			} else {
+				// ── Non-streaming (no tools) ──────────────────────────────────
+				const response = await provider.chat(llmMessages, chatOptions);
+				fullResponse = response.content;
+				tokenUsage = response?.usage;
+				finishReason = response.finishReason;
+				appendChunk(assistantId, fullResponse);
+				hasTokenLimitBeenHit = isTokenLimitReached(finishReason);
+			}
+
+			debugLogger.logResponse(requestId, {
+				model: resolvedModelId,
+				content: fullResponse,
+				durationMs: Date.now() - reqStart,
+				usage: tokenUsage,
+				...(finishReason ? { stopReason: finishReason } : {}),
+			});
+		} catch (err: unknown) {
+			const isAborted = (err instanceof Error && err.name === 'AbortError') || Boolean(signal?.aborted);
+			debugLogger.logResponse(requestId, {
+				model: resolvedModelId,
+				content: fullResponse || `❌ [Error] ${err instanceof Error ? err.message : String(err)}`,
+				durationMs: Date.now() - reqStart,
+				usage: tokenUsage,
+				stopReason: isAborted ? 'aborted' : 'error',
+			});
+			throw err;
+		}
 	}
 
 	return { fullResponse, tokenUsage, hasTokenLimitBeenHit };
