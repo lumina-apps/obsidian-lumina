@@ -40,6 +40,13 @@ export function addDynamicLocale(lang: string, translation: DeepPartial<Translat
   loadedLocales[lang] = translation;
 }
 
+/** 런타임에 등록된 동적 로캘 제거 (예: 시스템 번역 캐시 삭제 시) */
+export function removeDynamicLocale(lang: string): void {
+  if (lang !== 'en') {
+    delete loadedLocales[lang];
+  }
+}
+
 /** 현재 로드된 로캘 객체 반환 */
 export function getCurrentLoadedLocale(): DeepPartial<Translation> {
   const lang = currentLanguage;

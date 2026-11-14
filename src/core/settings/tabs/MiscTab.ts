@@ -1,12 +1,19 @@
 import { Notice, Setting, Platform, ButtonComponent, SliderComponent, TextComponent } from 'obsidian';
 import type { LuminaSettingTab } from '../settingTab';
-import { t, setLanguage } from '../../../shared/locales/helpers';
+import { t, setLanguage, removeDynamicLocale } from '../../../shared/locales/helpers';
 import { wrapAsync } from '../../../shared/utils/settingHelpers';
+import { normalizeError } from '../../../shared/utils/errorUtils';
 import { ConfirmModal } from '../../../shared/utils/modal';
 import { debugLogger } from '../../../shared/debugLogger';
 import { resetIndexing } from '../../store/ragStore';
+import { resetDiscoveryState } from '../../store/discoveryStore';
+import { sessionProviderId, sessionModelId } from '../../store/chatStore';
 import { loadSystemLocaleCache } from '../../../shared/locales/translator';
 import { initEmbeddingWorker } from '../../../features/rag/ragInitializer';
+import { projectIndexCache } from '../../../features/rag/projectIndexCache';
+import { EmbeddingStore } from '../../../features/rag/embeddingStore';
+import { getVaultId } from '../../../features/rag/storage';
+import { runMigrations } from '../migrations';
 import { activateView, closeView } from '../../views/viewHelper';
 import { DEBUG_VIEW_TYPE } from '../../../shared/constants/viewTypes';
 
@@ -277,55 +284,92 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 						t('settings.misc.factoryReset.confirmTitle'),
 						t('settings.misc.factoryReset.confirmMsg'),
 						wrapAsync(async () => {
-							// 워커 및 인덱서 정리
+							// 1. 설정 초기화 전 기존 프로젝트 ID 목록 수집 (IndexedDB 정리용)
+							const projectIds = new Set<string>([
+								'default',
+								...(tab.plugin.settings.projects?.list?.map((p) => p.id) ?? []),
+							]);
+
+							// 2. 파일 감시, 캐시된 인덱서 및 임베딩 워커 정리 (캐시 재기록 방지)
+							tab.plugin.watchManager?.clearWatchEvents();
+							projectIndexCache.destroyAll();
 							if (tab.plugin.indexer) {
 								tab.plugin.indexer.destroy();
 								tab.plugin.indexer = null;
 							}
 							if (tab.plugin.embeddingWorker) {
-								tab.plugin.embeddingWorker.terminate();
+								tab.plugin.embeddingWorker.terminate(false);
 								tab.plugin.embeddingWorker = null;
 							}
 
-							// 인덱스 및 다운로드된 모델(storage 폴더) 삭제
+							// 3. 모든 프로젝트의 IndexedDB 임베딩 저장소 삭제
+							if (typeof indexedDB !== 'undefined') {
+								const vaultId = getVaultId(tab.app);
+								const dbStores: EmbeddingStore[] = [new EmbeddingStore()];
+								for (const pid of projectIds) {
+									dbStores.push(new EmbeddingStore(pid, vaultId));
+									dbStores.push(new EmbeddingStore(pid));
+								}
+								for (const store of dbStores) {
+									try {
+										await store.clear();
+									} catch (e) {
+										debugLogger.logWarn('rag', `IndexedDB 삭제 실패: ${e}`);
+									}
+								}
+							}
+
+							// 4. 브라우저 Cache Storage 내 로컬 임베딩 모델 캐시 삭제
+							if (typeof caches !== 'undefined') {
+								try {
+									await caches.delete('transformers-cache');
+								} catch (e) {
+									debugLogger.logWarn('rag', `로컬 모델 브라우저 캐시 삭제 실패: ${e}`);
+								}
+							}
+
+							// 5. 인덱스 및 다운로드된 모델(storage 폴더) 삭제
 							try {
 								const storagePath = `${tab.app.vault.configDir}/plugins/lumina/storage`;
 								if (await tab.app.vault.adapter.exists(storagePath)) {
 									await tab.app.vault.adapter.rmdir(storagePath, true);
 								}
 							} catch (e) {
-								debugLogger.logError('system', e instanceof Error ? e : new Error(`스토리지 삭제 실패: ${e}`));
+								debugLogger.logError('system', normalizeError(e, `스토리지 삭제 실패: ${e}`));
 							}
 
-							// 언어 번역 캐시(locales 폴더) 삭제
+							// 6. 언어 번역 캐시(locales 폴더 및 메모리 캐시) 삭제
+							removeDynamicLocale('system');
 							try {
 								const localesPath = `${tab.app.vault.configDir}/plugins/lumina/locales`;
 								if (await tab.app.vault.adapter.exists(localesPath)) {
 									await tab.app.vault.adapter.rmdir(localesPath, true);
 								}
 							} catch (e) {
-								debugLogger.logError('system', e instanceof Error ? e : new Error(`번역 캐시 삭제 실패: ${e}`));
+								debugLogger.logError('system', normalizeError(e, `번역 캐시 삭제 실패: ${e}`));
 							}
 
-							// 설정 초기화 (빈 데이터를 저장하여 다음 로드나 loadSettings 시 isFirstRun이 true가 되도록 유도)
-							await tab.plugin.saveData({});
-							await tab.plugin.loadSettings();
-
-							// RAG 인덱싱 상태 초기화 및 자동 재인덱싱
-							resetIndexing();
-							if (tab.plugin.settings.connections.ragEnabled) {
-								if (Platform.isMobile && tab.plugin.settings.connections.embedding.mode === 'auto') {
-									new Notice(t('uiMessages.noticeMobileRag'), 10000);
-								} else {
-									initEmbeddingWorker(tab.plugin, false, true).catch(console.error);
+							// 7. 프론트매터 및 MCP 매니저(내장 서버, 외부 연결, CLI 설정) 정리
+							tab.plugin.frontmatterManager?.clearEvents();
+							if (tab.plugin.mcpManager) {
+								try {
+									await tab.plugin.mcpManager.cleanupCliMcp();
+								} catch (e) {
+									debugLogger.logWarn('mcp', `CLI MCP 설정 정리 실패: ${e}`);
+								}
+								try {
+									await tab.plugin.mcpManager.destroy();
+								} catch (e) {
+									debugLogger.logError('mcp', normalizeError(e, `MCP 매니저 종료 실패: ${e}`));
 								}
 							}
 
-							// UI 업데이트 반영
-							tab.plugin.updateRibbonIcon();
-							closeView(tab.plugin.app.workspace, DEBUG_VIEW_TYPE);
+							// 8. SecretStorage 시크릿 일괄 삭제 후 설정 초기화
+							tab.plugin.settingsManager?.clearAllSecrets();
+							await tab.plugin.saveData({});
+							await tab.plugin.loadSettings();
 
-							// 언어 설정 다시 반영 (loadSettings에서 감지된 언어로 즉시 전환)
+							// 9. 언어 설정 다시 반영 및 뷰/리본 로캘 갱신
 							if (tab.plugin.settings.connections.language === 'system') {
 								const success = await loadSystemLocaleCache(tab.app);
 								if (success) {
@@ -335,6 +379,34 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 								}
 							} else {
 								await setLanguage(tab.plugin.settings.connections.language);
+							}
+							tab.plugin.refreshLocales?.();
+
+							// 10. 초기 마이그레이션(기본 퀵 액션 다국어화, configDir 제외 경로 등) 및 커맨드 재등록
+							if (runMigrations(tab.plugin)) {
+								await tab.plugin.saveSettings();
+							}
+							tab.plugin.commandManager?.registerQuickActions?.();
+
+							// 11. 런타임 스토어, 로거 및 UI 상태 초기화
+							resetIndexing();
+							resetDiscoveryState();
+							sessionProviderId.set(null);
+							sessionModelId.set(null);
+							debugLogger.clear();
+
+							tab.plugin.updateRibbonIcon?.();
+							closeView(tab.plugin.app.workspace, DEBUG_VIEW_TYPE);
+
+							// 12. RAG 자동 재인덱싱
+							if (tab.plugin.settings.connections.ragEnabled) {
+								if (Platform.isMobile && tab.plugin.settings.connections.embedding.mode === 'auto') {
+									new Notice(t('uiMessages.noticeMobileRag'), 10000);
+								} else {
+									initEmbeddingWorker(tab.plugin, false, true).catch((err: unknown) => {
+										debugLogger.logError('rag', normalizeError(err, `RAG 재초기화 실패: ${err}`));
+									});
+								}
 							}
 
 							new Notice(t('settings.misc.factoryReset.success'), 3000);

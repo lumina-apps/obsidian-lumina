@@ -5,8 +5,10 @@ import {
 	addToStaging,
 	removeFromStaging,
 	clearStaging,
+	resetDiscoveryState,
 	updateDiscoveryState
 } from './discoveryStore';
+import type { TFile } from 'obsidian';
 
 describe('discoveryStore', () => {
 	beforeEach(() => {
@@ -48,6 +50,29 @@ describe('discoveryStore', () => {
 		clearStaging();
 
 		const state = get(discoveryState);
+		expect(state.stagedItems).toEqual([]);
+	});
+
+	it('resetDiscoveryState 호출 시 activeFile은 유지하고 검색 결과 및 스테이징 항목을 초기화한다', () => {
+		const mockFile = { path: 'notes/active.md', name: 'active.md' } as unknown as TFile;
+		updateDiscoveryState({
+			activeFile: mockFile,
+			similarNotes: [{ chunk: { id: 'c1', path: 'notes/sim.md', text: 'hi', chunkIndex: 0 }, score: 0.9 }],
+			recommendedTags: [{ tag: 'ai', score: 0.8 }],
+			isSearching: true,
+			lastSearchedFilePath: 'notes/active.md',
+		});
+		addToStaging({ path: 'notes/a.md', name: 'a', tokens: 100 });
+
+		resetDiscoveryState();
+
+		const state = get(discoveryState);
+		expect(state.activeFile).toBe(mockFile);
+		expect(state.similarNotes).toEqual([]);
+		expect(state.duplicateNote).toBeNull();
+		expect(state.recommendedTags).toEqual([]);
+		expect(state.isSearching).toBe(false);
+		expect(state.lastSearchedFilePath).toBeNull();
 		expect(state.stagedItems).toEqual([]);
 	});
 });

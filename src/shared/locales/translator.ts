@@ -6,7 +6,7 @@ import type { LuminaSettings } from '../../core/settings/settings.types';
 import { createProvider } from '../../core/llm-providers/index';
 import en from './en.json';
 import { ConfirmModal } from '../utils/modal';
-import { addDynamicLocale, setLanguage, t } from './helpers';
+import { addDynamicLocale, removeDynamicLocale, setLanguage, t } from './helpers';
 import { debugLogger } from '../debugLogger';
 import { normalizeError } from '../utils/errorUtils';
 
@@ -154,6 +154,7 @@ export async function deleteSystemLocaleCache(app: App): Promise<boolean> {
     if (await app.vault.adapter.exists(cacheFile)) {
         try {
             await app.vault.adapter.remove(cacheFile);
+            removeDynamicLocale('system');
             new Notice(t('settings.translation.cacheDeleted'));
             return true;
         } catch (e) {

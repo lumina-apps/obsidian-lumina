@@ -17,7 +17,7 @@ export class SettingsManager {
 	}
 
 	private deepMergeSettings<T extends object>(defaultSettings: T, savedSettings: Partial<T>): T {
-		const result = { ...defaultSettings } as Record<string, unknown>;
+		const result = JSON.parse(JSON.stringify(defaultSettings)) as Record<string, unknown>;
 		const saved = savedSettings as Record<string, unknown>;
 
 		for (const key in saved) {
@@ -34,6 +34,8 @@ export class SettingsManager {
 					? defaultValue
 					: {};
 				result[key] = this.deepMergeSettings(defaultObj, savedValue);
+			} else if (Array.isArray(savedValue)) {
+				result[key] = JSON.parse(JSON.stringify(savedValue)) as unknown;
 			} else {
 				result[key] = savedValue;
 			}
@@ -221,6 +223,65 @@ export class SettingsManager {
 			this.plugin.settings.projects.list,
 			this.plugin.settings.projects.activeProjectId,
 		);
+	}
+
+	/**
+	 * 플러그인 전체 초기화 시 SecretStorage에 저장된 모든 자격 증명을 제거합니다.
+	 */
+	clearAllSecrets(): void {
+		if (!this.app.secretStorage) {
+			return;
+		}
+
+		const keysToClear = new Set<string>(['lumina-mcp-server-auth']);
+
+		for (const provider of this.plugin.settings?.connections?.providers ?? []) {
+			keysToClear.add(`lumina-provider-${provider.id}`);
+		}
+
+		for (const server of this.plugin.settings?.mcp?.servers ?? []) {
+			keysToClear.add(`lumina-mcp-client-${server.id}`);
+		}
+
+		const webSearchTypes = new Set<string>([
+			...DEFAULT_SETTINGS.webSearch.providers.map((p) => p.type),
+			...(this.plugin.settings?.webSearch?.providers?.map((p) => p.type) ?? []),
+		]);
+		for (const type of webSearchTypes) {
+			keysToClear.add(`lumina-websearch-apikey-${type}`);
+			if (type === 'google') {
+				keysToClear.add(`lumina-websearch-cx-${type}`);
+			}
+		}
+
+		const storageWithList = this.app.secretStorage as {
+			setSecret: (key: string, val: string) => void;
+			listSecrets?: () => string[];
+		};
+		if (typeof storageWithList.listSecrets === 'function') {
+			try {
+				for (const key of storageWithList.listSecrets()) {
+					if (
+						key === 'lumina-mcp-server-auth' ||
+						key.startsWith('lumina-provider-') ||
+						key.startsWith('lumina-mcp-client-') ||
+						key.startsWith('lumina-websearch-')
+					) {
+						keysToClear.add(key);
+					}
+				}
+			} catch (e) {
+				debugLogger.logWarn('settings', `Failed to list secrets during reset: ${e}`);
+			}
+		}
+
+		for (const key of keysToClear) {
+			try {
+				this.app.secretStorage.setSecret(key, '');
+			} catch (e) {
+				debugLogger.logWarn('settings', `Failed to clear secret ${key}: ${e}`);
+			}
+		}
 	}
 
 	private detectSystemLanguage(): PluginLanguage {

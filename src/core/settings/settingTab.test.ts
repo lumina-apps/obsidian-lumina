@@ -414,5 +414,98 @@ describe('LuminaSettingTab scroll preservation', () => {
 				expect(container.textContent).toContain('Autocomplete Wait Time (ms)');
 			});
 		});
+
+		describe('MiscTab factoryReset full cleanup', () => {
+			it('cleans up worker, indexers, storage, locales, secrets, MCP, frontmatter, and runtime stores on factory reset', async () => {
+				const { ConfirmModal } = await import('../../shared/utils/modal');
+				const { sessionProviderId, sessionModelId } = await import('../store/chatStore');
+				const { discoveryState, addToStaging } = await import('../store/discoveryStore');
+				const { get } = await import('svelte/store');
+
+				let confirmPromise: Promise<void> | undefined;
+				const modalOpenSpy = vi.spyOn(ConfirmModal.prototype, 'open').mockImplementation(function (this: InstanceType<typeof ConfirmModal>) {
+					const cb = (this as unknown as { onConfirm: () => Promise<void> }).onConfirm;
+					confirmPromise = Promise.resolve(cb());
+				});
+
+				const rmdirMock = vi.fn().mockResolvedValue(undefined);
+				const existsMock = vi.fn().mockResolvedValue(true);
+				(mockApp as unknown as { vault: unknown }).vault = {
+					configDir: '.obsidian',
+					adapter: {
+						exists: existsMock,
+						rmdir: rmdirMock,
+					},
+				};
+				(mockApp as unknown as { workspace: unknown }).workspace = {
+					getLeavesOfType: vi.fn().mockReturnValue([]),
+				};
+
+				const indexerDestroy = vi.fn();
+				const workerTerminate = vi.fn();
+				const clearWatchEvents = vi.fn();
+				const clearFrontmatterEvents = vi.fn();
+				const cleanupCliMcp = vi.fn().mockResolvedValue(undefined);
+				const mcpDestroy = vi.fn().mockResolvedValue(undefined);
+				const clearAllSecrets = vi.fn();
+				const registerQuickActions = vi.fn();
+				const updateRibbonIcon = vi.fn();
+
+				mockPlugin.indexer = { destroy: indexerDestroy } as never;
+				mockPlugin.embeddingWorker = { terminate: workerTerminate } as never;
+				mockPlugin.watchManager = { clearWatchEvents } as never;
+				mockPlugin.frontmatterManager = { clearEvents: clearFrontmatterEvents } as never;
+				mockPlugin.mcpManager = { cleanupCliMcp, destroy: mcpDestroy } as never;
+				mockPlugin.settingsManager = { clearAllSecrets } as never;
+				mockPlugin.commandManager = { registerQuickActions } as never;
+				mockPlugin.updateRibbonIcon = updateRibbonIcon;
+				mockPlugin.saveData = vi.fn().mockResolvedValue(undefined);
+				mockPlugin.loadSettings = vi.fn().mockImplementation(async () => {
+					mockPlugin.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+					// Disable ragEnabled in mock reload so background worker init doesn't run in unit test
+					mockPlugin.settings.connections.ragEnabled = false;
+				});
+
+				sessionProviderId.set('prov-old');
+				sessionModelId.set('model-old');
+				addToStaging({ path: 'note.md', name: 'note', tokens: 50 });
+
+				try {
+					tab.activeTab = 'misc';
+					tab.showAdvanced = true;
+					tab.display();
+
+					const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>('button'));
+					const resetBtn = buttons.find((b) => b.textContent?.includes('Reset') || b.textContent?.includes('초기화'));
+					expect(resetBtn).toBeDefined();
+
+					resetBtn?.click();
+					await confirmPromise;
+					// Allow any nested microtasks in wrapAsync to settle
+					await new Promise((r) => setTimeout(r, 20));
+
+					expect(clearWatchEvents).toHaveBeenCalled();
+					expect(indexerDestroy).toHaveBeenCalled();
+					expect(mockPlugin.indexer).toBeNull();
+					expect(workerTerminate).toHaveBeenCalledWith(false);
+					expect(mockPlugin.embeddingWorker).toBeNull();
+					expect(rmdirMock).toHaveBeenCalledWith('.obsidian/plugins/lumina/storage', true);
+					expect(rmdirMock).toHaveBeenCalledWith('.obsidian/plugins/lumina/locales', true);
+					expect(clearFrontmatterEvents).toHaveBeenCalled();
+					expect(cleanupCliMcp).toHaveBeenCalled();
+					expect(mcpDestroy).toHaveBeenCalled();
+					expect(clearAllSecrets).toHaveBeenCalled();
+					expect(mockPlugin.saveData).toHaveBeenCalledWith({});
+					expect(mockPlugin.loadSettings).toHaveBeenCalled();
+					expect(registerQuickActions).toHaveBeenCalled();
+					expect(updateRibbonIcon).toHaveBeenCalled();
+					expect(get(sessionProviderId)).toBeNull();
+					expect(get(sessionModelId)).toBeNull();
+					expect(get(discoveryState).stagedItems).toEqual([]);
+				} finally {
+					modalOpenSpy.mockRestore();
+				}
+			});
+		});
 	});
 });

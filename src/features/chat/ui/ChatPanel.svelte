@@ -239,6 +239,9 @@
 					selectedModelId = verified[0].availableModels[0];
 				}
 			}
+		} else if (untrack(() => selectedProviderId !== "" || selectedModelId !== "")) {
+			selectedProviderId = "";
+			selectedModelId = "";
 		}
 	});
 

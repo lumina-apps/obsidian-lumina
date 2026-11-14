@@ -74,6 +74,49 @@ describe('SettingsManager', () => {
 			// 병합되지 않은 기본값들은 그대로 보존
 			expect(mockPlugin.settings.rag.topK).toBe(DEFAULT_SETTINGS.rag.topK);
 		});
+
+		it('loadSettings 이후 plugin.settings를 변경해도 DEFAULT_SETTINGS 원본이 오염되지 않아 재초기화 시 기본값으로 복원된다', async () => {
+			mockPlugin.loadData = vi.fn().mockResolvedValue({});
+			const manager = new SettingsManager(mockPlugin);
+
+			await manager.loadSettings();
+
+			// 런타임에서 중첩 객체 및 배열 변경
+			mockPlugin.settings.connections.providers.push({
+				id: 'p-mutated',
+				type: 'openai',
+				credential: 'sk-test',
+				availableModels: ['gpt-4o'],
+				isVerified: true,
+			});
+			mockPlugin.settings.chat.temperature = 1.9;
+			mockPlugin.settings.canvas.depth = 5;
+			mockPlugin.settings.projects.list.push({
+				id: 'custom-proj',
+				name: 'Custom',
+				ragIncludedPaths: ['docs'],
+				ragExcludedPaths: [],
+				historySubfolder: 'custom',
+				defaultProviderId: '',
+				defaultModelId: '',
+				systemPromptId: '',
+				createdAt: 123,
+			});
+
+			// DEFAULT_SETTINGS 원본은 변형되지 않아야 함
+			expect(DEFAULT_SETTINGS.connections.providers).toEqual([]);
+			expect(DEFAULT_SETTINGS.chat.temperature).toBe(0.7);
+			expect(DEFAULT_SETTINGS.canvas.depth).toBe(1);
+			expect(DEFAULT_SETTINGS.projects.list).toHaveLength(1);
+
+			// 빈 데이터({})로 다시 loadSettings 호출 시 초기 상태로 완전히 복원되어야 함
+			await manager.loadSettings();
+			expect(mockPlugin.settings.connections.providers).toEqual([]);
+			expect(mockPlugin.settings.chat.temperature).toBe(0.7);
+			expect(mockPlugin.settings.canvas.depth).toBe(1);
+			expect(mockPlugin.settings.projects.list).toHaveLength(1);
+			expect(mockPlugin.settings.projects.list[0].id).toBe('default');
+		});
 	});
 
 	describe('saveSettings - SecretStorage 분리 및 평문 누출 방지', () => {
@@ -208,6 +251,39 @@ describe('SettingsManager', () => {
 
 			const manager = new SettingsManager(mockPlugin);
 			await expect(manager.loadSecrets()).resolves.not.toThrow();
+		});
+	});
+
+	describe('clearAllSecrets - 전체 초기화 시 SecretStorage 일괄 제거', () => {
+		it('등록된 프로바이더, 웹 검색, 내장/외부 MCP 시크릿을 모두 빈 문자열로 초기화한다', () => {
+			mockSecretStore.set('lumina-provider-p1', 'sk-provider-1');
+			mockSecretStore.set('lumina-provider-orphan', 'sk-orphan');
+			mockSecretStore.set('lumina-websearch-apikey-tavily', 'tvly-key');
+			mockSecretStore.set('lumina-websearch-apikey-google', 'g-key');
+			mockSecretStore.set('lumina-websearch-cx-google', 'g-cx');
+			mockSecretStore.set('lumina-mcp-server-auth', 'server-token');
+			mockSecretStore.set('lumina-mcp-client-s1', 'client-token');
+			mockSecretStore.set('other-plugin-secret', 'keep-me');
+
+			mockPlugin.settings.connections.providers = [
+				{ id: 'p1', type: 'openai', credential: 'sk-provider-1', availableModels: [], isVerified: true },
+			];
+			mockPlugin.settings.mcp.servers = [
+				{ id: 's1', name: 'S1', transport: 'sse', url: 'http://localhost', authToken: 'client-token', enabled: true, status: 'connected' },
+			];
+
+			const manager = new SettingsManager(mockPlugin);
+			manager.clearAllSecrets();
+
+			expect(mockSecretStore.get('lumina-provider-p1')).toBe('');
+			expect(mockSecretStore.get('lumina-provider-orphan')).toBe('');
+			expect(mockSecretStore.get('lumina-websearch-apikey-tavily')).toBe('');
+			expect(mockSecretStore.get('lumina-websearch-apikey-google')).toBe('');
+			expect(mockSecretStore.get('lumina-websearch-cx-google')).toBe('');
+			expect(mockSecretStore.get('lumina-mcp-server-auth')).toBe('');
+			expect(mockSecretStore.get('lumina-mcp-client-s1')).toBe('');
+			// 타 플러그인 시크릿은 건드리지 않음
+			expect(mockSecretStore.get('other-plugin-secret')).toBe('keep-me');
 		});
 	});
 });

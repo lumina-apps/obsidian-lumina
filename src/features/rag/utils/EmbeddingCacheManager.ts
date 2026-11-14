@@ -58,6 +58,15 @@ export class EmbeddingCacheManager {
 		}
 	}
 
+	/** 메모리 캐시 및 디스크 저장 경로 초기화 (플러그인 리셋 시 사용) */
+	public clear(): void {
+		this.embedCache.clear();
+		this.embedAccess.clear();
+		this.accessCounter = 1;
+		this.cacheFilePath = null;
+		this.pendingSave = false;
+	}
+
 	public trimCacheIfNecessary(): void {
 		if (this.embedCache.size > this.MAX_CACHE_ENTRIES) {
 			const entries = Array.from(this.embedCache.keys()).map((k) => ({

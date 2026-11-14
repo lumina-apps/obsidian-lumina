@@ -80,7 +80,7 @@ export class EmbeddingWorkerBridge {
 	}
 
 	/** 모든 Worker 종료 */
-	terminate(): void {
+	terminate(persistCache: boolean = true): void {
 		if (this.idleTimer) {
 			window.clearTimeout(this.idleTimer);
 			this.idleTimer = null;
@@ -93,9 +93,13 @@ export class EmbeddingWorkerBridge {
 			this.workerCodeUrl = null;
 		}
 
-		void this.cacheManager.persistCache().catch(() => {
-			// 종료 중 캐시 저장 실패는 무시
-		});
+		if (persistCache) {
+			void this.cacheManager.persistCache().catch(() => {
+				// 종료 중 캐시 저장 실패는 무시
+			});
+		} else {
+			this.cacheManager.clear();
+		}
 	}
 
 	get ready(): boolean {

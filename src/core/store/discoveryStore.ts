@@ -54,3 +54,10 @@ export function removeFromStaging(path: string): void {
 export function clearStaging(): void {
 	discoveryState.update(s => ({ ...s, stagedItems: [] }));
 }
+
+export function resetDiscoveryState(): void {
+	discoveryState.update(s => ({
+		...INITIAL_STATE,
+		activeFile: s.activeFile,
+	}));
+}

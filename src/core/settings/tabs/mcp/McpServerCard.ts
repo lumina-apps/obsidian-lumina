@@ -3,6 +3,7 @@ import type { LuminaSettingTab } from '../../settingTab';
 import { t } from '../../../../shared/locales/helpers';
 import type { McpServerConfig } from '../../../../shared/types/settings.types';
 import { createImePasswordBinding, createImeTextBinding } from '../../../../shared/utils/settingHelpers';
+import { debugLogger } from '../../../../shared/debugLogger';
 
 export function renderMcpServerCard(tab: LuminaSettingTab, el: HTMLElement, server: McpServerConfig): void {
 	const statusClass = server.status === 'connected' ? 'is-verified' : server.status === 'error' ? 'is-error' : '';
@@ -66,8 +67,16 @@ export function renderMcpServerCard(tab: LuminaSettingTab, el: HTMLElement, serv
 		})
 		.addExtraButton(btn => {
 			btn.setIcon('trash').setTooltip(t('settings.mcp.deleteServer')).onClick(async () => {
-				tab.plugin.settings.mcp.servers = tab.plugin.settings.mcp.servers.filter(s => s.id !== server.id);
-				await tab.saveAndSync();
+				const deletedId = server.id;
+				tab.plugin.settings.mcp.servers = tab.plugin.settings.mcp.servers.filter(s => s.id !== deletedId);
+				if (tab.app.secretStorage) {
+					try {
+						tab.app.secretStorage.setSecret(`lumina-mcp-client-${deletedId}`, '');
+					} catch (e) {
+						debugLogger.logWarn('settings', `Failed to delete mcp client secret for ${deletedId}: ${e}`);
+					}
+				}
+				await tab.saveAndSync(false, true);
 				tab.refreshDisplay();
 			});
 		});
