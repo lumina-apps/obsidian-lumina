@@ -5,7 +5,7 @@
  */
 
 import { t } from '../../shared/locales/helpers';
-import type { ChatMessage, ChatOptions, ToolCall, TokenUsage, ILLMProvider } from '../../shared/types/llm.types';
+import type { ChatMessage, ChatOptions, TokenUsage, ILLMProvider } from '../../shared/types/llm.types';
 import type { ChatSettings } from '../../core/settings/settings.types';
 import type { McpManager } from '../../core/mcp/mcpManager';
 import { appendChunk, syncMessageContent, addExecutingTool, removeExecutingTool } from '../../core/store/chatStore';
