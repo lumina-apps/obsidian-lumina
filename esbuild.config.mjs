@@ -74,6 +74,9 @@ async function postProcessMainBundle() {
 	// Replace dynamic Function("return this")() used by lodash-es with safe globalThis reference
 	text = text.replace(/Function\(["']return this["']\)\(\)/g, '(typeof globalThis !== "undefined" ? globalThis : window)');
 
+	// setImmediate 폴리필 내부의 동적 new Function 호출 제거
+	text = text.replace(/typeof\s+([a-zA-Z0-9_$]+)\s*!=+\s*['"]function['"]\s*&&\s*\(\1\s*=\s*new\s+Function\([^)]*\)\)/g, 'if(typeof $1!=="function")return');
+
 	if (text !== original) {
 		writeFileSync(outPath, text);
 	}
@@ -95,7 +98,7 @@ async function postProcessWorkerBundle() {
 	// Replace dynamic Function("return this")() with safe globalThis reference
 	text = text.replace(/Function\(["']return this["']\)\(\)/g, '(typeof globalThis !== "undefined" ? globalThis : self)');
 	// Remove new Function in setImmediate polyfills
-	text = text.replace(/typeof\s+([a-zA-Z0-9_$]+)\s*!==?\s*['"]function['"]\s*&&\s*\(\1\s*=\s*new\s+Function\([^)]*\)\)/g, 'if(typeof $1!=="function")return');
+	text = text.replace(/typeof\s+([a-zA-Z0-9_$]+)\s*!=+\s*['"]function['"]\s*&&\s*\(\1\s*=\s*new\s+Function\([^)]*\)\)/g, 'if(typeof $1!=="function")return');
 
 	if (text !== original) {
 		writeFileSync(outPath, text);

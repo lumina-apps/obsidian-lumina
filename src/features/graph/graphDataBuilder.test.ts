@@ -1,3 +1,4 @@
+import { runInNewContext } from 'node:vm';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
 	buildGraphData,
@@ -144,8 +145,8 @@ describe('graphDataBuilder', () => {
 					};
 
 					if (capturedWorkerScript) {
-						const runWorker = new Function('self', capturedWorkerScript);
-						runWorker(simulatedSelf);
+						// buildGraphData가 생성한 워커 스크립트를 독립된 VM 컨텍스트에서 실행
+						runInNewContext(capturedWorkerScript, { self: simulatedSelf, Math });
 						if (typeof simulatedSelf.onmessage === 'function') {
 							(simulatedSelf.onmessage as (e: unknown) => void)({ data });
 							return;
