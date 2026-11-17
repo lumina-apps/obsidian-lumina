@@ -151,7 +151,7 @@ Luminaは、あなたのスキルレベルに合わせた2つのトラックを�
 
 ## サポートとスポンサー
 
-Luminaは**100%無料のオープンソース**プロジェクトとして配布・継続的にアップデートされています。Luminaが時間の節約やワークフローの改善に役立ちましたら、ぜひコーヒー1杯で今後の開発とメンテナンスを応援してください！
+Luminaはオープンソースプロジェクトとして丁寧に開発され、継続的にアップデートされています。Luminaが時間の節約やワークフローの改善に役立ちましたら、ぜひコーヒー1杯で今後の開発とメンテナンスを応援してください！
 
 <p align="left">
   <a href="https://github.com/sponsors/lumina-apps"><img src="https://img.shields.io/badge/GitHub%20Sponsors-Sponsor-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors" /></a>

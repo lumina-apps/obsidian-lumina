@@ -152,7 +152,7 @@ You can view all internal data processed by the plugin by enabling Advanced Sett
 
 ## Support & Sponsor
 
-Lumina is an open-source project maintained with care and distributed **100% free of charge**. If Lumina has saved you time or improved your workflow, please consider buying a coffee to support ongoing development and maintenance!
+Lumina is an open-source project maintained with care and continuously updated. If Lumina has saved you time or improved your workflow, please consider buying a coffee to support ongoing development and maintenance!
 
 <p align="left">
   <a href="https://github.com/sponsors/lumina-apps"><img src="https://img.shields.io/badge/GitHub%20Sponsors-Sponsor-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors" /></a>

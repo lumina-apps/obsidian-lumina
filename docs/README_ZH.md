@@ -151,7 +151,7 @@ Lumina 根据您的熟练程度提供两种模式。选择适合您的方式！
 
 ## 支持与赞助
 
-Lumina 是一个**100% 免费开源**的项目，并将持续更新维护。如果 Lumina 帮您节省了时间或改善了工作流，欢迎请开发者喝杯咖啡，支持项目的持续开发与维护！
+Lumina 是一个用心维护并持续更新的开源项目。如果 Lumina 帮您节省了时间或改善了工作流，欢迎请开发者喝杯咖啡，支持项目的持续开发与维护！
 
 <p align="left">
   <a href="https://github.com/sponsors/lumina-apps"><img src="https://img.shields.io/badge/GitHub%20Sponsors-Sponsor-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors" /></a>

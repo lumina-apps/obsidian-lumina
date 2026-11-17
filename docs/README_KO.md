@@ -152,7 +152,7 @@ Lumina는 여러분의 숙련도에 맞춰 두 가지 모드를 제공합니다.
 
 ## 후원하기
 
-Lumina는 **100% 무료 오픈소스** 프로젝트로 배포되며 지속적으로 업데이트되고 있습니다. Lumina가 여러분의 시간 절약과 지식 관리에 도움이 되었다면, 커피 한 잔으로 개발을 응원해 주세요!
+Lumina는 오픈소스 프로젝트로 정성껏 개발되며 지속적으로 업데이트되고 있습니다. Lumina가 여러분의 시간 절약과 지식 관리에 도움이 되었다면, 커피 한 잔으로 개발을 응원해 주세요!
 
 <p align="left">
   <a href="https://ctee.kr/place/luminaapps"><img src="https://img.shields.io/badge/Ctee-커피%20한%20잔%20후원하기-FF6B00?style=for-the-badge&logo=buymeacoffee&logoColor=white" alt="Ctee" /></a>

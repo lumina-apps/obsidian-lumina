@@ -19,4 +19,4 @@ assignees: ''
 
 
 ---
-> 💖 *Lumina is a 100% free open-source project. If you find it useful, consider supporting its development on [💖 GitHub Sponsors](https://github.com/sponsors/lumina-apps), [☕ Ko-fi](https://ko-fi.com/luminaapps), or [☕ Ctee (KR)](https://ctee.kr/place/luminaapps)!*
+> 💖 *Lumina is an open-source project maintained with care. If you find it useful, consider supporting its development on [💖 GitHub Sponsors](https://github.com/sponsors/lumina-apps), [☕ Ko-fi](https://ko-fi.com/luminaapps), or [☕ Ctee (KR)](https://ctee.kr/place/luminaapps)!*

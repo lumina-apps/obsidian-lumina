@@ -151,7 +151,7 @@ Vous pouvez afficher toutes les données internes traitées par le plugin en act
 
 ## Soutien & Sponsoring
 
-Lumina est un projet open-source distribué **100% gratuitement** et continuellement mis à jour. Si Lumina vous a fait gagner du temps ou a amélioré votre flux de travail, n'hésitez pas à offrir un café pour soutenir son développement et sa maintenance !
+Lumina est un projet open-source maintenu avec soin et continuellement mis à jour. Si Lumina vous a fait gagner du temps ou a amélioré votre flux de travail, n'hésitez pas à offrir un café pour soutenir son développement et sa maintenance !
 
 <p align="left">
   <a href="https://github.com/sponsors/lumina-apps"><img src="https://img.shields.io/badge/GitHub%20Sponsors-Sponsor-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors" /></a>

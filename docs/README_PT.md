@@ -152,7 +152,7 @@ Pode visualizar todos os dados internos processados pelo plugin ativando as Conf
 
 ## Suporte e Patrocínio
 
-O Lumina é um projeto de código aberto distribuído **100% gratuitamente** e atualizado continuamente. Se o Lumina lhe poupou tempo ou melhorou o seu fluxo de trabalho, considere pagar um café para apoiar o desenvolvimento e a manutenção contínua!
+O Lumina é um projeto de código aberto mantido com dedicação e atualizado continuamente. Se o Lumina lhe poupou tempo ou melhorou o seu fluxo de trabalho, considere pagar um café para apoiar o desenvolvimento e a manutenção contínua!
 
 <p align="left">
   <a href="https://github.com/sponsors/lumina-apps"><img src="https://img.shields.io/badge/GitHub%20Sponsors-Sponsor-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors" /></a>
