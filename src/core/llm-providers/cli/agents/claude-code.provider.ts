@@ -3,7 +3,12 @@ import type {
 	CliEvent,
 } from '../../../../shared/types/cliAgent.types';
 import { BaseCliAgent, type CliAgentConfig } from '../base-cli-agent';
-import { extractTextFromUnknown, stripAnsiCodes, parseRawCliLine } from '../ndjson-parser';
+import {
+	extractTextFromUnknown,
+	stripAnsiCodes,
+	parseRawCliLine,
+	inferFileEditEventsFromToolCall,
+} from '../ndjson-parser';
 
 export class ClaudeCodeProvider extends BaseCliAgent {
 	readonly displayName = 'Claude Code';
@@ -173,24 +178,7 @@ export class ClaudeCodeProvider extends BaseCliAgent {
 						toolCall: { name, arguments: args },
 						raw,
 					});
-
-					const candidatePath = (args.file_path || args.path || args.file || args.targetFile || args.filePath) as string | undefined;
-					if (candidatePath && typeof candidatePath === 'string') {
-						const lowerName = name.toLowerCase();
-						if (lowerName.includes('write') || lowerName.includes('edit') || lowerName.includes('create') || lowerName.includes('modify')) {
-							events.push({
-								type: 'file_edit',
-								fileEdit: { path: candidatePath, action: 'modify' },
-								raw,
-							});
-						} else if (lowerName.includes('delete') || lowerName.includes('remove')) {
-							events.push({
-								type: 'file_edit',
-								fileEdit: { path: candidatePath, action: 'delete' },
-								raw,
-							});
-						}
-					}
+					events.push(...inferFileEditEventsFromToolCall(name, args, raw));
 				} else if (bType === 'tool_result') {
 					const name = (b.name || 'tool') as string;
 					const output = extractTextFromUnknown(b.output || b.result || b.content || '');
@@ -230,25 +218,8 @@ export class ClaudeCodeProvider extends BaseCliAgent {
 					toolCall: { name, arguments: args },
 					raw,
 				},
+				...inferFileEditEventsFromToolCall(name, args, raw),
 			];
-
-			const candidatePath = (args.file_path || args.path || args.file || args.targetFile || args.filePath) as string | undefined;
-			if (candidatePath && typeof candidatePath === 'string') {
-				const lowerName = name.toLowerCase();
-				if (lowerName.includes('write') || lowerName.includes('edit') || lowerName.includes('create') || lowerName.includes('modify')) {
-					events.push({
-						type: 'file_edit',
-						fileEdit: { path: candidatePath, action: 'modify' },
-						raw,
-					});
-				} else if (lowerName.includes('delete') || lowerName.includes('remove')) {
-					events.push({
-						type: 'file_edit',
-						fileEdit: { path: candidatePath, action: 'delete' },
-						raw,
-					});
-				}
-			}
 
 			return events.length === 1 ? events[0] : events;
 		}

@@ -64,4 +64,16 @@ describe('historyLocation', () => {
 			excludeFolders: [],
 		});
 	});
+
+	it('historyPath와 historySubfolder에 .. 또는 금지 문자가 포함되면 안전하게 정제한다', () => {
+		const unsafeProj = makeProject({ id: 'unsafe', name: 'Unsafe', historySubfolder: '../Sub:1*' });
+		const res = resolveHistoryLocation(
+			{ historyPath: '../My:Chats/', historyFolderFormat: '{{YYYY}}' },
+			[defaultProj, unsafeProj],
+			unsafeProj,
+		);
+
+		expect(res.basePath).toBe('My_Chats/Sub_1_');
+		expect(res.options.folderFormat).toBe('{{YYYY}}');
+	});
 });

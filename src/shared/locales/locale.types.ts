@@ -287,10 +287,12 @@ export interface TranslationSettingsChatHistory {
   pathPlaceholder: string;
   savePath: string;
   savePathDesc: string;
+  pathSanitizedWarning: string;
   folderFormat: string;
   folderFormatDesc: string;
   folderFormatPlaceholder: string;
   folderFormatPreview: string;
+  folderFormatActiveProjectPreview: string;
   folderFormatInvalid: string;
   folderFormatPresetNone: string;
   folderFormatPresetYear: string;
@@ -939,6 +941,15 @@ export interface TranslationUiMessages {
   cmdLogTitle: string;
   cmdReindex: string;
   cmdClearIdx: string;
+  cmdRestoreBackup: string;
+  backupRestorePlaceholder: string;
+  backupRestoreNone: string;
+  backupRestoreDone: string;
+  backupRestoreFailed: string;
+  autoLinkNoChanges: string;
+  autoLinkSuccess: string;
+  autoLinkRejected: string;
+  autoLinkError: string;
   cmdStripMetadata: string;
   stripMetadataTitle: string;
   stripMetadataBody: string;
@@ -1018,7 +1029,6 @@ export interface TranslationUiMessages {
   ragProgress: {
     searching: string;
     reranking: string;
-    compressing: string;
     generating: string;
   };
 }

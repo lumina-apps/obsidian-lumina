@@ -62,134 +62,6 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 	const cs = tab.plugin.settings.canvas;
 	tab.sectionHeading(el, t('canvas.menuItem'));
 
-	let depthSlider: SliderComponent;
-	let depthText: TextComponent;
-	new Setting(el)
-		.setName(t('canvas.settings.depth.name'))
-		.setDesc(t('canvas.settings.depth.desc'))
-		.addSlider(slider => {
-			depthSlider = slider;
-			slider
-				.setLimits(1, 5, 1)
-				.setValue(cs.depth)
-				.onChange(async (val) => {
-					cs.depth = val;
-					depthText.setValue(val.toString());
-					await tab.saveAndSync();
-				});
-		})
-		.addText(text => {
-			depthText = text;
-			text
-				.setValue(cs.depth.toString())
-				.onChange(async (val) => {
-					const num = parseInt(val, 10);
-					if (!isNaN(num) && num >= 1 && num <= 5) {
-						cs.depth = num;
-						depthSlider.setValue(num);
-						await tab.saveAndSync();
-					}
-				});
-			text.inputEl.type = 'number';
-			text.inputEl.setCssStyles({ width: '50px' });
-		});
-
-	new Setting(el)
-		.setName(t('canvas.settings.layout.name'))
-		.setDesc(t('canvas.settings.layout.desc'))
-		.addDropdown(dd => {
-			dd.addOption('radial', t('canvas.settings.layout.radial'));
-			dd.addOption('tree', t('canvas.settings.layout.tree'));
-			dd.setValue(cs.layout).onChange(async (val) => {
-				cs.layout = val as 'radial' | 'tree';
-				await tab.saveAndSync();
-			});
-		});
-
-	new Setting(el)
-		.setName(t('canvas.settings.bidirectional.name'))
-		.setDesc(t('canvas.settings.bidirectional.desc'))
-		.addToggle(toggle => {
-			toggle.setValue(cs.bidirectional).onChange(async (val) => {
-				cs.bidirectional = val;
-				await tab.saveAndSync();
-			});
-		});
-
-	new Setting(el)
-		.setName(t('canvas.settings.includeAttachments.name'))
-		.setDesc(t('canvas.settings.includeAttachments.desc'))
-		.addToggle(toggle => {
-			toggle.setValue(cs.includeAttachments).onChange(async (val) => {
-				cs.includeAttachments = val;
-				await tab.saveAndSync();
-			});
-		});
-
-	let maxNodesSlider: SliderComponent;
-	let maxNodesText: TextComponent;
-	new Setting(el)
-		.setName(t('canvas.settings.maxNodes.name'))
-		.setDesc(t('canvas.settings.maxNodes.desc'))
-		.addSlider(slider => {
-			maxNodesSlider = slider;
-			slider
-				.setLimits(20, 500, 10)
-				.setValue(cs.maxNodes)
-				.onChange(async (val) => {
-					cs.maxNodes = val;
-					maxNodesText.setValue(val.toString());
-					await tab.saveAndSync();
-				});
-		})
-		.addText(text => {
-			maxNodesText = text;
-			text
-				.setValue(cs.maxNodes.toString())
-				.onChange(async (val) => {
-					const num = parseInt(val, 10);
-					if (!isNaN(num) && num >= 20 && num <= 500) {
-						cs.maxNodes = num;
-						maxNodesSlider.setValue(num);
-						await tab.saveAndSync();
-					}
-				});
-			text.inputEl.type = 'number';
-			text.inputEl.setCssStyles({ width: '60px' });
-		});
-
-	let folderDepthSlider: SliderComponent;
-	let folderDepthText: TextComponent;
-	new Setting(el)
-		.setName(t('canvas.settings.folderDepth.name'))
-		.setDesc(t('canvas.settings.folderDepth.desc'))
-		.addSlider(slider => {
-			folderDepthSlider = slider;
-			slider
-				.setLimits(0, 3, 1)
-				.setValue(cs.folderDepth)
-				.onChange(async (val) => {
-					cs.folderDepth = val;
-					folderDepthText.setValue(val.toString());
-					await tab.saveAndSync();
-				});
-		})
-		.addText(text => {
-			folderDepthText = text;
-			text
-				.setValue(cs.folderDepth.toString())
-				.onChange(async (val) => {
-					const num = parseInt(val, 10);
-					if (!isNaN(num) && num >= 0 && num <= 3) {
-						cs.folderDepth = num;
-						folderDepthSlider.setValue(num);
-						await tab.saveAndSync();
-					}
-				});
-			text.inputEl.type = 'number';
-			text.inputEl.setCssStyles({ width: '50px' });
-		});
-
 	new Setting(el)
 		.setName(t('canvas.settings.outputPath.name'))
 		.setDesc(t('canvas.settings.outputPath.desc'))
@@ -217,6 +89,134 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 
 	if (tab.showAdvanced) {
 		tab.advancedLabel(el);
+
+		let depthSlider: SliderComponent;
+		let depthText: TextComponent;
+		new Setting(el)
+			.setName(t('canvas.settings.depth.name'))
+			.setDesc(t('canvas.settings.depth.desc'))
+			.addSlider(slider => {
+				depthSlider = slider;
+				slider
+					.setLimits(1, 5, 1)
+					.setValue(cs.depth)
+					.onChange(async (val) => {
+						cs.depth = val;
+						depthText.setValue(val.toString());
+						await tab.saveAndSync();
+					});
+			})
+			.addText(text => {
+				depthText = text;
+				text
+					.setValue(cs.depth.toString())
+					.onChange(async (val) => {
+						const num = parseInt(val, 10);
+						if (!isNaN(num) && num >= 1 && num <= 5) {
+							cs.depth = num;
+							depthSlider.setValue(num);
+							await tab.saveAndSync();
+						}
+					});
+				text.inputEl.type = 'number';
+				text.inputEl.setCssStyles({ width: '50px' });
+			});
+
+		new Setting(el)
+			.setName(t('canvas.settings.layout.name'))
+			.setDesc(t('canvas.settings.layout.desc'))
+			.addDropdown(dd => {
+				dd.addOption('radial', t('canvas.settings.layout.radial'));
+				dd.addOption('tree', t('canvas.settings.layout.tree'));
+				dd.setValue(cs.layout).onChange(async (val) => {
+					cs.layout = val as 'radial' | 'tree';
+					await tab.saveAndSync();
+				});
+			});
+
+		new Setting(el)
+			.setName(t('canvas.settings.bidirectional.name'))
+			.setDesc(t('canvas.settings.bidirectional.desc'))
+			.addToggle(toggle => {
+				toggle.setValue(cs.bidirectional).onChange(async (val) => {
+					cs.bidirectional = val;
+					await tab.saveAndSync();
+				});
+			});
+
+		new Setting(el)
+			.setName(t('canvas.settings.includeAttachments.name'))
+			.setDesc(t('canvas.settings.includeAttachments.desc'))
+			.addToggle(toggle => {
+				toggle.setValue(cs.includeAttachments).onChange(async (val) => {
+					cs.includeAttachments = val;
+					await tab.saveAndSync();
+				});
+			});
+
+		let maxNodesSlider: SliderComponent;
+		let maxNodesText: TextComponent;
+		new Setting(el)
+			.setName(t('canvas.settings.maxNodes.name'))
+			.setDesc(t('canvas.settings.maxNodes.desc'))
+			.addSlider(slider => {
+				maxNodesSlider = slider;
+				slider
+					.setLimits(20, 500, 10)
+					.setValue(cs.maxNodes)
+					.onChange(async (val) => {
+						cs.maxNodes = val;
+						maxNodesText.setValue(val.toString());
+						await tab.saveAndSync();
+					});
+			})
+			.addText(text => {
+				maxNodesText = text;
+				text
+					.setValue(cs.maxNodes.toString())
+					.onChange(async (val) => {
+						const num = parseInt(val, 10);
+						if (!isNaN(num) && num >= 20 && num <= 500) {
+							cs.maxNodes = num;
+							maxNodesSlider.setValue(num);
+							await tab.saveAndSync();
+						}
+					});
+				text.inputEl.type = 'number';
+				text.inputEl.setCssStyles({ width: '60px' });
+			});
+
+		let folderDepthSlider: SliderComponent;
+		let folderDepthText: TextComponent;
+		new Setting(el)
+			.setName(t('canvas.settings.folderDepth.name'))
+			.setDesc(t('canvas.settings.folderDepth.desc'))
+			.addSlider(slider => {
+				folderDepthSlider = slider;
+				slider
+					.setLimits(0, 3, 1)
+					.setValue(cs.folderDepth)
+					.onChange(async (val) => {
+						cs.folderDepth = val;
+						folderDepthText.setValue(val.toString());
+						await tab.saveAndSync();
+					});
+			})
+			.addText(text => {
+				folderDepthText = text;
+				text
+					.setValue(cs.folderDepth.toString())
+					.onChange(async (val) => {
+						const num = parseInt(val, 10);
+						if (!isNaN(num) && num >= 0 && num <= 3) {
+							cs.folderDepth = num;
+							folderDepthSlider.setValue(num);
+							await tab.saveAndSync();
+						}
+					});
+				text.inputEl.type = 'number';
+				text.inputEl.setCssStyles({ width: '50px' });
+			});
 
 		new Setting(el)
 			.setName(t('settings.misc.frontmatter.name'))

@@ -25,10 +25,6 @@ export function renderLocalServerSection(tab: LuminaSettingTab, el: HTMLElement,
 				if (val && !s.serverAuthToken) {
 					s.serverAuthToken = crypto.randomUUID();
 				}
-				if (!val && tab.plugin.settings.chat.agentEnabled) {
-					tab.plugin.settings.chat.agentEnabled = false;
-					new Notice(t('uiMessages.agentModeLocalServerStoppedDisabled'));
-				}
 				await tab.saveAndSync(true);
 				tab.refreshDisplay();
 			});
@@ -85,15 +81,7 @@ export function renderLocalServerSection(tab: LuminaSettingTab, el: HTMLElement,
 		.addToggle(toggle => {
 			toggle.setValue(s.serverEnableShellCommands ?? false).onChange(async (val) => {
 				s.serverEnableShellCommands = val;
-				await tab.saveAndSync(false, false); 
-				
-				// 실시간으로 툴 목록 업데이트
-				const localClient = tab.plugin.mcpManager?.clients.get('__lumina_local__');
-				if (localClient) {
-					await localClient.refreshTools().catch((err: unknown) => {
-						debugLogger.logError('mcp', normalizeError(err, `Failed to refresh local MCP tools: ${err}`));
-					});
-				}
+				await tab.saveAndSync(false, false);
 			});
 		});
 

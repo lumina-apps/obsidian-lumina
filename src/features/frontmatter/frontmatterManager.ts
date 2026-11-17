@@ -1,4 +1,4 @@
-/** 프론트매터 자동 생성 모듈. 생성/수정 시 luminaCreated, luminaModified, luminaVersion, tags 관리 */
+/** 프론트매터 자동 생성 모듈. AI 기반 tags, description 자동 생성 및 기존 lumina* 잔여 메타데이터 정리를 담당 */
 
 import { App, TFile, type EventRef } from 'obsidian';
 import { isMarkdownFile } from '../../shared/utils/fileUtils';
@@ -10,9 +10,6 @@ import type LuminaPlugin from '../../main';
 
 /** processFrontMatter용 프론트매터 구조 */
 interface LuminaFrontmatter {
-	luminaCreated?: string;
-	luminaModified?: string;
-	luminaVersion?: string;
 	tags?: string | string[];
 	description?: string;
 }
@@ -311,79 +308,49 @@ ${contentWithoutFm.substring(0, 3000)}`;
 		}
 	}
 
-	/** processFrontMatter로 파일별 프론트매터 생성/갱신 (의미 있는 변경이 있을 때만 재기록) */
-	private async autoGenerate(file: TFile, isUpdate: boolean): Promise<void> {
+	/** processFrontMatter로 LLM이 생성한 tags/description 프론트매터를 반영 (실제 변경이 있을 때만 기록) */
+	private async autoGenerate(file: TFile, _isUpdate: boolean): Promise<void> {
 		if (!this.plugin.settings.misc.autoFrontmatter) return;
 
 		if (this.generatingFiles.has(file.path)) return;
 		this.generatingFiles.add(file.path);
 
 		try {
+			const cachedData = this.llmGeneratedCache.get(file.path);
+			if (!cachedData) {
+				return; // LLM이 생성한 태그/요약 데이터가 없으면 파일을 건드리지 않음
+			}
+
 			const cache = this.app.metadataCache.getFileCache(file);
 			const currentFm = (cache?.frontmatter ?? {}) as Record<string, unknown>;
-			const now = new Date().toISOString();
-			const version = this.plugin.manifest.version;
 
 			// 적용할 프론트매터를 먼저 계산한다 (실제로 변경된 경우에만 재기록).
 			const targetFm: Record<string, unknown> = { ...currentFm };
+			targetFm.description = cachedData.description;
 
-			if (!isUpdate) {
-				targetFm.luminaCreated = targetFm.luminaCreated || now;
+			let existingTags: string[] = [];
+			if (Array.isArray(targetFm.tags)) {
+				existingTags = targetFm.tags as string[];
+			} else if (typeof targetFm.tags === 'string') {
+				existingTags = targetFm.tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
 			}
+			targetFm.tags = Array.from(new Set([...existingTags, ...cachedData.tags]));
 
-			// LLM 캐시가 있다면 적용
-			const cachedData = this.llmGeneratedCache.get(file.path);
-			if (cachedData) {
-				targetFm.description = cachedData.description;
+			this.llmGeneratedCache.delete(file.path);
 
-				let existingTags: string[] = [];
-				if (Array.isArray(targetFm.tags)) {
-					existingTags = targetFm.tags as string[];
-				} else if (typeof targetFm.tags === 'string') {
-					existingTags = targetFm.tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
-				}
-				targetFm.tags = Array.from(new Set([...existingTags, ...cachedData.tags]));
-
-				this.llmGeneratedCache.delete(file.path);
-			}
-
-			targetFm.luminaVersion = version;
-
-			// luminaModified 단순 타임스탬프 갱신만으로는 재기록하지 않는다 (mtime 보존).
-			// luminaCreated/luminaVersion/tags/description 중 실제 변경이 있을 때만 쓴다.
-			const managed: (keyof LuminaFrontmatter)[] = ['luminaCreated', 'luminaModified', 'luminaVersion', 'tags', 'description'];
+			const managed: (keyof LuminaFrontmatter)[] = ['tags', 'description'];
 			const hasMeaningfulChange = managed.some(k => !deepEqual(currentFm[k], targetFm[k]));
 			if (!hasMeaningfulChange) {
 				this.lastUpdateMap.set(file.path, Date.now());
 				return; // 변경 없음 → 파일을 건드리지 않음
 			}
 
-			targetFm.luminaModified = now;
-
 			await this.app.fileManager.processFrontMatter(file, (fmObj) => {
 				const fm = fmObj as Record<string, unknown>;
-
-				// 생성 시: metadataCache는 파일 생성 직후 스테일일 수 있으므로,
-				// 태그 정규화는 캐시가 아닌 실제 파싱된 프론트매터 기준으로 수행한다.
-				if (!isUpdate && !cachedData) {
-					if (typeof fm.tags === 'string') {
-						fm.tags = fm.tags
-							.split(',')
-							.map((t: string) => t.trim())
-							.filter((t: string) => t.length > 0);
-					} else if (fm.tags === undefined || fm.tags === null) {
-						fm.tags = [];
-					}
-				}
-
 				for (const k of managed) {
-					// 태그는 LLM 캐시(병합 결과)가 있을 때만 덮어쓴다.
-					// 그 외에는 실제 값(위에서 정규화한 값)을 보존한다.
-					if (k === 'tags' && !cachedData) continue;
 					if (k in targetFm) {
 						fm[k] = targetFm[k];
 					}
-					// (기존 delete 분기는 제거: 스테일 캐시로 사용자 데이터를 지우지 않도록)
 				}
 			});
 

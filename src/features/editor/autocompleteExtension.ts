@@ -126,12 +126,14 @@ export const autocompletePlugin = (handler: AutocompleteHandler) => ViewPlugin.f
 					// Get current cursor
 					const pos = this.view.state.selection.main.head;
 					
-					// Extract context before cursor
+					// Extract context before and after cursor
 					const contextLength = handler.getContextLength();
 					const startOffset = Math.max(0, pos - contextLength);
 					const contextText = this.view.state.doc.sliceString(startOffset, pos);
+					const suffixEnd = Math.min(this.view.state.doc.length, pos + 300);
+					const suffixText = this.view.state.doc.sliceString(pos, suffixEnd);
 					
-					const suggestion = await handler.fetchSuggestion(contextText);
+					const suggestion = await handler.fetchSuggestion(contextText, suffixText);
 					
 					if (suggestion) {
 						// Check if cursor hasn't moved

@@ -135,19 +135,27 @@ export function migrateMinSimilarity(plugin: LuminaPlugin): boolean {
 }
 
 /**
- * useTokenLimit 옵션을 memoryMethod로 마이그레이션.
+ * useTokenLimit 옵션을 memoryMethod로 마이그레이션하고 구버전 필드를 정리합니다.
  */
 export function migrateMemoryMethod(plugin: LuminaPlugin): boolean {
+	const legacyChat = plugin.settings.chat as LegacyChatSettings;
+	let changed = false;
+
 	if (plugin.settings.chat.memoryMethod === undefined) {
-		const legacyChat = plugin.settings.chat as LegacyChatSettings;
 		if (legacyChat.useTokenLimit) {
 			plugin.settings.chat.memoryMethod = 'tokens';
 		} else {
 			plugin.settings.chat.memoryMethod = 'auto_summary';
 		}
-		return true;
+		changed = true;
 	}
-	return false;
+
+	if ('useTokenLimit' in legacyChat) {
+		delete legacyChat.useTokenLimit;
+		changed = true;
+	}
+
+	return changed;
 }
 
 /**
@@ -304,14 +312,6 @@ export function migrateProjects(plugin: LuminaPlugin): boolean {
 	return needsSave;
 }
 
-export function migrateCliOperationMode(plugin: LuminaPlugin): boolean {
-	if (plugin.settings.chat && !plugin.settings.chat.cliOperationMode) {
-		plugin.settings.chat.cliOperationMode = 'cli-agent';
-		return true;
-	}
-	return false;
-}
-
 export function migrateGraphRibbonIcon(plugin: LuminaPlugin): boolean {
 	if (plugin.settings.misc && plugin.settings.misc.showGraphRibbonIcon === undefined) {
 		plugin.settings.misc.showGraphRibbonIcon = false;
@@ -368,7 +368,6 @@ export function runMigrations(plugin: LuminaPlugin): boolean {
 	if (migrateContextWindowTurns(plugin)) needsSave = true;
 	if (migrateWebSearch(plugin)) needsSave = true;
 	if (migrateCanvasSettings(plugin)) needsSave = true;
-	if (migrateCliOperationMode(plugin)) needsSave = true;
 	if (migrateGraphRibbonIcon(plugin)) needsSave = true;
 	return needsSave;
 }

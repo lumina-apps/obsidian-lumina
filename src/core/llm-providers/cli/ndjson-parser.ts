@@ -297,3 +297,154 @@ export class NdjsonParser {
 		this.buffer = '';
 	}
 }
+
+const SINGLE_PATH_ARG_KEYS = [
+	'file_path',
+	'path',
+	'file',
+	'targetFile',
+	'TargetFile',
+	'filePath',
+	'notebook_path',
+] as const;
+
+/**
+ * apply_patch / patch 도구 페이로드에서 파일 경로와 작업 유형을 추출합니다.
+ */
+export function extractPatchFileActions(
+	patchText: string,
+): Array<{ path: string; action: 'create' | 'modify' | 'delete' }> {
+	if (!patchText) return [];
+
+	const results: Array<{ path: string; action: 'create' | 'modify' | 'delete' }> = [];
+	const seen = new Set<string>();
+	const lines = patchText.split(/\r?\n/);
+
+	for (const line of lines) {
+		const trimmed = line.trim();
+		let action: 'create' | 'modify' | 'delete' | null = null;
+		let rawPath = '';
+
+		if (trimmed.startsWith('*** Add File:')) {
+			action = 'create';
+			rawPath = trimmed.slice('*** Add File:'.length).trim();
+		} else if (trimmed.startsWith('*** Update File:')) {
+			action = 'modify';
+			rawPath = trimmed.slice('*** Update File:'.length).trim();
+		} else if (trimmed.startsWith('*** Delete File:')) {
+			action = 'delete';
+			rawPath = trimmed.slice('*** Delete File:'.length).trim();
+		}
+
+		if (action && rawPath && !seen.has(`${action}:${rawPath}`)) {
+			seen.add(`${action}:${rawPath}`);
+			results.push({ path: rawPath, action });
+		}
+	}
+
+	return results;
+}
+
+/**
+ * CLI tool_call 인자에서 파일 경로 후보 목록을 추출합니다.
+ */
+export function extractCandidateFilePaths(
+	toolName: string,
+	args: Record<string, unknown>,
+): string[] {
+	const paths: string[] = [];
+	const seen = new Set<string>();
+
+	const addPath = (val: unknown) => {
+		if (typeof val === 'string') {
+			const trimmed = val.trim();
+			if (trimmed && !seen.has(trimmed)) {
+				seen.add(trimmed);
+				paths.push(trimmed);
+			}
+		}
+	};
+
+	for (const key of SINGLE_PATH_ARG_KEYS) {
+		addPath(args[key]);
+	}
+
+	const lowerName = toolName.toLowerCase();
+	if (lowerName.includes('patch')) {
+		const patchPayload = args.patchText ?? args.patch ?? args.input;
+		if (typeof patchPayload === 'string') {
+			for (const entry of extractPatchFileActions(patchPayload)) {
+				addPath(entry.path);
+			}
+		}
+	}
+
+	return paths;
+}
+
+/**
+ * CLI 도구 호출 이름과 인자로부터 file_edit 이벤트를 추론해 생성합니다.
+ */
+export function inferFileEditEventsFromToolCall(
+	toolName: string,
+	args: Record<string, unknown>,
+	raw: unknown,
+): CliEvent[] {
+	const lowerName = toolName.toLowerCase();
+
+	if (lowerName.includes('patch')) {
+		const patchPayload = args.patchText ?? args.patch ?? args.input;
+		if (typeof patchPayload === 'string') {
+			const patchActions = extractPatchFileActions(patchPayload);
+			if (patchActions.length > 0) {
+				return patchActions.map((entry) => ({
+					type: 'file_edit',
+					fileEdit: { path: entry.path, action: entry.action },
+					raw,
+				}));
+			}
+		}
+	}
+
+	if (lowerName.includes('bash') || lowerName.includes('command')) {
+		return [];
+	}
+
+	let candidatePath = '';
+	for (const key of SINGLE_PATH_ARG_KEYS) {
+		const val = args[key];
+		if (typeof val === 'string' && val.trim()) {
+			candidatePath = val.trim();
+			break;
+		}
+	}
+	if (!candidatePath) return [];
+
+	if (lowerName.includes('delete') || lowerName.includes('remove')) {
+		return [
+			{
+				type: 'file_edit',
+				fileEdit: { path: candidatePath, action: 'delete' },
+				raw,
+			},
+		];
+	}
+
+	if (
+		lowerName.includes('write') ||
+		lowerName.includes('edit') ||
+		lowerName.includes('create') ||
+		lowerName.includes('modify') ||
+		lowerName.includes('replace')
+	) {
+		return [
+			{
+				type: 'file_edit',
+				fileEdit: { path: candidatePath, action: 'modify' },
+				raw,
+			},
+		];
+	}
+
+	return [];
+}

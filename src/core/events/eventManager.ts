@@ -76,6 +76,17 @@ export class EventManager {
 									await this.plugin.canvasManager?.generateForFile(activeFile);
 								});
 						});
+
+						target.addItem((subItem) => {
+							subItem
+								.setTitle(t('uiMessages.cmdRestoreBackup'))
+								.setIcon('history')
+								.onClick(async () => {
+									debugLogger.logSystem('events', `context-menu: restore backup triggered (file=${activeFile.path})`);
+									const { openRestoreBackupModal } = await import('../../features/backup/backupManager');
+									openRestoreBackupModal(this.plugin.app, activeFile);
+								});
+						});
 					}
 
 					if (selection.trim() && (this.plugin.settings.chat.quickActions?.length ?? 0) > 0) {

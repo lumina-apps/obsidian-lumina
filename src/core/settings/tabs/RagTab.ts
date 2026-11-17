@@ -6,6 +6,7 @@ import { t } from '../../../shared/locales/helpers';
 import { indexingState } from '../../store/ragStore';
 import { ConfirmModal } from '../../../shared/utils/modal';
 import { syncProjectStore } from '../../../core/store/projectStore';
+import { resolveHistoryBasePath, sanitizeHistorySubfolder } from '../../../shared/utils/historyPathUtils';
 
 /** 경로 설정 변경 후 자동 재인덱싱 디바운스 타이머 */
 let pathChangeDebounceTimer: number | null = null;
@@ -71,13 +72,14 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 		
 		const displayName = (project.id === 'default' && project.name === 'Default') ? (t('projects.settings.defaultProjectName') || 'Default Project') : project.name;
 
+		const sanitizedSubfolder = sanitizeHistorySubfolder(project.historySubfolder);
 		const setting = new Setting(card)
 			.setName(displayName + (isActive ? ' ✓' : ''))
 			.setDesc(
 				isDefault
 					? (t('projects.settings.defaultDesc') || '기본 프로젝트')
-					: (project.historySubfolder
-						? `${t('projects.settings.historyPath') || '히스토리'}: ${tab.plugin.settings.chat.historyPath || 'Chat History'}/${project.historySubfolder}`
+					: (sanitizedSubfolder
+						? `${t('projects.settings.historyPath') || '히스토리'}: ${resolveHistoryBasePath(tab.plugin.settings.chat.historyPath, sanitizedSubfolder)}`
 						: (t('projects.settings.noSubfolder') || '히스토리: 전역 경로 사용'))
 			);
 

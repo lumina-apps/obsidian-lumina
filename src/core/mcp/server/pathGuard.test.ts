@@ -7,12 +7,13 @@ import type LuminaPlugin from '../../../main';
 describe('PathGuard', () => {
 	let pathGuard: PathGuard;
 
-	const mockPlugin = (agentRespectRagExclusions: boolean): LuminaPlugin => {
+	const mockPlugin = (agentRespectRagExclusions: boolean, historyPath?: string): LuminaPlugin => {
 		return {
 			settings: {
 				mcp: {
 					agentRespectRagExclusions,
 				},
+				...(historyPath !== undefined ? { chat: { historyPath } } : {}),
 			},
 		} as unknown as LuminaPlugin;
 	};
@@ -60,6 +61,33 @@ describe('PathGuard', () => {
 			const plugin = mockPlugin(true);
 			expect(pathGuard.isAgentPathAllowed('Docs/guide.md', plugin)).toBe(true);
 			expect(pathGuard.isAgentPathAllowed('Notes/Allowed.md', plugin)).toBe(true);
+		});
+
+		it('agentRespectRagExclusions가 true일 때 사용자 지정 chat.historyPath 경로를 자동 차단한다', () => {
+			initProjectStore(
+				[
+					{
+						id: DEFAULT_PROJECT_ID,
+						name: 'Default',
+						ragIncludedPaths: [],
+						ragExcludedPaths: ['chatHistory'],
+						historySubfolder: '',
+						defaultProviderId: '',
+						defaultModelId: '',
+						systemPromptId: '',
+						createdAt: Date.now(),
+					},
+				],
+				DEFAULT_PROJECT_ID,
+			);
+			const plugin = mockPlugin(true, '/MyChats/');
+			expect(pathGuard.isAgentPathAllowed('MyChats/2026/11/session.md', plugin)).toBe(false);
+			expect(pathGuard.isAgentPathAllowed('Docs/guide.md', plugin)).toBe(true);
+		});
+
+		it('agentRespectRagExclusions가 false이면 사용자 지정 chat.historyPath도 차단하지 않는다', () => {
+			const plugin = mockPlugin(false, '/MyChats/');
+			expect(pathGuard.isAgentPathAllowed('MyChats/2026/11/session.md', plugin)).toBe(true);
 		});
 	});
 

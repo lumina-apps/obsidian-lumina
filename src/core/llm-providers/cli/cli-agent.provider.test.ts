@@ -533,6 +533,43 @@ claude-3-5-haiku
 				expect(res[2].type).toBe('tool_result');
 			});
 
+			it('OpenCode file_path 인자 및 apply_patch 도구 호출 시 file_edit 이벤트를 방출한다', () => {
+				const sampleFilePath = {
+					type: 'tool_use',
+					part: {
+						type: 'tool-use',
+						tool: 'edit',
+						state: {
+							status: 'completed',
+							input: { file_path: 'notes/legacy.md', oldString: 'a', newString: 'b' },
+						},
+					},
+				};
+				const resEdit = map(sampleFilePath) as Array<{ type: string; fileEdit?: { path: string; action: string } }>;
+				expect(resEdit.some((e) => e.type === 'file_edit' && e.fileEdit?.path === 'notes/legacy.md' && e.fileEdit?.action === 'modify')).toBe(true);
+
+				const samplePatch = {
+					type: 'tool_use',
+					part: {
+						type: 'tool-use',
+						tool: 'apply_patch',
+						state: {
+							status: 'completed',
+							input: {
+								patchText: '*** Add File: notes/added.md\n+hi\n*** Update File: notes/updated.md\n@@\n-old\n+new\n*** Delete File: notes/deleted.md',
+							},
+						},
+					},
+				};
+				const resPatch = map(samplePatch) as Array<{ type: string; fileEdit?: { path: string; action: string } }>;
+				const patchEdits = resPatch.filter((e) => e.type === 'file_edit').map((e) => e.fileEdit);
+				expect(patchEdits).toEqual([
+					{ path: 'notes/added.md', action: 'create' },
+					{ path: 'notes/updated.md', action: 'modify' },
+					{ path: 'notes/deleted.md', action: 'delete' },
+				]);
+			});
+
 			it('OpenCode step_finish 이벤트를 파싱하여 usage 이벤트를 반환한다', () => {
 				const sample = {
 					type: 'step_finish',
@@ -665,6 +702,30 @@ claude-3-5-haiku
 				expect(res.type).toBe('error');
 				expect(res.content).toBe('Execution timed out');
 			});
+
+			it('Codex item.completed (file_change)의 item.changes[] 배열을 파싱하여 파일별 file_edit 이벤트를 반환한다', () => {
+				const sample = {
+					type: 'item.completed',
+					item: {
+						id: 'item_fc_1',
+						type: 'file_change',
+						status: 'completed',
+						changes: [
+							{ path: 'notes/new.md', kind: 'add' },
+							{ path: 'notes/edited.md', kind: 'update' },
+							{ path: 'notes/removed.md', kind: 'delete' },
+						],
+					},
+				};
+				const res = map(sample) as Array<{ type: string; fileEdit?: { path: string; action: string } }>;
+				expect(Array.isArray(res)).toBe(true);
+				expect(res).toHaveLength(3);
+				expect(res.map((r) => r.fileEdit)).toEqual([
+					{ path: 'notes/new.md', action: 'create' },
+					{ path: 'notes/edited.md', action: 'modify' },
+					{ path: 'notes/removed.md', action: 'delete' },
+				]);
+			});
 		});
 
 		describe('ClaudeCodeProvider - mapEvent stream_event and result Handling', () => {
@@ -784,6 +845,100 @@ claude-3-5-haiku
 				expect(res[1].type).toBe('file_edit');
 				expect(res[1].fileEdit?.path).toBe('notes/test.md');
 				expect(res[1].fileEdit?.action).toBe('modify');
+			});
+
+			it('Claude Code NotebookEdit (notebook_path) 도구 호출 시 file_edit 이벤트를 함께 방출한다', () => {
+				const sampleNotebook = {
+					type: 'assistant',
+					message: {
+						content: [
+							{
+								type: 'tool_use',
+								name: 'NotebookEdit',
+								input: {
+									notebook_path: 'notes/analysis.ipynb',
+									new_source: 'print(1)',
+								},
+							},
+						],
+					},
+				};
+				const res = map(sampleNotebook) as Array<{ type: string; fileEdit?: { path: string; action: string } }>;
+				expect(res.some((e) => e.type === 'file_edit' && e.fileEdit?.path === 'notes/analysis.ipynb')).toBe(true);
+			});
+		});
+
+		describe('AntigravityProvider - mapEvent JSON Event Parsing', () => {
+			const provider = new AntigravityProvider({
+				id: 'test-antigravity-mapper',
+				type: 'antigravity',
+				binaryPath: 'agy',
+				autoApprove: true,
+				isVerified: true,
+			});
+
+			const map = (raw: unknown) => (provider as unknown as { mapEvent: (r: unknown) => unknown }).mapEvent(raw);
+
+			it('step_update.tool_call의 파일 수정 도구(write_to_file, replace_file_content)에서 file_edit를 추론해 방출한다', () => {
+				const sample = {
+					type: 'step_update',
+					step_update: {
+						tool_call: {
+							name: 'replace_file_content',
+							arguments: {
+								TargetFile: '/test/vault/notes/agy-edited.md',
+							},
+						},
+					},
+				};
+				const res = map(sample) as Array<{ type: string; fileEdit?: { path: string; action: string } }>;
+				expect(Array.isArray(res)).toBe(true);
+				expect(res.some((e) => e.type === 'tool_call')).toBe(true);
+				expect(res.some((e) => e.type === 'file_edit' && e.fileEdit?.path === '/test/vault/notes/agy-edited.md' && e.fileEdit?.action === 'modify')).toBe(true);
+			});
+
+			it('step_update에 tool_call과 명시적 file_edit가 함께 오면 동일 경로에 대해 file_edit를 중복 방출하지 않는다', () => {
+				const sample = {
+					type: 'step_update',
+					step_update: {
+						tool_call: {
+							name: 'write_to_file',
+							arguments: { TargetFile: 'notes/dup.md' },
+						},
+						file_edit: {
+							path: 'notes/dup.md',
+							action: 'modify',
+						},
+					},
+				};
+				const res = map(sample) as Array<{ type: string }>;
+				const fileEdits = res.filter((e) => e.type === 'file_edit');
+				expect(fileEdits).toHaveLength(1);
+			});
+
+			it('assistant.message.content[] 내 tool_use 블록(write_to_file / edit_file)을 파싱해 file_edit를 방출한다', () => {
+				const sample = {
+					type: 'assistant',
+					message: {
+						role: 'assistant',
+						content: [
+							{
+								type: 'tool_use',
+								id: 'toolu_agy_1',
+								name: 'write_to_file',
+								input: {
+									path: 'notes/from-assistant.md',
+									content: '# Updated',
+								},
+							},
+						],
+					},
+				};
+				const res = map(sample) as Array<{ type: string; fileEdit?: { path: string; action: string } }>;
+				expect(Array.isArray(res)).toBe(true);
+				expect(res[0].type).toBe('tool_call');
+				expect(res[1].type).toBe('file_edit');
+				expect(res[1].fileEdit?.path).toBe('notes/from-assistant.md');
 			});
 		});
 

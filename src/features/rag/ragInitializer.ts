@@ -17,6 +17,7 @@ import { projectIndexCache } from './projectIndexCache';
 import { getActiveProject } from '../../core/store/projectStore';
 import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
+import { normalizeHistoryRootPath } from '../../shared/utils/historyPathUtils';
 import type LuminaPlugin from '../../main';
 
 /** 기본 임베딩 모델 (auto 모드). 다국어 지원. */
@@ -152,7 +153,7 @@ export async function initEmbeddingWorker(
 			settings: ragSettings,
 			includedPaths: activeProject.ragIncludedPaths,
 			excludedPaths: activeProject.ragExcludedPaths,
-			chatHistoryPath: plugin.settings.chat.historyPath,
+			chatHistoryPath: normalizeHistoryRootPath(plugin.settings.chat.historyPath),
 			modelName,
 			projectId: activeProject.id,
 			embeddingStore,
@@ -306,7 +307,7 @@ export async function switchProjectIndex(
 		settings: plugin.settings.rag,
 		includedPaths: project.ragIncludedPaths,
 		excludedPaths: project.ragExcludedPaths,
-		chatHistoryPath: plugin.settings.chat.historyPath,
+		chatHistoryPath: normalizeHistoryRootPath(plugin.settings.chat.historyPath),
 		modelName,
 		projectId: newProjectId,
 		embeddingStore,

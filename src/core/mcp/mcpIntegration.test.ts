@@ -83,6 +83,13 @@ vi.mock('./server/luminaMcpServer', () => {
 	};
 });
 
+// ─── 5. handlerRegistry Mocking ──────────────────────────────────────────────
+vi.mock('./server/handlerRegistry', () => ({
+	dispatchToolHandler: vi.fn().mockResolvedValue({
+		content: [{ type: 'text', text: 'In-memory tool result' }],
+	}),
+}));
+
 describe('MCP Lifecycle & Integration', () => {
 	let mockPlugin: any;
 	let mcpManager: McpManager;
@@ -176,5 +183,37 @@ describe('MCP Lifecycle & Integration', () => {
 		
 		expect(result.isError).toBe(true);
 		expect(result.content[0].text).toContain('rejected'); // 거부 메시지 포함 여부
+	});
+
+	it('should expose and execute built-in tools in-memory when agentEnabled is true even if serverEnabled is false', async () => {
+		const { dispatchToolHandler } = await import('./server/handlerRegistry');
+		mockPlugin.settings.chat.agentEnabled = true;
+		mockPlugin.settings.chat.agentExecutionMode = 'edit';
+		mockPlugin.settings.mcp.serverEnabled = false;
+		mockPlugin.settings.mcp.clientToolsEnabled = true;
+
+		const tools = mcpManager.getAllTools();
+		const readNoteTool = tools.find((t) => t.name === 'read_note');
+		expect(readNoteTool).toBeDefined();
+		expect(readNoteTool?._serverId).toBe('__lumina_local__');
+
+		const result: any = await mcpManager.callTool('__lumina_local__', 'read_note', { path: 'test.md' });
+		expect(dispatchToolHandler).toHaveBeenCalledWith(
+			'read_note',
+			{ path: 'test.md' },
+			expect.objectContaining({ plugin: mockPlugin }),
+			expect.anything(),
+		);
+		expect(result.content[0].text).toBe('In-memory tool result');
+	});
+
+	it('should block dangerous built-in tools in read mode without calling handlerRegistry', async () => {
+		const { dispatchToolHandler } = await import('./server/handlerRegistry');
+		mockPlugin.settings.chat.agentEnabled = true;
+		mockPlugin.settings.chat.agentExecutionMode = 'read';
+
+		const result: any = await mcpManager.callTool('__lumina_local__', 'delete_note', { path: 'test.md' });
+		expect(result.isError).toBe(true);
+		expect(dispatchToolHandler).not.toHaveBeenCalled();
 	});
 });

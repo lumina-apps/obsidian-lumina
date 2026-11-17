@@ -1,5 +1,6 @@
 import type LuminaPlugin from '../../../main';
 import { isExcluded, isIncluded } from '../../../shared/utils/exclusions';
+import { normalizeHistoryRootPath } from '../../../shared/utils/historyPathUtils';
 import { getActiveProject } from '../../store/projectStore';
 
 /**
@@ -22,7 +23,12 @@ export class PathGuard {
 		if (!isIncluded(filePath, project.ragIncludedPaths)) {
 			return false;
 		}
-		if (isExcluded(filePath, project.ragExcludedPaths)) {
+		// 사용자 지정 채팅 히스토리 루트 경로도 기본 제외 경로와 동일하게 보호
+		const historyRoot = normalizeHistoryRootPath(plugin.settings?.chat?.historyPath);
+		const excludedPaths = project.ragExcludedPaths.includes(historyRoot)
+			? project.ragExcludedPaths
+			: [...project.ragExcludedPaths, historyRoot];
+		if (isExcluded(filePath, excludedPaths)) {
 			return false;
 		}
 		return true;

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { TFile } from 'obsidian';
 import { executeLlmCall, executeCliAgentCall } from './llmExecutor';
 import type { LLMProviderConfig } from '../../../shared/types/settings.types';
 import type { ResolvedContext } from './contextBuilder';
@@ -7,6 +8,7 @@ import { debugLogger } from '../../../shared/debugLogger';
 import { CliAgentProvider } from '../../../core/llm-providers/cli/cli-agent.provider';
 import * as providerIndex from '../../../core/llm-providers/index';
 import * as agentLoopModule from '../agentLoop';
+import * as backupManager from '../../backup/backupManager';
 
 describe('llmExecutor - CLI Agent Execution & Debug Logging', () => {
 	const mockPlugin = {
@@ -470,6 +472,280 @@ describe('llmExecutor - CLI Agent Execution & Debug Logging', () => {
 			expect(agentLoopSpy).toHaveBeenCalled();
 			expect(res.fullResponse).toBe('Final response after tool execution');
 			expect(res.tokenUsage?.totalTokens).toBe(150);
+		});
+	});
+
+	describe('CLI 에이전트 문서 수정 시 자동 백업', () => {
+		const cliConfig: LLMProviderConfig = {
+			id: 'cli-claude',
+			type: 'cli-claude-code',
+			credential: '',
+			availableModels: ['claude-3-7-sonnet'],
+			isVerified: true,
+			autoApprove: true,
+		};
+
+		it('첨부된 노트를 CLI가 수정하면 실행 전 스냅샷을 기반으로 1회만 백업을 생성한다', async () => {
+			const noteFile = new TFile();
+			noteFile.path = 'notes/attached.md';
+			noteFile.name = 'attached.md';
+
+			let diskContent = '# Original Attached Content';
+			const vaultPlugin = {
+				...mockPlugin,
+				app: {
+					...mockPlugin.app,
+					vault: {
+						...mockPlugin.app.vault,
+						getAbstractFileByPath: vi.fn((p: string) => (p === 'notes/attached.md' ? noteFile : null)),
+						read: vi.fn(async () => diskContent),
+					},
+				},
+			} as unknown as LuminaPlugin;
+
+			const backupFromContentSpy = vi.spyOn(backupManager, 'createBackupFromContent').mockResolvedValue(undefined);
+			const createBackupSpy = vi.spyOn(backupManager, 'createBackup').mockResolvedValue(undefined);
+
+			vi.spyOn(CliAgentProvider.prototype, 'executeRaw').mockImplementation(() => {
+				// CLI 실행 직후 디스크 파일이 즉시 수정되는 상황을 시뮬레이션
+				diskContent = '# Modified By CLI';
+				return {
+					events: (async function* () {
+						yield { type: 'tool_call', toolCall: { name: 'Edit', arguments: { file_path: '/test/vault/notes/attached.md' } } };
+						yield { type: 'file_edit', fileEdit: { path: '/test/vault/notes/attached.md', action: 'modify' } };
+						yield { type: 'tool_call', toolCall: { name: 'Edit', arguments: { file_path: '/test/vault/notes/attached.md' } } };
+						yield { type: 'file_edit', fileEdit: { path: '/test/vault/notes/attached.md', action: 'modify' } };
+						yield { type: 'text', content: 'Updated.' };
+					})(),
+					waitForExit: vi.fn().mockResolvedValue({ exitCode: 0 }),
+					writeStdin: vi.fn(),
+					kill: vi.fn(),
+				};
+			});
+
+			const ctxWithAttachment: ResolvedContext = {
+				...mockContext,
+				attachments: [
+					{ type: 'active_note', name: 'attached.md', path: 'notes/attached.md' },
+				],
+			};
+
+			await executeCliAgentCall(
+				vaultPlugin,
+				ctxWithAttachment,
+				cliConfig,
+				'claude-3-7-sonnet',
+				{ ...mockPlugin.settings.chat, agentExecutionMode: 'edit' },
+				undefined,
+				'asst-cli-backup-1',
+			);
+
+			expect(backupFromContentSpy).toHaveBeenCalledTimes(1);
+			expect(backupFromContentSpy).toHaveBeenCalledWith(
+				vaultPlugin.app,
+				'notes/attached.md',
+				'# Original Attached Content',
+			);
+			expect(createBackupSpy).not.toHaveBeenCalled();
+		});
+
+		it('미첨부 파일이라도 tool_call(Read 등)로 선제 스냅샷이 잡히면 file_edit 시 원본으로 백업한다', async () => {
+			const otherFile = new TFile();
+			otherFile.path = 'notes/other.md';
+			otherFile.name = 'other.md';
+
+			let diskContent = '# Original Other Note';
+			const vaultPlugin = {
+				...mockPlugin,
+				app: {
+					...mockPlugin.app,
+					vault: {
+						...mockPlugin.app.vault,
+						getAbstractFileByPath: vi.fn((p: string) => (p === 'notes/other.md' ? otherFile : null)),
+						read: vi.fn(async () => diskContent),
+					},
+				},
+			} as unknown as LuminaPlugin;
+
+			const backupFromContentSpy = vi.spyOn(backupManager, 'createBackupFromContent').mockResolvedValue(undefined);
+
+			vi.spyOn(CliAgentProvider.prototype, 'executeRaw').mockReturnValue({
+				events: (async function* () {
+					yield { type: 'tool_call', toolCall: { name: 'Read', arguments: { file_path: 'notes/other.md' } } };
+					diskContent = '# Edited After Read';
+					yield { type: 'file_edit', fileEdit: { path: 'notes/other.md', action: 'modify' } };
+				})(),
+				waitForExit: vi.fn().mockResolvedValue({ exitCode: 0 }),
+				writeStdin: vi.fn(),
+				kill: vi.fn(),
+			});
+
+			await executeCliAgentCall(
+				vaultPlugin,
+				mockContext,
+				cliConfig,
+				'claude-3-7-sonnet',
+				{ ...mockPlugin.settings.chat, agentExecutionMode: 'edit' },
+				undefined,
+				'asst-cli-backup-2',
+			);
+
+			expect(backupFromContentSpy).toHaveBeenCalledTimes(1);
+			expect(backupFromContentSpy).toHaveBeenCalledWith(
+				vaultPlugin.app,
+				'notes/other.md',
+				'# Original Other Note',
+			);
+		});
+
+		it('수정 전 볼트에 존재하지 않았던 신규 파일 생성 시에는 불필요한 빈 백업을 만들지 않는다', async () => {
+			const vaultPlugin = {
+				...mockPlugin,
+				app: {
+					...mockPlugin.app,
+					vault: {
+						...mockPlugin.app.vault,
+						getAbstractFileByPath: vi.fn().mockReturnValue(null),
+						read: vi.fn(),
+					},
+				},
+			} as unknown as LuminaPlugin;
+
+			const backupFromContentSpy = vi.spyOn(backupManager, 'createBackupFromContent').mockResolvedValue(undefined);
+			const createBackupSpy = vi.spyOn(backupManager, 'createBackup').mockResolvedValue(undefined);
+
+			vi.spyOn(CliAgentProvider.prototype, 'executeRaw').mockReturnValue({
+				events: (async function* () {
+					yield { type: 'tool_call', toolCall: { name: 'Write', arguments: { file_path: 'notes/brand-new.md' } } };
+					yield { type: 'file_edit', fileEdit: { path: 'notes/brand-new.md', action: 'modify' } };
+				})(),
+				waitForExit: vi.fn().mockResolvedValue({ exitCode: 0 }),
+				writeStdin: vi.fn(),
+				kill: vi.fn(),
+			});
+
+			await executeCliAgentCall(
+				vaultPlugin,
+				mockContext,
+				cliConfig,
+				'claude-3-7-sonnet',
+				{ ...mockPlugin.settings.chat, agentExecutionMode: 'edit' },
+				undefined,
+				'asst-cli-backup-3',
+			);
+
+			expect(backupFromContentSpy).not.toHaveBeenCalled();
+			expect(createBackupSpy).not.toHaveBeenCalled();
+		});
+
+		it('사전 tool_call 스냅샷 없이 file_edit만 직접 수신되면 createBackup fallback을 호출하고 backups 폴더는 제외한다', async () => {
+			const backupFromContentSpy = vi.spyOn(backupManager, 'createBackupFromContent').mockResolvedValue(undefined);
+			const createBackupSpy = vi.spyOn(backupManager, 'createBackup').mockResolvedValue(undefined);
+
+			vi.spyOn(CliAgentProvider.prototype, 'executeRaw').mockReturnValue({
+				events: (async function* () {
+					yield { type: 'file_edit', fileEdit: { path: 'notes/direct-edit.md', action: 'modify' } };
+					yield { type: 'file_edit', fileEdit: { path: 'backups/existing.bak', action: 'modify' } };
+				})(),
+				waitForExit: vi.fn().mockResolvedValue({ exitCode: 0 }),
+				writeStdin: vi.fn(),
+				kill: vi.fn(),
+			});
+
+			await executeCliAgentCall(
+				mockPlugin,
+				mockContext,
+				cliConfig,
+				'claude-3-7-sonnet',
+				{ ...mockPlugin.settings.chat, agentExecutionMode: 'edit' },
+				undefined,
+				'asst-cli-backup-4',
+			);
+
+			expect(backupFromContentSpy).not.toHaveBeenCalled();
+			expect(createBackupSpy).toHaveBeenCalledTimes(1);
+			expect(createBackupSpy).toHaveBeenCalledWith(mockPlugin.app, 'notes/direct-edit.md');
+		});
+
+		it('file_edit 이벤트가 전혀 없더라도 waitForExit 이후 스냅샷 파일이 수정 또는 삭제되었으면 fallback으로 백업을 생성한다', async () => {
+			const editedFile = new TFile();
+			editedFile.path = 'notes/shell-edited.md';
+			const unchangedFile = new TFile();
+			unchangedFile.path = 'notes/unchanged.md';
+			const deletedFile = new TFile();
+			deletedFile.path = 'notes/deleted-by-bash.md';
+
+			let editedDiskContent = '# Original Shell Edited';
+			let deletedExists = true;
+
+			const vaultPlugin = {
+				...mockPlugin,
+				app: {
+					...mockPlugin.app,
+					vault: {
+						...mockPlugin.app.vault,
+						getAbstractFileByPath: vi.fn((p: string) => {
+							if (p === 'notes/shell-edited.md') return editedFile;
+							if (p === 'notes/unchanged.md') return unchangedFile;
+							if (p === 'notes/deleted-by-bash.md') return deletedExists ? deletedFile : null;
+							return null;
+						}),
+						read: vi.fn(async (f: TFile) => {
+							if (f === editedFile) return editedDiskContent;
+							if (f === unchangedFile) return '# Unchanged Content';
+							if (f === deletedFile) return '# Before Delete';
+							return '';
+						}),
+					},
+				},
+			} as unknown as LuminaPlugin;
+
+			const backupFromContentSpy = vi.spyOn(backupManager, 'createBackupFromContent').mockResolvedValue(undefined);
+
+			vi.spyOn(CliAgentProvider.prototype, 'executeRaw').mockImplementation(() => {
+				// 첨부 파일은 실행 직후 수정되고, deleted-by-bash.md는 Read 이후 셸로 삭제되는 상황 시뮬레이션
+				editedDiskContent = '# Modified Via Bash';
+				return {
+					events: (async function* () {
+						yield { type: 'tool_call', toolCall: { name: 'Read', arguments: { file_path: 'notes/unchanged.md' } } };
+						yield { type: 'tool_call', toolCall: { name: 'Read', arguments: { file_path: 'notes/deleted-by-bash.md' } } };
+						deletedExists = false;
+						yield { type: 'text', content: 'Done.' };
+					})(),
+					waitForExit: vi.fn().mockResolvedValue({ exitCode: 0 }),
+					writeStdin: vi.fn(),
+					kill: vi.fn(),
+				};
+			});
+
+			const ctxWithAttachment: ResolvedContext = {
+				...mockContext,
+				attachments: [
+					{ type: 'active_note', name: 'shell-edited.md', path: 'notes/shell-edited.md' },
+				],
+			};
+
+			await executeCliAgentCall(
+				vaultPlugin,
+				ctxWithAttachment,
+				cliConfig,
+				'claude-3-7-sonnet',
+				{ ...mockPlugin.settings.chat, agentExecutionMode: 'edit' },
+				undefined,
+				'asst-cli-fallback-1',
+			);
+
+			expect(backupFromContentSpy).toHaveBeenCalledTimes(2);
+			expect(backupFromContentSpy).toHaveBeenCalledWith(
+				vaultPlugin.app,
+				'notes/shell-edited.md',
+				'# Original Shell Edited',
+			);
+			expect(backupFromContentSpy).toHaveBeenCalledWith(
+				vaultPlugin.app,
+				'notes/deleted-by-bash.md',
+				'# Before Delete',
+			);
 		});
 	});
 });

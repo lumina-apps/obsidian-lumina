@@ -1,20 +1,34 @@
 import { App, TFile, Editor } from 'obsidian';
 import { debugLogger } from '../../../../../shared/debugLogger';
+import { t } from '../../../../../shared/locales/helpers';
+import { approvalManager } from '../../../../store/approvalStore';
+
+/** 인라인 Diff 승인 대기 최대 시간 (5분) */
+const AUTO_LINK_APPROVAL_TIMEOUT_MS = 5 * 60 * 1000;
+
+/** 한국어 대표 조사 목록 (긴 조사 우선 매칭) */
+const KOREAN_PARTICLES =
+	'(?:에서|에게|한테|으로|부터|까지|처럼|보다|이란|이라|이며|이고|이나|든지|라도|은|는|이|가|을|를|의|에|께|로|와|과|도|만|란|라|며|고|나)';
 
 function escapeRegExp(string: string) {
 	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function normalizeTargetKey(targetPath: string): string {
+	return targetPath.replace(/\.md$/i, '').trim().toLowerCase();
+}
+
 function buildTermRegex(term: string) {
-	// 순수 영문/숫자 혼합 단어인 경우 단어 경계(\b)를 사용해 오작동을 방지
-	// 한글 등 타 언어 포함 시 띄어쓰기나 조사 결합이 잦으므로 경계 미사용
 	const isPureEnglish = /^[a-zA-Z0-9_-]+$/.test(term);
 	const escaped = escapeRegExp(term);
 	if (isPureEnglish) {
 		return new RegExp(`\\b(${escaped})\\b`, 'gi');
-	} else {
-		return new RegExp(`(${escaped})`, 'gi');
 	}
+	// 비영문/공백 포함 단어: 앞쪽은 어절 경계, 뒤쪽은 어절 경계 또는 한국어 조사 + 어절 경계만 허용하여 복합어 훼손 방지
+	return new RegExp(
+		`(?<=^|[^\\p{L}\\p{N}])(${escaped})(?=$|[^\\p{L}\\p{N}]|${KOREAN_PARTICLES}(?=$|[^\\p{L}\\p{N}]))`,
+		'giu',
+	);
 }
 
 export function applyAutoLink(content: string, terms: { originalTerm: string, path: string }[]): { newContent: string; linksAdded: number } {
@@ -22,10 +36,23 @@ export function applyAutoLink(content: string, terms: { originalTerm: string, pa
 
 	const parts = content.split(protectedRegex);
 	let textTokens: { text: string; isProtected: boolean }[] = [];
+	const alreadyLinkedTargets = new Set<string>();
 	
 	for (let i = 0; i < parts.length; i++) {
 		if (!parts[i]) continue;
-		textTokens.push({ text: parts[i], isProtected: i % 2 !== 0 });
+		const isProtected = i % 2 !== 0;
+		textTokens.push({ text: parts[i], isProtected });
+
+		// 본문에 이미 존재하는 [[링크]] 대상은 중복 생성하지 않도록 수집 (1노트 1링크 원칙)
+		if (isProtected && parts[i].startsWith('[[') && parts[i].endsWith(']]')) {
+			const inner = parts[i].slice(2, -2);
+			const linkTarget = inner.split('|')[0].split('#')[0].trim();
+			if (linkTarget) {
+				alreadyLinkedTargets.add(normalizeTargetKey(linkTarget));
+				const base = linkTarget.split('/').pop();
+				if (base) alreadyLinkedTargets.add(normalizeTargetKey(base));
+			}
+		}
 	}
 
 	let linksAdded = 0;
@@ -34,22 +61,27 @@ export function applyAutoLink(content: string, terms: { originalTerm: string, pa
 		const termStr = termObj.originalTerm;
 		if (termStr.length < 2) continue;
 
+		const targetKey = normalizeTargetKey(termObj.path);
+		const targetBaseKey = normalizeTargetKey(termObj.path.split('/').pop() || termObj.path);
+		if (alreadyLinkedTargets.has(targetKey) || alreadyLinkedTargets.has(targetBaseKey)) {
+			continue;
+		}
+
 		const regex = buildTermRegex(termStr);
 		const newTokens: { text: string; isProtected: boolean }[] = [];
+		let linkedThisTerm = false;
 
 		for (const token of textTokens) {
-			if (token.isProtected) {
+			if (token.isProtected || linkedThisTerm) {
 				newTokens.push(token);
 				continue;
 			}
 
-			let lastIndex = 0;
 			regex.lastIndex = 0;
-			let match;
-
-			while ((match = regex.exec(token.text)) !== null) {
-				if (match.index > lastIndex) {
-					newTokens.push({ text: token.text.slice(lastIndex, match.index), isProtected: false });
+			const match = regex.exec(token.text);
+			if (match) {
+				if (match.index > 0) {
+					newTokens.push({ text: token.text.slice(0, match.index), isProtected: false });
 				}
 
 				const matchedStr = match[0];
@@ -58,12 +90,17 @@ export function applyAutoLink(content: string, terms: { originalTerm: string, pa
 					: `[[${termObj.path}|${matchedStr}]]`;
 
 				newTokens.push({ text: linkText, isProtected: true });
-				linksAdded++;
-				lastIndex = regex.lastIndex;
-			}
+				const afterIndex = match.index + matchedStr.length;
+				if (afterIndex < token.text.length) {
+					newTokens.push({ text: token.text.slice(afterIndex), isProtected: false });
+				}
 
-			if (lastIndex < token.text.length) {
-				newTokens.push({ text: token.text.slice(lastIndex), isProtected: false });
+				linksAdded++;
+				linkedThisTerm = true;
+				alreadyLinkedTargets.add(targetKey);
+				alreadyLinkedTargets.add(targetBaseKey);
+			} else {
+				newTokens.push(token);
 			}
 		}
 		textTokens = newTokens;
@@ -121,28 +158,51 @@ export function calculateAutoLinks(
 	return applyAutoLink(content, terms);
 }
 
-export async function processAutoLink(app: App, file: TFile, editor?: Editor): Promise<{ success: boolean; linksAdded: number; message: string }> {
+export async function processAutoLink(
+	app: App,
+	file: TFile,
+	editor?: Editor,
+	requireApproval: boolean = true,
+): Promise<{ success: boolean; linksAdded: number; message: string }> {
 	try {
 		const content = editor ? editor.getValue() : await app.vault.read(file);
 		const { newContent, linksAdded } = calculateAutoLinks(app, file, content);
 
 		if (linksAdded === 0) {
-			return { success: true, linksAdded: 0, message: "추가할 링크가 없습니다." };
+			return { success: true, linksAdded: 0, message: t('uiMessages.autoLinkNoChanges') };
+		}
+
+		let contentToSave = newContent;
+		if (requireApproval) {
+			const approval = await approvalManager.requestApproval(
+				file.path,
+				content,
+				newContent,
+				{ timeoutMs: AUTO_LINK_APPROVAL_TIMEOUT_MS },
+			);
+			if (!approval.approved) {
+				return { success: true, linksAdded: 0, message: t('uiMessages.autoLinkRejected') };
+			}
+			contentToSave = approval.content;
 		}
 
 		// 4. 저장 (에디터가 주어졌다면 에디터 텍스트 수정, 아니면 파일 직접 수정)
 		if (editor) {
 			const cursor = editor.getCursor();
-			editor.setValue(newContent);
+			editor.setValue(contentToSave);
 			editor.setCursor(cursor);
 		} else {
-			await app.vault.modify(file, newContent);
+			await app.vault.modify(file, contentToSave);
 		}
 
-		return { success: true, linksAdded, message: `총 ${linksAdded}개의 백링크가 생성되었습니다.` };
+		return { success: true, linksAdded, message: t('uiMessages.autoLinkSuccess', { count: linksAdded }) };
 
 	} catch (error) {
 		debugLogger.logError('mcp', error instanceof Error ? error : new Error(String(error)));
-		return { success: false, linksAdded: 0, message: `오류 발생: ${error}` };
+		return {
+			success: false,
+			linksAdded: 0,
+			message: t('uiMessages.autoLinkError', { error: error instanceof Error ? error.message : String(error) }),
+		};
 	}
 }

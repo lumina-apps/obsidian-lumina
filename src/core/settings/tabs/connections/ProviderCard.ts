@@ -202,17 +202,6 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 								(enabled) => {
 									if (!enabled) return;
 									tab.plugin.settings.chat.agentEnabled = true;
-									if (!tab.plugin.settings.mcp.serverEnabled) {
-										tab.plugin.settings.mcp.serverEnabled = true;
-										if (!tab.plugin.settings.mcp.serverAuthToken) {
-											tab.plugin.settings.mcp.serverAuthToken = crypto.randomUUID();
-										}
-										if (tab.plugin.mcpManager) {
-											void tab.plugin.mcpManager.syncServers().catch((err: unknown) => {
-												debugLogger.logError('mcp', err instanceof Error ? err : new Error(`MCP sync failed: ${err}`));
-											});
-										}
-									}
 									void tab.saveAndSync().then(() => {
 										tab.refreshDisplay();
 										new Notice(t('uiMessages.agentBetaEnabled'));

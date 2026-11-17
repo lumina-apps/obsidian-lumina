@@ -4,7 +4,12 @@ import type {
 } from '../../../../shared/types/cliAgent.types';
 import { BaseCliAgent, type CliAgentConfig } from '../base-cli-agent';
 import { ProcessManager, getDefaultCwd } from '../process-manager';
-import { extractTextFromUnknown, stripAnsiCodes, parseRawCliLine } from '../ndjson-parser';
+import {
+	extractTextFromUnknown,
+	stripAnsiCodes,
+	parseRawCliLine,
+	inferFileEditEventsFromToolCall,
+} from '../ndjson-parser';
 import { debugLogger } from '../../../../shared/debugLogger';
 
 export class OpenCodeProvider extends BaseCliAgent {
@@ -249,24 +254,7 @@ export class OpenCodeProvider extends BaseCliAgent {
 				toolCall: { name: toolName, arguments: args },
 				raw,
 			});
-
-			const candidatePath = (args.path || args.file || args.targetFile || args.filePath) as string | undefined;
-			if (candidatePath && typeof candidatePath === 'string') {
-				const lowerName = toolName.toLowerCase();
-				if (lowerName.includes('write') || lowerName.includes('edit') || lowerName.includes('create') || lowerName.includes('modify')) {
-					events.push({
-						type: 'file_edit',
-						fileEdit: { path: candidatePath, action: 'modify' },
-						raw,
-					});
-				} else if (lowerName.includes('delete') || lowerName.includes('remove')) {
-					events.push({
-						type: 'file_edit',
-						fileEdit: { path: candidatePath, action: 'delete' },
-						raw,
-					});
-				}
-			}
+			events.push(...inferFileEditEventsFromToolCall(toolName, args, raw));
 
 			if (status === 'completed' || status === 'error' || output || error) {
 				events.push({

@@ -10,10 +10,12 @@ import {
 	stripAnsiCodes,
 	extractTextFromUnknown,
 	isDuplicateCliSnapshotText,
+	extractCandidateFilePaths,
 } from '../../../core/llm-providers/cli/ndjson-parser';
 import { runAgentLoop, isTokenLimitReached } from '../agentLoop';
 import { debugLogger, formatMessagesForDebugLog } from '../../../shared/debugLogger';
 import { estimateTokens } from '../../../shared/utils/tokenEstimator';
+import { normalizeHistoryRootPath } from '../../../shared/utils/historyPathUtils';
 import {
 	appendChunk,
 	appendThinking,
@@ -33,7 +35,7 @@ import {
 	getVaultBasePath as getVaultBasePathUtil,
 	toVaultRelativePath as toVaultRelativePathUtil,
 } from '../../../shared/utils/fileUtils';
-import { TFile } from 'obsidian';
+import { TFile, normalizePath } from 'obsidian';
 import * as path from 'path';
 import { IMAGE_EXTENSIONS } from './ChatAttachmentHandler';
 import { t } from '../../../shared/locales/helpers';
@@ -68,6 +70,73 @@ async function getFileContentSafely(plugin: LuminaPlugin, filePath: string): Pro
 		debugLogger.logDebug('cli-agent', `Could not read file ${filePath}: ${e}`);
 	}
 	return null;
+}
+
+/**
+ * CLI 파일 수정 전 원본 내용을 스냅샷 맵에 1회 기록합니다.
+ * 파일이 존재하지 않으면 null을 기록해 신규 생성 파일과 구분합니다.
+ */
+async function captureFileSnapshot(
+	plugin: LuminaPlugin,
+	fileSnapshots: Map<string, string | null>,
+	rawPath: string,
+): Promise<void> {
+	const relPath = toVaultRelativePath(plugin, rawPath);
+	if (!relPath || fileSnapshots.has(relPath)) return;
+
+	const currentContent = await getFileContentSafely(plugin, relPath);
+	fileSnapshots.set(relPath, currentContent);
+	if (rawPath && rawPath !== relPath && !fileSnapshots.has(rawPath)) {
+		fileSnapshots.set(rawPath, currentContent);
+	}
+}
+
+/**
+ * CLI 에이전트가 볼트 문서를 수정하거나 삭제할 때 수정 전 원본 백업을 생성합니다.
+ * 한 턴 내에서 동일 파일이 여러 번 수정되더라도 최초 원본 기준으로 1회만 백업합니다.
+ */
+async function backupCliEditedFile(
+	plugin: LuminaPlugin,
+	relPath: string,
+	rawPath: string,
+	action: 'create' | 'modify' | 'delete',
+	fileSnapshots: Map<string, string | null>,
+	backedUpPaths: Set<string>,
+): Promise<void> {
+	const targetPath = relPath || rawPath;
+	if (!targetPath) return;
+
+	const normalizedPath = normalizePath(targetPath);
+	if (!normalizedPath) {
+		return;
+	}
+
+	const { BACKUP_FOLDER, createBackup, createBackupFromContent } = await import('../../backup/backupManager');
+	if (normalizedPath === BACKUP_FOLDER || normalizedPath.startsWith(`${BACKUP_FOLDER}/`)) {
+		return;
+	}
+	if (backedUpPaths.has(normalizedPath)) {
+		return;
+	}
+
+	const snapshot = fileSnapshots.has(relPath)
+		? fileSnapshots.get(relPath)
+		: fileSnapshots.get(rawPath);
+
+	if (typeof snapshot === 'string') {
+		backedUpPaths.add(normalizedPath);
+		await createBackupFromContent(plugin.app, normalizedPath, snapshot);
+		return;
+	}
+
+	// 수정 전 볼트에 존재하지 않았던 신규 생성 파일은 백업을 생략
+	if (snapshot === null || action === 'create') {
+		return;
+	}
+
+	// 사전 스냅샷 없이 file_edit 이벤트만 직접 수신된 경우(예: Codex/Antigravity) 기존 파일 백업 시도
+	backedUpPaths.add(normalizedPath);
+	await createBackup(plugin.app, normalizedPath);
 }
 
 /**
@@ -160,7 +229,7 @@ export async function executeCliAgentCall(
 			new Set([
 				...DEFAULT_EXCLUDED_PATHS,
 				...(activeProject?.ragExcludedPaths ?? []),
-				plugin.settings?.chat?.historyPath || 'chatHistory',
+				normalizeHistoryRootPath(plugin.settings?.chat?.historyPath),
 				plugin.app.vault.configDir,
 			]),
 		).filter(Boolean);
@@ -209,7 +278,12 @@ export async function executeCliAgentCall(
 		},
 	);
 
-	const fileSnapshots = new Map<string, string>();
+	const fileSnapshots = new Map<string, string | null>();
+	const backedUpPaths = new Set<string>();
+	// CLI 프로세스가 디스크를 수정하기 전에 첨부·참조된 볼트 파일의 원본을 선제적으로 스냅샷 확보
+	for (const filePath of nonImageFiles) {
+		await captureFileSnapshot(plugin, fileSnapshots, filePath);
+	}
 	let fullResponse = '';
 	let toolCallCounter = 0;
 	let tokenUsage: TokenUsage | undefined;
@@ -268,14 +342,8 @@ export async function executeCliAgentCall(
 							},
 						);
 						const args = event.toolCall.arguments || {};
-						const candidatePath = (args.file_path || args.path || args.file || args.TargetFile || args.filePath || args.targetFile) as string | undefined;
-						if (candidatePath && typeof candidatePath === 'string') {
-							const relPath = toVaultRelativePath(plugin, candidatePath);
-							if (!fileSnapshots.has(relPath)) {
-								const currentContent = await getFileContentSafely(plugin, relPath);
-								fileSnapshots.set(relPath, currentContent ?? '');
-								fileSnapshots.set(candidatePath, currentContent ?? '');
-							}
+						for (const candidatePath of extractCandidateFilePaths(event.toolCall.name, args)) {
+							await captureFileSnapshot(plugin, fileSnapshots, candidatePath);
 						}
 
 						const toolLogId = `tc-${Date.now()}-${++toolCallCounter}`;
@@ -342,7 +410,8 @@ export async function executeCliAgentCall(
 						const rawPath = event.fileEdit.path;
 						const relPath = toVaultRelativePath(plugin, rawPath);
 						const action = event.fileEdit.action;
-						const beforeContent = fileSnapshots.get(relPath) ?? fileSnapshots.get(rawPath) ?? '';
+						const beforeContent = (fileSnapshots.has(relPath) ? fileSnapshots.get(relPath) : fileSnapshots.get(rawPath)) ?? '';
+						await backupCliEditedFile(plugin, relPath, rawPath, action, fileSnapshots, backedUpPaths);
 						let afterContent = '';
 						if (action !== 'delete') {
 							afterContent = (await getFileContentSafely(plugin, relPath)) ?? '';
@@ -393,6 +462,47 @@ export async function executeCliAgentCall(
 		}
 
 		const exitResult = await execution.waitForExit();
+
+		// file_edit 이벤트가 누락되었거나 셸 명령 등으로 수정된 스냅샷 파일들에 대해 종료 후 디스크 변경 대조 백업 수행
+		const checkedSnapshotPaths = new Set<string>();
+		for (const [snapshotKey, snapshot] of fileSnapshots.entries()) {
+			if (typeof snapshot !== 'string') continue;
+			const relPath = toVaultRelativePath(plugin, snapshotKey);
+			if (!relPath) continue;
+			const normalizedPath = normalizePath(relPath);
+			if (!normalizedPath || checkedSnapshotPaths.has(normalizedPath)) continue;
+			checkedSnapshotPaths.add(normalizedPath);
+
+			if (backedUpPaths.has(normalizedPath)) continue;
+
+			const currentContent = await getFileContentSafely(plugin, normalizedPath);
+			if (currentContent === snapshot) continue;
+
+			const action: 'modify' | 'delete' = currentContent === null ? 'delete' : 'modify';
+			await backupCliEditedFile(
+				plugin,
+				normalizedPath,
+				snapshotKey,
+				action,
+				fileSnapshots,
+				backedUpPaths,
+			);
+
+			const latestMsg = getMessages().find((m) => m.id === assistantId);
+			const alreadyLogged = latestMsg?.cliFileEdits?.some(
+				(fe) => normalizePath(toVaultRelativePath(plugin, fe.path)) === normalizedPath,
+			);
+			if (!alreadyLogged) {
+				addCliFileEdit(assistantId, {
+					id: `fe-${Date.now()}-${checkedSnapshotPaths.size}`,
+					path: normalizedPath,
+					action,
+					timestamp: Date.now(),
+					beforeContent: snapshot,
+					afterContent: currentContent ?? '',
+				});
+			}
+		}
 
 		if (requestId) {
 			debugLogger.logResponse(requestId, {

@@ -116,6 +116,19 @@ describe('AutocompleteHandler & Inline Autocomplete', () => {
 				{ role: 'user', content: 'Context text:\nMy note' },
 			]);
 		});
+
+		it('커서 뒤 텍스트(suffixText)가 있으면 중복 생성을 막기 위해 프롬프트에 포함한다', async () => {
+			await handler.fetchSuggestion('Start of sentence', 'End of sentence');
+			const messages = mockChatFn.mock.calls[0][0];
+			expect(messages[1].content).toContain('Context text:\nStart of sentence');
+			expect(messages[1].content).toContain('End of sentence');
+		});
+
+		it('한글/CJK 문맥에서는 앞에 불필요한 공백을 강제 삽입하지 않는다', async () => {
+			mockChatFn.mockResolvedValueOnce({ content: '은 맑습니다.' });
+			const res = await handler.fetchSuggestion('오늘 날씨');
+			expect(res).toBe('은 맑습니다.');
+		});
 	});
 
 	describe('splitFirstWord & partial suggestion acceptance', () => {

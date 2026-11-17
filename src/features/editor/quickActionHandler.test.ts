@@ -3,8 +3,9 @@ import { QuickActionHandler } from './quickActionHandler';
 import { DEFAULT_SETTINGS } from '../../core/settings/defaultSettings';
 import { initProjectStore } from '../../core/store/projectStore';
 import { createProvider } from '../../core/llm-providers';
+import { approvalManager } from '../../core/store/approvalStore';
 import type LuminaPlugin from '../../main';
-import type { Editor, MarkdownView } from 'obsidian';
+import type { Editor, MarkdownView, TFile } from 'obsidian';
 import type { ILLMProvider } from '../../shared/types/llm.types';
 
 vi.mock('../../core/llm-providers', () => ({
@@ -20,6 +21,12 @@ vi.mock('../chat/chatController', () => ({
 		sendMessage: vi.fn().mockResolvedValue(undefined),
 		destroy: vi.fn(),
 	})),
+}));
+
+vi.mock('../../core/store/approvalStore', () => ({
+	approvalManager: {
+		requestApproval: vi.fn(),
+	},
 }));
 
 describe('QuickActionHandler', () => {
@@ -119,7 +126,7 @@ describe('QuickActionHandler', () => {
 		expect(mockEditor.undo).not.toHaveBeenCalled();
 	});
 
-	it('should safely revert editor when error occurs in streaming mode without calling undo()', async () => {
+	it('스트리밍 중 오류가 발생하면 에디터 원문을 전혀 건드리지 않고 undo()도 호출하지 않는다', async () => {
 		mockPlugin.settings.chat.streaming = true;
 
 		const mockStream = vi.fn().mockRejectedValue(new Error('Network failure'));
@@ -133,14 +140,8 @@ describe('QuickActionHandler', () => {
 			{} as MarkdownView
 		);
 
-		// First replaceRange was indicator insertion
-		expect(mockEditor.replaceRange).toHaveBeenCalled();
-		// Crucial: editor.undo() should NEVER be called; instead revert replaces with original selection
+		expect(mockEditor.replaceRange).not.toHaveBeenCalled();
 		expect(mockEditor.undo).not.toHaveBeenCalled();
-		// Last replaceRange should be the restoration of original selection
-		const calls = (mockEditor.replaceRange as unknown as ReturnType<typeof vi.fn>).mock.calls;
-		const lastCall = calls[calls.length - 1];
-		expect(lastCall[0]).toBe('Hello');
 	});
 
 	it('should not modify editor or call undo if error occurs before editor is touched', async () => {
@@ -158,5 +159,78 @@ describe('QuickActionHandler', () => {
 
 		expect(mockEditor.replaceRange).not.toHaveBeenCalled();
 		expect(mockEditor.undo).not.toHaveBeenCalled();
+	});
+
+	it('replace/append 퀵 액션은 전용 퀵 액션 모델이 미설정이면 메인 모델로 폴백하지 않고 설정 창을 연다', async () => {
+		mockPlugin.settings.connections.quickActionProviderId = '';
+		mockPlugin.settings.connections.quickActionModelId = '';
+
+		await handler.executeAction(
+			{ id: 'test-qa', name: 'Translate', prompt: 'translate', actionType: 'replace' },
+			mockEditor,
+			{} as MarkdownView
+		);
+
+		expect(createProvider).not.toHaveBeenCalled();
+		expect((mockPlugin.app as unknown as { setting: { open: ReturnType<typeof vi.fn> } }).setting.open).toHaveBeenCalled();
+	});
+
+	it('활성 파일이 있는 마크다운 뷰에서는 인라인 Diff 승인(approvalManager)을 거쳐 에디터를 수정한다', async () => {
+		mockPlugin.settings.chat.streaming = false;
+		const docEditor = {
+			...mockEditor,
+			getValue: vi.fn(() => 'Hello world'),
+			setValue: vi.fn(),
+		} as unknown as Editor;
+
+		const mockChat = vi.fn().mockResolvedValue({ content: '안녕하세요' });
+		(createProvider as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+			chat: mockChat,
+		} as unknown as ILLMProvider);
+
+		vi.mocked(approvalManager.requestApproval).mockResolvedValue({
+			approved: true,
+			content: '안녕하세요 world',
+		});
+
+		await handler.executeAction(
+			{ id: 'test-qa', name: 'Translate', prompt: 'translate', actionType: 'replace' },
+			docEditor,
+			{ file: { path: 'Note.md' } as TFile } as MarkdownView
+		);
+
+		expect(approvalManager.requestApproval).toHaveBeenCalledWith(
+			'Note.md',
+			'Hello world',
+			'안녕하세요 world',
+			expect.any(Object),
+		);
+		expect(docEditor.setValue).toHaveBeenCalledWith('안녕하세요 world');
+	});
+
+	it('인라인 Diff가 거절되면 에디터 내용을 변경하지 않는다', async () => {
+		mockPlugin.settings.chat.streaming = false;
+		const docEditor = {
+			...mockEditor,
+			getValue: vi.fn(() => 'Hello world'),
+			setValue: vi.fn(),
+		} as unknown as Editor;
+
+		(createProvider as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+			chat: vi.fn().mockResolvedValue({ content: '안녕하세요' }),
+		} as unknown as ILLMProvider);
+
+		vi.mocked(approvalManager.requestApproval).mockResolvedValue({
+			approved: false,
+			content: '',
+		});
+
+		await handler.executeAction(
+			{ id: 'test-qa', name: 'Translate', prompt: 'translate', actionType: 'replace' },
+			docEditor,
+			{ file: { path: 'Note.md' } as TFile } as MarkdownView
+		);
+
+		expect(docEditor.setValue).not.toHaveBeenCalled();
 	});
 });

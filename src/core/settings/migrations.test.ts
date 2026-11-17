@@ -9,7 +9,6 @@ import {
 	migrateContextWindowTurns,
 	migrateWebSearch,
 	migrateCanvasSettings,
-	migrateCliOperationMode,
 	migrateGraphRibbonIcon,
 	runMigrations,
 } from './migrations';
@@ -253,10 +252,17 @@ describe('migrateMemoryMethod', () => {
 		expect(mockPlugin.settings.chat.memoryMethod).toBe('auto_summary');
 	});
 
-	it('does nothing if memoryMethod is already defined', () => {
-		const mockPlugin = { settings: { chat: { memoryMethod: 'tokens', useTokenLimit: false } } } as any;
+	it('does nothing if memoryMethod is already defined and useTokenLimit is absent', () => {
+		const mockPlugin = { settings: { chat: { memoryMethod: 'tokens' } } } as any;
 		expect(migrateMemoryMethod(mockPlugin)).toBe(false);
 		expect(mockPlugin.settings.chat.memoryMethod).toBe('tokens');
+	});
+
+	it('cleans up legacy useTokenLimit field if still present when memoryMethod is defined', () => {
+		const mockPlugin = { settings: { chat: { memoryMethod: 'tokens', useTokenLimit: false } } } as any;
+		expect(migrateMemoryMethod(mockPlugin)).toBe(true);
+		expect(mockPlugin.settings.chat.memoryMethod).toBe('tokens');
+		expect('useTokenLimit' in mockPlugin.settings.chat).toBe(false);
 	});
 });
 
@@ -299,7 +305,7 @@ describe('runMigrations', () => {
 			settings: {
 				misc: { hasMigratedChatHistory: true, showGraphRibbonIcon: false },
 				rag: { minSimilarity: 0.5 },
-				chat: { quickActions: [], memoryMethod: 'tokens', contextWindowTurns: 10, cliOperationMode: 'cli-agent' },
+				chat: { quickActions: [], memoryMethod: 'tokens', contextWindowTurns: 10 },
 				webSearch: {
 					enabled: false,
 					providers: [
@@ -392,34 +398,6 @@ describe('migrateProjects', () => {
 		// Legacy Chat
 		expect(mockPlugin.settings.projects.list[0].systemPromptId).toBe('sys1');
 		expect(mockPlugin.settings.chat.activeSystemPromptId).toBeUndefined();
-	});
-});
-
-describe('migrateCliOperationMode', () => {
-	it('cliOperationMode가 없을 때 cli-agent로 초기화하고 true를 반환한다', () => {
-		const mockPlugin = {
-			settings: {
-				chat: {} as unknown as LuminaPlugin['settings']['chat'],
-			},
-		} as unknown as LuminaPlugin;
-
-		const result = migrateCliOperationMode(mockPlugin);
-		expect(result).toBe(true);
-		expect(mockPlugin.settings.chat.cliOperationMode).toBe('cli-agent');
-	});
-
-	it('cliOperationMode가 이미 있으면 변경하지 않고 false를 반환한다', () => {
-		const mockPlugin = {
-			settings: {
-				chat: {
-					cliOperationMode: 'plugin-agent',
-				} as unknown as LuminaPlugin['settings']['chat'],
-			},
-		} as unknown as LuminaPlugin;
-
-		const result = migrateCliOperationMode(mockPlugin);
-		expect(result).toBe(false);
-		expect(mockPlugin.settings.chat.cliOperationMode).toBe('plugin-agent');
 	});
 });
 

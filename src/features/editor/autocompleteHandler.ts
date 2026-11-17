@@ -35,7 +35,7 @@ export class AutocompleteHandler {
 		return Math.max(100, Math.floor(raw));
 	}
 
-	async fetchSuggestion(contextText: string): Promise<string | null> {
+	async fetchSuggestion(contextText: string, suffixText?: string): Promise<string | null> {
 		if (!this.plugin.settings.chat.enableAutocomplete) return null;
 		const { taskProviderId, taskModelId, providers } = this.plugin.settings.connections;
 		if (!taskProviderId || !taskModelId) return null;
@@ -53,9 +53,14 @@ export class AutocompleteHandler {
 			? `${DEFAULT_AUTOCOMPLETE_PROMPT}\n\nAdditional user instructions (MUST follow strictly):\n${instruction}`
 			: instruction;
 
+		const hasSuffix = Boolean(suffixText && suffixText.trim().length > 0);
+		const suffixBlock = hasSuffix
+			? `\n\n[Text already following the cursor — DO NOT repeat or overlap with this]:\n${suffixText!.trim()}`
+			: '';
+
 		const userPrompt = isCustomInstruction
-			? `Context text:\n${contextText}\n\n[Instruction reminder: ${instruction}. Output ONLY the raw continuation text.]`
-			: `Context text:\n${contextText}`;
+			? `Context text:\n${contextText}${suffixBlock}\n\n[Instruction reminder: ${instruction}. Output ONLY the raw continuation text.]`
+			: `Context text:\n${contextText}${suffixBlock}`;
 
 		const llmMessages: ChatMessage[] = [
 			{ role: 'system', content: systemPrompt },
@@ -96,8 +101,8 @@ export class AutocompleteHandler {
 			}
 			let cleanSuggestion = sanitizeDisplayContent(rawContent);
 			
-			// 문맥 끝에 맞춰 띄어쓰기 조절
-			if (cleanSuggestion && !contextText.endsWith(' ') && !contextText.endsWith('\n')) {
+			// 영문/숫자 단어끼리 바로 이어질 때만 공백을 보정하여 한글/CJK 조사 결합 시 강제 띄어쓰기 방지
+			if (cleanSuggestion && /[a-zA-Z0-9]$/.test(contextText) && /^[a-zA-Z0-9]/.test(cleanSuggestion)) {
 				cleanSuggestion = ' ' + cleanSuggestion;
 			}
 

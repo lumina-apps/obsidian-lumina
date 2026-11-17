@@ -1,8 +1,13 @@
-import { Setting, normalizePath, type DropdownComponent, type TextComponent } from 'obsidian';
+import { Setting, type DropdownComponent, type TextComponent } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
 import { wrapAsync } from '../../../../shared/utils/settingHelpers';
 import { t } from '../../../../shared/locales/helpers';
-import { resolveDateTemplate, validateDateTemplate } from '../../../../shared/utils/datePathTemplate';
+import { getActiveProject } from '../../../store/projectStore';
+import {
+	formatHistoryFolderPreview,
+	hasUnsafeHistoryPathInput,
+	sanitizeHistorySubfolder,
+} from '../../../../shared/utils/historyPathUtils';
 
 const CUSTOM_PRESET_KEY = '__custom__';
 const FOLDER_FORMAT_PRESETS = new Set<string>([
@@ -32,7 +37,7 @@ export function renderChatHistorySection(tab: LuminaSettingTab, el: HTMLElement)
 	if (s.autoSaveHistory) {
 		let updatePreview = () => {};
 
-		new Setting(el)
+		const savePathSetting = new Setting(el)
 			.setName(t('settings.chat.history.savePath'))
 			.setDesc(t('settings.chat.history.savePathDesc'))
 			.addText(text => {
@@ -53,6 +58,9 @@ export function renderChatHistorySection(tab: LuminaSettingTab, el: HTMLElement)
 						await tab.saveAndSync();
 					});
 			});
+
+		const pathWarningEl = savePathSetting.descEl.createDiv({ cls: 'lumina-settings__desc-warning' });
+		pathWarningEl.style.display = 'none';
 
 		let dropComp: DropdownComponent | null = null;
 		let textComp: TextComponent | null = null;
@@ -108,27 +116,51 @@ export function renderChatHistorySection(tab: LuminaSettingTab, el: HTMLElement)
 			});
 
 		const previewEl = formatSetting.descEl.createDiv({ cls: 'lumina-settings__desc-guide' });
+		const activeProjectPreviewEl = formatSetting.descEl.createDiv({ cls: 'lumina-settings__desc-guide' });
 		const warningEl = formatSetting.descEl.createDiv({ cls: 'lumina-settings__desc-warning' });
 
-		// 설정 입력에 따른 실시간 폴더 경로 미리보기 갱신
+		// 설정 입력에 따른 실시간 폴더 경로 미리보기 및 정제 경고 갱신
 		updatePreview = () => {
-			const rawRoot = (s.historyPath?.trim() || 'chatHistory').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
-			const root = (rawRoot ? normalizePath(rawRoot) : '') || 'chatHistory';
-			const format = s.historyFolderFormat ?? '';
-			const validation = validateDateTemplate(format);
-
-			if (!validation.valid) {
-				warningEl.setText(t('settings.chat.history.folderFormatInvalid'));
-				warningEl.style.display = '';
-				previewEl.setText(t('settings.chat.history.folderFormatPreview', { path: `${root}/` }));
-				return;
+			const rawHistoryPath = s.historyPath ?? '';
+			if (hasUnsafeHistoryPathInput(rawHistoryPath)) {
+				pathWarningEl.setText(t('settings.chat.history.pathSanitizedWarning'));
+				pathWarningEl.style.display = '';
+			} else {
+				pathWarningEl.setText('');
+				pathWarningEl.style.display = 'none';
 			}
 
-			warningEl.setText('');
-			warningEl.style.display = 'none';
-			const sub = resolveDateTemplate(format, new Date());
-			const resolved = sub ? normalizePath(`${root}/${sub}`) : root;
-			previewEl.setText(t('settings.chat.history.folderFormatPreview', { path: `${resolved}/` }));
+			const now = new Date();
+			const format = s.historyFolderFormat ?? '';
+			const globalPreview = formatHistoryFolderPreview(rawHistoryPath, '', format, now);
+
+			if (!globalPreview.isFormatValid) {
+				warningEl.setText(t('settings.chat.history.folderFormatInvalid'));
+				warningEl.style.display = '';
+			} else {
+				warningEl.setText('');
+				warningEl.style.display = 'none';
+			}
+			previewEl.setText(t('settings.chat.history.folderFormatPreview', { path: `${globalPreview.resolvedPath}/` }));
+
+			const activeProject = getActiveProject();
+			const activeSubfolder = sanitizeHistorySubfolder(activeProject?.historySubfolder);
+			if (activeProject && activeSubfolder) {
+				const activePreview = formatHistoryFolderPreview(rawHistoryPath, activeSubfolder, format, now);
+				const activeName = (activeProject.id === 'default' && activeProject.name === 'Default')
+					? t('projects.settings.defaultProjectName')
+					: activeProject.name;
+				activeProjectPreviewEl.setText(
+					t('settings.chat.history.folderFormatActiveProjectPreview', {
+						project: activeName,
+						path: `${activePreview.resolvedPath}/`,
+					}),
+				);
+				activeProjectPreviewEl.style.display = '';
+			} else {
+				activeProjectPreviewEl.setText('');
+				activeProjectPreviewEl.style.display = 'none';
+			}
 		};
 
 		updatePreview();

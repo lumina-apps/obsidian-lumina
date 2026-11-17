@@ -4,7 +4,12 @@ import type {
 } from '../../../../shared/types/cliAgent.types';
 import { BaseCliAgent, type CliAgentConfig } from '../base-cli-agent';
 import { ProcessManager, getDefaultCwd } from '../process-manager';
-import { extractTextFromUnknown, stripAnsiCodes, parseRawCliLine } from '../ndjson-parser';
+import {
+	extractTextFromUnknown,
+	stripAnsiCodes,
+	parseRawCliLine,
+	inferFileEditEventsFromToolCall,
+} from '../ndjson-parser';
 import { debugLogger } from '../../../../shared/debugLogger';
 
 export class CodexProvider extends BaseCliAgent {
@@ -222,6 +227,10 @@ export class CodexProvider extends BaseCliAgent {
 				raw,
 			});
 
+			if (eventType !== 'command_execution' && itemType !== 'command_execution') {
+				events.push(...inferFileEditEventsFromToolCall(name, args, raw));
+			}
+
 			if (status === 'completed' || status === 'failed' || status === 'error' || output || error) {
 				events.push({
 					type: 'tool_result',
@@ -253,8 +262,41 @@ export class CodexProvider extends BaseCliAgent {
 			itemType === 'file_change' ||
 			itemType === 'file_edit'
 		) {
-			const path = (item?.path || item?.file || obj.path || obj.file || '') as string;
-			const action = (item?.action || item?.change_type || obj.action || 'modify') as 'create' | 'modify' | 'delete';
+			// Codex 공식 exec --json 스키마: item.changes[{ path, kind }] 배열 처리
+			const changes = item?.changes || obj.changes;
+			if (Array.isArray(changes) && changes.length > 0) {
+				const changeEvents: CliEvent[] = [];
+				for (const entry of changes) {
+					if (!entry || typeof entry !== 'object') continue;
+					const ch = entry as Record<string, unknown>;
+					const changePath = (ch.path || ch.file || ch.file_path || '') as string;
+					if (!changePath) continue;
+					const kind = String(ch.kind || ch.action || ch.change_type || 'update').toLowerCase();
+					const action: 'create' | 'modify' | 'delete' =
+						kind === 'add' || kind === 'create'
+							? 'create'
+							: kind === 'delete' || kind === 'remove'
+								? 'delete'
+								: 'modify';
+					changeEvents.push({
+						type: 'file_edit',
+						fileEdit: { path: changePath, action },
+						raw,
+					});
+				}
+				if (changeEvents.length > 0) {
+					return changeEvents.length === 1 ? changeEvents[0] : changeEvents;
+				}
+			}
+
+			const path = (item?.path || item?.file || item?.file_path || item?.targetFile || obj.path || obj.file || obj.file_path || '') as string;
+			const rawAction = String(item?.action || item?.change_type || obj.action || 'modify').toLowerCase();
+			const action: 'create' | 'modify' | 'delete' =
+				rawAction === 'add' || rawAction === 'create'
+					? 'create'
+					: rawAction === 'delete' || rawAction === 'remove'
+						? 'delete'
+						: 'modify';
 			return {
 				type: 'file_edit',
 				fileEdit: { path, action },

@@ -149,7 +149,6 @@ export const safeModifyFile = async (
 		}
 		await createBackup(ctx.plugin.app, path);
 		await ctx.plugin.app.vault.modify(file, result.content);
-		await enforceLuminaMetadata(path, ctx);
 		await openFileInWorkspace(ctx.plugin.app, path);
 		return { content: [{ type: 'text', text: successMessage }] };
 	});
@@ -181,49 +180,10 @@ export const safeCreateFile = async (
 	await pathGuard.lock(path, async () => {
 		await ensureFolderExists(ctx.plugin.app, path);
 		await ctx.plugin.app.vault.create(path, content);
-		await enforceLuminaMetadata(path, ctx);
 		await openFileInWorkspace(ctx.plugin.app, path);
 	});
 	return { content: [{ type: 'text', text: successMessage }] };
 };
-
-/**
- * MCP 툴로 노트를 생성/수정한 직후 lumina 메타데이터를 스탬핑한다.
- * - `autoFrontmatter`가 꺼져 있으면 프론트매터를 절대 건드리지 않는다 (전체 opt-out).
- * - 이미 현재 버전으로 스탬핑된 파일은 재기록하지 않는다 (불필요한 mtime 변경/재기록 방지).
- */
-async function enforceLuminaMetadata(path: string, ctx: ToolHandlerContext) {
-	if (!ctx.plugin.settings.misc.autoFrontmatter) return;
-
-	const file = ctx.plugin.app.vault.getAbstractFileByPath(path);
-	if (!(file instanceof TFile) || file.extension !== 'md') return;
-
-	try {
-		const now = new Date().toISOString();
-		const version = ctx.plugin.manifest.version;
-
-		// 이미 현재 버전으로 스탬핑되어 있으면 건너뛴다 (중복 재기록 방지).
-		const cache = ctx.plugin.app.metadataCache.getFileCache(file);
-		const fm = cache?.frontmatter;
-		if (
-			fm &&
-			typeof fm.luminaCreated === 'string' &&
-			typeof fm.luminaModified === 'string' &&
-			fm.luminaVersion === version
-		) {
-			return;
-		}
-
-		await ctx.plugin.app.fileManager.processFrontMatter(file, (fmObj: Record<string, unknown>) => {
-			const r = fmObj as Record<string, string>;
-			r.luminaCreated = r.luminaCreated || now;
-			r.luminaModified = now;
-			r.luminaVersion = version;
-		});
-	} catch {
-		// ignore errors if frontmatter is invalid
-	}
-}
 
 export const safeActionFile = async (
 	actionName: Exclude<ActionType, 'edit'>,
@@ -249,7 +209,6 @@ export const safeActionFile = async (
 		const successMessage = await actionFn();
 		
 		const targetPath = (actionName === 'rename' && actionParams?.targetPath) ? String(actionParams.targetPath) : path;
-		await enforceLuminaMetadata(targetPath, ctx);
 		
 		if (actionName !== 'delete') {
 			await openFileInWorkspace(ctx.plugin.app, targetPath);

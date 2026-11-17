@@ -362,5 +362,23 @@ describe('graphDataBuilder', () => {
 			expect(hubLinks.length).toBeLessThanOrEqual(20);
 			expect(hubLinks.length).toBeGreaterThan(0);
 		});
+
+		it('파일에 여러 하위 청크가 있을 때 첫 번째 청크만이 아니라 전체 청크의 평균(L2 정규화) 임베딩으로 유사도를 계산한다', async () => {
+			const parentChunks: ParentChunk[] = [
+				{ id: 'p1', path: 'Multi.md', text: 'intro + main', chunkIndex: 0 },
+				{ id: 'p2', path: 'Target.md', text: 'target', chunkIndex: 0 },
+			];
+			// Multi.md: 첫 청크는 [1, 0] (직교), 두 번째 청크는 [0, 1] (Target과 동일) -> 평균 후 정규화하면 [1/sqrt(2), 1/sqrt(2)]
+			// Target.md와의 내적은 1/sqrt(2) ≈ 0.7071 (첫 청크만 썼다면 0.0이었을 것)
+			const childChunks: ChildChunk[] = [
+				{ id: 'c1', parentId: 'p1', path: 'Multi.md', text: 'intro', chunkIndex: 0, embedding: [1, 0] },
+				{ id: 'c2', parentId: 'p1', path: 'Multi.md', text: 'main', chunkIndex: 1, embedding: [0, 1] },
+				{ id: 'c3', parentId: 'p2', path: 'Target.md', text: 'target', chunkIndex: 0, embedding: [0, 1] },
+			];
+
+			const result = await buildGraphData(parentChunks, childChunks, 0.6, 5, 'global');
+			expect(result.links).toHaveLength(1);
+			expect(result.links[0].weight).toBeCloseTo(Math.SQRT1_2, 4);
+		});
 	});
 });

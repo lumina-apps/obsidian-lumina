@@ -8,7 +8,6 @@ import { debugLogger } from '../../../shared/debugLogger';
 import type { RagChunkMeta } from '../../../shared/types/debug.types';
 import type { RagSettings, ConnectionsSettings } from '../../../core/settings/settings.types';
 import { rerankChunks } from '../../rag/reranker';
-import { compressChunks } from '../../rag/compressor';
 
 /** RAG 검색 수행 여부 결정 */
 export function resolveRagSearchFlag(opts: {
@@ -71,8 +70,6 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 		setMessageRagStep(assistantId, 'searching');
 		
 		const useReranker = !!(connections.rerankerProviderId && connections.rerankerModelId);
-		// 과도한 레이턴시 및 청크별 다중 LLM 호출 방지를 위해 RAG 청크 자동 압축은 비활성화
-		const useCompressor = false;
 		
 		// 리랭커 사용 시에는 K * 2 개 추출
 		const initialTopK = useReranker ? rag.topK * 2 : rag.topK;
@@ -107,16 +104,7 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 			}
 		}
 
-		// [3] Compressing
-		if (useCompressor) {
-			setMessageRagStep(assistantId, 'compressing');
-			const providerConfig = connections.providers.find(p => p.id === connections.taskProviderId);
-			if (providerConfig) {
-				results = await compressChunks(userText, results, providerConfig, connections.taskModelId, signal);
-			}
-		}
-
-		// [4] Generating (End of Pipeline)
+		// [3] Generating (End of Pipeline)
 		setMessageRagStep(assistantId, 'generating');
 
 		const ragText = formatRagContext(results);

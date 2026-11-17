@@ -1,6 +1,10 @@
 import { normalizePath } from 'obsidian';
 import type { ChatSettings } from '../../../core/settings/settings.types';
 import type { ProjectConfig } from '../../../shared/types/project.types';
+import {
+	normalizeHistoryRootPath,
+	sanitizeHistorySubfolder,
+} from '../../../shared/utils/historyPathUtils';
 
 /** 히스토리 저장·탐색 시 전달하는 경로 옵션 */
 export interface HistoryLocationOptions {
@@ -18,12 +22,6 @@ export interface ResolvedHistoryLocation {
 	options: HistoryLocationOptions;
 }
 
-function normalizeRelativeSegment(raw: string | undefined): string {
-	if (!raw) return '';
-	const cleaned = raw.trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
-	return cleaned ? normalizePath(cleaned) : '';
-}
-
 /**
  * 채팅 설정과 프로젝트 목록/활성 프로젝트를 바탕으로
  * 히스토리 루트 경로(basePath), 날짜 폴더 포맷, 제외할 타 프로젝트 폴더 목록을 계산합니다.
@@ -33,8 +31,8 @@ export function resolveHistoryLocation(
 	projects: readonly ProjectConfig[] | undefined,
 	activeProject: ProjectConfig | undefined,
 ): ResolvedHistoryLocation {
-	const rootPath = normalizeRelativeSegment(chat.historyPath) || 'chatHistory';
-	const activeSub = normalizeRelativeSegment(activeProject?.historySubfolder);
+	const rootPath = normalizeHistoryRootPath(chat.historyPath);
+	const activeSub = sanitizeHistorySubfolder(activeProject?.historySubfolder);
 	const basePath = activeSub ? normalizePath(`${rootPath}/${activeSub}`) : rootPath;
 
 	const baseLower = basePath.toLowerCase();
@@ -45,7 +43,7 @@ export function resolveHistoryLocation(
 		if (activeProject && project.id === activeProject.id) {
 			continue;
 		}
-		const sub = normalizeRelativeSegment(project.historySubfolder);
+		const sub = sanitizeHistorySubfolder(project.historySubfolder);
 		if (!sub) {
 			continue;
 		}

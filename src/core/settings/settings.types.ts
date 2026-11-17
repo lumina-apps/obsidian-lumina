@@ -69,8 +69,6 @@ export interface ChatSettings {
 	memoryMethod: 'auto_summary' | 'turns' | 'tokens';
 	/** 대화 기억 제한 (턴 수, memoryMethod가 'auto_summary' 거나 'turns' 일 때 사용) */
 	contextWindowTurns: number;
-	/** @deprecated memoryMethod로 대체됨 */
-	useTokenLimit: boolean;
 	/** 최대 컨텍스트 토큰 수 (memoryMethod가 'tokens' 일 때 사용) */
 	maxContextTokens: number;
 	/** Temperature (0.0 ~ 2.0) */
@@ -85,8 +83,6 @@ export interface ChatSettings {
 	agentEnabled: boolean;
 	/** 에이전트 실행 모드 (읽기/수정) */
 	agentExecutionMode: 'read' | 'edit';
-	/** CLI 프로바이더 동작 모드 (CLI 자체 에이전트 / 플러그인 에이전트 LLM 브릿지) */
-	cliOperationMode: 'cli-agent' | 'plugin-agent';
 	/** 에이전트 최대 실행 스텝 수 (무한 루프 방지) */
 	agentMaxSteps: number;
 

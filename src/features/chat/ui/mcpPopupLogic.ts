@@ -112,12 +112,6 @@ export async function toggleLocalServer(plugin: LuminaPlugin): Promise<ToggleLoc
 		new Notice(t("uiMessages.mcpConnectFailed", { name: t("settings.mcp.localServerName") }));
 	}
 
-	// 에이전트가 켜져 있는데 서버를 수동으로 껐다면 에이전트도 끔
-	if (!plugin.settings.mcp.serverEnabled && plugin.settings.chat.agentEnabled) {
-		plugin.settings.chat.agentEnabled = false;
-		new Notice(t("uiMessages.agentModeLocalServerStoppedDisabledShort"));
-	}
-
 	await plugin.saveSettings();
 
 	return {
@@ -137,7 +131,7 @@ export interface ToggleAgentResult {
 /**
  * 에이전트 모드의 enabled 상태를 토글합니다.
  * LLM 제공자가 설정되지 않았으면 거부하고 rejected: true를 반환합니다.
- * 에이전트 ON 시 내장 MCP 서버도 자동으로 켜집니다.
+ * 내장 도구는 메모리에서 직접 실행되므로 로컬 HTTP 서버를 강제 구동하지 않습니다.
  */
 export async function toggleAgent(plugin: LuminaPlugin): Promise<ToggleAgentResult> {
 	const isConfigured = plugin.settings.connections.providers.some((p) => p.isVerified);
@@ -151,16 +145,7 @@ export async function toggleAgent(plugin: LuminaPlugin): Promise<ToggleAgentResu
 
 	plugin.settings.chat.agentEnabled = !plugin.settings.chat.agentEnabled;
 
-	if (plugin.settings.chat.agentEnabled && !plugin.settings.mcp.serverEnabled) {
-		plugin.settings.mcp.serverEnabled = true;
-		if (!plugin.settings.mcp.serverAuthToken) {
-			plugin.settings.mcp.serverAuthToken = crypto.randomUUID();
-		}
-		new Notice(t("uiMessages.agentModeLocalServerStarting"));
-		if (plugin.mcpManager) {
-			await plugin.mcpManager.syncServers();
-		}
-	} else if (plugin.settings.chat.agentEnabled) {
+	if (plugin.settings.chat.agentEnabled) {
 		new Notice(t("uiMessages.agentModeEnabled"));
 	} else {
 		new Notice(t("uiMessages.agentModeDisabled"));

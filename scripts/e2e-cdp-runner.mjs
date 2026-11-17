@@ -881,15 +881,29 @@ async function run() {
 		const tHistoryRestore = Date.now();
 		try {
 			const historyResult = await client.evaluate(`(async () => {
-				const files = app.vault.getMarkdownFiles();
-				if (files.length === 0) return { success: false, reason: 'No markdown files in vault' };
-				const targetNote = files.find(f => app.metadataCache.getFirstLinkpathDest(f.basename, '')?.path === f.path) || files[0];
+				const cleanSeg = (s) => (s || '').trim().replace(/\\\\/g, '/').replace(/^\\/+|\\/+$/g, '');
+				const ensureFolder = async (folderPath) => {
+					let cur = '';
+					for (const seg of folderPath.split('/').filter(Boolean)) {
+						cur = cur ? cur + '/' + seg : seg;
+						if (!app.vault.getAbstractFileByPath(cur)) {
+							await app.vault.createFolder(cur);
+						}
+					}
+				};
 
 				const lumina = app.plugins.plugins['lumina'];
-				const historyDir = lumina.settings.chat.historyPath || 'chatHistory';
-				if (!app.vault.getAbstractFileByPath(historyDir)) {
-					await app.vault.createFolder(historyDir);
-				}
+				const rootHistoryDir = cleanSeg(lumina.settings.chat.historyPath) || 'chatHistory';
+				const projSettings = lumina.settings.projects;
+				const activeProj = projSettings?.list?.find(p => p.id === projSettings?.activeProjectId);
+				const subFolder = cleanSeg(activeProj?.historySubfolder);
+				const historyDir = subFolder ? rootHistoryDir + '/' + subFolder : rootHistoryDir;
+
+				const files = app.vault.getMarkdownFiles().filter(f => !f.path.startsWith(rootHistoryDir + '/') && !f.path.startsWith('Lumina Exports'));
+				if (files.length === 0) return { success: false, chipMounted: false, chipText: '', fileOpened: false, targetPath: 'No markdown files in vault' };
+				const targetNote = files.find(f => app.metadataCache.getFirstLinkpathDest(f.basename, '')?.path === f.path) || files[0];
+
+				await ensureFolder(historyDir);
 
 				const testSessionId = 'e2e-restore-test-' + Date.now();
 				const sessionData = {
@@ -951,52 +965,63 @@ async function run() {
 				if (existing) await app.vault.delete(existing, true);
 				await app.vault.create(filePath, mdContent);
 
-				// Click history button in chat header
-				const histBtn = document.querySelector('.lumina-chat__header .lumina-chat__icon-btn[aria-label*="기록"], .lumina-chat__header .lumina-chat__icon-btn[aria-label*="History"]');
-				histBtn?.click();
-				await new Promise(r => setTimeout(r, 400));
+				try {
+					// Open history view if not already open
+					if (!document.querySelector('.lumina-history')) {
+						const histBtn = document.querySelector('.lumina-chat__header .lumina-chat__icon-btn[aria-label*="기록"], .lumina-chat__header .lumina-chat__icon-btn[aria-label*="History"]');
+						histBtn?.click();
+						await new Promise(r => setTimeout(r, 400));
+					}
 
-				// Click refresh button in history header
-				const refreshBtn = document.querySelector('.lumina-history__header button[aria-label*="새로고침"], .lumina-history__header button[aria-label*="Refresh"]');
-				refreshBtn?.click();
-				await new Promise(r => setTimeout(r, 500));
+					// Click refresh button in history header
+					const refreshBtn = document.querySelector('.lumina-history__header button[aria-label*="새로고침"], .lumina-history__header button[aria-label*="Refresh"]');
+					refreshBtn?.click();
+					await new Promise(r => setTimeout(r, 500));
 
-				// Find test session item
-				const items = Array.from(document.querySelectorAll('.lumina-history__item'));
-				const targetItem = items.find(el => el.textContent.includes('E2E Attachment History Test'));
-				if (!targetItem) {
+					// Find test session item
+					const items = Array.from(document.querySelectorAll('.lumina-history__item'));
+					const targetItem = items.find(el => el.textContent.includes('E2E Attachment History Test'));
+					if (!targetItem) {
+						return {
+							success: false,
+							chipMounted: false,
+							chipText: '',
+							fileOpened: false,
+							targetPath: 'History item not rendered in ' + historyDir
+						};
+					}
+
+					// Click history item to restore session
+					targetItem.click();
+					await new Promise(r => setTimeout(r, 600));
+
+					// Verify message bubble attachment chip rendered
+					const messageChips = document.querySelectorAll('.lumina-message__attachment-chip');
+					const chipMounted = messageChips.length > 0;
+					const chipText = messageChips[0]?.textContent?.trim() || '';
+
+					// Click attachment chip in message bubble (testing linkpath fallback for path: "")
+					messageChips[0]?.click();
+					await new Promise(r => setTimeout(r, 600));
+
+					const activeAfter = app.workspace.getActiveFile()?.path;
+					const fileOpened = activeAfter === targetNote.path;
+
+					return {
+						success: chipMounted && fileOpened,
+						chipMounted,
+						chipText,
+						fileOpened,
+						targetPath: targetNote.path
+					};
+				} finally {
 					const f = app.vault.getAbstractFileByPath(filePath);
 					if (f) await app.vault.delete(f, true);
-					return { success: false, reason: 'History item not rendered in list' };
+					if (document.querySelector('.lumina-history')) {
+						document.querySelector('.lumina-history__header-title button')?.click();
+						await new Promise(r => setTimeout(r, 200));
+					}
 				}
-
-				// Click history item to restore session
-				targetItem.click();
-				await new Promise(r => setTimeout(r, 600));
-
-				// Verify message bubble attachment chip rendered
-				const messageChips = document.querySelectorAll('.lumina-message__attachment-chip');
-				const chipMounted = messageChips.length > 0;
-				const chipText = messageChips[0]?.textContent?.trim() || '';
-
-				// Click attachment chip in message bubble (testing linkpath fallback for path: "")
-				messageChips[0]?.click();
-				await new Promise(r => setTimeout(r, 600));
-
-				const activeAfter = app.workspace.getActiveFile()?.path;
-				const fileOpened = activeAfter === targetNote.path;
-
-				// Cleanup test history file
-				const f = app.vault.getAbstractFileByPath(filePath);
-				if (f) await app.vault.delete(f, true);
-
-				return {
-					success: chipMounted && fileOpened,
-					chipMounted,
-					chipText,
-					fileOpened,
-					targetPath: targetNote.path
-				};
 			})()`);
 
 			reporter.record(
@@ -1013,12 +1038,30 @@ async function run() {
 		const tDocLink = Date.now();
 		try {
 			const linkResult = await client.evaluate(`(async () => {
-				const files = app.vault.getMarkdownFiles().filter(f => !f.path.startsWith('chatHistory') && !f.path.startsWith('Lumina Exports'));
-				if (files.length === 0) return { success: false, reason: 'No markdown files' };
-				const targetNote = files.find(f => app.metadataCache.getFirstLinkpathDest(f.basename, '')?.path === f.path) || files[0];
+				const cleanSeg = (s) => (s || '').trim().replace(/\\\\/g, '/').replace(/^\\/+|\\/+$/g, '');
+				const ensureFolder = async (folderPath) => {
+					let cur = '';
+					for (const seg of folderPath.split('/').filter(Boolean)) {
+						cur = cur ? cur + '/' + seg : seg;
+						if (!app.vault.getAbstractFileByPath(cur)) {
+							await app.vault.createFolder(cur);
+						}
+					}
+				};
 
 				const lumina = app.plugins.plugins['lumina'];
-				const historyDir = lumina.settings.chat.historyPath || 'chatHistory';
+				const rootHistoryDir = cleanSeg(lumina.settings.chat.historyPath) || 'chatHistory';
+				const projSettings = lumina.settings.projects;
+				const activeProj = projSettings?.list?.find(p => p.id === projSettings?.activeProjectId);
+				const subFolder = cleanSeg(activeProj?.historySubfolder);
+				const historyDir = subFolder ? rootHistoryDir + '/' + subFolder : rootHistoryDir;
+
+				const files = app.vault.getMarkdownFiles().filter(f => !f.path.startsWith(rootHistoryDir + '/') && !f.path.startsWith('chatHistory') && !f.path.startsWith('Lumina Exports'));
+				if (files.length === 0) return { success: false, targetPath: 'No markdown files', openedPath: '', linksFound: 0 };
+				const targetNote = files.find(f => app.metadataCache.getFirstLinkpathDest(f.basename, '')?.path === f.path) || files[0];
+
+				await ensureFolder(historyDir);
+
 				const testSessionId = 'e2e-link-test-' + Date.now();
 				const basePath = app.vault.adapter.basePath;
 				const fileUrl = 'file://' + basePath + '/' + encodeURI(targetNote.path);
@@ -1074,9 +1117,11 @@ async function run() {
 				await app.vault.create(filePath, mdContent);
 
 				try {
-					const histBtn = document.querySelector('.lumina-chat__header .lumina-chat__icon-btn[aria-label*="기록"], .lumina-chat__header .lumina-chat__icon-btn[aria-label*="History"]');
-					histBtn?.click();
-					await new Promise(r => setTimeout(r, 400));
+					if (!document.querySelector('.lumina-history')) {
+						const histBtn = document.querySelector('.lumina-chat__header .lumina-chat__icon-btn[aria-label*="기록"], .lumina-chat__header .lumina-chat__icon-btn[aria-label*="History"]');
+						histBtn?.click();
+						await new Promise(r => setTimeout(r, 400));
+					}
 
 					const refreshBtn = document.querySelector('.lumina-history__header button[aria-label*="새로고침"], .lumina-history__header button[aria-label*="Refresh"]');
 					refreshBtn?.click();
@@ -1084,7 +1129,7 @@ async function run() {
 
 					const items = Array.from(document.querySelectorAll('.lumina-history__item'));
 					const targetItem = items.find(el => el.textContent.includes('E2E Document Link Test'));
-					if (!targetItem) return { success: false, reason: 'History item not rendered' };
+					if (!targetItem) return { success: false, targetPath: 'History item not rendered in ' + historyDir, openedPath: '', linksFound: 0 };
 
 					targetItem.click();
 					await new Promise(r => setTimeout(r, 600));
@@ -1093,7 +1138,7 @@ async function run() {
 					const lastMsg = messageEls[messageEls.length - 1];
 					const links = Array.from(lastMsg?.querySelectorAll('a') || []);
 
-					if (links.length === 0) return { success: false, reason: 'No links rendered in message' };
+					if (links.length === 0) return { success: false, targetPath: targetNote.path, openedPath: 'No links rendered', linksFound: 0 };
 
 					// Click the link inside the assistant message bubble
 					const wikiLink = links.find(a => a.textContent.includes(targetNote.basename)) || links[0];
@@ -1112,6 +1157,10 @@ async function run() {
 				} finally {
 					const f = app.vault.getAbstractFileByPath(filePath);
 					if (f) await app.vault.delete(f, true);
+					if (document.querySelector('.lumina-history')) {
+						document.querySelector('.lumina-history__header-title button')?.click();
+						await new Promise(r => setTimeout(r, 200));
+					}
 				}
 			})()`);
 

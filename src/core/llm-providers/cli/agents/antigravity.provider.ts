@@ -4,7 +4,12 @@ import type {
 } from '../../../../shared/types/cliAgent.types';
 import { BaseCliAgent, type CliAgentConfig } from '../base-cli-agent';
 import { ProcessManager, getDefaultCwd } from '../process-manager';
-import { extractTextFromUnknown, stripAnsiCodes, parseRawCliLine } from '../ndjson-parser';
+import {
+	extractTextFromUnknown,
+	stripAnsiCodes,
+	parseRawCliLine,
+	inferFileEditEventsFromToolCall,
+} from '../ndjson-parser';
 import { debugLogger } from '../../../../shared/debugLogger';
 
 export class AntigravityProvider extends BaseCliAgent {
@@ -200,6 +205,23 @@ export class AntigravityProvider extends BaseCliAgent {
 				events.push({ type: 'thinking', content: stepThinking, raw });
 			}
 
+			// 파일 편집 감지 (명시적 file_edit / file_change 우선 확인)
+			const emittedEditPaths = new Set<string>();
+			let explicitFileEditEvent: CliEvent | null = null;
+			if (step.file_edit || step.file_change) {
+				const fe = (step.file_edit || step.file_change) as Record<string, unknown>;
+				const path = (fe.path || fe.file || fe.targetFile || fe.TargetFile || fe.file_path || fe.filePath || '') as string;
+				const action = (fe.action || 'modify') as 'create' | 'modify' | 'delete';
+				if (path) {
+					emittedEditPaths.add(path);
+				}
+				explicitFileEditEvent = {
+					type: 'file_edit',
+					fileEdit: { path, action },
+					raw,
+				};
+			}
+
 			// 도구 호출
 			if (step.tool_call || step.step_type === 'tool_call') {
 				const tc = (step.tool_call || step) as Record<string, unknown>;
@@ -210,6 +232,12 @@ export class AntigravityProvider extends BaseCliAgent {
 					toolCall: { name, arguments: args },
 					raw,
 				});
+				for (const inferred of inferFileEditEventsFromToolCall(name, args, raw)) {
+					if (inferred.fileEdit && !emittedEditPaths.has(inferred.fileEdit.path)) {
+						emittedEditPaths.add(inferred.fileEdit.path);
+						events.push(inferred);
+					}
+				}
 			}
 
 			// 도구 결과
@@ -225,16 +253,8 @@ export class AntigravityProvider extends BaseCliAgent {
 				});
 			}
 
-			// 파일 편집 감지
-			if (step.file_edit || step.file_change) {
-				const fe = (step.file_edit || step.file_change) as Record<string, unknown>;
-				const path = (fe.path || fe.file || '') as string;
-				const action = (fe.action || 'modify') as 'create' | 'modify' | 'delete';
-				events.push({
-					type: 'file_edit',
-					fileEdit: { path, action },
-					raw,
-				});
+			if (explicitFileEditEvent) {
+				events.push(explicitFileEditEvent);
 			}
 
 			// 텍스트 청크
@@ -260,6 +280,86 @@ export class AntigravityProvider extends BaseCliAgent {
 			if (events.length > 0) {
 				return events.length === 1 ? events[0] : events;
 			}
+		}
+
+		// 1.5. Antigravity assistant / message content 배열 내 tool_use · tool_result · text 블록 처리
+		const msgObj = (obj.message && typeof obj.message === 'object' ? obj.message : obj) as Record<string, unknown>;
+		if (Array.isArray(msgObj.content)) {
+			const events: CliEvent[] = [];
+			for (const block of msgObj.content) {
+				if (!block || typeof block !== 'object') continue;
+				const b = block as Record<string, unknown>;
+				const bType = (b.type || b.event) as string;
+
+				if (bType === 'thinking' || b.thinking) {
+					const thought = extractTextFromUnknown(b.thinking || b.content || b.text);
+					if (thought) {
+						events.push({ type: 'thinking', content: thought, raw });
+					}
+				} else if (bType === 'tool_use' || bType === 'tool_call' || b.name) {
+					const name = (b.name || (b.tool as Record<string, unknown>)?.name || 'tool') as string;
+					const args = (b.input || b.arguments || {}) as Record<string, unknown>;
+					events.push({
+						type: 'tool_call',
+						toolCall: { name, arguments: args },
+						raw,
+					});
+					events.push(...inferFileEditEventsFromToolCall(name, args, raw));
+				} else if (bType === 'tool_result') {
+					const name = (b.name || 'tool') as string;
+					const output = extractTextFromUnknown(b.output || b.result || b.content || '');
+					const error = extractTextFromUnknown(b.error || '');
+					events.push({
+						type: 'tool_result',
+						toolResult: { name, output, error: error || undefined },
+						raw,
+					});
+				} else if (bType === 'text' || b.text) {
+					const text = extractTextFromUnknown(b.text || b.content);
+					if (text) {
+						events.push({ type: 'text', content: text, raw });
+					}
+				}
+			}
+			if (events.length > 0) {
+				return events.length === 1 ? events[0] : events;
+			}
+		}
+
+		// 1.6. 최상위 tool_use / tool_call / tool_result / file_edit 이벤트 처리
+		if (eventType === 'tool_use' || eventType === 'tool_call') {
+			const name = (obj.name || obj.tool_name || (obj.tool as Record<string, unknown>)?.name || 'tool') as string;
+			const args = (obj.input || obj.arguments || {}) as Record<string, unknown>;
+			const events: CliEvent[] = [
+				{
+					type: 'tool_call',
+					toolCall: { name, arguments: args },
+					raw,
+				},
+				...inferFileEditEventsFromToolCall(name, args, raw),
+			];
+			return events.length === 1 ? events[0] : events;
+		}
+
+		if (eventType === 'tool_result') {
+			const name = (obj.name || obj.tool_name || 'tool') as string;
+			const output = extractTextFromUnknown(obj.output || obj.result || '');
+			const error = extractTextFromUnknown(obj.error || '');
+			return {
+				type: 'tool_result',
+				toolResult: { name, output, error: error || undefined },
+				raw,
+			};
+		}
+
+		if (eventType === 'file_edit' || eventType === 'file_change') {
+			const path = (obj.path || obj.file || obj.targetFile || obj.TargetFile || obj.file_path || obj.filePath || '') as string;
+			const action = (obj.action || 'modify') as 'create' | 'modify' | 'delete';
+			return {
+				type: 'file_edit',
+				fileEdit: { path, action },
+				raw,
+			};
 		}
 
 		// 2. 사고 과정 (Thinking / Thought)

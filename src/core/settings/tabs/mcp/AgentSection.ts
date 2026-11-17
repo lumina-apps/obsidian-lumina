@@ -27,18 +27,7 @@ export function renderAgentSection(tab: LuminaSettingTab, el: HTMLElement, _s: M
 					}
 
 					tab.plugin.settings.chat.agentEnabled = true;
-					if (!tab.plugin.settings.mcp.serverEnabled) {
-						tab.plugin.settings.mcp.serverEnabled = true;
-						if (!tab.plugin.settings.mcp.serverAuthToken) {
-							tab.plugin.settings.mcp.serverAuthToken = crypto.randomUUID();
-						}
-						new Notice(t('uiMessages.agentModeLocalServerStarting'));
-						if (tab.plugin.mcpManager) {
-							await tab.plugin.mcpManager.syncServers();
-						}
-					} else {
-						new Notice(t('uiMessages.agentModeEnabled'));
-					}
+					new Notice(t('uiMessages.agentModeEnabled'));
 				} else {
 					tab.plugin.settings.chat.agentEnabled = false;
 					new Notice(t('uiMessages.agentModeDisabled'));

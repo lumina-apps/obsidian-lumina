@@ -4,6 +4,7 @@ import { normalizeError } from '../../shared/utils/errorUtils';
 import { TFile, type EventRef, type TAbstractFile } from 'obsidian';
 import { SUPPORTED_EXTENSIONS } from './parsers/DocumentParserRouter';
 import { isExcluded, isIncluded } from './exclusions';
+import { normalizeHistoryRootPath } from '../../shared/utils/historyPathUtils';
 import { getActiveProject } from '../../core/store/projectStore';
 
 export class RagWatchManager {
@@ -29,7 +30,7 @@ export class RagWatchManager {
 		if (configDir && !finalExcludedPaths.includes(configDir)) {
 			finalExcludedPaths.push(configDir);
 		}
-		const chatHistoryPath = this.plugin.settings.chat.historyPath;
+		const chatHistoryPath = normalizeHistoryRootPath(this.plugin.settings.chat.historyPath);
 		if (chatHistoryPath && !finalExcludedPaths.includes(chatHistoryPath)) {
 			finalExcludedPaths.push(chatHistoryPath);
 		}

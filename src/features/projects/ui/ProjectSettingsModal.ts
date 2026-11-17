@@ -8,6 +8,14 @@ import { switchProjectIndex } from '../../../features/rag/ragInitializer';
 import { setTotalFiles } from '../../../core/store/ragStore';
 import { buildChatModelOptions, toProviderModelValue, parseProviderModelValue } from '../../../shared/utils/modelUtils';
 import { debugLogger } from '../../../shared/debugLogger';
+import { ensureFolderExists } from '../../../shared/utils/fileUtils';
+import {
+	formatHistoryFolderPreview,
+	hasUnsafeHistoryPathInput,
+	normalizeHistoryRootPath,
+	sanitizeHistorySubfolder,
+	sanitizeProjectFolderName,
+} from '../../../shared/utils/historyPathUtils';
 
 export class ProjectSettingsModal extends Modal {
 	private plugin: LuminaPlugin;
@@ -32,8 +40,9 @@ export class ProjectSettingsModal extends Modal {
 			this.project = project;
 			this.projectName = (project.id === 'default' && project.name === 'Default') ? t('projects.settings.defaultProjectName') : project.name;
 
-			const sanitizeName = (n: string) => n.trim().replace(/[\\/:*?"<>|]/g, '_');
-			this.historySubfolder = project.historySubfolder !== undefined ? project.historySubfolder : (project.id === 'default' ? '' : sanitizeName(project.name));
+			this.historySubfolder = project.historySubfolder !== undefined
+				? project.historySubfolder
+				: (project.id === 'default' ? '' : sanitizeProjectFolderName(project.name));
 			this.includedPaths = new Set(project.ragIncludedPaths);
 			this.excludedPaths = new Set(project.ragExcludedPaths);
 			this.defaultProviderId = project.defaultProviderId || '';
@@ -48,7 +57,7 @@ export class ProjectSettingsModal extends Modal {
 			this.defaultModelId = '';
 			this.systemPromptId = '';
 			// Auto detect default excludes
-			const chatHistoryPath = this.plugin.settings.chat.historyPath || 'chatHistory';
+			const chatHistoryPath = normalizeHistoryRootPath(this.plugin.settings.chat.historyPath);
 			const backupPath = 'backups';
 			const commonExcludes = ['Templates', 'templates', '_templates', 'Attachments', 'attachments'];
 			
@@ -66,7 +75,16 @@ export class ProjectSettingsModal extends Modal {
 
 		contentEl.createEl('h2', { text: this.isNewProject ? t('projects.settings.newProjectTitle') : t('projects.settings.modalTitle') });
 
-		const sanitizeName = (n: string) => n.trim().replace(/[\\/:*?"<>|]/g, '_');
+		const isDefault = this.project?.id === 'default';
+		const rootPath = normalizeHistoryRootPath(this.plugin.settings.chat.historyPath);
+		const buildPlaceholder = (nameVal: string) => (
+			isDefault
+				? t('projects.settings.chatHistoryRootPlaceholder', { path: rootPath })
+				: (sanitizeProjectFolderName(nameVal) || t('projects.settings.chatHistoryAutoPlaceholder'))
+		);
+
+		let historyPathInput: TextComponent | null = null;
+		let updateHistoryPreview = () => {};
 
 		new Setting(contentEl)
 			.setName(t('projects.settings.projectName'))
@@ -76,34 +94,39 @@ export class ProjectSettingsModal extends Modal {
 					.onChange(val => {
 						this.projectName = val;
 						if (historyPathInput && !this.historySubfolder) {
-							const isDefault = this.project?.id === 'default';
-							const placeholder = isDefault ? t('projects.settings.chatHistoryRootPlaceholder') : (sanitizeName(val) || t('projects.settings.chatHistoryAutoPlaceholder'));
-							historyPathInput.setPlaceholder(placeholder);
+							historyPathInput.setPlaceholder(buildPlaceholder(val));
 						}
-						previewEl.setText(t('projects.settings.chatHistoryPreview', { path: this.getHistoryDisplayPath() }));
+						updateHistoryPreview();
 					});
 			});
 
 		// Auto / Custom history path display
-		let historyPathInput: TextComponent | null = null;
-		const isDefault = this.project?.id === 'default';
-		const defaultPlaceholder = isDefault ? t('projects.settings.chatHistoryRootPlaceholder') : (sanitizeName(this.projectName) || t('projects.settings.chatHistoryAutoPlaceholder'));
-
 		const historySetting = new Setting(contentEl)
 			.setName(t('projects.settings.chatHistoryPath'))
 			.setDesc(t('projects.settings.chatHistoryPathDesc'))
 			.addText(text => {
 				historyPathInput = text;
-				text.setPlaceholder(defaultPlaceholder)
+				text.setPlaceholder(buildPlaceholder(this.projectName))
 					.setValue(this.historySubfolder)
 					.onChange(val => {
 						this.historySubfolder = val.trim();
-						previewEl.setText(t('projects.settings.chatHistoryPreview', { path: this.getHistoryDisplayPath() }));
+						updateHistoryPreview();
 					});
 			});
 
 		const previewEl = historySetting.descEl.createDiv({ cls: 'lumina-settings__desc-guide' });
-		previewEl.setText(t('projects.settings.chatHistoryPreview', { path: this.getHistoryDisplayPath() }));
+		const historyWarningEl = historySetting.descEl.createDiv({ cls: 'lumina-settings__desc-warning' });
+		updateHistoryPreview = () => {
+			previewEl.setText(t('projects.settings.chatHistoryPreview', { path: this.getHistoryDisplayPath() }));
+			if (hasUnsafeHistoryPathInput(this.historySubfolder)) {
+				historyWarningEl.setText(t('settings.chat.history.pathSanitizedWarning'));
+				historyWarningEl.style.display = '';
+			} else {
+				historyWarningEl.setText('');
+				historyWarningEl.style.display = 'none';
+			}
+		};
+		updateHistoryPreview();
 
 		// --- Default Chat Model Selector ---
 		const chatModelOptions = buildChatModelOptions(this.plugin.settings.connections.providers);
@@ -360,31 +383,28 @@ export class ProjectSettingsModal extends Modal {
 	}
 
 	private getHistoryDisplayPath(): string {
-		const sanitizeSubfolder = (sub: string) => {
-			const converted = sub.trim().replace(/\\/g, '/');
-			const cleaned = converted.replace(/[:*?"<>|]/g, '_').replace(/^\/+|\/+$/g, '');
-			return normalizePath(cleaned);
-		};
-		const sanitizeName = (name: string) => name.trim().replace(/[\\/:*?"<>|]/g, '_');
-
-		let subfolder = '';
-		if (this.historySubfolder.trim()) {
-			subfolder = sanitizeSubfolder(this.historySubfolder);
-		} else if (this.project?.id !== 'default' && this.projectName.trim()) {
-			subfolder = sanitizeName(this.projectName);
+		let subfolder = sanitizeHistorySubfolder(this.historySubfolder);
+		if (!subfolder && this.project?.id !== 'default' && this.projectName.trim()) {
+			subfolder = sanitizeProjectFolderName(this.projectName);
 		}
 
-		const basePath = normalizePath(this.plugin.settings.chat.historyPath || 'chatHistory');
-		return subfolder ? normalizePath(`${basePath}/${subfolder}`) : basePath;
+		const { resolvedPath } = formatHistoryFolderPreview(
+			this.plugin.settings.chat.historyPath,
+			subfolder,
+			this.plugin.settings.chat.historyFolderFormat,
+		);
+		return `${resolvedPath}/`;
 	}
 
 	private async moveHistoryFolder(oldSubfolder: string, newSubfolder: string) {
-		const historyBasePath = this.plugin.settings.chat.historyPath || 'chatHistory';
+		const historyBasePath = normalizeHistoryRootPath(this.plugin.settings.chat.historyPath);
+		const normalizedOld = sanitizeHistorySubfolder(oldSubfolder);
+		const normalizedNew = sanitizeHistorySubfolder(newSubfolder);
 
-		if (!oldSubfolder || !newSubfolder || oldSubfolder === newSubfolder) return;
+		if (!normalizedOld || !normalizedNew || normalizedOld === normalizedNew) return;
 
-		const oldPath = normalizePath(`${historyBasePath}/${oldSubfolder}`);
-		const newPath = normalizePath(`${historyBasePath}/${newSubfolder}`);
+		const oldPath = normalizePath(`${historyBasePath}/${normalizedOld}`);
+		const newPath = normalizePath(`${historyBasePath}/${normalizedNew}`);
 
 		try {
 			const oldFolder = this.app.vault.getAbstractFileByPath(oldPath);
@@ -399,6 +419,8 @@ export class ProjectSettingsModal extends Modal {
 				return;
 			}
 
+			// 계층 이동(예: Work -> Team/Work) 시 대상 상위 폴더가 없으면 사전 생성
+			await ensureFolderExists(this.app, newPath);
 			await this.app.fileManager.renameFile(oldFolder, newPath);
 			new Notice(t('projects.settings.historyMoved', { path: newPath }));
 			debugLogger.logSystem('projects', `Successfully moved chat history from "${oldPath}" to "${newPath}"`);
@@ -418,18 +440,9 @@ export class ProjectSettingsModal extends Modal {
 			finalName = 'Default';
 		}
 
-		const sanitizeSubfolder = (sub: string) => {
-			const converted = sub.trim().replace(/\\/g, '/');
-			const cleaned = converted.replace(/[:*?"<>|]/g, '_').replace(/^\/+|\/+$/g, '');
-			return normalizePath(cleaned);
-		};
-		const sanitizeName = (n: string) => n.trim().replace(/[\\/:*?"<>|]/g, '_');
-
-		let historySubfolder = '';
-		if (this.historySubfolder.trim()) {
-			historySubfolder = sanitizeSubfolder(this.historySubfolder);
-		} else if (this.project?.id !== 'default' && finalName) {
-			historySubfolder = sanitizeName(finalName);
+		let historySubfolder = sanitizeHistorySubfolder(this.historySubfolder);
+		if (!historySubfolder && this.project?.id !== 'default' && finalName) {
+			historySubfolder = sanitizeProjectFolderName(finalName);
 		}
 
 		const ragIncludedPaths = Array.from(this.includedPaths);

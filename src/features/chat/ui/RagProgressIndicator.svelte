@@ -17,8 +17,6 @@
 				return t('uiMessages.ragProgress.searching');
 			case 'reranking':
 				return t('uiMessages.ragProgress.reranking');
-			case 'compressing':
-				return t('uiMessages.ragProgress.compressing');
 			case 'generating':
 				return t('uiMessages.ragProgress.generating');
 			default:

@@ -10,7 +10,7 @@ export interface ChatRagSource {
 	chunkText?: string;
 }
 
-export type RagPipelineStep = 'searching' | 'reranking' | 'compressing' | 'generating' | null;
+export type RagPipelineStep = 'searching' | 'reranking' | 'generating' | null;
 
 import type { TokenUsage } from './llm.types';
 import type { CliToolCallLog, CliFileEditLog, CliUsage, CliAgentType } from './cliAgent.types';

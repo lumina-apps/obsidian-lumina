@@ -153,6 +153,24 @@ export class CommandManager {
 			},
 		});
 
+		this.plugin.addCommand({
+			id: 'restore-note-backup',
+			name: t('uiMessages.cmdRestoreBackup'),
+			checkCallback: (checking: boolean) => {
+				const activeFile = this.plugin.app.workspace.getActiveFile();
+				if (activeFile && activeFile.extension === 'md') {
+					if (!checking) {
+						debugLogger.logSystem('commands', `Command executed: restore-note-backup (file=${activeFile.path})`);
+						void import('../../features/backup/backupManager').then(({ openRestoreBackupModal }) => {
+							openRestoreBackupModal(this.plugin.app, activeFile);
+						});
+					}
+					return true;
+				}
+				return false;
+			},
+		});
+
 		this.registerQuickActions();
 	}
 

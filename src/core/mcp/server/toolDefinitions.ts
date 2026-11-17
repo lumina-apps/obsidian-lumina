@@ -1,3 +1,4 @@
+import { Platform } from 'obsidian';
 import { t } from '../../../shared/locales/helpers';
 import type { ToolName } from './toolTypes';
 
@@ -471,7 +472,7 @@ export function getToolDefinitions(settings: LuminaSettings): ToolDefinition[] {
 		}
 	];
 
-	if (!settings.mcp.serverEnableShellCommands) {
+	if (!settings.mcp?.serverEnableShellCommands || !Platform.isDesktop) {
 		return tools.filter((t) => t.name !== 'run_shell_command');
 	}
 

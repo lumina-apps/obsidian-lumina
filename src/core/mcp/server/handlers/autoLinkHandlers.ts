@@ -5,6 +5,7 @@ import { calculateAutoLinks } from './utils/autoLinker';
 import { sanitizeFilePath } from '../../../../shared/utils/fileUtils';
 import { getStringArg, blockIfPathNotAllowed } from '../handlerHelpers';
 import { safeModifyFile } from './utils/writeHandlerUtils';
+import { t } from '../../../../shared/locales/helpers';
 
 export async function autoLinkNoteHandler(
 	args: ToolArguments,
@@ -41,7 +42,7 @@ export async function autoLinkNoteHandler(
 
 	if (linksAdded === 0) {
 		return {
-			content: [{ type: 'text', text: '추가할 링크가 없습니다.' }],
+			content: [{ type: 'text', text: t('uiMessages.autoLinkNoChanges') }],
 		};
 	}
 
@@ -50,7 +51,7 @@ export async function autoLinkNoteHandler(
 		file,
 		currentContent,
 		newContent,
-		`총 ${linksAdded}개의 백링크가 생성되었습니다.`,
+		t('uiMessages.autoLinkSuccess', { count: linksAdded }),
 		ctx,
 		pathGuard,
 	);

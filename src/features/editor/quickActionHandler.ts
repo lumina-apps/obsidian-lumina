@@ -1,4 +1,5 @@
 import { getActiveProject } from "../../core/store/projectStore";
+import { approvalManager } from "../../core/store/approvalStore";
 
 import { Notice, Editor, MarkdownView } from 'obsidian';
 import type { MarkdownFileInfo } from 'obsidian';
@@ -16,6 +17,9 @@ import type { ChatMessage, TokenUsage } from '../../shared/types/llm.types';
 import { activateView } from '../../core/views/viewHelper';
 import { CHAT_VIEW_TYPE } from '../../shared/constants/viewTypes';
 
+/** 인라인 Diff 승인 대기 최대 시간 (5분) */
+const QA_APPROVAL_TIMEOUT_MS = 5 * 60 * 1000;
+
 export class QuickActionHandler {
 	private plugin: LuminaPlugin;
 
@@ -23,7 +27,7 @@ export class QuickActionHandler {
 		this.plugin = plugin;
 	}
 
-	async executeAction(action: QuickAction, editor: Editor, _view: MarkdownView | MarkdownFileInfo) {
+	async executeAction(action: QuickAction, editor: Editor, view: MarkdownView | MarkdownFileInfo) {
 		const selection = editor.getSelection();
 		if (!selection) {
 			new Notice(t('uiMessages.qaEmptySel'));
@@ -45,43 +49,43 @@ export class QuickActionHandler {
 			return Boolean(p && p.isVerified);
 		};
 
-		// 1. chat 액션이 아닐 때만 퀵 액션 전용 모델 우선 사용
-		if (
-			action.actionType !== 'chat' &&
-			isValidVerifiedPair(connections.quickActionProviderId, connections.quickActionModelId)
-		) {
-			providerId = connections.quickActionProviderId;
-			modelId = connections.quickActionModelId;
-		}
-
-		// 2. 퀵 액션 전용 모델이 없거나 유효하지 않거나 chat 액션인 경우: 활성 프로젝트 기본 모델 확인
-		if (!providerId || !modelId) {
+		if (action.actionType === 'chat') {
+			// chat 액션은 채팅창으로 전송되므로 활성 프로젝트 기본 모델 → 검증된 첫 모델 순으로 폴백 허용
 			const activeProject = getActiveProject();
 			if (isValidVerifiedPair(activeProject.defaultProviderId, activeProject.defaultModelId)) {
 				providerId = activeProject.defaultProviderId!;
 				modelId = activeProject.defaultModelId!;
 			}
-		}
-
-		// 3. 여전히 없으면 첫 번째 검증된 프로바이더의 첫 번째 모델로 자동 폴백
-		if (!providerId || !modelId) {
-			const verified = connections.providers.filter(p => p.isVerified && p.availableModels.length > 0);
-			if (verified.length > 0) {
-				providerId = verified[0].id;
-				modelId = verified[0].availableModels[0];
+			if (!providerId || !modelId) {
+				const verified = connections.providers.filter(p => p.isVerified && p.availableModels.length > 0);
+				if (verified.length > 0) {
+					providerId = verified[0].id;
+					modelId = verified[0].availableModels[0];
+				}
+			}
+		} else {
+			// replace / append 인라인 퀵 액션은 속도·비용 최적화를 위해 전용 퀵 액션 모델 지정 필수 (/ai 서제스트와 정책 통일)
+			if (connections.quickActionProviderId && connections.quickActionModelId) {
+				const configuredProvider = connections.providers.find(p => p.id === connections.quickActionProviderId);
+				if (!configuredProvider || !configuredProvider.isVerified) {
+					new Notice(t('uiMessages.qaInvalidProvider'));
+					return;
+				}
+				providerId = connections.quickActionProviderId;
+				modelId = connections.quickActionModelId;
 			}
 		}
 
 		if (!providerId || !modelId) {
 			new Notice(action.actionType === 'chat' ? t('settings.translation.noValidModel') : t('uiMessages.qaNotConfigured'));
 			const appWithSetting = this.plugin.app as unknown as {
-				setting: {
+				setting?: {
 					open(): void;
 					openTabById(id: string): void;
 				};
 			};
-			appWithSetting.setting.open();
-			appWithSetting.setting.openTabById(this.plugin.manifest.id);
+			appWithSetting.setting?.open();
+			appWithSetting.setting?.openTabById(this.plugin.manifest.id);
 			return;
 		}
 
@@ -109,36 +113,19 @@ export class QuickActionHandler {
 			return;
 		}
 
-		// replace 또는 append 동작: 에디터 텍스트 수정 및 로딩 표시
-		new Notice(t('uiMessages.qaExecuting', { name: action.name }));
-		let hasModifiedEditor = false;
-		let isFirstChunk = true;
-		let currentOffset = 0;
-		const indicatorText = t('uiMessages.qaWaitingAI');
+		// replace 또는 append 동작: 응답 생성 후 인라인 Diff 승인을 거쳐 반영
+		const activeFile = (view as MarkdownView)?.file ?? this.plugin.app.workspace.getActiveFile?.() ?? null;
+		const canUseDiff = Boolean(
+			activeFile?.path &&
+			typeof editor.getValue === 'function' &&
+			typeof editor.setValue === 'function' &&
+			typeof editor.posToOffset === 'function'
+		);
+		const baseDoc = canUseDiff ? editor.getValue() : '';
+		const startOffset = canUseDiff ? editor.posToOffset(initialFrom) : 0;
+		const endOffset = canUseDiff ? editor.posToOffset(initialTo) : 0;
 
-		const revertEditor = () => {
-			if (!hasModifiedEditor) return;
-			try {
-				if (!chat.streaming) {
-					return;
-				}
-				if (action.actionType === 'replace') {
-					const startPos = initialFrom;
-					const endPos = isFirstChunk
-						? editor.offsetToPos(editor.posToOffset(initialFrom) + indicatorText.length)
-						: editor.offsetToPos(currentOffset);
-					editor.replaceRange(selection, startPos, endPos);
-				} else { // append
-					const startPos = initialTo;
-					const endPos = isFirstChunk
-						? editor.offsetToPos(editor.posToOffset(initialTo) + 2 + indicatorText.length)
-						: editor.offsetToPos(currentOffset);
-					editor.replaceRange('', startPos, endPos);
-				}
-			} catch (revertErr) {
-				debugLogger.logError('editor', normalizeError(revertErr));
-			}
-		};
+		new Notice(t('uiMessages.qaExecuting', { name: action.name }));
 
 		let llmStart = Date.now();
 		let requestId = '';
@@ -189,18 +176,7 @@ export class QuickActionHandler {
 			};
 
 			if (chat.streaming) {
-				if (action.actionType === 'replace') {
-					editor.replaceRange(indicatorText, initialFrom, initialTo);
-					hasModifiedEditor = true;
-					currentOffset = editor.posToOffset(initialFrom);
-				} else { // append
-					editor.replaceRange(`\n\n${indicatorText}`, initialTo);
-					hasModifiedEditor = true;
-					currentOffset = editor.posToOffset(initialTo) + 2;
-				}
-
 				let chunkCount = 0;
-				// 청크 단위로 UI에 점진적 출력
 				const streamRes = await provider.stream(
 					llmMessages,
 					qaChatOptions,
@@ -213,18 +189,8 @@ export class QuickActionHandler {
 							throw new Error('REASONING_DETECTED');
 						}
 
-						const cleanChunk = chunk.replace(/\r/g, '');
-						if (cleanChunk) {
+						if (chunk.replace(/\r/g, '')) {
 							chunkCount++;
-							if (isFirstChunk) {
-								isFirstChunk = false;
-								const startPos = editor.offsetToPos(currentOffset);
-								const endPos = editor.offsetToPos(currentOffset + indicatorText.length);
-								editor.replaceRange('', startPos, endPos); // 인디케이터 제거
-							}
-							const pos = editor.offsetToPos(currentOffset);
-							editor.replaceRange(cleanChunk, pos);
-							currentOffset += cleanChunk.length;
 						}
 					}
 				);
@@ -233,59 +199,23 @@ export class QuickActionHandler {
 
 				// 스트리밍 청크가 없으면 일반 chat 요청으로 폴백
 				if (chunkCount === 0) {
-					const response = await provider.chat(
-						llmMessages,
-						qaChatOptions
-					);
-					const resultText = response.content;
-					fullResponse = resultText;
+					const response = await provider.chat(llmMessages, qaChatOptions);
+					fullResponse = response.content;
 					tokenUsage = response?.usage;
 					finishReason = response?.finishReason;
 
 					if (fullResponse.includes('<think>') || fullResponse.includes('&lt;think&gt;')) {
 						throw new Error('REASONING_DETECTED');
 					}
-
-					// 인디케이터 제거 및 결과 텍스트 삽입
-					const startPos = editor.offsetToPos(currentOffset);
-					const endPos = editor.offsetToPos(currentOffset + indicatorText.length);
-
-					if (resultText && resultText.trim() !== '') {
-						editor.replaceRange(resultText, startPos, endPos);
-					} else {
-						// 빈 응답일 경우: 원본 선택 영역 보존
-						if (action.actionType === 'replace') {
-							editor.replaceRange(selection, startPos, endPos);
-						} else {
-							editor.replaceRange('', startPos, endPos);
-						}
-						new Notice(t('uiMessages.qaEmptyResponse'));
-					}
 				}
-
 			} else {
-				const response = await provider.chat(
-					llmMessages,
-					qaChatOptions
-				);
-
-				const resultText = response.content;
-				fullResponse = resultText;
+				const response = await provider.chat(llmMessages, qaChatOptions);
+				fullResponse = response.content;
 				tokenUsage = response?.usage;
 				finishReason = response?.finishReason;
 
 				if (fullResponse.includes('<think>') || fullResponse.includes('&lt;think&gt;')) {
 					throw new Error('REASONING_DETECTED');
-				}
-
-				if (!resultText || resultText.trim() === '') {
-					new Notice(t('uiMessages.qaEmptyResponse'));
-				} else if (action.actionType === 'replace') {
-					editor.replaceRange(resultText, initialFrom, initialTo);
-					hasModifiedEditor = true;
-				} else if (action.actionType === 'append') {
-					editor.replaceRange(`\n\n${resultText}`, initialTo);
-					hasModifiedEditor = true;
 				}
 			}
 
@@ -296,6 +226,46 @@ export class QuickActionHandler {
 				usage: tokenUsage,
 				...(finishReason ? { stopReason: finishReason } : {}),
 			});
+
+			const resultText = fullResponse;
+			if (!resultText || resultText.trim() === '') {
+				new Notice(t('uiMessages.qaEmptyResponse'));
+				return;
+			}
+
+			if (canUseDiff && activeFile) {
+				const proposedDoc = action.actionType === 'replace'
+					? baseDoc.slice(0, startOffset) + resultText + baseDoc.slice(endOffset)
+					: baseDoc.slice(0, endOffset) + `\n\n${resultText}` + baseDoc.slice(endOffset);
+
+				const approval = await approvalManager.requestApproval(
+					activeFile.path,
+					baseDoc,
+					proposedDoc,
+					{ timeoutMs: QA_APPROVAL_TIMEOUT_MS },
+				);
+
+				if (!approval.approved) {
+					return;
+				}
+
+				if (editor.getValue() !== baseDoc) {
+					// 승인 대기 중 사용자가 문서를 직접 수정한 경우 덮어쓰기 방지
+					new Notice(t('uiMessages.qaError', { msg: 'Document was modified while waiting for approval.' }));
+					return;
+				}
+
+				editor.setValue(approval.content);
+				new Notice(t('uiMessages.qaCompleted', { name: action.name }));
+				return;
+			}
+
+			// 파일 정보가 없는 특수 에디터 폴백
+			if (action.actionType === 'replace') {
+				editor.replaceRange(resultText, initialFrom, initialTo);
+			} else if (action.actionType === 'append') {
+				editor.replaceRange(`\n\n${resultText}`, initialTo);
+			}
 
 			new Notice(t('uiMessages.qaCompleted', { name: action.name }));
 		} catch (err: unknown) {
@@ -311,11 +281,8 @@ export class QuickActionHandler {
 			}
 			if (msg === 'REASONING_DETECTED') {
 				new Notice(t('uiMessages.qaReasoningDetected'), 10000);
-				revertEditor();
 				return;
 			}
-
-			revertEditor();
 
 			debugLogger.logError('llm', normalizeError(err));
 			new Notice(t('uiMessages.qaError', { msg: formatLlmError(err) }));

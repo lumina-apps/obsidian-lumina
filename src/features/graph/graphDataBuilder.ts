@@ -216,18 +216,48 @@ function calculateEdgesInWorker(
 			return;
 		}
 
-		// We only want 1 chunk per file to avoid dense self-loops and redundant computation
-		const firstChunks = new Map<string, ChildChunk>();
+		// 파일별 모든 하위 청크 임베딩을 평균(Mean Pooling) 후 L2 정규화하여 문서 전체 주제를 반영
+		const fileEmbeddingsMap = new Map<string, Array<number[] | Float32Array>>();
 		for (const c of childChunks) {
-			if (!firstChunks.has(c.path) && c.embedding) {
-				firstChunks.set(c.path, c);
+			if (!c.embedding || c.embedding.length === 0) continue;
+			let list = fileEmbeddingsMap.get(c.path);
+			if (!list) {
+				list = [];
+				fileEmbeddingsMap.set(c.path, list);
 			}
+			list.push(c.embedding);
 		}
-		
-		const chunksData = Array.from(firstChunks.values()).map(c => ({
-			path: c.path,
-			embedding: c.embedding
-		}));
+
+		const chunksData: Array<{ path: string; embedding: number[] | Float32Array }> = [];
+		for (const [filePath, embeddings] of fileEmbeddingsMap.entries()) {
+			if (embeddings.length === 1) {
+				chunksData.push({ path: filePath, embedding: embeddings[0] });
+				continue;
+			}
+			const dim = embeddings[0].length;
+			const mean = new Array<number>(dim).fill(0);
+			let validCount = 0;
+			for (const emb of embeddings) {
+				if (emb.length !== dim) continue;
+				for (let k = 0; k < dim; k++) {
+					mean[k] += emb[k];
+				}
+				validCount++;
+			}
+			if (validCount === 0) continue;
+			let normSq = 0;
+			for (let k = 0; k < dim; k++) {
+				mean[k] /= validCount;
+				normSq += mean[k] * mean[k];
+			}
+			const norm = Math.sqrt(normSq);
+			if (norm > 0) {
+				for (let k = 0; k < dim; k++) {
+					mean[k] /= norm;
+				}
+			}
+			chunksData.push({ path: filePath, embedding: mean });
+		}
 
 		if (chunksData.length === 0) {
 			debugLogger.logSystem('graph', 'calculateEdgesInWorker: no chunks with embeddings, skipping worker.');
