@@ -216,4 +216,10 @@ describe('MCP Lifecycle & Integration', () => {
 		expect(result.isError).toBe(true);
 		expect(dispatchToolHandler).not.toHaveBeenCalled();
 	});
+
+	it('should expose pathGuard even when localServer is not running', () => {
+		expect(mcpManager.localServer).toBeNull();
+		expect(mcpManager.pathGuard).toBeDefined();
+		expect(typeof mcpManager.pathGuard.isAgentPathAllowed).toBe('function');
+	});
 });

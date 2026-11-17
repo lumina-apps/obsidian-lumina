@@ -164,6 +164,8 @@
 		} catch (err) {
 			debugLogger.logError('rag', normalizeError(err, `Semantic Search 실패: ${err}`));
 			if (currentSeq === searchSeq) {
+				// 검색 실패 시 이전 쿼리의 결과 카드가 잔류하지 않도록 초기화
+				searchResults = [];
 				new Notice($tStore('discovery.searchFailed'));
 			}
 		} finally {

@@ -14,6 +14,68 @@ interface LuminaFrontmatter {
 	description?: string;
 }
 
+const PLACEHOLDER_TAG_PATTERNS: readonly RegExp[] = [
+	/^tag\d*$/i,
+	/^example\d*$/i,
+	/^placeholder\d*$/i,
+	/^sample\d*$/i,
+	/^keyword\d*$/i,
+	/^topic\d*$/i,
+	/^태그\d*$/,
+	/^예시\d*$/,
+	/^키워드\d*$/,
+	/^<.*>$/,
+];
+
+const PLACEHOLDER_DESCRIPTIONS = new Set<string>([
+	"one-sentence summary of the document's core content",
+	'one-sentence summary of the document',
+	'summary of the document',
+]);
+
+/** LLM이 생성한 프론트매터 데이터에서 플레이스홀더·중복·선행 # 기호 등을 정제 */
+export function sanitizeGeneratedFrontmatterData(
+	raw: unknown,
+): { tags: string[]; description: string } | null {
+	if (typeof raw !== 'object' || raw === null) {
+		return null;
+	}
+	const record = raw as Record<string, unknown>;
+	const rawTags = Array.isArray(record.tags) ? record.tags : [];
+	const rawDesc = typeof record.description === 'string' ? record.description.trim() : '';
+
+	const cleanedTags: string[] = [];
+	const seenLower = new Set<string>();
+
+	for (const item of rawTags) {
+		if (typeof item !== 'string') continue;
+		const cleaned = item.trim().replace(/^#+/, '').trim();
+		if (!cleaned) continue;
+		if (PLACEHOLDER_TAG_PATTERNS.some(pattern => pattern.test(cleaned))) continue;
+
+		const lower = cleaned.toLowerCase();
+		if (seenLower.has(lower)) continue;
+		seenLower.add(lower);
+		cleanedTags.push(cleaned);
+		if (cleanedTags.length >= 3) break;
+	}
+
+	const isPlaceholderDesc =
+		!rawDesc ||
+		/^<.*>$/.test(rawDesc) ||
+		PLACEHOLDER_DESCRIPTIONS.has(rawDesc.toLowerCase());
+	const description = isPlaceholderDesc ? '' : rawDesc;
+
+	if (cleanedTags.length === 0 && !description) {
+		return null;
+	}
+
+	return {
+		tags: cleanedTags,
+		description,
+	};
+}
+
 /** 두 값이 깊은 동등인지 비교 (프론트매터의 원시값/배열/객체 비교용) */
 function deepEqual(a: unknown, b: unknown): boolean {
 	if (a === b) return true;
@@ -229,14 +291,13 @@ export class FrontmatterManager {
 			const contentWithoutFm = fullContent.replace(/^---[\s\S]+?---\n/, '').trim();
 			if (contentWithoutFm.length < 50) return; // 내용이 너무 짧으면 무시
 
-			const prompt = `Analyze the following markdown document and return up to 3 core tags and a 1-sentence summary (description) in JSON format.
+			const prompt = `Analyze the following markdown document and return 1 to 3 relevant topic tags and a 1-sentence summary (description) in JSON format.
 CRITICAL RULES:
 1. Write the tags and description in the EXACT SAME LANGUAGE as the document content (e.g., Korean for Korean notes, English for English notes).
-2. Output ONLY the valid JSON object below with no additional text or markdown fences.
-{
-  "tags": ["tag1", "tag2"],
-  "description": "One-sentence summary of the document's core content"
-}
+2. Tags MUST be specific, meaningful keywords/topics derived directly from the document content (without a leading "#").
+3. NEVER copy placeholder strings such as "tag1", "tag2", "tag", "example", or template descriptions verbatim.
+4. Output ONLY a valid JSON object matching this schema with no additional text or markdown fences:
+{"tags": ["<specific topic from note>"], "description": "<1-sentence summary in the note's language>"}
 
 Document Content:
 ${contentWithoutFm.substring(0, 3000)}`;
@@ -246,7 +307,7 @@ ${contentWithoutFm.substring(0, 3000)}`;
 				provider: providerConfig.type,
 				model: taskModelId,
 				temperature: 0.1,
-				maxTokens: 150,
+				maxTokens: 250,
 				stream: false,
 				systemPrompt: `[Auto Frontmatter — ${file.path}]`,
 				messages: [{ role: 'user', content: prompt }],
@@ -258,7 +319,7 @@ ${contentWithoutFm.substring(0, 3000)}`;
 				response = await provider.chat([{ role: 'user', content: prompt }], {
 					model: taskModelId,
 					temperature: 0.1,
-					maxOutputTokens: 150,
+					maxOutputTokens: 250,
 					ttftTimeoutMs: 15000,
 					interTokenTimeoutMs: 10000,
 				});
@@ -282,19 +343,9 @@ ${contentWithoutFm.substring(0, 3000)}`;
 			const match = response.content.match(/\{[\s\S]*\}/);
 			if (match) {
 				const data: unknown = JSON.parse(match[0]);
-				if (
-					typeof data === 'object' &&
-					data !== null &&
-					'tags' in data &&
-					'description' in data &&
-					Array.isArray((data as Record<string, unknown>).tags) &&
-					typeof (data as Record<string, unknown>).description === 'string'
-				) {
-					const parsed = data as { tags: string[]; description: string };
-					this.llmGeneratedCache.set(file.path, {
-						tags: parsed.tags,
-						description: parsed.description
-					});
+				const sanitized = sanitizeGeneratedFrontmatterData(data);
+				if (sanitized) {
+					this.llmGeneratedCache.set(file.path, sanitized);
 					debugLogger.logSystem('frontmatter', `Generated LLM data cached for ${file.path}`);
 					
 					// 생성 완료 시점에 현재 파일이 비활성화 상태라면 대기열 처리를 놓쳤을 수 있으므로 즉시 반영
@@ -326,15 +377,19 @@ ${contentWithoutFm.substring(0, 3000)}`;
 
 			// 적용할 프론트매터를 먼저 계산한다 (실제로 변경된 경우에만 재기록).
 			const targetFm: Record<string, unknown> = { ...currentFm };
-			targetFm.description = cachedData.description;
-
-			let existingTags: string[] = [];
-			if (Array.isArray(targetFm.tags)) {
-				existingTags = targetFm.tags as string[];
-			} else if (typeof targetFm.tags === 'string') {
-				existingTags = targetFm.tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+			if (cachedData.description) {
+				targetFm.description = cachedData.description;
 			}
-			targetFm.tags = Array.from(new Set([...existingTags, ...cachedData.tags]));
+
+			if (cachedData.tags.length > 0) {
+				let existingTags: string[] = [];
+				if (Array.isArray(targetFm.tags)) {
+					existingTags = targetFm.tags as string[];
+				} else if (typeof targetFm.tags === 'string') {
+					existingTags = targetFm.tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+				}
+				targetFm.tags = Array.from(new Set([...existingTags, ...cachedData.tags]));
+			}
 
 			this.llmGeneratedCache.delete(file.path);
 

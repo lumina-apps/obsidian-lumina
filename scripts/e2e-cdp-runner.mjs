@@ -1457,20 +1457,44 @@ async function run() {
 			const inputs = document.querySelectorAll('.lumina-discovery__search-input');
 			if (inputs.length < 1) return { success: false, reason: 'Missing search input' };
 			const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+
+			const waitForSearchIdle = async (timeoutMs = 3500) => {
+				// 400ms debounce 경과 대기 후 로딩/업데이트 표시가 끝날 때까지 폴링
+				await new Promise(r => setTimeout(r, 550));
+				const deadline = Date.now() + timeoutMs;
+				while (Date.now() < deadline) {
+					const isLoading = !!document.querySelector('.lumina-discovery__loading');
+					const isUpdating = !!document.querySelector('.lumina-discovery__results-list.is-updating');
+					if (!isLoading && !isUpdating) break;
+					await new Promise(r => setTimeout(r, 100));
+				}
+			};
 			
 			// Type nonsensical query to get 0 results
 			setter.call(inputs[0], '@@@@NOT_FOUND_QUERY_1234@@@@');
 			inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+			await waitForSearchIdle();
 			
-			await new Promise(r => setTimeout(r, 1200));
-			
-			const results = document.querySelectorAll('.lumina-discovery__card');
-			const emptyUI = document.querySelector('.lumina-discovery__empty');
+			let results = document.querySelectorAll('.lumina-discovery__card');
+			let emptyUI = document.querySelector('.lumina-discovery__empty');
+
+			// 볼트 데이터/커스텀 임베딩 임계값에 따라 벡터 검색 결과가 남을 경우, 결정적 필터로 0건 빈 상태 검증
+			if (results.length > 0 && inputs.length >= 2) {
+				setter.call(inputs[1], '__lumina_nonexistent_filter_9999__');
+				inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
+				await waitForSearchIdle();
+				results = document.querySelectorAll('.lumina-discovery__card');
+				emptyUI = document.querySelector('.lumina-discovery__empty');
+
+				setter.call(inputs[1], '');
+				inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
+				await new Promise(r => setTimeout(r, 100));
+			}
 			
 			// Revert to normal search for next tests
 			setter.call(inputs[0], '세계관');
 			inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-			await new Promise(r => setTimeout(r, 1200));
+			await waitForSearchIdle();
 			
 			return {
 				success: results.length === 0,
@@ -1999,15 +2023,27 @@ async function run() {
 				const start = Date.now();
 				// 1. Read existing note (select a note permitted by RAG/path exclusion settings)
 				const files = app.vault.getMarkdownFiles();
-				const pathGuard = lumina.mcpManager?.localServer?.pathGuard;
+				const pathGuard = lumina.mcpManager?.pathGuard ?? lumina.mcpManager?.localServer?.pathGuard;
+				const cleanPrefix = (p) => (p || '').trim().replace(/\\\\/g, '/').replace(/^\\/+|\\/+$/g, '').toLowerCase();
+				const historyRoot = cleanPrefix(lumina.settings.chat.historyPath) || 'chathistory';
+				const activeProj = lumina.settings.projects?.list?.find(p => p.id === lumina.settings.projects?.activeProjectId);
+				const ragExcluded = (activeProj?.ragExcludedPaths || []).map(cleanPrefix).filter(Boolean);
+				const ragIncluded = (activeProj?.ragIncludedPaths || []).map(cleanPrefix).filter(Boolean);
+				const isFallbackAllowed = (filePath) => {
+					if (lumina.settings.mcp.agentRespectRagExclusions === false) return true;
+					const lower = filePath.toLowerCase();
+					const matchesPrefix = (prefix) => lower === prefix || lower.startsWith(prefix + '/');
+					if (ragIncluded.length > 0 && !ragIncluded.some(matchesPrefix)) return false;
+					const defaultExcluded = ['templates', '_templates', 'chathistory', 'backups', historyRoot];
+					return !defaultExcluded.some(matchesPrefix) && !ragExcluded.some(matchesPrefix);
+				};
+
 				let candidate = files.find(f => {
 					if (f.stat && f.stat.size === 0) return false;
 					if (pathGuard && typeof pathGuard.isAgentPathAllowed === 'function') {
 						return pathGuard.isAgentPathAllowed(f.path, lumina);
 					}
-					const lower = f.path.toLowerCase();
-					const isExcluded = lower.startsWith('templates/') || lower.startsWith('_templates/') || lower.startsWith('chathistory/') || lower.startsWith('backups/');
-					return !isExcluded;
+					return isFallbackAllowed(f.path);
 				});
 
 				let targetPath = candidate?.path;
@@ -2023,14 +2059,17 @@ async function run() {
 					if (pathGuard && typeof pathGuard.isAgentPathAllowed === 'function') {
 						return !pathGuard.isAgentPathAllowed(f.path, lumina);
 					}
-					const lower = f.path.toLowerCase();
-					return lower.startsWith('templates/') || lower.startsWith('_templates/') || lower.startsWith('chathistory/') || lower.startsWith('backups/');
+					return !isFallbackAllowed(f.path);
 				})?.path;
 				let createdExcludedTemp = false;
 				if (!excludedPath && lumina.settings.mcp.agentRespectRagExclusions !== false) {
-					const historyFolder = lumina.settings.chat.historyPath || 'chatHistory';
-					if (!app.vault.getAbstractFileByPath(historyFolder)) {
-						await app.vault.createFolder(historyFolder);
+					const historyFolder = (lumina.settings.chat.historyPath || 'chatHistory').trim().replace(/\\\\/g, '/').replace(/^\\/+|\\/+$/g, '') || 'chatHistory';
+					let cur = '';
+					for (const seg of historyFolder.split('/').filter(Boolean)) {
+						cur = cur ? cur + '/' + seg : seg;
+						if (!app.vault.getAbstractFileByPath(cur)) {
+							await app.vault.createFolder(cur);
+						}
 					}
 					excludedPath = historyFolder + '/__lumina_excluded_test__.md';
 					await app.vault.create(excludedPath, '# Excluded note');
@@ -2051,7 +2090,8 @@ async function run() {
 					let excludedSuccess = true;
 					if (excludedPath && lumina.settings.mcp.agentRespectRagExclusions !== false) {
 						const excludedRes = await lumina.mcpManager.callTool(readTool._serverId, 'read_note', { path: excludedPath });
-						excludedSuccess = excludedRes?.isError === true && (excludedRes?.content?.[0]?.text || '').includes('제한된 경로');
+						const excludedMsg = excludedRes?.content?.[0]?.text || '';
+						excludedSuccess = excludedRes?.isError === true && (excludedMsg.includes('제한된 경로') || excludedMsg.toLowerCase().includes('restricted'));
 					}
 
 					return {
@@ -2210,35 +2250,70 @@ async function run() {
 				const lumina = app.plugins.plugins['lumina'];
 				const providers = lumina.settings.connections.providers || [];
 				const activeId = lumina.settings.connections.activeProviderId;
-				const activeProv = providers.find(p => p.id === activeId && p.type === 'google');
-				const googleProv = activeProv || providers.find(p => p.type === 'google');
-				if (!googleProv) {
-					return { skipped: true, reason: 'No Google provider configured for live completion test' };
-				}
-				const apiKey = app.secretStorage?.getSecret('lumina-provider-' + googleProv.id) || googleProv.credential;
-				if (!apiKey) {
-					return { skipped: true, reason: 'Google provider has no stored API key' };
-				}
 
 				const req = window.requestUrl || (typeof require !== 'undefined' ? require('obsidian').requestUrl : null);
 				if (!req) {
-					return { success: false, providerType: 'google', error: 'Obsidian requestUrl API not available' };
+					return { success: false, providerType: 'unknown', error: 'Obsidian requestUrl API not available' };
 				}
 
-				const start = Date.now();
-				try {
-					// 1. Test listModels endpoint via requestUrl (bypasses browser CORS & net restrictions)
+				const DEFAULT_BASE_URLS = {
+					xai: 'https://api.x.ai',
+					deepseek: 'https://api.deepseek.com',
+					groq: 'https://api.groq.com/openai',
+					openrouter: 'https://openrouter.ai/api',
+					ollama: 'http://localhost:11434',
+					lmstudio: 'http://localhost:1234',
+				};
+
+				const isCli = (type) => typeof type === 'string' && type.startsWith('cli-');
+				const isLocalOrCustom = (type) => type === 'ollama' || type === 'lmstudio' || type === 'custom';
+
+				// 활성 프로바이더 → 검증된 프로바이더 → 나머지 HTTP 프로바이더 순으로 시도 후보 정렬
+				const sortedProviders = [...providers]
+					.filter(p => !isCli(p.type))
+					.sort((a, b) => {
+						const aActive = a.id === activeId ? 0 : 1;
+						const bActive = b.id === activeId ? 0 : 1;
+						if (aActive !== bActive) return aActive - bActive;
+						const aVerified = a.isVerified ? 0 : 1;
+						const bVerified = b.isVerified ? 0 : 1;
+						return aVerified - bVerified;
+					});
+
+				const candidates = [];
+				for (const prov of sortedProviders) {
+					const rawSecret = app.secretStorage?.getSecret('lumina-provider-' + prov.id) || prov.credential || '';
+					const apiKey = rawSecret.trim();
+					const rawBaseUrl = (prov.baseUrl || DEFAULT_BASE_URLS[prov.type] || '').trim();
+					const baseUrl = rawBaseUrl.replace(/\\/+$/, '').replace(/\\/v1$/, '');
+
+					if (isLocalOrCustom(prov.type)) {
+						if (!baseUrl) continue;
+						candidates.push({ prov, apiKey: apiKey || 'ollama', baseUrl });
+					} else {
+						if (!apiKey) continue;
+						candidates.push({ prov, apiKey, baseUrl });
+					}
+				}
+
+				if (candidates.length === 0) {
+					return { skipped: true, reason: 'No HTTP LLM provider with valid credentials/URL configured' };
+				}
+
+				const testGoogle = async (prov, apiKey) => {
 					const listRes = await req({
 						url: 'https://generativelanguage.googleapis.com/v1beta/models',
 						method: 'GET',
 						headers: { 'x-goog-api-key': apiKey }
 					});
-					const listData = listRes.json;
-					const models = listData?.models || [];
+					const models = listRes.json?.models || [];
 					const geminiModels = models.filter(m => m.name && m.name.includes('gemini'));
-
-					// 2. Test short prompt completion
-					const candidateModel = geminiModels.find(m => m.name.includes('gemini-2.5-flash') || m.name.includes('gemini-2.0-flash') || m.name.includes('flash'))?.name || geminiModels[0]?.name || 'models/gemini-2.5-flash';
+					const preferred = (prov.availableModels || []).find(m => m.includes('flash')) || prov.availableModels?.[0];
+					const candidateModel =
+						preferred ||
+						geminiModels.find(m => m.name.includes('gemini-2.5-flash') || m.name.includes('gemini-2.0-flash') || m.name.includes('flash'))?.name ||
+						geminiModels[0]?.name ||
+						'models/gemini-2.5-flash';
 					const modelEndpoint = candidateModel.startsWith('models/') ? candidateModel.replace('models/', '') : candidateModel;
 
 					const promptRes = await req({
@@ -2250,39 +2325,125 @@ async function run() {
 						},
 						body: JSON.stringify({
 							contents: [{ role: 'user', parts: [{ text: 'Say "PONG" and nothing else.' }] }],
-							generationConfig: {
-								maxOutputTokens: 100
-							}
+							generationConfig: { maxOutputTokens: 100 }
 						})
 					});
+					const text = promptRes.json?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+					return { testModel: modelEndpoint, response: text };
+				};
 
-					const promptData = promptRes.json;
-					const text = promptData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+				const testAnthropic = async (prov, apiKey) => {
+					let modelId = (prov.availableModels || [])[0];
+					if (!modelId) {
+						const listRes = await req({
+							url: 'https://api.anthropic.com/v1/models',
+							method: 'GET',
+							headers: {
+								'x-api-key': apiKey,
+								'anthropic-version': '2023-06-01'
+							}
+						});
+						const models = (listRes.json?.data || []).map(m => m.id).filter(id => id && id.startsWith('claude-'));
+						modelId = models.find(id => id.includes('haiku')) || models[0] || 'claude-3-5-haiku-latest';
+					}
+					const promptRes = await req({
+						url: 'https://api.anthropic.com/v1/messages',
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': apiKey,
+							'anthropic-version': '2023-06-01'
+						},
+						body: JSON.stringify({
+							model: modelId,
+							max_tokens: 100,
+							messages: [{ role: 'user', content: 'Say "PONG" and nothing else.' }]
+						})
+					});
+					const textBlock = (promptRes.json?.content || []).find(c => c.type === 'text');
+					return { testModel: modelId, response: (textBlock?.text || '').trim() };
+				};
 
-					return {
-						success: true,
-						providerType: 'google',
-						testModel: modelEndpoint,
-						modelsCount: geminiModels.length,
-						response: text,
-						latency: Date.now() - start
+				const testOpenAICompat = async (prov, apiKey, baseUrl) => {
+					const resolvedBase = prov.type === 'openai' ? 'https://api.openai.com' : baseUrl;
+					let modelId = (prov.availableModels || [])[0];
+					if (!modelId) {
+						if (prov.type === 'ollama') {
+							const listRes = await req({ url: resolvedBase + '/api/tags', method: 'GET' });
+							modelId = listRes.json?.models?.[0]?.name || '';
+						} else {
+							const listRes = await req({
+								url: resolvedBase + '/v1/models',
+								method: 'GET',
+								headers: { Authorization: 'Bearer ' + apiKey }
+							});
+							const list = Array.isArray(listRes.json) ? listRes.json : (listRes.json?.data || listRes.json?.models || []);
+							modelId = list.map(m => m?.id || m?.name).find(Boolean) || '';
+						}
+					}
+					if (!modelId) throw new Error('No available model found');
+
+					const isReasoningModel = /^(o\\d|gpt-5)/i.test(modelId);
+					const bodyPayload = {
+						model: modelId,
+						messages: [{ role: 'user', content: 'Say "PONG" and nothing else.' }],
+						...(isReasoningModel ? { max_completion_tokens: 100 } : { max_tokens: 100 })
 					};
-				} catch (e) {
-					return {
-						success: false,
-						providerType: 'google',
-						error: e.message || String(e),
-						duration: Date.now() - start
-					};
+					const promptRes = await req({
+						url: resolvedBase + '/v1/chat/completions',
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: 'Bearer ' + apiKey
+						},
+						body: JSON.stringify(bodyPayload)
+					});
+					const text = promptRes.json?.choices?.[0]?.message?.content?.trim() || '';
+					return { testModel: modelId, response: text };
+				};
+
+				const failedAttempts = [];
+				for (const { prov, apiKey, baseUrl } of candidates) {
+					const start = Date.now();
+					try {
+						let out;
+						if (prov.type === 'google') {
+							out = await testGoogle(prov, apiKey);
+						} else if (prov.type === 'anthropic') {
+							out = await testAnthropic(prov, apiKey);
+						} else {
+							out = await testOpenAICompat(prov, apiKey, baseUrl);
+						}
+						return {
+							success: true,
+							providerType: prov.type,
+							testModel: out.testModel,
+							response: out.response,
+							latency: Date.now() - start,
+							failedAttempts
+						};
+					} catch (e) {
+						const msg = e?.message || String(e);
+						failedAttempts.push('[' + prov.type + '] ' + msg);
+					}
 				}
+
+				return {
+					success: false,
+					providerType: candidates[0].prov.type,
+					error: failedAttempts.join(' | ')
+				};
 			})()`, 45000);
 
 			if (llmResult.skipped) {
 				reporter.recordSkip('Live LLM Provider Completion', `Skipped: ${llmResult.reason}`, Date.now() - t0);
 			} else if (llmResult.success) {
-				reporter.record('Live LLM Provider Completion', true, `[${llmResult.providerType}] Model: ${llmResult.testModel}, Output: "${llmResult.response}", Latency: ${llmResult.latency}ms`, Date.now() - t0);
+				const fallbackNote = llmResult.failedAttempts?.length
+					? ` (fallback after: ${llmResult.failedAttempts.join('; ')})`
+					: '';
+				reporter.record('Live LLM Provider Completion', true, `[${llmResult.providerType}] Model: ${llmResult.testModel}, Output: "${llmResult.response}", Latency: ${llmResult.latency}ms${fallbackNote}`, Date.now() - t0);
 			} else {
-				reporter.record('Live LLM Provider Completion', false, `[${llmResult.providerType}] Error: ${llmResult.error}`, Date.now() - t0);
+				reporter.record('Live LLM Provider Completion', false, `All providers failed: ${llmResult.error}`, Date.now() - t0);
 			}
 		} catch (err) {
 			reporter.record('Live LLM Provider Completion', false, err.message, Date.now() - t0);

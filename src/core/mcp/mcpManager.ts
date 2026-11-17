@@ -46,6 +46,11 @@ export class McpManager {
 		return this.localLifecycle.server?.pathGuard ?? this.localPathGuard;
 	}
 
+	/** 내장 에이전트 및 외부 경로 검사에서 접근 가능한 PathGuard 인스턴스 */
+	get pathGuard(): PathGuard {
+		return this.sharedPathGuard;
+	}
+
 	/** 내장 도구 실행용 컨텍스트 생성 */
 	private buildLocalContext(signal?: AbortSignal): ToolHandlerContext {
 		const mcpSettings = this.plugin.settings?.mcp;
