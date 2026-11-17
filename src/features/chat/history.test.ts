@@ -1,11 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TFile, TFolder, type App } from 'obsidian';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
+import { TFile, TFolder, moment, type App } from 'obsidian';
+import realMoment from 'moment';
 import {
 	saveSession,
 	loadSession,
 	utf8ToBase64,
 	base64ToUtf8,
 	renameSession,
+	deleteSession,
 	exportSessionToMarkdown,
 	loadSessionsList,
 	sanitizeSafeTitle,
@@ -392,6 +394,196 @@ Multiline base64
 		const exportedContent = exportEntry![1].content;
 		expect(exportedContent).toContain('📎 **Attachments**: [[notes/doc.md|doc.md]]');
 		expect(exportedContent).toContain('📚 **Sources**: [[knowledge/faq.md]]');
+	});
+
+	describe('date folder path support', () => {
+		const momentMock = moment as unknown as Mock;
+
+		beforeEach(() => {
+			momentMock.mockImplementation((inp?: unknown) => realMoment(inp as Date));
+			vi.mocked(mockApp.fileManager.trashFile).mockImplementation(async (file) => {
+				virtualFiles.delete(file.path);
+			});
+		});
+
+		afterEach(() => {
+			momentMock.mockReset();
+		});
+
+		it('saves sessions into date subfolders and recursively creates missing folders', async () => {
+			const createdFolders = new Set<string>();
+			const folderMockApp = {
+				...mockApp,
+				vault: {
+					...mockApp.vault,
+					adapter: {
+						exists: vi.fn().mockImplementation(async (p: string) => createdFolders.has(p)),
+					},
+					createFolder: vi.fn().mockImplementation(async (p: string) => {
+						createdFolders.add(p);
+					}),
+					getAbstractFileByPath: vi.fn().mockImplementation((path: string) => {
+						const cleanPath = path.replace(/[/\\]+$/, '');
+						if (virtualFiles.has(cleanPath)) {
+							return virtualFiles.get(cleanPath)!.file;
+						}
+						if (!createdFolders.has(cleanPath)) {
+							return null;
+						}
+						const folder = new TFolder();
+						folder.path = cleanPath;
+						for (const [filePath, fileData] of virtualFiles.entries()) {
+							if (filePath.startsWith(cleanPath + '/')) {
+								folder.children.push(fileData.file);
+							}
+						}
+						return folder;
+					}),
+				},
+			} as unknown as App;
+
+			const createdAt = new Date(2026, 10, 17, 14, 30, 0).getTime();
+			const session: ChatSession = {
+				id: 'session-date-1',
+				title: 'Date Folder Test',
+				createdAt,
+				updatedAt: createdAt,
+				providerId: 'openai',
+				modelId: 'gpt-4o',
+				messages: [{ id: 'm1', role: 'user', content: 'Hello', timestamp: createdAt, isStreaming: false }],
+			};
+
+			await saveSession(folderMockApp, session, 'Lumina/History', { folderFormat: '{{YYYY}}/{{MM}}' });
+
+			expect(Array.from(createdFolders)).toEqual([
+				'Lumina',
+				'Lumina/History',
+				'Lumina/History/2026',
+				'Lumina/History/2026/11',
+			]);
+			const savedPath = Array.from(virtualFiles.keys())[0];
+			expect(savedPath).toMatch(/^Lumina\/History\/2026\/11\/261117_1430 - Date Folder Test\.md$/);
+		});
+
+		it('loads, lists, renames, and deletes sessions across nested date folders and legacy flat files', async () => {
+			// 기존 평면 파일 1개 배치
+			const legacyCreatedAt = new Date(2025, 0, 5, 9, 0, 0).getTime();
+			const legacySession: ChatSession = {
+				id: 'session-legacy-flat',
+				title: 'Legacy Flat Chat',
+				createdAt: legacyCreatedAt,
+				updatedAt: legacyCreatedAt,
+				providerId: 'openai',
+				modelId: 'gpt-4o',
+				messages: [{ id: 'm1', role: 'user', content: 'Old msg', timestamp: legacyCreatedAt, isStreaming: false }],
+			};
+			await saveSession(mockApp, legacySession, 'Lumina/History');
+			expect(Array.from(virtualFiles.keys())[0]).toMatch(/^Lumina\/History\/250105_0900/);
+
+			// 날짜 폴더 파일 1개 저장
+			const datedCreatedAt = new Date(2026, 10, 17, 14, 30, 0).getTime();
+			const datedSession: ChatSession = {
+				id: 'session-dated-1',
+				title: 'Dated Chat',
+				createdAt: datedCreatedAt,
+				updatedAt: datedCreatedAt + 1000,
+				providerId: 'openai',
+				modelId: 'gpt-4o',
+				messages: [{ id: 'm1', role: 'user', content: 'New msg', timestamp: datedCreatedAt, isStreaming: false }],
+			};
+			await saveSession(mockApp, datedSession, 'Lumina/History', { folderFormat: '{{YYYY}}/{{MM}}' });
+
+			// 목록에는 두 파일 모두 포함
+			const list = await loadSessionsList(mockApp, 'Lumina/History', { folderFormat: '{{YYYY}}/{{MM}}' });
+			expect(list.map(s => s.id)).toEqual(['session-dated-1', 'session-legacy-flat']);
+
+			// 평면 파일을 날짜 포맷 활성 상태에서 재저장하면 날짜 폴더로 이동
+			await saveSession(mockApp, legacySession, 'Lumina/History', { folderFormat: '{{YYYY}}/{{MM}}' });
+			const keysAfterMove = Array.from(virtualFiles.keys());
+			expect(keysAfterMove.some(k => k.startsWith('Lumina/History/2025/01/'))).toBe(true);
+			expect(keysAfterMove.some(k => /^Lumina\/History\/250105_0900/.test(k))).toBe(false);
+
+			// renameSession 후에도 날짜 폴더 유지
+			await renameSession(mockApp, 'session-dated-1', 'Renamed Dated', 'Lumina/History', { folderFormat: '{{YYYY}}/{{MM}}' });
+			const renamedKey = Array.from(virtualFiles.keys()).find(k => k.includes('Renamed Dated.md'));
+			expect(renamedKey).toMatch(/^Lumina\/History\/2026\/11\//);
+
+			// deleteSession으로 삭제 가능
+			const deleted = await deleteSession(mockApp, 'session-dated-1', 'Lumina/History', { folderFormat: '{{YYYY}}/{{MM}}' });
+			expect(deleted).toBe(true);
+			expect(await loadSession(mockApp, 'session-dated-1', 'Lumina/History', { folderFormat: '{{YYYY}}/{{MM}}' })).toBeNull();
+		});
+
+		it('excludes other project subfolders and hidden folders during recursive scan', async () => {
+			// 계층형 TFolder 트리 mock
+			const makeFile = (filePath: string, id: string, title: string): TFile => {
+				const f = new TFile();
+				f.path = filePath;
+				f.name = filePath.split('/').pop()!;
+				f.extension = 'md';
+				f.stat = { ctime: 1700000000000, mtime: 1700000000000, size: 100 };
+				const content = `---\nid: ${id}\ntitle: "${title}"\n---\n`;
+				virtualFiles.set(filePath, { content, file: f });
+				return f;
+			};
+
+			const defaultFile = makeFile('chatHistory/2026/11/default.md', 'id-default', 'Default Chat');
+			const projAFile = makeFile('chatHistory/ProjectA/2026/11/proja.md', 'id-proja', 'Project A Chat');
+			const hiddenFile = makeFile('chatHistory/.hidden/secret.md', 'id-hidden', 'Hidden Chat');
+
+			const monthFolder = new TFolder();
+			monthFolder.path = 'chatHistory/2026/11';
+			monthFolder.name = '11';
+			monthFolder.children = [defaultFile];
+
+			const yearFolder = new TFolder();
+			yearFolder.path = 'chatHistory/2026';
+			yearFolder.name = '2026';
+			yearFolder.children = [monthFolder];
+
+			const projMonthFolder = new TFolder();
+			projMonthFolder.path = 'chatHistory/ProjectA/2026/11';
+			projMonthFolder.name = '11';
+			projMonthFolder.children = [projAFile];
+
+			const projYearFolder = new TFolder();
+			projYearFolder.path = 'chatHistory/ProjectA/2026';
+			projYearFolder.name = '2026';
+			projYearFolder.children = [projMonthFolder];
+
+			const projFolder = new TFolder();
+			projFolder.path = 'chatHistory/ProjectA';
+			projFolder.name = 'ProjectA';
+			projFolder.children = [projYearFolder];
+
+			const hiddenFolder = new TFolder();
+			hiddenFolder.path = 'chatHistory/.hidden';
+			hiddenFolder.name = '.hidden';
+			hiddenFolder.children = [hiddenFile];
+
+			const rootFolder = new TFolder();
+			rootFolder.path = 'chatHistory';
+			rootFolder.name = 'chatHistory';
+			rootFolder.children = [yearFolder, projFolder, hiddenFolder];
+
+			const treeMockApp = {
+				...mockApp,
+				vault: {
+					...mockApp.vault,
+					adapter: { exists: vi.fn().mockResolvedValue(true) },
+					getAbstractFileByPath: vi.fn().mockImplementation((p: string) => {
+						if (p === 'chatHistory') return rootFolder;
+						return null;
+					}),
+				},
+			} as unknown as App;
+
+			const sessions = await loadSessionsList(treeMockApp, 'chatHistory', {
+				excludeFolders: ['chatHistory/ProjectA'],
+			});
+
+			expect(sessions.map(s => s.id)).toEqual(['id-default']);
+		});
 	});
 });
 

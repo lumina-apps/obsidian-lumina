@@ -1,5 +1,4 @@
 import type LuminaPlugin from '../../../main';
-import { normalizePath } from 'obsidian';
 import { get } from 'svelte/store';
 import { messages, sessionSummary, summaryUpToMessageId, currentSessionId, currentSessionTitle } from '../../../core/store/chatStore';
 import { getActiveProject } from '../../../core/store/projectStore';
@@ -15,6 +14,7 @@ import { estimateTokens } from '../promptBuilder';
 import { stripThinkTags } from '../../../shared/utils/llmTextSanitizer';
 import { formatLlmError } from '../../../shared/utils/llmErrorFormatter';
 import { getVaultBasePath } from '../../../shared/utils/fileUtils';
+import { resolveHistoryLocation } from './historyLocation';
 
 /** 디버그 로그에 남길 요약 본문 최대 길이 (과도한 메모리/표시 방지) */
 const SUMMARY_LOG_MAX = 2000;
@@ -191,11 +191,12 @@ function applySummaryToStoreAndHistory(
 				summaryUpToMessageId: newUpToId,
 			};
 			const project = getActiveProject();
-			const basePath = chat.historyPath?.trim() || 'chatHistory';
-			const historyPath = project?.historySubfolder
-				? normalizePath(`${basePath}/${project.historySubfolder}`)
-				: basePath;
-			saveSession(plugin.app, session, historyPath).catch((e: unknown) => {
+			const { basePath, options } = resolveHistoryLocation(
+				chat,
+				plugin.settings.projects?.list ?? [],
+				project,
+			);
+			saveSession(plugin.app, session, basePath, options).catch((e: unknown) => {
 				debugLogger.logError('AutoSummary', e instanceof Error ? e : new Error(String(e)));
 			});
 		}

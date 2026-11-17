@@ -880,6 +880,26 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 	opacity: 0.95;
 }
 
+.lumina-settings__desc-warning {
+	margin-top: 4px;
+	font-size: 0.9em;
+	color: var(--text-warning, #f59e0b);
+}
+
+.vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-stacked-control .setting-item-control {
+	flex-direction: column;
+	align-items: stretch;
+	gap: 8px;
+	width: 260px;
+	max-width: 100%;
+}
+
+.vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-stacked-control .setting-item-control select,
+.vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-stacked-control .setting-item-control input[type="text"] {
+	width: 100%;
+	max-width: 100%;
+}
+
 .vertical-tab-content-container .lumina-settings .setting-item.lumina-textarea-setting {
 	display: flex;
 	flex-direction: column;

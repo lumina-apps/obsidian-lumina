@@ -48,6 +48,8 @@ export interface ChatSettings {
 	autoSaveHistory: boolean;
 	/** 채팅 기록 저장 경로 (autoSaveHistory=true 일 때) */
 	historyPath: string;
+	/** 채팅 기록 하위 폴더 날짜 템플릿 (예: {{YYYY}}/{{MM}}). 빈 문자열이면 루트에 평면 저장 */
+	historyFolderFormat: string;
 	/** 메시지 전송 단축키 */
 	sendKey: SendKeyMode;
 	/** 커스텀 퀵 액션 프롬프트 목록 */

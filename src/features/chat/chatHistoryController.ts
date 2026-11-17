@@ -22,9 +22,9 @@ import {
 	deleteSession,
 } from './history';
 import type { ChatSession } from '../../shared/types/chat.types';
-import { normalizePath } from 'obsidian';
 import { getActiveProject } from '../../core/store/projectStore';
 import { sanitizeDisplayContent } from '../../shared/utils/llmTextSanitizer';
+import { resolveHistoryLocation, type ResolvedHistoryLocation } from './utils/historyLocation';
 
 export class ChatHistoryController {
 	private app: App;
@@ -36,17 +36,20 @@ export class ChatHistoryController {
 	}
 
 	/**
+	 * 활성 프로젝트와 설정을 기반으로 히스토리 경로 및 날짜 폴더/제외 폴더 옵션을 계산합니다.
+	 */
+	private resolveLocation(): ResolvedHistoryLocation {
+		const { chat, projects } = this.plugin.settings;
+		return resolveHistoryLocation(chat, projects?.list ?? [], getActiveProject());
+	}
+
+	/**
 	 * 활성 프로젝트를 기반으로 히스토리 저장 경로를 계산합니다.
 	 * - Default 프로젝트(historySubfolder=''): chat.historyPath 그대로 (빈 값시 chatHistory 기본값)
 	 * - 다른 프로젝트: chat.historyPath/historySubfolder
 	 */
 	public resolveHistoryPath(): string {
-		const basePath = this.plugin.settings.chat.historyPath?.trim() || 'chatHistory';
-		const project = getActiveProject();
-		if (!project.historySubfolder) {
-			return basePath;
-		}
-		return normalizePath(`${basePath}/${project.historySubfolder}`);
+		return this.resolveLocation().basePath;
 	}
 
 	/**
@@ -120,9 +123,9 @@ export class ChatHistoryController {
 			summaryUpToMessageId: get(summaryUpToMessageId),
 		};
 
-		const historyPath = this.resolveHistoryPath();
+		const { basePath, options } = this.resolveLocation();
 		try {
-			await saveSession(this.app, session, historyPath);
+			await saveSession(this.app, session, basePath, options);
 		} catch (e) {
 			new Notice(t('settings.chat.history.saveFail', { error: (e as Error).message }));
 		}
@@ -130,7 +133,8 @@ export class ChatHistoryController {
 
 	/** 히스토리 세션 목록을 반환합니다. */
 	async fetchSessions(): Promise<ChatSession[]> {
-		return loadSessionsList(this.app, this.resolveHistoryPath());
+		const { basePath, options } = this.resolveLocation();
+		return loadSessionsList(this.app, basePath, options);
 	}
 
 	/** 특정 세션의 제목을 변경합니다. */
@@ -139,7 +143,8 @@ export class ChatHistoryController {
 		if (!trimmed) return false;
 		try {
 			const { renameSession } = await import('./history');
-			const updated = await renameSession(this.app, sessionId, trimmed, this.resolveHistoryPath());
+			const { basePath, options } = this.resolveLocation();
+			const updated = await renameSession(this.app, sessionId, trimmed, basePath, options);
 			if (updated) {
 				if (get(currentSessionId) === sessionId) {
 					currentSessionTitle.set(trimmed);
@@ -158,7 +163,8 @@ export class ChatHistoryController {
 
 	/** 특정 세션을 불러와 현재 대화창을 덮어씁니다. */
 	async restoreSession(sessionId: string): Promise<boolean> {
-		const session = await loadSession(this.app, sessionId, this.resolveHistoryPath());
+		const { basePath, options } = this.resolveLocation();
+		const session = await loadSession(this.app, sessionId, basePath, options);
 		if (session) {
 			setSession(session);
 			return true;
@@ -169,7 +175,8 @@ export class ChatHistoryController {
 
 	/** 특정 세션을 삭제합니다. */
 	async removeSession(sessionId: string): Promise<boolean> {
-		const success = await deleteSession(this.app, sessionId, this.resolveHistoryPath());
+		const { basePath, options } = this.resolveLocation();
+		const success = await deleteSession(this.app, sessionId, basePath, options);
 		if (success) {
 			const currentId = get(currentSessionId);
 			if (currentId === sessionId) {
@@ -185,7 +192,8 @@ export class ChatHistoryController {
 	/** 특정 세션을 마크다운 파일로 내보냅니다. */
 	async exportSession(sessionId: string): Promise<boolean> {
 		try {
-			const session = await loadSession(this.app, sessionId, this.resolveHistoryPath());
+			const { basePath, options } = this.resolveLocation();
+			const session = await loadSession(this.app, sessionId, basePath, options);
 			if (session) {
 				const { exportSessionToMarkdown } = await import('./history');
 				await exportSessionToMarkdown(this.app, session);

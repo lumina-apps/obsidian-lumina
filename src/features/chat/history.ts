@@ -4,6 +4,8 @@ import type { ChatSession } from '../../shared/types/chat.types';
 import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
 import { sanitizeDisplayContent } from '../../shared/utils/llmTextSanitizer';
+import { resolveDateTemplate } from '../../shared/utils/datePathTemplate';
+import type { HistoryLocationOptions } from './utils/historyLocation';
 
 // ─── 하위 호환성을 위한 Re-exports ──────────────────────────────────────────────
 export * from './utils/historySerializer';
@@ -53,19 +55,91 @@ export async function getAvailableHistoryPath(
 	return normalizePath(`${folderPath}/${baseFilename}`);
 }
 
-/** 특정 디렉토리 내 .md 파일만 가져온다 (vault 전체 스캔 방지) */
-function getHistoryFiles(app: App, basePath: string): TFile[] {
-	const cleanBase = (basePath?.trim() || 'chatHistory').replace(/[/\\]+$/, '');
-	const normalBase = normalizePath(cleanBase);
-	const folder = app.vault.getAbstractFileByPath(normalBase);
-	const files: TFile[] = [];
-	if (folder instanceof TFolder) {
-		for (const child of folder.children) {
-			if (child instanceof TFile && child.extension === 'md') {
-				files.push(child);
+const MAX_HISTORY_SCAN_DEPTH = 8;
+
+/** 히스토리 베이스 경로를 크로스 플랫폼 안전하게 정규화한다 */
+function normalizeBasePath(basePath: string): string {
+	const cleanBase = (basePath?.trim() || 'chatHistory').replace(/\\/g, '/').replace(/\/+$/, '');
+	return normalizePath(cleanBase) || 'chatHistory';
+}
+
+/** 대상 경로가 제외 폴더 목록(대소문자 무시)에 포함되는지 판별한다 */
+function isExcludedFolderPath(targetPath: string, excludedLower: readonly string[]): boolean {
+	if (excludedLower.length === 0) return false;
+	const lower = normalizePath(targetPath).toLowerCase();
+	return excludedLower.some(ex => lower === ex || lower.startsWith(`${ex}/`));
+}
+
+/**
+ * 대상 폴더 및 상위 폴더가 존재하지 않으면 순차적으로 생성한다.
+ * 동시 저장 경합이나 대소문자 미구분 파일시스템에서의 중복 생성 오류를 방어한다.
+ */
+async function ensureHistoryFolder(app: App, folderPath: string): Promise<void> {
+	const normalFolder = normalizePath(folderPath.replace(/\\/g, '/').replace(/\/+$/, ''));
+	if (!normalFolder) return;
+
+	const segments = normalFolder.split('/').filter(Boolean);
+	let current = '';
+
+	for (const seg of segments) {
+		current = current ? `${current}/${seg}` : seg;
+		const existing = app.vault.getAbstractFileByPath(current);
+		if (existing instanceof TFolder) {
+			continue;
+		}
+		if (existing) {
+			throw new Error(`Cannot create folder: file already exists at "${current}"`);
+		}
+		if (await app.vault.adapter.exists(current)) {
+			continue;
+		}
+		try {
+			await app.vault.createFolder(current);
+		} catch (err: unknown) {
+			if (!(await app.vault.adapter.exists(current))) {
+				throw err;
 			}
 		}
 	}
+}
+
+/** 특정 디렉토리 및 하위 폴더 내 .md 파일만 재귀적으로 가져온다 (vault 전체 스캔 방지) */
+function getHistoryFiles(
+	app: App,
+	basePath: string,
+	excludeFolders: readonly string[] = [],
+): TFile[] {
+	const normalBase = normalizeBasePath(basePath);
+	const rootFolder = app.vault.getAbstractFileByPath(normalBase);
+	if (!(rootFolder instanceof TFolder)) {
+		return [];
+	}
+
+	const excludedLower = excludeFolders
+		.map(p => normalizePath(p.replace(/\\/g, '/').replace(/\/+$/, '')).toLowerCase())
+		.filter(Boolean);
+
+	const files: TFile[] = [];
+	const seenPaths = new Set<string>();
+
+	const visit = (folder: TFolder, depth: number): void => {
+		if (depth > MAX_HISTORY_SCAN_DEPTH) return;
+		for (const child of folder.children) {
+			if (child instanceof TFolder) {
+				if (child.name?.startsWith('.')) continue;
+				if (isExcludedFolderPath(child.path, excludedLower)) continue;
+				visit(child, depth + 1);
+			} else if (child instanceof TFile && child.extension === 'md') {
+				if (isExcludedFolderPath(child.path, excludedLower)) continue;
+				if (!seenPaths.has(child.path)) {
+					seenPaths.add(child.path);
+					files.push(child);
+				}
+			}
+		}
+	};
+
+	visit(rootFolder, 0);
 	return files;
 }
 
@@ -98,9 +172,15 @@ async function findSessionFile(app: App, files: TFile[], sessionId: string): Pro
 
 // ─── Save ─────────────────────────────────────────────────────────────────────
 
-export async function saveSession(app: App, session: ChatSession, basePath: string): Promise<void> {
-	const cleanBase = (basePath?.trim() || 'chatHistory').replace(/[/\\]+$/, '');
-	const normalBase = normalizePath(cleanBase);
+export async function saveSession(
+	app: App,
+	session: ChatSession,
+	basePath: string,
+	options?: Partial<HistoryLocationOptions>,
+): Promise<void> {
+	const normalBase = normalizeBasePath(basePath);
+	const folderFormat = options?.folderFormat?.trim() ?? '';
+	const excludeFolders = options?.excludeFolders ?? [];
 
 	// 파일명: YYMMDD_HHMM - [title]
 	const dateObj = new Date(session.createdAt);
@@ -112,34 +192,23 @@ export async function saveSession(app: App, session: ChatSession, basePath: stri
 	const safeTitle = sanitizeSafeTitle(session.title);
 	const filename = `${yy}${mm}${dd}_${hh}${min} - ${safeTitle}.md`;
 
+	const subFolder = folderFormat ? resolveDateTemplate(folderFormat, dateObj) : '';
+	const targetFolder = subFolder ? normalizePath(`${normalBase}/${subFolder}`) : normalBase;
+
 	const content = serializeSession(session);
 
-	if (!(await app.vault.adapter.exists(normalBase))) {
-		await app.vault.createFolder(normalBase);
+	await ensureHistoryFolder(app, targetFolder);
+
+	// 기존 파일 탐색: 대상 날짜 폴더를 우선 탐색하고, 없으면 베이스 폴더 전체를 재귀 탐색한다
+	const targetFiles = getHistoryFiles(app, targetFolder, excludeFolders);
+	let existingFile = await findSessionFile(app, targetFiles, session.id);
+
+	if (!existingFile && targetFolder !== normalBase) {
+		const allFiles = getHistoryFiles(app, normalBase, excludeFolders);
+		existingFile = await findSessionFile(app, allFiles, session.id);
 	}
 
-	// 기존 파일 탐색 (frontmatter id + 텍스트 폴백)
-	const files = getHistoryFiles(app, normalBase);
-	let existingFile = files.find(f => {
-		const cache = app.metadataCache.getFileCache(f);
-		return cache?.frontmatter?.id === session.id;
-	});
-
-	// 캐시 미동기 대비 텍스트 폴백 (frontmatter 블록 내에서만 id 검색)
-	if (!existingFile) {
-		for (const f of files) {
-			try {
-				const text = await app.vault.cachedRead(f);
-				const fm = extractFrontmatter(text);
-				if (fm?.id === session.id) {
-					existingFile = f;
-					break;
-				}
-			} catch { /* ignore */ }
-		}
-	}
-
-	const targetFilePath = await getAvailableHistoryPath(app, normalBase, filename, existingFile ?? null);
+	const targetFilePath = await getAvailableHistoryPath(app, targetFolder, filename, existingFile ?? null);
 
 	if (existingFile) {
 		if (existingFile.path !== targetFilePath) {
@@ -155,16 +224,19 @@ export async function saveSession(app: App, session: ChatSession, basePath: stri
 
 // ─── Load & Delete ─────────────────────────────────────────────────────────────
 
-export async function loadSessionsList(app: App, basePath: string): Promise<ChatSession[]> {
-	const cleanBase = (basePath?.trim() || 'chatHistory').replace(/[/\\]+$/, '');
-	const normalBase = normalizePath(cleanBase);
+export async function loadSessionsList(
+	app: App,
+	basePath: string,
+	options?: Partial<HistoryLocationOptions>,
+): Promise<ChatSession[]> {
+	const normalBase = normalizeBasePath(basePath);
 	const folderExists = await app.vault.adapter.exists(normalBase);
 	if (!folderExists) {
 		debugLogger.logSystem('history', `loadSessionsList: folder does not exist (${normalBase}), returning empty.`);
 		return [];
 	}
 
-	const files = getHistoryFiles(app, normalBase);
+	const files = getHistoryFiles(app, normalBase, options?.excludeFolders ?? []);
 	const sessions: ChatSession[] = [];
 
 	for (const file of files) {
@@ -218,10 +290,14 @@ export async function loadSessionsList(app: App, basePath: string): Promise<Chat
 }
 
 /** 세션 파일에서 숨김 JSON을 파싱해 ChatSession(메시지 포함) 복원 */
-export async function loadSession(app: App, sessionId: string, basePath: string): Promise<ChatSession | null> {
-	const cleanBase = (basePath?.trim() || 'chatHistory').replace(/[/\\]+$/, '');
-	const normalBase = normalizePath(cleanBase);
-	const files = getHistoryFiles(app, normalBase);
+export async function loadSession(
+	app: App,
+	sessionId: string,
+	basePath: string,
+	options?: Partial<HistoryLocationOptions>,
+): Promise<ChatSession | null> {
+	const normalBase = normalizeBasePath(basePath);
+	const files = getHistoryFiles(app, normalBase, options?.excludeFolders ?? []);
 	
 	const file = await findSessionFile(app, files, sessionId);
 	if (!file) {
@@ -264,21 +340,26 @@ export async function renameSession(
 	sessionId: string,
 	newTitle: string,
 	basePath: string,
+	options?: Partial<HistoryLocationOptions>,
 ): Promise<ChatSession | null> {
 	const trimmedTitle = newTitle.replace(/[\r\n\t\p{Cc}]+/gu, ' ').trim() || t('chat.newChat');
-	const session = await loadSession(app, sessionId, basePath);
+	const session = await loadSession(app, sessionId, basePath, options);
 	if (!session) return null;
 	session.title = trimmedTitle;
 	session.updatedAt = Date.now();
-	await saveSession(app, session, basePath);
+	await saveSession(app, session, basePath, options);
 	return session;
 }
 
 /** 세션 파일 삭제 */
-export async function deleteSession(app: App, sessionId: string, basePath: string): Promise<boolean> {
-	const cleanBase = (basePath?.trim() || 'chatHistory').replace(/[/\\]+$/, '');
-	const normalBase = normalizePath(cleanBase);
-	const files = getHistoryFiles(app, normalBase);
+export async function deleteSession(
+	app: App,
+	sessionId: string,
+	basePath: string,
+	options?: Partial<HistoryLocationOptions>,
+): Promise<boolean> {
+	const normalBase = normalizeBasePath(basePath);
+	const files = getHistoryFiles(app, normalBase, options?.excludeFolders ?? []);
 	
 	const file = await findSessionFile(app, files, sessionId);
 	if (file) {

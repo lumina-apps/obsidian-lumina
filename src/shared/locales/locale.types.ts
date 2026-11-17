@@ -287,6 +287,17 @@ export interface TranslationSettingsChatHistory {
   pathPlaceholder: string;
   savePath: string;
   savePathDesc: string;
+  folderFormat: string;
+  folderFormatDesc: string;
+  folderFormatPlaceholder: string;
+  folderFormatPreview: string;
+  folderFormatInvalid: string;
+  folderFormatPresetNone: string;
+  folderFormatPresetYear: string;
+  folderFormatPresetYearMonth: string;
+  folderFormatPresetYearMonthDay: string;
+  folderFormatPresetYearMonthDash: string;
+  folderFormatPresetCustom: string;
   saveFail: string;
   loadFail: string;
   deleteSuccess: string;

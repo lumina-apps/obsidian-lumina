@@ -148,7 +148,54 @@ describe('ChatHistoryController & ChatController History Lifecycle', () => {
 			'active-session-123',
 			'New Lovely Title',
 			'chatHistory',
+			{ folderFormat: '', excludeFolders: [] },
 		);
+	});
+
+	it('should forward historyFolderFormat and other project excludeFolders to history operations', async () => {
+		mockPlugin.settings.chat.historyFolderFormat = '{{YYYY}}/{{MM}}';
+		mockPlugin.settings.projects = {
+			activeProjectId: 'default',
+			list: [
+				{
+					id: 'default',
+					name: 'Default',
+					ragIncludedPaths: [],
+					ragExcludedPaths: [],
+					historySubfolder: '',
+					defaultProviderId: '',
+					defaultModelId: '',
+					systemPromptId: '',
+					createdAt: 0,
+				},
+				{
+					id: 'proj-a',
+					name: 'Project A',
+					ragIncludedPaths: [],
+					ragExcludedPaths: [],
+					historySubfolder: 'ProjectA',
+					defaultProviderId: '',
+					defaultModelId: '',
+					systemPromptId: '',
+					createdAt: 1,
+				},
+			],
+		};
+
+		const historyCtrl = new ChatHistoryController(mockPlugin);
+		const expectedOptions = {
+			folderFormat: '{{YYYY}}/{{MM}}',
+			excludeFolders: ['chatHistory/ProjectA'],
+		};
+
+		await historyCtrl.fetchSessions();
+		expect(historyModule.loadSessionsList).toHaveBeenCalledWith(mockPlugin.app, 'chatHistory', expectedOptions);
+
+		await historyCtrl.restoreSession('s1');
+		expect(historyModule.loadSession).toHaveBeenCalledWith(mockPlugin.app, 's1', 'chatHistory', expectedOptions);
+
+		await historyCtrl.removeSession('s1');
+		expect(historyModule.deleteSession).toHaveBeenCalledWith(mockPlugin.app, 's1', 'chatHistory', expectedOptions);
 	});
 
 	it('should queue concurrent saveHistory requests without dropping the latest state', async () => {

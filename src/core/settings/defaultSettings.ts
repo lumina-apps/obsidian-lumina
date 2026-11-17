@@ -37,6 +37,7 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		],
 		autoSaveHistory: true,
 		historyPath: 'chatHistory',
+		historyFolderFormat: '{{YYYY}}/{{MM}}',
 		sendKey: 'enter',
 		inlineTrigger: '/ai',
 		enableAutocomplete: false,

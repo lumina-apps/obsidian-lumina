@@ -27,6 +27,7 @@ describe('promptBuilder', () => {
 			systemPrompts: [{ id: '1', name: 'Default', content: 'You are a helpful assistant.' }],
 			autoSaveHistory: false,
 			historyPath: '',
+			historyFolderFormat: '',
 			sendKey: 'enter',
 			quickActions: [],
 			inlineTrigger: '/ai',
