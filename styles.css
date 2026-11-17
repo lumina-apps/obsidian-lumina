@@ -2713,7 +2713,8 @@ html body .modal-container.lumina-settings-modal-container {
 	gap: 8px;
 }
 
-.lumina-settings__footer-btn {
+.vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__footer a.lumina-settings__footer-btn,
+.lumina-settings__footer a.lumina-settings__footer-btn {
 	display: inline-flex;
 	align-items: center;
 	gap: 4px;
@@ -2721,46 +2722,59 @@ html body .modal-container.lumina-settings-modal-container {
 	border-radius: 6px;
 	font-size: 0.82em;
 	font-weight: 500;
-	text-decoration: none !important;
+	text-decoration: none;
 	transition: all 0.15s ease;
 	cursor: pointer;
 	line-height: 1.2;
 	white-space: nowrap;
 }
 
-.lumina-settings__footer-btn--primary {
+.vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__footer a.lumina-settings__footer-btn:hover,
+.lumina-settings__footer a.lumina-settings__footer-btn:hover {
+	text-decoration: none;
+}
+
+.vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__footer a.lumina-settings__footer-btn--primary,
+.lumina-settings__footer a.lumina-settings__footer-btn--primary {
 	background-color: var(--interactive-accent);
-	color: var(--text-on-accent) !important;
+	color: var(--text-on-accent);
 	border: 1px solid transparent;
 }
 
-.lumina-settings__footer-btn--primary:hover {
+.vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__footer a.lumina-settings__footer-btn--primary:hover,
+.lumina-settings__footer a.lumina-settings__footer-btn--primary:hover {
 	background-color: var(--interactive-accent-hover);
+	color: var(--text-on-accent);
 	transform: translateY(-1px);
 }
 
-.lumina-settings__footer-btn--secondary {
+.vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__footer a.lumina-settings__footer-btn--secondary,
+.lumina-settings__footer a.lumina-settings__footer-btn--secondary {
 	background-color: var(--background-primary);
-	color: var(--text-normal) !important;
+	color: var(--text-normal);
 	border: 1px solid var(--background-modifier-border);
 }
 
-.lumina-settings__footer-btn--secondary:hover {
+.vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__footer a.lumina-settings__footer-btn--secondary:hover,
+.lumina-settings__footer a.lumina-settings__footer-btn--secondary:hover {
 	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
 	border-color: var(--background-modifier-border-hover);
 	transform: translateY(-1px);
 }
 
-.lumina-settings__footer-btn--ghost {
+.vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__footer a.lumina-settings__footer-btn--ghost,
+.lumina-settings__footer a.lumina-settings__footer-btn--ghost {
 	background-color: transparent;
-	color: var(--text-muted) !important;
+	color: var(--text-muted);
 	border: 1px solid transparent;
 	padding: 6px 10px;
 }
 
-.lumina-settings__footer-btn--ghost:hover {
+.vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__footer a.lumina-settings__footer-btn--ghost:hover,
+.lumina-settings__footer a.lumina-settings__footer-btn--ghost:hover {
 	background-color: var(--background-modifier-hover);
-	color: var(--text-normal) !important;
+	color: var(--text-normal);
 }
 
 

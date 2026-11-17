@@ -120,10 +120,10 @@ export class ProjectSettingsModal extends Modal {
 			previewEl.setText(t('projects.settings.chatHistoryPreview', { path: this.getHistoryDisplayPath() }));
 			if (hasUnsafeHistoryPathInput(this.historySubfolder)) {
 				historyWarningEl.setText(t('settings.chat.history.pathSanitizedWarning'));
-				historyWarningEl.style.display = '';
+				historyWarningEl.setCssStyles({ display: '' });
 			} else {
 				historyWarningEl.setText('');
-				historyWarningEl.style.display = 'none';
+				historyWarningEl.setCssStyles({ display: 'none' });
 			}
 		};
 		updateHistoryPreview();

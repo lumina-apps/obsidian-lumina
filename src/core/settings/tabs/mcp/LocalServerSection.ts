@@ -8,8 +8,6 @@ import {
 } from '../../../../shared/utils/settingHelpers';
 import { ConfirmModal } from '../../../../shared/utils/modal';
 import type { McpSettings } from '../../../../shared/types/settings.types';
-import { debugLogger } from '../../../../shared/debugLogger';
-import { normalizeError } from '../../../../shared/utils/errorUtils';
 
 export function renderLocalServerSection(tab: LuminaSettingTab, el: HTMLElement, s: McpSettings): void {
 	tab.sectionHeading(el, t('settings.mcp.localServer.sectionTitle'));

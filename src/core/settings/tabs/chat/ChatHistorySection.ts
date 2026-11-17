@@ -60,7 +60,7 @@ export function renderChatHistorySection(tab: LuminaSettingTab, el: HTMLElement)
 			});
 
 		const pathWarningEl = savePathSetting.descEl.createDiv({ cls: 'lumina-settings__desc-warning' });
-		pathWarningEl.style.display = 'none';
+		pathWarningEl.setCssStyles({ display: 'none' });
 
 		let dropComp: DropdownComponent | null = null;
 		let textComp: TextComponent | null = null;
@@ -124,10 +124,10 @@ export function renderChatHistorySection(tab: LuminaSettingTab, el: HTMLElement)
 			const rawHistoryPath = s.historyPath ?? '';
 			if (hasUnsafeHistoryPathInput(rawHistoryPath)) {
 				pathWarningEl.setText(t('settings.chat.history.pathSanitizedWarning'));
-				pathWarningEl.style.display = '';
+				pathWarningEl.setCssStyles({ display: '' });
 			} else {
 				pathWarningEl.setText('');
-				pathWarningEl.style.display = 'none';
+				pathWarningEl.setCssStyles({ display: 'none' });
 			}
 
 			const now = new Date();
@@ -136,10 +136,10 @@ export function renderChatHistorySection(tab: LuminaSettingTab, el: HTMLElement)
 
 			if (!globalPreview.isFormatValid) {
 				warningEl.setText(t('settings.chat.history.folderFormatInvalid'));
-				warningEl.style.display = '';
+				warningEl.setCssStyles({ display: '' });
 			} else {
 				warningEl.setText('');
-				warningEl.style.display = 'none';
+				warningEl.setCssStyles({ display: 'none' });
 			}
 			previewEl.setText(t('settings.chat.history.folderFormatPreview', { path: `${globalPreview.resolvedPath}/` }));
 
@@ -156,10 +156,10 @@ export function renderChatHistorySection(tab: LuminaSettingTab, el: HTMLElement)
 						path: `${activePreview.resolvedPath}/`,
 					}),
 				);
-				activeProjectPreviewEl.style.display = '';
+				activeProjectPreviewEl.setCssStyles({ display: '' });
 			} else {
 				activeProjectPreviewEl.setText('');
-				activeProjectPreviewEl.style.display = 'none';
+				activeProjectPreviewEl.setCssStyles({ display: 'none' });
 			}
 		};
 
