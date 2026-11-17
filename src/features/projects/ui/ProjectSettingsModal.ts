@@ -396,38 +396,129 @@ export class ProjectSettingsModal extends Modal {
 		return `${resolvedPath}/`;
 	}
 
-	private async moveHistoryFolder(oldSubfolder: string, newSubfolder: string) {
+	/** 대상 상위 폴더가 하위 폴더로 이어지는 단일 빈 체인인지 확인한다 */
+	private isSingleChainAncestor(ancestor: TFolder, descendant: TFolder): boolean {
+		let current: TFolder = ancestor;
+		while (current.path.toLowerCase() !== descendant.path.toLowerCase()) {
+			if (!Array.isArray(current.children) || current.children.length !== 1) return false;
+			const onlyChild = current.children[0];
+			if (!(onlyChild instanceof TFolder)) return false;
+			current = onlyChild;
+		}
+		return true;
+	}
+
+	/** 폴더 이동 후 historyBasePath 아래에 남은 빈 상위 폴더를 정리한다 */
+	private async cleanupEmptyParentFolders(
+		startFolder: TFolder | null,
+		historyBasePath: string,
+		newPath: string,
+	): Promise<void> {
+		const rootLower = historyBasePath.toLowerCase();
+		const newLower = newPath.toLowerCase();
+		const otherProjectFolders = new Set(
+			this.plugin.settings.projects.list
+				.filter(p => p.id !== this.project?.id)
+				.map(p => sanitizeHistorySubfolder(p.historySubfolder))
+				.filter(Boolean)
+				.map(sub => normalizePath(`${historyBasePath}/${sub}`).toLowerCase()),
+		);
+
+		let current: TFolder | null = startFolder;
+		while (current) {
+			const currentLower = current.path.toLowerCase();
+			if (currentLower === rootLower || !currentLower.startsWith(`${rootLower}/`)) {
+				break;
+			}
+			if (currentLower === newLower || newLower.startsWith(`${currentLower}/`)) {
+				break;
+			}
+			if (otherProjectFolders.has(currentLower) || !Array.isArray(current.children) || current.children.length > 0) {
+				break;
+			}
+
+			const parent: TFolder | null = current.parent ?? null;
+			await this.app.fileManager.trashFile(current);
+			current = parent;
+		}
+	}
+
+	/** 히스토리 폴더를 새 하위 경로로 이동한다. 성공(또는 이동할 폴더 없음) 시 true 반환 */
+	private async moveHistoryFolder(oldSubfolder: string, newSubfolder: string): Promise<boolean> {
 		const historyBasePath = normalizeHistoryRootPath(this.plugin.settings.chat.historyPath);
 		const normalizedOld = sanitizeHistorySubfolder(oldSubfolder);
 		const normalizedNew = sanitizeHistorySubfolder(newSubfolder);
 
-		if (!normalizedOld || !normalizedNew || normalizedOld === normalizedNew) return;
+		if (!normalizedOld || !normalizedNew || normalizedOld === normalizedNew) return true;
 
 		const oldPath = normalizePath(`${historyBasePath}/${normalizedOld}`);
 		const newPath = normalizePath(`${historyBasePath}/${normalizedNew}`);
+		const oldLower = oldPath.toLowerCase();
+		const newLower = newPath.toLowerCase();
 
 		try {
 			const oldFolder = this.app.vault.getAbstractFileByPath(oldPath);
 			if (!(oldFolder instanceof TFolder)) {
 				debugLogger.logSystem('projects', `moveHistoryFolder: Old path "${oldPath}" is not a folder or does not exist. Skipping move.`);
-				return;
+				return true;
 			}
 
+			const oldParent = oldFolder.parent ?? null;
 			const newFolderExists = this.app.vault.getAbstractFileByPath(newPath);
-			if (newFolderExists) {
-				new Notice(t('projects.settings.historyTargetExists', { path: newPath }));
-				return;
+			const isMovingIntoDescendant = newLower.startsWith(`${oldLower}/`);
+			const isHoistingToAncestor = oldLower.startsWith(`${newLower}/`);
+
+			if (isMovingIntoDescendant) {
+				if (newFolderExists) {
+					new Notice(t('projects.settings.historyTargetExists', { path: newPath }));
+					return false;
+				}
+				// 자기 자신의 하위 경로로 직접 rename 시 EINVAL이 발생하므로 형제 임시 폴더를 경유한다
+				const tmpPath = normalizePath(`${historyBasePath}/__lumina_move_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+				await this.app.fileManager.renameFile(oldFolder, tmpPath);
+				const movedTmp = this.app.vault.getAbstractFileByPath(tmpPath) ?? oldFolder;
+				try {
+					await ensureFolderExists(this.app, newPath);
+					await this.app.fileManager.renameFile(movedTmp, newPath);
+				} catch (innerError: unknown) {
+					await this.app.fileManager.renameFile(movedTmp, oldPath).catch(() => {});
+					throw innerError;
+				}
+			} else if (isHoistingToAncestor && newFolderExists instanceof TFolder) {
+				if (!this.isSingleChainAncestor(newFolderExists, oldFolder)) {
+					new Notice(t('projects.settings.historyTargetExists', { path: newPath }));
+					return false;
+				}
+				const tmpPath = normalizePath(`${historyBasePath}/__lumina_move_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+				await this.app.fileManager.renameFile(oldFolder, tmpPath);
+				const movedTmp = this.app.vault.getAbstractFileByPath(tmpPath) ?? oldFolder;
+				try {
+					await this.app.fileManager.trashFile(newFolderExists);
+					await this.app.fileManager.renameFile(movedTmp, newPath);
+				} catch (innerError: unknown) {
+					await ensureFolderExists(this.app, oldPath).catch(() => {});
+					await this.app.fileManager.renameFile(movedTmp, oldPath).catch(() => {});
+					throw innerError;
+				}
+			} else {
+				if (newFolderExists && newFolderExists !== oldFolder) {
+					new Notice(t('projects.settings.historyTargetExists', { path: newPath }));
+					return false;
+				}
+				// 계층 이동(예: Work -> Team/Work) 시 대상 상위 폴더가 없으면 사전 생성
+				await ensureFolderExists(this.app, newPath);
+				await this.app.fileManager.renameFile(oldFolder, newPath);
+				await this.cleanupEmptyParentFolders(oldParent, historyBasePath, newPath);
 			}
 
-			// 계층 이동(예: Work -> Team/Work) 시 대상 상위 폴더가 없으면 사전 생성
-			await ensureFolderExists(this.app, newPath);
-			await this.app.fileManager.renameFile(oldFolder, newPath);
 			new Notice(t('projects.settings.historyMoved', { path: newPath }));
 			debugLogger.logSystem('projects', `Successfully moved chat history from "${oldPath}" to "${newPath}"`);
+			return true;
 		} catch (error: unknown) {
 			const msg = error instanceof Error ? error.message : String(error);
 			new Notice(t('projects.settings.historyMoveError', { error: msg }));
 			debugLogger.logError('projects', error instanceof Error ? error : new Error(msg));
+			return false;
 		}
 	}
 
@@ -465,6 +556,14 @@ export class ProjectSettingsModal extends Modal {
 			this.plugin.settings.projects.list.push(newProject);
 		} else if (this.project) {
 			const oldHistorySubfolder = this.project.historySubfolder;
+			let nextHistorySubfolder = historySubfolder;
+
+			if (oldHistorySubfolder && oldHistorySubfolder !== historySubfolder) {
+				const moved = await this.moveHistoryFolder(oldHistorySubfolder, historySubfolder);
+				if (!moved) {
+					nextHistorySubfolder = oldHistorySubfolder;
+				}
+			}
 
 			this.project.name = finalName;
 			this.project.ragIncludedPaths = ragIncludedPaths;
@@ -472,11 +571,7 @@ export class ProjectSettingsModal extends Modal {
 			this.project.defaultProviderId = this.defaultProviderId;
 			this.project.defaultModelId = this.defaultModelId;
 			this.project.systemPromptId = this.systemPromptId;
-			this.project.historySubfolder = historySubfolder;
-
-			if (oldHistorySubfolder && oldHistorySubfolder !== historySubfolder) {
-				await this.moveHistoryFolder(oldHistorySubfolder, historySubfolder);
-			}
+			this.project.historySubfolder = nextHistorySubfolder;
 		}
 
 		await this.plugin.saveSettings();

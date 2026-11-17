@@ -77,7 +77,7 @@ export function injectToolPrompts(
 		}
 	} else {
 		const cloudToolPrompt =
-			`\n\n[Tool Use Instruction]\nYou have access to tools. If the user asks you to do something that can be done with a tool (e.g., modifying, writing, appending to, or reading Obsidian notes/files, or running a search), you MUST call the appropriate tool to execute the action. Do not just describe what you would do or output the raw text in the chat; always execute it via tool calling.`;
+			`\n\n[Tool Use Instruction]\nYou have access to Obsidian vault tools. If the user asks you to do something that involves notes or files (e.g., summarizing, explaining, analyzing, reading, modifying, writing, appending, or searching), you MUST call the appropriate tool first (such as \`read_active_note\`, \`read_note\`, or search tools to retrieve content before summarizing or answering, and write tools to apply changes). Do not claim a task is unsupported just because there is no single-step tool for it (e.g., summarize by calling \`read_active_note\` or \`read_note\` first, then summarizing the retrieved text).`;
 		if (systemContent !== null) {
 			llmMessages[0].content = systemContent + cloudToolPrompt;
 		} else {
