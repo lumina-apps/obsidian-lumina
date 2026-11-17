@@ -2636,4 +2636,112 @@ html body .modal-container.lumina-settings-modal-container {
 	font-size: 12px;
 }
 
+/* ─── Settings Donation Footer Card ────────────────────────────────────────── */
+
+.lumina-settings__footer {
+	margin-top: 40px;
+	padding: 16px 20px;
+	border-radius: 10px;
+	background: linear-gradient(135deg, var(--background-secondary-alt) 0%, var(--background-secondary) 100%);
+	border: 1px solid var(--background-modifier-border);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 14px 20px;
+	box-sizing: border-box;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.lumina-settings__footer:hover {
+	border-color: var(--background-modifier-border-hover);
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.lumina-settings__footer-info {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 220px;
+	flex: 1 1 auto;
+}
+
+.lumina-settings__footer-title {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 0.92em;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+.lumina-settings__footer-icon {
+	font-size: 1em;
+	line-height: 1;
+}
+
+.lumina-settings__footer-desc {
+	font-size: 0.82em;
+	color: var(--text-muted);
+	line-height: 1.4;
+}
+
+.lumina-settings__footer-actions {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.lumina-settings__footer-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 6px 12px;
+	border-radius: 6px;
+	font-size: 0.82em;
+	font-weight: 500;
+	text-decoration: none !important;
+	transition: all 0.15s ease;
+	cursor: pointer;
+	line-height: 1.2;
+	white-space: nowrap;
+}
+
+.lumina-settings__footer-btn--primary {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent) !important;
+	border: 1px solid transparent;
+}
+
+.lumina-settings__footer-btn--primary:hover {
+	background-color: var(--interactive-accent-hover);
+	transform: translateY(-1px);
+}
+
+.lumina-settings__footer-btn--secondary {
+	background-color: var(--background-primary);
+	color: var(--text-normal) !important;
+	border: 1px solid var(--background-modifier-border);
+}
+
+.lumina-settings__footer-btn--secondary:hover {
+	background-color: var(--background-modifier-hover);
+	border-color: var(--background-modifier-border-hover);
+	transform: translateY(-1px);
+}
+
+.lumina-settings__footer-btn--ghost {
+	background-color: transparent;
+	color: var(--text-muted) !important;
+	border: 1px solid transparent;
+	padding: 6px 10px;
+}
+
+.lumina-settings__footer-btn--ghost:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal) !important;
+}
+
+
 

@@ -6,6 +6,13 @@
   <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/README.md">English</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_KO.md">한국어</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_JA.md">日本語</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ZH.md">简体中文</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ZH_TW.md">繁體中文</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ES.md">Español</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_DE.md">Deutsch</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_FR.md">Français</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_PT.md">Português</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_RU.md">Русский</a> | <b>Italiano</b>
 </p>
 
+<p align="center">
+  <a href="https://github.com/sponsors/lumina-apps"><img src="https://img.shields.io/badge/GitHub%20Sponsors-Sponsor-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors" /></a>
+  <a href="https://ko-fi.com/luminaapps"><img src="https://img.shields.io/badge/Ko--fi-Support%20Lumina-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Ko-fi" /></a>
+  <a href="https://ctee.kr/place/luminaapps"><img src="https://img.shields.io/badge/Ctee-Sponsor%20(KR)-FF6B00?style=for-the-badge&logo=buymeacoffee&logoColor=white" alt="Ctee" /></a>
+  <a href="https://github.com/lumina-apps/obsidian-lumina"><img src="https://img.shields.io/github/stars/lumina-apps/obsidian-lumina?style=for-the-badge&logo=github&color=yellow" alt="GitHub Stars" /></a>
+</p>
+
 ![alt text](readme.gif)
 
 ---
@@ -144,7 +151,10 @@ Puoi visualizzare tutti i dati interni elaborati dal plugin abilitando le Impost
 
 ## Supporto e Sponsorizzazione
 
-Questo plugin è distribuito al 100% gratuitamente e sarà costantemente aggiornato.
+Lumina è un progetto open-source distribuito **100% gratuitamente** e costantemente aggiornato. Se Lumina ti ha fatto risparmiare tempo o ha migliorato il tuo flusso di lavoro, considera di offrire un caffè per supportare lo sviluppo e la manutenzione continua!
 
-**[Ko-fi](https://ko-fi.com/luminaapps)**  
-**[Ctee](https://ctee.kr/place/luminaapps)**
+<p align="left">
+  <a href="https://github.com/sponsors/lumina-apps"><img src="https://img.shields.io/badge/GitHub%20Sponsors-Sponsor-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors" /></a>
+  <a href="https://ko-fi.com/luminaapps"><img src="https://img.shields.io/badge/Ko--fi-Buy%20Me%20a%20Coffee-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Ko-fi" /></a>
+  <a href="https://ctee.kr/place/luminaapps"><img src="https://img.shields.io/badge/Ctee-Sponsor%20(KR)-FF6B00?style=for-the-badge&logo=buymeacoffee&logoColor=white" alt="Ctee" /></a>
+</p>

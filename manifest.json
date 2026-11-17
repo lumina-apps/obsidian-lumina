@@ -6,6 +6,7 @@
 	"description": "Multilingual AI Assistant & Copilot: Chat with Notes using Any Local LLMs or Cloud APIs. Features RAG, Smart Semantic Vector Search, Auto Embeddings & Autonomous MCP Agent.",
 	"author": "Lumina",
 	"fundingUrl": {
+		"GitHub Sponsors": "https://github.com/sponsors/lumina-apps",
 		"Ko-fi": "https://ko-fi.com/luminaapps",
 		"ctee": "https://ctee.kr/place/luminaapps"
 	},

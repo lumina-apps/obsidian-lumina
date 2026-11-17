@@ -1,0 +1,12 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 💖 Sponsor Lumina on GitHub Sponsors
+    url: https://github.com/sponsors/lumina-apps
+    about: Support Lumina's open-source development directly via GitHub Sponsors!
+  - name: ☕ Support Lumina on Ko-fi (Global)
+    url: https://ko-fi.com/luminaapps
+    about: Enjoying Lumina? Support its ongoing open-source development with a coffee!
+  - name: ☕ Ctee로 Lumina 후원하기 (한국어 간편결제)
+    url: https://ctee.kr/place/luminaapps
+    about: Lumina가 유용하셨다면 커피 한 잔으로 개발을 응원해 주세요!
+

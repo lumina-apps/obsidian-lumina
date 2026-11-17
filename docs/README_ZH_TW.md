@@ -6,6 +6,13 @@
   <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/README.md">English</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_KO.md">한국어</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_JA.md">日本語</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ZH.md">简体中文</a> | <b>繁體中文</b> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_ES.md">Español</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_DE.md">Deutsch</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_FR.md">Français</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_PT.md">Português</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_RU.md">Русский</a> | <a href="https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_IT.md">Italiano</a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/sponsors/lumina-apps"><img src="https://img.shields.io/badge/GitHub%20Sponsors-Sponsor-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors" /></a>
+  <a href="https://ko-fi.com/luminaapps"><img src="https://img.shields.io/badge/Ko--fi-Support%20Lumina-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Ko-fi" /></a>
+  <a href="https://ctee.kr/place/luminaapps"><img src="https://img.shields.io/badge/Ctee-Sponsor%20(KR)-FF6B00?style=for-the-badge&logo=buymeacoffee&logoColor=white" alt="Ctee" /></a>
+  <a href="https://github.com/lumina-apps/obsidian-lumina"><img src="https://img.shields.io/github/stars/lumina-apps/obsidian-lumina?style=for-the-badge&logo=github&color=yellow" alt="GitHub Stars" /></a>
+</p>
+
 ![alt text](readme.gif)
 
 ---
@@ -144,7 +151,10 @@ Lumina 根據您的熟練程度提供兩種模式。選擇適合您的方式！
 
 ## 支援與贊助
 
-此外掛 100% 免費分發，並將持續更新。
+Lumina 是一個**100% 免費開源**的專案，並將持續更新維護。如果 Lumina 幫您節省了時間或改善了工作流程，歡迎請開發者喝杯咖啡，支持專案的持續開發與維護！
 
-**[Ko-fi](https://ko-fi.com/luminaapps)**  
-**[Ctee](https://ctee.kr/place/luminaapps)**
+<p align="left">
+  <a href="https://github.com/sponsors/lumina-apps"><img src="https://img.shields.io/badge/GitHub%20Sponsors-Sponsor-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors" /></a>
+  <a href="https://ko-fi.com/luminaapps"><img src="https://img.shields.io/badge/Ko--fi-Buy%20Me%20a%20Coffee-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Ko-fi" /></a>
+  <a href="https://ctee.kr/place/luminaapps"><img src="https://img.shields.io/badge/Ctee-Sponsor%20(KR)-FF6B00?style=for-the-badge&logo=buymeacoffee&logoColor=white" alt="Ctee" /></a>
+</p>

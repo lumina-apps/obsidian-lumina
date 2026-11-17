@@ -1,48 +1,48 @@
+import { t } from '../../../shared/locales/helpers';
+
 /** 설정 창 하단의 후원/링크 푸터 렌더링 */
 
 export function renderDonationFooter(el: HTMLElement, langSuffix: string): void {
 	const footer = el.createDiv({ cls: 'lumina-settings__footer' });
-	footer.setCssStyles({
-		marginTop: '40px',
-		paddingTop: '15px',
-		paddingBottom: '15px',
-		borderTop: '1px solid var(--background-modifier-border)',
-		textAlign: 'center',
-		fontSize: '0.85em',
-		display: 'flex',
-		justifyContent: 'center',
-		alignItems: 'center',
-		flexWrap: 'wrap',
-		gap: '20px',
+
+	// 좌측: 후원 타이틀 및 설명 문구 영역
+	const info = footer.createDiv({ cls: 'lumina-settings__footer-info' });
+	const titleRow = info.createDiv({ cls: 'lumina-settings__footer-title' });
+	titleRow.createSpan({ text: '💖', cls: 'lumina-settings__footer-icon' });
+	titleRow.createSpan({ text: t('settings.misc.donate.name') });
+
+	info.createDiv({
+		cls: 'lumina-settings__footer-desc',
+		text: t('settings.misc.donate.desc'),
 	});
 
-	const label = footer.createSpan({ text: 'Support Lumina:' });
-	label.setCssStyles({ color: 'var(--text-muted)', fontWeight: '500', opacity: '0.9' });
+	// 우측: 후원 및 GitHub 링크 버튼 영역
+	const actions = footer.createDiv({ cls: 'lumina-settings__footer-actions' });
 
-	const createLink = (text: string, url: string, isAccent = false) => {
-		const a = footer.createEl('a', { text });
+	const createActionBtn = (text: string, url: string, variant: 'primary' | 'secondary' | 'ghost' = 'secondary') => {
+		const a = actions.createEl('a', {
+			text,
+			cls: `lumina-settings__footer-btn lumina-settings__footer-btn--${variant}`,
+		});
 		a.href = url;
 		a.target = '_blank';
-		a.setCssStyles({
-			color: isAccent ? 'var(--text-accent)' : 'var(--text-muted)',
-			textDecoration: 'none',
-			opacity: isAccent ? '0.9' : '0.75',
-			fontWeight: isAccent ? '400' : 'normal',
-			transition: 'opacity 0.2s',
-		});
-		a.addEventListener('mouseenter', () => a.setCssStyles({ opacity: '1' }));
-		a.addEventListener('mouseleave', () => a.setCssStyles({ opacity: isAccent ? '0.9' : '0.75' }));
+		a.rel = 'noopener noreferrer';
 	};
 
-	createLink('☕ Ko-fi', 'https://ko-fi.com/luminaapps');
-	createLink('☕ Ctee', 'https://ctee.kr/place/luminaapps');
-
-	const separator = footer.createSpan({ text: '|' });
-	separator.setCssStyles({ color: 'var(--background-modifier-border)', fontWeight: '500' });
+	const isKorean = langSuffix === 'KO';
+	if (isKorean) {
+		createActionBtn(t('settings.misc.donate.ctee'), 'https://ctee.kr/place/luminaapps', 'primary');
+		createActionBtn(t('settings.misc.donate.kofi'), 'https://ko-fi.com/luminaapps', 'secondary');
+		createActionBtn(t('settings.misc.donate.githubSponsors'), 'https://github.com/sponsors/lumina-apps', 'secondary');
+	} else {
+		createActionBtn(t('settings.misc.donate.kofi'), 'https://ko-fi.com/luminaapps', 'primary');
+		createActionBtn(t('settings.misc.donate.githubSponsors'), 'https://github.com/sponsors/lumina-apps', 'secondary');
+		createActionBtn(t('settings.misc.donate.ctee'), 'https://ctee.kr/place/luminaapps', 'secondary');
+	}
 
 	const readmeUrl = langSuffix === 'EN'
 		? 'https://github.com/lumina-apps/obsidian-lumina'
 		: `https://github.com/lumina-apps/obsidian-lumina/blob/main/docs/README_${langSuffix}.md`;
 
-	createLink('📖 GitHub README', readmeUrl, true);
+	createActionBtn('⭐ GitHub', readmeUrl, 'ghost');
 }
