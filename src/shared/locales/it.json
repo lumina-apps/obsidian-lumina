@@ -397,7 +397,11 @@
         "interTokenLabel": "Tempo di attesa tra i frammenti (ms)",
         "interTokenDesc": "Tempo massimo di attesa per ricevere la frase successiva durante lo streaming. Imposta a 0 per illimitato.. (Predefinito: 0)"
       },
-      "emptyResponseFallback": "⚠️ Il modello ha restituito una risposta vuota. (Ciò potrebbe essere dovuto a una lingua/formato non supportati, al filtraggio dei prompt o al superamento del limite di contesto.)"
+      "emptyResponseFallback": "⚠️ Il modello ha restituito una risposta vuota. (Ciò potrebbe essere dovuto a una lingua/formato non supportati, al filtraggio dei prompt o al superamento del limite di contesto.)",
+      "enableSelectionMiniIcon": {
+        "name": "Mostra mini icona IA alla selezione",
+        "desc": "Mostra un pulsante IA compatto vicino al testo selezionato nell'editor per aprire rapidamente la barra prompt."
+      }
     },
     "rag": {
       "toggleTooltip": "Quando abilitato, l'IA leggerà e farà riferimento alle note del vault per rispondere.",
@@ -933,6 +937,25 @@
       "searching": "🔍 Ricerca in corso...",
       "reranking": "⚖️ Riordinamento...",
       "generating": "💡 Generazione risposta..."
+    },
+    "promptBar": {
+      "commandTitle": "Apri barra prompt inline",
+      "menuTitle": "✍️ Istruzione IA inline",
+      "inlineSuggestName": "Istruzione diretta...",
+      "inlineSuggestCustom": "Prompt: \"{{query}}\"",
+      "placeholder": "Descrivi come modificare o espandere (Invio esegui, Shift+Invio nuova riga)",
+      "modeReplace": "Sostituisci",
+      "modeAppend": "Aggiungi",
+      "run": "Esegui",
+      "cancel": "Annulla",
+      "generating": "Generazione risposta...",
+      "reviewHint": "Rivedi diff — Invio per accettare, Esc per modificare",
+      "noModel": "Modello Azione Rapida non impostato",
+      "openSettings": "Impostazioni",
+      "pendingDiffExists": "Risolvi prima il diff in sospeso su questa nota.",
+      "targetModified": "Il testo di destinazione è stato modificato durante l'attesa.",
+      "noChanges": "Nessuna modifica da applicare.",
+      "thinking": "Elaborazione..."
     }
   },
   "mcpServerTools": {

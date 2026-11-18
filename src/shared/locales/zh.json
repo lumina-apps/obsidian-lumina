@@ -397,7 +397,11 @@
         "interTokenLabel": "区块间超时时间 (ms)",
         "interTokenDesc": "流式传输期间等待下一句话接收的最大时间。设置为0表示无限制。. (默认值: 0)"
       },
-      "emptyResponseFallback": "⚠️ 模型返回了空响应。（这可能是因为不支持的语言/格式、提示词过滤或超过了上下文限制。）"
+      "emptyResponseFallback": "⚠️ 模型返回了空响应。（这可能是因为不支持的语言/格式、提示词过滤或超过了上下文限制。）",
+      "enableSelectionMiniIcon": {
+        "name": "显示选中文本迷你 AI 图标",
+        "desc": "在编辑器中选中文本时，在选区附近显示一个迷你浮动 AI 按钮以快速打开内联提示栏。"
+      }
     },
     "rag": {
       "toggleTooltip": "开启后，AI 将读取并参考您库中的笔记来回答。",
@@ -933,6 +937,25 @@
       "searching": "🔍 扩展搜索中...",
       "reranking": "⚖️ 重排计算中...",
       "generating": "💡 生成回答中..."
+    },
+    "promptBar": {
+      "commandTitle": "打开内联提示栏",
+      "menuTitle": "✍️ 内联 AI 指令",
+      "inlineSuggestName": "直接输入指令...",
+      "inlineSuggestCustom": "指令: \"{{query}}\"",
+      "placeholder": "输入编辑或扩展指令 (Enter 运行，Shift+Enter 换行)",
+      "modeReplace": "替换",
+      "modeAppend": "追加",
+      "run": "运行",
+      "cancel": "取消",
+      "generating": "正在生成响应...",
+      "reviewHint": "审阅 Diff — Enter 接受，Esc 修改指令",
+      "noModel": "未设置快捷操作模型",
+      "openSettings": "设置",
+      "pendingDiffExists": "此笔记有待处理的 Diff，请先接受或拒绝。",
+      "targetModified": "等待确认期间目标文本已被修改，已取消应用。",
+      "noChanges": "没有需要应用的更改。",
+      "thinking": "正在思考..."
     }
   },
   "mcpServerTools": {

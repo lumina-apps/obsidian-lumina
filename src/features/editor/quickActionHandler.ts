@@ -7,18 +7,153 @@ import type LuminaPlugin from '../../main';
 import { createProvider } from '../../core/llm-providers';
 import { formatLlmError } from '../../shared/utils/llmErrorFormatter';
 import { ChatController } from '../chat/chatController';
-import type { QuickAction } from '../../shared/types/settings.types';
+import type { QuickAction, QuickActionType } from '../../shared/types/settings.types';
 import { t } from '../../shared/locales/helpers';
 import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
 import { estimateTokens } from '../../shared/utils/tokenEstimator';
 import { getVaultBasePath } from '../../shared/utils/fileUtils';
+import { sanitizeDisplayContent } from '../../shared/utils/llmTextSanitizer';
 import type { ChatMessage, TokenUsage } from '../../shared/types/llm.types';
 import { activateView } from '../../core/views/viewHelper';
 import { CHAT_VIEW_TYPE } from '../../shared/constants/viewTypes';
 
 /** 인라인 Diff 승인 대기 최대 시간 (5분) */
 const QA_APPROVAL_TIMEOUT_MS = 5 * 60 * 1000;
+
+export interface QuickActionStreamProgress {
+	/** 현재 <think> 등 사고 블록 내부를 생성 중인지 여부 */
+	isThinking: boolean;
+	/** 사고 블록을 제외한 현재까지의 본문 누적 텍스트 */
+	previewText: string;
+}
+
+/**
+ * 퀵 액션 및 즉석 프롬프트 실행 시 호출자가 제어·구독할 수 있는 선택 옵션.
+ */
+export interface QuickActionExecuteOptions {
+	/** LLM 생성 및 승인 대기 중단용 AbortSignal */
+	signal?: AbortSignal;
+	/** 호출자가 명시적으로 지정한 프로바이더 ID (프롬프트 바 모델 선택기 등) */
+	providerId?: string;
+	/** 호출자가 명시적으로 지정한 모델 ID */
+	modelId?: string;
+	/** 명시적 대상 범위 (프롬프트 바 등에서 선택 해제 시에도 대상 텍스트·오프셋 유지용) */
+	targetRange?: {
+		from: number;
+		to: number;
+		text: string;
+	};
+	/** 스트리밍 중 진행 상태(사고 여부 및 누적 본문) 전달 콜백 */
+	onStreamProgress?: (progress: QuickActionStreamProgress) => void;
+	/** 승인 큐에 요청이 등록될 때 요청 ID를 전달받는 콜백 */
+	onApprovalQueued?: (requestId: string) => void;
+	/** Diff 승인 완료 시 커스텀 적용 콜백 (적용 성공 시 true 반환) */
+	applyApprovedContent?: (
+		approvalContent: string,
+		context: {
+			baseDoc: string;
+			startOffset: number;
+			endOffset: number;
+			targetText: string;
+		},
+	) => boolean;
+	/** 승인 대기 종료 시 결과(승인 적용 여부) 알림 콜백 */
+	onApprovalResult?: (approved: boolean) => void;
+	/** LLM 생성 단계 종료 콜백 */
+	onGenerationFinished?: () => void;
+	/** 오류 발생 시 커스텀 핸들러 (미지정 시 Notice 표시) */
+	onError?: (message: string) => void;
+	/** 진행·완료 Notice 표시 억제 여부 */
+	suppressNotices?: boolean;
+}
+
+function isAbortError(err: unknown, signal?: AbortSignal): boolean {
+	if (signal?.aborted) return true;
+	return err instanceof Error && err.name === 'AbortError';
+}
+
+const REASONING_TAGS = ['think', 'thinking', 'thought', 'reasoning'] as const;
+
+/**
+ * LLM 응답에서 <think>/<thinking>/<thought>/<reasoning> 등 사고 과정 블록과
+ * 특수 토큰을 제거하고 실제 본문 텍스트만 반환한다.
+ */
+export function cleanQuickActionOutput(raw: string): string {
+	if (!raw) return '';
+	let text = raw
+		.replace(/&lt;think&gt;/gi, '<think>')
+		.replace(/&lt;\/think&gt;/gi, '</think>');
+	const thinkEndIdx = text.toLowerCase().lastIndexOf('</think>');
+	if (thinkEndIdx !== -1) {
+		text = text.slice(thinkEndIdx + '</think>'.length);
+	}
+	return sanitizeDisplayContent(text);
+}
+
+/**
+ * 스트리밍 중인 누적 응답에서 현재 사고 블록 내부 여부와 본문 프리뷰 텍스트를 추출한다.
+ */
+export function extractStreamingProgress(raw: string): QuickActionStreamProgress {
+	if (!raw) {
+		return { isThinking: false, previewText: '' };
+	}
+
+	const normalized = raw
+		.replace(/&lt;think&gt;/gi, '<think>')
+		.replace(/&lt;\/think&gt;/gi, '</think>');
+	const lower = normalized.toLowerCase();
+
+	// 스트리밍 극초반에 "<thi..." 형태로 여는 태그가 아직 완성되지 않은 경우 깜빡임 방지
+	const trimmedStart = lower.trimStart();
+	if (trimmedStart.startsWith('<') && !trimmedStart.includes('>') && trimmedStart.length < 16) {
+		const couldBeReasoningTag = REASONING_TAGS.some((tag) => `<${tag}>`.startsWith(trimmedStart));
+		if (couldBeReasoningTag) {
+			return { isThinking: true, previewText: '' };
+		}
+	}
+
+	let isThinking = false;
+	for (const tag of REASONING_TAGS) {
+		const lastOpen = lower.lastIndexOf(`<${tag}>`);
+		const lastClose = lower.lastIndexOf(`</${tag}>`);
+		if (lastOpen !== -1 && lastOpen > lastClose) {
+			isThinking = true;
+			break;
+		}
+	}
+
+	return {
+		isThinking,
+		previewText: cleanQuickActionOutput(normalized),
+	};
+}
+
+/**
+ * append 액션 시 선택 범위 끝(개행·줄 중간 포함)을 대상 마지막 줄 끝으로 정렬하고
+ * 불필요한 중복 빈 줄 없이 단일 줄바꿈으로 결과를 삽입한 문서를 생성한다.
+ */
+export function buildAppendProposedDoc(
+	baseDoc: string,
+	startOffset: number,
+	endOffset: number,
+	resultText: string,
+): string {
+	const cleanResult = resultText.replace(/^(?:\r?\n)+/, '').replace(/(?:\r?\n)+$/, '');
+	let effectiveEnd = Math.max(startOffset, Math.min(endOffset, baseDoc.length));
+	while (
+		effectiveEnd > startOffset &&
+		(baseDoc[effectiveEnd - 1] === '\n' || baseDoc[effectiveEnd - 1] === '\r')
+	) {
+		effectiveEnd--;
+	}
+	const nextNl = baseDoc.indexOf('\n', effectiveEnd);
+	let appendOffset = nextNl === -1 ? baseDoc.length : nextNl;
+	if (appendOffset > 0 && baseDoc[appendOffset - 1] === '\r') {
+		appendOffset--;
+	}
+	return baseDoc.slice(0, appendOffset) + `\n${cleanResult}` + baseDoc.slice(appendOffset);
+}
 
 export class QuickActionHandler {
 	private plugin: LuminaPlugin;
@@ -27,16 +162,55 @@ export class QuickActionHandler {
 		this.plugin = plugin;
 	}
 
-	async executeAction(action: QuickAction, editor: Editor, view: MarkdownView | MarkdownFileInfo) {
-		const selection = editor.getSelection();
+	/**
+	 * 일회성 즉석 프롬프트를 임시 QuickAction으로 감싸 기존 실행 파이프라인을 통해 실행한다.
+	 */
+	async executeCustomPrompt(
+		prompt: string,
+		actionType: QuickActionType,
+		editor: Editor,
+		view: MarkdownView | MarkdownFileInfo,
+		options?: QuickActionExecuteOptions,
+	): Promise<void> {
+		const trimmed = prompt.trim();
+		if (!trimmed && actionType !== 'chat') {
+			return;
+		}
+		const adhocAction: QuickAction = {
+			id: '__adhoc__',
+			name: trimmed.length > 30 ? `${trimmed.slice(0, 30)}…` : (trimmed || 'Prompt'),
+			prompt: trimmed,
+			actionType,
+		};
+		await this.executeAction(adhocAction, editor, view, options);
+	}
+
+	async executeAction(
+		action: QuickAction,
+		editor: Editor,
+		view: MarkdownView | MarkdownFileInfo,
+		options?: QuickActionExecuteOptions,
+	) {
+		if (options?.signal?.aborted) {
+			return;
+		}
+
+		const explicitTarget = options?.targetRange;
+		const selection = explicitTarget ? explicitTarget.text : editor.getSelection();
 		if (!selection) {
-			new Notice(t('uiMessages.qaEmptySel'));
+			if (!options?.suppressNotices) {
+				new Notice(t('uiMessages.qaEmptySel'));
+			}
 			return;
 		}
 
 		// 비동기 작업 전 초기 커서 및 선택 영역 위치 캡처 (레이스 컨디션 방지)
-		const initialFrom = editor.getCursor('from');
-		const initialTo = editor.getCursor('to');
+		const initialFrom = explicitTarget && typeof editor.offsetToPos === 'function'
+			? editor.offsetToPos(explicitTarget.from)
+			: editor.getCursor('from');
+		const initialTo = explicitTarget && typeof editor.offsetToPos === 'function'
+			? editor.offsetToPos(explicitTarget.to)
+			: editor.getCursor('to');
 
 		const { connections, chat } = this.plugin.settings;
 		
@@ -49,7 +223,19 @@ export class QuickActionHandler {
 			return Boolean(p && p.isVerified);
 		};
 
-		if (action.actionType === 'chat') {
+		if (options?.providerId && options?.modelId) {
+			if (!isValidVerifiedPair(options.providerId, options.modelId)) {
+				const invalidMsg = t('uiMessages.qaInvalidProvider');
+				if (options.onError) {
+					options.onError(invalidMsg);
+				} else {
+					new Notice(invalidMsg);
+				}
+				return;
+			}
+			providerId = options.providerId;
+			modelId = options.modelId;
+		} else if (action.actionType === 'chat') {
 			// chat 액션은 채팅창으로 전송되므로 활성 프로젝트 기본 모델 → 검증된 첫 모델 순으로 폴백 허용
 			const activeProject = getActiveProject();
 			if (isValidVerifiedPair(activeProject.defaultProviderId, activeProject.defaultModelId)) {
@@ -77,6 +263,10 @@ export class QuickActionHandler {
 		}
 
 		if (!providerId || !modelId) {
+			if (options?.onError) {
+				options.onError(action.actionType === 'chat' ? t('settings.translation.noValidModel') : t('uiMessages.qaNotConfigured'));
+				return;
+			}
 			new Notice(action.actionType === 'chat' ? t('settings.translation.noValidModel') : t('uiMessages.qaNotConfigured'));
 			const appWithSetting = this.plugin.app as unknown as {
 				setting?: {
@@ -91,7 +281,12 @@ export class QuickActionHandler {
 
 		const providerConfig = connections.providers.find(p => p.id === providerId);
 		if (!providerConfig || !providerConfig.isVerified) {
-			new Notice(action.actionType === 'chat' ? t('settings.translation.noValidModel') : t('uiMessages.qaInvalidProvider'));
+			const invalidMsg = action.actionType === 'chat' ? t('settings.translation.noValidModel') : t('uiMessages.qaInvalidProvider');
+			if (options?.onError) {
+				options.onError(invalidMsg);
+				return;
+			}
+			new Notice(invalidMsg);
 			return;
 		}
 
@@ -122,10 +317,16 @@ export class QuickActionHandler {
 			typeof editor.posToOffset === 'function'
 		);
 		const baseDoc = canUseDiff ? editor.getValue() : '';
-		const startOffset = canUseDiff ? editor.posToOffset(initialFrom) : 0;
-		const endOffset = canUseDiff ? editor.posToOffset(initialTo) : 0;
+		const startOffset = explicitTarget
+			? explicitTarget.from
+			: (canUseDiff ? editor.posToOffset(initialFrom) : 0);
+		const endOffset = explicitTarget
+			? explicitTarget.to
+			: (canUseDiff ? editor.posToOffset(initialTo) : 0);
 
-		new Notice(t('uiMessages.qaExecuting', { name: action.name }));
+		if (!options?.suppressNotices) {
+			new Notice(t('uiMessages.qaExecuting', { name: action.name }));
+		}
 
 		let llmStart = Date.now();
 		let requestId = '';
@@ -173,6 +374,7 @@ export class QuickActionHandler {
 				temperature: chat.temperature,
 				maxOutputTokens: chat.maxOutputTokens || undefined,
 				...(vaultCwd ? { cwd: vaultCwd } : {}),
+				...(options?.signal ? { signal: options.signal } : {}),
 			};
 
 			if (chat.streaming) {
@@ -181,12 +383,16 @@ export class QuickActionHandler {
 					llmMessages,
 					qaChatOptions,
 					(chunk) => {
+						if (options?.signal?.aborted) {
+							const abortErr = new Error('Aborted');
+							abortErr.name = 'AbortError';
+							throw abortErr;
+						}
 						if (!chunk) return;
 						fullResponse += chunk;
 
-						// <think> 태그 감지 시 중단 (추론형 모델)
-						if (fullResponse.includes('<think>') || fullResponse.includes('&lt;think&gt;')) {
-							throw new Error('REASONING_DETECTED');
+						if (options?.onStreamProgress) {
+							options.onStreamProgress(extractStreamingProgress(fullResponse));
 						}
 
 						if (chunk.replace(/\r/g, '')) {
@@ -198,25 +404,29 @@ export class QuickActionHandler {
 				finishReason = streamRes?.finishReason;
 
 				// 스트리밍 청크가 없으면 일반 chat 요청으로 폴백
-				if (chunkCount === 0) {
+				if (chunkCount === 0 && !options?.signal?.aborted) {
 					const response = await provider.chat(llmMessages, qaChatOptions);
 					fullResponse = response.content;
 					tokenUsage = response?.usage;
 					finishReason = response?.finishReason;
-
-					if (fullResponse.includes('<think>') || fullResponse.includes('&lt;think&gt;')) {
-						throw new Error('REASONING_DETECTED');
-					}
 				}
 			} else {
 				const response = await provider.chat(llmMessages, qaChatOptions);
 				fullResponse = response.content;
 				tokenUsage = response?.usage;
 				finishReason = response?.finishReason;
+			}
 
-				if (fullResponse.includes('<think>') || fullResponse.includes('&lt;think&gt;')) {
-					throw new Error('REASONING_DETECTED');
-				}
+			if (options?.signal?.aborted) {
+				debugLogger.logResponse(requestId, {
+					model: modelId,
+					content: fullResponse,
+					durationMs: Date.now() - llmStart,
+					usage: tokenUsage,
+					stopReason: 'aborted',
+				});
+				options?.onGenerationFinished?.();
+				return;
 			}
 
 			debugLogger.logResponse(requestId, {
@@ -227,25 +437,54 @@ export class QuickActionHandler {
 				...(finishReason ? { stopReason: finishReason } : {}),
 			});
 
-			const resultText = fullResponse;
+			options?.onGenerationFinished?.();
+
+			const resultText = cleanQuickActionOutput(fullResponse);
 			if (!resultText || resultText.trim() === '') {
-				new Notice(t('uiMessages.qaEmptyResponse'));
+				const isLengthStop = finishReason === 'length' || finishReason === 'max_tokens';
+				const emptyMsg = isLengthStop
+					? t('uiMessages.emptyResponseTokenLimit')
+					: t('uiMessages.qaEmptyResponse');
+				if (options?.onError) {
+					options.onError(emptyMsg);
+				} else if (!options?.suppressNotices) {
+					new Notice(emptyMsg);
+				}
 				return;
 			}
 
 			if (canUseDiff && activeFile) {
 				const proposedDoc = action.actionType === 'replace'
 					? baseDoc.slice(0, startOffset) + resultText + baseDoc.slice(endOffset)
-					: baseDoc.slice(0, endOffset) + `\n\n${resultText}` + baseDoc.slice(endOffset);
+					: buildAppendProposedDoc(baseDoc, startOffset, endOffset, resultText);
 
 				const approval = await approvalManager.requestApproval(
 					activeFile.path,
 					baseDoc,
 					proposedDoc,
-					{ timeoutMs: QA_APPROVAL_TIMEOUT_MS },
+					{
+						timeoutMs: QA_APPROVAL_TIMEOUT_MS,
+						...(options?.signal ? { signal: options.signal } : {}),
+						...(options?.onApprovalQueued ? { onQueued: options.onApprovalQueued } : {}),
+					},
 				);
 
 				if (!approval.approved) {
+					options?.onApprovalResult?.(false);
+					return;
+				}
+
+				if (options?.applyApprovedContent) {
+					const applied = options.applyApprovedContent(approval.content, {
+						baseDoc,
+						startOffset,
+						endOffset,
+						targetText: selection,
+					});
+					options?.onApprovalResult?.(applied);
+					if (applied && !options.suppressNotices) {
+						new Notice(t('uiMessages.qaCompleted', { name: action.name }));
+					}
 					return;
 				}
 
@@ -256,7 +495,9 @@ export class QuickActionHandler {
 				}
 
 				editor.setValue(approval.content);
-				new Notice(t('uiMessages.qaCompleted', { name: action.name }));
+				if (!options?.suppressNotices) {
+					new Notice(t('uiMessages.qaCompleted', { name: action.name }));
+				}
 				return;
 			}
 
@@ -264,11 +505,33 @@ export class QuickActionHandler {
 			if (action.actionType === 'replace') {
 				editor.replaceRange(resultText, initialFrom, initialTo);
 			} else if (action.actionType === 'append') {
-				editor.replaceRange(`\n\n${resultText}`, initialTo);
+				const cleanResult = resultText.replace(/^(?:\r?\n)+/, '').replace(/(?:\r?\n)+$/, '');
+				const hasGetLine = typeof editor.getLine === 'function';
+				const lineText = hasGetLine ? editor.getLine(initialTo.line) : '';
+				const lineEndPos = hasGetLine ? { line: initialTo.line, ch: lineText.length } : initialTo;
+				editor.replaceRange(`\n${cleanResult}`, lineEndPos);
 			}
 
-			new Notice(t('uiMessages.qaCompleted', { name: action.name }));
+			options?.onApprovalResult?.(true);
+			if (!options?.suppressNotices) {
+				new Notice(t('uiMessages.qaCompleted', { name: action.name }));
+			}
 		} catch (err: unknown) {
+			options?.onGenerationFinished?.();
+
+			if (isAbortError(err, options?.signal)) {
+				if (requestId) {
+					debugLogger.logResponse(requestId, {
+						model: modelId,
+						content: fullResponse || '⏹ [Aborted]',
+						durationMs: Date.now() - llmStart,
+						usage: tokenUsage,
+						stopReason: 'aborted',
+					});
+				}
+				return;
+			}
+
 			const msg = err instanceof Error ? err.message : t('uiMessages.qaUnknownError');
 			if (requestId) {
 				debugLogger.logResponse(requestId, {
@@ -276,16 +539,17 @@ export class QuickActionHandler {
 					content: fullResponse || `❌ [Error] ${msg}`,
 					durationMs: Date.now() - llmStart,
 					usage: tokenUsage,
-					stopReason: msg === 'REASONING_DETECTED' ? 'reasoning_detected' : 'error',
+					stopReason: 'error',
 				});
-			}
-			if (msg === 'REASONING_DETECTED') {
-				new Notice(t('uiMessages.qaReasoningDetected'), 10000);
-				return;
 			}
 
 			debugLogger.logError('llm', normalizeError(err));
-			new Notice(t('uiMessages.qaError', { msg: formatLlmError(err) }));
+			const errorNotice = t('uiMessages.qaError', { msg: formatLlmError(err) });
+			if (options?.onError) {
+				options.onError(errorNotice);
+			} else {
+				new Notice(errorNotice);
+			}
 		}
 	}
 }

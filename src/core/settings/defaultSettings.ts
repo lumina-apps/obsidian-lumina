@@ -2,7 +2,7 @@ import type { LuminaSettings } from './settings.types';
 import { createDefaultProject } from '../../shared/types/project.types';
 
 export const DEFAULT_AUTOCOMPLETE_PROMPT =
-	'You are an inline autocomplete AI for a markdown editor. Based on the following text, provide only the exact continuation that should logically follow the cursor. Do not output any explanation, markdown blocks, or surrounding quotes. Only output the raw text to be appended. If the context ends mid-sentence, finish the sentence. If it ends at a sentence, provide the next logical sentence.';
+	'You are an inline autocomplete AI for a markdown editor. Continue directly from the cursor with only a single short sentence or phrase. Do not repeat existing lines, and do not output explanations, markdown blocks, or surrounding quotes.';
 export const DEFAULT_AUTOCOMPLETE_CONTEXT_LENGTH = 1000;
 export const DEFAULT_AUTOCOMPLETE_WAIT_TIME_MS = 700;
 
@@ -40,6 +40,7 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		historyFolderFormat: '{{YYYY}}/{{MM}}',
 		sendKey: 'enter',
 		inlineTrigger: '/ai',
+		enableSelectionMiniIcon: true,
 		enableAutocomplete: false,
 		autocompletePrompt: DEFAULT_AUTOCOMPLETE_PROMPT,
 		autocompleteContextLength: DEFAULT_AUTOCOMPLETE_CONTEXT_LENGTH,

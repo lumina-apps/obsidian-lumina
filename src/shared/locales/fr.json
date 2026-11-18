@@ -397,7 +397,11 @@
         "interTokenLabel": "Délai d'attente entre les fragments (ms)",
         "interTokenDesc": "Temps d'attente maximum pour recevoir la phrase suivante pendant la diffusion en continu. Réglez sur 0 pour illimité.. (Défaut: 0)"
       },
-      "emptyResponseFallback": "⚠️ Le modèle a renvoyé une réponse vide. (Cela peut être dû à une langue/un format non pris en charge, au filtrage des prompts ou au dépassement de la limite de contexte.)"
+      "emptyResponseFallback": "⚠️ Le modèle a renvoyé une réponse vide. (Cela peut être dû à une langue/un format non pris en charge, au filtrage des prompts ou au dépassement de la limite de contexte.)",
+      "enableSelectionMiniIcon": {
+        "name": "Afficher la mini-icône IA lors de la sélection",
+        "desc": "Affiche un bouton IA flottant discret près du texte sélectionné dans l'éditeur pour ouvrir la barre de prompt."
+      }
     },
     "rag": {
       "toggleTooltip": "Lorsqu'activé, l'IA lira et consultera les notes de votre coffre pour répondre.",
@@ -933,6 +937,25 @@
       "searching": "🔍 Recherche en cours...",
       "reranking": "⚖️ Reranking en cours...",
       "generating": "💡 Génération de la réponse..."
+    },
+    "promptBar": {
+      "commandTitle": "Ouvrir la barre de prompt intégrée",
+      "menuTitle": "✍️ Instruction IA en ligne",
+      "inlineSuggestName": "Instruction directe...",
+      "inlineSuggestCustom": "Prompt : \"{{query}}\"",
+      "placeholder": "Décrivez la modification (Entrée pour exécuter, Maj+Entrée nouvelle ligne)",
+      "modeReplace": "Remplacer",
+      "modeAppend": "Ajouter",
+      "run": "Exécuter",
+      "cancel": "Annuler",
+      "generating": "Génération de la réponse...",
+      "reviewHint": "Vérifier le diff — Entrée pour accepter, Échap pour modifier",
+      "noModel": "Modèle d'action rapide non configuré",
+      "openSettings": "Paramètres",
+      "pendingDiffExists": "Veuillez d'abord traiter le diff en attente sur cette note.",
+      "targetModified": "Le texte cible a été modifié pendant l'attente.",
+      "noChanges": "Aucune modification à appliquer.",
+      "thinking": "Réflexion..."
     }
   },
   "mcpServerTools": {

@@ -378,6 +378,11 @@ export interface TranslationSettingsChatInlineTrigger {
   desc: string;
 }
 
+export interface TranslationSettingsChatEnableSelectionMiniIcon {
+  name: string;
+  desc: string;
+}
+
 export interface TranslationSettingsChatEnableAutocomplete {
   name: string;
   desc: string;
@@ -429,6 +434,7 @@ export interface TranslationSettingsChat {
   sendMode: TranslationSettingsChatSendMode;
   quickActions: TranslationSettingsChatQuickActions;
   inlineTrigger: TranslationSettingsChatInlineTrigger;
+  enableSelectionMiniIcon: TranslationSettingsChatEnableSelectionMiniIcon;
   enableAutocomplete: TranslationSettingsChatEnableAutocomplete;
   memoryLimit: TranslationSettingsChatMemoryLimit;
   modelParams: TranslationSettingsChatModelParams;
@@ -896,6 +902,25 @@ export interface TranslationUiMessages {
   qaEmptyResponse: string;
   qaUnknownError: string;
   qaReasoningDetected: string;
+  promptBar: {
+    commandTitle: string;
+    menuTitle: string;
+    inlineSuggestName: string;
+    inlineSuggestCustom: string;
+    placeholder: string;
+    modeReplace: string;
+    modeAppend: string;
+    run: string;
+    cancel: string;
+    thinking: string;
+    generating: string;
+    reviewHint: string;
+    noModel: string;
+    openSettings: string;
+    pendingDiffExists: string;
+    targetModified: string;
+    noChanges: string;
+  };
   modalCancel: string;
   modalProceed: string;
   modelPlaceholder: string;

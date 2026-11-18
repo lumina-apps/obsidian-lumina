@@ -171,6 +171,17 @@ export class CommandManager {
 			},
 		});
 
+		this.plugin.addCommand({
+			id: 'open-inline-prompt-bar',
+			name: t('uiMessages.promptBar.commandTitle'),
+			editorCallback: (editor: Editor, view: MarkdownView | MarkdownFileInfo) => {
+				debugLogger.logSystem('commands', 'Command executed: open-inline-prompt-bar');
+				void import('../../features/editor/promptBarExtension').then(({ openPromptBar }) => {
+					openPromptBar(this.plugin, editor, view);
+				});
+			},
+		});
+
 		this.registerQuickActions();
 	}
 

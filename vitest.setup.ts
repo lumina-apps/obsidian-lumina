@@ -172,6 +172,13 @@ vi.mock('obsidian', () => {
 			render: vi.fn(),
 		},
 		MarkdownView: vi.fn(),
+		editorInfoField: undefined,
+		Scope: class {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			constructor(_parent?: any) {}
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			register(_modifiers: any[], _key: string, _func: any) {}
+		},
 		TFile: class TFile {
 			path = '';
 			name = '';

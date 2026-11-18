@@ -82,4 +82,24 @@ describe('approvalManager', () => {
 		approvalManager.rejectAll(queuedRequest.id);
 		unsubscribe();
 	});
+
+	it('onQueued 옵션이 주어지면 큐 등록 시 요청 ID를 전달하고 diff가 없으면 호출하지 않는다', async () => {
+		const onQueuedCalls: string[] = [];
+
+		// Diff 없는 요청: onQueued 미호출
+		const noDiffRes = await approvalManager.requestApproval('same.md', 'abc', 'abc', {
+			onQueued: (id) => onQueuedCalls.push(id),
+		});
+		expect(noDiffRes.approved).toBe(true);
+		expect(onQueuedCalls).toHaveLength(0);
+
+		// Diff 있는 요청: onQueued 호출
+		const promise = approvalManager.requestApproval('changed.md', 'abc', 'def', {
+			onQueued: (id) => onQueuedCalls.push(id),
+		});
+		expect(onQueuedCalls).toHaveLength(1);
+		approvalManager.rejectAll(onQueuedCalls[0]);
+		const res = await promise;
+		expect(res.approved).toBe(false);
+	});
 });

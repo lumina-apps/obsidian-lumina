@@ -51,6 +51,17 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 				});
 		});
 
+	new Setting(el)
+		.setName(t('settings.chat.enableSelectionMiniIcon.name'))
+		.setDesc(t('settings.chat.enableSelectionMiniIcon.desc'))
+		.addToggle(toggle => {
+			toggle.setValue(s.enableSelectionMiniIcon ?? true)
+				.onChange(async (val) => {
+					s.enableSelectionMiniIcon = val;
+					await tab.saveAndSync();
+				});
+		});
+
 	const hasTaskModel = !!tab.plugin.settings.connections.taskModelId;
 	if (!hasTaskModel && s.enableAutocomplete) {
 		s.enableAutocomplete = false;

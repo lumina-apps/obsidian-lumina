@@ -31,6 +31,7 @@ describe('promptBuilder', () => {
 			sendKey: 'enter',
 			quickActions: [],
 			inlineTrigger: '/ai',
+			enableSelectionMiniIcon: true,
 			enableAutocomplete: false,
 			autocompletePrompt: '',
 			autocompleteContextLength: 1000,

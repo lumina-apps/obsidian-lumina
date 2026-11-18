@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { QuickActionHandler } from './quickActionHandler';
+import { diffLines } from 'diff';
+import { QuickActionHandler, buildAppendProposedDoc } from './quickActionHandler';
 import { DEFAULT_SETTINGS } from '../../core/settings/defaultSettings';
 import { initProjectStore } from '../../core/store/projectStore';
 import { createProvider } from '../../core/llm-providers';
@@ -232,5 +233,183 @@ describe('QuickActionHandler', () => {
 		);
 
 		expect(docEditor.setValue).not.toHaveBeenCalled();
+	});
+
+	it('executeCustomPrompt는 일회성 지시를 실행하고 applyApprovedContent/onApprovalQueued 콜백을 호출한다', async () => {
+		mockPlugin.settings.chat.streaming = false;
+		const docEditor = {
+			...mockEditor,
+			getValue: vi.fn(() => 'Hello world'),
+			setValue: vi.fn(),
+		} as unknown as Editor;
+
+		(createProvider as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+			chat: vi.fn().mockResolvedValue({ content: 'Hi' }),
+		} as unknown as ILLMProvider);
+
+		vi.mocked(approvalManager.requestApproval).mockImplementation(async (_path, _base, proposed, opts) => {
+			opts?.onQueued?.('req-123');
+			return { approved: true, content: proposed };
+		});
+
+		const queuedIds: string[] = [];
+		const applied: string[] = [];
+		const results: boolean[] = [];
+
+		await handler.executeCustomPrompt(
+			'Make it shorter',
+			'replace',
+			docEditor,
+			{ file: { path: 'Note.md' } as TFile } as MarkdownView,
+			{
+				suppressNotices: true,
+				targetRange: { from: 0, to: 5, text: 'Hello' },
+				onApprovalQueued: (id) => queuedIds.push(id),
+				applyApprovedContent: (content) => {
+					applied.push(content);
+					return true;
+				},
+				onApprovalResult: (ok) => results.push(ok),
+			},
+		);
+
+		expect(queuedIds).toEqual(['req-123']);
+		expect(applied).toEqual(['Hi world']);
+		expect(results).toEqual([true]);
+		expect(docEditor.setValue).not.toHaveBeenCalled();
+	});
+
+	it('AbortSignal로 중단되면 onError를 호출하지 않고 조용히 종료한다', async () => {
+		mockPlugin.settings.chat.streaming = false;
+		const abortCtrl = new AbortController();
+		const abortErr = new Error('Aborted');
+		abortErr.name = 'AbortError';
+
+		(createProvider as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+			chat: vi.fn().mockImplementation(async () => {
+				abortCtrl.abort();
+				throw abortErr;
+			}),
+		} as unknown as ILLMProvider);
+
+		const onError = vi.fn();
+		const onGenFinished = vi.fn();
+
+		await handler.executeCustomPrompt(
+			'Rewrite',
+			'replace',
+			mockEditor,
+			{ file: { path: 'Note.md' } as TFile } as MarkdownView,
+			{
+				signal: abortCtrl.signal,
+				suppressNotices: true,
+				targetRange: { from: 0, to: 5, text: 'Hello' },
+				onError,
+				onGenerationFinished: onGenFinished,
+			},
+		);
+
+		expect(onGenFinished).toHaveBeenCalled();
+		expect(onError).not.toHaveBeenCalled();
+	});
+
+	it('응답에 <think> 사고 블록이 포함되어도 에러로 중단하지 않고 태그를 제거한 본문만 적용한다', async () => {
+		mockPlugin.settings.chat.streaming = true;
+		const docEditor = {
+			...mockEditor,
+			getValue: vi.fn(() => 'Hello world'),
+			setValue: vi.fn(),
+		} as unknown as Editor;
+
+		const mockStream = vi.fn().mockImplementation(async (_msgs, _opts, onChunk: (c: string) => void) => {
+			onChunk('<think>\n짧게 생각 중...\n</think>\n');
+			onChunk('번역된 문장');
+			return { finishReason: 'stop' };
+		});
+
+		(createProvider as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+			stream: mockStream,
+		} as unknown as ILLMProvider);
+
+		vi.mocked(approvalManager.requestApproval).mockImplementation(async (_path, _base, proposed) => ({
+			approved: true,
+			content: proposed,
+		}));
+
+		await handler.executeAction(
+			{ id: 'test-qa', name: 'Translate', prompt: 'translate', actionType: 'replace' },
+			docEditor,
+			{ file: { path: 'Note.md' } as TFile } as MarkdownView,
+		);
+
+		expect(approvalManager.requestApproval).toHaveBeenCalledWith(
+			'Note.md',
+			'Hello world',
+			'번역된 문장 world',
+			expect.any(Object),
+		);
+		expect(docEditor.setValue).toHaveBeenCalledWith('번역된 문장 world');
+	});
+
+	it('스트리밍 중 onStreamProgress 콜백으로 사고 중 여부와 정제된 프리뷰 텍스트를 전달한다', async () => {
+		mockPlugin.settings.chat.streaming = true;
+		const progressEvents: Array<{ isThinking: boolean; previewText: string }> = [];
+
+		const mockStream = vi.fn().mockImplementation(async (_msgs, _opts, onChunk: (c: string) => void) => {
+			onChunk('<think>\n고민 중');
+			onChunk('</think>\n안녕');
+			onChunk('하세요');
+			return { finishReason: 'stop' };
+		});
+
+		(createProvider as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+			stream: mockStream,
+		} as unknown as ILLMProvider);
+
+		vi.mocked(approvalManager.requestApproval).mockResolvedValue({
+			approved: false,
+			content: '',
+		});
+
+		await handler.executeCustomPrompt(
+			'인사해줘',
+			'replace',
+			mockEditor,
+			{ file: { path: 'Note.md' } as TFile } as MarkdownView,
+			{
+				suppressNotices: true,
+				targetRange: { from: 0, to: 5, text: 'Hello' },
+				onStreamProgress: (p) => progressEvents.push(p),
+			},
+		);
+
+		expect(progressEvents).toEqual([
+			{ isThinking: true, previewText: '' },
+			{ isThinking: false, previewText: '안녕' },
+			{ isThinking: false, previewText: '안녕하세요' },
+		]);
+	});
+
+	it('buildAppendProposedDoc는 선택 끝 개행·줄 중간·빈 줄 인접 상황에서도 추가 빈 줄 없이 단일 Diff 청크로 삽입한다', () => {
+		// 1. 일반 줄 뒤 (trailing newline 포함 선택)
+		const doc1 = 'Line 1\nLine 2\nLine 3';
+		const prop1 = buildAppendProposedDoc(doc1, 0, 7, 'Added\n');
+		expect(prop1).toBe('Line 1\nAdded\nLine 2\nLine 3');
+		const changes1 = diffLines(doc1, prop1).filter((c) => c.added || c.removed);
+		expect(changes1).toEqual([{ count: 1, added: true, removed: false, value: 'Added\n' }]);
+
+		// 2. 빈 줄 바로 앞 줄 뒤
+		const doc2 = 'Line 1\n\nLine 3';
+		const prop2 = buildAppendProposedDoc(doc2, 0, 6, 'Added');
+		expect(prop2).toBe('Line 1\nAdded\n\nLine 3');
+		const changes2 = diffLines(doc2, prop2).filter((c) => c.added || c.removed);
+		expect(changes2).toEqual([{ count: 1, added: true, removed: false, value: 'Added\n' }]);
+
+		// 3. 줄 중간까지만 선택한 경우에도 해당 줄 끝으로 정렬 후 다음 줄에 삽입
+		const doc3 = 'Line 1 tail\nLine 2';
+		const prop3 = buildAppendProposedDoc(doc3, 0, 6, 'Added');
+		expect(prop3).toBe('Line 1 tail\nAdded\nLine 2');
+		const changes3 = diffLines(doc3, prop3).filter((c) => c.added || c.removed);
+		expect(changes3).toEqual([{ count: 1, added: true, removed: false, value: 'Added\n' }]);
 	});
 });

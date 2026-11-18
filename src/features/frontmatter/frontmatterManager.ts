@@ -4,9 +4,13 @@ import { App, TFile, type EventRef } from 'obsidian';
 import { isMarkdownFile } from '../../shared/utils/fileUtils';
 import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
+import { stripThinkTags } from '../../shared/utils/llmTextSanitizer';
 import { createProvider } from '../../core/llm-providers';
 import { StripFrontmatterModal } from './stripFrontmatterModal';
 import type LuminaPlugin from '../../main';
+
+/** 사고/추론 토큰을 사용하는 모델에서도 JSON 응답이 잘리지 않도록 여유 출력 한도 부여 */
+const FRONTMATTER_MAX_OUTPUT_TOKENS = 1000;
 
 /** processFrontMatter용 프론트매터 구조 */
 interface LuminaFrontmatter {
@@ -307,7 +311,7 @@ ${contentWithoutFm.substring(0, 3000)}`;
 				provider: providerConfig.type,
 				model: taskModelId,
 				temperature: 0.1,
-				maxTokens: 250,
+				maxTokens: FRONTMATTER_MAX_OUTPUT_TOKENS,
 				stream: false,
 				systemPrompt: `[Auto Frontmatter — ${file.path}]`,
 				messages: [{ role: 'user', content: prompt }],
@@ -319,7 +323,7 @@ ${contentWithoutFm.substring(0, 3000)}`;
 				response = await provider.chat([{ role: 'user', content: prompt }], {
 					model: taskModelId,
 					temperature: 0.1,
-					maxOutputTokens: 250,
+					maxOutputTokens: FRONTMATTER_MAX_OUTPUT_TOKENS,
 					ttftTimeoutMs: 15000,
 					interTokenTimeoutMs: 10000,
 				});
@@ -340,7 +344,12 @@ ${contentWithoutFm.substring(0, 3000)}`;
 				throw chatErr;
 			}
 
-			const match = response.content.match(/\{[\s\S]*\}/);
+			const cleanedContent = stripThinkTags(
+				response.content
+					.replace(/&lt;think&gt;/gi, '<think>')
+					.replace(/&lt;\/think&gt;/gi, '</think>'),
+			);
+			const match = cleanedContent.match(/\{[\s\S]*\}/);
 			if (match) {
 				const data: unknown = JSON.parse(match[0]);
 				const sanitized = sanitizeGeneratedFrontmatterData(data);

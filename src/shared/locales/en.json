@@ -397,7 +397,11 @@
         "interTokenLabel": "Inter-Token Timeout (ms)",
         "interTokenDesc": "Wait time between subsequent streaming chunks. Set to 0 to disable. (Default: 0)"
       },
-      "emptyResponseFallback": "⚠️ The model returned an empty response. (This may be due to an unsupported language/format, prompt filtering, or exceeding the context limit.)"
+      "emptyResponseFallback": "⚠️ The model returned an empty response. (This may be due to an unsupported language/format, prompt filtering, or exceeding the context limit.)",
+      "enableSelectionMiniIcon": {
+        "name": "Show Selection Mini AI Button",
+        "desc": "Display a compact floating AI button near selected text in the editor to quickly open the inline prompt bar."
+      }
     },
     "rag": {
       "toggleTooltip": "When enabled, the AI will read and reference notes in your vault to answer.",
@@ -933,6 +937,25 @@
       "searching": "🔍 Searching...",
       "reranking": "⚖️ Reranking...",
       "generating": "💡 Generating response..."
+    },
+    "promptBar": {
+      "commandTitle": "Open Inline Prompt Bar",
+      "menuTitle": "✍️ Inline AI Prompt",
+      "inlineSuggestName": "Direct prompt...",
+      "inlineSuggestCustom": "Prompt: \"{{query}}\"",
+      "placeholder": "Describe how to edit or expand (Enter to run, Shift+Enter for newline)",
+      "modeReplace": "Replace",
+      "modeAppend": "Append",
+      "run": "Run",
+      "cancel": "Cancel",
+      "generating": "Generating response...",
+      "reviewHint": "Review diff — Enter to accept, Esc to edit prompt",
+      "noModel": "Quick Action model not set",
+      "openSettings": "Settings",
+      "pendingDiffExists": "Please resolve the pending diff on this note first.",
+      "targetModified": "Target text was modified while waiting for approval.",
+      "noChanges": "No changes to apply.",
+      "thinking": "Thinking..."
     }
   },
   "mcpServerTools": {

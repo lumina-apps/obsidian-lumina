@@ -397,7 +397,11 @@
         "interTokenLabel": "チャンク間の制限時間 (ms)",
         "interTokenDesc": "ストリーミング中、次の文章を受信するまでの最大待機時間です。0に設定すると無制限になります。. (デフォルト: 0)"
       },
-      "emptyResponseFallback": "⚠️ モデルが空の応答を返しました。（サポートされていない言語/フォーマット、プロンプトのフィルタリング、またはコンテキスト制限の超過が原因である可能性があります。）"
+      "emptyResponseFallback": "⚠️ モデルが空の応答を返しました。（サポートされていない言語/フォーマット、プロンプトのフィルタリング、またはコンテキスト制限の超過が原因である可能性があります。）",
+      "enableSelectionMiniIcon": {
+        "name": "選択範囲ミニAIアイコンを表示",
+        "desc": "エディタでテキストを選択すると、インラインプロンプトバーを素早く開く小さなAIボタンを表示します。"
+      }
     },
     "rag": {
       "toggleTooltip": "オンにすると、AIがVault内のノートを読み取り、参照して回答します。",
@@ -933,6 +937,25 @@
       "searching": "🔍 拡張検索中...",
       "reranking": "⚖️ リランク演算中...",
       "generating": "💡 回答生成中..."
+    },
+    "promptBar": {
+      "commandTitle": "インラインプロンプトバーを開く",
+      "menuTitle": "✍️ インラインAI指示",
+      "inlineSuggestName": "直接指示を入力...",
+      "inlineSuggestCustom": "プロンプト: \"{{query}}\"",
+      "placeholder": "編集や追記の指示を入力 (Enterで実行、Shift+Enterで改行)",
+      "modeReplace": "置換",
+      "modeAppend": "末尾に追記",
+      "run": "実行",
+      "cancel": "キャンセル",
+      "generating": "応答を生成中...",
+      "reviewHint": "Diffを確認 — Enterで適用、Escで再編集",
+      "noModel": "クイックアクションモデル未設定",
+      "openSettings": "設定",
+      "pendingDiffExists": "このノートに保留中のDiffがあります。先に承認または拒否してください。",
+      "targetModified": "承認待ちの間に対象テキストが変更されたため中止しました。",
+      "noChanges": "適用する変更はありません。",
+      "thinking": "思考中..."
     }
   },
   "mcpServerTools": {

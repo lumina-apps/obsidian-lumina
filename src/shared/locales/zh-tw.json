@@ -397,7 +397,11 @@
         "interTokenLabel": "區塊間超時時間 (ms)",
         "interTokenDesc": "流式傳輸期間等待下一句話接收的最大時間。設置為0表示無限制。. (預設值: 0)"
       },
-      "emptyResponseFallback": "⚠️ 模組傳回了空回應。（這可能是因為不支援的語言/格式、提示詞過濾或超過了上下文限制。）"
+      "emptyResponseFallback": "⚠️ 模組傳回了空回應。（這可能是因為不支援的語言/格式、提示詞過濾或超過了上下文限制。）",
+      "enableSelectionMiniIcon": {
+        "name": "顯示選取文字迷你 AI 圖示",
+        "desc": "在編輯器中選取文字時，於選取範圍旁顯示迷你浮動 AI 按鈕以快速開啟內嵌提示列。"
+      }
     },
     "rag": {
       "toggleTooltip": "開啟後，AI 將讀取並參考您庫中的筆記來回答。",
@@ -933,6 +937,25 @@
       "searching": "🔍 擴展搜尋中...",
       "reranking": "⚖️ 重排計算中...",
       "generating": "💡 生成回答中..."
+    },
+    "promptBar": {
+      "commandTitle": "開啟內嵌提示列",
+      "menuTitle": "✍️ 內嵌 AI 指令",
+      "inlineSuggestName": "直接輸入指令...",
+      "inlineSuggestCustom": "指令: \"{{query}}\"",
+      "placeholder": "輸入編輯或擴充指令 (Enter 執行，Shift+Enter 換行)",
+      "modeReplace": "取代",
+      "modeAppend": "附加",
+      "run": "執行",
+      "cancel": "取消",
+      "generating": "正在產生回應...",
+      "reviewHint": "檢視 Diff — Enter 套用，Esc 修改指令",
+      "noModel": "未設定快速動作模型",
+      "openSettings": "設定",
+      "pendingDiffExists": "此筆記尚有待處理的 Diff，請先接受或拒絕。",
+      "targetModified": "等待確認期間目標文字已被修改，已取消套用。",
+      "noChanges": "沒有可套用的變更。",
+      "thinking": "思考中..."
     }
   },
   "mcpServerTools": {

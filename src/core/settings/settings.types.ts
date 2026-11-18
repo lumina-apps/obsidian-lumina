@@ -55,6 +55,8 @@ export interface ChatSettings {
 	/** 커스텀 퀵 액션 프롬프트 목록 */
 	quickActions: QuickAction[];
 	inlineTrigger: string;
+	/** 에디터 텍스트 선택 시 플로팅 즉석 프롬프트 미니 아이콘 표시 여부 */
+	enableSelectionMiniIcon: boolean;
 	/** 인라인 고스트 텍스트 자동완성 사용 여부 */
 	enableAutocomplete: boolean;
 	/** 인라인 자동완성 프롬프트 지시문 */

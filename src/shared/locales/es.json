@@ -397,7 +397,11 @@
         "interTokenLabel": "Tiempo de espera entre fragmentos (ms)",
         "interTokenDesc": "Tiempo máximo de espera hasta recibir la siguiente oración durante la transmisión. Establezca en 0 para ilimitado.. (Predeterminado: 0)"
       },
-      "emptyResponseFallback": "⚠️ El modelo devolvió una respuesta vacía. (Esto puede deberse a un formato/idioma no admitido, filtrado de prompts o haber excedido el límite de contexto)."
+      "emptyResponseFallback": "⚠️ El modelo devolvió una respuesta vacía. (Esto puede deberse a un formato/idioma no admitido, filtrado de prompts o haber excedido el límite de contexto).",
+      "enableSelectionMiniIcon": {
+        "name": "Mostrar icono mini de IA al seleccionar texto",
+        "desc": "Muestra un botón flotante compacto junto al texto seleccionado en el editor para abrir rápidamente la barra de prompt."
+      }
     },
     "rag": {
       "toggleTooltip": "Cuando está activado, la IA leerá y consultará las notas de tu bóveda para responder.",
@@ -933,6 +937,25 @@
       "searching": "🔍 Buscando...",
       "reranking": "⚖️ Reordenando...",
       "generating": "💡 Generando respuesta..."
+    },
+    "promptBar": {
+      "commandTitle": "Abrir barra de prompt en línea",
+      "menuTitle": "✍️ Instrucción IA en línea",
+      "inlineSuggestName": "Instrucción directa...",
+      "inlineSuggestCustom": "Prompt: \"{{query}}\"",
+      "placeholder": "Describe cómo editar o ampliar (Enter para ejecutar, Shift+Enter salto de línea)",
+      "modeReplace": "Reemplazar",
+      "modeAppend": "Añadir",
+      "run": "Ejecutar",
+      "cancel": "Cancelar",
+      "generating": "Generando respuesta...",
+      "reviewHint": "Revisar diff — Enter para aceptar, Esc para editar",
+      "noModel": "Modelo de Acción Rápida no configurado",
+      "openSettings": "Ajustes",
+      "pendingDiffExists": "Resuelve primero el diff pendiente en esta nota.",
+      "targetModified": "El texto objetivo se modificó durante la espera.",
+      "noChanges": "No hay cambios para aplicar.",
+      "thinking": "Pensando..."
     }
   },
   "mcpServerTools": {

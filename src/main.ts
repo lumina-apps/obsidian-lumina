@@ -177,7 +177,8 @@ export default class LuminaPlugin extends Plugin {
 					{ inlineDiffExtension },
 					{ FrontmatterManager },
 					{ AutocompleteHandler },
-					{ buildInlineAutocompleteExtension }
+					{ buildInlineAutocompleteExtension },
+					{ buildPromptBarExtension }
 				]
 			] = await Promise.all([
 				initLocale(),
@@ -189,7 +190,8 @@ export default class LuminaPlugin extends Plugin {
 					import('./features/editor/diffExtension'),
 					import('./features/frontmatter/frontmatterManager'),
 					import('./features/editor/autocompleteHandler'),
-					import('./features/editor/autocompleteExtension')
+					import('./features/editor/autocompleteExtension'),
+					import('./features/editor/promptBarExtension')
 				])
 			]);
 
@@ -224,9 +226,10 @@ export default class LuminaPlugin extends Plugin {
 			this.registerEditorSuggest(new InlineAISuggest(this));
 			this.registerEditorExtension(inlineDiffExtension);
 			
-			// ── 인라인 고스트 텍스트 자동완성 초기화
+			// ── 인라인 고스트 텍스트 자동완성 및 플로팅 즉석 프롬프트 바 초기화
 			const autocompleteHandler = new AutocompleteHandler(this);
 			this.registerEditorExtension(buildInlineAutocompleteExtension(autocompleteHandler));
+			this.registerEditorExtension(buildPromptBarExtension(this));
 
 			// ── 프론트매터 매니저 초기화
 			this.frontmatterManager = new FrontmatterManager(this);

@@ -13,6 +13,9 @@ import type {
 import type LuminaPlugin from '../../main';
 import type { QuickAction } from '../../shared/types/settings.types';
 import { t } from '../../shared/locales/helpers';
+import { openPromptBar } from './promptBarExtension';
+
+const PROMPT_BAR_ACTION_ID = '__prompt_bar__';
 
 export class InlineAISuggest extends EditorSuggest<QuickAction> {
 	private plugin: LuminaPlugin;
@@ -66,14 +69,32 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 		}
 
 		const actions = this.plugin.settings.chat.quickActions || [];
-		const lowerQuery = context.query.trim().toLowerCase();
+		const trimmedQuery = context.query.trim();
+		const lowerQuery = trimmedQuery.toLowerCase();
+		const promptBarAction: QuickAction = {
+			id: PROMPT_BAR_ACTION_ID,
+			name: t('uiMessages.promptBar.inlineSuggestName'),
+			prompt: trimmedQuery,
+			actionType: 'replace',
+		};
+
 		if (!lowerQuery) {
-			return actions;
+			return [promptBarAction, ...actions];
 		}
-		return actions.filter((a) => a.name.toLowerCase().includes(lowerQuery));
+
+		const filtered = actions.filter((a) => a.name.toLowerCase().includes(lowerQuery));
+		return [...filtered, promptBarAction];
 	}
 
 	renderSuggestion(action: QuickAction, el: HTMLElement): void {
+		if (action.id === PROMPT_BAR_ACTION_ID) {
+			const label = action.prompt
+				? t('uiMessages.promptBar.inlineSuggestCustom', { query: action.prompt })
+				: t('uiMessages.promptBar.inlineSuggestName');
+			el.createSpan({ text: `✍️ ${label}`, cls: 'lumina-inline-suggest-name' });
+			return;
+		}
+
 		if (action.id === '__unconfigured__') {
 			el.createSpan({ text: `⚠️ ${action.name}`, cls: 'lumina-inline-suggest-name' });
 			el.createEl('small', {
@@ -130,9 +151,14 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 		}
 
 		const view = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
-		if (view) {
-			void this.plugin.quickActionHandler.executeAction(action, editor, view);
-			// QuickActionHandler가 비동기로 선택 영역을 결과로 대체하므로 커서는 자연스럽게 이동됨
+		if (!view) return;
+
+		if (action.id === PROMPT_BAR_ACTION_ID) {
+			openPromptBar(this.plugin, editor, view, action.prompt || undefined);
+			return;
 		}
+
+		void this.plugin.quickActionHandler.executeAction(action, editor, view);
+		// QuickActionHandler가 비동기로 선택 영역을 결과로 대체하므로 커서는 자연스럽게 이동됨
 	}
 }

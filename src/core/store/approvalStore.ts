@@ -30,6 +30,8 @@ export interface ApprovalOptions {
 	timeoutMs?: number;
 	/** 중단 신호. abort 시 자동 거절 처리 */
 	signal?: AbortSignal;
+	/** 승인 큐에 요청이 등록될 때 요청 ID를 전달받는 콜백 */
+	onQueued?: (requestId: string) => void;
 }
 
 export interface EnrichedChange extends Change {
@@ -155,6 +157,7 @@ function createRequestWithAutoResolve<T>(
 				queue: [...state.queue, request],
 				undoStack: state.undoStack
 			}));
+			options?.onQueued?.(request.id);
 		}
 	});
 }

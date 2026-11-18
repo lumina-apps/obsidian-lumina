@@ -2,6 +2,7 @@ import { StateField, StateEffect } from '@codemirror/state';
 import { EditorView, Decoration, WidgetType, ViewPlugin, ViewUpdate, keymap } from '@codemirror/view';
 import { Prec } from '@codemirror/state';
 import type { AutocompleteHandler } from './autocompleteHandler';
+import { aiEditAnnotation } from './editorAnnotations';
 
 interface AutocompleteSuggestion {
 	text: string;
@@ -112,11 +113,23 @@ export const autocompletePlugin = (handler: AutocompleteHandler) => ViewPlugin.f
 		if (update.docChanged) {
 			if (this.timer) window.clearTimeout(this.timer);
 
-			// 제안 수락(Tab / ArrowRight)으로 인한 문서 변경 시에는 불필요한 재요청 타이머를 실행하지 않음
+			// 제안 수락(Tab / ArrowRight) 또는 AI 편집 적용으로 인한 문서 변경 시에는 불필요한 재요청 타이머를 실행하지 않음
 			const hasSuggestionEffect = update.transactions.some(tr =>
 				tr.effects.some(e => e.is(setSuggestion))
 			);
-			if (hasSuggestionEffect) {
+			const isAiEdit = update.transactions.some(tr => tr.annotation(aiEditAnnotation) === true);
+			if (hasSuggestionEffect || isAiEdit) {
+				return;
+			}
+
+			// 텍스트 삽입 없이 삭제(Backspace/Delete)만 발생한 경우 자동완성 재요청 생략
+			let hasInsertion = false;
+			update.changes.iterChanges((_fromA, _toA, _fromB, _toB, inserted) => {
+				if (inserted.length > 0) {
+					hasInsertion = true;
+				}
+			});
+			if (!hasInsertion) {
 				return;
 			}
 

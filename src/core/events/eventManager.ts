@@ -33,6 +33,18 @@ export class EventManager {
 					const submenu = itemWithSubmenu.setSubmenu ? itemWithSubmenu.setSubmenu() : null;
 					const target = submenu || menu;
 
+					target.addItem((subItem) => {
+						subItem
+							.setTitle(t('uiMessages.promptBar.menuTitle'))
+							.setIcon('sparkles')
+							.onClick(() => {
+								debugLogger.logSystem('events', 'context-menu: inline prompt bar triggered');
+								void import('../../features/editor/promptBarExtension').then(({ openPromptBar }) => {
+									openPromptBar(this.plugin, editor, view);
+								});
+							});
+					});
+
 					if (selection.trim()) {
 						target.addItem((subItem) => {
 							subItem

@@ -2934,6 +2934,569 @@ html body .modal-container.lumina-settings-modal-container {
 	cursor: pointer;
 }
 
+/* ── Editor Floating Prompt Bar & Selection Mini Trigger ── */
+.lumina-promptbar-target-highlight {
+	background-color: rgba(var(--color-accent-rgb, 139, 92, 246), 0.16);
+	border-bottom: 1.5px solid rgba(var(--color-accent-rgb, 139, 92, 246), 0.45);
+	border-radius: 2px;
+}
+
+.lumina-promptbar-target-replacing {
+	background-color: rgba(200, 0, 0, 0.1);
+	text-decoration: line-through;
+	opacity: 0.72;
+	border-radius: 2px;
+}
+
+.lumina-promptbar-streaming-widget {
+	border-left-style: dashed;
+}
+
+.cm-editor .cm-tooltip.lumina-mini-trigger,
+.cm-tooltip.lumina-mini-trigger {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	height: 26px;
+	min-height: 26px;
+	padding: 0 9px;
+	margin: 2px 0;
+	border-radius: 999px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-family: var(--font-interface, -apple-system, BlinkMacSystemFont, sans-serif);
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1;
+	letter-spacing: 0.02em;
+	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16), 0 1px 3px rgba(0, 0, 0, 0.08);
+	cursor: pointer;
+	user-select: none;
+	transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease, background 0.14s ease, color 0.14s ease;
+}
+
+.cm-editor .cm-tooltip.lumina-mini-trigger:hover,
+.cm-tooltip.lumina-mini-trigger:hover {
+	transform: translateY(-1px);
+	border-color: var(--interactive-accent);
+	background: linear-gradient(135deg, var(--interactive-accent) 0%, #8b5cf6 100%);
+	color: #ffffff;
+	box-shadow: 0 6px 18px rgba(139, 92, 246, 0.28);
+}
+
+.lumina-mini-trigger-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 12px;
+	height: 12px;
+	color: var(--interactive-accent);
+	transition: color 0.14s ease;
+}
+
+.cm-tooltip.lumina-mini-trigger:hover .lumina-mini-trigger-icon {
+	color: #ffffff;
+}
+
+.lumina-mini-trigger-icon svg {
+	width: 12px;
+	height: 12px;
+}
+
+.lumina-mini-trigger-label {
+	line-height: 1;
+}
+
+.cm-editor .cm-tooltip.lumina-promptbar,
+.cm-tooltip.lumina-promptbar {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	width: min(480px, calc(100vw - 24px));
+	max-width: min(480px, calc(100vw - 24px));
+	padding: 0;
+	margin: 4px 0;
+	border-radius: 12px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	box-shadow: 0 14px 36px -6px rgba(0, 0, 0, 0.28), 0 4px 12px rgba(0, 0, 0, 0.12);
+	color: var(--text-normal);
+	font-family: var(--font-interface, -apple-system, BlinkMacSystemFont, sans-serif);
+	font-size: 13px;
+	line-height: 1.4;
+	overflow: hidden;
+	z-index: var(--layer-popover, 30);
+	box-sizing: border-box;
+}
+
+.cm-tooltip.lumina-promptbar:focus-within {
+	border-color: rgba(var(--color-accent-rgb, 139, 92, 246), 0.65);
+}
+
+.cm-tooltip.lumina-promptbar button {
+	font-family: inherit;
+	box-shadow: none;
+	min-height: 0;
+	margin: 0;
+}
+
+.lumina-promptbar-input-row {
+	display: flex;
+	align-items: flex-end;
+	gap: 8px;
+	padding: 10px 10px 10px 12px;
+	background: var(--background-primary);
+}
+
+.lumina-promptbar-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 18px;
+	height: 28px;
+	color: var(--interactive-accent);
+}
+
+.lumina-promptbar-icon svg {
+	width: 15px;
+	height: 15px;
+}
+
+.cm-tooltip.lumina-promptbar textarea.lumina-promptbar-input,
+.cm-tooltip.lumina-promptbar textarea.lumina-promptbar-input:focus {
+	flex: 1;
+	min-width: 0;
+	min-height: 24px;
+	max-height: 108px;
+	padding: 3px 0;
+	margin: 0;
+	border: none;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	outline: none;
+	color: var(--text-normal);
+	font-family: var(--font-interface, -apple-system, BlinkMacSystemFont, sans-serif);
+	font-size: 13.5px;
+	line-height: 20px;
+	resize: none;
+	overflow-y: auto;
+}
+
+.cm-tooltip.lumina-promptbar textarea.lumina-promptbar-input::placeholder {
+	color: var(--text-faint);
+}
+
+.cm-tooltip.lumina-promptbar textarea.lumina-promptbar-input:disabled {
+	opacity: 0.72;
+	cursor: not-allowed;
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-submit-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	border-radius: 8px;
+	border: none;
+	background: var(--background-modifier-border);
+	color: var(--text-muted);
+	cursor: pointer;
+	transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-submit-btn svg {
+	width: 16px;
+	height: 16px;
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-submit-btn.is-ready {
+	background: linear-gradient(135deg, var(--interactive-accent) 0%, #8b5cf6 100%);
+	color: #ffffff;
+	box-shadow: 0 2px 8px rgba(139, 92, 246, 0.32);
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-submit-btn.is-ready:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(139, 92, 246, 0.42);
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-submit-btn:disabled {
+	opacity: 0.45;
+	cursor: default;
+	transform: none;
+	box-shadow: none;
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-submit-btn.is-cancel {
+	background: var(--color-red, #ef4444);
+	color: #ffffff;
+	box-shadow: 0 2px 8px rgba(239, 68, 68, 0.28);
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-submit-btn.is-cancel:hover {
+	opacity: 0.92;
+	transform: translateY(-1px);
+}
+
+.lumina-promptbar-error {
+	display: none;
+	margin: 0 10px 8px;
+	padding: 6px 10px;
+	border-radius: 7px;
+	background: rgba(239, 68, 68, 0.1);
+	border: 1px solid rgba(239, 68, 68, 0.28);
+	color: var(--text-error, #ef4444);
+	font-size: 12px;
+	line-height: 1.4;
+	word-break: break-word;
+}
+
+.lumina-promptbar-status {
+	display: none;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 7px 12px;
+	border-top: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: 12px;
+}
+
+.lumina-promptbar-status-left {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.lumina-promptbar-kbd {
+	display: inline-flex;
+	align-items: center;
+	padding: 1px 6px;
+	border-radius: 4px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	color: var(--text-muted);
+	font-family: var(--font-monospace);
+	font-size: 10px;
+	line-height: 1.4;
+}
+
+.lumina-promptbar-spinner {
+	width: 13px;
+	height: 13px;
+	border: 2px solid var(--background-modifier-border);
+	border-top-color: var(--interactive-accent);
+	border-radius: 50%;
+	animation: lumina-promptbar-spin 0.75s linear infinite;
+}
+
+@keyframes lumina-promptbar-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.lumina-promptbar-review {
+	display: none;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 8px 12px;
+	border-top: 1px solid var(--background-modifier-border);
+	background: rgba(var(--color-accent-rgb, 139, 92, 246), 0.06);
+}
+
+.lumina-promptbar-review-hint {
+	color: var(--text-muted);
+	font-size: 11.5px;
+	line-height: 1.35;
+}
+
+.lumina-promptbar-review-actions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-shrink: 0;
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	height: 26px;
+	padding: 0 10px;
+	border-radius: 6px;
+	border: 1px solid var(--background-modifier-border);
+	font-size: 11.5px;
+	font-weight: 600;
+	line-height: 1;
+	cursor: pointer;
+	transition: all 0.14s ease;
+}
+
+.lumina-promptbar-btn-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 12px;
+	height: 12px;
+}
+
+.lumina-promptbar-btn-icon svg {
+	width: 12px;
+	height: 12px;
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-btn.accept {
+	background: linear-gradient(135deg, var(--interactive-accent) 0%, #8b5cf6 100%);
+	border-color: transparent;
+	color: #ffffff;
+	box-shadow: 0 2px 6px rgba(139, 92, 246, 0.28);
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-btn.accept:hover {
+	opacity: 0.94;
+	transform: translateY(-0.5px);
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-btn.reject {
+	background: var(--background-primary);
+	color: var(--text-muted);
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-btn.reject:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
+.lumina-promptbar-footer {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	padding: 7px 12px 9px;
+	border-top: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+}
+
+.lumina-promptbar-controls {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.lumina-promptbar-mode-group {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	padding: 2px;
+	border-radius: 7px;
+	background: rgba(var(--mono-rgb-100, 128, 128, 128), 0.08);
+	border: 1px solid var(--background-modifier-border);
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-mode-btn {
+	height: 22px;
+	padding: 0 9px;
+	border: none;
+	border-radius: 5px;
+	background: transparent;
+	color: var(--text-muted);
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1;
+	cursor: pointer;
+	transition: all 0.14s ease;
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-mode-btn:hover:not(:disabled) {
+	color: var(--text-normal);
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-mode-btn.is-active {
+	background: var(--background-primary);
+	color: var(--interactive-accent);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-mode-btn:disabled {
+	opacity: 0.48;
+	cursor: not-allowed;
+}
+
+.lumina-promptbar-model-chip {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	max-width: 240px;
+	height: 24px;
+	padding: 0 7px 0 8px;
+	border-radius: 999px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	color: var(--text-muted);
+	font-size: 11px;
+	line-height: 1;
+	transition: border-color 0.14s ease, color 0.14s ease;
+}
+
+.lumina-promptbar-model-chip:hover:not(.is-warning) {
+	border-color: var(--interactive-accent);
+	color: var(--text-normal);
+}
+
+.lumina-promptbar-model-dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--color-green, #10b981);
+	flex-shrink: 0;
+}
+
+.cm-tooltip.lumina-promptbar select.lumina-promptbar-model-select,
+.cm-tooltip.lumina-promptbar select.lumina-promptbar-model-select:hover,
+.cm-tooltip.lumina-promptbar select.lumina-promptbar-model-select:focus {
+	appearance: none;
+	-webkit-appearance: none;
+	height: 22px;
+	min-height: 0;
+	max-width: 195px;
+	padding: 0 14px 0 0;
+	margin: 0;
+	border: none;
+	border-radius: 0;
+	background: transparent;
+	background-image: none;
+	box-shadow: none;
+	outline: none;
+	color: inherit;
+	font-family: inherit;
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 22px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.cm-tooltip.lumina-promptbar select.lumina-promptbar-model-select:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+.lumina-promptbar-model-chevron {
+	position: absolute;
+	right: 6px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 11px;
+	height: 11px;
+	pointer-events: none;
+	opacity: 0.7;
+}
+
+.lumina-promptbar-model-chevron svg {
+	width: 11px;
+	height: 11px;
+}
+
+.lumina-promptbar-model-chip.is-warning {
+	background: rgba(245, 158, 11, 0.12);
+	border-color: rgba(245, 158, 11, 0.3);
+	color: var(--text-warning, #f59e0b);
+	padding-right: 4px;
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-settings-link {
+	height: 19px;
+	padding: 0 7px;
+	border-radius: 999px;
+	border: 1px solid rgba(245, 158, 11, 0.35);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 10.5px;
+	font-weight: 600;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-settings-link:hover {
+	border-color: var(--interactive-accent);
+	color: var(--interactive-accent);
+}
+
+.lumina-promptbar-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 5px;
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	height: 23px;
+	padding: 0 9px;
+	border-radius: 6px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	color: var(--text-muted);
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 1;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: all 0.14s ease;
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-chip:hover {
+	color: var(--interactive-accent);
+	background: rgba(var(--color-accent-rgb, 139, 92, 246), 0.08);
+	border-color: rgba(var(--color-accent-rgb, 139, 92, 246), 0.45);
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-chip.is-chat {
+	border-style: dashed;
+}
+
+.lumina-promptbar-chip-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 11px;
+	height: 11px;
+	opacity: 0.85;
+}
+
+.lumina-promptbar-chip-icon svg {
+	width: 11px;
+	height: 11px;
+}
+
+.lumina-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+
 
 
 

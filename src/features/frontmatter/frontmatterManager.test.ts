@@ -142,4 +142,27 @@ describe('FrontmatterManager', () => {
 		expect(promptArg).not.toContain('---\r\n');
 		expect(promptArg).toContain('오늘은 맛있는 사과를 먹었다.');
 	});
+
+	it('maxOutputTokens 1000으로 요청하며 <think> 블록 안의 중괄호를 제거하고 JSON만 파싱한다', async () => {
+		const writtenFm: Record<string, unknown> = {};
+		mockApp.fileManager.processFrontMatter.mockImplementation(async (_f: TFile, cb: (fm: Record<string, unknown>) => void) => {
+			cb(writtenFm);
+		});
+
+		const chatSpy = vi.fn().mockResolvedValue({
+			content: '<think>스키마 예시 {invalid: json} 확인 완료</think>\n```json\n{"tags": ["과수원", "사과"], "description": "사과 메모입니다."}\n```',
+		});
+		vi.mocked(createProvider).mockReturnValue({ chat: chatSpy } as unknown as ReturnType<typeof createProvider>);
+
+		const manager = new FrontmatterManager(mockPlugin);
+		const file = Object.assign(new TFile(), { path: '사과.md', basename: '사과', extension: 'md' });
+		await (manager as unknown as { generateFrontmatterData(f: TFile): Promise<void> }).generateFrontmatterData(file);
+
+		expect(chatSpy).toHaveBeenCalledWith(
+			expect.any(Array),
+			expect.objectContaining({ maxOutputTokens: 1000 }),
+		);
+		expect(writtenFm.tags).toEqual(['과수원', '사과']);
+		expect(writtenFm.description).toBe('사과 메모입니다.');
+	});
 });

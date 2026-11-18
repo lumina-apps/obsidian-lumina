@@ -397,7 +397,11 @@
         "interTokenLabel": "Zeitlimit zwischen den Blöcken (ms)",
         "interTokenDesc": "Maximale Wartezeit bis zum Empfang des nächsten Satzes während des Streamings. Auf 0 setzen für unbegrenzt.. (Standard: 0)"
       },
-      "emptyResponseFallback": "⚠️ Das Modell hat eine leere Antwort zurückgegeben. (Dies kann auf eine nicht unterstützte Sprache/ein nicht unterstütztes Format, Prompt-Filterung oder das Überschreiten des Kontextlimits zurückzuführen sein.)"
+      "emptyResponseFallback": "⚠️ Das Modell hat eine leere Antwort zurückgegeben. (Dies kann auf eine nicht unterstützte Sprache/ein nicht unterstütztes Format, Prompt-Filterung oder das Überschreiten des Kontextlimits zurückzuführen sein.)",
+      "enableSelectionMiniIcon": {
+        "name": "Mini-KI-Symbol bei Textauswahl anzeigen",
+        "desc": "Zeigt bei ausgewähltem Text im Editor eine kompakte schwebende KI-Schaltfläche zum Öffnen der Prompt-Leiste an."
+      }
     },
     "rag": {
       "toggleTooltip": "Wenn aktiviert, liest und referenziert die KI Notizen in Ihrem Vault, um zu antworten.",
@@ -933,6 +937,25 @@
       "searching": "🔍 Suchen...",
       "reranking": "⚖️ Neuordnung (Reranking)...",
       "generating": "💡 Antwort generieren..."
+    },
+    "promptBar": {
+      "commandTitle": "Inline-Prompt-Leiste öffnen",
+      "menuTitle": "✍️ Inline-KI-Anweisung",
+      "inlineSuggestName": "Direkte Anweisung...",
+      "inlineSuggestCustom": "Anweisung: \"{{query}}\"",
+      "placeholder": "Bearbeitung beschreiben (Enter ausführen, Shift+Enter Zeilenumbruch)",
+      "modeReplace": "Ersetzen",
+      "modeAppend": "Anhängen",
+      "run": "Ausführen",
+      "cancel": "Abbrechen",
+      "generating": "Antwort wird generiert...",
+      "reviewHint": "Diff prüfen — Enter zum Übernehmen, Esc zum Bearbeiten",
+      "noModel": "Quick-Action-Modell nicht festgelegt",
+      "openSettings": "Einstellungen",
+      "pendingDiffExists": "Bitte schließen Sie zuerst den ausstehenden Diff für diese Notiz ab.",
+      "targetModified": "Zieltext wurde während des Wartens geändert.",
+      "noChanges": "Keine Änderungen zum Übernehmen.",
+      "thinking": "Denkt nach..."
     }
   },
   "mcpServerTools": {
