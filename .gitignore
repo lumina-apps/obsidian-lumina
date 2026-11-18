@@ -43,3 +43,6 @@ coverage/
 
 # Temporary scratch / debug scripts
 scratch/
+
+# SonarQube scanner cache
+.scannerwork/

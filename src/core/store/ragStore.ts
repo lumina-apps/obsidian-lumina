@@ -4,7 +4,6 @@
  * RAG 인덱싱 및 검색 런타임 상태.
  * - indexingState: 워커 진행률 + 파일 카운트
  * - indexingProgress: 0~100 퍼센트 (derived)
- * - indexingStatusText: 사람이 읽기 좋은 상태 문자열 (derived)
  * - estimatedTimeRemaining: 예상 잔여 초 (derived)
  * - resumedFromCheckpoint: 체크포인트에서 이어서 진행 중인지 여부
  *
@@ -50,31 +49,6 @@ indexingState.subscribe(state => {
 /** 인덱싱 진행률 (0 ~ 100). totalFiles가 0이면 0 반환 */
 export const indexingProgress = derived(indexingState, ($s) =>
 	$s.totalFiles > 0 ? Math.min(100, Math.max(0, Math.round(($s.processedFiles / $s.totalFiles) * 100))) : 0,
-);
-
-/** 사람이 읽기 좋은 상태 문자열 */
-export const indexingStatusText = derived(
-	[indexingState, resumedFromCheckpoint],
-	([$s, $isResuming]): string => {
-		switch ($s.status) {
-			case 'idle':
-				return '대기 중';
-			case 'loading-model':
-				if ($s.progressPct !== undefined && $s.progressPct > 0) {
-					return `임베딩 모델 로딩 중… (${$s.progressPct}%)`;
-				}
-				return '임베딩 모델 로딩 중…';
-			case 'indexing':
-				if ($isResuming) {
-					return `이어서 인덱싱 중… (${$s.processedFiles} / ${$s.totalFiles}개)`;
-				}
-				return `인덱싱 중… (${$s.processedFiles} / ${$s.totalFiles}개)`;
-			case 'ready':
-				return `준비 완료 — ${$s.totalFiles}개 파일 인덱싱됨`;
-			case 'error':
-				return `오류: ${$s.errorMessage ?? '알 수 없는 오류'}`;
-		}
-	},
 );
 
 /** 워커가 완전히 준비된 상태인지 여부 */

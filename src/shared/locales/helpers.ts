@@ -103,12 +103,6 @@ export function getLanguage(): string {
   return currentLanguage;
 }
 
-/** en locale 프리로드 (앱 시작 시 필수) */
-export async function preloadDefaultLocale(): Promise<void> {
-  // en is now statically imported, so no action is needed here.
-  return Promise.resolve();
-}
-
 /** 점 경로 키로 번역 텍스트 조회. 누락 시 en 폴백, {{key}} 치환 지원 */
 export function t(path: TranslationKeys, params?: Record<string, string | number>): string {
   const keys = path.split('.') as string[];

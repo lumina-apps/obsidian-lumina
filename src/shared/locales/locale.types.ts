@@ -21,9 +21,7 @@ export interface TranslationSettingsConnectionsLanguageOption {
 export interface TranslationSettingsConnectionsLanguage {
   name: string;
   desc: string;
-  systemTranslate: string;
   llmRequired: string;
-  warningCost: string;
   option: TranslationSettingsConnectionsLanguageOption;
   current: string;
   deleteCache: string;
@@ -34,7 +32,6 @@ export interface TranslationSettingsConnectionsLanguage {
 
 export interface TranslationSettingsConnectionsApiKey {
   name: string;
-  desc: string;
   mobileLocalWarning: string;
   addConnection: string;
   apiKey: string;
@@ -47,7 +44,6 @@ export interface TranslationSettingsConnectionsApiKey {
   notConnected: string;
   selectModel: string;
   endpointPlaceholder: string;
-  newConnection: string;
   success: string;
   fail: string;
   noModels: string;
@@ -69,13 +65,6 @@ export interface TranslationSettingsConnectionsCustomEmbedding {
   guide: string;
   localWarn: string;
   mobileWarn: string;
-}
-
-export interface TranslationSettingsConnectionsDefaultChatModel {
-  name: string;
-  desc: string;
-  sidebarDefault: string;
-  noConnections: string;
 }
 
 export interface TranslationSettingsConnectionsQuickActionProvider {
@@ -112,7 +101,6 @@ export interface TranslationSettingsConnectionsConnectionStatus {
   mcpDisconnected: string;
   mcpConnected: string;
   connected: string;
-  disconnected: string;
 }
 
 export interface TranslationSettingsConnections {
@@ -122,7 +110,6 @@ export interface TranslationSettingsConnections {
   apiKey: TranslationSettingsConnectionsApiKey;
   ragEngine: TranslationSettingsConnectionsRagEngine;
   customEmbedding: TranslationSettingsConnectionsCustomEmbedding;
-  defaultChatModel: TranslationSettingsConnectionsDefaultChatModel;
   quickActionProvider: TranslationSettingsConnectionsQuickActionProvider;
   quickActionModel: TranslationSettingsConnectionsQuickActionModel;
   taskModel: TranslationSettingsConnectionsTaskModel;
@@ -228,33 +215,17 @@ export interface TranslationSettingsMcpExternalServer {
   token: TranslationSettingsMcpExternalServerToken;
 }
 
-export interface TranslationSettingsMcpPermission {
-  title: string;
-  desc: string;
-  args: string;
-  approve: string;
-  reject: string;
-}
-
 export interface TranslationSettingsMcp {
   title: string;
-  desc: string;
   agentMode?: TranslationSettingsMcpAgentMode;
   addServer: string;
   serverName: string;
-  transport: string;
-  transportDesc: string;
-  transportSse: string;
-  transportStreamableHttp: string;
   enableDesc: string;
   deleteServer: string;
   emptyServers: string;
   localServerName: string;
-  restart: string;
   localServer: TranslationSettingsMcpLocalServer;
   externalServer: TranslationSettingsMcpExternalServer;
-  permission: TranslationSettingsMcpPermission;
-  experimental: string;
 }
 
 // Chat
@@ -274,8 +245,6 @@ export interface TranslationSettingsChatQuickSettings {
 export interface TranslationSettingsChatSystemPrompt {
   name: string;
   desc: string;
-  active: string;
-  activate: string;
   addPrompt: string;
   defaultName: string;
   variablesHint: string;
@@ -324,7 +293,6 @@ export interface TranslationSettingsChatContext {
   activeNotePrefix: string;
   canvasFile: string;
   tagFiles: string;
-  activeNotePrompt: string;
   categoryActiveNote: string;
   categorySelection: string;
   categoryFolder: string;
@@ -342,7 +310,6 @@ export interface TranslationSettingsChatContext {
 
 export interface TranslationSettingsChatSendMode {
   name: string;
-  desc: string;
   enter: string;
   ctrlEnter: string;
 }
@@ -396,7 +363,6 @@ export interface TranslationSettingsChatEnableAutocomplete {
 }
 
 export interface TranslationSettingsChatMemoryLimit {
-  name: string;
   desc: string;
   limitType: string;
   autoSummary: string;
@@ -408,8 +374,6 @@ export interface TranslationSettingsChatMemoryLimit {
 }
 
 export interface TranslationSettingsChatModelParams {
-  name: string;
-  desc: string;
   tempLabel: string;
   tempDesc: string;
   maxOutput: string;
@@ -427,7 +391,6 @@ export interface TranslationSettingsChatStreaming {
 export interface TranslationSettingsChat {
   quickSettings: TranslationSettingsChatQuickSettings;
   title: string;
-  currentNote: string;
   systemPrompt: TranslationSettingsChatSystemPrompt;
   history: TranslationSettingsChatHistory;
   context: TranslationSettingsChatContext;
@@ -449,27 +412,8 @@ export interface TranslationSettingsChat {
 }
 
 // RAG
-export interface TranslationSettingsRagDataScope {
-  name: string;
-  desc: string;
-  vaultWide: string;
-  activeNote: string;
-  manual: string;
-}
-
 export interface TranslationSettingsRagAutoIncludeActive {
   name: string;
-  desc: string;
-}
-
-export interface TranslationSettingsRagIncludePaths {
-  name: string;
-  desc: string;
-}
-
-export interface TranslationSettingsRagIgnorePaths {
-  name: string;
-  desc: string;
 }
 
 export interface TranslationSettingsRagChunking {
@@ -520,8 +464,6 @@ export interface TranslationSettingsRagContentFilter {
 }
 
 export interface TranslationSettingsRagReindex {
-  name: string;
-  desc: string;
   button: string;
   notActivated: string;
   started: string;
@@ -531,11 +473,9 @@ export interface TranslationSettingsRagReindex {
 
 export interface TranslationSettingsRagStatus {
   name: string;
-  desc: string;
   statusLabel: string;
   indexing: string;
   files: string;
-  size: string;
   ready: string;
   indexingShort: string;
   error: string;
@@ -559,10 +499,7 @@ export interface TranslationSettingsRagInit extends Record<string, string | unde
 }
 
 export interface TranslationSettingsRagReset {
-  name: string;
-  desc: string;
   button: string;
-  devNotice: string;
   resetConfirm: string;
   resetSuccess: string;
 }
@@ -572,10 +509,7 @@ export interface TranslationSettingsRag {
   title: string;
   embeddingWarning: string;
   disabledWarning: string;
-  dataScope: TranslationSettingsRagDataScope;
   autoIncludeActive: TranslationSettingsRagAutoIncludeActive;
-  includePaths: TranslationSettingsRagIncludePaths;
-  ignorePaths: TranslationSettingsRagIgnorePaths;
   chunking: TranslationSettingsRagChunking;
   topK: TranslationSettingsRagTopK;
   syncMode: TranslationSettingsRagSyncMode;
@@ -618,7 +552,6 @@ export interface TranslationSettingsMiscFactoryReset {
   name: string;
   desc: string;
   button: string;
-  devNotice: string;
   confirmTitle: string;
   confirmMsg: string;
   success: string;
@@ -627,7 +560,6 @@ export interface TranslationSettingsMiscFactoryReset {
 export interface TranslationSettingsMiscDonate {
   name: string;
   desc: string;
-  supportTitle: string;
   kofi: string;
   ctee: string;
   githubSponsors: string;
@@ -664,7 +596,6 @@ export interface TranslationSettingsProviderErrors {
   unknownType: string;
   apiError: string;
   ollamaNoModel: string;
-  connectFail: string;
   anthropicNoEmbed: string;
   visionNotSupported: string;
   timeoutTTFT: string;
@@ -690,12 +621,7 @@ export interface TranslationSettingsTranslation {
 export interface TranslationSettingsCli {
   binaryPathName: string;
   binaryPathDesc: string;
-  autoApproveName: string;
-  autoApproveDesc: string;
-  waitingApprovalPrefix: string;
   runningToolPrefix: string;
-  toolRejectedPrefix: string;
-  toolRejectedByUser: string;
   waitingApprovalBadge: string;
   approvalPrompt: string;
   approveBtn: string;
@@ -737,14 +663,11 @@ export interface TranslationErrorsLlm {
 
 export interface TranslationErrors {
   llmNotConnected: string;
-  ragIndexingFailed: string;
   llmConnectRequired: string;
-  resetChat: string;
   chatPlaceholder: string;
   chatEmptyWelcome: string;
   cancelStreaming: string;
   send: string;
-  underDevelopment: string;
   ragDisabledGlobally: string;
   agentDisabledGlobally: string;
   llm: TranslationErrorsLlm;
@@ -771,11 +694,6 @@ export interface TranslationChatSlashCommands {
 }
 
 export interface TranslationChatCliMode {
-  cliAgent: string;
-  pluginAgent: string;
-  cliAgentTooltip: string;
-  pluginAgentTooltip: string;
-  disabledHintForCliAgent: string;
   readModeTooltip: string;
   editModeTooltip: string;
   readModeNotice: string;
@@ -805,9 +723,7 @@ export interface TranslationCommon {
   remove: string;
   add: string;
   copy: string;
-  success: string;
   error: string;
-  history: string;
   back: string;
   settings: string;
   loading: string;
@@ -821,12 +737,10 @@ export interface TranslationDiscovery {
   chatTabName: string;
   searchPlaceholder: string;
   duplicateWarning: string;
-  duplicateCompare: string;
   recommendedTags: string;
   relatedNotes: string;
   insertLink: string;
   openInSplit: string;
-  chatWithNote: string;
   filterPlaceholder: string;
   emptyStateText: string;
   emptyStateSub: string;
@@ -834,8 +748,6 @@ export interface TranslationDiscovery {
   stagedContext: string;
   approxTokens: string;
   startChat: string;
-  indexing: string;
-  loadingModel: string;
   noActiveEditor: string;
   tagInserted: string;
   tagInsertFailed: string;
@@ -865,7 +777,6 @@ export interface TranslationSummarization {
 export interface TranslationUiMessages {
   actionApproval: {
     title: string;
-    targetFile: string;
     createNote: string;
     deleteNote: string;
     renameNote: string;
@@ -891,17 +802,13 @@ export interface TranslationUiMessages {
   inlineEmpty: string;
   qaEmptySel: string;
   qaNotConfigured: string;
-  qaNoProvider: string;
   qaInvalidProvider: string;
-  qaNoModel: string;
   qaSelectedText: string;
   qaExecuting: string;
   qaCompleted: string;
   qaError: string;
-  qaWaitingAI: string;
   qaEmptyResponse: string;
   qaUnknownError: string;
-  qaReasoningDetected: string;
   promptBar: {
     commandTitle: string;
     menuTitle: string;
@@ -923,7 +830,6 @@ export interface TranslationUiMessages {
   };
   modalCancel: string;
   modalProceed: string;
-  modelPlaceholder: string;
   searchModelShort: string;
   favorites: string;
   allModels: string;
@@ -954,12 +860,8 @@ export interface TranslationUiMessages {
   debugCollapseAll: string;
   ragTooLong: string;
   ragWorkerInitErr: string;
-  ragWorkerTimeout: string;
   ragWorkerTerm: string;
   ragWorkerNotReady: string;
-  ragWorkerNotInit: string;
-  ragWorkerLoadFail: string;
-  localizedPrompt: string;
   cmdCtxMenu: string;
   cmdAutoLinkNote: string;
   cmdChatTitle: string;
@@ -986,28 +888,19 @@ export interface TranslationUiMessages {
   noticeMobileRag: string;
   noticeLargeVault: string;
   noticeIndexing: string;
-  errNoProvider: string;
   errMobileAuto: string;
   mcpTokenCopied: string;
   mcpManagerNotInitialized: string;
   mcpConnectFailed: string;
   mcpLocalServerStartFailed: string;
-  mcpDisconnectedDuringExecution: string;
-  mcpToolExecutionFailed: string;
   mcpSyncError: string;
-  mcpLocalServerRestarted: string;
   mcpLocalServerStarted: string;
   mcpLocalServerStopped: string;
   mcpCliCleanupSuccess: string;
-  mcpLocalServerDisconnectAgentDisabled: string;
   mcpClientDisconnected: string;
   mcpClientConnected: string;
-  mcpClientToolExecutionFailedStatusError: string;
-  mcpClientToolExecuteFailedTryReconnect: string;
   toolExecutionBlockedReadMode: string;
   agentModeLlmRequired: string;
-  agentModeLocalServerStarting: string;
-  agentModeLocalServerConnecting: string;
   agentModeEnabled: string;
   agentModeDisabled: string;
   agentModeSwitchedToRead: string;
@@ -1023,10 +916,6 @@ export interface TranslationUiMessages {
   tooShortToCompress: string;
   compressFailed: string;
   compressedContextBlock: string;
-  agentModeLocalServerStoppedDisabled: string;
-  agentModeLocalServerStoppedDisabledShort: string;
-  mcpLocalServerTokenInputFromLocal: string;
-  mcpLocalServerTokenInputFromLocalTooltip: string;
   thoughtProcess: string;
   agentMaxStepsReached: string;
   agentRepeatedToolCalls: string;
@@ -1149,9 +1038,9 @@ export interface TranslationMcpServerToolsListNotes {
 export interface TranslationMcpServerTools {
   read_active_note: { desc: string; noActive: string };
   read_note: { desc: string; argPath: string; notFound: string };
-  create_note: { desc: string; argPath: string; argContent: string; tooLong: string; alreadyExists: string; parentFolderNotFound: string; success: string };
+  create_note: { desc: string; argPath: string; argContent: string; tooLong: string; alreadyExists: string; success: string };
   search_notes: { desc: string; argQuery: string; foundPrefix: string; noResults: string };
-  append_to_note: { desc: string; argPath: string; argContent: string; tooLong: string; notFound: string; maxLengthExceeded: string; success: string };
+  append_to_note: { desc: string; argPath: string; argContent: string; tooLong: string; maxLengthExceeded: string; success: string };
   read_daily_note: { desc: string; notFound: string };
   append_to_daily_note: { desc: string; argContent: string; tooLong: string; maxLengthExceeded: string; successAppend: string; successCreate: string };
   list_notes: TranslationMcpServerToolsListNotes;
@@ -1192,7 +1081,6 @@ export interface TranslationProjectsSettings {
   historyPath: string;
   noSubfolder: string;
   activate: string;
-  config: string;
   deleteConfirmTitle: string;
   deleteConfirmDesc: string;
   addProjectBtn: string;
@@ -1221,13 +1109,7 @@ export interface TranslationProjectsSettings {
   deletedModel: string;
   deletedPrompt: string;
   save: string;
-  saveSuccess: string;
-  nameRequired: string;
-  nameExists: string;
-  namePlaceholder: string;
-  subfolderPlaceholder: string;
   add: string;
-  duplicateName: string;
   chatHistoryRootPlaceholder: string;
   chatHistoryAutoPlaceholder: string;
   chatHistoryPreview: string;

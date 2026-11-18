@@ -3,7 +3,6 @@ import {
 	splitProviderModel,
 	detectMention,
 	detectSlashCommand,
-	calculateEstimatedInputTokens,
 	estimateInputTokensDetails,
 	calculateFolderSize,
 } from "./inputUtils";
@@ -114,25 +113,25 @@ describe("inputUtils", () => {
 		});
 	});
 
-	describe("calculateEstimatedInputTokens", () => {
+	describe("estimateInputTokensDetails", () => {
 		it("should return 0 when input is empty and no attachments or active note", () => {
-			const tokens = calculateEstimatedInputTokens({
+			const tokens = estimateInputTokensDetails({
 				inputText: "",
 				attachments: [],
-			});
+			}).tokens;
 			expect(tokens).toBe(0);
 		});
 
 		it("should estimate tokens for input text", () => {
-			const tokens = calculateEstimatedInputTokens({
+			const tokens = estimateInputTokensDetails({
 				inputText: "Hello world",
 				attachments: [],
-			});
+			}).tokens;
 			expect(tokens).toBeGreaterThan(0);
 		});
 
 		it("should estimate tokens for attachments with content", () => {
-			const tokens = calculateEstimatedInputTokens({
+			const tokens = estimateInputTokensDetails({
 				inputText: "",
 				attachments: [
 					{
@@ -142,12 +141,12 @@ describe("inputUtils", () => {
 						content: "This is selected text",
 					},
 				],
-			});
+			}).tokens;
 			expect(tokens).toBeGreaterThan(0);
 		});
 
 		it("should estimate tokens for file attachments using getFileSize", () => {
-			const tokens = calculateEstimatedInputTokens({
+			const tokens = estimateInputTokensDetails({
 				inputText: "",
 				attachments: [
 					{
@@ -157,34 +156,34 @@ describe("inputUtils", () => {
 					},
 				],
 				getFileSize: (p) => (p === "notes/file.md" ? 300 : undefined),
-			});
+			}).tokens;
 			// 300 / 3 = 100
 			expect(tokens).toBe(100);
 		});
 
 		it("should include active note tokens when includeActiveNote is true", () => {
-			const tokens = calculateEstimatedInputTokens({
+			const tokens = estimateInputTokensDetails({
 				inputText: "",
 				attachments: [],
 				includeActiveNote: true,
 				activeFileInfo: { path: "notes/active.md", size: 600 },
-			});
+			}).tokens;
 			// 600 / 3 = 200
 			expect(tokens).toBe(200);
 		});
 
 		it("should not include active note tokens when includeActiveNote is false", () => {
-			const tokens = calculateEstimatedInputTokens({
+			const tokens = estimateInputTokensDetails({
 				inputText: "",
 				attachments: [],
 				includeActiveNote: false,
 				activeFileInfo: { path: "notes/active.md", size: 600 },
-			});
+			}).tokens;
 			expect(tokens).toBe(0);
 		});
 
 		it("should not double-count active note if already in attachments as active_note", () => {
-			const tokens = calculateEstimatedInputTokens({
+			const tokens = estimateInputTokensDetails({
 				inputText: "",
 				attachments: [
 					{
@@ -196,13 +195,13 @@ describe("inputUtils", () => {
 				includeActiveNote: true,
 				activeFileInfo: { path: "notes/active.md", size: 600 },
 				getFileSize: (p) => (p === "notes/active.md" ? 600 : undefined),
-			});
+			}).tokens;
 			// Only counted once (200 tokens, not 400)
 			expect(tokens).toBe(200);
 		});
 
 		it("should not double-count active note if already in attachments as file with same path", () => {
-			const tokens = calculateEstimatedInputTokens({
+			const tokens = estimateInputTokensDetails({
 				inputText: "",
 				attachments: [
 					{
@@ -214,18 +213,18 @@ describe("inputUtils", () => {
 				includeActiveNote: true,
 				activeFileInfo: { path: "notes/active.md", size: 600 },
 				getFileSize: (p) => (p === "notes/active.md" ? 600 : undefined),
-			});
+			}).tokens;
 			// Only counted once (200 tokens, not 400)
 			expect(tokens).toBe(200);
 		});
 
 		it("should handle null activeFileInfo gracefully when includeActiveNote is true", () => {
-			const tokens = calculateEstimatedInputTokens({
+			const tokens = estimateInputTokensDetails({
 				inputText: "test",
 				attachments: [],
 				includeActiveNote: true,
 				activeFileInfo: null,
-			});
+			}).tokens;
 			expect(tokens).toBeGreaterThan(0);
 		});
 

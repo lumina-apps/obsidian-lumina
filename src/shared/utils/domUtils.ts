@@ -1,25 +1,3 @@
-/** 개행 포함 설명 텍스트를 DOM 요소로 변환하여 컨테이너에 추가 */
-export function renderDescriptionLines(
-	container: HTMLElement,
-	text: string,
-	options?: { tag?: 'p' | 'span'; className?: string },
-): void {
-	const tag = options?.tag ?? 'p';
-	const cls = options?.className;
-	const lines = text.split('\n');
-
-	for (const line of lines) {
-		if (line.trim() === '') {
-			container.createEl('br');
-		} else {
-			const el = container.createEl(tag, { text: line });
-			if (cls) {
-				el.addClass(cls);
-			}
-		}
-	}
-}
-
 /** 개행 포함 텍스트 → DocumentFragment (Setting.setDesc() 용) */
 export function createMultilineDesc(text: string): DocumentFragment {
 	return createFragment((frag) => {

@@ -20,10 +20,6 @@ export interface ContextUpdateResult {
 const MAX_CONTEXT_CACHE_SIZE = 30;
 const contextResultCache = new Map<string, ContextUpdateResult>();
 
-export function clearDiscoveryContextCache(): void {
-	contextResultCache.clear();
-}
-
 /**
  * 활성 파일 기준으로 RAG 컨텍스트(유사 노트, 중복, 추천 태그)를 계산합니다.
  * UI 로직과 분리된 순수 검색/태그 추출 함수입니다.

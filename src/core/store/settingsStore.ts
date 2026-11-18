@@ -25,12 +25,6 @@ settingsStore.subscribe((settings) => {
 
 // ─── Derived ──────────────────────────────────────────────────────────────────
 
-/** 연결 설정이 존재하는지 여부 */
-export const hasAnyProvider = derived(
-	settingsStore,
-	($s) => ($s?.connections.providers.filter(p => p.isVerified).length ?? 0) > 0,
-);
-
 /** 검증된 프로바이더 목록 */
 export const verifiedProviders = derived(settingsStore, ($s) =>
 	$s?.connections.providers.filter(p => p.isVerified && p.availableModels.length > 0) ?? [],

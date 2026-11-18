@@ -8,26 +8,6 @@ import { t } from '../../shared/locales/helpers';
 import type { OramaStore } from './oramaStore';
 import { debugLogger } from '../../shared/debugLogger';
 
-// ─── Similarity ───────────────────────────────────────────────────────────────
-
-/** 두 벡터 간 코사인 유사도 계산 (0~1). 길이가 다르거나 비어있으면 0. */
-export function cosineSimilarity(a: number[] | Float32Array, b: number[] | Float32Array): number {
-	if (a.length !== b.length || a.length === 0) return 0;
-
-	let dot = 0;
-	let normA = 0;
-	let normB = 0;
-
-	for (let i = 0; i < a.length; i++) {
-		dot   += a[i] * b[i];
-		normA += a[i] * a[i];
-		normB += b[i] * b[i];
-	}
-
-	const denom = Math.sqrt(normA) * Math.sqrt(normB);
-	return denom === 0 ? 0 : dot / denom;
-}
-
 // ─── Search ───────────────────────────────────────────────────────────────────
 
 /**

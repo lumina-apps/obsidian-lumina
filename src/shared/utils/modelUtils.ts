@@ -32,11 +32,6 @@ export function stripProviderSuffix(label: string): string {
 	return label.replace(/\s*\(.*\)\s*/, '');
 }
 
-/** ProviderType의 짧은 표시명 반환 */
-export function getShortProviderLabel(providerType: ProviderType): string {
-	return stripProviderSuffix(PROVIDER_LABELS[providerType] || providerType);
-}
-
 /** 모델이 임베딩 전용인지 판별 */
 export function isEmbeddingModel(providerType: ProviderType, modelId?: string): boolean {
 	if (!modelId) {

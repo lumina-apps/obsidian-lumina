@@ -53,11 +53,6 @@ export function setSession(session: import('../../shared/types/chat.types').Chat
 	sessionModelId.set(session.modelId || null);
 }
 
-/** 현재 세션 제목 업데이트 */
-export function setSessionTitle(title: string): void {
-	currentSessionTitle.set(title);
-}
-
 /** 메시지 추가 */
 export function addMessage(msg: UIChatMessage): void {
 	messages.update(ms => [...ms, msg]);

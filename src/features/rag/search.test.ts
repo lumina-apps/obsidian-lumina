@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { cosineSimilarity, searchVault } from './search';
+import { searchVault } from './search';
 import type { ParentChunk } from '../../shared/types/rag.types';
 import type { OramaStore } from './oramaStore';
 
@@ -16,25 +16,6 @@ vi.mock('../../shared/debugLogger', () => ({
 }));
 
 describe('search module', () => {
-	describe('cosineSimilarity', () => {
-		it('should return 1 for identical vectors', () => {
-			const v1 = [1, 2, 3];
-			const v2 = [1, 2, 3];
-			expect(cosineSimilarity(v1, v2)).toBeCloseTo(1);
-		});
-
-		it('should return 0 for orthogonal vectors', () => {
-			const v1 = [1, 0];
-			const v2 = [0, 1];
-			expect(cosineSimilarity(v1, v2)).toBe(0);
-		});
-
-		it('should return 0 for different length or empty vectors', () => {
-			expect(cosineSimilarity([1], [1, 2])).toBe(0);
-			expect(cosineSimilarity([], [])).toBe(0);
-		});
-	});
-
 	describe('searchVault', () => {
 		it('should return empty array if no parent chunks or oramaDb is null', async () => {
 			const embedFn = vi.fn();

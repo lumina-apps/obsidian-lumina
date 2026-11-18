@@ -197,7 +197,3 @@ export function estimateInputTokensDetails(options: EstimateInputTokensOptions):
 		displayText,
 	};
 }
-
-export function calculateEstimatedInputTokens(options: EstimateInputTokensOptions): number {
-	return estimateInputTokensDetails(options).tokens;
-}

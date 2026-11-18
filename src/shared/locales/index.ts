@@ -6,6 +6,5 @@ export {
   getLanguage,
   t,
   addDynamicLocale,
-  preloadDefaultLocale,
   type Language,
 } from './helpers';

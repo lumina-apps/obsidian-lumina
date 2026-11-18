@@ -3,7 +3,6 @@ import { TFile, TFolder } from 'obsidian';
 import {
 	createRemoveAttachment,
 	handleFiles,
-	createFileInputTrigger,
 	createDragOverHandler,
 } from './useFileAttachment';
 import { normalizePastedFile } from '../../utils/fileAttachmentUtils';
@@ -38,19 +37,6 @@ describe('useFileAttachment composable', () => {
 		const file = new File(['dummy'], 'image.png', { type: 'image/png' });
 		const normalized = normalizePastedFile(file);
 		expect(normalized.name).toMatch(/^Pasted_Image_\d+\.png$/);
-	});
-
-	it('createFileInputTrigger triggers click on file input element', () => {
-		let clicked = false;
-		const mockEl = {
-			click: () => {
-				clicked = true;
-			},
-		} as unknown as HTMLInputElement;
-
-		const trigger = createFileInputTrigger(() => mockEl);
-		trigger();
-		expect(clicked).toBe(true);
 	});
 
 	it('createDragOverHandler prevents default event', () => {

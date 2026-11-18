@@ -222,8 +222,6 @@ const mainContext = await esbuild.context({
 	],
 	resolveExtensions: ['.svelte.ts', '.ts', '.js', '.svelte'],
 	alias: {
-		"bluebird/js/release/promise": "./src/core/mocks/bluebird.js",
-		"bluebird": "./src/core/mocks/bluebird.js",
 		"ajv": "./src/core/mocks/ajv.js",
 		"ajv-formats": "./src/core/mocks/ajv-formats.js",
 		"underscore": "./src/core/mocks/underscore.js",
@@ -305,8 +303,6 @@ const workerContext = await esbuild.context({
 	// bare import("fs")가 생성되어 에러를 유발합니다. 제거하여 package.json의 browser 필드가 작동하게 합니다.
 	external: obsidianExternals.filter(e => !builtinModules.includes(e) && !e.startsWith("node:")),
 	alias: {
-		"bluebird/js/release/promise": "./src/core/mocks/bluebird.js",
-		"bluebird": "./src/core/mocks/bluebird.js",
 		"ajv": "./src/core/mocks/ajv.js",
 		"ajv-formats": "./src/core/mocks/ajv-formats.js",
 		"underscore": "./src/core/mocks/underscore.js",

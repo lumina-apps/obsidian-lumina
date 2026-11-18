@@ -157,19 +157,6 @@ export function enforceMarkdownExt(path: string): string {
 	return norm;
 }
 
-/**
- * 경로 세그먼트들을 안전하게 결합하고 normalizePath 적용
- * '..' 나 '.' 와 같은 디렉토리 순회 방지
- */
-export function sanitizeAndNormalizePath(parts: string[], enforceMd: boolean = false): string {
-	const safeParts = parts
-		.filter((p) => p !== '..' && p !== '.')
-		.map((p) => sanitizeFilename(p));
-		
-	const joined = safeParts.join('/');
-	return enforceMd ? enforceMarkdownExt(joined) : normalizePath(joined);
-}
-
 /** 경로 전체 정제 (경로 순회 방지 + 폴더/파일명 특수문자 치환 + .md 확장자 보장) */
 export function sanitizeFilePath(rawPath: string, enforceMd: boolean = true, appOrBasePath?: App | { app?: App; vault?: { adapter: unknown } } | string): string {
 	let cleanedPath = rawPath.trim();

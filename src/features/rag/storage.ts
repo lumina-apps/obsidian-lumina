@@ -1,9 +1,9 @@
 /**
  * 플러그인 스토리지 경로 계산 유틸.
- * 워커 경로, 모델 캐시 경로, 히스토리 경로 등을 반환합니다.
+ * 모델 캐시 경로 및 볼트 식별자 등을 반환합니다.
  */
 
-import { normalizePath, type App, Platform } from 'obsidian';
+import { type App, Platform } from 'obsidian';
 import { FileSystemAdapter } from 'obsidian';
 import { t } from '../../shared/locales/helpers';
 import { hashString } from '../../shared/utils/hash';
@@ -35,39 +35,12 @@ export function getPluginDir(app: App): string {
 	return `${base}/${configDir}/plugins/${PLUGIN_ID}`;
 }
 
-/** 임베딩 워커 파일 절대 경로 */
-export function getWorkerPath(app: App): string {
-	if (Platform.isDesktop && nodePath) {
-		return nodePath.join(getPluginDir(app), 'embedding.worker.js');
-	}
-	return `${getPluginDir(app)}/embedding.worker.js`;
-}
-
-/** 임베딩 워커 파일의 Vault 상대 경로 (getResourcePath 용) */
-export function getWorkerRelativePath(app: App): string {
-	const configDir = app.vault.configDir; // 예: .obsidian
-	return normalizePath(`${configDir}/plugins/${PLUGIN_ID}/embedding.worker.js`);
-}
-
 /** 모델 캐시 디렉토리 절대 경로 */
 export function getModelCacheDir(app: App): string {
 	if (Platform.isDesktop && nodePath) {
 		return nodePath.join(getPluginDir(app), 'storage', 'models');
 	}
 	return `${getPluginDir(app)}/storage/models`;
-}
-
-/** 벡터 DB 디렉토리 절대 경로 */
-export function getVectorDbDir(app: App): string {
-	if (Platform.isDesktop && nodePath) {
-		return nodePath.join(getPluginDir(app), 'storage', 'vectordb');
-	}
-	return `${getPluginDir(app)}/storage/vectordb`;
-}
-
-/** 채팅 기록 저장 경로 (볼트 내 상대 경로) */
-export function getHistoryVaultPath(relativePath: string): string {
-	return normalizePath(relativePath);
 }
 
 /** 볼트별 고유 식별자 반환 (IndexedDB 볼트 간 격리용) */

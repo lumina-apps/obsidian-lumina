@@ -12,9 +12,7 @@
       "language": {
         "name": "插件语言",
         "desc": "选择插件的界面语言。",
-        "systemTranslate": "翻译为系统语言",
         "llmRequired": "需要连接 LLM 才能使用翻译功能。",
-        "warningCost": "使用翻译功能可能会产生 LLM API 费用。",
         "option": {
           "en": "English",
           "ko": "한국어",
@@ -37,7 +35,6 @@
       },
       "apiKey": {
         "name": "API 密钥与模型注册",
-        "desc": "注册云端提供商的 API 密钥或本地 LLM 的 URL。",
         "mobileLocalWarning": "移动端无法使用本地 LLM。",
         "addConnection": "+ 添加新 LLM 连接",
         "apiKey": "API 密钥",
@@ -50,7 +47,6 @@
         "notConnected": "未连接",
         "selectModel": "选择模型",
         "endpointPlaceholder": "例：http://localhost:11434",
-        "newConnection": "新连接",
         "success": "连接成功！",
         "fail": "连接失败：",
         "noModels": "没有可用的模型。"
@@ -70,12 +66,6 @@
         "guide": "※ 在上方注册 LLM 连接并完成连接测试。",
         "localWarn": "⚠️ 无法自动验证本地模型是否为嵌入模型。\n如果索引失败，请选择专门的嵌入模型。",
         "mobileWarn": "⚠️ 移动端无法使用本地嵌入模型。请选择云端嵌入。"
-      },
-      "defaultChatModel": {
-        "name": "默认聊天模型",
-        "desc": "选择侧边栏聊天默认使用的 LLM 模型。",
-        "sidebarDefault": "侧边栏聊天默认模型",
-        "noConnections": "添加 LLM 连接并通过测试后，即可选择默认模型。"
       },
       "quickActionProvider": {
         "name": "快捷操作提供程序",
@@ -106,13 +96,11 @@
         "syncFail": "同步失败",
         "mcpDisconnected": "MCP 已断开",
         "mcpConnected": "MCP 已连接",
-        "connected": "已连接: {{name}}",
-        "disconnected": "已断开: {{name}}"
+        "connected": "已连接: {{name}}"
       }
     },
     "mcp": {
       "title": "代理与\nMCP",
-      "desc": "连接外部 Model Context Protocol (MCP) 服务器以使用本地工具，或启用内置服务器以允许其他应用控制 Lumina。",
       "agentMode": {
         "name": "代理模式 (Agent Mode)",
         "desc": "LLM 利用 MCP 工具自主执行任务。⚠️ 小型模型可能导致性能下降。",
@@ -125,15 +113,10 @@
       },
       "addServer": "+ 添加新 MCP 服务器",
       "serverName": "服务器名称",
-      "transport": "传输方式",
-      "transportDesc": "选择此 MCP 服务器的传输协议。",
-      "transportSse": "SSE (GET → 会话 URL → POST)",
-      "transportStreamableHttp": "Streamable HTTP (直接 POST)",
       "enableDesc": "启用（注入工具到聊天）",
       "deleteServer": "删除此服务器",
       "emptyServers": "未注册服务器。",
       "localServerName": "Lumina 本地服务器",
-      "restart": "重新启动",
       "localServer": {
         "sectionTitle": "Lumina 内置 MCP 服务器（托管）",
         "desc": "打开本地服务器，以便外部客户端（如 AI 智能体等）能够访问 Obsidian 功能。",
@@ -193,15 +176,7 @@
           "name": "认证令牌 (Auth Token) (可选)",
           "desc": "如果服务器需要认证，请输入令牌。"
         }
-      },
-      "permission": {
-        "title": "工具执行权限",
-        "desc": "AI 正在请求执行一个具有潜在危险的工具的权限。\n\n服务器: {{server}}\n工具: {{tool}}",
-        "args": "参数:",
-        "approve": "批准",
-        "reject": "拒绝"
-      },
-      "experimental": "实验性功能"
+      }
     },
     "webSearch": {
       "title": "网络搜索",
@@ -250,12 +225,9 @@
         "allSettings": "所有设置"
       },
       "title": "聊天与\n提示词",
-      "currentNote": "包含当前笔记",
       "systemPrompt": {
         "name": "系统提示词",
         "desc": "注册并管理系统提示词。",
-        "active": "✅ 当前激活",
-        "activate": "激活",
         "addPrompt": "+ 添加提示词",
         "defaultName": "系统提示词",
         "variablesHint": "点击插入变量："
@@ -302,7 +274,6 @@
         "activeNotePrefix": "[当前笔记: {{name}}]",
         "canvasFile": "[白板文件: {{name}}]",
         "tagFiles": "[含标签的文件: {{name}} (最多 5 个)]",
-        "activeNotePrompt": "当前活动笔记",
         "categoryActiveNote": "📄 包含当前笔记",
         "categorySelection": "✂️ 选中的文本",
         "categoryFolder": "📁 添加文件夹",
@@ -319,7 +290,6 @@
       },
       "sendMode": {
         "name": "消息发送方式",
-        "desc": "选择聊天消息的发送方式。（默认：按 Enter 发送）",
         "enter": "按 Enter 发送",
         "ctrlEnter": "按 Ctrl + Enter 发送"
       },
@@ -366,7 +336,6 @@
         "waitTimeDesc": "停止输入后发送自动补全请求前的等待时间（毫秒）。（默认：700）"
       },
       "memoryLimit": {
-        "name": "对话记忆限制",
         "desc": "保留多少对话历史（按轮数或 Token 数）。",
         "limitType": "对话记忆方式",
         "autoSummary": "自动上下文摘要（默认）",
@@ -377,8 +346,6 @@
         "maxTokens": "最大上下文 Token（默认：8000）"
       },
       "modelParams": {
-        "name": "模型参数",
-        "desc": "调整回答的创造性和输出长度。",
         "tempLabel": "温度 (Temperature)",
         "tempDesc": "越接近 0 = 精确，越接近 2 = 创造性（默认：0.7）",
         "maxOutput": "最大输出 Token",
@@ -408,28 +375,10 @@
       "title": "RAG 与\n上下文",
       "embeddingWarning": "RAG 用的嵌入模型设置在 [连接与模型设置] 选项卡中。",
       "disabledWarning": "⚪ RAG 目前已禁用。请先在 [连接与模型设置] 选项卡中启用 RAG 引擎。",
-      "dataScope": {
-        "name": "默认数据范围设置",
-        "desc": "选择 RAG 搜索要包含的笔记。（默认：整个库）",
-        "vaultWide": "整个库",
-        "activeNote": "仅当前活动笔记",
-        "manual": "仅手动选择的文件"
-      },
       "autoIncludeActive": {
-        "name": "自动包含当前笔记",
-        "desc": "在聊天时默认将当前活动的（打开的）笔记包含在上下文中。"
-      },
-      "includePaths": {
-        "name": "包含的路径",
-        "desc": "逗号分隔。留空则包含整个库。"
-      },
-      "ignorePaths": {
-        "name": "忽略的路径",
-        "desc": "逗号分隔。优先于包含的路径。（默认：templates, chatHistory 等）"
+        "name": "自动包含当前笔记"
       },
       "chunking": {
-        "name": "分块设置",
-        "desc": "配置文档分割的块大小和重叠。",
         "parentSizeName": "父块大小 (Parent Chunk Size)",
         "parentSizeDesc": "文档分割的基本单位（建议 1000~3000 字符） (默认值: 2000)",
         "parentOverlapName": "父块重叠 (Parent Chunk Overlap)",
@@ -471,8 +420,6 @@
         "excludePatternsPlaceholder": "例如：\n^> \\[!note\\].*$\n```dataview[\\s\\S]*?```"
       },
       "reindex": {
-        "name": "完全重新索引",
-        "desc": "从头开始对库中的所有笔记重新建立索引。",
         "button": "🔄 完全重新索引",
         "notActivated": "❌ RAG 引擎未激活。",
         "started": "🔄 开始完全重新索引...",
@@ -481,11 +428,9 @@
       },
       "status": {
         "name": "索引状态",
-        "desc": "显示当前的索引大小及文件数量。",
         "statusLabel": "状态",
         "indexing": "索引中... ({{processed}}/{{total}})",
         "files": "📄 已索引文件：{{count}}个",
-        "size": "💾 存储使用量：{{size}} KB",
         "ready": "RAG 已就绪",
         "indexingShort": "索引中",
         "error": "RAG 错误",
@@ -507,10 +452,7 @@
         "initFail": "❌ Lumina: RAG Worker 初始化失败\n{{error}}"
       },
       "reset": {
-        "name": "重置索引",
-        "desc": "清除所有已索引的数据。",
         "button": "🗑 重置索引",
-        "devNotice": "⚠️ 索引已重置。（开发中）",
         "resetConfirm": "您确定要重置索引吗？此操作无法撤销。",
         "resetSuccess": "🗑 索引已重置。"
       }
@@ -545,7 +487,6 @@
         "name": "数据初始化与插件重置",
         "desc": "将所有设置和数据重置为默认值。 (聊天记录将保留)",
         "button": "🔄 重置",
-        "devNotice": "⚠️ 插件重置功能正在开发中。",
         "confirmTitle": "插件重置",
         "confirmMsg": "您确定要重置所有设置吗？已注册的 API 密钥、设置选项、RAG 索引、已下载的本地模型以及系统语言翻译缓存将被全部删除。（聊天记录将保留）",
         "success": "✅ 插件设置已重置。"
@@ -553,7 +494,6 @@
       "donate": {
         "name": "捐款与支持",
         "desc": "如果您觉得 Lumina 很有用，请考虑赞助支持我们的开发！",
-        "supportTitle": "支持 Lumina：",
         "kofi": "☕ Ko-fi",
         "ctee": "☕ Ctee",
         "githubSponsors": "💖 GitHub Sponsors"
@@ -565,7 +505,6 @@
       "unknownType": "未知的提供商类型：{{type}}",
       "apiError": "{{provider}} API 错误：{{status}} {{text}}",
       "ollamaNoModel": "Ollama 中没有正在运行的模型。请先使用 `ollama run <model>` 运行模型。",
-      "connectFail": "连接失败：{{status}} {{text}}",
       "anthropicNoEmbed": "Anthropic 不支持嵌入 API。",
       "visionNotSupported": "⚠️ 所选提供商（{{provider}}）不支持图像分析。如需使用图片，请选择 OpenAI、Anthropic 或 Google（支持视觉的模型）。",
       "timeoutTTFT": "超时：第一个Token响应延迟。 ({{fallback}})",
@@ -589,12 +528,7 @@
     "cli": {
       "binaryPathName": "二进制路径",
       "binaryPathDesc": "CLI 可执行文件路径（例如 claude, codex, agy）",
-      "autoApproveName": "自动批准工具",
-      "autoApproveDesc": "无需提示即可自动批准工具执行和文件修改",
-      "waitingApprovalPrefix": "🛡️ 等待批准：",
       "runningToolPrefix": "⚡ 运行中：",
-      "toolRejectedPrefix": "❌ 已拒绝：",
-      "toolRejectedByUser": "已被用户拒绝",
       "waitingApprovalBadge": "需要批准",
       "approvalPrompt": "智能体请求执行此工具。是否批准？",
       "approveBtn": "批准",
@@ -605,14 +539,11 @@
   },
   "errors": {
     "llmNotConnected": "未连接 LLM。",
-    "ragIndexingFailed": "RAG 索引失败。",
     "llmConnectRequired": "请在设置中添加 LLM 并完成连接测试。",
-    "resetChat": "重置对话",
     "chatPlaceholder": "输入消息... (@: 上下文, /: 命令)",
     "chatEmptyWelcome": "向 Lumina 提问任何事情。",
     "cancelStreaming": "中止",
     "send": "发送",
-    "underDevelopment": "此功能正在开发中。",
     "ragDisabledGlobally": "全局 RAG 引擎已关闭。请先在设置中启用。",
     "agentDisabledGlobally": "代理功能已禁用。请先在设置中启用。",
     "llm": {
@@ -683,11 +614,6 @@
     "estimatedTokensTooltip": "本次发送预估输入 Token 数（近似值）",
     "tokenOverLimitTooltip": "上下文超过 10 万 Token，显示估算上限（> 100k tokens）",
     "cliMode": {
-      "cliAgent": "CLI 智能体",
-      "pluginAgent": "插件智能体",
-      "cliAgentTooltip": "CLI 智能体模式：CLI 直接运行自主工具（Bash、文件修改等）。",
-      "pluginAgentTooltip": "插件智能体模式：将 CLI 作为纯 LLM 推理机，使用 Lumina 的工具（MCP、RAG、笔记）。",
-      "disabledHintForCliAgent": "CLI 智能体模式下由 CLI 自身管理工具。",
       "readModeTooltip": "只读模式：CLI 智能体仅进行查看和分析，不会修改笔记。",
       "editModeTooltip": "编辑模式：允许 CLI 智能体直接在库中创建和修改笔记。",
       "readModeNotice": "👁️ CLI 智能体：只读模式（禁止修改笔记）",
@@ -701,9 +627,7 @@
     "remove": "移除",
     "add": "添加",
     "copy": "复制",
-    "success": "成功",
     "error": "错误",
-    "history": "对话记录",
     "back": "返回",
     "settings": "设置",
     "loading": "加载中...",
@@ -715,12 +639,10 @@
     "chatTabName": "AI 聊天",
     "searchPlaceholder": "基于语义进行提问/搜索...",
     "duplicateWarning": "⚠️ 存在高度相似的笔记：",
-    "duplicateCompare": "进行比较",
     "recommendedTags": "推荐标签",
     "relatedNotes": "相关笔记",
     "insertLink": "插入链接",
     "openInSplit": "分屏查看",
-    "chatWithNote": "开始聊天",
     "filterPlaceholder": "过滤器（文件夹路径或 #标签）",
     "emptyStateText": "RAG 搜索功能已关闭。",
     "emptyStateSub": "请在设置中开启嵌入（RAG）引擎。",
@@ -728,8 +650,6 @@
     "stagedContext": "暂存的上下文",
     "approxTokens": "预计 Token 数：{{current}} / {{max}}",
     "startChat": "与 {{count}} 个项目开始聊天",
-    "indexing": "RAG 索引中... ({{processed}} / {{total}})",
-    "loadingModel": "正在加载嵌入模型...",
     "noActiveEditor": "未找到激活的 Markdown 编辑器。",
     "tagInserted": "已添加标签: {{tag}}",
     "tagInsertFailed": "添加标签失败。",
@@ -743,7 +663,6 @@
     "toolExecuting": "⚙️ 正在执行 {{name}}...",
     "actionApproval": {
       "title": "需要批准: {{action}}",
-      "targetFile": "目标文件: {{path}}",
       "editNote": "编辑笔记",
       "editNoteDesc": "查看下面的差异并批准或拒绝更改。",
       "createNote": "📄 是否要创建新笔记？",
@@ -756,13 +675,6 @@
       "reject": "拒绝",
       "acceptAll": "全部批准",
       "rejectAll": "全部拒绝",
-      "chunkAccepted": "区块已批准",
-      "chunkAcceptedShort": "已批准",
-      "chunkAcceptedDesc": "所有区块决定后，此更改将被应用。",
-      "chunkRejected": "区块已拒绝",
-      "chunkRejectedShort": "已拒绝",
-      "chunkRejectedDesc": "此更改将被跳过。",
-      "pendingChangesBanner": "待修改 — 请在Lumina聊天中查看",
       "tableNotice": "📊 检测到表格修改。在实时预览模式下，内联 Diff 可能会被表格组件遮挡。",
       "switchToSourceMode": "切换到源码模式",
       "viewInEditor": "在编辑器中查看",
@@ -777,20 +689,15 @@
     "inlineEmpty": "当前行未找到目标文本。请编写或选择文本。",
     "qaEmptySel": "未选择文本。",
     "qaNotConfigured": "快捷操作模型未配置。请在设置中选择专用模型。",
-    "qaNoProvider": "未配置 LLM 提供程序。",
     "qaInvalidProvider": "无效的或未认证的 LLM 提供程序。",
-    "qaNoModel": "没有可用模型。",
     "qaSelectedText": "选中的文本",
     "qaExecuting": "正在执行 {{name}}...",
     "qaCompleted": "{{name}} 完成",
     "qaError": "发生错误：{{msg}}",
-    "qaWaitingAI": "⏳ 等待 AI 响应...",
     "qaEmptyResponse": "⚠️ 模型返回了空文本。（无限循环或提示词兼容性问题）",
     "qaUnknownError": "未知错误",
-    "qaReasoningDetected": "🚫 检测到推理模型的思考过程(<think>)。已取消快捷操作。请在设置中更改为标准 Instruct 模型。",
     "modalCancel": "取消",
     "modalProceed": "继续",
-    "modelPlaceholder": "输入模型名称... (例如, claude, gpt-4)",
     "searchModelShort": "搜索模型...",
     "favorites": "收藏",
     "allModels": "所有模型",
@@ -821,12 +728,8 @@
     "debugCollapseAll": "折叠全部",
     "ragTooLong": "[Lumina] RAG 上下文过长，已截断至 {{max}} 字符。",
     "ragWorkerInitErr": "未知的 Worker 初始化错误（请检查控制台）",
-    "ragWorkerTimeout": "嵌入模型加载超时（>60秒）。请检查网络或清除缓存后重试。",
     "ragWorkerTerm": "Worker 已终止。",
     "ragWorkerNotReady": "EmbeddingWorker 未就绪。请先调用 init()。",
-    "ragWorkerNotInit": "模型未初始化。请先发送 init 消息。",
-    "ragWorkerLoadFail": "模型加载失败：",
-    "localizedPrompt": "Always respond in Chinese (简体中文).",
     "cmdCtxMenu": "💬 发送到 Lumina 聊天",
     "cmdAutoLinkNote": "🔗 自动链接当前笔记",
     "cmdChatTitle": "打开聊天",
@@ -853,28 +756,19 @@
     "noticeMobileRag": "移动端不支持本地嵌入。请在设置中配置云端嵌入以使用 RAG。",
     "noticeLargeVault": "您的库包含大量笔记（{{count}}个）。首次后台索引可能需要一些时间和资源。",
     "noticeIndexing": "Lumina：正在后台进行初始设置和笔记索引...",
-    "errNoProvider": "未找到所选的嵌入提供程序配置。",
     "errMobileAuto": "移动端不支持本地嵌入（自动模式）。请在设置中选择云端嵌入。",
     "mcpTokenCopied": "认证令牌已复制到剪贴板。",
     "mcpManagerNotInitialized": "⚠️ MCP Manager 未初始化。",
     "mcpConnectFailed": "MCP 服务器 \"{{name}}\" 连接失败。已禁用。",
     "mcpLocalServerStartFailed": "启动内置 MCP 服务器失败: {{error}}",
-    "mcpDisconnectedDuringExecution": "在执行工具时 MCP 服务器 \"{{name}}\" 连接断开，已禁用该服务器。",
-    "mcpToolExecutionFailed": "在 MCP 服务器 \"{{name}}\" 上执行工具失败。该服务器已被禁用。请检查您的设置。",
     "mcpSyncError": "⚠️ 同步 MCP 服务器时出错。",
-    "mcpLocalServerRestarted": "✅ 内置 MCP 服务器已重启（端口：{{port}}）",
     "mcpLocalServerStarted": "✅ 内置 MCP 服务器已启动（端口：{{port}}）",
     "mcpLocalServerStopped": "🛑 内置 MCP 服务器已停止（端口：{{port}}）",
     "mcpCliCleanupSuccess": "✅ 外部 CLI 联动配置已清理干净。",
-    "mcpLocalServerDisconnectAgentDisabled": "⚠️ 由于内置服务器连接错误，代理模式已被禁用。",
     "mcpClientDisconnected": "🔌 MCP 服务器“{{name}}”已断开连接。",
     "mcpClientConnected": "✅ MCP 服务器“{{name}}”已成功连接。",
-    "mcpClientToolExecutionFailedStatusError": "⚠️ MCP 服务器“{{name}}”工具执行失败，状态已设置为错误。",
-    "mcpClientToolExecuteFailedTryReconnect": "在 MCP 服务器“{{name}}”上执行工具失败。请尝试重新连接。",
     "toolExecutionBlockedReadMode": "错误：当前处于读取模式。要执行需要写入或修改权限的工具（{{toolName}}），请切换到“编辑模式”。",
     "agentModeLlmRequired": "⚠️ 要使用代理，您必须先配置并验证 LLM 提供商。",
-    "agentModeLocalServerStarting": "🚀 代理已启用：正在连接本地 MCP 服务器...",
-    "agentModeLocalServerConnecting": "🚀 代理已启用：正在连接本地 MCP 服务器...",
     "agentModeEnabled": "🤖 代理模式已启用。",
     "agentModeDisabled": "🤖 代理模式已禁用。",
     "agentModeSwitchedToRead": "👁️ 代理已切换为只读模式。（只读）",
@@ -890,10 +784,6 @@
     "tooShortToCompress": "可压缩的对话不足。",
     "compressFailed": "⚠️ 压缩上下文失败。",
     "compressedContextBlock": "📋 [之前的对话已压缩]",
-    "agentModeLocalServerStoppedDisabled": "⚠️ 由于内置 MCP 服务器已停止，代理模式也被禁用。",
-    "agentModeLocalServerStoppedDisabledShort": "⚠️ 由于本地服务器已停止，代理功能已禁用。",
-    "mcpLocalServerTokenInputFromLocal": "已输入本地服务器令牌。",
-    "mcpLocalServerTokenInputFromLocalTooltip": "自动输入内置 MCP 服务器认证令牌",
     "thoughtProcess": "思考过程",
     "agentMaxStepsReached": "⚠️ 达到最大工具执行次数。",
     "agentRepeatedToolCalls": "⚠️ 检测到重复的工具调用并已终止。请换个说法提问。",
@@ -974,7 +864,6 @@
       "argContent": "笔记的初始内容",
       "tooLong": "要创建的内容超出了限制（{{limit}} 个字符）。",
       "alreadyExists": "文件已存在。不允许覆盖：{{path}}",
-      "parentFolderNotFound": "父文件夹不存在：{{parentPath}}",
       "success": "已创建笔记：{{path}}"
     },
     "search_notes": {
@@ -988,7 +877,6 @@
       "argPath": "要追加内容的文件的路径",
       "argContent": "要追加的内容",
       "tooLong": "一次可以追加的最大长度为 {{limit}} 个字符。",
-      "notFound": "未找到文件：{{path}}",
       "maxLengthExceeded": "无法继续追加，因为文件已超出最大长度（100,000 个字符）以防止无限循环。",
       "success": "内容已成功追加：{{path}}"
     },
@@ -1028,18 +916,7 @@
       "pathExcluded": "RAG 排除/包含设置已限制对此路径的访问：{{path}}"
     },
     "generate_moc": {
-      "desc": "基于文件夹、标签或文件列表收集相关笔记，并生成 MOC (Map of Content) 中心笔记。",
-      "argTitle": "MOC 笔记的标题（用作 H1 标题）",
-      "argOutputPath": "保存 MOC 文件的路径（例如：Project MOC 或 Maps/Project MOC）。.md 扩展名会自动添加。",
-      "argFolder": "收集此文件夹路径下的笔记（可选）",
-      "argTags": "收集包含所有这些标签的笔记（可选）",
-      "argFiles": "要包含的笔记路径列表（可选，指定时将忽略 folder/tags）",
-      "argGroupBy": "分组策略：\"folder\"(按文件夹)、\"tag\"(按标签)、\"none\"(列表)（默认：\"none\"）",
-      "argOverwrite": "如果文件已存在是否覆盖（默认：false）",
-      "successCreate": "已创建 MOC：{{path}} ({{count}} 个笔记)",
-      "successUpdate": "已更新 MOC：{{path}} ({{count}} 个笔记)",
-      "emptyWarning": "未找到匹配指定范围的笔记。此 MOC 目前为空。",
-      "noScope": "必须提供 folder、tags 或 files 中的至少一个。"
+      "desc": "基于文件夹、标签或文件列表收集相关笔记，并生成 MOC (Map of Content) 中心笔记。"
     },
     "replace_note": {
       "desc": "替换现有笔记的全部内容。"
@@ -1201,21 +1078,14 @@
       "deletedModel": "[已删除] 模型",
       "deletedPrompt": "[已删除] 提示词",
       "save": "保存",
-      "saveSuccess": "项目设置已保存",
-      "nameRequired": "项目名称为必填项，且不能为 'default'。",
-      "nameExists": "已存在同名项目。",
       "title": "项目",
       "defaultDesc": "默认项目",
       "historyPath": "历史记录",
       "noSubfolder": "历史记录：使用全局路径",
       "activate": "切换",
-      "config": "项目设置",
       "deleteConfirmTitle": "删除项目",
       "addProjectDesc": "创建新项目并配置 RAG 和聊天设置。",
-      "namePlaceholder": "项目名称",
-      "subfolderPlaceholder": "子文件夹名称",
       "add": "添加",
-      "duplicateName": "已存在同名的项目。",
       "defaultProjectName": "默认",
       "modalTitleActive": "项目设置 (当前: {{projectName}})",
       "activeProjectModelDesc": "设置当前活动项目 (<strong>{{projectName}}</strong>) 的默认聊天模型。您也可以在项目设置（RAG选项卡）中更改此设置。",

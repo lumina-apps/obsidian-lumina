@@ -19,18 +19,6 @@ export interface FileAttachmentContext {
 }
 
 /**
- * 파일 선택 input 클릭 트리거
- */
-export function createFileInputTrigger(
-	getFileInputEl: () => HTMLInputElement | null,
-): () => void {
-	return () => {
-		const el = getFileInputEl();
-		if (el) el.click();
-	};
-}
-
-/**
  * input[type=file] change 이벤트 핸들러
  */
 export function createFileSelectHandler(

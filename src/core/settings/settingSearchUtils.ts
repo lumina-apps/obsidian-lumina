@@ -189,18 +189,6 @@ export function getSynonymMapForLocale(locale?: string): Map<string, string[]> {
 }
 
 /**
- * 하위 호환성을 위해 유지되는 한국어 동의어 맵.
- */
-export const BILINGUAL_KEYWORDS: Record<string, string[]> = (() => {
-	const map = getSynonymMapForLocale('ko');
-	const record: Record<string, string[]> = {};
-	for (const [k, v] of map.entries()) {
-		record[k] = v;
-	}
-	return record;
-})();
-
-/**
  * 검색어로부터 동의어/교차 언어 검색어 목록을 추출합니다.
  * 예: "model" -> ["model", "모델"] (한국어 모드) 또는 ["model", "モデル"] (일본어 모드)
  *     "기본 모델" -> ["기본 모델", "model", "모델"]

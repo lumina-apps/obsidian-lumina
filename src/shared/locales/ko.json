@@ -12,9 +12,7 @@
       "language": {
         "name": "플러그인 언어",
         "desc": "플러그인 인터페이스 언어를 선택합니다.",
-        "systemTranslate": "시스템 언어로 번역",
         "llmRequired": "번역 기능을 사용하려면 LLM 연동이 필요합니다.",
-        "warningCost": "번역 기능 사용 시 LLM API 비용이 발생할 수 있습니다.",
         "option": {
           "en": "English",
           "ko": "한국어",
@@ -37,7 +35,6 @@
       },
       "apiKey": {
         "name": "API 키 및 모델 등록",
-        "desc": "클라우드 제공자의 API 키 또는 로컬 모델(Ollama 등)의 URL을 등록합니다.",
         "mobileLocalWarning": "모바일 환경에서는 로컬 모델을 연결하여 사용할 수 없습니다.",
         "addConnection": "+ 새 LLM 연결 추가",
         "apiKey": "API 키",
@@ -50,7 +47,6 @@
         "notConnected": "미연결",
         "selectModel": "모델 선택",
         "endpointPlaceholder": "예: http://localhost:11434",
-        "newConnection": "새 연결",
         "success": "연결 성공!",
         "fail": "연결 실패: ",
         "noModels": "사용 가능한 모델이 없습니다."
@@ -70,12 +66,6 @@
         "guide": "※ 모델을 추가하려면 위쪽에서 LLM 연결을 등록하고 연결 테스트를 완료해 주세요.",
         "localWarn": "⚠️ 로컬 모델은 임베딩 모델인지 자동으로 확인할 수 없습니다.\n인덱싱 시도 후 오류가 발생하면 임베딩 전용 모델을 선택해 주세요.",
         "mobileWarn": "⚠️ 모바일 환경에서는 로컬 임베딩 모델을 사용할 수 없습니다. 클라우드 임베딩을 선택해 주세요."
-      },
-      "defaultChatModel": {
-        "name": "기본 채팅 모델",
-        "desc": "사이드바 채팅에서 기본으로 사용할 LLM 모델을 선택합니다.",
-        "sidebarDefault": "사이드바 채팅 기본 모델",
-        "noConnections": "LLM 연결을 추가하고 테스트를 통과하면 기본 모델을 선택할 수 있습니다."
       },
       "quickActionProvider": {
         "name": "퀵 액션 프로바이더",
@@ -106,13 +96,11 @@
         "syncFail": "동기화 실패",
         "mcpDisconnected": "MCP 연결 해제됨",
         "mcpConnected": "MCP 연결됨",
-        "connected": "연결됨: {{name}}",
-        "disconnected": "연결 해제됨: {{name}}"
+        "connected": "연결됨: {{name}}"
       }
     },
     "mcp": {
       "title": "에이전트\n& MCP",
-      "desc": "Model Context Protocol (MCP)을 통해 외부 도구를 연결하거나, 내장 서버를 통해 다른 앱에서 Lumina를 제어하도록 설정합니다.",
       "agentMode": {
         "name": "에이전트 (Agent) 활성화",
         "desc": "LLM이 스스로 판단하여 필요한 툴(검색, 파일 읽기, 노트 생성 등)을 자율적으로 사용하도록 허용합니다.",
@@ -125,15 +113,10 @@
       },
       "addServer": "+ 새 MCP 서버 추가",
       "serverName": "서버 이름",
-      "transport": "전송 방식",
-      "transportDesc": "이 MCP 서버의 전송 프로토콜을 선택합니다.",
-      "transportSse": "SSE (GET → 세션 URL → POST)",
-      "transportStreamableHttp": "Streamable HTTP (직접 POST)",
       "enableDesc": "활성화 (채팅에 도구 주입)",
       "deleteServer": "이 서버 삭제",
       "emptyServers": "등록된 서버가 없습니다.",
       "localServerName": "Lumina 내장 서버",
-      "restart": "재시작",
       "localServer": {
         "sectionTitle": "Lumina 내장 MCP 서버 (호스팅)",
         "desc": "Obsidian 기능을 외부 클라이언트(AI 에이전트 등)에서 접근할 수 있도록 로컬 서버를 엽니다.",
@@ -193,15 +176,7 @@
           "name": "인증 토큰 (Auth Token) (선택)",
           "desc": "서버가 인증을 요구하는 경우 토큰을 입력하세요."
         }
-      },
-      "permission": {
-        "title": "도구 실행 승인",
-        "desc": "AI가 시스템 제어 권한이 필요할 수 있는 위험한 도구의 실행을 요청하고 있습니다.\n\n서버: {{server}}\n도구: {{tool}}",
-        "args": "인자 (Arguments):",
-        "approve": "승인",
-        "reject": "거절"
-      },
-      "experimental": "실험적 기능"
+      }
     },
     "webSearch": {
       "title": "웹 검색",
@@ -250,12 +225,9 @@
         "allSettings": "모든 설정 보기"
       },
       "title": "채팅 및\n프롬프트",
-      "currentNote": "현재 노트 포함",
       "systemPrompt": {
         "name": "시스템 프롬프트",
         "desc": "시스템 프롬프트를 등록하고 관리합니다.",
-        "active": "✅ 현재 활성",
-        "activate": "활성화",
         "addPrompt": "+ 프롬프트 추가",
         "defaultName": "시스템 프롬프트",
         "variablesHint": "클릭하여 변수 삽입:"
@@ -302,7 +274,6 @@
         "activeNotePrefix": "[현재 노트: {{name}}]",
         "canvasFile": "[캔버스 파일: {{name}}]",
         "tagFiles": "[태그: {{name}} 가 포함된 파일들 (최대 5개)]",
-        "activeNotePrompt": "현재 활성 노트",
         "categoryActiveNote": "📄 현재 노트 포함",
         "categorySelection": "✂️ 선택된 텍스트",
         "categoryFolder": "📁 폴더 추가",
@@ -319,7 +290,6 @@
       },
       "sendMode": {
         "name": "메시지 전송 방식",
-        "desc": "채팅 메시지를 전송하는 방식을 선택합니다. (기본값: Enter로 전송)",
         "enter": "Enter로 전송",
         "ctrlEnter": "Ctrl + Enter로 전송"
       },
@@ -366,7 +336,6 @@
         "waitTimeDesc": "타이핑을 멈춘 후 자동완성 요청을 보내기까지 대기하는 시간(밀리초)입니다. (기본값: 700)"
       },
       "memoryLimit": {
-        "name": "대화 기억 제한",
         "desc": "이전 대화를 얼마나 기억할지 설정합니다. (턴 수 또는 토큰 수 기준)",
         "limitType": "대화 기억 방식",
         "autoSummary": "컨텍스트 자동 요약 (기본값)",
@@ -377,8 +346,6 @@
         "maxTokens": "최대 컨텍스트 토큰 (기본값: 8000)"
       },
       "modelParams": {
-        "name": "모델 파라미터",
-        "desc": "응답의 창의성과 출력 길이를 조절합니다.",
         "tempLabel": "온도 (Temperature)",
         "tempDesc": "0에 가까울수록 정확, 2에 가까울수록 창의적 (기본값: 0.7)",
         "maxOutput": "최대 출력 토큰",
@@ -408,28 +375,10 @@
       "title": "RAG 및\n컨텍스트",
       "embeddingWarning": "RAG용 임베딩 모델 설정은 [연결 및 모델 설정] 탭에 있습니다.",
       "disabledWarning": "⚪ RAG가 비활성화 상태입니다. [연결 및 모델 설정] 탭에서 RAG 엔진을 활성화해 주세요.",
-      "dataScope": {
-        "name": "기본 데이터 범위 설정",
-        "desc": "RAG 검색에 포함할 데이터 범위를 선택합니다. (기본값: 전체 저장소)",
-        "vaultWide": "전체 저장소",
-        "activeNote": "현재 활성화된 노트만",
-        "manual": "수동으로 선택한 파일만"
-      },
       "autoIncludeActive": {
-        "name": "현재 노트 자동 포함",
-        "desc": "채팅 시 현재 활성화된(열려있는) 노트를 컨텍스트에 기본으로 포함합니다."
-      },
-      "includePaths": {
-        "name": "포함할 경로",
-        "desc": "쉼표로 구분, 비워두면 전체 포함"
-      },
-      "ignorePaths": {
-        "name": "제외할 경로",
-        "desc": "쉼표로 구분, 포함 경로보다 우선 적용됨 (기본값: templates, chatHistory 등)"
+        "name": "현재 노트 자동 포함"
       },
       "chunking": {
-        "name": "청킹(Chunking) 설정",
-        "desc": "문서를 나눌 단위 크기와 겹침 정도를 설정합니다.",
         "parentSizeName": "상위 청크 크기",
         "parentSizeDesc": "문서 분할의 기본 단위 (1000~3000자 권장) (기본값: 2000)",
         "parentOverlapName": "상위 청크 겹침 크기",
@@ -471,8 +420,6 @@
         "excludePatternsPlaceholder": "예:\n^> \\[!note\\].*$\n```dataview[\\s\\S]*?```"
       },
       "reindex": {
-        "name": "전체 재인덱싱",
-        "desc": "보관소의 모든 노트를 처음부터 다시 인덱싱합니다.",
         "button": "🔄 전체 재인덱싱",
         "notActivated": "❌ RAG 엔진이 활성화되지 않았습니다.",
         "started": "🔄 전체 재인덱싱 시작…",
@@ -481,11 +428,9 @@
       },
       "status": {
         "name": "인덱싱 상태",
-        "desc": "현재 인덱스 용량 및 파일 수를 표시합니다.",
         "statusLabel": "상태",
         "indexing": "인덱싱 중… ({{processed}}/{{total}})",
         "files": "📄 인덱싱된 파일: {{count}}개",
-        "size": "💾 스토리지 사용량: {{size}} KB",
         "ready": "RAG 준비 완료",
         "indexingShort": "인덱싱 중",
         "error": "RAG 오류",
@@ -507,10 +452,7 @@
         "initFail": "❌ Lumina: RAG 워커 초기화 실패\n{{error}}"
       },
       "reset": {
-        "name": "인덱스 초기화",
-        "desc": "인덱싱된 모든 데이터를 초기화합니다.",
         "button": "🗑 인덱스 초기화",
-        "devNotice": "⚠️ 인덱스가 초기화되었습니다. (개발 중)",
         "resetConfirm": "정말로 인덱스를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
         "resetSuccess": "🗑 인덱스가 초기화되었습니다."
       }
@@ -545,7 +487,6 @@
         "name": "데이터 초기화 및 플러그인 리셋",
         "desc": "모든 설정과 데이터를 초기 상태로 되돌립니다. (채팅 기록은 유지)",
         "button": "🔄 초기화",
-        "devNotice": "⚠️ 플러그인 초기화 기능은 개발 중입니다.",
         "confirmTitle": "플러그인 초기화",
         "confirmMsg": "정말로 모든 설정을 초기화하시겠습니까? 등록된 API 키, 설정 옵션, RAG 인덱스, 다운로드된 로컬 모델 및 시스템 언어 번역 캐시가 모두 삭제됩니다. (채팅 기록은 유지됩니다)",
         "success": "✅ 플러그인 설정이 초기화되었습니다."
@@ -553,7 +494,6 @@
       "donate": {
         "name": "기부 및 후원",
         "desc": "Lumina 플러그인이 유용하셨다면 후원을 통해 개발을 지원해 주세요!",
-        "supportTitle": "Lumina 후원하기:",
         "kofi": "☕ Ko-fi",
         "ctee": "☕ Ctee",
         "githubSponsors": "💖 GitHub Sponsors"
@@ -565,7 +505,6 @@
       "unknownType": "알 수 없는 프로바이더 타입: {{type}}",
       "apiError": "{{provider}} API 오류: {{status}} {{text}}",
       "ollamaNoModel": "Ollama에 실행 중인 모델이 없습니다. `ollama run <model>` 로 모델을 먼저 실행해 주세요.",
-      "connectFail": "연결 실패: {{status}} {{text}}",
       "anthropicNoEmbed": "Anthropic은 임베딩 API를 지원하지 않습니다.",
       "visionNotSupported": "⚠️ 선택한 프로바이더({{provider}})는 이미지 분석을 지원하지 않습니다. 이미지 첨부를 사용하려면 OpenAI, Anthropic 또는 Google(비전 모델)을 선택해 주세요.",
       "timeoutTTFT": "타임아웃: 첫 번째 토큰 응답이 지연되었습니다. ({{fallback}})",
@@ -589,12 +528,7 @@
     "cli": {
       "binaryPathName": "바이너리 경로",
       "binaryPathDesc": "CLI 실행 파일 경로 (예: claude, codex, agy)",
-      "autoApproveName": "도구 자동 승인",
-      "autoApproveDesc": "도구 실행 및 파일 수정을 확인 없이 자동으로 승인합니다.",
-      "waitingApprovalPrefix": "🛡️ 승인 대기 중:",
       "runningToolPrefix": "⚡ 실행 중:",
-      "toolRejectedPrefix": "❌ 거부됨:",
-      "toolRejectedByUser": "사용자에 의해 거부됨",
       "waitingApprovalBadge": "승인 필요",
       "approvalPrompt": "에이전트가 위 도구를 실행하려고 합니다. 승인하시겠습니까?",
       "approveBtn": "승인",
@@ -605,14 +539,11 @@
   },
   "errors": {
     "llmNotConnected": "LLM이 연동되지 않았습니다.",
-    "ragIndexingFailed": "RAG 인덱싱에 실패했습니다.",
     "llmConnectRequired": "설정에서 LLM을 추가하고 연결 테스트를 완료해 주세요.",
-    "resetChat": "대화 초기화",
     "chatPlaceholder": "메시지를 입력하세요… (@: 컨텍스트, /: 명령어)",
     "chatEmptyWelcome": "Lumina에게 무엇이든 물어보세요.",
     "cancelStreaming": "중단",
     "send": "전송",
-    "underDevelopment": "개발 중인 기능입니다.",
     "ragDisabledGlobally": "전역 RAG 엔진이 사용 중지되었습니다. 설정에서 먼저 활성화해 주세요.",
     "agentDisabledGlobally": "에이전트 기능이 비활성화되어 있습니다. 설정에서 먼저 활성화해 주세요.",
     "llm": {
@@ -683,11 +614,6 @@
     "estimatedTokensTooltip": "이번 전송 예상 입력 토큰 (추정치)",
     "tokenOverLimitTooltip": "컨텍스트가 10만 토큰을 초과하여 추정치가 제한 표기됩니다 (> 100k tokens)",
     "cliMode": {
-      "cliAgent": "CLI 에이전트",
-      "pluginAgent": "플러그인 에이전트",
-      "cliAgentTooltip": "CLI 에이전트 모드: CLI가 자체 도구(Bash, 파일 수정 등)를 직접 실행합니다.",
-      "pluginAgentTooltip": "플러그인 에이전트 모드: CLI를 순수 LLM 추론기로 사용하여 Lumina의 도구(MCP, RAG, 노트)를 실행합니다.",
-      "disabledHintForCliAgent": "CLI 에이전트 모드에서는 CLI가 자체 도구를 실행하므로 비활성화됩니다.",
       "readModeTooltip": "읽기 모드: CLI 에이전트가 노트를 수정하지 않고 조회/분석만 수행합니다.",
       "editModeTooltip": "수정 모드: CLI 에이전트가 볼트 내 노트를 직접 생성 및 수정할 수 있습니다.",
       "readModeNotice": "👁️ CLI 에이전트: 읽기 모드 (노트 수정 차단)",
@@ -701,9 +627,7 @@
     "remove": "제거",
     "add": "추가",
     "copy": "복사",
-    "success": "성공",
     "error": "오류",
-    "history": "대화 기록",
     "back": "뒤로",
     "settings": "설정",
     "loading": "불러오는 중...",
@@ -715,12 +639,10 @@
     "chatTabName": "AI 채팅",
     "searchPlaceholder": "의미 기반으로 질문/검색...",
     "duplicateWarning": "⚠️ 매우 유사한 노트가 있습니다:",
-    "duplicateCompare": "비교하기",
     "recommendedTags": "추천 태그",
     "relatedNotes": "연관된 노트",
     "insertLink": "링크 삽입",
     "openInSplit": "스플릿뷰",
-    "chatWithNote": "채팅하기",
     "filterPlaceholder": "필터 (폴더 경로 또는 #태그)",
     "emptyStateText": "RAG 검색 기능이 꺼져 있습니다.",
     "emptyStateSub": "설정에서 임베딩(RAG) 엔진을 켜주세요.",
@@ -728,8 +650,6 @@
     "stagedContext": "선택된 컨텍스트",
     "approxTokens": "예상 토큰 수: {{current}} / {{max}}",
     "startChat": "{{count}}개로 채팅 시작",
-    "indexing": "RAG 인덱싱 중... ({{processed}} / {{total}})",
-    "loadingModel": "임베딩 모델 로딩 중...",
     "noActiveEditor": "활성화된 마크다운 에디터를 찾을 수 없습니다.",
     "tagInserted": "태그가 추가되었습니다: {{tag}}",
     "tagInsertFailed": "태그 추가에 실패했습니다.",
@@ -743,7 +663,6 @@
     "toolExecuting": "⚙️ {{name}} 실행 중...",
     "actionApproval": {
       "title": "승인 필요: {{action}}",
-      "targetFile": "대상 파일: {{path}}",
       "editNote": "노트 수정",
       "editNoteDesc": "아래 diff를 검토하고 변경사항을 승인 또는 거절하세요.",
       "createNote": "📄 새 노트를 생성하시겠습니까?",
@@ -756,13 +675,6 @@
       "reject": "거절",
       "acceptAll": "모두 승인",
       "rejectAll": "모두 거절",
-      "chunkAccepted": "청크 승인됨",
-      "chunkAcceptedShort": "승인됨",
-      "chunkAcceptedDesc": "모든 청크가 결정되면 이 변경사항이 적용됩니다.",
-      "chunkRejected": "청크 거절됨",
-      "chunkRejectedShort": "거절됨",
-      "chunkRejectedDesc": "이 변경사항은 건너뜁니다.",
-      "pendingChangesBanner": "수정 대기 중 — Lumina 채팅에서 검토하세요",
       "tableNotice": "📊 표(Table) 변경점이 포함되어 있습니다. 라이브 프리뷰에서는 표 위젯에 의해 인라인 Diff가 가려질 수 있습니다.",
       "switchToSourceMode": "소스 모드로 전환",
       "viewInEditor": "에디터에서 보기",
@@ -777,20 +689,15 @@
     "inlineEmpty": "현재 줄에 적용할 대상 텍스트가 없습니다. 텍스트를 작성하거나 드래그해 주세요.",
     "qaEmptySel": "선택된 텍스트가 없습니다.",
     "qaNotConfigured": "퀵 액션 모델이 설정되지 않았습니다. 설정에서 전용 모델을 선택해 주세요.",
-    "qaNoProvider": "설정된 LLM 프로바이더가 없습니다.",
     "qaInvalidProvider": "유효한 LLM 프로바이더를 찾을 수 없거나 인증되지 않았습니다.",
-    "qaNoModel": "사용 가능한 모델이 없습니다.",
     "qaSelectedText": "선택된 텍스트",
     "qaExecuting": "{{name}} 실행 중...",
     "qaCompleted": "{{name}} 완료",
     "qaError": "에러 발생: {{msg}}",
-    "qaWaitingAI": "⏳ AI 응답 대기 중...",
     "qaEmptyResponse": "⚠️ 모델이 빈 텍스트를 응답했습니다. (무한 루프 또는 프롬프트 호환성 문제)",
     "qaUnknownError": "알 수 없는 오류",
-    "qaReasoningDetected": "🚫 추론형 모델의 생각 과정(<think>)이 감지되어 퀵 액션을 강제 종료했습니다. 설정에서 일반 Instruct 모델로 변경해 주세요.",
     "modalCancel": "취소",
     "modalProceed": "진행",
-    "modelPlaceholder": "검색할 모델명을 입력하세요... (e.g., claude, gpt-4)",
     "searchModelShort": "모델 검색...",
     "favorites": "즐겨찾기",
     "allModels": "전체 모델",
@@ -821,12 +728,8 @@
     "debugCollapseAll": "모두 접기",
     "ragTooLong": "[Lumina] RAG 컨텍스트가 너무 길어 {{max}}자로 잘렸습니다.",
     "ragWorkerInitErr": "알 수 없는 Worker 초기화 에러 (Console 확인 필요)",
-    "ragWorkerTimeout": "임베딩 모델 로딩 타임아웃 (60초 초과). 네트워크 연결을 확인하거나 캐시를 삭제 후 재시도해 주세요.",
     "ragWorkerTerm": "Worker가 종료되었습니다.",
     "ragWorkerNotReady": "EmbeddingWorker가 준비되지 않았습니다. init()을 먼저 호출하세요.",
-    "ragWorkerNotInit": "모델이 초기화되지 않았습니다. init 메시지를 먼저 보내주세요.",
-    "ragWorkerLoadFail": "모델 로딩 실패: ",
-    "localizedPrompt": "Always respond in Korean (한국어).",
     "cmdCtxMenu": "💬 Lumina 채팅으로 보내기",
     "cmdAutoLinkNote": "🔗 자동 백링크 생성",
     "cmdChatTitle": "Chat 열기",
@@ -853,28 +756,19 @@
     "noticeMobileRag": "모바일 환경에서는 로컬 임베딩이 차단됩니다. RAG를 사용하려면 설정에서 클라우드 임베딩을 구성해주세요.",
     "noticeLargeVault": "현재 볼트의 노트가 {{count}}개로 매우 많습니다. 백그라운드 최초 인덱싱에 리소스와 시간이 다소 소요될 수 있습니다.",
     "noticeIndexing": "Lumina: 초기 설정 및 내 노트 인덱싱을 백그라운드에서 진행 중입니다...",
-    "errNoProvider": "선택한 임베딩 프로바이더 설정을 찾을 수 없습니다.",
     "errMobileAuto": "모바일 환경에서는 로컬 임베딩(Auto 모드)을 지원하지 않습니다. 설정에서 클라우드 임베딩을 선택해주세요.",
     "mcpTokenCopied": "인증 토큰이 클립보드에 복사되었습니다.",
     "mcpManagerNotInitialized": "⚠️ MCP Manager가 초기화되지 않았습니다.",
     "mcpConnectFailed": "MCP 서버 \"{{name}}\" 연결에 실패하여 비활성화되었습니다.",
     "mcpLocalServerStartFailed": "내장 MCP 서버 시작 실패: {{error}}",
-    "mcpDisconnectedDuringExecution": "도구 실행 중 MCP 서버 \"{{name}}\"의 연결이 끊어져 비활성화되었습니다.",
-    "mcpToolExecutionFailed": "MCP 서버 \"{{name}}\"에서 도구를 실행하지 못했습니다. 서버가 비활성화되었습니다. 설정을 확인해 주세요.",
     "mcpSyncError": "⚠️ MCP 서버 동기화 중 오류가 발생했습니다.",
-    "mcpLocalServerRestarted": "✅ 내장 MCP 서버가 재시작되었습니다 (포트: {{port}})",
     "mcpLocalServerStarted": "✅ 내장 MCP 서버가 시작되었습니다 (포트: {{port}})",
     "mcpLocalServerStopped": "🛑 내장 MCP 서버가 중지되었습니다 (포트: {{port}})",
     "mcpCliCleanupSuccess": "✅ 외부 CLI 연동 설정이 깨끗하게 정리되었습니다.",
-    "mcpLocalServerDisconnectAgentDisabled": "⚠️ 내장 서버 연결 오류로 에이전트 기능이 해제되었습니다.",
     "mcpClientDisconnected": "🔌 MCP Server \"{{name}}\" 연결이 해제되었습니다.",
     "mcpClientConnected": "✅ MCP Server \"{{name}}\" 연결에 성공했습니다.",
-    "mcpClientToolExecutionFailedStatusError": "⚠️ MCP 서버 \"{{name}}\" 도구 실행에 실패하여 상태가 오류로 변경되었습니다.",
-    "mcpClientToolExecuteFailedTryReconnect": "MCP 서버 \"{{name}}\"에서 툴을 실행하지 못했습니다. 연결을 다시 확인해주세요.",
     "toolExecutionBlockedReadMode": "에러: 현재 읽기 모드입니다. 쓰기 또는 수정 권한이 필요한 툴({{toolName}})을 실행하려면 '수정 모드'로 전환해주세요.",
     "agentModeLlmRequired": "⚠️ 에이전트를 사용하려면 먼저 LLM 제공자를 설정하고 검증(Verify)해야 합니다.",
-    "agentModeLocalServerStarting": "🚀 에이전트 활성화: 로컬 MCP 서버 연결 중...",
-    "agentModeLocalServerConnecting": "🚀 에이전트 활성화: 로컬 MCP 서버 연결 중...",
     "agentModeEnabled": "🤖 에이전트 모드가 켜졌습니다.",
     "agentModeDisabled": "🤖 에이전트 모드가 꺼졌습니다.",
     "agentModeSwitchedToRead": "👁️ 에이전트 읽기 모드로 전환되었습니다. (읽기 전용)",
@@ -890,10 +784,6 @@
     "tooShortToCompress": "압축할 대화가 아직 부족합니다.",
     "compressFailed": "⚠️ 컨텍스트 압축에 실패했습니다.",
     "compressedContextBlock": "📋 [이전 대화가 압축되었습니다]",
-    "agentModeLocalServerStoppedDisabled": "⚠️ 내장 MCP 서버가 꺼져서 에이전트 모드도 함께 비활성화되었습니다.",
-    "agentModeLocalServerStoppedDisabledShort": "⚠️ 로컬 서버가 종료되어 에이전트 기능이 해제되었습니다.",
-    "mcpLocalServerTokenInputFromLocal": "내부 서버 토큰이 입력되었습니다.",
-    "mcpLocalServerTokenInputFromLocalTooltip": "내장 MCP 서버의 인증 토큰으로 자동 입력",
     "thoughtProcess": "생각 과정",
     "agentMaxStepsReached": "⚠️ 최대 툴 실행 횟수에 도달했습니다.",
     "agentRepeatedToolCalls": "⚠️ 동일한 툴 호출이 반복되어 중단되었습니다. 다른 방식으로 질문해 주세요.",
@@ -974,7 +864,6 @@
       "argContent": "노트의 초기 내용",
       "tooLong": "생성할 내용이 제한({{limit}}자)을 초과합니다.",
       "alreadyExists": "파일이 이미 존재합니다. 덮어쓰기는 허용되지 않습니다: {{path}}",
-      "parentFolderNotFound": "부모 폴더가 존재하지 않습니다: {{parentPath}}",
       "success": "노트가 생성되었습니다: {{path}}"
     },
     "search_notes": {
@@ -988,7 +877,6 @@
       "argPath": "내용을 추가할 파일의 경로",
       "argContent": "추가할 내용",
       "tooLong": "한 번에 추가할 수 있는 최대 길이는 {{limit}}자입니다.",
-      "notFound": "파일을 찾을 수 없습니다: {{path}}",
       "maxLengthExceeded": "파일의 최대 길이(100,000자)를 초과하여 더 이상 추가할 수 없습니다. (무한 루프 방지)",
       "success": "내용이 성공적으로 추가되었습니다: {{path}}"
     },
@@ -1028,18 +916,7 @@
       "pathExcluded": "RAG 제외/포함 설정에 의해 접근이 제한된 경로입니다: {{path}}"
     },
     "generate_moc": {
-      "desc": "관련 노트를 수집하고 연결하는 MOC(Map of Content) 노트를 생성합니다. 폴더, 태그 또는 파일을 사용하여 포함할 노트를 정의합니다.",
-      "argTitle": "MOC 노트의 제목 (H1 헤딩으로 사용됨)",
-      "argOutputPath": "MOC 파일을 저장할 경로 (예: Project MOC 또는 Maps/Project MOC). .md 확장자는 자동으로 추가됩니다.",
-      "argFolder": "노트를 수집할 폴더 경로 (선택사항)",
-      "argTags": "이 태그를 모두 가진 노트를 수집합니다 (선택사항)",
-      "argFiles": "포함할 노트 경로 목록 (선택사항, 지정 시 folder/tags는 무시됩니다)",
-      "argGroupBy": "섹션 그룹핑 전략: \"folder\"(폴더별), \"tag\"(태그별), \"none\"(목록) (기본값: \"none\")",
-      "argOverwrite": "파일이 이미 존재하면 덮어쓸지 여부 (기본값: false)",
-      "successCreate": "MOC가 생성되었습니다: {{path}} ({{count}}개 노트)",
-      "successUpdate": "MOC가 업데이트되었습니다: {{path}} ({{count}}개 노트)",
-      "emptyWarning": "지정된 범위에 해당하는 노트를 찾을 수 없습니다. 이 MOC는 현재 비어 있습니다.",
-      "noScope": "folder, tags, files 중 하나 이상을 지정해야 합니다."
+      "desc": "관련 노트를 수집하고 연결하는 MOC(Map of Content) 노트를 생성합니다. 폴더, 태그 또는 파일을 사용하여 포함할 노트를 정의합니다."
     },
     "replace_note": {
       "desc": "기존 노트의 전체 내용을 바꿉니다."
@@ -1201,21 +1078,14 @@
       "deletedModel": "[삭제됨] 모델",
       "deletedPrompt": "[삭제됨] 프롬프트",
       "save": "저장",
-      "saveSuccess": "프로젝트 설정 저장 완료",
-      "nameRequired": "프로젝트 이름은 필수이며, 'default'일 수 없습니다.",
-      "nameExists": "해당 이름의 프로젝트가 이미 존재합니다.",
       "title": "프로젝트",
       "defaultDesc": "기본 프로젝트",
       "historyPath": "히스토리",
       "noSubfolder": "히스토리: 전역 경로 사용",
       "activate": "전환",
-      "config": "프로젝트 설정",
       "deleteConfirmTitle": "프로젝트 삭제",
       "addProjectDesc": "새로운 프로젝트를 생성하고 RAG 및 채팅 설정을 구성합니다.",
-      "namePlaceholder": "프로젝트 이름",
-      "subfolderPlaceholder": "하위 폴더 이름",
       "add": "추가",
-      "duplicateName": "해당 이름의 프로젝트가 이미 존재합니다.",
       "defaultProjectName": "기본",
       "modalTitleActive": "프로젝트 설정 (현재: {{projectName}})",
       "activeProjectModelDesc": "현재 활성화된 프로젝트 (<strong>{{projectName}}</strong>) 의 기본 채팅 모델을 설정합니다. 프로젝트 관리(RAG 탭)에서도 변경할 수 있습니다.",

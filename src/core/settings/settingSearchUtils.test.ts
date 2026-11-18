@@ -3,7 +3,6 @@ import {
 	expandQueryTerms,
 	buildTranslationIndex,
 	isSettingItemMatchBilingual,
-	BILINGUAL_KEYWORDS,
 	LOCALE_SYNONYMS,
 	COMMON_SYNONYMS,
 } from './settingSearchUtils';

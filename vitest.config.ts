@@ -7,8 +7,6 @@ export default defineConfig({
 	resolve: {
 		conditions: ['browser', 'development', 'import'],
 		alias: {
-			bluebird: resolve(__dirname, 'src/core/mocks/bluebird.js'),
-			'bluebird/js/release/promise': resolve(__dirname, 'src/core/mocks/bluebird.js'),
 			ajv: resolve(__dirname, 'src/core/mocks/ajv.js'),
 			'ajv-formats': resolve(__dirname, 'src/core/mocks/ajv-formats.js'),
 			underscore: resolve(__dirname, 'src/core/mocks/underscore.js'),

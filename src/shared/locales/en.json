@@ -12,9 +12,7 @@
       "language": {
         "name": "Plugin Language",
         "desc": "Select the language for the plugin interface.",
-        "systemTranslate": "Translate to system language",
         "llmRequired": "LLM connection is required for translation.",
-        "warningCost": "Using translation may incur LLM API costs.",
         "option": {
           "en": "English",
           "ko": "한국어",
@@ -37,7 +35,6 @@
       },
       "apiKey": {
         "name": "API Key & Model Registration",
-        "desc": "Register API keys for cloud providers or local LLM URLs.",
         "mobileLocalWarning": "Local LLMs cannot be used on mobile devices.",
         "addConnection": "+ Add new LLM connection",
         "apiKey": "API Key",
@@ -50,7 +47,6 @@
         "notConnected": "Not Connected",
         "selectModel": "Select Model",
         "endpointPlaceholder": "e.g., http://localhost:11434",
-        "newConnection": "New Connection",
         "success": "Connection successful!",
         "fail": "Connection failed: ",
         "noModels": "No models available."
@@ -70,12 +66,6 @@
         "guide": "※ Register an LLM connection above and run a connection test to add models.",
         "localWarn": "⚠️ Local models cannot be automatically verified as embedding models.\\nIf indexing fails, please select an embedding-specific model.",
         "mobileWarn": "⚠️ Mobile devices cannot use local embedding models. Please select a cloud embedding."
-      },
-      "defaultChatModel": {
-        "name": "Default Chat Model",
-        "desc": "Select the default LLM model for the sidebar chat.",
-        "sidebarDefault": "Sidebar Chat Default Model",
-        "noConnections": "Please add an LLM connection in settings and complete the connection test."
       },
       "quickActionProvider": {
         "name": "Quick Action Provider",
@@ -106,13 +96,11 @@
         "syncFail": "Sync failed",
         "mcpDisconnected": "MCP disconnected",
         "mcpConnected": "MCP connected",
-        "connected": "Connected: {{name}}",
-        "disconnected": "Disconnected: {{name}}"
+        "connected": "Connected: {{name}}"
       }
     },
     "mcp": {
       "title": "Agent\n& MCP",
-      "desc": "Connect external Model Context Protocol (MCP) servers to use local tools, or enable the built-in server to allow other apps to control Lumina.",
       "agentMode": {
         "name": "Agent execution",
         "desc": "Allow the LLM to autonomously use tools (e.g., search, file reading, file creation).",
@@ -125,15 +113,10 @@
       },
       "addServer": "+ Add new MCP server",
       "serverName": "Server Name",
-      "transport": "Transport",
-      "transportDesc": "Select the transport protocol for this MCP server.",
-      "transportSse": "SSE (GET → session URL → POST)",
-      "transportStreamableHttp": "Streamable HTTP (POST directly)",
       "enableDesc": "Enable (Inject tools into chat)",
       "deleteServer": "Delete this server",
       "emptyServers": "No servers registered.",
       "localServerName": "Lumina Local Server",
-      "restart": "Restart",
       "localServer": {
         "sectionTitle": "Lumina Built-in MCP Server (Hosting)",
         "desc": "Open a local server to access Obsidian features from external clients (AI agents, etc.).",
@@ -193,15 +176,7 @@
           "name": "Auth Token (Optional)",
           "desc": "Enter a token if the server requires authentication."
         }
-      },
-      "permission": {
-        "title": "Tool Execution Permission",
-        "desc": "The AI is requesting permission to execute a potentially dangerous tool.\\n\\nServer: {{server}}\\nTool: {{tool}}",
-        "args": "Arguments:",
-        "approve": "Approve",
-        "reject": "Reject"
-      },
-      "experimental": "Experimental"
+      }
     },
     "webSearch": {
       "title": "Web Search",
@@ -250,12 +225,9 @@
         "allSettings": "All Settings"
       },
       "title": "Chat\n& Prompt",
-      "currentNote": "Include Current Note",
       "systemPrompt": {
         "name": "System Prompts",
         "desc": "Manage multiple system prompts.",
-        "active": "✅ Active",
-        "activate": "Activate",
         "addPrompt": "+ Add Prompt",
         "defaultName": "System Prompt",
         "variablesHint": "Click to insert variable:"
@@ -302,7 +274,6 @@
         "activeNotePrefix": "[Active Note: {{name}}]",
         "canvasFile": "[Canvas File: {{name}}]",
         "tagFiles": "[Files with Tag: {{name}} (Max 5)]",
-        "activeNotePrompt": "Active Note",
         "categoryActiveNote": "📄 Include Current Note",
         "categorySelection": "✂️ Selected Text",
         "categoryFolder": "📁 Add Folder",
@@ -319,7 +290,6 @@
       },
       "sendMode": {
         "name": "Send Message Mode",
-        "desc": "Choose how to send messages in chat. (Default: Send on Enter)",
         "enter": "Enter to send",
         "ctrlEnter": "Ctrl + Enter to send"
       },
@@ -366,7 +336,6 @@
         "waitTimeDesc": "Wait time in milliseconds after typing stops before sending the autocomplete query. (Default: 700)"
       },
       "memoryLimit": {
-        "name": "Conversation Memory Limit",
         "desc": "How much conversation history to retain (by turns or tokens).",
         "limitType": "Conversation Memory Mode",
         "autoSummary": "Auto Context Summary (Default)",
@@ -377,8 +346,6 @@
         "maxTokens": "Max Context Tokens (Default: 8000)"
       },
       "modelParams": {
-        "name": "Model Parameters",
-        "desc": "Adjust response creativity and output length.",
         "tempLabel": "Temperature",
         "tempDesc": "Closer to 0 = precise, closer to 2 = creative (Default: 0.7)",
         "maxOutput": "Max Output Tokens",
@@ -408,28 +375,10 @@
       "title": "RAG\n& Context",
       "embeddingWarning": "RAG embedding model can be configured in the Connections & Models tab.",
       "disabledWarning": "⚪ RAG is disabled. Please enable RAG engine in the Connections & Models tab.",
-      "dataScope": {
-        "name": "Default Data Scope",
-        "desc": "Choose which notes to include in RAG search. (Default: Entire Vault)",
-        "vaultWide": "Entire Vault",
-        "activeNote": "Active Note Only",
-        "manual": "Manually Selected Files"
-      },
       "autoIncludeActive": {
-        "name": "Auto-include Active Note",
-        "desc": "Automatically include the currently active note as context in chat."
-      },
-      "includePaths": {
-        "name": "Include Paths",
-        "desc": "Comma-separated. Leave empty to include the entire vault."
-      },
-      "ignorePaths": {
-        "name": "Ignore Paths",
-        "desc": "Comma-separated. Takes precedence over included paths. (Default: templates, chatHistory, etc.)"
+        "name": "Auto-include Active Note"
       },
       "chunking": {
-        "name": "Chunking",
-        "desc": "Configure chunk size and overlap for document splitting.",
         "parentSizeName": "Parent Chunk Size",
         "parentSizeDesc": "Base unit for document splitting (1000~3000 chars recommended) (Default: 2000)",
         "parentOverlapName": "Parent Chunk Overlap",
@@ -471,8 +420,6 @@
         "excludePatternsPlaceholder": "e.g.\n^> \\[!note\\].*$\n```dataview[\\s\\S]*?```"
       },
       "reindex": {
-        "name": "Full Re-index",
-        "desc": "Re-index all vault files from scratch.",
         "button": "🔄 Re-index Now",
         "notActivated": "❌ RAG engine is not activated.",
         "started": "🔄 Starting full re-indexing...",
@@ -481,11 +428,9 @@
       },
       "status": {
         "name": "Indexing Status",
-        "desc": "Shows current index size and file count.",
         "statusLabel": "Status",
         "indexing": "Indexing... ({{processed}}/{{total}})",
         "files": "📄 Indexed Files: {{count}}",
-        "size": "💾 Storage Size: {{size}} KB",
         "ready": "RAG Ready",
         "indexingShort": "Indexing",
         "error": "RAG Error",
@@ -507,10 +452,7 @@
         "initFail": "❌ Lumina: RAG worker initialization failed\\n{{error}}"
       },
       "reset": {
-        "name": "Reset Index",
-        "desc": "Clear all indexed data.",
         "button": "🗑 Reset Index",
-        "devNotice": "⚠️ Index cleared (Under development)",
         "resetConfirm": "Are you sure you want to reset the index? This action cannot be undone.",
         "resetSuccess": "🗑 Index has been reset."
       }
@@ -545,7 +487,6 @@
         "name": "Data Initialization & Plugin Reset",
         "desc": "Reset all settings and data to defaults. (Chat history is preserved)",
         "button": "🔄 Reset",
-        "devNotice": "⚠️ Factory reset (Under development)",
         "confirmTitle": "Factory Reset",
         "confirmMsg": "Are you sure you want to reset all settings? Registered API keys, options, RAG index, downloaded local models, and system language translation cache will be deleted. (Chat history will be preserved)",
         "success": "✅ Plugin settings have been reset."
@@ -553,7 +494,6 @@
       "donate": {
         "name": "Donate & Support",
         "desc": "If you find Lumina useful, please consider supporting its development!",
-        "supportTitle": "Support Lumina:",
         "kofi": "☕ Ko-fi",
         "ctee": "☕ Ctee",
         "githubSponsors": "💖 GitHub Sponsors"
@@ -565,7 +505,6 @@
       "unknownType": "Unknown provider type: {{type}}",
       "apiError": "{{provider}} API Error: {{status}} {{text}}",
       "ollamaNoModel": "There are no running models in Ollama. Please start a model with `ollama run <model>` first.",
-      "connectFail": "Connection failed: {{status}} {{text}}",
       "anthropicNoEmbed": "Anthropic does not support the embedding API.",
       "visionNotSupported": "⚠️ The selected provider ({{provider}}) does not support image analysis. Please use OpenAI, Anthropic, or Google with a vision-capable model.",
       "timeoutTTFT": "Timeout: First token response took too long. ({{fallback}})",
@@ -589,12 +528,7 @@
     "cli": {
       "binaryPathName": "Binary Path",
       "binaryPathDesc": "Path to CLI binary (e.g. claude, codex, agy)",
-      "autoApproveName": "Auto Approve Tools",
-      "autoApproveDesc": "Automatically approve tool execution without asking",
-      "waitingApprovalPrefix": "🛡️ Approval required:",
       "runningToolPrefix": "⚡ Running:",
-      "toolRejectedPrefix": "❌ Rejected:",
-      "toolRejectedByUser": "Rejected by user",
       "waitingApprovalBadge": "Approval Required",
       "approvalPrompt": "The agent wants to execute this tool. Do you want to approve?",
       "approveBtn": "Approve",
@@ -605,14 +539,11 @@
   },
   "errors": {
     "llmNotConnected": "LLM is not connected.",
-    "ragIndexingFailed": "RAG indexing failed.",
     "llmConnectRequired": "Please add an LLM in settings and complete the connection test.",
-    "resetChat": "Reset Chat",
     "chatPlaceholder": "Enter a message… (@: Context, /: Commands)",
     "chatEmptyWelcome": "Ask Lumina anything.",
     "cancelStreaming": "Cancel",
     "send": "Send",
-    "underDevelopment": "This feature is under development.",
     "ragDisabledGlobally": "Global RAG engine is disabled. Turn it on in Settings.",
     "agentDisabledGlobally": "Agent feature is disabled. Please enable it in Settings first.",
     "llm": {
@@ -683,11 +614,6 @@
     "estimatedTokensTooltip": "Estimated input tokens for this prompt (approx.)",
     "tokenOverLimitTooltip": "Context exceeds 100k tokens (capped estimate)",
     "cliMode": {
-      "cliAgent": "CLI Agent",
-      "pluginAgent": "Plugin Agent",
-      "cliAgentTooltip": "CLI Agent Mode: CLI runs autonomous tools and project commands.",
-      "pluginAgentTooltip": "Plugin Agent Mode: Uses CLI purely as an LLM brain for Lumina tools, RAG, and notes.",
-      "disabledHintForCliAgent": "Managed natively by CLI Agent in this mode",
       "readModeTooltip": "Read Mode: CLI agent inspects and analyzes without modifying notes.",
       "editModeTooltip": "Edit Mode: CLI agent is allowed to create and modify notes directly.",
       "readModeNotice": "👁️ CLI Agent: Read Mode (Note modifications blocked)",
@@ -701,9 +627,7 @@
     "remove": "Remove",
     "add": "Add",
     "copy": "Copy",
-    "success": "Success",
     "error": "Error",
-    "history": "Chat History",
     "back": "Back",
     "settings": "Settings",
     "loading": "Loading...",
@@ -715,12 +639,10 @@
     "chatTabName": "AI Chat",
     "searchPlaceholder": "Search by meaning...",
     "duplicateWarning": "⚠️ Highly similar note found:",
-    "duplicateCompare": "Compare",
     "recommendedTags": "Recommended Tags",
     "relatedNotes": "Related Notes",
     "insertLink": "Insert Link",
     "openInSplit": "Split View",
-    "chatWithNote": "Chat",
     "filterPlaceholder": "Filter (Path or #tag)",
     "emptyStateText": "RAG engine is disabled.",
     "emptyStateSub": "Enable it in settings to use Smart Discovery.",
@@ -728,8 +650,6 @@
     "stagedContext": "Staged Context",
     "approxTokens": "approx. {{current}} / {{max}} tokens",
     "startChat": "Start chat with {{count}} items",
-    "indexing": "RAG Indexing... ({{processed}} / {{total}})",
-    "loadingModel": "Loading Embedding Model...",
     "noActiveEditor": "No active Markdown editor found.",
     "tagInserted": "Tag added: {{tag}}",
     "tagInsertFailed": "Failed to add tag.",
@@ -743,7 +663,6 @@
     "toolExecuting": "⚙️ Executing {{name}}...",
     "actionApproval": {
       "title": "Approval Required: {{action}}",
-      "targetFile": "Target File: {{path}}",
       "editNote": "Edit Note",
       "editNoteDesc": "Review the diff below and accept or reject changes.",
       "createNote": "📄 Do you want to CREATE a new note?",
@@ -756,13 +675,6 @@
       "reject": "Reject",
       "acceptAll": "Accept All",
       "rejectAll": "Reject All",
-      "chunkAccepted": "Chunk accepted",
-      "chunkAcceptedShort": "Accepted",
-      "chunkAcceptedDesc": "This change will be applied when all chunks are decided.",
-      "chunkRejected": "Chunk rejected",
-      "chunkRejectedShort": "Rejected",
-      "chunkRejectedDesc": "This change will be skipped.",
-      "pendingChangesBanner": "Pending changes — review in Lumina chat",
       "tableNotice": "📊 Table modifications detected. In Live Preview, inline diffs may be hidden by table widgets.",
       "switchToSourceMode": "Switch to Source Mode",
       "viewInEditor": "View in Editor",
@@ -777,20 +689,15 @@
     "inlineEmpty": "No target text found on current line. Please write or select text.",
     "qaEmptySel": "No text selected.",
     "qaNotConfigured": "Quick Action model is not configured. Please select a dedicated model in settings.",
-    "qaNoProvider": "No LLM provider configured.",
     "qaInvalidProvider": "Invalid or unauthenticated LLM provider.",
-    "qaNoModel": "No available models.",
     "qaSelectedText": "Selected text",
     "qaExecuting": "Executing {{name}}...",
     "qaCompleted": "{{name}} completed",
     "qaError": "Error occurred: {{msg}}",
-    "qaWaitingAI": "⏳ Waiting for AI response...",
     "qaEmptyResponse": "⚠️ Model returned empty text. (Infinite loop or prompt compatibility issue)",
     "qaUnknownError": "Unknown error",
-    "qaReasoningDetected": "🚫 Reasoning model's thought process (<think>) detected. Quick action aborted. Please change to a standard Instruct model in settings.",
     "modalCancel": "Cancel",
     "modalProceed": "Proceed",
-    "modelPlaceholder": "Enter model name... (e.g., claude, gpt-4)",
     "searchModelShort": "Search models...",
     "favorites": "Favorites",
     "allModels": "All Models",
@@ -821,12 +728,8 @@
     "debugCollapseAll": "Collapse All",
     "ragTooLong": "[Lumina] RAG context too long, truncated to {{max}} chars.",
     "ragWorkerInitErr": "Unknown Worker init error (Check console)",
-    "ragWorkerTimeout": "Embedding model load timeout (>60s). Check network or clear cache and retry.",
     "ragWorkerTerm": "Worker terminated.",
     "ragWorkerNotReady": "EmbeddingWorker not ready. Call init() first.",
-    "ragWorkerNotInit": "Model not initialized. Send init message first.",
-    "ragWorkerLoadFail": "Model load failed: ",
-    "localizedPrompt": "Always respond in English.",
     "cmdCtxMenu": "💬 Send to Lumina Chat",
     "cmdAutoLinkNote": "🔗 Auto-Link Current Note",
     "cmdChatTitle": "Open Chat",
@@ -853,28 +756,19 @@
     "noticeMobileRag": "Local embeddings are blocked on mobile. Please configure cloud embeddings in settings to use RAG.",
     "noticeLargeVault": "Your vault contains a large number of notes ({{count}}). The initial background indexing may take some time and resources.",
     "noticeIndexing": "Lumina: Initial setup and note indexing are in progress in the background...",
-    "errNoProvider": "Selected embedding provider configuration not found.",
     "errMobileAuto": "Local embedding (Auto mode) is not supported on mobile devices. Please select a cloud embedding in settings.",
     "mcpTokenCopied": "Auth token copied to clipboard.",
     "mcpManagerNotInitialized": "⚠️ MCP Manager is not initialized.",
     "mcpConnectFailed": "MCP Server \"{{name}}\" connection failed. Disabled.",
     "mcpLocalServerStartFailed": "Failed to start built-in MCP server: {{error}}",
-    "mcpDisconnectedDuringExecution": "MCP Server \"{{name}}\" disconnected during tool execution and has been disabled.",
-    "mcpToolExecutionFailed": "Failed to execute tool on MCP server \"{{name}}\". The server has been disabled. Please check your settings.",
     "mcpSyncError": "⚠️ Error syncing MCP servers.",
-    "mcpLocalServerRestarted": "✅ Built-in MCP server restarted (Port: {{port}})",
     "mcpLocalServerStarted": "✅ Built-in MCP server started (Port: {{port}})",
     "mcpLocalServerStopped": "🛑 Built-in MCP server stopped (Port: {{port}})",
     "mcpCliCleanupSuccess": "✅ External CLI MCP configs have been cleanly removed.",
-    "mcpLocalServerDisconnectAgentDisabled": "⚠️ Agent mode disabled due to built-in server connection error.",
     "mcpClientDisconnected": "🔌 MCP Server \"{{name}}\" disconnected.",
     "mcpClientConnected": "Connected to server: {{name}}.",
-    "mcpClientToolExecutionFailedStatusError": "Tool execution failed on {{name}}. Server status changed to error.",
-    "mcpClientToolExecuteFailedTryReconnect": "Failed to execute tool on {{name}}. You may need to reconnect the server.",
     "toolExecutionBlockedReadMode": "Error: You are currently in Read Mode. To execute tools requiring write or modify permissions ({{toolName}}), please switch to 'Edit Mode'.",
     "agentModeLlmRequired": "Agent mode requires a compatible LLM provider.",
-    "agentModeLocalServerStarting": "🚀 Agent enabled: Connecting to local MCP server...",
-    "agentModeLocalServerConnecting": "🚀 Agent enabled: Connecting to local MCP server...",
     "agentModeEnabled": "🤖 Agent mode enabled.",
     "agentModeDisabled": "🤖 Agent mode disabled.",
     "agentModeSwitchedToRead": "👁️ Agent switched to Read Mode. (Read-only)",
@@ -890,10 +784,6 @@
     "tooShortToCompress": "Not enough conversation to compress.",
     "compressFailed": "⚠️ Failed to compress context.",
     "compressedContextBlock": "📋 [Previous conversation compressed]",
-    "agentModeLocalServerStoppedDisabled": "⚠️ Agent mode disabled because the built-in MCP server was stopped.",
-    "agentModeLocalServerStoppedDisabledShort": "⚠️ Agent mode disabled because the local server was stopped.",
-    "mcpLocalServerTokenInputFromLocal": "Local server token has been entered.",
-    "mcpLocalServerTokenInputFromLocalTooltip": "Automatically input the built-in MCP server authentication token",
     "thoughtProcess": "Thought Process",
     "agentMaxStepsReached": "⚠️ Maximum tool execution limit reached.",
     "agentRepeatedToolCalls": "⚠️ Repeated tool executions detected and halted. Please rephrase your query.",
@@ -974,7 +864,6 @@
       "argContent": "The initial content of the note",
       "tooLong": "The content to create exceeds the limit ({{limit}} characters).",
       "alreadyExists": "File already exists. Overwriting is not allowed: {{path}}",
-      "parentFolderNotFound": "Parent folder does not exist: {{parentPath}}",
       "success": "Note created: {{path}}"
     },
     "search_notes": {
@@ -988,7 +877,6 @@
       "argPath": "The path of the file to append content to",
       "argContent": "The content to append",
       "tooLong": "The maximum length that can be appended at once is {{limit}} characters.",
-      "notFound": "File not found: {{path}}",
       "maxLengthExceeded": "Cannot append further as the file has exceeded the maximum length (100,000 characters) to prevent infinite loops.",
       "success": "Content successfully appended: {{path}}"
     },
@@ -1028,18 +916,7 @@
       "pathExcluded": "Access to this path is restricted by RAG exclusion/inclusion settings: {{path}}"
     },
     "generate_moc": {
-      "desc": "Generate a Map of Content (MOC) note that collects and links related notes. Use folder, tags, or files to define which notes to include.",
-      "argTitle": "Title of the MOC note (used as the H1 heading)",
-      "argOutputPath": "Vault-relative path for the MOC file (e.g. \"Project MOC\" or \"Maps/Project MOC\"). .md is appended automatically.",
-      "argFolder": "Collect notes from this folder path (optional)",
-      "argTags": "Collect notes that have ALL of these tags (optional)",
-      "argFiles": "Explicit list of note paths to include (optional)",
-      "argGroupBy": "Grouping strategy: \"folder\", \"tag\", or \"none\" (default: \"none\")",
-      "argOverwrite": "Overwrite if the file already exists (default: false)",
-      "successCreate": "MOC created at {{path}} ({{count}} notes)",
-      "successUpdate": "MOC updated at {{path}} ({{count}} notes)",
-      "emptyWarning": "No notes were found matching the given scope. This MOC is currently empty.",
-      "noScope": "At least one of folder, tags, or files must be provided."
+      "desc": "Generate a Map of Content (MOC) note that collects and links related notes. Use folder, tags, or files to define which notes to include."
     },
     "replace_note": {
       "desc": "Replace the entire content of an existing note."
@@ -1201,21 +1078,14 @@
       "deletedModel": "(Deleted) Model",
       "deletedPrompt": "(Deleted) Prompt",
       "save": "Save",
-      "saveSuccess": "Project settings saved",
-      "nameRequired": "Project name is required and cannot be 'default'.",
-      "nameExists": "A project with this name already exists.",
       "title": "Projects",
       "defaultDesc": "Default Project",
       "historyPath": "History",
       "noSubfolder": "History: Uses global path",
       "activate": "Switch",
-      "config": "Project Settings",
       "deleteConfirmTitle": "Delete Project",
       "addProjectDesc": "Create a new project and configure RAG and chat settings.",
-      "namePlaceholder": "Project Name",
-      "subfolderPlaceholder": "Subfolder Name",
       "add": "Add",
-      "duplicateName": "A project with this name already exists.",
       "defaultProjectName": "Default",
       "modalTitleActive": "Project Settings (Current: {{projectName}})",
       "activeProjectModelDesc": "Sets the default chat model for the active project (<strong>{{projectName}}</strong>). You can also change this in Project Settings (RAG tab).",
