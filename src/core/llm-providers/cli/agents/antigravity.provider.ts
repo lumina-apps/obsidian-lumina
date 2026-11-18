@@ -222,11 +222,41 @@ export class AntigravityProvider extends BaseCliAgent {
 				};
 			}
 
-			// 도구 호출
+			// 도구 호출 / 실행 결과 (신규 agy step_type: "tool" 및 기존 step.tool_call / step.tool_result 통합 지원)
+			if (step.step_type === 'tool') {
+				const toolInfo = (step.tool_info && typeof step.tool_info === 'object' ? step.tool_info : undefined) as Record<string, unknown> | undefined;
+				const name = (step.tool_name || toolInfo?.name || step.name || 'tool') as string;
+				const args = (toolInfo?.parameters || toolInfo?.arguments || toolInfo?.input || step.parameters || step.arguments || step.input || {}) as Record<string, unknown>;
+				const state = String(step.state || '').toUpperCase();
+
+				if (state !== 'DONE') {
+					events.push({
+						type: 'tool_call',
+						toolCall: { name, arguments: args },
+						raw,
+					});
+					for (const inferred of inferFileEditEventsFromToolCall(name, args, raw)) {
+						if (inferred.fileEdit && !emittedEditPaths.has(inferred.fileEdit.path)) {
+							emittedEditPaths.add(inferred.fileEdit.path);
+							events.push(inferred);
+						}
+					}
+				} else {
+					const output = extractTextFromUnknown(toolInfo?.output ?? step.output ?? step.result ?? '');
+					const error = extractTextFromUnknown(toolInfo?.error ?? step.error ?? '');
+					events.push({
+						type: 'tool_result',
+						toolResult: { name, output, error: error || undefined },
+						raw,
+					});
+				}
+			}
+
 			if (step.tool_call || step.step_type === 'tool_call') {
 				const tc = (step.tool_call || step) as Record<string, unknown>;
-				const name = (tc.tool_name || tc.name || 'tool') as string;
-				const args = (tc.arguments || tc.input || {}) as Record<string, unknown>;
+				const toolInfo = (tc.tool_info && typeof tc.tool_info === 'object' ? tc.tool_info : undefined) as Record<string, unknown> | undefined;
+				const name = (tc.tool_name || toolInfo?.name || tc.name || 'tool') as string;
+				const args = (tc.arguments || tc.input || tc.parameters || toolInfo?.parameters || {}) as Record<string, unknown>;
 				events.push({
 					type: 'tool_call',
 					toolCall: { name, arguments: args },

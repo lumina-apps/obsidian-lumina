@@ -301,11 +301,15 @@ export class NdjsonParser {
 const SINGLE_PATH_ARG_KEYS = [
 	'file_path',
 	'path',
+	'Path',
 	'file',
+	'File',
 	'targetFile',
 	'TargetFile',
 	'filePath',
+	'FilePath',
 	'notebook_path',
+	'NotebookPath',
 ] as const;
 
 /**
@@ -435,7 +439,8 @@ export function inferFileEditEventsFromToolCall(
 		lowerName.includes('edit') ||
 		lowerName.includes('create') ||
 		lowerName.includes('modify') ||
-		lowerName.includes('replace')
+		lowerName.includes('replace') ||
+		lowerName === 'sed_file'
 	) {
 		return [
 			{

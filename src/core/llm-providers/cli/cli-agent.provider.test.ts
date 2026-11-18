@@ -940,6 +940,81 @@ claude-3-5-haiku
 				expect(res[1].type).toBe('file_edit');
 				expect(res[1].fileEdit?.path).toBe('notes/from-assistant.md');
 			});
+
+			it('실제 agy step_update (step_type: "tool", tool_info.parameters.Path) 이벤트를 정확히 파싱해 tool_call·file_edit·tool_result를 방출한다', () => {
+				const readActive = {
+					event: 'step_update',
+					step_update: {
+						step_index: 16,
+						state: 'ACTIVE',
+						step_type: 'tool',
+						tool_name: 'read_file',
+						tool_info: {
+							name: 'read_file',
+							parameters: { Path: '/Users/haein/Documents/Vault/02_캐릭터/주인공.md' },
+						},
+					},
+				};
+				const resRead = map(readActive) as { type: string; toolCall?: { name: string; arguments: Record<string, unknown> } };
+				expect(resRead.type).toBe('tool_call');
+				expect(resRead.toolCall?.name).toBe('read_file');
+				expect(resRead.toolCall?.arguments).toEqual({ Path: '/Users/haein/Documents/Vault/02_캐릭터/주인공.md' });
+
+				const editActive = {
+					event: 'step_update',
+					step_update: {
+						step_index: 18,
+						state: 'ACTIVE',
+						step_type: 'tool',
+						tool_name: 'edit_file',
+						tool_info: {
+							name: 'edit_file',
+							parameters: { Path: '/Users/haein/Documents/Vault/02_캐릭터/주인공.md' },
+						},
+					},
+				};
+				const resEditActive = map(editActive) as Array<{ type: string; fileEdit?: { path: string; action: string } }>;
+				expect(Array.isArray(resEditActive)).toBe(true);
+				expect(resEditActive.some((e) => e.type === 'tool_call')).toBe(true);
+				expect(
+					resEditActive.some(
+						(e) => e.type === 'file_edit' && e.fileEdit?.path === '/Users/haein/Documents/Vault/02_캐릭터/주인공.md' && e.fileEdit?.action === 'modify',
+					),
+				).toBe(true);
+
+				const editDone = {
+					event: 'step_update',
+					step_update: {
+						step_index: 18,
+						state: 'DONE',
+						step_type: 'tool',
+						tool_name: 'edit_file',
+						tool_info: {
+							name: 'edit_file',
+							parameters: { Path: '/Users/haein/Documents/Vault/02_캐릭터/주인공.md' },
+						},
+					},
+				};
+				const resEditDone = map(editDone) as { type: string; toolResult?: { name: string } };
+				expect(resEditDone.type).toBe('tool_result');
+				expect(resEditDone.toolResult?.name).toBe('edit_file');
+
+				const sedActive = {
+					event: 'step_update',
+					step_update: {
+						step_index: 19,
+						state: 'ACTIVE',
+						step_type: 'tool',
+						tool_name: 'sed_file',
+						tool_info: {
+							name: 'sed_file',
+							parameters: { Path: 'notes/sed-target.md' },
+						},
+					},
+				};
+				const resSed = map(sedActive) as Array<{ type: string; fileEdit?: { path: string; action: string } }>;
+				expect(resSed.some((e) => e.type === 'file_edit' && e.fileEdit?.path === 'notes/sed-target.md')).toBe(true);
+			});
 		});
 
 		describe('AntigravityProvider - buildCommandArgs', () => {
