@@ -96,50 +96,47 @@ export const runShellCommandHandler = async (
 				let timer: number | null = null;
 				try {
 					const child = spawnFn(exe, args, { cwd: finalCwd || undefined, env: mergedEnv, windowsHide: true });
+					// 멀티바이트 UTF-8 문자가 청크 경계에서 분할되어도 깨지지 않도록 스트리밍 디코더 사용
+					const stdoutDecoder = new TextDecoder('utf-8');
+					const stderrDecoder = new TextDecoder('utf-8');
 					let stdout = '';
 					let stderr = '';
 					if (child.stdout) {
-						child.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
+						child.stdout.on('data', (chunk: Buffer | Uint8Array | string) => {
+							stdout += typeof chunk === 'string' ? chunk : stdoutDecoder.decode(chunk, { stream: true });
+						});
 					}
 					if (child.stderr) {
-						child.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
+						child.stderr.on('data', (chunk: Buffer | Uint8Array | string) => {
+							stderr += typeof chunk === 'string' ? chunk : stderrDecoder.decode(chunk, { stream: true });
+						});
 					}
 
-					const finish = (res: { error: Error | null; stdout: string; stderr: string }) => {
+					const finish = (error: Error | null) => {
 						if (settled) return;
 						settled = true;
 						if (timer !== null) {
 							window.clearTimeout(timer);
 							timer = null;
 						}
-						resolveExec(res);
+						stdout += stdoutDecoder.decode();
+						stderr += stderrDecoder.decode();
+						resolveExec({ error, stdout, stderr });
 					};
 
 					timer = window.setTimeout(() => {
 						ProcessManager.killProcess(child);
-						finish({
-							error: new Error(`Command timed out after ${SHELL_TIMEOUT_MS / 1000}s`),
-							stdout,
-							stderr,
-						});
+						finish(new Error(`Command timed out after ${SHELL_TIMEOUT_MS / 1000}s`));
 					}, SHELL_TIMEOUT_MS);
 
 					child.on('error', (err: Error | number | null) => {
-						finish({
-							error: err instanceof Error ? err : new Error(String(err)),
-							stdout,
-							stderr,
-						});
+						finish(err instanceof Error ? err : new Error(String(err)));
 					});
 					child.on('close', (code: Error | number | null) => {
 						if (code === 0) {
-							finish({ error: null, stdout, stderr });
+							finish(null);
 						} else {
-							finish({
-								error: new Error(`Command exited with code ${String(code)}`),
-								stdout,
-								stderr,
-							});
+							finish(new Error(`Command exited with code ${String(code)}`));
 						}
 					});
 				} catch (e) {
@@ -155,12 +152,14 @@ export const runShellCommandHandler = async (
 				return !check.error && check.stdout.trim().length > 0;
 			};
 
+			// 한국어 등 비영어권 Windows 콘솔(CP949 등)의 출력 깨짐을 방지하기 위해 승인 이후 실행 명령에만 UTF-8 출력 인코딩 지정
+			const psCommand = `[Console]::OutputEncoding = $OutputEncoding = (New-Object System.Text.UTF8Encoding $false); ${command}`;
 			if (await isShellAvailable('pwsh.exe')) {
-				result = await runSpawn('pwsh.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', command]);
+				result = await runSpawn('pwsh.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', psCommand]);
 			} else if (await isShellAvailable('powershell.exe')) {
-				result = await runSpawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', command]);
+				result = await runSpawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', psCommand]);
 			} else {
-				result = await runSpawn('cmd.exe', ['/c', command]);
+				result = await runSpawn('cmd.exe', ['/c', `chcp 65001>nul & ${command}`]);
 			}
 		} else {
 			result = await runSpawn('/bin/sh', ['-c', command]);

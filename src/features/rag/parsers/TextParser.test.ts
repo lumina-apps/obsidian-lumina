@@ -74,5 +74,15 @@ key2: val2
 			const result = TextParser.parseYaml(yaml);
 			expect(result).toBe('key: val\nkey2: val2');
 		});
+
+		it('should parse CRLF YAML lists and key-value lines', () => {
+			const yaml = 'parent:\r\n  child1: value1\r\n  items:\r\n    - first\r\n    - second\r\n';
+			const result = TextParser.parseYaml(yaml);
+			expect(result).toContain('[parent]');
+			expect(result).toContain('  child1: value1');
+			expect(result).toContain('[items]');
+			expect(result).toContain('  • first');
+			expect(result).toContain('  • second');
+		});
 	});
 });

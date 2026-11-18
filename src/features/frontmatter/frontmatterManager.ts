@@ -288,7 +288,7 @@ export class FrontmatterManager {
 		try {
 			// 본문만 읽기 (토큰 절약을 위해 프론트매터 제거)
 			const fullContent = await this.app.vault.read(file);
-			const contentWithoutFm = fullContent.replace(/^---[\s\S]+?---\n/, '').trim();
+			const contentWithoutFm = fullContent.replace(/^---[\s\S]+?---\r?\n/, '').trim();
 			if (contentWithoutFm.length < 50) return; // 내용이 너무 짧으면 무시
 
 			const prompt = `Analyze the following markdown document and return 1 to 3 relevant topic tags and a 1-sentence summary (description) in JSON format.

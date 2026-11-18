@@ -44,7 +44,7 @@ export class TextParser {
 	 * 외부 라이브러리 없이 정규식으로 처리하며, 주석과 빈 줄을 정리합니다.
 	 */
 	static parseYaml(content: string): string {
-		const lines = content.split('\n');
+		const lines = content.split(/\r?\n/);
 		const result: string[] = [];
 
 		for (const line of lines) {

@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { EventEmitter } from 'events';
 import * as http from 'http';
 import * as net from 'net';
@@ -120,6 +120,38 @@ describe('HttpTransport security & lifecycle', () => {
 
 		await transport.start(mockMcpServer);
 		expect(transport.port).toBeGreaterThan(19420);
+	});
+
+	it('falls back to the next port when binding fails with EACCES (Windows reserved port range)', async () => {
+		const originalListen = http.Server.prototype.listen;
+		let blockedOnce = false;
+		const listenSpy = vi.spyOn(http.Server.prototype, 'listen').mockImplementation(function (
+			this: http.Server,
+			...args: unknown[]
+		) {
+			if (!blockedOnce && args[0] === 19425) {
+				blockedOnce = true;
+				const err = Object.assign(new Error('listen EACCES: permission denied 127.0.0.1:19425'), {
+					code: 'EACCES',
+				});
+				queueMicrotask(() => {
+					this.emit('error', err);
+				});
+				return this;
+			}
+			return (originalListen as (...a: unknown[]) => http.Server).apply(this, args);
+		});
+
+		try {
+			const transport = new HttpTransport(19425, 'secret-token-123');
+			activeTransports.push(transport);
+
+			await transport.start(mockMcpServer);
+			expect(blockedOnce).toBe(true);
+			expect(transport.port).toBe(19426);
+		} finally {
+			listenSpy.mockRestore();
+		}
 	});
 
 	it('rejects unauthenticated POST requests with 401 before parsing the body', async () => {

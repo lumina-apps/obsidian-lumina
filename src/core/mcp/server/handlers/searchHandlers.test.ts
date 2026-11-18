@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { searchNotesHandler, listTasksHandler, globToRegex } from './searchHandlers';
+import { searchNotesHandler, listTasksHandler, grepSearchHandler, globToRegex } from './searchHandlers';
 import type { ToolHandlerContext } from '../toolTypes';
 import type { PathGuard } from '../pathGuard';
 import type { TFile } from 'obsidian';
@@ -157,5 +157,65 @@ describe('listTasksHandler', () => {
 		expect(completedText).toContain('Tasks (1):');
 		expect(completedText).toContain('- [x] Finished task');
 		expect(completedText).not.toContain('Unfinished task');
+	});
+
+	it('Windows CRLF 줄바꿈 파일에서도 할 일 목록을 정상 파싱한다', async () => {
+		const files = [
+			{ path: 'win-tasks.md', basename: 'win-tasks' } as TFile,
+		];
+		const contents: Record<string, string> = {
+			'win-tasks.md': '# Todo\r\n- [ ] Windows unfinished task\r\n- [x] Windows finished task\r\nPlain text',
+		};
+		const ctx = {
+			plugin: {
+				app: {
+					vault: {
+						getMarkdownFiles: vi.fn().mockReturnValue(files),
+						read: vi.fn(async (f: TFile) => contents[f.path] || ''),
+					},
+				},
+			},
+			limitRead: 5000,
+		} as unknown as ToolHandlerContext;
+		const pathGuard = {
+			isAgentPathAllowed: vi.fn(() => true),
+		} as unknown as PathGuard;
+
+		const res = await listTasksHandler({}, ctx, pathGuard);
+		expect(res.isError).toBeFalsy();
+		const text = res.content[0].type === 'text' ? res.content[0].text : '';
+		expect(text).toContain('Tasks (2):');
+		expect(text).toContain('- [ ] Windows unfinished task (win-tasks.md:2)');
+		expect(text).toContain('- [x] Windows finished task (win-tasks.md:3)');
+	});
+});
+
+describe('grepSearchHandler', () => {
+	it('Windows CRLF 파일에서 줄 끝 앵커($) 정규식 검색이 정상 동작한다', async () => {
+		const files = [
+			{ path: 'crlf.md', basename: 'crlf', extension: 'md' } as TFile,
+		];
+		const contents: Record<string, string> = {
+			'crlf.md': 'first line\r\ntarget foo\r\nlast line',
+		};
+		const ctx = {
+			plugin: {
+				app: {
+					vault: {
+						getFiles: vi.fn().mockReturnValue(files),
+						read: vi.fn(async (f: TFile) => contents[f.path] || ''),
+					},
+				},
+			},
+			limitRead: 5000,
+		} as unknown as ToolHandlerContext;
+		const pathGuard = {
+			isAgentPathAllowed: vi.fn(() => true),
+		} as unknown as PathGuard;
+
+		const res = await grepSearchHandler({ query: 'foo$', isRegex: true }, ctx, pathGuard);
+		expect(res.isError).toBeFalsy();
+		const text = res.content[0].type === 'text' ? res.content[0].text : '';
+		expect(text).toContain('crlf.md:2: target foo');
 	});
 });

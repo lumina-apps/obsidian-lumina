@@ -217,7 +217,7 @@ export const grepSearchHandler = async (
 
 		try {
 			const content = await ctx.plugin.app.vault.read(file);
-			const lines = content.split('\n');
+			const lines = content.split(/\r?\n/);
 			for (let i = 0; i < lines.length; i++) {
 				if (matcher.test(lines[i])) {
 					matches.push(`${file.path}:${i + 1}: ${lines[i].trimEnd()}`);
@@ -320,7 +320,7 @@ export const listTasksHandler = async (
 	for (const file of files) {
 		if (tasks.length >= maxResults) break;
 		const content = await ctx.plugin.app.vault.read(file);
-		const lines = content.split('\n');
+		const lines = content.split(/\r?\n/);
 
 		for (let i = 0; i < lines.length; i++) {
 			const line = lines[i];

@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { Platform } from 'obsidian';
+import type { ChildProcess } from 'child_process';
 import { runShellCommandHandler } from './executeHandlers';
 import { PathGuard } from '../pathGuard';
 import type { ToolHandlerContext } from '../toolTypes';
@@ -163,6 +165,116 @@ describe('runShellCommandHandler 검증', () => {
 			expect(killSpy).toHaveBeenCalledWith(fakeChild);
 
 			vi.useRealTimers();
+		});
+
+		it('청크 경계에서 분할된 멀티바이트 UTF-8 한글 출력을 깨짐 없이 디코딩한다', async () => {
+			vi.spyOn(approvalManager, 'requestActionApproval').mockResolvedValue(true);
+
+			const fullBytes = Buffer.from('안녕하세요 옵시디언 루미나', 'utf-8');
+			// 첫 한글 문자('안', 3바이트)의 중간(2바이트)에서 의도적으로 청크 분할
+			const part1 = fullBytes.subarray(0, 2);
+			const part2 = fullBytes.subarray(2);
+
+			const fakeChild = Object.assign(new EventEmitter(), {
+				stdout: new EventEmitter(),
+				stderr: new EventEmitter(),
+			}) as unknown as ChildProcess & EventEmitter;
+
+			ProcessManager.spawnFnOverride = () => {
+				queueMicrotask(() => {
+					fakeChild.stdout?.emit('data', part1);
+					fakeChild.stdout?.emit('data', part2);
+					fakeChild.emit('close', 0);
+				});
+				return fakeChild;
+			};
+
+			const res = await runShellCommandHandler({ command: 'echo korean' }, ctx, pathGuard);
+			expect(res.isError).toBeUndefined();
+			const text = res.content[0].type === 'text' ? res.content[0].text : '';
+			expect(text).toContain('안녕하세요 옵시디언 루미나');
+			expect(text).not.toContain('\uFFFD');
+		});
+
+		it('Windows PowerShell 실행 시 승인 이후 실행 명령에만 UTF-8 출력 인코딩 접두를 추가한다', async () => {
+			const origIsWin = Platform.isWin;
+			(Platform as { isWin: boolean }).isWin = true;
+			const approvalSpy = vi.spyOn(approvalManager, 'requestActionApproval').mockResolvedValue(true);
+			const spawnCalls: Array<{ exe: string; args: string[] }> = [];
+
+			ProcessManager.spawnFnOverride = (exe, args) => {
+				spawnCalls.push({ exe, args });
+				const fakeChild = Object.assign(new EventEmitter(), {
+					stdout: new EventEmitter(),
+					stderr: new EventEmitter(),
+				}) as unknown as ChildProcess & EventEmitter;
+				queueMicrotask(() => {
+					if (exe === 'where.exe' && args[0] === 'pwsh.exe') {
+						fakeChild.stdout?.emit('data', Buffer.from('C:\\Program Files\\PowerShell\\7\\pwsh.exe\r\n'));
+						fakeChild.emit('close', 0);
+					} else {
+						fakeChild.stdout?.emit('data', Buffer.from('출력 성공', 'utf-8'));
+						fakeChild.emit('close', 0);
+					}
+				});
+				return fakeChild;
+			};
+
+			try {
+				const res = await runShellCommandHandler({ command: 'echo 한글' }, ctx, pathGuard);
+				expect(res.isError).toBeUndefined();
+				// 승인 요청에는 원본 명령어만 표시되어야 함
+				expect(approvalSpy).toHaveBeenCalledWith(
+					'shell',
+					'Terminal Command',
+					expect.objectContaining({ code: 'echo 한글' }),
+					expect.any(Object),
+				);
+				const psCall = spawnCalls.find((c) => c.exe === 'pwsh.exe');
+				expect(psCall).toBeDefined();
+				const cmdArg = psCall!.args[psCall!.args.length - 1];
+				expect(cmdArg).toContain('[Console]::OutputEncoding');
+				expect(cmdArg).toContain('UTF8Encoding');
+				expect(cmdArg).toContain('echo 한글');
+			} finally {
+				(Platform as { isWin: boolean }).isWin = origIsWin;
+			}
+		});
+
+		it('Windows cmd.exe 폴백 시 chcp 65001 접두를 추가한다', async () => {
+			const origIsWin = Platform.isWin;
+			(Platform as { isWin: boolean }).isWin = true;
+			vi.spyOn(approvalManager, 'requestActionApproval').mockResolvedValue(true);
+			const spawnCalls: Array<{ exe: string; args: string[] }> = [];
+
+			ProcessManager.spawnFnOverride = (exe, args) => {
+				spawnCalls.push({ exe, args });
+				const fakeChild = Object.assign(new EventEmitter(), {
+					stdout: new EventEmitter(),
+					stderr: new EventEmitter(),
+				}) as unknown as ChildProcess & EventEmitter;
+				queueMicrotask(() => {
+					if (exe === 'where.exe') {
+						fakeChild.emit('close', 1);
+					} else {
+						fakeChild.stdout?.emit('data', Buffer.from('cmd 출력', 'utf-8'));
+						fakeChild.emit('close', 0);
+					}
+				});
+				return fakeChild;
+			};
+
+			try {
+				const res = await runShellCommandHandler({ command: 'dir' }, ctx, pathGuard);
+				expect(res.isError).toBeUndefined();
+				const cmdCall = spawnCalls.find((c) => c.exe === 'cmd.exe');
+				expect(cmdCall).toBeDefined();
+				expect(cmdCall!.args[0]).toBe('/c');
+				expect(cmdCall!.args[1]).toContain('chcp 65001');
+				expect(cmdCall!.args[1]).toContain('dir');
+			} finally {
+				(Platform as { isWin: boolean }).isWin = origIsWin;
+			}
 		});
 	});
 });

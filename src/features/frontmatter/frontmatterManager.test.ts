@@ -121,4 +121,25 @@ describe('FrontmatterManager', () => {
 		expect(promptArg).toContain('NEVER copy placeholder strings');
 		expect(promptArg).not.toContain('["tag1", "tag2"]');
 	});
+
+	it('Windows CRLF 프론트매터를 제거한 본문만 LLM에 전달한다', async () => {
+		const crlfNote =
+			'---\r\ntitle: 사과\r\nsecret_meta: should_not_appear\r\n---\r\n오늘은 맛있는 사과를 먹었다. 마당에 사과나무도 있고 풋사과도 참 많다. 사과가 달콤하다.';
+		mockApp.vault.read.mockResolvedValue(crlfNote);
+
+		const chatSpy = vi.fn().mockResolvedValue({
+			content: '{"tags": ["사과"], "description": "사과에 대한 짧은 메모입니다."}',
+		});
+		vi.mocked(createProvider).mockReturnValue({ chat: chatSpy } as unknown as ReturnType<typeof createProvider>);
+
+		const manager = new FrontmatterManager(mockPlugin);
+		const file = Object.assign(new TFile(), { path: '사과.md', basename: '사과', extension: 'md' });
+		await (manager as unknown as { generateFrontmatterData(f: TFile): Promise<void> }).generateFrontmatterData(file);
+
+		expect(chatSpy).toHaveBeenCalledTimes(1);
+		const promptArg = (chatSpy.mock.calls[0][0] as Array<{ content: string }>)[0].content;
+		expect(promptArg).not.toContain('secret_meta: should_not_appear');
+		expect(promptArg).not.toContain('---\r\n');
+		expect(promptArg).toContain('오늘은 맛있는 사과를 먹었다.');
+	});
 });

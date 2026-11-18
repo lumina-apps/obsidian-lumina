@@ -105,8 +105,9 @@ export class HttpTransport {
 				return;
 			} catch (err) {
 				const errno = err as NodeJS.ErrnoException;
-				if (errno.code === 'EADDRINUSE') {
-					debugLogger.logSystem('mcp', `Port ${currentPort} is in use. Trying next port...`);
+				// Windows Hyper-V/WSL/Docker 예약 포트 구간에서는 EACCES가 발생하므로 EADDRINUSE와 동일하게 다음 포트로 폴백
+				if (errno.code === 'EADDRINUSE' || errno.code === 'EACCES') {
+					debugLogger.logSystem('mcp', `Port ${currentPort} is unavailable (${errno.code}). Trying next port...`);
 					currentPort++;
 					if (attempts + 1 >= maxAttempts) {
 						debugLogger.logError('mcp', new Error(`MCP Server failed to start after ${maxAttempts} attempts.`));

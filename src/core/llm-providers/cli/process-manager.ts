@@ -194,6 +194,249 @@ function getExistsSyncFunction(): ((path: string) => boolean) | null {
 }
 
 /**
+ * Electron renderer / Node 런타임에서 fs.readFileSync 함수를 안전하게 획득합니다.
+ * (esbuild 번들링 시 require('fs')가 undefined로 치환되더라도 TypeError가 발생하지 않도록 방지)
+ */
+function getReadFileSyncFunction(): ((path: string) => string) | null {
+	try {
+		const fsModuleName = ['f', 's'].join('');
+		if (typeof window !== 'undefined') {
+			const win = window as unknown as {
+				require?: (mod: string) => { readFileSync?: (p: string, enc: BufferEncoding) => string };
+			};
+			if (typeof win.require === 'function') {
+				const fsMod = win.require(fsModuleName);
+				if (fsMod && typeof fsMod.readFileSync === 'function') {
+					const readFn = fsMod.readFileSync;
+					return (p: string) => readFn(p, 'utf8');
+				}
+			}
+		}
+		// eslint-disable-next-line @typescript-eslint/no-require-imports -- Fallback to Node.js require in desktop runtime
+		const nodeRequire = typeof require === 'function'
+			? (require as unknown as (mod: string) => { readFileSync?: (p: string, enc: BufferEncoding) => string })
+			: undefined;
+		if (typeof nodeRequire === 'function') {
+			const fsMod = nodeRequire(fsModuleName);
+			if (fsMod && typeof fsMod.readFileSync === 'function') {
+				const readFn = fsMod.readFileSync;
+				return (p: string) => readFn(p, 'utf8');
+			}
+		}
+	} catch {
+		// ignore
+	}
+	return null;
+}
+
+/** 프로세스 실행 계획 */
+export interface SpawnPlan {
+	file: string;
+	args: string[];
+	windowsVerbatimArguments?: boolean;
+}
+
+/** buildSpawnPlan 테스트/주입 옵션 */
+export interface BuildSpawnPlanOptions {
+	platform?: NodeJS.Platform;
+	env?: Record<string, string>;
+	existsSyncFn?: (path: string) => boolean;
+	readFileFn?: (path: string) => string;
+}
+
+/** cmd.exe 메타문자 패턴 (cross-spawn 규칙 준수) */
+const CMD_META_CHARS = /([()[\]%!^"`<>&|;, *?])/g;
+
+/** cmd.exe 메타문자 앞에 ^ 이스케이프를 추가합니다. */
+function escapeCmdMetaChars(str: string): string {
+	return str.replace(CMD_META_CHARS, '^$1');
+}
+
+/** Windows cmd.exe에서 실행할 명령 경로를 이스케이프합니다. */
+function escapeCmdCommand(cmd: string): string {
+	return escapeCmdMetaChars(cmd);
+}
+
+/**
+ * Windows .cmd/.bat 인자를 MSVCRT 인용 + cmd.exe 이중 메타문자 이스케이프 규칙으로 변환합니다.
+ */
+function escapeCmdArgument(arg: string): string {
+	let escaped = arg.replace(/(?=(\\+?)?)\1"/g, '$1$1\\"');
+	escaped = escaped.replace(/(?=(\\+?)?)\1$/, '$1$1');
+	escaped = `"${escaped}"`;
+	// cmd.exe 1차 파싱과 배치 파일(%*) 2차 파싱을 모두 안전하게 통과하도록 이중 이스케이프
+	escaped = escapeCmdMetaChars(escaped);
+	escaped = escapeCmdMetaChars(escaped);
+	return escaped;
+}
+
+/** npm .cmd 셔심에 포함된 node 사전 인자 문자열을 토큰 배열로 파싱합니다. */
+function tokenizeShimPreArgs(raw: string): string[] | null {
+	const trimmed = raw.trim();
+	if (!trimmed) return [];
+	// 환경변수 참조(%)가 포함된 경우 안전을 위해 직접 파싱을 포기하고 폴백
+	if (trimmed.includes('%')) return null;
+
+	const tokens: string[] = [];
+	let current = '';
+	let inQuote = false;
+	for (let i = 0; i < trimmed.length; i++) {
+		const ch = trimmed[i];
+		if (ch === '"') {
+			inQuote = !inQuote;
+		} else if (!inQuote && /\s/.test(ch)) {
+			if (current) {
+				tokens.push(current);
+				current = '';
+			}
+		} else {
+			current += ch;
+		}
+	}
+	if (inQuote) return null;
+	if (current) tokens.push(current);
+	return tokens;
+}
+
+/**
+ * npm cmd-shim이 생성한 Windows .cmd 래퍼에서 실제 node 실행 파일과 JS 엔트리포인트 경로를 추출합니다.
+ * cmd.exe를 거치지 않고 node.exe를 직접 실행할 수 있게 하여 8,191자 제한·줄바꿈 절단·메타문자 주입을 방지합니다.
+ */
+export function resolveNpmCmdShim(
+	cmdPath: string,
+	options?: {
+		env?: Record<string, string>;
+		existsSyncFn?: (path: string) => boolean;
+		readFileFn?: (path: string) => string;
+	},
+): { file: string; args: string[] } | null {
+	const existsSyncFn = options?.existsSyncFn ?? getExistsSyncFunction();
+	const readFileFn = options?.readFileFn ?? getReadFileSyncFunction();
+	if (!existsSyncFn || !readFileFn) return null;
+
+	let content: string;
+	try {
+		content = readFileFn(cmdPath);
+	} catch {
+		return null;
+	}
+	if (!content || content.length > 4096) return null;
+
+	// 표준 npm cmd-shim 변수(dp0, _prog, PATHEXT) 외의 SET 명령이 있으면 커스텀 배치 로직 보존을 위해 폴백
+	for (const rawLine of content.split(/\r?\n/)) {
+		const trimmed = rawLine.trim();
+		if (/^@?SET\s+/i.test(trimmed)) {
+			const afterSet = trimmed.replace(/^@?SET\s+/i, '');
+			const isKnownShimVar =
+				/^dp0=/i.test(afterSet) ||
+				/^"?_prog=/i.test(afterSet) ||
+				/^PATHEXT=/i.test(afterSet);
+			if (!isKnownShimVar) {
+				return null;
+			}
+		}
+	}
+
+	let preArgsRaw = '';
+	let scriptRelPath = '';
+
+	// 1. 최신 npm cmd-shim 포맷 ("%_prog%" [preArgs] "%dp0%\...\cli.js" %*)
+	const modernMatch = content.match(/"%_prog%"\s+([^\r\n]*?)"%(?:~)?dp0%?[\\/]+([^"]+)"\s+%\*/i);
+	if (modernMatch) {
+		const progMatches = Array.from(content.matchAll(/SET\s+"?_prog=([^"\r\n]+)"?/gi));
+		if (progMatches.length === 0) return null;
+		const allNode = progMatches.every((m) => /(?:^|[\\/])node(?:\.exe)?$/i.test(m[1].trim()));
+		if (!allNode) return null;
+		preArgsRaw = modernMatch[1];
+		scriptRelPath = modernMatch[2];
+	} else {
+		// 2. 구버전 npm cmd-shim 포맷 ("%~dp0\node.exe" / node [preArgs] "%~dp0\...\cli.js" %*)
+		const legacyMatch = content.match(/(?:"%~dp0[\\/]+node\.exe"|\bnode(?:\.exe)?)\s+([^\r\n]*?)"%~dp0[\\/]+([^"]+)"\s+%\*/i);
+		if (!legacyMatch) return null;
+		preArgsRaw = legacyMatch[1];
+		scriptRelPath = legacyMatch[2];
+	}
+
+	const preArgs = tokenizeShimPreArgs(preArgsRaw);
+	if (!preArgs) return null;
+
+	const shimDir = win32.dirname(cmdPath);
+	const scriptPath = win32.join(shimDir, scriptRelPath);
+	try {
+		if (!existsSyncFn(scriptPath)) return null;
+	} catch {
+		return null;
+	}
+
+	const localNode = win32.join(shimDir, 'node.exe');
+	let nodeExe: string;
+	try {
+		nodeExe = existsSyncFn(localNode)
+			? localNode
+			: resolveBinaryPath('node', options?.env ?? {}, { existsSyncFn, platform: 'win32' });
+	} catch {
+		nodeExe = resolveBinaryPath('node', options?.env ?? {}, { existsSyncFn, platform: 'win32' });
+	}
+
+	return {
+		file: nodeExe,
+		args: [...preArgs, scriptPath],
+	};
+}
+
+/**
+ * OS 및 파일 확장자에 따라 안전하게 자식 프로세스를 실행할 계획(file, args, windowsVerbatimArguments)을 생성합니다.
+ * Windows에서 shell: true를 사용하지 않고 .cmd/.bat를 안전하게 실행합니다.
+ */
+export function buildSpawnPlan(
+	resolvedCommand: string,
+	args: string[],
+	options?: BuildSpawnPlanOptions,
+): SpawnPlan {
+	const platform = options?.platform ?? (typeof process !== 'undefined' ? process.platform : 'darwin');
+	if (platform !== 'win32') {
+		return { file: resolvedCommand, args: [...args] };
+	}
+
+	const lower = resolvedCommand.toLowerCase();
+	const isBatchOrCmd = lower.endsWith('.cmd') || lower.endsWith('.bat');
+	if (!isBatchOrCmd) {
+		return { file: resolvedCommand, args: [...args] };
+	}
+
+	const env = options?.env ?? {};
+	const shim = resolveNpmCmdShim(resolvedCommand, {
+		env,
+		existsSyncFn: options?.existsSyncFn,
+		readFileFn: options?.readFileFn,
+	});
+	if (shim) {
+		debugLogger.logDebug('cli-agent', `Resolved npm .cmd shim directly to Node.js: ${shim.file} ${shim.args.join(' ')}`);
+		return {
+			file: shim.file,
+			args: [...shim.args, ...args],
+		};
+	}
+
+	// cmd.exe는 줄바꿈 문자를 명령 종결자로 해석해 인자 절단·명령 주입이 발생하므로 차단
+	if (/[\r\n]/.test(resolvedCommand) || args.some((a) => /[\r\n]/.test(a))) {
+		throw new Error(
+			`Cannot safely pass multiline arguments to Windows batch/cmd file "${resolvedCommand}". Please configure an .exe binary or direct Node.js CLI path in binaryPath.`,
+		);
+	}
+
+	const comspecEntry = Object.entries(env).find(([k]) => k.toUpperCase() === 'COMSPEC');
+	const comspec = comspecEntry?.[1] || 'cmd.exe';
+	const shellCommand = [escapeCmdCommand(resolvedCommand), ...args.map(escapeCmdArgument)].join(' ');
+
+	return {
+		file: comspec,
+		args: ['/d', '/s', '/c', `"${shellCommand}"`],
+		windowsVerbatimArguments: true,
+	};
+}
+
+/**
  * 바이너리 이름(예: agy, claude)이 PATH 내에 위치한 실제 절대 경로를 찾아냅니다.
  */
 export function resolveBinaryPath(
@@ -282,24 +525,25 @@ export class ProcessManager {
 
 		const mergedEnv = getEnhancedEnv(env);
 		const resolvedCommand = resolveBinaryPath(command, mergedEnv);
+		const plan = buildSpawnPlan(resolvedCommand, args, {
+			platform: process.platform,
+			env: mergedEnv,
+		});
 
 		debugLogger.logDebug(
 			'cli-agent',
-			`Spawning process: ${resolvedCommand} (raw: ${command}) args: [${args.join(', ')}] in ${cwd}`,
+			`Spawning process: ${plan.file} (resolved: ${resolvedCommand}, raw: ${command}) args: [${plan.args.join(', ')}] in ${cwd}`,
 		);
 
-		const isWin = process.platform === 'win32';
-		// Windows에서 .cmd, .bat 파일은 Node.js 보안 정책상 shell: true가 필수이지만,
-		// .exe 파일은 cmd.exe의 8,191자 명령줄 길이 제한 및 이스케이프 왜곡을 피하기 위해 shell: false로 실행
-		const isBatchOrCmd = isWin && (resolvedCommand.toLowerCase().endsWith('.cmd') || resolvedCommand.toLowerCase().endsWith('.bat'));
-		const needsShell = isWin && (isBatchOrCmd || !resolvedCommand.toLowerCase().endsWith('.exe'));
-
-		const child = spawnFn(resolvedCommand, args, {
+		const spawnOptions: NodeSpawnOptions = {
 			cwd,
 			env: mergedEnv,
-			shell: needsShell,
+			shell: false,
 			windowsHide: true,
-		});
+			...(plan.windowsVerbatimArguments ? { windowsVerbatimArguments: true } : {}),
+		};
+
+		const child = spawnFn(plan.file, plan.args, spawnOptions);
 
 		// Stdin이 필요 없는 경우 즉시 스트림을 닫아(EOF 전송), CLI 프로세스가 stdin 대기 상태로 블로킹되는 현상 방지
 		if (closeStdin) {
