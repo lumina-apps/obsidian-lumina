@@ -9,6 +9,7 @@ import {
 	extractFileName,
 	getVaultBasePath,
 	toVaultRelativePath,
+	joinSystemPath,
 } from './fileUtils';
 import { TFile, App } from 'obsidian';
 
@@ -222,6 +223,18 @@ describe('fileUtils', () => {
 
 		it('빈 문자열을 안전하게 처리한다', () => {
 			expect(toVaultRelativePath('D:\\MyVault', '')).toBe('');
+		});
+	});
+
+	describe('joinSystemPath', () => {
+		it('경로 세그먼트를 안전하게 결합한다', () => {
+			expect(joinSystemPath('/Users/test/vault', 'notes/daily.md')).toBe('/Users/test/vault/notes/daily.md');
+			expect(joinSystemPath('/Users/test/vault/', '/notes/daily.md')).toBe('/Users/test/vault/notes/daily.md');
+		});
+
+		it('빈 세그먼트를 무시하고 모두 비어 있으면 빈 문자열을 반환한다', () => {
+			expect(joinSystemPath('', '')).toBe('');
+			expect(joinSystemPath('/vault', '')).toBe('/vault');
 		});
 	});
 });

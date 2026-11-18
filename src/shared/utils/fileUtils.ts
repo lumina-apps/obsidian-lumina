@@ -20,6 +20,53 @@ export function getVaultBasePath(appOrPlugin: App | { app?: App; vault?: { adapt
 }
 
 /**
+ * 데스크탑(Electron/Node) 환경에서는 네이티브 `path.join`을 사용하고,
+ * Node 모듈이 없는 모바일 환경에서는 순수 문자열 결합으로 안전하게 폴백합니다.
+ */
+export function joinSystemPath(...segments: string[]): string {
+	const filtered = segments.filter((s) => s.length > 0);
+	if (filtered.length === 0) return '';
+
+	try {
+		const pathModName = ['pa', 'th'].join('');
+		if (typeof window !== 'undefined') {
+			const win = window as unknown as {
+				require?: (mod: string) => { join?: (...args: string[]) => string };
+			};
+			if (typeof win.require === 'function') {
+				const pathMod = win.require(pathModName);
+				if (pathMod && typeof pathMod.join === 'function') {
+					return pathMod.join(...filtered);
+				}
+			}
+		}
+		// eslint-disable-next-line @typescript-eslint/no-require-imports -- 데스크탑/테스트 런타임 폴백
+		const nodeRequire = typeof require === 'function'
+			? (require as unknown as (mod: string) => { join?: (...args: string[]) => string })
+			: undefined;
+		if (typeof nodeRequire === 'function') {
+			const pathMod = nodeRequire(pathModName);
+			if (pathMod && typeof pathMod.join === 'function') {
+				return pathMod.join(...filtered);
+			}
+		}
+	} catch {
+		// 모바일 등 path 모듈 미지원 환경에서는 아래 순수 JS 폴백 사용
+	}
+
+	const sep = filtered[0].includes('\\') ? '\\' : '/';
+	return filtered
+		.map((seg, idx) => {
+			let s = seg;
+			if (idx > 0) s = s.replace(/^[/\\]+/, '');
+			if (idx < filtered.length - 1) s = s.replace(/[/\\]+$/, '');
+			return s;
+		})
+		.filter((s) => s.length > 0)
+		.join(sep);
+}
+
+/**
  * 입력된 파일 경로(절대 경로 또는 상대 경로)를 볼트 루트 기준 상대 경로로 정규화합니다.
  * Windows 및 macOS/Linux의 경로 구분자(/ vs \), 드라이브 문자 대소문자(c: vs C:)를 완전하게 처리합니다.
  */
@@ -39,7 +86,7 @@ export function toVaultRelativePath(
 
 	if (normalizedBase) {
 		// Windows 환경(드라이브 문자 포함) 고려하여 대소문자 무시 비교
-		const isWin = process.platform === 'win32' || /^[a-zA-Z]:\//.test(normalizedBase);
+		const isWin = (typeof process !== 'undefined' && process.platform === 'win32') || /^[a-zA-Z]:\//.test(normalizedBase);
 		const inputToCompare = isWin ? normalizedInput.toLowerCase() : normalizedInput;
 		const baseToCompare = isWin ? normalizedBase.toLowerCase() : normalizedBase;
 

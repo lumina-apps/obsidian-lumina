@@ -399,7 +399,8 @@
 		transition: opacity 0.2s ease;
 	}
 
-	.lumina-history__item:hover .lumina-history__actions {
+	.lumina-history__item:hover .lumina-history__actions,
+	:global(.is-mobile) .lumina-history__item .lumina-history__actions {
 		opacity: 1;
 	}
 

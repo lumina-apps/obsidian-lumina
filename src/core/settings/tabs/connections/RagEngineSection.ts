@@ -46,7 +46,7 @@ export function renderRagEngineSection(tab: LuminaSettingTab, el: HTMLElement): 
 			toggle.setValue(s.ragEnabled).onChange(async (val) => {
 				s.ragEnabled = val;
 				await tab.saveAndSync();
-				if (val && !Platform.isMobile) {
+				if (val && !(Platform.isMobile && s.embedding.mode === 'auto')) {
 					// 워커 초기화는 백그라운드에서 실행 (설정 시 UI 반복 방지)
 					initEmbeddingWorker(tab.plugin).catch((err: unknown) =>
 						debugLogger.logError('rag', normalizeError(err, `RAG 초기화 실패: ${String(err)}`))
@@ -82,8 +82,9 @@ export function renderRagEngineSection(tab: LuminaSettingTab, el: HTMLElement): 
 		});
 	}
 
-	// 고급 설정 활성화 + RAG 켜짐 → 임베딩 모델 선택 UI 표시
-	if (tab.showAdvanced && s.ragEnabled) {
+	// 고급 설정 활성화 + (RAG 켜짐 또는 모바일 환경) → 임베딩 모델 선택 UI 표시
+	// 모바일에서는 기본 auto 모드일 때 RAG 토글이 잠기므로, 클라우드 임베딩을 선택할 수 있도록 고급 설정에서 항상 노출
+	if (tab.showAdvanced && (s.ragEnabled || Platform.isMobile)) {
 		renderEmbeddingModelSelector(tab, el);
 	} else if (tab.showAdvanced && !s.ragEnabled) {
 		// RAG가 꺼진 상태에서 고급 설정 활성화 시 안내 메시지 표시
@@ -134,10 +135,14 @@ function renderEmbeddingModelSelector(tab: LuminaSettingTab, el: HTMLElement): v
 		}
 		await tab.saveAndSync();
 
-		if (s.ragEnabled && !Platform.isMobile) {
+		if (s.ragEnabled && !(Platform.isMobile && s.embedding.mode === 'auto')) {
 			initEmbeddingWorker(tab.plugin).catch((err: unknown) =>
 				debugLogger.logError('rag', normalizeError(err, `임베딩 모델 변경 후 초기화 실패: ${err}`))
 			);
+		}
+		if (Platform.isMobile) {
+			// 모바일에서 auto ↔ custom 전환 시 상단 RAG 토글 잠금 상태(isMobileLocked)를 즉시 갱신
+			tab.refreshDisplay();
 		}
 	};
 

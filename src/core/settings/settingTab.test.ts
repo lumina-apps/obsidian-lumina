@@ -507,5 +507,54 @@ describe('LuminaSettingTab scroll preservation', () => {
 				}
 			});
 		});
+
+		describe('Mobile compatibility rendering', () => {
+			it('모바일 환경에서 RAG가 꺼져 있어도 고급 설정 활성화 시 클라우드 임베딩 모델 선택기를 표시한다', async () => {
+				const { Platform } = await import('obsidian');
+				const origIsMobile = Platform.isMobile;
+				const origIsDesktop = Platform.isDesktop;
+
+				try {
+					(Platform as { isMobile: boolean }).isMobile = true;
+					(Platform as { isDesktop: boolean }).isDesktop = false;
+
+					mockPlugin.settings.connections.ragEnabled = false;
+					mockPlugin.settings.connections.embedding = { mode: 'auto', providerId: '', modelId: '' };
+
+					tab.activeTab = 'connections';
+					tab.showAdvanced = true;
+					tab.display();
+
+					// 고급 설정에서 임베딩 모델 선택 드롭다운/버튼 및 모바일 경고가 렌더링되어야 함
+					const warnings = container.querySelectorAll('.lumina-settings__info-box--warning');
+					expect(warnings.length).toBeGreaterThanOrEqual(3); // localWarning + ragEngine mobileWarning + customEmbedding mobileWarn
+				} finally {
+					(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+					(Platform as { isDesktop: boolean }).isDesktop = origIsDesktop;
+				}
+			});
+
+			it('모바일 환경에서 MCP 탭은 내장 에이전트 섹션만 표시하고 로컬 HTTP/외부 서버 섹션을 숨긴다', async () => {
+				const { Platform } = await import('obsidian');
+				const origIsMobile = Platform.isMobile;
+				const origIsDesktop = Platform.isDesktop;
+
+				try {
+					(Platform as { isMobile: boolean }).isMobile = true;
+					(Platform as { isDesktop: boolean }).isDesktop = false;
+
+					tab.activeTab = 'mcp';
+					tab.display();
+
+					// 내장 에이전트 섹션 헤딩(1개)만 렌더링되고 로컬/외부 서버 헤딩은 없어야 함
+					const headings = container.querySelectorAll('.lumina-settings__section-heading');
+					expect(headings.length).toBe(1);
+					expect(container.querySelector('.lumina-setting-cta')).toBeNull();
+				} finally {
+					(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+					(Platform as { isDesktop: boolean }).isDesktop = origIsDesktop;
+				}
+			});
+		});
 	});
 });

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Platform } from "obsidian";
 	import type LuminaPlugin from "../../../main";
 	import type { McpServerConfig } from "../../../shared/types/settings.types";
 	import { t } from "../../../shared/locales/helpers";
@@ -106,49 +107,51 @@
 				</label>
 			</div>
 		</div>
-		<!-- 고급 설정 접이식 영역 -->
-		<button class="lumina-mcp-popup__advanced-toggle" onclick={() => (showAdvanced = !showAdvanced)} type="button">
-			<span class="lumina-mcp-popup__advanced-arrow" class:is-open={showAdvanced}>▶</span>
-			<span>{t('settings.showAdvanced')}</span>
-		</button>
+		<!-- 고급 설정 접이식 영역 (로컬/외부 MCP 서버는 데스크탑 전용) -->
+		{#if !Platform.isMobile}
+			<button class="lumina-mcp-popup__advanced-toggle" onclick={() => (showAdvanced = !showAdvanced)} type="button">
+				<span class="lumina-mcp-popup__advanced-arrow" class:is-open={showAdvanced}>▶</span>
+				<span>{t('settings.showAdvanced')}</span>
+			</button>
 
-		{#if showAdvanced}
-			<!-- 내장 MCP 서버 -->
-			<div class="lumina-mcp-popup__item lumina-mcp-popup__item-local">
-				<div class="lumina-mcp-popup__item-left">
-					<span class="lumina-mcp-popup__status-dot" style="background-color: {serverEnabled ? 'var(--text-success)' : 'var(--text-muted)'}"></span>
-					<span class="lumina-mcp-popup__item-name" title="{t('settings.mcp.localServerName')}">{t('settings.mcp.localServerName')} (:{serverPort})</span>
-				</div>
-				<div class="lumina-mcp-popup__item-right">
-					<label class="lumina-toggle-switch">
-						<input type="checkbox" checked={serverEnabled} onchange={handleToggleLocalServer} />
-						<span class="lumina-toggle-slider"></span>
-					</label>
-				</div>
-			</div>
-
-			{#if servers.length > 0}
-				<div class="lumina-mcp-popup__divider"></div>
-			{/if}
-
-			<!-- 외부 MCP 서버 -->
-			{#if servers.length === 0}
-				<div class="lumina-mcp-popup__empty">{t('settings.mcp.emptyServers')}</div>
-			{:else}
-				{#each servers as server}
-					<div class="lumina-mcp-popup__item">
-						<div class="lumina-mcp-popup__item-left">
-							<span class="lumina-mcp-popup__status-dot" style="background-color: {getStatusColor(server.status)}"></span>
-							<span class="lumina-mcp-popup__item-name" title={server.name}>{server.name}</span>
-						</div>
-						<div class="lumina-mcp-popup__item-right">
-							<label class="lumina-toggle-switch">
-								<input type="checkbox" checked={server.enabled} onchange={(e) => handleToggleServer(e, server)} />
-								<span class="lumina-toggle-slider"></span>
-							</label>
-						</div>
+			{#if showAdvanced}
+				<!-- 내장 MCP 서버 -->
+				<div class="lumina-mcp-popup__item lumina-mcp-popup__item-local">
+					<div class="lumina-mcp-popup__item-left">
+						<span class="lumina-mcp-popup__status-dot" style="background-color: {serverEnabled ? 'var(--text-success)' : 'var(--text-muted)'}"></span>
+						<span class="lumina-mcp-popup__item-name" title="{t('settings.mcp.localServerName')}">{t('settings.mcp.localServerName')} (:{serverPort})</span>
 					</div>
-				{/each}
+					<div class="lumina-mcp-popup__item-right">
+						<label class="lumina-toggle-switch">
+							<input type="checkbox" checked={serverEnabled} onchange={handleToggleLocalServer} />
+							<span class="lumina-toggle-slider"></span>
+						</label>
+					</div>
+				</div>
+
+				{#if servers.length > 0}
+					<div class="lumina-mcp-popup__divider"></div>
+				{/if}
+
+				<!-- 외부 MCP 서버 -->
+				{#if servers.length === 0}
+					<div class="lumina-mcp-popup__empty">{t('settings.mcp.emptyServers')}</div>
+				{:else}
+					{#each servers as server}
+						<div class="lumina-mcp-popup__item">
+							<div class="lumina-mcp-popup__item-left">
+								<span class="lumina-mcp-popup__status-dot" style="background-color: {getStatusColor(server.status)}"></span>
+								<span class="lumina-mcp-popup__item-name" title={server.name}>{server.name}</span>
+							</div>
+							<div class="lumina-mcp-popup__item-right">
+								<label class="lumina-toggle-switch">
+									<input type="checkbox" checked={server.enabled} onchange={(e) => handleToggleServer(e, server)} />
+									<span class="lumina-toggle-slider"></span>
+								</label>
+							</div>
+						</div>
+					{/each}
+				{/if}
 			{/if}
 		{/if}
 	</div>

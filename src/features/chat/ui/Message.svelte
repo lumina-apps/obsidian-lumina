@@ -500,7 +500,8 @@
 		border-color: rgba(139, 92, 246, 0.3);
 	}
 
-	.lumina-message:hover :global(.lumina-message__actions) {
+	.lumina-message:hover :global(.lumina-message__actions),
+	:global(.is-mobile) .lumina-message :global(.lumina-message__actions) {
 		opacity: 1;
 	}
 

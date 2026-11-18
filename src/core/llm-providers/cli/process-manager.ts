@@ -1,6 +1,82 @@
 import type { ChildProcess, SpawnOptions as NodeSpawnOptions } from 'child_process';
-import { join, win32 } from 'path';
 import { debugLogger } from '../../../shared/debugLogger';
+
+/** 런타임 path 헬퍼 인터페이스 */
+interface RuntimePathHelpers {
+	join: (...paths: string[]) => string;
+	win32Join: (...paths: string[]) => string;
+	win32Dirname: (p: string) => string;
+}
+
+/**
+ * 데스크탑(Electron/Node) 런타임에서 `path` 모듈을 동적으로 획득하고,
+ * 모바일 등 Node 모듈이 없는 환경에서는 순수 JS 폴백을 제공합니다.
+ */
+function getPathHelpers(): RuntimePathHelpers {
+	try {
+		const pathModName = ['pa', 'th'].join('');
+		type NodePathLike = {
+			join?: (...paths: string[]) => string;
+			win32?: {
+				join?: (...paths: string[]) => string;
+				dirname?: (p: string) => string;
+			};
+		};
+		let pathMod: NodePathLike | undefined;
+		if (typeof window !== 'undefined') {
+			const win = window as unknown as { require?: (mod: string) => NodePathLike };
+			if (typeof win.require === 'function') {
+				pathMod = win.require(pathModName);
+			}
+		}
+		if (!pathMod) {
+			// eslint-disable-next-line @typescript-eslint/no-require-imports -- 데스크탑/테스트 런타임 폴백
+			const nodeRequire = typeof require === 'function' ? (require as unknown as (mod: string) => NodePathLike) : undefined;
+			if (typeof nodeRequire === 'function') {
+				pathMod = nodeRequire(pathModName);
+			}
+		}
+		if (
+			pathMod &&
+			typeof pathMod.join === 'function' &&
+			pathMod.win32 &&
+			typeof pathMod.win32.join === 'function' &&
+			typeof pathMod.win32.dirname === 'function'
+		) {
+			return {
+				join: pathMod.join,
+				win32Join: pathMod.win32.join,
+				win32Dirname: pathMod.win32.dirname,
+			};
+		}
+	} catch {
+		// 모바일 등 path 모듈 미지원 환경에서는 아래 폴백 사용
+	}
+
+	const joinWithSep = (sep: string, parts: string[]): string =>
+		parts
+			.filter((p) => p.length > 0)
+			.map((seg, idx, arr) => {
+				let s = seg;
+				if (idx > 0) s = s.replace(/^[/\\]+/, '');
+				if (idx < arr.length - 1) s = s.replace(/[/\\]+$/, '');
+				return s;
+			})
+			.filter((p) => p.length > 0)
+			.join(sep);
+
+	return {
+		join: (...paths: string[]) => joinWithSep('/', paths),
+		win32Join: (...paths: string[]) => joinWithSep('\\', paths.map((p) => p.replace(/\//g, '\\'))),
+		win32Dirname: (p: string) => {
+			const normalized = p.replace(/\//g, '\\').replace(/\\+$/, '');
+			const idx = normalized.lastIndexOf('\\');
+			if (idx < 0) return '.';
+			if (idx === 2 && normalized[1] === ':') return normalized.slice(0, 3);
+			return normalized.slice(0, idx) || '\\';
+		},
+	};
+}
 
 export interface SpawnOptions {
 	command: string;
@@ -96,7 +172,8 @@ export function getEnhancedEnv(
 	Object.assign(env, customEnv);
 
 	const isWin = platform === 'win32';
-	const pathJoin = isWin ? win32.join : join;
+	const { join, win32Join } = getPathHelpers();
+	const pathJoin = isWin ? win32Join : join;
 	const pathKey = Object.keys(env).find((k) => k.toUpperCase() === 'PATH') || (isWin ? 'Path' : 'PATH');
 	const currentPath = env[pathKey] || (typeof process !== 'undefined' && process.env ? (process.env[pathKey] || process.env.PATH || process.env.Path || '') : '');
 	const delimiter = isWin ? ';' : ':';
@@ -360,15 +437,16 @@ export function resolveNpmCmdShim(
 	const preArgs = tokenizeShimPreArgs(preArgsRaw);
 	if (!preArgs) return null;
 
-	const shimDir = win32.dirname(cmdPath);
-	const scriptPath = win32.join(shimDir, scriptRelPath);
+	const { win32Dirname, win32Join } = getPathHelpers();
+	const shimDir = win32Dirname(cmdPath);
+	const scriptPath = win32Join(shimDir, scriptRelPath);
 	try {
 		if (!existsSyncFn(scriptPath)) return null;
 	} catch {
 		return null;
 	}
 
-	const localNode = win32.join(shimDir, 'node.exe');
+	const localNode = win32Join(shimDir, 'node.exe');
 	let nodeExe: string;
 	try {
 		nodeExe = existsSyncFn(localNode)
@@ -450,7 +528,7 @@ export function resolveBinaryPath(
 	if (!command) return command;
 
 	const existsSyncFn = options?.existsSyncFn ?? getExistsSyncFunction();
-	const isWin = (options?.platform ?? process.platform) === 'win32';
+	const isWin = (options?.platform ?? (typeof process !== 'undefined' ? process.platform : 'darwin')) === 'win32';
 
 	// 1. 이미 경로 구분자(/ or \)가 포함된 경우
 	if (command.includes('/') || command.includes('\\')) {
@@ -480,7 +558,8 @@ export function resolveBinaryPath(
 	const pathStr = env.PATH || env.Path || '';
 	const delimiter = isWin ? ';' : ':';
 	const dirs = pathStr.split(delimiter).filter(Boolean);
-	const pathJoin = isWin ? win32.join : join;
+	const { join, win32Join } = getPathHelpers();
+	const pathJoin = isWin ? win32Join : join;
 
 	const extensions = isWin && !command.includes('.') ? ['.cmd', '.exe', '.bat', ''] : [''];
 
@@ -526,7 +605,7 @@ export class ProcessManager {
 		const mergedEnv = getEnhancedEnv(env);
 		const resolvedCommand = resolveBinaryPath(command, mergedEnv);
 		const plan = buildSpawnPlan(resolvedCommand, args, {
-			platform: process.platform,
+			platform: typeof process !== 'undefined' ? process.platform : 'darwin',
 			env: mergedEnv,
 		});
 
@@ -638,7 +717,7 @@ export class ProcessManager {
 		try {
 			if (!child.killed && child.pid) {
 				const spawnFn = getSpawnFunction();
-				if (process.platform === 'win32' && spawnFn) {
+				if (typeof process !== 'undefined' && process.platform === 'win32' && spawnFn) {
 					debugLogger.logDebug('cli-agent', `Terminating Windows process tree for PID ${child.pid} via taskkill`);
 					spawnFn('taskkill', ['/pid', child.pid.toString(), '/f', '/t'], { windowsHide: true });
 				} else {

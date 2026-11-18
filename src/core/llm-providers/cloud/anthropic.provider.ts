@@ -147,7 +147,11 @@ export class AnthropicProvider implements ILLMProvider {
 		finishReason?: string;
 	}> {
 		const url = 'https://api.anthropic.com/v1/messages';
-		const headers = this.buildHeaders();
+		// 모바일 WebView 등 브라우저 fetch 환경에서 Anthropic CORS 허용 헤더 포함
+		const headers: Record<string, string> = {
+			...this.buildHeaders(),
+			'anthropic-dangerous-direct-browser-access': 'true',
+		};
 		const payload = this.buildPayload(options, messages, true);
 
 		const timeoutCtrl = new IdleTimeoutController(options.signal, options.ttftTimeoutMs, options.interTokenTimeoutMs);

@@ -190,6 +190,32 @@ describe('AnthropicProvider', () => {
 			expect(chunks.join('')).toBe('<think>\nAnalyzing the request...\n</think>\nHere is the answer.');
 		});
 
+		it('스트리밍 fetch 요청에 모바일 WebView CORS 허용 헤더를 포함한다', async () => {
+			const stream = new ReadableStream({
+				start(controller) {
+					controller.enqueue(new TextEncoder().encode('data: ' + JSON.stringify({ type: 'content_block_start', index: 0, content_block: { type: 'text' } }) + '\n'));
+					controller.enqueue(new TextEncoder().encode('data: ' + JSON.stringify({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'OK' } }) + '\n'));
+					controller.close();
+				},
+			});
+
+			const fetchSpy = vi.fn().mockResolvedValue({
+				ok: true,
+				body: stream,
+			});
+			window.fetch = fetchSpy;
+
+			await provider.chat(
+				[{ role: 'user', content: 'hello' }],
+				{ model: 'claude-3-5-sonnet' },
+				() => {},
+			);
+
+			expect(fetchSpy).toHaveBeenCalledTimes(1);
+			const init = fetchSpy.mock.calls[0][1] as { headers: Record<string, string> };
+			expect(init.headers['anthropic-dangerous-direct-browser-access']).toBe('true');
+		});
+
 		it('should omit deprecated temperature parameter for Claude 4.7+ and Claude 5+ models', async () => {
 			mockRequestUrl.mockResolvedValue({
 				text: '{}',

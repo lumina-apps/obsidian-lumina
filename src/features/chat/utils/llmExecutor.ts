@@ -34,9 +34,9 @@ import type LuminaPlugin from '../../../main';
 import {
 	getVaultBasePath as getVaultBasePathUtil,
 	toVaultRelativePath as toVaultRelativePathUtil,
+	joinSystemPath,
 } from '../../../shared/utils/fileUtils';
 import { TFile, normalizePath } from 'obsidian';
-import * as path from 'path';
 import { IMAGE_EXTENSIONS } from './ChatAttachmentHandler';
 import { t } from '../../../shared/locales/helpers';
 import { getActiveProject } from '../../../core/store/projectStore';
@@ -189,7 +189,7 @@ export async function executeCliAgentCall(
 		if (att.type === 'external_file') {
 			absPath = att.path || null;
 		} else if (att.type === 'file' || att.type === 'active_note') {
-			absPath = path.join(cwd, att.path);
+			absPath = joinSystemPath(cwd, att.path);
 		}
 
 		if (absPath) {
