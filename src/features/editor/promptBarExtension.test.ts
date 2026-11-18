@@ -714,4 +714,107 @@ describe('promptBarExtension', () => {
 			expect.any(Object),
 		);
 	});
+
+	it('타이핑 및 스트리밍 진행 중 모델 드롭다운과 퀵 액션 칩 DOM 인스턴스를 불필요하게 재생성하지 않는다', () => {
+		vi.useFakeTimers();
+		try {
+			view = new EditorView({
+				state: EditorState.create({
+					doc: 'Target line',
+					selection: { anchor: 0, head: 11 },
+					extensions: [buildPromptBarExtension(mockPlugin)],
+				}),
+				parent,
+			});
+
+			const editor = createMockEditorForCm(view);
+			const mdView = { file: { path: 'Note.md' } as TFile, editor } as unknown as MarkdownView;
+
+			let emitProgress: ((p: { isThinking: boolean; previewText: string }) => void) | undefined;
+			let resolveRun: (() => void) | undefined;
+			mockExecuteAction.mockImplementation(async (_action, _ed, _v, opts?: QuickActionExecuteOptions) => {
+				emitProgress = opts?.onStreamProgress;
+				await new Promise<void>((resolve) => {
+					resolveRun = resolve;
+				});
+			});
+
+			openPromptBar(mockPlugin, editor, mdView);
+			const inputEl = view.dom.querySelector('.lumina-promptbar-input') as HTMLTextAreaElement;
+			const initialSelect = view.dom.querySelector('.lumina-promptbar-model-select') as HTMLSelectElement;
+			const initialChip = view.dom.querySelector('.lumina-promptbar-chip') as HTMLButtonElement;
+			expect(initialSelect).not.toBeNull();
+			expect(initialChip).not.toBeNull();
+
+			// 연속 타이핑 중에도 동일한 DOM 노드 유지
+			inputEl.value = '가';
+			inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+			inputEl.value = '가나다';
+			inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+			expect(view.dom.querySelector('.lumina-promptbar-model-select')).toBe(initialSelect);
+			expect(view.dom.querySelector('.lumina-promptbar-chip')).toBe(initialChip);
+
+			// 스트리밍 진행 중에도 <select> 인스턴스가 재생성되지 않고 disabled만 전환
+			const submitBtn = view.dom.querySelector('.lumina-promptbar-submit-btn') as HTMLButtonElement;
+			submitBtn.click();
+			emitProgress?.({ isThinking: false, previewText: 'First' });
+			vi.advanceTimersByTime(40);
+			emitProgress?.({ isThinking: false, previewText: 'First Second' });
+
+			expect(view.dom.querySelector('.lumina-promptbar-model-select')).toBe(initialSelect);
+			expect(initialSelect.disabled).toBe(true);
+
+			submitBtn.click();
+			resolveRun?.();
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it('phase 전환 시 모델 select의 disabled 상태를 토글하고, 모델 목록 변경 시 옵션을 재구성한다', () => {
+		view = new EditorView({
+			state: EditorState.create({
+				doc: 'Target line',
+				selection: { anchor: 0, head: 11 },
+				extensions: [buildPromptBarExtension(mockPlugin)],
+			}),
+			parent,
+		});
+
+		const editor = createMockEditorForCm(view);
+		const mdView = { file: { path: 'Note.md' } as TFile, editor } as unknown as MarkdownView;
+
+		let resolveRun: (() => void) | undefined;
+		mockExecuteAction.mockImplementation(async () => {
+			await new Promise<void>((resolve) => {
+				resolveRun = resolve;
+			});
+		});
+
+		openPromptBar(mockPlugin, editor, mdView, '요약');
+		const initialSelect = view.dom.querySelector('.lumina-promptbar-model-select') as HTMLSelectElement;
+		expect(initialSelect.disabled).toBe(false);
+		expect(initialSelect.querySelectorAll('option')).toHaveLength(1);
+
+		const submitBtn = view.dom.querySelector('.lumina-promptbar-submit-btn') as HTMLButtonElement;
+		submitBtn.click();
+		expect(initialSelect.disabled).toBe(true);
+
+		// 취소로 input 복귀 시 disabled 해제 및 동일 노드 유지
+		submitBtn.click();
+		expect(view.dom.querySelector('.lumina-promptbar-model-select')).toBe(initialSelect);
+		expect(initialSelect.disabled).toBe(false);
+
+		// 설정의 모델 목록 변경 후 상태 업데이트 시 옵션 재구성
+		mockPlugin.settings.connections.providers[0].availableModels = ['gpt-4o-mini', 'gpt-4o'];
+		const inputEl = view.dom.querySelector('.lumina-promptbar-input') as HTMLTextAreaElement;
+		inputEl.value = '다시 요약';
+		inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+
+		const updatedSelect = view.dom.querySelector('.lumina-promptbar-model-select') as HTMLSelectElement;
+		expect(updatedSelect.querySelectorAll('option')).toHaveLength(2);
+		expect(updatedSelect.querySelectorAll('option')[1].textContent).toContain('gpt-4o');
+
+		resolveRun?.();
+	});
 });

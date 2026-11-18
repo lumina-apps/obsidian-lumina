@@ -1,0 +1,187 @@
+import { StateField } from '@codemirror/state';
+import type { Extension } from '@codemirror/state';
+import { EditorView, showTooltip, ViewPlugin } from '@codemirror/view';
+import type { Tooltip, TooltipView, ViewUpdate } from '@codemirror/view';
+import { Platform, setIcon, type Editor, type MarkdownFileInfo, type MarkdownView } from 'obsidian';
+import type LuminaPlugin from '../../../main';
+import { t } from '../../../shared/locales/helpers';
+import {
+	hasPendingEditForView,
+	openPromptBarEffect,
+	resolveEditorAndViewForCm,
+	setMiniIconEffect,
+	type PromptBarFieldValue,
+} from './promptBarState';
+
+type TriggerPromptBarFn = (
+	plugin: LuminaPlugin,
+	editor: Editor,
+	view: MarkdownView | MarkdownFileInfo,
+) => boolean;
+
+/**
+ * 선택 영역 끝자락에 표시되는 작은 플로팅 AI 실행 버튼 툴팁.
+ */
+class SelectionMiniIconTooltipView implements TooltipView {
+	dom: HTMLElement;
+
+	constructor(plugin: LuminaPlugin, view: EditorView, onTriggerPromptBar: TriggerPromptBarFn) {
+		const btn = document.createElement('button');
+		btn.type = 'button';
+		btn.className = 'lumina-mini-trigger';
+		btn.setAttribute('aria-label', t('uiMessages.promptBar.commandTitle'));
+
+		const iconEl = btn.createSpan({ cls: 'lumina-mini-trigger-icon' });
+		setIcon(iconEl, 'sparkles');
+		btn.createSpan({ cls: 'lumina-mini-trigger-label', text: 'AI' });
+
+		// 클릭 시 에디터 선택 영역이 해제되지 않도록 mousedown 기본 동작 차단
+		btn.addEventListener('mousedown', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+		});
+
+		btn.addEventListener('click', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			const resolved = resolveEditorAndViewForCm(plugin, view);
+			if (!resolved) return;
+			onTriggerPromptBar(plugin, resolved.editor, resolved.view);
+		});
+
+		this.dom = btn;
+	}
+}
+
+/**
+ * 텍스트 선택 시 플로팅 미니 AI 버튼을 표시하는 CM6 확장을 생성한다.
+ */
+export function buildSelectionMiniIconExtension(
+	plugin: LuminaPlugin,
+	promptBarField: StateField<PromptBarFieldValue>,
+	onTriggerPromptBar: TriggerPromptBarFn,
+): Extension[] {
+	const miniIconField: StateField<Tooltip | null> = StateField.define<Tooltip | null>({
+		create() {
+			return null;
+		},
+		update(value, tr) {
+			if (!plugin.settings.chat.enableSelectionMiniIcon) {
+				return null;
+			}
+			if (tr.state.field(promptBarField, false)?.state.open) {
+				return null;
+			}
+			if (tr.docChanged) {
+				return null;
+			}
+
+			for (const effect of tr.effects) {
+				if (effect.is(openPromptBarEffect)) {
+					return null;
+				}
+				if (effect.is(setMiniIconEffect)) {
+					const anchor = effect.value;
+					if (!anchor) return null;
+					if (value && value.pos === anchor.pos) return value;
+					return {
+						pos: anchor.pos,
+						above: Platform.isMobile,
+						strictSide: false,
+						create(view: EditorView) {
+							return new SelectionMiniIconTooltipView(plugin, view, onTriggerPromptBar);
+						},
+					};
+				}
+			}
+
+			if (tr.selection) {
+				// 선택 변경 중에는 숨기고 ViewPlugin 디바운스 완료 후 다시 표시
+				return null;
+			}
+
+			return value;
+		},
+		provide: (field) => showTooltip.from(field),
+	});
+
+	const miniIconPlugin = ViewPlugin.fromClass(
+		class {
+			private view: EditorView;
+			private timer: number | null = null;
+			private isPointerDown = false;
+			private destroyed = false;
+
+			private onPointerDown = () => {
+				this.isPointerDown = true;
+				if (this.timer !== null) {
+					window.clearTimeout(this.timer);
+					this.timer = null;
+				}
+			};
+
+			private onPointerUp = () => {
+				if (!this.isPointerDown) return;
+				this.isPointerDown = false;
+				this.scheduleCheck(80);
+			};
+
+			constructor(view: EditorView) {
+				this.view = view;
+				view.dom.addEventListener('pointerdown', this.onPointerDown);
+				window.addEventListener('pointerup', this.onPointerUp);
+			}
+
+			update(update: ViewUpdate) {
+				if (update.docChanged || update.selectionSet) {
+					if (!plugin.settings.chat.enableSelectionMiniIcon) {
+						if (this.timer !== null) {
+							window.clearTimeout(this.timer);
+							this.timer = null;
+						}
+						return;
+					}
+					if (this.isPointerDown) return;
+					this.scheduleCheck(180);
+				}
+			}
+
+			private scheduleCheck(delayMs: number): void {
+				if (this.timer !== null) {
+					window.clearTimeout(this.timer);
+				}
+				this.timer = window.setTimeout(() => {
+					this.timer = null;
+					if (this.destroyed || this.isPointerDown) return;
+					if (!plugin.settings.chat.enableSelectionMiniIcon) return;
+					if (this.view.state.field(promptBarField, false)?.state.open) return;
+
+					const sel = this.view.state.selection.main;
+					if (sel.empty) return;
+
+					const selectedText = this.view.state.doc.sliceString(sel.from, sel.to);
+					if (!selectedText || selectedText.trim().length === 0) return;
+
+					if (hasPendingEditForView(plugin, this.view)) return;
+
+					const anchorPos = Platform.isMobile ? sel.from : sel.to;
+					this.view.dispatch({
+						effects: setMiniIconEffect.of({ pos: anchorPos }),
+					});
+				}, delayMs);
+			}
+
+			destroy() {
+				this.destroyed = true;
+				if (this.timer !== null) {
+					window.clearTimeout(this.timer);
+					this.timer = null;
+				}
+				this.view.dom.removeEventListener('pointerdown', this.onPointerDown);
+				window.removeEventListener('pointerup', this.onPointerUp);
+			}
+		},
+	);
+
+	return [miniIconField, miniIconPlugin];
+}
