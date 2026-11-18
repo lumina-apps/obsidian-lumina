@@ -5,7 +5,11 @@
 	import { copyToClipboard } from "../../../shared/utils/clipboardUtils";
 	import { sanitizeDisplayContent } from "../../../shared/utils/llmTextSanitizer";
 	import { icon } from "../../../shared/utils/iconAction";
-	import { insertToNote } from "./utils/messageActions";
+	import {
+		appendToActiveNote,
+		insertToNote,
+		openSaveAsNoteModal,
+	} from "./utils/messageActions";
 
 	let {
 		message,
@@ -29,6 +33,16 @@
 		insertToNote(app, contentToInsert);
 	}
 
+	async function handleAppendToNote(): Promise<void> {
+		const contentToAppend = sanitizeDisplayContent(message.content);
+		await appendToActiveNote(app, contentToAppend);
+	}
+
+	function handleSaveAsNote(): void {
+		const contentToSave = sanitizeDisplayContent(message.content);
+		openSaveAsNoteModal(app, contentToSave);
+	}
+
 	function handleRegenerate(): void {
 		if (window.confirm(t("uiMessages.regenerateConfirm"))) {
 			onRegenerate?.(message.id);
@@ -42,13 +56,14 @@
 
 <div class="lumina-message__actions">
 	{#if message.role === "assistant"}
-		<button class="clickable-icon lumina-message__action-btn" aria-label={t("common.copy")} use:icon={"copy"} onclick={handleCopy}></button>
-		<button class="clickable-icon lumina-message__action-btn" aria-label={t("uiMessages.insertToNote")} use:icon={"arrow-down"} onclick={handleInsertToNote}></button>
-		<button class="clickable-icon lumina-message__action-btn" aria-label={t("uiMessages.regenerate")} use:icon={"refresh-cw"} onclick={handleRegenerate}></button>
+		<button class="clickable-icon lumina-message__action-btn" aria-label={t("common.copy")} title={t("common.copy")} use:icon={"copy"} onclick={handleCopy}></button>
+		<button class="clickable-icon lumina-message__action-btn" aria-label={t("uiMessages.appendToNote")} title={t("uiMessages.appendToNote")} use:icon={"arrow-down-to-line"} onclick={handleAppendToNote}></button>
+		<button class="clickable-icon lumina-message__action-btn" aria-label={t("uiMessages.saveAsNote")} title={t("uiMessages.saveAsNote")} use:icon={"file-plus"} onclick={handleSaveAsNote}></button>
+		<button class="clickable-icon lumina-message__action-btn" aria-label={t("uiMessages.regenerate")} title={t("uiMessages.regenerate")} use:icon={"refresh-cw"} onclick={handleRegenerate}></button>
 	{:else}
-		<button class="clickable-icon lumina-message__action-btn" aria-label={t("common.copy")} use:icon={"copy"} onclick={handleCopy}></button>
-		<button class="clickable-icon lumina-message__action-btn" aria-label={t("uiMessages.insertToNote")} use:icon={"arrow-down"} onclick={handleInsertToNote}></button>
-		<button class="clickable-icon lumina-message__action-btn" aria-label={t("uiMessages.edit")} use:icon={"pencil"} onclick={handleEditStart}></button>
+		<button class="clickable-icon lumina-message__action-btn" aria-label={t("common.copy")} title={t("common.copy")} use:icon={"copy"} onclick={handleCopy}></button>
+		<button class="clickable-icon lumina-message__action-btn" aria-label={t("uiMessages.insertToNote")} title={t("uiMessages.insertToNote")} use:icon={"arrow-down"} onclick={handleInsertToNote}></button>
+		<button class="clickable-icon lumina-message__action-btn" aria-label={t("uiMessages.edit")} title={t("uiMessages.edit")} use:icon={"pencil"} onclick={handleEditStart}></button>
 	{/if}
 </div>
 

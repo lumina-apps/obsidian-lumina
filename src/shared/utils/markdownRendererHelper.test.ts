@@ -5,6 +5,9 @@ import {
 	bindContainerLinkEvents,
 	renderMessageContent,
 	openTagSearch,
+	extractCodeBlockLanguage,
+	formatFencedCodeBlock,
+	injectCodeBlockInsertButtons,
 } from './markdownRendererHelper';
 
 describe('markdownRendererHelper', () => {
@@ -191,6 +194,84 @@ describe('markdownRendererHelper', () => {
 				'',
 				expect.anything(),
 			);
+		});
+
+		it('onInsertCode 옵션이 주어지면 렌더링 완료 후 코드 블록 삽입 버튼을 주입한다', async () => {
+			const el = document.createElement('div');
+			const compRef = { current: null };
+			const onInsertCode = vi.fn();
+
+			(MarkdownRenderer.render as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+				async (_app: App, _md: string, targetEl: HTMLElement) => {
+					const pre = document.createElement('pre');
+					const code = document.createElement('code');
+					code.className = 'language-ts';
+					code.textContent = 'const x = 1;\n';
+					pre.appendChild(code);
+					targetEl.appendChild(pre);
+				},
+			);
+
+			renderMessageContent(el, compRef, mockApp, '```ts\nconst x = 1;\n```', false, 'assistant', {
+				onInsertCode,
+				insertCodeLabel: 'Insert code',
+			});
+
+			await Promise.resolve();
+			await Promise.resolve();
+
+			const btn = el.querySelector('.lumina-code-insert-btn') as HTMLButtonElement | null;
+			expect(btn).not.toBeNull();
+			btn?.click();
+			expect(onInsertCode).toHaveBeenCalledWith('```ts\nconst x = 1;\n```');
+		});
+	});
+
+	describe('코드 블록 포맷팅 및 삽입 버튼 주입', () => {
+		it('extractCodeBlockLanguage는 language-xxx 클래스에서 언어를 추출한다', () => {
+			const codeEl = document.createElement('code');
+			codeEl.className = 'is-loaded language-python';
+			expect(extractCodeBlockLanguage(codeEl)).toBe('python');
+
+			const plainCodeEl = document.createElement('code');
+			expect(extractCodeBlockLanguage(plainCodeEl)).toBe('');
+		});
+
+		it('formatFencedCodeBlock은 언어 태그를 포함하고 내부 백틱 중첩 시 펜스 길이를 늘린다', () => {
+			expect(formatFencedCodeBlock('console.log(1);\n', 'javascript')).toBe(
+				'```javascript\nconsole.log(1);\n```',
+			);
+			expect(formatFencedCodeBlock('plain text')).toBe('```\nplain text\n```');
+			expect(formatFencedCodeBlock('```ts\nconst a = 1;\n```', 'markdown')).toBe(
+				'````markdown\n```ts\nconst a = 1;\n```\n````',
+			);
+		});
+
+		it('injectCodeBlockInsertButtons는 code가 있는 pre에만 버튼을 한 번씩 주입한다', () => {
+			const container = document.createElement('div');
+			const preWithCode = document.createElement('pre');
+			const codeEl = document.createElement('code');
+			codeEl.className = 'language-bash';
+			codeEl.textContent = 'echo hi\n';
+			preWithCode.appendChild(codeEl);
+
+			const preWithoutCode = document.createElement('pre');
+			preWithoutCode.className = 'mermaid';
+
+			container.appendChild(preWithCode);
+			container.appendChild(preWithoutCode);
+
+			const onInsertCode = vi.fn();
+			injectCodeBlockInsertButtons(container, onInsertCode, 'Insert code block');
+			injectCodeBlockInsertButtons(container, onInsertCode, 'Insert code block');
+
+			expect(preWithCode.querySelectorAll('.lumina-code-insert-btn').length).toBe(1);
+			expect(preWithoutCode.querySelectorAll('.lumina-code-insert-btn').length).toBe(0);
+
+			const btn = preWithCode.querySelector('.lumina-code-insert-btn') as HTMLButtonElement;
+			expect(btn.getAttribute('aria-label')).toBe('Insert code block');
+			btn.click();
+			expect(onInsertCode).toHaveBeenCalledWith('```bash\necho hi\n```');
 		});
 	});
 });

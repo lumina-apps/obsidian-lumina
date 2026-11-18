@@ -2777,5 +2777,163 @@ html body .modal-container.lumina-settings-modal-container {
 	color: var(--text-normal);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Save As Note Modal (messageActions.ts)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.modal.lumina-save-note-modal {
+	width: 480px;
+	max-width: 92vw;
+}
+
+.lumina-save-note-modal__content {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding-top: 4px;
+}
+
+.lumina-save-note-modal__header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.lumina-save-note-modal__header-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--interactive-accent);
+	flex-shrink: 0;
+}
+
+.lumina-save-note-modal__header-icon svg {
+	width: 18px;
+	height: 18px;
+}
+
+.lumina-save-note-modal__title {
+	margin: 0;
+	font-size: 1.15em;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+.lumina-save-note-modal__field {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.lumina-save-note-modal__label {
+	font-size: var(--font-ui-small, 13px);
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+.lumina-save-note-modal__input {
+	width: 100%;
+	box-sizing: border-box;
+	height: 38px;
+	padding: 8px 12px;
+	font-size: 14px;
+	border-radius: var(--radius-s, 6px);
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-modifier-form-field, var(--background-primary));
+	color: var(--text-normal);
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lumina-save-note-modal__input:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 22%, transparent);
+}
+
+.lumina-save-note-modal__folder-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.lumina-save-note-modal__folder-input {
+	flex: 1;
+	min-width: 0;
+}
+
+.lumina-save-note-modal__folder-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 38px;
+	height: 38px;
+	padding: 0;
+	flex-shrink: 0;
+	border-radius: var(--radius-s, 6px);
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	cursor: pointer;
+	transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.lumina-save-note-modal__folder-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+	border-color: var(--background-modifier-border-hover);
+}
+
+.lumina-save-note-modal__folder-btn svg {
+	width: 16px;
+	height: 16px;
+}
+
+.lumina-save-note-modal__preview {
+	display: flex;
+	align-items: flex-start;
+	gap: 6px;
+	padding: 8px 10px;
+	border-radius: var(--radius-s, 6px);
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	color: var(--text-muted);
+	font-size: 12px;
+	line-height: 1.45;
+}
+
+.lumina-save-note-modal__preview-icon {
+	display: inline-flex;
+	align-items: center;
+	margin-top: 1px;
+	flex-shrink: 0;
+}
+
+.lumina-save-note-modal__preview-icon svg {
+	width: 14px;
+	height: 14px;
+}
+
+.lumina-save-note-modal__preview-text {
+	word-break: break-all;
+}
+
+.lumina-save-note-modal__actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	padding-top: 12px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.lumina-save-note-modal__btn-cancel,
+.lumina-save-note-modal__btn-save {
+	padding: 7px 16px;
+	font-size: 13px;
+	font-weight: 500;
+	border-radius: var(--radius-s, 6px);
+	cursor: pointer;
+}
+
+
 
 

@@ -6,6 +6,7 @@
 	import { formatTime } from "../../../shared/utils/dateUtils";
 	import { extractThinkBlocks, sanitizeDisplayContent } from "../../../shared/utils/llmTextSanitizer";
 	import { renderMessageContent } from "../../../shared/utils/markdownRendererHelper";
+	import { insertToNote } from "./utils/messageActions";
 	import AttachmentChips from "./AttachmentChips.svelte";
 	import ThinkBlock from "./ThinkBlock.svelte";
 	import RagSources from "./RagSources.svelte";
@@ -52,7 +53,10 @@
 	// 본문 마크다운 렌더링
 	$effect(() => {
 		if (!contentEl) return;
-		renderMessageContent(contentEl, compRef, app, displayContent, message.isStreaming, message.role);
+		renderMessageContent(contentEl, compRef, app, displayContent, message.isStreaming, message.role, {
+			onInsertCode: (fencedCode) => insertToNote(app, fencedCode),
+			insertCodeLabel: t("uiMessages.insertCodeBlock"),
+		});
 	});
 
 	onDestroy(() => {
@@ -432,12 +436,49 @@
 	}
 
 	.lumina-message__content :global(pre) {
+		position: relative;
 		background: var(--code-background);
 		padding: 12px 14px;
 		border-radius: 8px;
 		overflow-x: auto;
 		border: 1px solid rgba(var(--mono-rgb-100), 0.05);
 		margin: 8px 0;
+	}
+
+	.lumina-message__content :global(.lumina-code-insert-btn) {
+		position: absolute;
+		top: var(--size-2-2, 6px);
+		right: calc(var(--size-2-2, 6px) + 32px);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 26px;
+		height: 26px;
+		padding: 4px;
+		border-radius: var(--radius-s, 4px);
+		background: var(--background-secondary);
+		border: 1px solid var(--background-modifier-border);
+		color: var(--text-muted);
+		cursor: pointer;
+		opacity: 0;
+		transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+		z-index: 2;
+	}
+
+	.lumina-message__content :global(pre:hover .lumina-code-insert-btn),
+	.lumina-message__content :global(.lumina-code-insert-btn:focus-visible),
+	:global(.is-mobile) .lumina-message__content :global(.lumina-code-insert-btn) {
+		opacity: 1;
+	}
+
+	.lumina-message__content :global(.lumina-code-insert-btn:hover) {
+		background: var(--background-modifier-hover);
+		color: var(--text-normal);
+	}
+
+	.lumina-message__content :global(.lumina-code-insert-btn svg) {
+		width: 14px;
+		height: 14px;
 	}
 
 	.lumina-message__content :global(ul),

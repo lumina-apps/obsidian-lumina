@@ -1,4 +1,4 @@
-import { Component, MarkdownRenderer, Keymap, type App, type WorkspaceLeaf } from 'obsidian';
+import { Component, MarkdownRenderer, Keymap, setIcon, type App, type WorkspaceLeaf } from 'obsidian';
 import { toVaultRelativePath } from './fileUtils';
 
 interface SearchView {
@@ -164,6 +164,69 @@ export function bindContainerLinkEvents(el: HTMLElement, app: App): void {
 	el.addEventListener('mouseover', (e) => handleLinkMouseOver(e, app, el));
 }
 
+export interface RenderMessageOptions {
+	onInsertCode?: (fencedCode: string) => void;
+	insertCodeLabel?: string;
+}
+
+/**
+ * code 요소의 클래스명(language-xxx)에서 언어 식별자를 추출합니다.
+ */
+export function extractCodeBlockLanguage(codeEl: HTMLElement): string {
+	const match = codeEl.className.match(/\blanguage-([^\s]+)/);
+	return match ? match[1] : '';
+}
+
+/**
+ * 코드 문자열을 백틱 중첩에 안전한 마크다운 코드 펜스(```lang ... ```)로 감쌉니다.
+ */
+export function formatFencedCodeBlock(code: string, language: string = ''): string {
+	const normalizedCode = code.replace(/\r?\n$/, '');
+	const backtickMatches = normalizedCode.match(/`+/g);
+	const maxBackticks = backtickMatches
+		? Math.max(...backtickMatches.map((m) => m.length))
+		: 0;
+	const fence = '`'.repeat(Math.max(3, maxBackticks + 1));
+	const lang = language.trim();
+	return `${fence}${lang}\n${normalizedCode}\n${fence}`;
+}
+
+/**
+ * 렌더링된 메시지 컨테이너 내의 각 코드 블록(<pre><code>)에 에디터 삽입 버튼을 주입합니다.
+ */
+export function injectCodeBlockInsertButtons(
+	container: HTMLElement,
+	onInsertCode: (fencedCode: string) => void,
+	label: string,
+): void {
+	const preElements = container.querySelectorAll('pre');
+	for (const pre of Array.from(preElements)) {
+		if (pre.dataset.luminaCodeInsertBound === 'true') continue;
+
+		const codeEl = pre.querySelector('code');
+		if (!codeEl) continue;
+
+		pre.dataset.luminaCodeInsertBound = 'true';
+
+		const btn = document.createElement('button');
+		btn.type = 'button';
+		btn.className = 'clickable-icon lumina-code-insert-btn';
+		btn.setAttribute('aria-label', label);
+		btn.setAttribute('title', label);
+		setIcon(btn, 'arrow-down');
+
+		btn.addEventListener('click', (e: MouseEvent) => {
+			e.preventDefault();
+			e.stopPropagation();
+			const rawCode = codeEl.textContent ?? '';
+			const language = extractCodeBlockLanguage(codeEl);
+			onInsertCode(formatFencedCodeBlock(rawCode, language));
+		});
+
+		pre.appendChild(btn);
+	}
+}
+
 export function renderMessageContent(
 	el: HTMLElement,
 	compRef: { current: Component | null },
@@ -171,6 +234,7 @@ export function renderMessageContent(
 	content: string,
 	isStreaming: boolean,
 	role: string,
+	options?: RenderMessageOptions,
 ): void {
 	if (isStreaming) {
 		if (compRef.current) {
@@ -186,7 +250,15 @@ export function renderMessageContent(
 			compRef.current = comp;
 			el.empty();
 			void MarkdownRenderer.render(app, content, el, '', comp).then(() => {
+				if (compRef.current !== comp) return;
 				bindContainerLinkEvents(el, app);
+				if (options?.onInsertCode) {
+					injectCodeBlockInsertButtons(
+						el,
+						options.onInsertCode,
+						options.insertCodeLabel ?? 'Insert code block into editor',
+					);
+				}
 			});
 		} else {
 			if (compRef.current) {
