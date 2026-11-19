@@ -68,7 +68,7 @@ export function openPromptBar(
 				effects: updatePromptBarEffect.of({ prompt: initialPrompt }),
 			});
 		}
-		const inputEl = cmView.dom.querySelector('.lumina-promptbar-input') as HTMLTextAreaElement | null;
+		const inputEl = cmView.dom.querySelector<HTMLTextAreaElement>('.lumina-promptbar-input');
 		inputEl?.focus();
 		return true;
 	}

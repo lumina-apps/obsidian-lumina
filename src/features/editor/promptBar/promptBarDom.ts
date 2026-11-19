@@ -286,14 +286,14 @@ export function syncPromptBarDom(
 	// 에러 배너
 	if (state.errorMessage && isInput) {
 		refs.errorEl.setText(state.errorMessage);
-		refs.errorEl.style.display = 'block';
+		refs.errorEl.setCssStyles({ display: 'block' });
 	} else {
 		refs.errorEl.setText('');
-		refs.errorEl.style.display = 'none';
+		refs.errorEl.setCssStyles({ display: 'none' });
 	}
 
 	// 생성 중 상태 행
-	refs.statusEl.style.display = isGenerating ? 'flex' : 'none';
+	refs.statusEl.setCssStyles({ display: isGenerating ? 'flex' : 'none' });
 	if (isGenerating) {
 		refs.statusTextEl.setText(
 			state.isThinking ? t('uiMessages.promptBar.thinking') : t('uiMessages.promptBar.generating'),
@@ -301,12 +301,12 @@ export function syncPromptBarDom(
 	}
 
 	// 리뷰 행
-	refs.reviewRowEl.style.display = isReview ? 'flex' : 'none';
+	refs.reviewRowEl.setCssStyles({ display: isReview ? 'flex' : 'none' });
 
 	// 퀵 액션 칩 (input 단계에서만 표시, 목록/내용 키가 바뀔 때만 DOM 재구성)
 	const quickActions = plugin.settings.chat.quickActions || [];
 	const showChips = isInput && quickActions.length > 0;
-	refs.chipsRowEl.style.display = showChips ? 'flex' : 'none';
+	refs.chipsRowEl.setCssStyles({ display: showChips ? 'flex' : 'none' });
 
 	if (quickActions.length === 0) {
 		if (cache.lastChipsRenderKey !== '') {

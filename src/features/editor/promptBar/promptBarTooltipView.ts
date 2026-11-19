@@ -84,7 +84,7 @@ export class PromptBarTooltipView implements TooltipView {
 			if (this.handledKeyEvents.has(e)) return;
 
 			if (e.key === 'Escape') {
-				if (this.isComposing || e.isComposing || e.keyCode === 229) return;
+				if (this.isComposing || e.isComposing) return;
 				this.handledKeyEvents.add(e);
 				e.preventDefault();
 				this.handleEscape();
@@ -126,7 +126,7 @@ export class PromptBarTooltipView implements TooltipView {
 
 		this.refs.textareaEl.addEventListener('keydown', (e) => {
 			e.stopPropagation();
-			if (this.isComposing || e.isComposing || e.keyCode === 229) {
+			if (this.isComposing || e.isComposing || e.key === 'Process') {
 				return;
 			}
 
@@ -249,9 +249,9 @@ export class PromptBarTooltipView implements TooltipView {
 	}
 
 	private autoResizeTextarea = (): void => {
-		this.refs.textareaEl.style.height = 'auto';
+		this.refs.textareaEl.setCssStyles({ height: 'auto' });
 		const nextHeight = Math.min(Math.max(this.refs.textareaEl.scrollHeight, 24), 108);
-		this.refs.textareaEl.style.height = `${nextHeight}px`;
+		this.refs.textareaEl.setCssStyles({ height: `${nextHeight}px` });
 	};
 
 	private setMode(mode: 'replace' | 'append'): void {

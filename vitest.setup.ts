@@ -437,6 +437,11 @@ if (typeof (globalThis as any).createEl === 'undefined') {
 		const el = document.createElement(tag);
 		if (o?.cls) el.className = o.cls;
 		if (o?.text) el.textContent = o.text;
+		if (o?.attr) {
+			for (const [k, v] of Object.entries(o.attr)) {
+				el.setAttribute(k, String(v));
+			}
+		}
 		return el;
 	};
 }

@@ -208,11 +208,14 @@ export function injectCodeBlockInsertButtons(
 
 		pre.dataset.luminaCodeInsertBound = 'true';
 
-		const btn = document.createElement('button');
-		btn.type = 'button';
-		btn.className = 'clickable-icon lumina-code-insert-btn';
-		btn.setAttribute('aria-label', label);
-		btn.setAttribute('title', label);
+		const btn = pre.createEl('button', {
+			cls: 'clickable-icon lumina-code-insert-btn',
+			attr: {
+				type: 'button',
+				'aria-label': label,
+				title: label,
+			},
+		});
 		setIcon(btn, 'arrow-down');
 
 		btn.addEventListener('click', (e: MouseEvent) => {
@@ -222,8 +225,6 @@ export function injectCodeBlockInsertButtons(
 			const language = extractCodeBlockLanguage(codeEl);
 			onInsertCode(formatFencedCodeBlock(rawCode, language));
 		});
-
-		pre.appendChild(btn);
 	}
 }
 

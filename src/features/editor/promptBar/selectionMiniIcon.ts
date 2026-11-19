@@ -26,10 +26,13 @@ class SelectionMiniIconTooltipView implements TooltipView {
 	dom: HTMLElement;
 
 	constructor(plugin: LuminaPlugin, view: EditorView, onTriggerPromptBar: TriggerPromptBarFn) {
-		const btn = document.createElement('button');
-		btn.type = 'button';
-		btn.className = 'lumina-mini-trigger';
-		btn.setAttribute('aria-label', t('uiMessages.promptBar.commandTitle'));
+		const btn = createEl('button', {
+			cls: 'lumina-mini-trigger',
+			attr: {
+				type: 'button',
+				'aria-label': t('uiMessages.promptBar.commandTitle'),
+			},
+		});
 
 		const iconEl = btn.createSpan({ cls: 'lumina-mini-trigger-icon' });
 		setIcon(iconEl, 'sparkles');
