@@ -3,10 +3,11 @@ import type { MarkdownFileInfo } from 'obsidian';
 import type LuminaPlugin from '../../main';
 import { t } from '../../shared/locales/helpers';
 import { activateView, activateMainView } from '../views/viewHelper';
-import { CHAT_VIEW_TYPE, DEBUG_VIEW_TYPE, GRAPH_VIEW_TYPE } from '../../shared/constants/viewTypes';
+import { CHAT_VIEW_TYPE, DEBUG_VIEW_TYPE, GRAPH_VIEW_TYPE, SPLIT_CHAT_VIEW_TYPE } from '../../shared/constants/viewTypes';
 import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
 import { activeSidebarTab } from '../store/chatStore';
+import { canUseFeature } from '../store/entitlementStore';
 
 interface ObsidianAppWithCommands extends App {
 	commands?: {
@@ -17,6 +18,7 @@ interface ObsidianAppWithCommands extends App {
 export class CommandManager {
 	private plugin: LuminaPlugin;
 	private registeredQuickActionIds: string[] = [];
+	private isSplitCommandRegistered = false;
 
 	constructor(plugin: LuminaPlugin) {
 		this.plugin = plugin;
@@ -183,6 +185,33 @@ export class CommandManager {
 		});
 
 		this.registerQuickActions();
+		this.syncProCommands();
+	}
+
+	/**
+	 * Pro 권한 상태에 따라 Split / Arena 커맨드를 동적으로 등록하거나 제거합니다.
+	 * 미인증 상태에서는 Obsidian 단축키 목록에도 노출되지 않도록 완전히 제거합니다.
+	 */
+	syncProCommands(): void {
+		const isEntitled = canUseFeature('split-chat');
+		const cmdId = 'open-split-chat';
+
+		if (isEntitled && !this.isSplitCommandRegistered) {
+			this.plugin.addCommand({
+				id: cmdId,
+				name: t('splitChat.commandTitle'),
+				callback: () => {
+					if (!canUseFeature('split-chat')) return;
+					debugLogger.logSystem('commands', 'Command executed: open-split-chat');
+					void activateMainView(this.plugin.app.workspace, SPLIT_CHAT_VIEW_TYPE);
+				},
+			});
+			this.isSplitCommandRegistered = true;
+		} else if (!isEntitled && this.isSplitCommandRegistered) {
+			const appWithCommands = this.plugin.app as unknown as ObsidianAppWithCommands;
+			appWithCommands.commands?.removeCommand(`${this.plugin.manifest.id}:${cmdId}`);
+			this.isSplitCommandRegistered = false;
+		}
 	}
 
 	registerQuickActions(): void {

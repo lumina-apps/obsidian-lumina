@@ -10,6 +10,8 @@
 
 	let {
 		isCliSelected = false,
+		hideAgentControls = false,
+		splitModelCount = 1,
 		agentEnabled = false,
 		agentExecutionMode = "read",
 		includeActiveNote,
@@ -26,6 +28,8 @@
 		onToggleActiveNote,
 	} = $props<{
 		isCliSelected?: boolean;
+		hideAgentControls?: boolean;
+		splitModelCount?: number;
 		agentEnabled: boolean;
 		agentExecutionMode: "read" | "edit";
 		includeActiveNote: boolean;
@@ -76,7 +80,7 @@
 			onclick={triggerFileInput}
 			type="button"
 		></button>
-		{#if !isCliSelected}
+		{#if !isCliSelected && !hideAgentControls}
 			<button
 				class="lumina-chat__toolbar-btn"
 				class:is-agent-active={agentEnabled}
@@ -106,7 +110,7 @@
 					? ($tStore("chat.tokenOverLimitTooltip") || "Context exceeds 100k tokens (capped estimate)")
 					: ($tStore("chat.estimatedTokensTooltip") || "Estimated input tokens for this prompt (approx.)")}
 			>
-				{estimatedTokensDisplayText || `~${estimatedInputTokens.toLocaleString()} tokens`}
+				{estimatedTokensDisplayText || `~${estimatedInputTokens.toLocaleString()} tokens`}{#if splitModelCount > 1}&nbsp;{$tStore("splitChat.modelsCountSuffix", { count: splitModelCount })}{/if}
 			</span>
 		{/if}
 		{#if sessionTokenStats.totalTokens > 0}
@@ -120,7 +124,7 @@
 			</span>
 		{/if}
 		<span class="lumina-chat__hint-inline">{sendHint}</span>
-		{#if agentEnabled || isCliSelected}
+		{#if (agentEnabled || isCliSelected) && !hideAgentControls}
 			<button
 				class="lumina-chat__context-badge"
 				class:is-active={agentExecutionMode === "edit"}

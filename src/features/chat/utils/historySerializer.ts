@@ -6,6 +6,7 @@ import { t } from '../../../shared/locales/helpers';
 /** 히스토리 파일의 frontmatter 메타데이터 인터페이스 */
 export interface HistoryFrontmatter {
 	id?: string;
+	sessionType?: string;
 	title?: string;
 	created?: string | number;
 	updated?: string | number;
@@ -70,9 +71,11 @@ export function parseFrontmatterFromContent(content: string, file: TFile): Histo
 
 	const modelVal = fm.model ? fm.model.replace(/^["']|["']$/g, '') : '';
 	const providerVal = fm.provider ? fm.provider.replace(/^["']|["']$/g, '') : '';
+	const sessionTypeVal = fm.sessionType ? fm.sessionType.replace(/^["']|["']$/g, '') : undefined;
 
 	return {
 		id: fm.id,
+		...(sessionTypeVal ? { sessionType: sessionTypeVal } : {}),
 		title: parsedTitle,
 		created: fm.created ?? file.stat.ctime,
 		updated: fm.updated ?? file.stat.mtime,

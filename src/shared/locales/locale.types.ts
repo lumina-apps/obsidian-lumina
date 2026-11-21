@@ -690,6 +690,7 @@ export interface TranslationChatSlashCommands {
   model: TranslationChatSlashCommand;
   prompt: TranslationChatSlashCommand;
   mode: TranslationChatSlashCommand;
+  arena: TranslationChatSlashCommand;
   settings: TranslationChatSlashCommand;
 }
 
@@ -1134,6 +1135,81 @@ export interface TranslationModal {
   errorProcessing: string;
 }
 
+export interface TranslationSplitChat {
+  title: string;
+  commandTitle: string;
+  openTooltip: string;
+  newComparison: string;
+  historyToggle: string;
+  modeSideBySide: string;
+  modeBlind: string;
+  modeSideBySideTooltip: string;
+  modeBlindTooltip: string;
+  contextIndependent: string;
+  contextWinner: string;
+  contextIndependentTooltip: string;
+  contextWinnerTooltip: string;
+  addModel: string;
+  removeModel: string;
+  maxModelsReached: string;
+  exportComparison: string;
+  exportSuccess: string;
+  exportFail: string;
+  noTurnsToExport: string;
+  inputPlaceholder: string;
+  modelsCountSuffix: string;
+  emptyTitle: string;
+  emptyDesc: string;
+  noValidModels: string;
+  cliNotSupported: string;
+  blindModelLabel: string;
+  blindHidden: string;
+  blindVotePrompt: string;
+  voteSlotWin: string;
+  voteTie: string;
+  voteBothBad: string;
+  revealModels: string;
+  winnerBadge: string;
+  fastestBadge: string;
+  pickWinner: string;
+  pickedWinner: string;
+  retrySlot: string;
+  stopSlot: string;
+  expandView: string;
+  continueInChat: string;
+  promotedToChat: string;
+  temperature: string;
+  temperatureDefault: string;
+  temperatureReset: string;
+  waiting: string;
+  aborted: string;
+  metricsSummary: string;
+  metricsTimeOnly: string;
+  metricsTtftTooltip: string;
+  historyTitle: string;
+  historySearchPlaceholder: string;
+  historyEmpty: string;
+  historyTurnsCount: string;
+  historyLoadFail: string;
+  historySaveFail: string;
+  historyDeleteConfirm: string;
+  historyDeleteSuccess: string;
+  historyDeleteFail: string;
+  historyRenameSuccess: string;
+  historyRenameFail: string;
+  exportReportTitle: string;
+  exportReportMode: string;
+  exportReportContext: string;
+  exportReportModels: string;
+  exportReportSummary: string;
+  exportReportWins: string;
+  exportReportAvgTime: string;
+  exportReportTotalTokens: string;
+  exportReportRound: string;
+  exportReportPrompt: string;
+  exportReportResult: string;
+}
+
 // 최상위 Translation 타입
 export interface Translation {
   settings: TranslationSettings;
@@ -1148,6 +1224,7 @@ export interface Translation {
   summarization: TranslationSummarization;
   projects: TranslationProjects;
   modal: TranslationModal;
+  splitChat: TranslationSplitChat;
 }
 
 // DeepPartial 타입

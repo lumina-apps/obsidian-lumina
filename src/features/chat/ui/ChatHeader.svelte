@@ -29,6 +29,8 @@
 		onToggleHistory,
 		onNewChat,
 		onProjectSelect,
+		canUseSplitChat = false,
+		onOpenSplitChat,
 	} = $props<{
 		plugin: LuminaPlugin;
 		verifiedProviders: LLMProviderConfig[];
@@ -49,6 +51,8 @@
 		onToggleHistory: () => void;
 		onNewChat: () => void;
 		onProjectSelect: (projectId: string) => void;
+		canUseSplitChat?: boolean;
+		onOpenSplitChat?: () => void;
 	}>();
 
 	let showQuickSettings = $state(false);
@@ -134,6 +138,18 @@
 				bind:selectedProviderId
 				bind:selectedModelId
 			/>
+		{/if}
+
+		{#if canUseSplitChat && onOpenSplitChat}
+			<button
+				class="clickable-icon lumina-chat__icon-btn"
+				aria-label={$tStore("splitChat.openTooltip")}
+				title={$tStore("splitChat.openTooltip")}
+				onclick={onOpenSplitChat}
+				type="button"
+				use:icon={"lumina-split-chat"}
+			>
+			</button>
 		{/if}
 
 		<button

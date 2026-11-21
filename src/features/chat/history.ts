@@ -74,7 +74,7 @@ function isExcludedFolderPath(targetPath: string, excludedLower: readonly string
  * 대상 폴더 및 상위 폴더가 존재하지 않으면 순차적으로 생성한다.
  * 동시 저장 경합이나 대소문자 미구분 파일시스템에서의 중복 생성 오류를 방어한다.
  */
-async function ensureHistoryFolder(app: App, folderPath: string): Promise<void> {
+export async function ensureHistoryFolder(app: App, folderPath: string): Promise<void> {
 	const normalFolder = normalizePath(folderPath.replace(/\\/g, '/').replace(/\/+$/, ''));
 	if (!normalFolder) return;
 
@@ -104,7 +104,7 @@ async function ensureHistoryFolder(app: App, folderPath: string): Promise<void> 
 }
 
 /** 특정 디렉토리 및 하위 폴더 내 .md 파일만 재귀적으로 가져온다 (vault 전체 스캔 방지) */
-function getHistoryFiles(
+export function getHistoryFiles(
 	app: App,
 	basePath: string,
 	excludeFolders: readonly string[] = [],
@@ -148,7 +148,7 @@ function getHistoryFiles(
  * 1차: metadataCache의 frontmatter id
  * 2차: 직접 파일 읽어서 frontmatter 블록 내 id 검색
  */
-async function findSessionFile(app: App, files: TFile[], sessionId: string): Promise<TFile | null> {
+export async function findSessionFile(app: App, files: TFile[], sessionId: string): Promise<TFile | null> {
 	// 1차: metadataCache
 	const cached = files.find(f => {
 		const cache = app.metadataCache.getFileCache(f);
@@ -255,6 +255,10 @@ export async function loadSessionsList(
 		}
 
 		if (fm && fm.id) {
+			// Split 비교 세션 파일은 일반 채팅 히스토리 목록에서 제외
+			if (fm.sessionType === 'split') {
+				continue;
+			}
 			// 유효한 날짜가 없으면 파일 stat 또는 파일명에서 fallback
 			const fileCreated = parseTimestamp(fm.created, file.stat.ctime);
 			const fileUpdated = parseTimestamp(fm.updated, file.stat.mtime);

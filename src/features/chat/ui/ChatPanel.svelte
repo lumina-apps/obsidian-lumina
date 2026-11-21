@@ -50,6 +50,9 @@
 	import { useChatActions } from "./composables/useChatActions";
 	import { createDropHandler, createDragOverHandler } from "./composables/useFileAttachment";
 	import type { TranslationKeys } from "../../../shared/locales/locale.types";
+	import { hasProFeature } from "../../../core/store/entitlementStore";
+	import { activateMainView } from "../../../core/views/viewHelper";
+	import { SPLIT_CHAT_VIEW_TYPE } from "../../../shared/constants/viewTypes";
 
 	let { plugin }: { plugin: LuminaPlugin } = $props();
 
@@ -124,8 +127,13 @@
 		}
 	});
 
-	// ── Controller ────────────────────────────────────────────────────────
+	// ── Controller & Pro 권한 ──────────────────────────────────────────────
 	let ctrl: ChatController | null = $state(null);
+	const splitChatEntitled = hasProFeature("split-chat");
+
+	function openSplitChat(): void {
+		void activateMainView(plugin.app.workspace, SPLIT_CHAT_VIEW_TYPE);
+	}
 
 	// ── Derived values ────────────────────────────────────────────────────
 	const hasProvider = $derived($verifiedProviders.length > 0);
@@ -470,6 +478,8 @@
 		}}
 		onNewChat={clearChat}
 		onProjectSelect={handleProjectSwitch}
+		canUseSplitChat={$splitChatEntitled}
+		onOpenSplitChat={openSplitChat}
 	/>
 
 	{#if showHistory}
@@ -550,6 +560,7 @@
 			onExportChat={chatActions.exportChat}
 			onRegenerateLast={regenerateLastAnswer}
 			onCompressContext={chatActions.compressContext}
+			onOpenSplitChat={$splitChatEntitled ? openSplitChat : undefined}
 		/>
 	{/if}
 </div>

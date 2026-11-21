@@ -3,6 +3,7 @@ import { Notice, Platform, Plugin, PluginSettingTab, App } from 'obsidian';
 import { ChatView, CHAT_VIEW_TYPE } from './features/chat/chatView';
 import { DebugView, DEBUG_VIEW_TYPE } from './features/debug/debugView';
 import { GraphView, GRAPH_VIEW_TYPE } from './features/graph/graphView';
+import { SplitChatView, SPLIT_CHAT_VIEW_TYPE } from './features/chat/split/splitChatView';
 import type { LuminaSettings } from './core/settings/settings.types';
 import { EmbeddingWorkerBridge } from './features/rag/workerBridge';
 import { VaultIndexer } from './features/rag/indexer';
@@ -12,7 +13,8 @@ import { debugLogger } from './shared/debugLogger';
 import { registerLuminaIcons } from './shared/icons';
 import { normalizeError } from './shared/utils/errorUtils';
 import { runMigrations, migrateRemovedProviders } from './core/settings/migrations';
-import { activateView, activateMainView } from './core/views/viewHelper';
+import { activateView, activateMainView, closeView } from './core/views/viewHelper';
+import { canUseFeature, entitlementStore, initEntitlementStore, resetEntitlementState } from './core/store/entitlementStore';
 import { cleanupApprovalListener } from './features/chat/utils/approvalListener';
 import { SettingsManager } from './core/settings/settingsManager';
 import { CommandManager } from './core/commands/commandManager';
@@ -99,6 +101,8 @@ export default class LuminaPlugin extends Plugin {
 
 	/** 플러그인 언로드 여부 — 비동기 초기화 중 언로드되면 MCP 생성을 건너뛰기 위한 플래그 */
 	private _unloaded = false;
+	private hasRegisteredSplitView = false;
+	private unsubSplitEntitlement: (() => void) | null = null;
 
 	/** 플러그인이 언로드 과정에 있는지 반환 */
 	get isUnloaded(): boolean {
@@ -115,6 +119,7 @@ export default class LuminaPlugin extends Plugin {
 
 	async onload() {
 		// ── 매니저 초기화 ───────────────────────────────────────────────
+		initEntitlementStore();
 		this.settingsManager = new SettingsManager(this);
 		this.commandManager = new CommandManager(this);
 		this.eventManager = new EventManager(this);
@@ -140,6 +145,9 @@ export default class LuminaPlugin extends Plugin {
 		this.registerView(CHAT_VIEW_TYPE, (leaf) => new ChatView(leaf, this));
 		this.registerView(DEBUG_VIEW_TYPE, (leaf) => new DebugView(leaf, this));
 		this.registerView(GRAPH_VIEW_TYPE, (leaf) => new GraphView(leaf, this));
+		if (canUseFeature('split-chat')) {
+			this.ensureSplitViewRegistered();
+		}
 
 		// ── 리본 아이콘 ────────────────────────────────────────────────
 		this.updateRibbonIcon();
@@ -221,6 +229,9 @@ export default class LuminaPlugin extends Plugin {
 			this.quickActionHandler = new QuickActionHandler(this);
 			this.commandManager.registerCommands();
 			this.eventManager.registerEvents();
+			this.unsubSplitEntitlement = entitlementStore.subscribe(() => {
+				this.syncSplitEntitlement();
+			});
 
 			// ── 인라인 서제스트 및 Diff Extension 초기화
 			this.registerEditorSuggest(new InlineAISuggest(this));
@@ -272,6 +283,9 @@ export default class LuminaPlugin extends Plugin {
 
 	onunload() {
 		this._unloaded = true;
+		this.unsubSplitEntitlement?.();
+		this.unsubSplitEntitlement = null;
+		resetEntitlementState();
 		if (this.ribbonEl) {
 			this.removeRibbonButton(this.ribbonEl);
 			this.ribbonEl = null;
@@ -313,11 +327,29 @@ export default class LuminaPlugin extends Plugin {
 		}
 	}
 
+	/** Pro 권한 활성 시 SplitChatView를 1회 지연 등록 */
+	private ensureSplitViewRegistered(): void {
+		if (this.hasRegisteredSplitView) return;
+		this.registerView(SPLIT_CHAT_VIEW_TYPE, (leaf) => new SplitChatView(leaf, this));
+		this.hasRegisteredSplitView = true;
+	}
+
+	/** 런타임 권한 변경 시 View·커맨드 등록/해제 동기화 */
+	private syncSplitEntitlement(): void {
+		if (canUseFeature('split-chat')) {
+			this.ensureSplitViewRegistered();
+			this.commandManager.syncProCommands();
+		} else {
+			this.commandManager.syncProCommands();
+			closeView(this.app.workspace, SPLIT_CHAT_VIEW_TYPE);
+		}
+	}
+
 	// ─── Locales ────────────────────────────────────────────────────────
 
 	refreshLocales(): void {
 		this.updateRibbonIcon();
-		for (const type of [CHAT_VIEW_TYPE, GRAPH_VIEW_TYPE, DEBUG_VIEW_TYPE]) {
+		for (const type of [CHAT_VIEW_TYPE, GRAPH_VIEW_TYPE, DEBUG_VIEW_TYPE, SPLIT_CHAT_VIEW_TYPE]) {
 			const leaves = this.app.workspace.getLeavesOfType(type);
 			leaves.forEach((leaf) => {
 				const view = leaf.view;

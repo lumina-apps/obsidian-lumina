@@ -15,6 +15,7 @@
 		favoriteModels = [],
 		selectedProviderId = $bindable(),
 		selectedModelId = $bindable(),
+		dropdownAlign = "right",
 		onSelect,
 		onToggleFavorite,
 	}: {
@@ -22,6 +23,7 @@
 		favoriteModels?: FavoriteModel[];
 		selectedProviderId?: string;
 		selectedModelId?: string;
+		dropdownAlign?: "left" | "right";
 		onSelect?: (providerId: string, modelId: string) => void;
 		onToggleFavorite?: (providerId: string, modelId: string) => void;
 	} = $props();
@@ -133,7 +135,10 @@
 	</button>
 
 	{#if isOpen}
-		<div class="lumina-popup-selector lumina-model-selector__dropdown">
+		<div
+			class="lumina-popup-selector lumina-model-selector__dropdown"
+			class:lumina-model-selector__dropdown--left={dropdownAlign === "left"}
+		>
 			<div class="lumina-model-selector__search-wrap">
 				<input
 					bind:this={inputEl}
@@ -224,6 +229,11 @@
 		max-width: calc(100vw - 32px);
 		padding: 0;
 		z-index: 100;
+	}
+
+	.lumina-model-selector__dropdown--left {
+		left: 0;
+		right: auto;
 	}
 
 	.lumina-model-selector__search-wrap {

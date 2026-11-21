@@ -4,6 +4,9 @@ import { resolve } from 'path';
 
 export default defineConfig({
 	plugins: [svelte()],
+	define: {
+		__LUMINA_DEV_PRO__: false,
+	},
 	resolve: {
 		conditions: ['browser', 'development', 'import'],
 		alias: {

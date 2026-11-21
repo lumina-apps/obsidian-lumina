@@ -51,6 +51,9 @@
 		agentEnabled = false,
 		agentExecutionMode = "read",
 		isCliSelected = false,
+		hideAgentControls = false,
+		splitModelCount = 1,
+		customPlaceholder = "",
 		providers = [],
 		favoriteModels = [],
 		selectedProviderId = "",
@@ -72,6 +75,7 @@
 		onExportChat,
 		onRegenerateLast,
 		onCompressContext,
+		onOpenSplitChat,
 	} = $props<{
 		plugin: LuminaPlugin;
 		isLoading: boolean;
@@ -82,6 +86,9 @@
 		agentEnabled: boolean;
 		agentExecutionMode: "read" | "edit";
 		isCliSelected?: boolean;
+		hideAgentControls?: boolean;
+		splitModelCount?: number;
+		customPlaceholder?: string;
 		providers: LLMProviderConfig[];
 		favoriteModels?: FavoriteModel[];
 		selectedProviderId: string;
@@ -103,6 +110,7 @@
 		onExportChat: () => void;
 		onRegenerateLast: () => void;
 		onCompressContext: () => void;
+		onOpenSplitChat?: () => void;
 	}>();
 
 	// ── UI state (팝업 표시 여부 및 검색 쿼리) ───────────────────────────────
@@ -341,8 +349,18 @@
 	}
 
 	// ── 슬래시 명령어 빌드 ─────────────────────────────────────────────────
-	const slashCommands = $derived(
-		buildSlashCommands(
+	const SPLIT_EXCLUDED_SLASH_IDS = new Set([
+		"mode",
+		"mcp",
+		"compress",
+		"model",
+		"regenerate",
+		"arena",
+		"websearch",
+	]);
+
+	const slashCommands = $derived.by(() => {
+		const all = buildSlashCommands(
 			plugin,
 			tProxy,
 			onClearChat,
@@ -362,8 +380,11 @@
 			onRegenerateLast,
 			onCompressContext,
 			onToggleAgentExecutionMode,
-		),
-	);
+			onOpenSplitChat,
+		);
+		if (!hideAgentControls) return all;
+		return all.filter((cmd) => !SPLIT_EXCLUDED_SLASH_IDS.has(cmd.id));
+	});
 
 	// ── MCP 팝업 토글 ──────────────────────────────────────────────────────
 	const toggleMcpPopup = handleMcpPopupToggle((v) => {
@@ -423,6 +444,8 @@
 >
 	<ChatInputToolbar
 		{isCliSelected}
+		{hideAgentControls}
+		{splitModelCount}
 		{agentEnabled}
 		{agentExecutionMode}
 		{includeActiveNote}
@@ -568,7 +591,7 @@
 					bind:value={inputText}
 					class="lumina-chat__textarea"
 					placeholder={hasProvider
-						? $tStore("errors.chatPlaceholder")
+						? (customPlaceholder || $tStore("errors.chatPlaceholder"))
 						: $tStore("errors.llmConnectRequired")}
 					disabled={!hasProvider}
 					rows="1"

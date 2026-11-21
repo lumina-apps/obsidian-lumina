@@ -11,6 +11,7 @@ import type {
 	QuickAction,
 } from '../../shared/types/settings.types';
 import type { ProjectSettings } from '../../shared/types/project.types';
+import type { SplitChatPreferences } from '../../shared/types/splitChat.types';
 
 // ─── Section 1: Connections & Models ────────────────────────────────────────
 
@@ -92,6 +93,8 @@ export interface ChatSettings {
 	ttftTimeoutMs: number;
 	/** 스트리밍 중 다음 토큰 대기 시간 (밀리초, 0이면 비활성화) */
 	interTokenTimeoutMs: number;
+	/** 멀티 모델 비교(Split) 선호 설정 (사용 전까지 미정의 상태 유지) */
+	splitChat?: SplitChatPreferences;
 }
 
 // ─── Section 3: RAG & Context ────────────────────────────────────────────────

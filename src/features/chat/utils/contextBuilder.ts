@@ -1,7 +1,7 @@
 import { Notice, type App } from 'obsidian';
 import { get } from 'svelte/store';
 import { t } from '../../../shared/locales/helpers';
-import type { ContextAttachment, UIChatMessage } from '../../../shared/types/chat.types';
+import type { ChatRagSource, ContextAttachment, RagPipelineStep, UIChatMessage } from '../../../shared/types/chat.types';
 import type LuminaPlugin from '../../../main';
 import type { LLMProviderConfig } from '../../../shared/types/settings.types';
 import type { ChatMessage, ToolDefinition } from '../../../shared/types/llm.types';
@@ -27,6 +27,39 @@ export interface ResolvedContext {
 	mcpTools: ToolDefinition[];
 	toolServerMap: Record<string, string>;
 	attachments?: ContextAttachment[];
+}
+
+/** 다중 모델 또는 단일 모델에서 턴당 1회 공유하는 첨부/RAG 컨텍스트 결과 */
+export interface SharedTurnContext {
+	attachmentContext: string;
+	multimodalImages: string[];
+	failedAttachments: string[];
+	ragContext: string | undefined;
+	ragChunksForLog: RagChunkMeta[] | undefined;
+	activeFilePath: string | undefined;
+	activeFileTitle: string | undefined;
+	attachments: ContextAttachment[];
+	ragSkipReason: string | null;
+	historyTurnsUsed: number;
+	summaryApplied: boolean;
+	historyAttachmentsRestored: number;
+}
+
+/** 공유 턴 컨텍스트 생성 입력 파라미터 */
+export interface SharedTurnContextParams {
+	plugin: LuminaPlugin;
+	userText: string;
+	updatedAttachments: ContextAttachment[];
+	history: UIChatMessage[];
+	ragSettings: LuminaPlugin['settings']['rag'];
+	ragEnabled: boolean;
+	useRagContext: boolean | undefined;
+	assistantId?: string;
+	onRagStepChange?: (step: RagPipelineStep) => void;
+	onRagSourcesFound?: (sources: ChatRagSource[]) => void;
+	signal?: AbortSignal;
+	/** 명시적으로 지정할 경우 chatStore의 summaryUpToMessageId 대신 사용 */
+	summaryUpToMessageId?: string;
 }
 
 /**
@@ -67,23 +100,26 @@ export async function resolveAttachmentsWithActiveNote(
 }
 
 /**
- * 컨텍스트(첨부파일 + RAG)와 LLM 메시지를 구성한다.
- * attachmentContext 생성, RAG 검색, 프롬프트 빌드, 툴/멀티모달 주입까지 일괄 처리.
+ * 턴당 1회 실행되는 첨부파일·과거 첨부·RAG 검색·활성 파일 메타데이터를 준비합니다.
+ * 단일 채팅과 Split 비교 채팅에서 공통으로 사용합니다.
  */
-export async function buildLlmContext(
-	plugin: LuminaPlugin,
-	userText: string,
-	updatedAttachments: ContextAttachment[],
-	history: UIChatMessage[],
-	providerConfig: LLMProviderConfig,
-	resolvedModelId: string,
-	chatSettings: LuminaPlugin['settings']['chat'],
-	ragSettings: LuminaPlugin['settings']['rag'],
-	ragEnabled: boolean,
-	useRagContext: boolean | undefined,
-	assistantId: string,
-	signal?: AbortSignal,
-): Promise<ResolvedContext> {
+export async function prepareSharedTurnContext(
+	params: SharedTurnContextParams,
+): Promise<SharedTurnContext> {
+	const {
+		plugin,
+		userText,
+		updatedAttachments,
+		history,
+		ragSettings,
+		ragEnabled,
+		useRagContext,
+		assistantId,
+		onRagStepChange,
+		onRagSourcesFound,
+		signal,
+	} = params;
+
 	// RAG 벡터 검색
 	const shouldSearchRag = resolveRagSearchFlag({
 		ragEnabled,
@@ -118,7 +154,9 @@ export async function buildLlmContext(
 	}
 
 	// 최근 대화 턴(요약 이후 최대 3턴)의 텍스트 기반 첨부파일 컨텍스트 복원
-	const currentSummaryUpToId = get(summaryUpToMessageId);
+	const currentSummaryUpToId = 'summaryUpToMessageId' in params
+		? params.summaryUpToMessageId
+		: get(summaryUpToMessageId);
 	let effectiveHistory = history;
 	if (currentSummaryUpToId) {
 		const summaryIdx = history.findIndex(m => m.id === currentSummaryUpToId);
@@ -198,10 +236,79 @@ export async function buildLlmContext(
 			filterPaths: ragFilterFolders.length > 0 ? ragFilterFolders : undefined,
 			excludePaths: attachedVaultPaths.length > 0 ? attachedVaultPaths : undefined,
 			signal,
+			onStepChange: onRagStepChange,
+			onSourcesFound: onRagSourcesFound,
 		});
 		ragContext = result.ragContext;
 		ragChunksForLog = result.ragChunksForLog;
 	}
+
+	const activeFile = plugin.app.workspace.getActiveFile();
+	const project = getActiveProject();
+	const isActiveFileAllowed =
+		!!activeFile &&
+		isIncluded(activeFile.path, project?.ragIncludedPaths ?? []) &&
+		!isExcluded(activeFile.path, project?.ragExcludedPaths ?? []);
+	const hasActiveNoteAttachment = updatedAttachments.some(a => a.type === 'active_note');
+	const activeFilePath = isActiveFileAllowed && hasActiveNoteAttachment ? activeFile?.path : undefined;
+	const activeFileTitle = isActiveFileAllowed && hasActiveNoteAttachment ? activeFile?.basename : undefined;
+
+	const ragStatus = get(indexingState).status;
+	const ragSkipReason = !shouldSearchRag
+		? 'disabled'
+		: !plugin.indexer
+			? 'no_indexer'
+			: ragStatus !== 'ready'
+				? `indexing_${ragStatus}`
+				: (userText.trim().length === 0 && ragFilterFolders.length === 0)
+					? 'empty_query'
+					: null;
+
+	return {
+		attachmentContext,
+		multimodalImages,
+		failedAttachments: failedAttachments ?? [],
+		ragContext,
+		ragChunksForLog,
+		activeFilePath,
+		activeFileTitle,
+		attachments: updatedAttachments,
+		ragSkipReason,
+		historyTurnsUsed: effectiveHistory.length,
+		summaryApplied: Boolean(currentSummaryUpToId),
+		historyAttachmentsRestored: historyTextAttachments.length,
+	};
+}
+
+/**
+ * 컨텍스트(첨부파일 + RAG)와 LLM 메시지를 구성한다.
+ * attachmentContext 생성, RAG 검색, 프롬프트 빌드, 툴/멀티모달 주입까지 일괄 처리.
+ */
+export async function buildLlmContext(
+	plugin: LuminaPlugin,
+	userText: string,
+	updatedAttachments: ContextAttachment[],
+	history: UIChatMessage[],
+	providerConfig: LLMProviderConfig,
+	resolvedModelId: string,
+	chatSettings: LuminaPlugin['settings']['chat'],
+	ragSettings: LuminaPlugin['settings']['rag'],
+	ragEnabled: boolean,
+	useRagContext: boolean | undefined,
+	assistantId: string,
+	signal?: AbortSignal,
+): Promise<ResolvedContext> {
+	const shared = await prepareSharedTurnContext({
+		plugin,
+		userText,
+		updatedAttachments,
+		history,
+		ragSettings,
+		ragEnabled,
+		useRagContext,
+		assistantId,
+		signal,
+	});
 
 	// MCP 툴 수집
 	const { mcp } = plugin.settings;
@@ -229,24 +336,14 @@ export async function buildLlmContext(
 		toolServerMap[webSearchTool.name] = '__web_search__';
 	}
 
-	const activeFile = plugin.app.workspace.getActiveFile();
-	const project = getActiveProject();
-	const isActiveFileAllowed =
-		!!activeFile &&
-		isIncluded(activeFile.path, project?.ragIncludedPaths ?? []) &&
-		!isExcluded(activeFile.path, project?.ragExcludedPaths ?? []);
-	const hasActiveNoteAttachment = updatedAttachments.some(a => a.type === 'active_note');
-	const activeFilePath = isActiveFileAllowed && hasActiveNoteAttachment ? activeFile?.path : undefined;
-	const activeFileTitle = isActiveFileAllowed && hasActiveNoteAttachment ? activeFile?.basename : undefined;
-
 	let llmMessages: ChatMessage[] = buildMessages(history, userText, {
 		chat: chatSettings,
-		attachmentContext: attachmentContext || undefined,
-		ragContext,
+		attachmentContext: shared.attachmentContext || undefined,
+		ragContext: shared.ragContext,
 		sessionSummary: get(sessionSummary),
 		summaryUpToMessageId: get(summaryUpToMessageId),
-		activeFilePath,
-		activeFileTitle
+		activeFilePath: shared.activeFilePath,
+		activeFileTitle: shared.activeFileTitle,
 	});
 
 	// 툴 사용 지침 주입 (CLI 에이전트는 자체 네이티브/설정 도구를 사용하므로 Lumina 텍스트 툴 프롬프트 주입 생략)
@@ -255,7 +352,7 @@ export async function buildLlmContext(
 	}
 
 	// 멀티모달 이미지 주입
-	if (multimodalImages.length > 0) {
+	if (shared.multimodalImages.length > 0) {
 		if (isCliAgent) {
 			// 로컬 파일 경로가 있는 이미지는 llmExecutor에서 CLI 에이전트에 직접 경로로 전달되어 분석됩니다.
 			// 디스크 파일 경로가 없는 순수 인라인(Base64) 이미지인 경우에만 안내 알림 표시
@@ -270,40 +367,36 @@ export async function buildLlmContext(
 				const providerLabel = PROVIDER_LABELS[providerConfig.type] || providerConfig.type;
 				throw new Error(t('settings.providerErrors.visionNotSupported', { provider: providerLabel }));
 			}
-			llmMessages = injectMultimodalImages(llmMessages, multimodalImages);
+			llmMessages = injectMultimodalImages(llmMessages, shared.multimodalImages);
 		}
 	}
 
-	const ragStatus = get(indexingState).status;
-	const ragSkipReason = !shouldSearchRag
-		? 'disabled'
-		: !plugin.indexer
-			? 'no_indexer'
-			: ragStatus !== 'ready'
-				? `indexing_${ragStatus}`
-				: (userText.trim().length === 0 && ragFilterFolders.length === 0)
-					? 'empty_query'
-					: null;
-
 	debugLogger.logSystem(
 		'chat-context',
-		`Context built (messages=${llmMessages.length}, tools=${mcpTools.length}, ragChunks=${ragChunksForLog?.length ?? 0}${ragSkipReason ? `, ragSkipped=${ragSkipReason}` : ''})`,
+		`Context built (messages=${llmMessages.length}, tools=${mcpTools.length}, ragChunks=${shared.ragChunksForLog?.length ?? 0}${shared.ragSkipReason ? `, ragSkipped=${shared.ragSkipReason}` : ''})`,
 		{
 			messagesCount: llmMessages.length,
-			historyTurnsUsed: effectiveHistory.length,
-			summaryApplied: Boolean(currentSummaryUpToId),
+			historyTurnsUsed: shared.historyTurnsUsed,
+			summaryApplied: shared.summaryApplied,
 			attachmentsCount: updatedAttachments.length,
-			historyAttachmentsRestored: historyTextAttachments.length,
-			...(failedAttachments && failedAttachments.length > 0 ? { failedAttachments } : {}),
-			multimodalImagesCount: multimodalImages.length,
-			ragSearched: ragSkipReason === null,
-			...(ragSkipReason ? { ragSkipReason } : {}),
-			ragChunksCount: ragChunksForLog?.length ?? 0,
+			historyAttachmentsRestored: shared.historyAttachmentsRestored,
+			...(shared.failedAttachments.length > 0 ? { failedAttachments: shared.failedAttachments } : {}),
+			multimodalImagesCount: shared.multimodalImages.length,
+			ragSearched: shared.ragSkipReason === null,
+			...(shared.ragSkipReason ? { ragSkipReason: shared.ragSkipReason } : {}),
+			ragChunksCount: shared.ragChunksForLog?.length ?? 0,
 			mcpToolsCount: mcpTools.length,
 			useTextTools,
-			activeFilePath: activeFilePath ?? null,
+			activeFilePath: shared.activeFilePath ?? null,
 		},
 	);
 
-	return { llmMessages, ragChunksForLog, useTextTools, mcpTools, toolServerMap, attachments: updatedAttachments };
+	return {
+		llmMessages,
+		ragChunksForLog: shared.ragChunksForLog,
+		useTextTools,
+		mcpTools,
+		toolServerMap,
+		attachments: updatedAttachments,
+	};
 }

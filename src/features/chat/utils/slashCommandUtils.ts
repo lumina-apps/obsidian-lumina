@@ -1,5 +1,6 @@
 import type { SlashCommand } from "../types/slashCommand.types";
 import type LuminaPlugin from "../../../main";
+import { canUseFeature } from "../../../core/store/entitlementStore";
 
 export function buildSlashCommands(
 	_plugin: LuminaPlugin,
@@ -15,6 +16,7 @@ export function buildSlashCommands(
 	onRegenerateLast: () => void,
 	onCompressContext: () => void,
 	onToggleAgentExecutionMode: () => void,
+	onOpenSplitChat?: () => void,
 ): SlashCommand[] {
 	const cmds: SlashCommand[] = [
 		{
@@ -101,6 +103,17 @@ export function buildSlashCommands(
 			action: () => onOpenSettings(),
 		},
 	];
+
+	// Pro 권한이 활성화된 경우에만 Split / Arena 슬래시 명령어를 노출
+	if (onOpenSplitChat && canUseFeature("split-chat")) {
+		cmds.splice(cmds.length - 1, 0, {
+			id: "arena",
+			name: t("chat.slashCommands.arena.name"),
+			description: t("chat.slashCommands.arena.desc"),
+			icon: "lumina-split-chat",
+			action: () => onOpenSplitChat(),
+		});
+	}
 
 	return cmds;
 }

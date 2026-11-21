@@ -74,6 +74,20 @@ export function syncSettingsStore(settings: LuminaSettings): void {
 			...settings.chat,
 			systemPrompts: (settings.chat.systemPrompts ?? []).map(p => ({ ...p })),
 			quickActions: (settings.chat.quickActions ?? []).map(a => ({ ...a })),
+			...(settings.chat.splitChat
+				? {
+						splitChat: {
+							...settings.chat.splitChat,
+							...(settings.chat.splitChat.lastSlots
+								? {
+										lastSlots: settings.chat.splitChat.lastSlots.map((slot) => ({
+											...slot,
+										})),
+									}
+								: {}),
+						},
+					}
+				: {}),
 		},
 		rag: { ...settings.rag },
 		misc: { ...settings.misc },

@@ -40,6 +40,7 @@ if you want to view the source, please visit the github repository of this plugi
 `;
 
 const prod = process.argv[2] === "production";
+const devProEnabled = !prod && process.env.LUMINA_DEV_PRO === "true";
 
 // Use OUTDIR env var if set (e.g., to a vault plugin dir), otherwise use project root
 const dir = process.env.OUTDIR || "./";
@@ -235,6 +236,9 @@ const mainContext = await esbuild.context({
 	treeShaking: true,
 	metafile: true,
 	outfile,
+	define: {
+		__LUMINA_DEV_PRO__: devProEnabled ? "true" : "false",
+	},
 });
 
 // ─── Build 2: Embedding Worker Bundle (iife) ─────────────────────────────

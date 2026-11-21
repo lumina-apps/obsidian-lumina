@@ -1,10 +1,18 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { buildSlashCommands } from "./slashCommandUtils";
 import type LuminaPlugin from "../../../main";
+import {
+	resetEntitlementState,
+	setEntitlementState,
+} from "../../../core/store/entitlementStore";
 
 describe("slashCommandUtils", () => {
 	const mockPlugin = {} as LuminaPlugin;
 	const mockT = vi.fn((key: string) => `trans_${key}`);
+
+	afterEach(() => {
+		resetEntitlementState();
+	});
 
 	it("should build all slash commands including mode command", () => {
 		const onClearChat = vi.fn();
@@ -121,6 +129,60 @@ describe("slashCommandUtils", () => {
 
 		cmds.find((c) => c.id === "settings")?.action();
 		expect(onOpenSettings).toHaveBeenCalledTimes(1);
+	});
+
+	it("Pro 비활성 시에는 onOpenSplitChat이 전달되어도 /arena 명령어를 노출하지 않는다", () => {
+		resetEntitlementState();
+		const onOpenSplitChat = vi.fn();
+		const cmds = buildSlashCommands(
+			mockPlugin,
+			mockT,
+			vi.fn(),
+			vi.fn(),
+			vi.fn(),
+			vi.fn(),
+			vi.fn(),
+			vi.fn(),
+			vi.fn(),
+			vi.fn(),
+			vi.fn(),
+			vi.fn(),
+			vi.fn(),
+			onOpenSplitChat,
+		);
+		expect(cmds).toHaveLength(11);
+		expect(cmds.find((c) => c.id === "arena")).toBeUndefined();
+	});
+
+	it("Pro 활성 시에만 /arena 명령어를 추가하고 실행한다", () => {
+		setEntitlementState({
+			tier: "pro",
+			status: "active",
+			enabledFeatures: new Set(["split-chat"]),
+		});
+		const onOpenSplitChat = vi.fn();
+		const cmds = buildSlashCommands(
+			mockPlugin,
+			mockT,
+			vi.fn(),
+			vi.fn(),
+			vi.fn(),
+			vi.fn(),
+			vi.fn(),
+			vi.fn(),
+			vi.fn(),
+			vi.fn(),
+			vi.fn(),
+			vi.fn(),
+			vi.fn(),
+			onOpenSplitChat,
+		);
+		expect(cmds).toHaveLength(12);
+		const arenaCmd = cmds.find((c) => c.id === "arena");
+		expect(arenaCmd).toBeDefined();
+		expect(arenaCmd?.icon).toBe("lumina-split-chat");
+		arenaCmd?.action();
+		expect(onOpenSplitChat).toHaveBeenCalledTimes(1);
 	});
 });
 

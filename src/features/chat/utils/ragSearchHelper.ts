@@ -5,6 +5,7 @@
 import { searchVault, formatRagContext } from '../../rag/search';
 import { setMessageSources, setMessageRagStep } from '../../../core/store/chatStore';
 import { debugLogger } from '../../../shared/debugLogger';
+import type { ChatRagSource, RagPipelineStep } from '../../../shared/types/chat.types';
 import type { RagChunkMeta } from '../../../shared/types/debug.types';
 import type { RagSettings, ConnectionsSettings } from '../../../core/settings/settings.types';
 import { rerankChunks } from '../../rag/reranker';
@@ -26,11 +27,15 @@ export interface PerformRagSearchParams {
 	rag: RagSettings;
 	connections: ConnectionsSettings;
 	existingContext: string | undefined;
-	assistantId: string;
+	assistantId?: string;
 	indexer: import('../../rag/indexer').VaultIndexer;
 	filterPaths?: string[];
 	excludePaths?: string[];
 	signal?: AbortSignal;
+	/** RAG 단계 변경 커스텀 콜백 (미전달 시 chatStore 직접 업데이트) */
+	onStepChange?: (step: RagPipelineStep) => void;
+	/** RAG 출처 발견 커스텀 콜백 (미전달 시 chatStore 직접 업데이트) */
+	onSourcesFound?: (sources: ChatRagSource[]) => void;
 }
 
 export interface RagSearchResult {
@@ -43,7 +48,35 @@ export interface RagSearchResult {
  * 검색 결과가 있으면 assistantId 메시지에 RAG 소스도 설정한다.
  */
 export async function performRagSearch(params: PerformRagSearchParams): Promise<RagSearchResult> {
-	const { userText, rag, connections, existingContext, assistantId, indexer, filterPaths, excludePaths, signal } = params;
+	const {
+		userText,
+		rag,
+		connections,
+		existingContext,
+		assistantId,
+		indexer,
+		filterPaths,
+		excludePaths,
+		signal,
+		onStepChange,
+		onSourcesFound,
+	} = params;
+
+	const emitStep = (step: RagPipelineStep): void => {
+		if (onStepChange) {
+			onStepChange(step);
+		} else if (assistantId) {
+			setMessageRagStep(assistantId, step);
+		}
+	};
+
+	const emitSources = (sources: ChatRagSource[]): void => {
+		if (onSourcesFound) {
+			onSourcesFound(sources);
+		} else if (assistantId) {
+			setMessageSources(assistantId, sources);
+		}
+	};
 
 	try {
 		let parentChunks = indexer.indexedParentChunks;
@@ -67,7 +100,7 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 		const ragStart = Date.now();
 		
 		// [1] Searching
-		setMessageRagStep(assistantId, 'searching');
+		emitStep('searching');
 		
 		const useReranker = !!(connections.rerankerProviderId && connections.rerankerModelId);
 		
@@ -88,13 +121,13 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 		debugLogger.logSystem('rag', `parentChunks: ${parentChunks.length}, Initial Results: ${results.length}`);
 
 		if (results.length === 0) {
-			setMessageRagStep(assistantId, null);
+			emitStep(null);
 			return { ragContext: existingContext, ragChunksForLog: undefined };
 		}
 
 		// [2] Reranking
 		if (useReranker) {
-			setMessageRagStep(assistantId, 'reranking');
+			emitStep('reranking');
 			const providerConfig = connections.providers.find(p => p.id === connections.rerankerProviderId);
 			if (providerConfig) {
 				results = await rerankChunks(userText, results, providerConfig, connections.rerankerModelId, rag.topK, signal);
@@ -105,7 +138,7 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 		}
 
 		// [3] Generating (End of Pipeline)
-		setMessageRagStep(assistantId, 'generating');
+		emitStep('generating');
 
 		const ragText = formatRagContext(results);
 		const ragContext = existingContext
@@ -157,16 +190,16 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 				filePath: p,
 				chunkText: text
 			}));
-			setMessageSources(assistantId, sourcesToSet);
+			emitSources(sourcesToSet);
 		}
 
 		return { ragContext, ragChunksForLog };
 	} catch (err) {
 		if (err instanceof Error && err.name === 'AbortError') {
-			setMessageRagStep(assistantId, null);
+			emitStep(null);
 			throw err;
 		}
-		setMessageRagStep(assistantId, null);
+		emitStep(null);
 		debugLogger.logError('rag', err instanceof Error ? err : new Error(`RAG 검색 실패: ${err}`));
 		return { ragContext: existingContext, ragChunksForLog: undefined };
 	}
