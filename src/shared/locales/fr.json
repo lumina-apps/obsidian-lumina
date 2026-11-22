@@ -1270,7 +1270,8 @@
       "statusPaused": "En pause",
       "statusCompleted": "Terminé",
       "progressSummary": "{{done}} / {{total}} traitées ({{percent}}%)",
-      "rateLimitWaiting": "Limite atteinte — reprise dans {{seconds}}s..."
+      "rateLimitWaiting": "Limite atteinte — reprise dans {{seconds}}s...",
+      "alreadyRunningNotice": "Un traitement par lots est déjà en cours. Veuillez attendre ou l'arrêter avant de changer de dossier."
     },
     "queue": {
       "title": "File d'attente",

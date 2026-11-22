@@ -1270,7 +1270,8 @@
       "statusPaused": "一時停止中",
       "statusCompleted": "完了",
       "progressSummary": "{{done}} / {{total}} 処理済み ({{percent}}%)",
-      "rateLimitWaiting": "レート制限に達しました — {{seconds}}秒後に自動再開..."
+      "rateLimitWaiting": "レート制限に達しました — {{seconds}}秒後に自動再開...",
+      "alreadyRunningNotice": "バッチ処理がすでに実行中です。完了または停止してから新しいフォルダを選択してください。"
     },
     "queue": {
       "title": "処理キュー",

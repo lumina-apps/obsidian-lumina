@@ -1296,6 +1296,7 @@ export interface TranslationBatchStudioExecution {
   statusCompleted: string;
   progressSummary: string;
   rateLimitWaiting: string;
+  alreadyRunningNotice: string;
 }
 
 export interface TranslationBatchStudioQueue {

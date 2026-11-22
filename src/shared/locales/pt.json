@@ -1270,7 +1270,8 @@
       "statusPaused": "Pausado",
       "statusCompleted": "Concluído",
       "progressSummary": "{{done}} / {{total}} processadas ({{percent}}%)",
-      "rateLimitWaiting": "Limite atingido — retomando em {{seconds}}s..."
+      "rateLimitWaiting": "Limite atingido — retomando em {{seconds}}s...",
+      "alreadyRunningNotice": "Um lote já está em andamento. Aguarde ou interrompa-o antes de selecionar outra pasta."
     },
     "queue": {
       "title": "Fila do Lote",

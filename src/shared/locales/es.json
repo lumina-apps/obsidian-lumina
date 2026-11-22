@@ -1270,7 +1270,8 @@
       "statusPaused": "Pausado",
       "statusCompleted": "Completado",
       "progressSummary": "{{done}} / {{total}} procesadas ({{percent}}%)",
-      "rateLimitWaiting": "Límite de velocidad alcanzado — reintentando en {{seconds}}s..."
+      "rateLimitWaiting": "Límite de velocidad alcanzado — reintentando en {{seconds}}s...",
+      "alreadyRunningNotice": "Ya hay un lote en ejecución. Espera a que termine o deténlo antes de cambiar de carpeta."
     },
     "queue": {
       "title": "Cola de Tareas",

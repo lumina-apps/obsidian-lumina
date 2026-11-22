@@ -137,7 +137,10 @@ export class EventManager {
 								'events',
 								`file-menu: batch studio triggered (folder=${abstractFile.path})`,
 							);
-							setBatchTargetFolder(abstractFile.path);
+							const applied = setBatchTargetFolder(abstractFile.path);
+							if (!applied) {
+								new Notice(t('batchStudio.execution.alreadyRunningNotice'));
+							}
 							void activateMainView(this.plugin.app.workspace, BATCH_STUDIO_VIEW_TYPE);
 						});
 				});

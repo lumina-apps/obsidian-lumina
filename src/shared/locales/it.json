@@ -1270,7 +1270,8 @@
       "statusPaused": "In pausa",
       "statusCompleted": "Completato",
       "progressSummary": "{{done}} / {{total}} elaborate ({{percent}}%)",
-      "rateLimitWaiting": "Limite raggiunto — riprova tra {{seconds}}s..."
+      "rateLimitWaiting": "Limite raggiunto — riprova tra {{seconds}}s...",
+      "alreadyRunningNotice": "Un'operazione batch è già in corso. Attendi o interrompila prima di selezionare un'altra cartella."
     },
     "queue": {
       "title": "Coda Batch",

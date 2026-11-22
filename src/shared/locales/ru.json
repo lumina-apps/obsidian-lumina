@@ -1270,7 +1270,8 @@
       "statusPaused": "На паузе",
       "statusCompleted": "Завершено",
       "progressSummary": "{{done}} / {{total}} обработано ({{percent}}%)",
-      "rateLimitWaiting": "Достигнут лимит запросов — повтор через {{seconds}}с..."
+      "rateLimitWaiting": "Достигнут лимит запросов — повтор через {{seconds}}с...",
+      "alreadyRunningNotice": "Пакетная обработка уже выполняется. Дождитесь завершения или остановите её перед выбором другой папки."
     },
     "queue": {
       "title": "Очередь",

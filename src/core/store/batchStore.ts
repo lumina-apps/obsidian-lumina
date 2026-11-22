@@ -220,19 +220,27 @@ export function setBatchSelectedPath(path: string | null): void {
 	}));
 }
 
-/** 폴더 컨텍스트 메뉴 진입 시 대상 폴더 즉시 지정 및 설정 패널 펼치기 */
-export function setBatchTargetFolder(folderPath: string): void {
+/** 폴더 컨텍스트 메뉴 진입 시 대상 폴더 즉시 지정 및 설정 패널 펼치기 (실행/일시정지 중에는 덮어쓰지 않음) */
+export function setBatchTargetFolder(folderPath: string): boolean {
 	const cleaned = folderPath === '/' ? '' : normalizePath(folderPath);
-	batchStore.update((state) => ({
-		...state,
-		activeMainTab: 'workspace',
-		isConfigCollapsed: false,
-		scopeConfig: {
-			...state.scopeConfig,
-			scopeMode: cleaned ? 'folder' : 'vault',
-			folderPath: cleaned,
-		},
-	}));
+	let updated = false;
+	batchStore.update((state) => {
+		if (state.runState === 'running' || state.runState === 'paused') {
+			return state;
+		}
+		updated = true;
+		return {
+			...state,
+			activeMainTab: 'workspace',
+			isConfigCollapsed: false,
+			scopeConfig: {
+				...state.scopeConfig,
+				scopeMode: cleaned ? 'folder' : 'vault',
+				folderPath: cleaned,
+			},
+		};
+	});
+	return updated;
 }
 
 /** 새 배치 히스토리 항목을 목록 맨 앞에 추가 */

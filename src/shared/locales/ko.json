@@ -1270,7 +1270,8 @@
       "statusPaused": "일시정지됨",
       "statusCompleted": "완료됨",
       "progressSummary": "{{done}} / {{total}} 처리됨 ({{percent}}%)",
-      "rateLimitWaiting": "API 요청 한도 도달 — {{seconds}}초 후 자동 재개..."
+      "rateLimitWaiting": "API 요청 한도 도달 — {{seconds}}초 후 자동 재개...",
+      "alreadyRunningNotice": "이미 배치 작업이 진행 중입니다. 완료 또는 중단 후 새 폴더를 선택해 주세요."
     },
     "queue": {
       "title": "작업 큐",

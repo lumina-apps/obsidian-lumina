@@ -7,6 +7,7 @@ import {
 	getBatchState,
 	patchBatchState,
 	resetBatchStore,
+	setBatchTargetFolder,
 } from '../../../core/store/batchStore';
 import {
 	resetEntitlementState,
@@ -206,5 +207,30 @@ describe('BatchStudioController', () => {
 		expect(state.sampleRunning).toBe(false);
 		expect(state.sampleResult?.afterTags).toEqual(['샘플']);
 		expect(mockApp.fileManager.processFrontMatter).not.toHaveBeenCalled();
+	});
+
+	it('배치 실행 중(running/paused)에는 setBatchTargetFolder가 기존 대상 폴더와 접힘 상태를 덮어쓰지 않는다', () => {
+		patchBatchState({
+			runState: 'running',
+			isConfigCollapsed: true,
+			scopeConfig: {
+				scopeMode: 'folder',
+				folderPath: 'ActiveFolder',
+				tagFilter: '',
+				skipIfAlreadyHasTarget: true,
+				minContentLength: 50,
+			},
+		});
+
+		const appliedWhileRunning = setBatchTargetFolder('OtherFolder');
+		expect(appliedWhileRunning).toBe(false);
+		expect(getBatchState().scopeConfig.folderPath).toBe('ActiveFolder');
+		expect(getBatchState().isConfigCollapsed).toBe(true);
+
+		patchBatchState({ runState: 'completed' });
+		const appliedAfterDone = setBatchTargetFolder('OtherFolder');
+		expect(appliedAfterDone).toBe(true);
+		expect(getBatchState().scopeConfig.folderPath).toBe('OtherFolder');
+		expect(getBatchState().isConfigCollapsed).toBe(false);
 	});
 });

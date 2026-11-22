@@ -1270,7 +1270,8 @@
       "statusPaused": "Pausiert",
       "statusCompleted": "Abgeschlossen",
       "progressSummary": "{{done}} / {{total}} verarbeitet ({{percent}}%)",
-      "rateLimitWaiting": "Rate-Limit erreicht — Weiter in {{seconds}}s..."
+      "rateLimitWaiting": "Rate-Limit erreicht — Weiter in {{seconds}}s...",
+      "alreadyRunningNotice": "Ein Batch-Vorgang läuft bereits. Bitte warten Sie oder stoppen Sie ihn, bevor Sie einen neuen Ordner wählen."
     },
     "queue": {
       "title": "Warteschlange",

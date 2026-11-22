@@ -1270,7 +1270,8 @@
       "statusPaused": "已暂停",
       "statusCompleted": "已完成",
       "progressSummary": "已处理 {{done}} / {{total}} ({{percent}}%)",
-      "rateLimitWaiting": "触发速率限制 — {{seconds}} 秒后自动继续..."
+      "rateLimitWaiting": "触发速率限制 — {{seconds}} 秒后自动继续...",
+      "alreadyRunningNotice": "已有批量任务正在运行，请等待完成或停止后再切换文件夹。"
     },
     "queue": {
       "title": "任务队列",

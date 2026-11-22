@@ -1270,7 +1270,8 @@
       "statusPaused": "Paused",
       "statusCompleted": "Completed",
       "progressSummary": "{{done}} / {{total}} processed ({{percent}}%)",
-      "rateLimitWaiting": "Rate limit reached — retrying in {{seconds}}s..."
+      "rateLimitWaiting": "Rate limit reached — retrying in {{seconds}}s...",
+      "alreadyRunningNotice": "A batch job is already in progress. Please wait or stop it before switching folders."
     },
     "queue": {
       "title": "Batch Queue",

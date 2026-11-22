@@ -1270,7 +1270,8 @@
       "statusPaused": "已暫停",
       "statusCompleted": "已完成",
       "progressSummary": "已處理 {{done}} / {{total}} ({{percent}}%)",
-      "rateLimitWaiting": "達到速率限制 — {{seconds}} 秒後自動繼續..."
+      "rateLimitWaiting": "達到速率限制 — {{seconds}} 秒後自動繼續...",
+      "alreadyRunningNotice": "已有批次作業正在執行中，請等待完成或停止後再選擇新資料夾。"
     },
     "queue": {
       "title": "任務佇列",
