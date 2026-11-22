@@ -119,6 +119,16 @@ export interface RagSettings {
 	topK: number;
 	/** 최소 코사인 유사도 (0~1) — 이 값 미만의 청크는 검색 결과에서 제외 */
 	minSimilarity: number;
+	/**
+	 * 연관 노트(Discovery) 전용 최소 코사인 유사도 (0~1).
+	 * 0 = 자동 (minSimilarity가 설정되어 있으면 그 값, 아니면 모델 기반 적응형 임계값)
+	 */
+	relatedNotesMinSimilarity: number;
+	/**
+	 * 중복 노트 판정 코사인 유사도 임계값 (0~1).
+	 * 0 = 자동 (Granite 0.90, 그 외 모델 0.85)
+	 */
+	duplicateThreshold: number;
 	/** 인덱싱 동기화 방식 */
 	syncMode: RAGSyncMode;
 	/** 대용량 파일 제외 임계값 (MB). 0 = 제외 안 함. 이 값보다 큰 파일은 인덱싱 제외. 기본 50 */
