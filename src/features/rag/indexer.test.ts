@@ -320,4 +320,22 @@ describe('VaultIndexer', () => {
 			expect((indexer as unknown as { isIndexing: boolean }).isIndexing).toBe(false);
 		});
 	});
+
+	it('should apply updated chatHistoryPath on subsequent syncs after setChatHistoryPath', async () => {
+		vi.mocked(fileFilter.getTargetFiles).mockReturnValue([]);
+		vi.mocked(checkpointManager.restoreFromCheckpoint).mockResolvedValue({
+			filesToProcess: [], alreadyProcessed: 0, indexRestored: false, processedPaths: [], startedAt: 0
+		});
+
+		indexer.setChatHistoryPath('NewChats');
+		await indexer.indexVault();
+
+		expect(fileFilter.getTargetFiles).toHaveBeenCalledWith(
+			mockApp,
+			mockSettings,
+			'NewChats',
+			[],
+			[],
+		);
+	});
 });

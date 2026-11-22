@@ -83,6 +83,11 @@
 			<div class="lumina-popup-selector__empty">{$tStore('uiMessages.noSearchResults')}</div>
 		{:else}
 			{#each filteredCommands as cmd, i}
+				{#if cmd.category === "custom" && (i === 0 || filteredCommands[i - 1]?.category !== "custom")}
+					<div class="lumina-slash-selector__section-header" role="presentation">
+						{$tStore("chat.slashCommands.customSection")}
+					</div>
+				{/if}
 				<button
 					class="lumina-popup-selector__item"
 					class:is-active={i === nav.activeIndex}
@@ -118,12 +123,31 @@
 		white-space: nowrap;
 	}
 
-	/* 배지(/{cmd.id}) 길이가 항목마다 달라도 텍스트 영역 폭이 일정하도록 고정 폭 + 중앙 정렬 */
+	.lumina-slash-selector__section-header {
+		padding: 6px 10px 4px;
+		font-size: 10px;
+		font-weight: 600;
+		color: var(--text-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		border-top: 1px solid var(--background-modifier-border);
+		margin-top: 2px;
+		user-select: none;
+	}
+
+	.lumina-slash-selector__section-header:first-child {
+		border-top: none;
+		margin-top: 0;
+	}
+
+	/* 배지(/{cmd.id}) 길이가 항목마다 달라도 텍스트 영역 폭이 일정하도록 고정 최소 폭 + 긴 슬러그 말줄임 */
 	.lumina-slash-selector__item-badge {
+		display: inline-block;
 		min-width: 72px;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
+		max-width: 150px;
+		text-align: center;
+		overflow: hidden;
+		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 </style>

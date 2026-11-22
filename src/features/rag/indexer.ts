@@ -62,7 +62,7 @@ export class VaultIndexer {
 	/** 인덱싱 제외 경로 목록 */
 	private readonly excludedPaths: string[];
 	/** 채팅 기록 저장 경로 (인덱싱 제외 대상) */
-	private readonly chatHistoryPath: string;
+	private chatHistoryPath: string;
 	/** 사용 중인 임베딩 모델명 */
 	private readonly modelName: string;
 	/** 프로젝트 식별자 (멀티 프로젝트 지원) */
@@ -111,6 +111,11 @@ export class VaultIndexer {
 		if (this.embeddingStore) {
 			this.embeddingStore.close();
 		}
+	}
+
+	/** 실행 중 채팅 히스토리 저장 경로 변경 시 인덱서 제외 경로를 즉시 갱신합니다. */
+	public setChatHistoryPath(chatHistoryPath: string): void {
+		this.chatHistoryPath = chatHistoryPath;
 	}
 
 	get indexedParentChunks(): ParentChunk[] { return this.state.parentChunks; }

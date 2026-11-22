@@ -92,61 +92,55 @@
 	</div>
 
 	<div class="lumina-split-header__right">
-		<div class="lumina-split-header__segmented" role="group" aria-label="Context mode">
-			<button
-				type="button"
-				class="lumina-split-header__seg-btn"
-				class:is-active={contextMode === "independent"}
-				title={$tS("splitChat.contextIndependentTooltip")}
-				onclick={() => onChangeContextMode("independent")}
-			>
-				{$tS("splitChat.contextIndependent")}
-			</button>
-			<button
-				type="button"
-				class="lumina-split-header__seg-btn"
-				class:is-active={contextMode === "winner"}
-				title={$tS("splitChat.contextWinnerTooltip")}
-				onclick={() => onChangeContextMode("winner")}
-			>
-				🏆 {$tS("splitChat.contextWinner")}
-			</button>
+		<div class="lumina-split-header__context-group">
+			<span class="lumina-split-header__group-label">
+				{$tS("splitChat.contextLabel")}:
+			</span>
+			<div class="lumina-split-header__segmented" role="group" aria-label={$tS("splitChat.contextLabel")}>
+				<button
+					type="button"
+					class="lumina-split-header__seg-btn"
+					class:is-active={contextMode === "independent"}
+					title={$tS("splitChat.contextIndependentTooltip")}
+					onclick={() => onChangeContextMode("independent")}
+				>
+					{$tS("splitChat.contextIndependent")}
+				</button>
+				<button
+					type="button"
+					class="lumina-split-header__seg-btn"
+					class:is-active={contextMode === "winner"}
+					title={$tS("splitChat.contextWinnerTooltip")}
+					onclick={() => onChangeContextMode("winner")}
+				>
+					🏆 {$tS("splitChat.contextWinner")}
+				</button>
+			</div>
 		</div>
-
-		{#if isRagEnabled}
-			{#if indexingState.status === "ready"}
-				<span
-					class="lumina-chat__rag-badge lumina-chat__rag-badge--ready"
-					title={$tS("settings.rag.status.ready")}
-				>
-					RAG ✓
-				</span>
-			{:else if indexingState.status === "indexing" || indexingState.status === "loading-model"}
-				<span
-					class="lumina-chat__rag-badge lumina-chat__rag-badge--indexing"
-					title={$tS("settings.rag.status.indexingShort")}
-				>
-					RAG {indexingState.status === "loading-model" ? "…" : `${indexingProgress}%`}
-				</span>
-			{:else}
-				<span
-					class="lumina-chat__rag-badge lumina-chat__rag-badge--idle"
-					title={$tS("settings.rag.status.waiting")}
-				>
-					RAG -
-				</span>
-			{/if}
-		{/if}
 
 		<button
 			type="button"
-			class="lumina-chat__toggle-btn"
+			class="lumina-chat__toggle-btn lumina-split-header__rag-btn"
 			class:is-active={useRagContext}
 			class:is-disabled={!isRagEnabled}
 			aria-label={$tS("settings.rag.toggleTooltip")}
+			title={!isRagEnabled
+				? $tS("errors.ragDisabledGlobally")
+				: indexingState.status === "ready"
+					? `${$tS("settings.rag.toggleTooltip")} (${$tS("settings.rag.status.ready")})`
+					: indexingState.status === "indexing" || indexingState.status === "loading-model"
+						? `${$tS("settings.rag.toggleTooltip")} (${indexingProgress}%)`
+						: $tS("settings.rag.toggleTooltip")}
 			onclick={onToggleRag}
 		>
 			RAG
+			{#if isRagEnabled && (indexingState.status === "indexing" || indexingState.status === "loading-model")}
+				<span class="lumina-split-header__rag-pct">
+					{indexingState.status === "loading-model" ? "…" : `${indexingProgress}%`}
+				</span>
+			{:else if isRagEnabled && indexingState.status === "ready"}
+				<span class="lumina-split-header__rag-dot"></span>
+			{/if}
 		</button>
 
 		<button
@@ -158,7 +152,9 @@
 				? $tS("splitChat.maxModelsReached", { max: maxSlots })
 				: $tS("splitChat.addModel")}
 		>
-			+ {$tS("splitChat.addModel")} ({slotCount}/{maxSlots})
+			<span>+</span>
+			<span class="lumina-split-header__add-label">{$tS("splitChat.addModel")}</span>
+			<span>({slotCount}/{maxSlots})</span>
 		</button>
 
 		<button
@@ -187,20 +183,27 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
 		gap: 8px;
-		padding: 8px 14px;
+		padding: 6px 12px;
 		background: var(--background-secondary);
 		border-bottom: 1px solid var(--background-modifier-border);
 		flex-shrink: 0;
+		overflow-x: auto;
+		scrollbar-width: none;
+	}
+
+	.lumina-split-header::-webkit-scrollbar {
+		display: none;
 	}
 
 	.lumina-split-header__left,
 	.lumina-split-header__right {
 		display: flex;
 		align-items: center;
-		flex-wrap: wrap;
-		gap: 8px;
+		flex-wrap: nowrap;
+		gap: 6px;
+		flex-shrink: 0;
 	}
 
 	.lumina-split-header__brand {
@@ -234,6 +237,20 @@
 		gap: 2px;
 	}
 
+	.lumina-split-header__context-group {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+	}
+
+	.lumina-split-header__group-label {
+		font-size: 11px;
+		font-weight: 600;
+		color: var(--text-muted);
+		user-select: none;
+		white-space: nowrap;
+	}
+
 	.lumina-split-header__seg-btn {
 		all: unset;
 		box-sizing: border-box;
@@ -260,7 +277,10 @@
 	.lumina-split-header__add-btn {
 		all: unset;
 		box-sizing: border-box;
-		padding: 4px 10px;
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 4px 9px;
 		font-size: 11px;
 		font-weight: 600;
 		border-radius: 6px;
@@ -270,6 +290,38 @@
 		cursor: pointer;
 		transition: all 0.15s ease;
 		white-space: nowrap;
+	}
+
+	.lumina-split-header__rag-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		white-space: nowrap;
+	}
+
+	.lumina-split-header__rag-dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: rgb(34, 197, 94);
+	}
+
+	.lumina-split-header__rag-pct {
+		font-size: 10px;
+		opacity: 0.85;
+	}
+
+	@container (max-width: 980px) {
+		.lumina-split-header__group-label,
+		.lumina-split-header__add-label {
+			display: none;
+		}
+	}
+
+	@container (max-width: 780px) {
+		.lumina-split-header__title {
+			display: none;
+		}
 	}
 
 	.lumina-split-header__add-btn:hover:not(:disabled) {

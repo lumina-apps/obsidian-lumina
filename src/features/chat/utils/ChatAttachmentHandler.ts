@@ -10,8 +10,14 @@ import { t } from '../../../shared/locales/helpers';
 import { debugLogger } from '../../../shared/debugLogger';
 import { resizeImageDataUrl } from './imageUtils';
 import { TEXT_EXTS } from './fileAttachmentUtils';
+import { get } from 'svelte/store';
 import { getActiveProject } from '../../../core/store/projectStore';
+import { settingsStore } from '../../../core/store/settingsStore';
 import { isExcluded, isIncluded } from '../../../shared/utils/exclusions';
+import {
+	isLuminaHistoryContent,
+	mergeExcludedPathsWithHistory,
+} from '../../../shared/utils/historyPathUtils';
 
 export const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif']);
 const MAX_TEXT_LENGTH = 2000000; // 물리적 텍스트 안전 상한선 (약 50만 토큰, OOM 힙 크래시 방지)
@@ -58,7 +64,7 @@ export class ChatAttachmentHandler {
 					return this.parseExternalFileAttachment(att);
 
 				case 'folder':
-					return await this.parseFolderAttachment(app, att);
+					return await this.parseFolderAttachment(app, att, plugin);
 
 				case 'selection':
 					return this.parseSelectionAttachment(app, att);
@@ -70,7 +76,7 @@ export class ChatAttachmentHandler {
 					return await this.parseCanvasAttachment(app, att);
 
 				case 'tag':
-					return await this.parseTagAttachment(app, att);
+					return await this.parseTagAttachment(app, att, plugin);
 
 				default:
 					return null;
@@ -176,7 +182,7 @@ export class ChatAttachmentHandler {
 		return this.createTextPayload(`[외부 파일: ${att.name}]\n${att.content}`);
 	}
 
-	private static async parseFolderAttachment(app: App, att: ContextAttachment): Promise<ParsedAttachment | null> {
+	private static async parseFolderAttachment(app: App, att: ContextAttachment, plugin?: LuminaPlugin): Promise<ParsedAttachment | null> {
 		const folder = app.vault.getAbstractFileByPath(att.path);
 		if (!(folder instanceof TFolder)) return null;
 
@@ -185,7 +191,10 @@ export class ChatAttachmentHandler {
 		const MAX_DEPTH = 15;
 
 		const project = getActiveProject();
-		const excludedPaths = project?.ragExcludedPaths ?? [];
+		const excludedPaths = mergeExcludedPathsWithHistory(
+			project?.ragExcludedPaths ?? [],
+			plugin?.settings?.chat?.historyPath ?? get(settingsStore)?.chat?.historyPath,
+		);
 
 		const collectFiles = (f: TFolder, depth: number) => {
 			if (depth > MAX_DEPTH || visitedFolders.has(f.path)) return;
@@ -210,6 +219,7 @@ export class ChatAttachmentHandler {
 		let readCount = 0;
 		for (const file of textFiles) {
 			const content = await app.vault.read(file);
+			if (isLuminaHistoryContent(content)) continue;
 			folderContent += `--- ${file.path} ---\n${content}\n\n`;
 			readCount++;
 			if (readCount % 50 === 0) {
@@ -324,7 +334,7 @@ export class ChatAttachmentHandler {
 		}
 	}
 
-	private static async parseTagAttachment(app: App, att: ContextAttachment): Promise<ParsedAttachment | null> {
+	private static async parseTagAttachment(app: App, att: ContextAttachment, plugin?: LuminaPlugin): Promise<ParsedAttachment | null> {
 		const files = app.vault.getMarkdownFiles();
 		let tagContent = t('settings.chat.context.tagFiles', { name: att.name }) + '\n';
 		const targetTag = att.name.startsWith('#') ? att.name : `#${att.name}`;
@@ -332,7 +342,10 @@ export class ChatAttachmentHandler {
 
 		const project = getActiveProject();
 		const includedPaths = project?.ragIncludedPaths ?? [];
-		const excludedPaths = project?.ragExcludedPaths ?? [];
+		const excludedPaths = mergeExcludedPathsWithHistory(
+			project?.ragExcludedPaths ?? [],
+			plugin?.settings?.chat?.historyPath ?? get(settingsStore)?.chat?.historyPath,
+		);
 
 		for (const file of files) {
 			if (!isIncluded(file.path, includedPaths) || isExcluded(file.path, excludedPaths)) {
@@ -344,6 +357,7 @@ export class ChatAttachmentHandler {
 
 			if (hasTag) {
 				const content = await app.vault.read(file);
+				if (isLuminaHistoryContent(content)) continue;
 				tagContent += `--- ${file.basename} ---\n${content}\n\n`;
 				readCount++;
 				if (readCount % 50 === 0) {

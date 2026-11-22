@@ -286,7 +286,12 @@
         "urlInputPlaceholder": "Enter URL (e.g., https://...)",
         "urlInputPrompt": "Press Enter to add URL",
         "includeNote": "Include Note",
-        "excludeNote": "Exclude Note"
+        "excludeNote": "Exclude Note",
+        "activeNoteNone": "No Active Note",
+        "activeNoteExcluded": "Excluded Note",
+        "includedActiveNoteTooltip": "Included active note: {{path}}",
+        "noActiveNoteTooltip": "No active markdown note to include.",
+        "excludedActiveNoteTooltip": "Excluded by project rules: {{path}}"
       },
       "sendMode": {
         "name": "Send Message Mode",
@@ -318,7 +323,9 @@
             "name": "Explain",
             "prompt": "Explain the following text in detail:\n\n"
           }
-        }
+        },
+        "slashHint": "Invoke in chat with {{command}}",
+        "slashHintEmpty": "Enter a prompt to invoke it with / in chat"
       },
       "inlineTrigger": {
         "name": "Inline Command Trigger",
@@ -611,7 +618,8 @@
       "settings": {
         "name": "Settings",
         "desc": "Open the Lumina settings screen."
-      }
+      },
+      "customSection": "Custom Prompts"
     },
     "sessionUsage": "Current session usage",
     "sessionTokens": "Total: {{tokens}} tokens",
@@ -1110,8 +1118,8 @@
     "errorProcessing": "Error processing action: {{message}}"
   },
   "splitChat": {
-    "title": "Split / Arena",
-    "commandTitle": "Open Split / Arena Comparison Chat",
+    "title": "Model Compare",
+    "commandTitle": "Open Model Compare Chat",
     "openTooltip": "Compare models side-by-side",
     "newComparison": "New Comparison",
     "historyToggle": "Comparison History",
@@ -1119,10 +1127,11 @@
     "modeBlind": "Blind",
     "modeSideBySideTooltip": "Show model names while comparing responses",
     "modeBlindTooltip": "Hide model names and shuffle order until you vote or reveal",
-    "contextIndependent": "Independent",
-    "contextWinner": "Winner Base",
-    "contextIndependentTooltip": "Each model continues using its own previous responses",
-    "contextWinnerTooltip": "All models continue from the picked winner response of each turn",
+    "contextLabel": "Follow-up",
+    "contextIndependent": "Each Own",
+    "contextWinner": "From Picked",
+    "contextIndependentTooltip": "From the 2nd prompt onward, each model continues using its own previous responses",
+    "contextWinnerTooltip": "From the 2nd prompt onward, all models continue from the picked winner response (falls back to own if unpicked)",
     "addModel": "Add Model",
     "removeModel": "Remove Slot",
     "maxModelsReached": "Maximum of {{max}} models reached.",
@@ -1160,7 +1169,7 @@
     "metricsSummary": "{{sec}}s · {{tokens}} tok · {{tps}} t/s",
     "metricsTimeOnly": "{{sec}}s",
     "metricsTtftTooltip": "TTFT: {{ms}}ms",
-    "historyTitle": "Split History",
+    "historyTitle": "Compare History",
     "historySearchPlaceholder": "Search comparisons or models...",
     "historyEmpty": "No saved comparisons yet.",
     "historyTurnsCount": "{{count}} turns",

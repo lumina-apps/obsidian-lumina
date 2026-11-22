@@ -5,6 +5,7 @@
 import { App, TFile } from 'obsidian';
 import type { ParentChunk, ChildChunk, ParseBinaryFn, MarkdownFilterOptions } from '../../shared/types/rag.types';
 import { hashString } from '../../shared/utils/hash';
+import { isLuminaHistoryContent } from '../../shared/utils/historyPathUtils';
 import { preprocessMarkdown } from '../../shared/utils/markdownPreprocessor';
 import { DocumentParserRouter } from './parsers/DocumentParserRouter';
 import { chunkDocument } from './chunker';
@@ -49,6 +50,9 @@ export async function readAndPrepareFile(
 		content = await parseBinaryFn(buffer, ext);
 	} else {
 		const textContent = await app.vault.read(file);
+		if (isLuminaHistoryContent(textContent)) {
+			return { parentChunks: [], childChunks: [], contentHash: 0, skip: false };
+		}
 		content = await DocumentParserRouter.parseText(textContent, ext);
 	}
 

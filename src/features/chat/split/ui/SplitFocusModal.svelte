@@ -15,7 +15,6 @@
 	import { renderMessageContent } from "../../../../shared/utils/markdownRendererHelper";
 	import ThinkBlock from "../../ui/ThinkBlock.svelte";
 	import {
-		appendToActiveNote,
 		insertToNote,
 		openSaveAsNoteModal,
 	} from "../../ui/utils/messageActions";
@@ -96,10 +95,6 @@
 		await copyToClipboard(displayContent, $tS("uiMessages.copiedToClipboard"));
 	}
 
-	async function handleAppend(): Promise<void> {
-		await appendToActiveNote(app, displayContent);
-	}
-
 	function handleSaveNote(): void {
 		openSaveAsNoteModal(app, displayContent);
 	}
@@ -128,14 +123,6 @@
 					title={$tS("common.copy")}
 					onclick={handleCopy}
 					use:iconAction={"copy"}
-				></button>
-				<button
-					type="button"
-					class="clickable-icon lumina-split-focus-modal__btn"
-					aria-label={$tS("uiMessages.appendToNote")}
-					title={$tS("uiMessages.appendToNote")}
-					onclick={handleAppend}
-					use:iconAction={"arrow-down-to-line"}
 				></button>
 				<button
 					type="button"

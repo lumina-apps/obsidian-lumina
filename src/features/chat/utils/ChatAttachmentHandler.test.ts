@@ -12,6 +12,7 @@ vi.mock('../../../shared/locales/helpers', () => ({
 
 vi.mock('../../../shared/debugLogger', () => ({
 	debugLogger: {
+		setEnabled: vi.fn(),
 		logWarn: vi.fn(),
 		logError: vi.fn(),
 	}
@@ -230,6 +231,49 @@ describe('ChatAttachmentHandler', () => {
 			expect(result?.content).toContain('Work1');
 			expect(result?.content).toContain('Work2');
 			expect(result?.content).not.toContain('Personal');
+		});
+
+		it('should exclude files in custom chat historyPath and files with Lumina history markers', async () => {
+			const normalFile = new TFile();
+			normalFile.path = 'Notes/Work.md';
+			normalFile.basename = 'Work';
+			normalFile.extension = 'md';
+
+			const customHistoryFile = new TFile();
+			customHistoryFile.path = 'MyCustomChats/session.md';
+			customHistoryFile.basename = 'session';
+			customHistoryFile.extension = 'md';
+
+			const oldHistoryFile = new TFile();
+			oldHistoryFile.path = 'OldChats/legacy.md';
+			oldHistoryFile.basename = 'legacy';
+			oldHistoryFile.extension = 'md';
+
+			mockVault.getMarkdownFiles.mockReturnValue([normalFile, customHistoryFile, oldHistoryFile]);
+			vi.mocked(getAllTags).mockReturnValue(['#project']);
+			mockMetadataCache.getFileCache.mockReturnValue({ id: '1' });
+			mockVault.read.mockImplementation(async (file: TFile) => {
+				if (file.path === oldHistoryFile.path) {
+					return '# Legacy\n\n<!-- LUMINA_HISTORY_DATA_V2: eyJpZCI6IjEifQ== -->\n';
+				}
+				return `Content of ${file.basename}`;
+			});
+
+			const mockPlugin = {
+				settings: { chat: { historyPath: 'MyCustomChats' } },
+			} as unknown as import('../../../main').default;
+
+			const att: ContextAttachment = {
+				type: 'tag',
+				path: '#project',
+				name: '#project',
+			};
+
+			const result = await ChatAttachmentHandler.parseAttachment(mockApp, att, mockPlugin);
+			expect(result).not.toBeNull();
+			expect(result?.content).toContain('Content of Work');
+			expect(result?.content).not.toContain('Content of session');
+			expect(result?.content).not.toContain('# Legacy');
 		});
 	});
 

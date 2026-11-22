@@ -10,8 +10,10 @@ import { VISION_UNSUPPORTED_PROVIDERS, PROVIDER_LABELS, isCliProvider } from '..
 import { isLocalProvider } from '../../../core/llm-providers/index';
 import { indexingState } from '../../../core/store/ragStore';
 import { sessionSummary, summaryUpToMessageId } from '../../../core/store/chatStore';
+import { settingsStore } from '../../../core/store/settingsStore';
 import { getActiveProject } from '../../../core/store/projectStore';
 import { isExcluded, isIncluded } from '../../../shared/utils/exclusions';
+import { mergeExcludedPathsWithHistory } from '../../../shared/utils/historyPathUtils';
 import { buildMessages } from '../promptBuilder';
 import { ChatAttachmentHandler, IMAGE_EXTENSIONS } from './ChatAttachmentHandler';
 import { resolveRagSearchFlag, performRagSearch } from './ragSearchHelper';
@@ -70,6 +72,7 @@ export async function resolveAttachmentsWithActiveNote(
 	app: App,
 	attachments: ContextAttachment[],
 	includeActiveNote: boolean,
+	chatHistoryPath?: string,
 ): Promise<ContextAttachment[]> {
 	if (!includeActiveNote) return [...attachments];
 
@@ -77,9 +80,13 @@ export async function resolveAttachmentsWithActiveNote(
 	if (!activeFile) return [...attachments];
 
 	const project = getActiveProject();
+	const excludedPaths = mergeExcludedPathsWithHistory(
+		project?.ragExcludedPaths ?? [],
+		chatHistoryPath ?? get(settingsStore)?.chat?.historyPath,
+	);
 	if (
 		!isIncluded(activeFile.path, project?.ragIncludedPaths ?? []) ||
-		isExcluded(activeFile.path, project?.ragExcludedPaths ?? [])
+		isExcluded(activeFile.path, excludedPaths)
 	) {
 		return [...attachments];
 	}
@@ -245,10 +252,14 @@ export async function prepareSharedTurnContext(
 
 	const activeFile = plugin.app.workspace.getActiveFile();
 	const project = getActiveProject();
+	const activeFileExcludedPaths = mergeExcludedPathsWithHistory(
+		project?.ragExcludedPaths ?? [],
+		plugin.settings?.chat?.historyPath,
+	);
 	const isActiveFileAllowed =
 		!!activeFile &&
 		isIncluded(activeFile.path, project?.ragIncludedPaths ?? []) &&
-		!isExcluded(activeFile.path, project?.ragExcludedPaths ?? []);
+		!isExcluded(activeFile.path, activeFileExcludedPaths);
 	const hasActiveNoteAttachment = updatedAttachments.some(a => a.type === 'active_note');
 	const activeFilePath = isActiveFileAllowed && hasActiveNoteAttachment ? activeFile?.path : undefined;
 	const activeFileTitle = isActiveFileAllowed && hasActiveNoteAttachment ? activeFile?.basename : undefined;

@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { tick } from "svelte";
-	import { setIcon, TFile } from "obsidian";
+	import { MarkdownView, setIcon, TFile } from "obsidian";
 	import type LuminaPlugin from "../../../main";
 	import type { Readable } from "svelte/store";
 	import type { TranslationKeys } from "../../../shared/locales/locale.types";
 	import type { ContextAttachment } from "../../../shared/types/chat.types";
-	import type { LLMProviderConfig, FavoriteModel } from "../../../shared/types/settings.types";
+	import type { LLMProviderConfig, FavoriteModel, QuickAction } from "../../../shared/types/settings.types";
 	import ContextSelector from "./ContextSelector.svelte";
 	import SlashCommandSelector from "./SlashCommandSelector.svelte";
 	import McpQuickPopup from "./McpQuickPopup.svelte";
@@ -15,6 +15,7 @@
 	import { getAttachmentIcon, IMAGE_EXTS } from "../utils/fileAttachmentUtils";
 	import { resizeTextarea } from "../../../shared/utils/textareaUtils";
 	import { buildSlashCommands } from "../utils/slashCommandUtils";
+	import { buildCustomPromptCommands } from "../utils/customSlashCommandUtils";
 	import { activeProject } from "../../../core/store/projectStore";
 	import { settingsStore } from "../../../core/store/settingsStore";
 	import { estimateInputTokensDetails, calculateFolderSize } from "../utils/inputUtils";
@@ -25,6 +26,7 @@
 		createContextMentionInserter,
 		createContextSelectHandler,
 		createSlashSelectHandler,
+		createPromptTemplateInserter,
 	} from "./composables/useInputHandler";
 	import {
 		createFileSelectHandler,
@@ -36,6 +38,8 @@
 	import { handleMcpPopupToggle } from "./composables/useInputPopups";
 	import { openAttachment } from "./utils/messageActions";
 	import { useActiveFileTracker, type ActiveFileInfo } from "./composables/useActiveFileTracker";
+	import { isExcluded, isIncluded } from "../../../shared/utils/exclusions";
+	import { extractFileName } from "../../../shared/utils/fileUtils";
 
 	type TStore = Readable<
 		(key: TranslationKeys, params?: Record<string, string | number>) => string
@@ -142,6 +146,26 @@
 	);
 	let activeFileInfo = $state<ActiveFileInfo | null>(activeTracker.getInitialActiveFile());
 
+	// ── 현재 노트 포함 상태 (UI 표시용) ──────────────────────────────────────
+	const activeNoteStatus = $derived.by((): {
+		status: "ready" | "none" | "excluded";
+		name: string;
+		path: string;
+	} => {
+		if (!activeFileInfo) {
+			return { status: "none", name: "", path: "" };
+		}
+		const project = $activeProject;
+		const allowed =
+			isIncluded(activeFileInfo.path, project?.ragIncludedPaths ?? []) &&
+			!isExcluded(activeFileInfo.path, project?.ragExcludedPaths ?? []);
+		const name = extractFileName(activeFileInfo.path) || activeFileInfo.path;
+		if (!allowed) {
+			return { status: "excluded", name, path: activeFileInfo.path };
+		}
+		return { status: "ready", name, path: activeFileInfo.path };
+	});
+
 	// ── 실시간 입력 예상 토큰 계산 ────────────────────────────────────────────
 	const tokenEstimation = $derived.by(() => {
 		return estimateInputTokensDetails({
@@ -186,7 +210,7 @@
 		const text = inputText.trim();
 		if (text.startsWith("/") && attachments.length === 0) {
 			const cmdId = text.slice(1).trim().toLowerCase();
-			const matched = slashCommands.find((c) => c.id.toLowerCase() === cmdId);
+			const matched = allSlashCommands.find((c) => c.id.toLowerCase() === cmdId);
 			if (matched) {
 				inputText = "";
 				tick().then(() => {
@@ -285,6 +309,70 @@
 			slashStartIndex = -1;
 		},
 	});
+
+	const insertPromptTemplate = createPromptTemplateInserter({
+		getTextareaEl: () => textareaEl,
+		getInputText: () => inputText,
+		setInputText: (v) => {
+			inputText = v;
+		},
+	});
+
+	/**
+	 * 채팅창으로 포커스가 이동한 상태에서도 활성 마크다운 에디터의 선택 영역을 조회합니다.
+	 */
+	function getActiveEditorSelection(): string | undefined {
+		const activeEditor = plugin.app.workspace.activeEditor?.editor;
+		const activeSel = activeEditor?.getSelection();
+		if (activeSel && activeSel.trim().length > 0) return activeSel;
+
+		const activeView = plugin.app.workspace.getActiveViewOfType(MarkdownView);
+		const viewSel = activeView?.editor?.getSelection();
+		if (viewSel && viewSel.trim().length > 0) return viewSel;
+
+		const leaves = plugin.app.workspace.getLeavesOfType("markdown");
+		const activeFilePath = plugin.app.workspace.getActiveFile()?.path;
+		const orderedLeaves = activeFilePath
+			? [...leaves].sort((a, b) => {
+					const aMatch = (a.view as MarkdownView)?.file?.path === activeFilePath ? 0 : 1;
+					const bMatch = (b.view as MarkdownView)?.file?.path === activeFilePath ? 0 : 1;
+					return aMatch - bMatch;
+				})
+			: leaves;
+
+		for (const leaf of orderedLeaves) {
+			const mdView = leaf.view as MarkdownView;
+			const sel = mdView?.editor?.getSelection?.();
+			if (sel && sel.trim().length > 0) {
+				return sel;
+			}
+		}
+		return undefined;
+	}
+
+	/**
+	 * 커스텀 프롬프트(퀵 액션) 선택 시 입력창에 프롬프트를 삽입하고,
+	 * 활성 에디터에 선택 영역이 있으면 selection 첨부 칩을 자동으로 추가합니다.
+	 */
+	function handleCustomPromptInsert(action: QuickAction): void {
+		insertPromptTemplate(action.prompt);
+
+		if (attachments.some((a) => a.type === "selection")) {
+			return;
+		}
+		const sel = getActiveEditorSelection();
+		if (sel) {
+			attachments = [
+				...attachments,
+				{
+					type: "selection",
+					path: "selection",
+					name: tProxy("settings.chat.context.selectedText", { length: sel.length }),
+					content: sel,
+				},
+			];
+		}
+	}
 
 	// ── 파일 첨부 핸들러들 (composable) ────────────────────────────────────
 	const tProxy = (key: string, vars?: Record<string, string | number>) => {
@@ -386,6 +474,12 @@
 		return all.filter((cmd) => !SPLIT_EXCLUDED_SLASH_IDS.has(cmd.id));
 	});
 
+	const quickActions = $derived($settingsStore?.chat.quickActions ?? []);
+	const customSlashCommands = $derived(
+		buildCustomPromptCommands(quickActions, (action) => handleCustomPromptInsert(action)),
+	);
+	const allSlashCommands = $derived([...slashCommands, ...customSlashCommands]);
+
 	// ── MCP 팝업 토글 ──────────────────────────────────────────────────────
 	const toggleMcpPopup = handleMcpPopupToggle((v) => {
 		if (typeof v === "function") {
@@ -449,6 +543,7 @@
 		{agentEnabled}
 		{agentExecutionMode}
 		{includeActiveNote}
+		{activeNoteStatus}
 		{sendHint}
 		estimatedInputTokens={tokenEstimation.tokens}
 		estimatedTokensDisplayText={tokenEstimation.displayText}
@@ -534,7 +629,7 @@
 
 			{#if showSlashSelector}
 				<SlashCommandSelector
-					commands={slashCommands}
+					commands={allSlashCommands}
 					searchQuery={slashSearchQuery}
 					onSelect={handleSlashCommandSelect}
 					onClose={(focusTextarea) => {

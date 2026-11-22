@@ -2,12 +2,55 @@ import { Setting, type DropdownComponent, type TextComponent } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
 import { wrapAsync } from '../../../../shared/utils/settingHelpers';
 import { t } from '../../../../shared/locales/helpers';
+import { debugLogger } from '../../../../shared/debugLogger';
+import { normalizeError } from '../../../../shared/utils/errorUtils';
 import { getActiveProject } from '../../../store/projectStore';
 import {
 	formatHistoryFolderPreview,
 	hasUnsafeHistoryPathInput,
+	normalizeHistoryRootPath,
 	sanitizeHistorySubfolder,
 } from '../../../../shared/utils/historyPathUtils';
+
+/** 히스토리 경로 변경 후 인덱서 제외 경로 동기화 및 디바운스 재인덱싱 타이머 */
+let historyPathReindexTimer: number | null = null;
+const HISTORY_PATH_REINDEX_DEBOUNCE_MS = 1500;
+
+/**
+ * 채팅 히스토리 경로 변경 시 활성·캐시 인덱서의 제외 경로를 즉시 갱신하고,
+ * 자동 동기화 모드에서는 디바운스 후 증분 인덱싱을 실행합니다.
+ */
+function syncHistoryPathToRag(tab: LuminaSettingTab, rawHistoryPath: string): void {
+	const normalizedPath = normalizeHistoryRootPath(rawHistoryPath);
+	tab.plugin.indexer?.setChatHistoryPath(normalizedPath);
+
+	void import('../../../../features/rag/projectIndexCache')
+		.then(({ projectIndexCache }) => {
+			projectIndexCache.updateChatHistoryPath(normalizedPath);
+		})
+		.catch(() => {
+			// RAG 모듈 미로드 상태는 무시
+		});
+
+	if (!tab.plugin.settings.connections?.ragEnabled || !tab.plugin.indexer) {
+		return;
+	}
+	if (tab.plugin.settings.rag?.syncMode === 'manual') {
+		return;
+	}
+
+	if (historyPathReindexTimer !== null) {
+		window.clearTimeout(historyPathReindexTimer);
+	}
+	historyPathReindexTimer = window.setTimeout(() => {
+		historyPathReindexTimer = null;
+		const indexer = tab.plugin.indexer;
+		if (!indexer || indexer.isDestroyed) return;
+		void indexer.updateIndex().catch((err: unknown) => {
+			debugLogger.logError('rag', normalizeError(err, `히스토리 경로 변경 후 재인덱싱 실패: ${err}`));
+		});
+	}, HISTORY_PATH_REINDEX_DEBOUNCE_MS);
+}
 
 const CUSTOM_PRESET_KEY = '__custom__';
 const FOLDER_FORMAT_PRESETS = new Set<string>([
@@ -49,6 +92,7 @@ export function renderChatHistorySection(tab: LuminaSettingTab, el: HTMLElement)
 					s.historyPath = inputEl.value;
 					updatePreview();
 					void tab.saveAndSync();
+					syncHistoryPathToRag(tab, s.historyPath);
 				});
 				text.setPlaceholder(t('settings.chat.history.pathPlaceholder'))
 					.setValue(s.historyPath).onChange(async (val) => {
@@ -56,6 +100,7 @@ export function renderChatHistorySection(tab: LuminaSettingTab, el: HTMLElement)
 						s.historyPath = val;
 						updatePreview();
 						await tab.saveAndSync();
+						syncHistoryPathToRag(tab, val);
 					});
 			});
 

@@ -5,6 +5,8 @@ import {
 	DEFAULT_CHAT_HISTORY_ROOT,
 	formatHistoryFolderPreview,
 	hasUnsafeHistoryPathInput,
+	isLuminaHistoryContent,
+	mergeExcludedPathsWithHistory,
 	normalizeHistoryRootPath,
 	resolveHistoryBasePath,
 	sanitizeHistorySubfolder,
@@ -88,6 +90,28 @@ describe('historyPathUtils', () => {
 				resolvedPath: 'MyChats/Work',
 				isFormatValid: false,
 			});
+		});
+	});
+
+	describe('isLuminaHistoryContent', () => {
+		it('V1, V2, Split 히스토리 직렬화 주석이 포함된 문서를 채팅 히스토리로 감지한다', () => {
+			expect(isLuminaHistoryContent('# Title\n\n<!-- LUMINA_HISTORY_DATA: {"id":"1"} -->\n')).toBe(true);
+			expect(isLuminaHistoryContent('# Title\n\n<!-- LUMINA_HISTORY_DATA_V2: eyJpZCI6IjEifQ== -->\n')).toBe(true);
+			expect(isLuminaHistoryContent('# Arena\n\n<!-- LUMINA_SPLIT_HISTORY_V1: eyJpZCI6IjEifQ== -->\n')).toBe(true);
+		});
+
+		it('내보내기 마크다운이나 일반 노트 본문은 채팅 히스토리로 감지하지 않는다', () => {
+			expect(isLuminaHistoryContent('')).toBe(false);
+			expect(isLuminaHistoryContent('# Exported Chat\n\n**👤 You**\nHello\n\n**✦ Lumina**\nHi!')).toBe(false);
+			expect(isLuminaHistoryContent('문서에서 LUMINA_HISTORY_DATA 키워드만 언급함')).toBe(false);
+		});
+	});
+
+	describe('mergeExcludedPathsWithHistory', () => {
+		it('정규화된 채팅 히스토리 루트 경로를 중복 없이 제외 목록에 추가한다', () => {
+			expect(mergeExcludedPathsWithHistory(['private'], '/MyChats/')).toEqual(['private', 'MyChats']);
+			expect(mergeExcludedPathsWithHistory(['MyChats', 'private'], 'MyChats')).toEqual(['MyChats', 'private']);
+			expect(mergeExcludedPathsWithHistory([], '   ')).toEqual([DEFAULT_CHAT_HISTORY_ROOT]);
 		});
 	});
 });

@@ -8,6 +8,7 @@ import {
 import { wrapAsync } from '../../../../shared/utils/settingHelpers';
 import { t } from '../../../../shared/locales/helpers';
 import { createButtonContainer } from '../../../../shared/utils/domUtils';
+import { resolveQuickActionSlashIds } from '../../../../shared/utils/slashCommandId';
 
 /**
  * ButtonComponent에 setWarning()이 있으면 호출합니다.
@@ -160,6 +161,20 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 			});
 	}
 
+	const nameSettings = new Map<string, Setting>();
+	/** 모든 퀵 액션 카드의 슬래시 호출 안내 문구를 일괄 갱신합니다. */
+	const updateAllSlashHints = () => {
+		const idMap = resolveQuickActionSlashIds(s.quickActions || []);
+		for (const [actionId, setting] of nameSettings) {
+			const slashId = idMap.get(actionId);
+			setting.setDesc(
+				slashId
+					? t('settings.chat.quickActions.slashHint', { command: `/${slashId}` })
+					: t('settings.chat.quickActions.slashHintEmpty'),
+			);
+		}
+	};
+
 	for (const action of s.quickActions || []) {
 		const card = el.createEl('details', { cls: 'lumina-prompt-card' });
 		card.dataset.actionId = action.id;
@@ -186,7 +201,7 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 		const body = card.createDiv({ cls: 'lumina-prompt-card__body' });
 
 		// Name Setting
-		new Setting(body)
+		const nameSetting = new Setting(body)
 			.setName(t('settings.chat.quickActions.actionName'))
 			.addText(text => {
 				let composing = false;
@@ -196,9 +211,11 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 					composing = false;
 					action.name = nameInputEl.value;
 					header.setText(`✨ ${nameInputEl.value || t('settings.chat.quickActions.newAction')}`);
+					updateAllSlashHints();
 					void tab.saveAndSync();
 				});
 				nameInputEl.addEventListener('blur', () => {
+					updateAllSlashHints();
 					if (tab.plugin.commandManager.registerQuickActions) {
 						tab.plugin.commandManager.registerQuickActions();
 					}
@@ -208,6 +225,7 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 						if (composing) return;
 						action.name = val;
 						header.setText(`✨ ${val || t('settings.chat.quickActions.newAction')}`);
+						updateAllSlashHints();
 						await tab.saveAndSync();
 					});
 				if (isNewlyAdded) {
@@ -220,6 +238,7 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 					}
 				}
 			});
+		nameSettings.set(action.id, nameSetting);
 
 		// Action Type Dropdown
 		new Setting(body)
@@ -247,11 +266,13 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 				text.inputEl.addEventListener('compositionend', () => {
 					composing = false;
 					action.prompt = text.inputEl.value;
+					updateAllSlashHints();
 					void tab.saveAndSync();
 				});
 				text.setValue(action.prompt).onChange(async (val) => {
 					if (composing) return;
 					action.prompt = val;
+					updateAllSlashHints();
 					await tab.saveAndSync();
 				});
 			});
@@ -279,6 +300,8 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 		// Force center alignment
 		deleteSetting.settingEl.addClass('lumina-setting-center-button');
 	}
+
+	updateAllSlashHints();
 
 	const addActionBtnContainer = createButtonContainer(el, 'lumina-settings-add-prompt-container');
 

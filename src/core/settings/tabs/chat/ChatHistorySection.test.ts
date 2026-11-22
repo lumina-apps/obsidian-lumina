@@ -82,4 +82,37 @@ describe('ChatHistorySection', () => {
 		expect(warnings[0].style.display).toBe('');
 		expect(warnings[0].textContent).not.toBe('');
 	});
+
+	it('historyPath 변경 시 활성 인덱서의 제외 경로를 즉시 갱신하고 디바운스 후 updateIndex를 호출한다', async () => {
+		const defaultProj = createDefaultProject();
+		initProjectStore([defaultProj], defaultProj.id);
+
+		const el = document.createElement('div');
+		const tab = createMockTab({ historyPath: 'chatHistory' });
+		const mockIndexer = {
+			setChatHistoryPath: vi.fn(),
+			updateIndex: vi.fn().mockResolvedValue(undefined),
+			isDestroyed: false,
+		};
+		tab.plugin.settings.connections.ragEnabled = true;
+		tab.plugin.settings.rag.syncMode = 'watch';
+		(tab.plugin as unknown as { indexer: typeof mockIndexer }).indexer = mockIndexer;
+
+		renderChatHistorySection(tab, el);
+
+		const input = el.querySelector<HTMLInputElement>('input');
+		expect(input).not.toBeNull();
+		input!.value = '/CustomChats/';
+		input!.dispatchEvent(new Event('compositionend'));
+
+		// 비동기 saveAndSync / dynamic import flush
+		await vi.advanceTimersByTimeAsync(0);
+
+		expect(mockIndexer.setChatHistoryPath).toHaveBeenCalledWith('CustomChats');
+		expect(mockIndexer.updateIndex).not.toHaveBeenCalled();
+
+		await vi.advanceTimersByTimeAsync(1500);
+
+		expect(mockIndexer.updateIndex).toHaveBeenCalledTimes(1);
+	});
 });

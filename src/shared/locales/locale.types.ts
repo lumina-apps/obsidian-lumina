@@ -306,6 +306,11 @@ export interface TranslationSettingsChatContext {
   urlInputPrompt: string;
   includeNote: string;
   excludeNote: string;
+  activeNoteNone: string;
+  activeNoteExcluded: string;
+  includedActiveNoteTooltip: string;
+  noActiveNoteTooltip: string;
+  excludedActiveNoteTooltip: string;
 }
 
 export interface TranslationSettingsChatSendMode {
@@ -337,6 +342,8 @@ export interface TranslationSettingsChatQuickActions {
   typeChat: string;
   newAction: string;
   deleteAction: string;
+  slashHint: string;
+  slashHintEmpty: string;
   defaults: TranslationSettingsChatQuickActionsDefaults;
 }
 
@@ -692,6 +699,7 @@ export interface TranslationChatSlashCommands {
   mode: TranslationChatSlashCommand;
   arena: TranslationChatSlashCommand;
   settings: TranslationChatSlashCommand;
+  customSection: string;
 }
 
 export interface TranslationChatCliMode {
@@ -1145,6 +1153,7 @@ export interface TranslationSplitChat {
   modeBlind: string;
   modeSideBySideTooltip: string;
   modeBlindTooltip: string;
+  contextLabel: string;
   contextIndependent: string;
   contextWinner: string;
   contextIndependentTooltip: string;

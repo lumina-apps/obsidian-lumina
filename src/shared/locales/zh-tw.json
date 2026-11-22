@@ -286,7 +286,12 @@
         "urlInputPlaceholder": "輸入網址（例：https://...）",
         "urlInputPrompt": "按 Enter 新增網址",
         "includeNote": "包含筆記",
-        "excludeNote": "排除筆記"
+        "excludeNote": "排除筆記",
+        "activeNoteNone": "無目前筆記",
+        "activeNoteExcluded": "已排除筆記",
+        "includedActiveNoteTooltip": "將包含的目前筆記: {{path}}",
+        "noActiveNoteTooltip": "沒有可包含的作用中 Markdown 筆記。",
+        "excludedActiveNoteTooltip": "已被專案路徑規則排除: {{path}}"
       },
       "sendMode": {
         "name": "訊息發送方式",
@@ -318,7 +323,9 @@
             "name": "解釋",
             "prompt": "請詳細解釋以下文本：\n\n"
           }
-        }
+        },
+        "slashHint": "在聊天中使用 {{command}} 呼叫",
+        "slashHintEmpty": "輸入提示詞後可在聊天中使用 / 呼叫"
       },
       "inlineTrigger": {
         "name": "內嵌命令觸發字元",
@@ -611,7 +618,8 @@
       "settings": {
         "name": "設定",
         "desc": "開啟 Lumina 設定畫面。"
-      }
+      },
+      "customSection": "自訂提示詞"
     },
     "sessionUsage": "目前工作階段用量",
     "sessionTokens": "累計: {{tokens}} tokens",
@@ -1110,8 +1118,8 @@
     "errorProcessing": "處理操作時出錯: {{message}}"
   },
   "splitChat": {
-    "title": "Split / Arena",
-    "commandTitle": "開啟 Split / Arena 多模型對比聊天",
+    "title": "模型對比",
+    "commandTitle": "開啟模型對比聊天",
     "openTooltip": "並排對比多個模型",
     "newComparison": "新增對比",
     "historyToggle": "對比歷史",
@@ -1119,10 +1127,11 @@
     "modeBlind": "盲測",
     "modeSideBySideTooltip": "對比回覆時顯示模型名稱",
     "modeBlindTooltip": "在投票或揭曉前隱藏模型名稱並打亂順序",
-    "contextIndependent": "獨立上下文",
-    "contextWinner": "基於勝出者",
-    "contextIndependentTooltip": "每個模型基於各自的上一輪回覆繼續對話",
-    "contextWinnerTooltip": "所有模型基於每輪選出的勝出回覆繼續對話",
+    "contextLabel": "追問延續",
+    "contextIndependent": "各自回覆",
+    "contextWinner": "勝出回覆",
+    "contextIndependentTooltip": "從第 2 輪提問起，每個模型基於各自的上一輪回覆繼續對話",
+    "contextWinnerTooltip": "從第 2 輪提問起，所有模型基於每輪選出的 🏆 勝出回覆繼續對話（未選擇時沿用各自回覆）",
     "addModel": "新增模型",
     "removeModel": "移除槽位",
     "maxModelsReached": "最多可同時對比 {{max}} 個模型。",

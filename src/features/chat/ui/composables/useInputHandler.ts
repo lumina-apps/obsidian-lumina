@@ -232,3 +232,39 @@ export function createSlashSelectHandler(
 		});
 	};
 }
+
+/**
+ * 커스텀 프롬프트 템플릿 삽입 컨텍스트
+ */
+export interface PromptTemplateInsertContext {
+	getTextareaEl: () => HTMLTextAreaElement | null;
+	getInputText: () => string;
+	setInputText: (v: string) => void;
+}
+
+/**
+ * 커스텀 프롬프트 선택 시 현재 커서 위치에 프롬프트 텍스트를 삽입하고 커서를 삽입 텍스트 끝으로 이동합니다.
+ */
+export function createPromptTemplateInserter(
+	ctx: PromptTemplateInsertContext,
+): (text: string) => void {
+	return (text: string) => {
+		const el = ctx.getTextareaEl();
+		const current = ctx.getInputText();
+		const start = el?.selectionStart ?? current.length;
+		const end = el?.selectionEnd ?? start;
+		const nextValue = current.slice(0, start) + text + current.slice(end);
+		ctx.setInputText(nextValue);
+
+		const newCursor = start + text.length;
+		void tick().then(() => {
+			const targetEl = ctx.getTextareaEl();
+			if (targetEl) {
+				resizeTextarea(targetEl);
+				targetEl.focus();
+				targetEl.selectionStart = newCursor;
+				targetEl.selectionEnd = newCursor;
+			}
+		});
+	};
+}

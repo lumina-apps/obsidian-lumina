@@ -286,7 +286,12 @@
         "urlInputPlaceholder": "Введите URL (напр. https://...)",
         "urlInputPrompt": "Нажмите Enter, чтобы добавить URL",
         "includeNote": "Включить заметку",
-        "excludeNote": "Исключить заметку"
+        "excludeNote": "Исключить заметку",
+        "activeNoteNone": "Нет заметки",
+        "activeNoteExcluded": "Исключена",
+        "includedActiveNoteTooltip": "Включённая заметка: {{path}}",
+        "noActiveNoteTooltip": "Нет активной Markdown-заметки для включения.",
+        "excludedActiveNoteTooltip": "Исключено правилами проекта: {{path}}"
       },
       "sendMode": {
         "name": "Режим отправки сообщений",
@@ -318,7 +323,9 @@
             "name": "Объяснить",
             "prompt": "Подробно объясните следующий текст:\n\n"
           }
-        }
+        },
+        "slashHint": "Вызвать в чате через {{command}}",
+        "slashHintEmpty": "Введите промпт, чтобы вызывать его через / в чате"
       },
       "inlineTrigger": {
         "name": "Триггер встроенных команд",
@@ -611,7 +618,8 @@
       "settings": {
         "name": "Настройки",
         "desc": "Открыть экран настроек Lumina."
-      }
+      },
+      "customSection": "Пользовательские промпты"
     },
     "sessionUsage": "Использование текущей сессии",
     "sessionTokens": "Всего: {{tokens}} токенов",
@@ -1110,8 +1118,8 @@
     "errorProcessing": "Ошибка при выполнении действия: {{message}}"
   },
   "splitChat": {
-    "title": "Split / Arena",
-    "commandTitle": "Открыть чат сравнения Split / Arena",
+    "title": "Сравнение моделей",
+    "commandTitle": "Открыть чат сравнения моделей",
     "openTooltip": "Сравнить модели рядом",
     "newComparison": "Новое сравнение",
     "historyToggle": "История сравнений",
@@ -1119,10 +1127,11 @@
     "modeBlind": "Слепой",
     "modeSideBySideTooltip": "Показывать названия моделей при сравнении ответов",
     "modeBlindTooltip": "Скрывать названия моделей и перемешивать порядок до голосования или раскрытия",
-    "contextIndependent": "Независимый",
-    "contextWinner": "На базе победителя",
-    "contextIndependentTooltip": "Каждая модель продолжает диалог на основе своих предыдущих ответов",
-    "contextWinnerTooltip": "Все модели продолжают диалог от выбранного ответа-победителя каждого раунда",
+    "contextLabel": "Контекст",
+    "contextIndependent": "Свой ответ",
+    "contextWinner": "От победителя",
+    "contextIndependentTooltip": "Со 2-го вопроса каждая модель продолжает диалог на основе своих предыдущих ответов",
+    "contextWinnerTooltip": "Со 2-го вопроса все модели продолжают диалог от выбранного 🏆 ответа (иначе от своего)",
     "addModel": "Добавить модель",
     "removeModel": "Удалить слот",
     "maxModelsReached": "Достигнут максимум моделей ({{max}}).",

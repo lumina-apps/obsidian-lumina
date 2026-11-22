@@ -286,7 +286,12 @@
         "urlInputPlaceholder": "输入网址（例：https://...）",
         "urlInputPrompt": "按 Enter 添加网址",
         "includeNote": "包含笔记",
-        "excludeNote": "排除笔记"
+        "excludeNote": "排除笔记",
+        "activeNoteNone": "无当前笔记",
+        "activeNoteExcluded": "已排除笔记",
+        "includedActiveNoteTooltip": "将包含的当前笔记: {{path}}",
+        "noActiveNoteTooltip": "没有可包含的活动 Markdown 笔记。",
+        "excludedActiveNoteTooltip": "已被项目路径规则排除: {{path}}"
       },
       "sendMode": {
         "name": "消息发送方式",
@@ -318,7 +323,9 @@
             "name": "解释",
             "prompt": "请详细解释以下文本：\n\n"
           }
-        }
+        },
+        "slashHint": "在聊天中使用 {{command}} 调用",
+        "slashHintEmpty": "输入提示词后可在聊天中使用 / 调用"
       },
       "inlineTrigger": {
         "name": "行内命令触发词",
@@ -611,7 +618,8 @@
       "settings": {
         "name": "设置",
         "desc": "打开 Lumina 设置界面。"
-      }
+      },
+      "customSection": "自定义提示词"
     },
     "sessionUsage": "当前会话用量",
     "sessionTokens": "累计: {{tokens}} tokens",
@@ -1110,8 +1118,8 @@
     "errorProcessing": "处理操作时出错: {{message}}"
   },
   "splitChat": {
-    "title": "Split / Arena",
-    "commandTitle": "打开 Split / Arena 多模型对比聊天",
+    "title": "模型对比",
+    "commandTitle": "打开模型对比聊天",
     "openTooltip": "并排对比多个模型",
     "newComparison": "新建对比",
     "historyToggle": "对比历史",
@@ -1119,10 +1127,11 @@
     "modeBlind": "盲测",
     "modeSideBySideTooltip": "对比回复时显示模型名称",
     "modeBlindTooltip": "在投票或揭晓前隐藏模型名称并打乱顺序",
-    "contextIndependent": "独立上下文",
-    "contextWinner": "基于胜出者",
-    "contextIndependentTooltip": "每个模型基于各自的上一轮回复继续对话",
-    "contextWinnerTooltip": "所有模型基于每轮选出的胜出回复继续对话",
+    "contextLabel": "追问延续",
+    "contextIndependent": "各自回复",
+    "contextWinner": "胜出回复",
+    "contextIndependentTooltip": "从第 2 轮提问起，每个模型基于各自的上一轮回复继续对话",
+    "contextWinnerTooltip": "从第 2 轮提问起，所有模型基于每轮选出的 🏆 胜出回复继续对话（未选择时沿用各自回复）",
     "addModel": "添加模型",
     "removeModel": "移除槽位",
     "maxModelsReached": "最多可同时对比 {{max}} 个模型。",

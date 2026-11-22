@@ -286,7 +286,12 @@
         "urlInputPlaceholder": "URLを入力（例: https://...）",
         "urlInputPrompt": "EnterでURLを追加",
         "includeNote": "ノートを含める",
-        "excludeNote": "ノートを除外"
+        "excludeNote": "ノートを除外",
+        "activeNoteNone": "ノートなし",
+        "activeNoteExcluded": "除外されたノート",
+        "includedActiveNoteTooltip": "含まれる現在のノート: {{path}}",
+        "noActiveNoteTooltip": "含めるアクティブなノートがありません。",
+        "excludedActiveNoteTooltip": "プロジェクト設定により除外: {{path}}"
       },
       "sendMode": {
         "name": "メッセージ送信モード",
@@ -318,7 +323,9 @@
             "name": "説明する",
             "prompt": "次のテキストについて詳しく説明してください:\n\n"
           }
-        }
+        },
+        "slashHint": "チャットで {{command}} で呼び出し",
+        "slashHintEmpty": "プロンプトを入力するとチャットで / から呼び出せます"
       },
       "inlineTrigger": {
         "name": "インラインコマンドトリガー",
@@ -611,7 +618,8 @@
       "settings": {
         "name": "設定",
         "desc": "Luminaの設定画面を開きます。"
-      }
+      },
+      "customSection": "カスタムプロンプト"
     },
     "sessionUsage": "現在のセッション使用量",
     "sessionTokens": "累積: {{tokens}} トークン",
@@ -1110,8 +1118,8 @@
     "errorProcessing": "アクションの処理中にエラーが発生しました: {{message}}"
   },
   "splitChat": {
-    "title": "Split / Arena",
-    "commandTitle": "Split / Arena 比較チャットを開く",
+    "title": "モデル比較",
+    "commandTitle": "モデル比較チャットを開く",
     "openTooltip": "複数モデルを並べて比較",
     "newComparison": "新規比較",
     "historyToggle": "比較履歴",
@@ -1119,10 +1127,11 @@
     "modeBlind": "ブラインド",
     "modeSideBySideTooltip": "モデル名を表示した状態で応答を比較します",
     "modeBlindTooltip": "投票または公開するまでモデル名を隠し、順序をシャッフルします",
-    "contextIndependent": "個別コンテキスト",
-    "contextWinner": "採用基準",
-    "contextIndependentTooltip": "各モデルが自身の過去の応答を引き継いで会話します",
-    "contextWinnerTooltip": "各ラウンドで採用された勝者の応答を全モデルの共通コンテキストにします",
+    "contextLabel": "続き方",
+    "contextIndependent": "各自の回答",
+    "contextWinner": "採用回答",
+    "contextIndependentTooltip": "2回目以降の質問で、各モデルが自身の過去の回答を引き継いで会話します",
+    "contextWinnerTooltip": "2回目以降の質問で、各ラウンドの 🏆 採用回答を全モデルの共通コンテキストにします（未採用時は各自の回答を維持）",
     "addModel": "モデル追加",
     "removeModel": "スロット削除",
     "maxModelsReached": "最大 {{max}} モデルまで比較できます。",

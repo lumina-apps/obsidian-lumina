@@ -96,4 +96,40 @@ describe('fileProcessor', () => {
 		const result = await readAndPrepareFile(f, mockApp, parseBinaryFn, 100, 10, 50, 5, {}, new Set());
 		expect(result.skip).toBe(false);
 	});
+
+	it('should exclude Lumina chat history files identified by serialization markers', async () => {
+		const markers = [
+			'<!-- LUMINA_HISTORY_DATA_V2: eyJpZCI6IjEifQ== -->',
+			'<!-- LUMINA_HISTORY_DATA: {"id":"1"} -->',
+			'<!-- LUMINA_SPLIT_HISTORY_V1: eyJpZCI6IjEifQ== -->',
+		];
+
+		for (const marker of markers) {
+			vi.mocked(chunker.chunkDocument).mockClear();
+			const f = { path: 'OldChats/session.md', extension: 'md', stat: { mtime: 100 } } as TFile;
+			vi.mocked(mockApp.vault.read).mockResolvedValue(`# Session\n\n**👤 You**\nhello\n\n${marker}\n`);
+
+			const result = await readAndPrepareFile(f, mockApp, parseBinaryFn, 100, 10, 50, 5, {}, new Set());
+			expect(result).toEqual({ parentChunks: [], childChunks: [], contentHash: 0, skip: false });
+			expect(chunker.chunkDocument).not.toHaveBeenCalled();
+		}
+	});
+
+	it('should index exported chat markdown files that have no history serialization marker', async () => {
+		vi.mocked(chunker.chunkDocument).mockClear();
+		const f = { path: 'Lumina Exports/261122_0800 - Topic.md', extension: 'md', stat: { mtime: 100 } } as TFile;
+		const exportedContent = '# Topic\n\n- **Date**: 2026-11-22\n\n---\n\n**👤 You**\n\nQuestion\n\n---\n\n**✦ Lumina**\n\nAnswer';
+		vi.mocked(mockApp.vault.read).mockResolvedValue(exportedContent);
+		vi.mocked(DocumentParserRouter.DocumentParserRouter.parseText).mockResolvedValue(exportedContent);
+		vi.mocked(hashModule.hashString).mockReturnValue(777);
+		vi.mocked(chunker.chunkDocument).mockReturnValue({
+			parentChunks: [{ id: 'p1', path: f.path, text: exportedContent, chunkIndex: 0 }],
+			childChunks: [],
+		});
+
+		const result = await readAndPrepareFile(f, mockApp, parseBinaryFn, 100, 10, 50, 5, {}, new Set());
+		expect(result.skip).toBe(false);
+		expect(result.parentChunks).toHaveLength(1);
+		expect(chunker.chunkDocument).toHaveBeenCalledTimes(1);
+	});
 });

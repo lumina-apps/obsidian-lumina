@@ -201,6 +201,7 @@ export class SplitChatController {
 			this.app,
 			attachments,
 			options?.includeActiveNote ?? rag.includeActiveNote,
+			this.plugin.settings.chat.historyPath,
 		);
 
 		const turnId = crypto.randomUUID();

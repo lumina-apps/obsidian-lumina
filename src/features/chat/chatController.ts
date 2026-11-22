@@ -92,6 +92,7 @@ export class ChatController {
 			this.app,
 			attachments,
 			options?.includeActiveNote ?? rag.includeActiveNote,
+			this.plugin.settings.chat.historyPath,
 		);
 
 		const userMsg: UIChatMessage = {

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { buildSlashCommands } from "./slashCommandUtils";
+import { BUILTIN_SLASH_COMMAND_IDS } from "../../../shared/utils/slashCommandId";
 import type LuminaPlugin from "../../../main";
 import {
 	resetEntitlementState,
@@ -46,6 +47,7 @@ describe("slashCommandUtils", () => {
 		expect(cmds).toHaveLength(11);
 
 		const cmdIds = cmds.map((c) => c.id);
+		expect(cmdIds).toEqual([...BUILTIN_SLASH_COMMAND_IDS]);
 		expect(cmdIds).toEqual([
 			"clear",
 			"rag",

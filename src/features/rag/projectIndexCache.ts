@@ -30,6 +30,13 @@ class ProjectIndexCache {
 		this.evictIfNeeded(activeProjectId ?? projectId);
 	}
 
+	/** 모든 캐시된 프로젝트 인덱서의 채팅 히스토리 제외 경로를 갱신합니다 */
+	updateChatHistoryPath(chatHistoryPath: string): void {
+		for (const { indexer } of this.cache.values()) {
+			indexer.setChatHistoryPath(chatHistoryPath);
+		}
+	}
+
 	/** 특정 프로젝트의 캐시를 제거하고 인덱서를 destroy합니다 */
 	delete(projectId: string): void {
 		const entry = this.cache.get(projectId);

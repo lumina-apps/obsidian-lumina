@@ -286,7 +286,12 @@
         "urlInputPlaceholder": "URL 입력 (예: https://...)",
         "urlInputPrompt": "Enter를 눌러 URL 추가",
         "includeNote": "노트 포함",
-        "excludeNote": "노트 제외"
+        "excludeNote": "노트 제외",
+        "activeNoteNone": "노트 없음",
+        "activeNoteExcluded": "제외된 노트",
+        "includedActiveNoteTooltip": "포함될 현재 노트: {{path}}",
+        "noActiveNoteTooltip": "포함할 활성 마크다운 노트가 없습니다.",
+        "excludedActiveNoteTooltip": "프로젝트 포함/제외 경로 설정으로 제외됨: {{path}}"
       },
       "sendMode": {
         "name": "메시지 전송 방식",
@@ -318,7 +323,9 @@
             "name": "설명하기",
             "prompt": "다음 텍스트에 대해 자세히 설명해줘:\n\n"
           }
-        }
+        },
+        "slashHint": "채팅에서 {{command}} 으로 호출",
+        "slashHintEmpty": "프롬프트를 입력하면 채팅에서 / 로 호출할 수 있습니다"
       },
       "inlineTrigger": {
         "name": "인라인 커맨드 트리거",
@@ -611,7 +618,8 @@
       "settings": {
         "name": "설정",
         "desc": "Lumina 설정 화면을 엽니다."
-      }
+      },
+      "customSection": "커스텀 프롬프트"
     },
     "sessionUsage": "현재 세션 누적 사용량",
     "sessionTokens": "누적: {{tokens}} 토큰",
@@ -1110,8 +1118,8 @@
     "errorProcessing": "작업 처리 중 오류가 발생했습니다: {{message}}"
   },
   "splitChat": {
-    "title": "Split / Arena",
-    "commandTitle": "멀티 모델 비교 채팅(Split / Arena) 열기",
+    "title": "모델 비교",
+    "commandTitle": "모델 비교 채팅 열기",
     "openTooltip": "여러 모델 나란히 비교하기",
     "newComparison": "새 비교",
     "historyToggle": "비교 기록",
@@ -1119,10 +1127,11 @@
     "modeBlind": "블라인드",
     "modeSideBySideTooltip": "모델명을 공개한 상태로 응답을 비교합니다",
     "modeBlindTooltip": "투표하거나 공개하기 전까지 모델명을 숨기고 순서를 무작위로 섞습니다",
-    "contextIndependent": "개별 맥락",
-    "contextWinner": "채택 기준",
-    "contextIndependentTooltip": "각 모델이 자신의 이전 응답을 이어받아 대화를 진행합니다",
-    "contextWinnerTooltip": "이전 라운드에서 채택한 우승 답변을 모든 모델의 공통 맥락으로 이어갑니다",
+    "contextLabel": "이어가기",
+    "contextIndependent": "각자 답변",
+    "contextWinner": "채택 답변",
+    "contextIndependentTooltip": "2번째 질문부터 각 모델이 자신의 이전 답변을 이어서 기억합니다",
+    "contextWinnerTooltip": "2번째 질문부터 모든 모델이 이전 라운드에서 🏆 채택한 답변을 공통 맥락으로 이어갑니다 (미채택 시 각자 답변 유지)",
     "addModel": "모델 추가",
     "removeModel": "슬롯 제거",
     "maxModelsReached": "최대 {{max}}개 모델까지 비교할 수 있습니다.",

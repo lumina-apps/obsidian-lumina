@@ -9,6 +9,36 @@ import { sanitizeFilename } from './fileUtils';
 /** 기본 채팅 히스토리 루트 폴더명 */
 export const DEFAULT_CHAT_HISTORY_ROOT = 'chatHistory';
 
+/** Lumina 채팅 히스토리 직렬화 데이터 블록 마커 패턴 (V1, V2, Split V1 등) */
+const LUMINA_HISTORY_MARKER_PATTERN =
+	/<!--\s*LUMINA_(?:HISTORY_DATA(?:_V\d+)?|SPLIT_HISTORY(?:_V\d+)?):[\s\S]*?-->/;
+
+/**
+ * 본문에 Lumina 채팅 히스토리 직렬화 주석이 포함되어 있는지 판별합니다.
+ * 폴더 경로가 변경되었더라도 실제 채팅 히스토리 파일만 정확히 식별하기 위해 사용하며,
+ * 해당 주석이 없는 내보내기(export) 파일은 일반 노트로 간주합니다.
+ */
+export function isLuminaHistoryContent(content: string): boolean {
+	if (!content) return false;
+	if (!content.includes('LUMINA_HISTORY_DATA') && !content.includes('LUMINA_SPLIT_HISTORY')) {
+		return false;
+	}
+	return LUMINA_HISTORY_MARKER_PATTERN.test(content);
+}
+
+/**
+ * 프로젝트 제외 경로 목록에 정규화된 채팅 히스토리 루트 경로를 중복 없이 결합합니다.
+ */
+export function mergeExcludedPathsWithHistory(
+	excludedPaths: readonly string[],
+	rawHistoryPath?: string,
+): string[] {
+	const historyRoot = normalizeHistoryRootPath(rawHistoryPath);
+	return excludedPaths.includes(historyRoot)
+		? [...excludedPaths]
+		: [...excludedPaths, historyRoot];
+}
+
 /** 채팅 히스토리 폴더 미리보기 계산 결과 */
 export interface HistoryPreviewResult {
 	/** 프로젝트 하위 폴더까지 반영된 베이스 경로 */

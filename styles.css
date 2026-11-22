@@ -1484,6 +1484,19 @@ body .lumina-model-suggest-modal .suggestion-item.is-selected-default::after {
 	border-color: var(--interactive-accent);
 }
 
+.lumina-chat__context-badge.is-unavailable {
+	background: rgba(var(--mono-rgb-100), 0.04);
+	color: var(--text-faint);
+	border-style: dashed;
+}
+
+.lumina-chat__context-badge-label {
+	max-width: 130px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 .lumina-chat__context-badge.is-disabled {
 	opacity: 0.45;
 	cursor: not-allowed;

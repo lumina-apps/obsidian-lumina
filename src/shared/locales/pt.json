@@ -286,7 +286,12 @@
         "urlInputPlaceholder": "Inserir URL (ex. https://...)",
         "urlInputPrompt": "Pressione Enter para adicionar URL",
         "includeNote": "Incluir Nota",
-        "excludeNote": "Excluir Nota"
+        "excludeNote": "Excluir Nota",
+        "activeNoteNone": "Sem nota ativa",
+        "activeNoteExcluded": "Nota excluída",
+        "includedActiveNoteTooltip": "Nota ativa incluída: {{path}}",
+        "noActiveNoteTooltip": "Nenhuma nota Markdown ativa para incluir.",
+        "excludedActiveNoteTooltip": "Excluída pelas regras do projeto: {{path}}"
       },
       "sendMode": {
         "name": "Modo de Envio de Mensagem",
@@ -318,7 +323,9 @@
             "name": "Explicar",
             "prompt": "Explique o texto a seguir em detalhes:\n\n"
           }
-        }
+        },
+        "slashHint": "Invocar no chat com {{command}}",
+        "slashHintEmpty": "Digite um prompt para invocá-lo com / no chat"
       },
       "inlineTrigger": {
         "name": "Acionador de Comando Inline",
@@ -611,7 +618,8 @@
       "settings": {
         "name": "Configurações",
         "desc": "Abre a tela de configurações do Lumina."
-      }
+      },
+      "customSection": "Prompts personalizados"
     },
     "sessionUsage": "Uso da sessão atual",
     "sessionTokens": "Total: {{tokens}} tokens",
@@ -1110,8 +1118,8 @@
     "errorProcessing": "Erro ao processar a ação: {{message}}"
   },
   "splitChat": {
-    "title": "Split / Arena",
-    "commandTitle": "Abrir chat comparativo Split / Arena",
+    "title": "Comparar modelos",
+    "commandTitle": "Abrir chat de comparação de modelos",
     "openTooltip": "Comparar modelos lado a lado",
     "newComparison": "Nova comparação",
     "historyToggle": "Histórico de comparações",
@@ -1119,10 +1127,11 @@
     "modeBlind": "Cego",
     "modeSideBySideTooltip": "Mostrar nomes dos modelos ao comparar respostas",
     "modeBlindTooltip": "Ocultar nomes e embaralhar ordem até votar ou revelar",
-    "contextIndependent": "Independente",
-    "contextWinner": "Base vencedora",
-    "contextIndependentTooltip": "Cada modelo continua usando suas próprias respostas anteriores",
-    "contextWinnerTooltip": "Todos os modelos continuam a partir da resposta vencedora escolhida em cada rodada",
+    "contextLabel": "Continuar",
+    "contextIndependent": "Cada um",
+    "contextWinner": "Da escolhida",
+    "contextIndependentTooltip": "A partir da 2ª pergunta, cada modelo continua usando suas próprias respostas anteriores",
+    "contextWinnerTooltip": "A partir da 2ª pergunta, todos os modelos continuam a partir da resposta 🏆 escolhida (ou a própria)",
     "addModel": "Adicionar modelo",
     "removeModel": "Remover slot",
     "maxModelsReached": "Máximo de {{max}} modelos atingido.",
@@ -1160,7 +1169,7 @@
     "metricsSummary": "{{sec}}s · {{tokens}} tok · {{tps}} t/s",
     "metricsTimeOnly": "{{sec}}s",
     "metricsTtftTooltip": "TTFT: {{ms}}ms",
-    "historyTitle": "Histórico Split",
+    "historyTitle": "Histórico de comparações",
     "historySearchPlaceholder": "Buscar comparações ou modelos...",
     "historyEmpty": "Nenhuma comparação salva.",
     "historyTurnsCount": "{{count}} turnos",

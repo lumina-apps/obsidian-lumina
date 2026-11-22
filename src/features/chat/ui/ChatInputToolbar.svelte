@@ -15,6 +15,7 @@
 		agentEnabled = false,
 		agentExecutionMode = "read",
 		includeActiveNote,
+		activeNoteStatus = { status: "none", name: "", path: "" },
 		sendHint,
 		estimatedInputTokens = 0,
 		estimatedTokensDisplayText = "",
@@ -33,6 +34,11 @@
 		agentEnabled: boolean;
 		agentExecutionMode: "read" | "edit";
 		includeActiveNote: boolean;
+		activeNoteStatus?: {
+			status: "ready" | "none" | "excluded";
+			name: string;
+			path: string;
+		};
 		sendHint: string;
 		estimatedInputTokens?: number;
 		estimatedTokensDisplayText?: string;
@@ -45,6 +51,46 @@
 		onToggleAgentExecutionMode: () => void;
 		onToggleActiveNote: () => void;
 	}>();
+
+	const activeNoteLabel = $derived.by(() => {
+		if (!includeActiveNote) {
+			return $tStore("settings.chat.context.excludeNote") || "Exclude Note";
+		}
+		if (activeNoteStatus.status === "ready") {
+			return activeNoteStatus.name;
+		}
+		if (activeNoteStatus.status === "excluded") {
+			return $tStore("settings.chat.context.activeNoteExcluded") || "Excluded Note";
+		}
+		return $tStore("settings.chat.context.activeNoteNone") || "No Active Note";
+	});
+
+	const activeNoteTooltip = $derived.by(() => {
+		if (!includeActiveNote) {
+			return activeNoteStatus.status === "ready"
+				? `${$tStore("settings.rag.autoIncludeActive.name")} (${activeNoteStatus.path})`
+				: $tStore("settings.rag.autoIncludeActive.name");
+		}
+		if (activeNoteStatus.status === "ready") {
+			return $tStore("settings.chat.context.includedActiveNoteTooltip", {
+				path: activeNoteStatus.path,
+			});
+		}
+		if (activeNoteStatus.status === "excluded") {
+			return $tStore("settings.chat.context.excludedActiveNoteTooltip", {
+				path: activeNoteStatus.path,
+			});
+		}
+		return $tStore("settings.chat.context.noActiveNoteTooltip");
+	});
+
+	const activeNoteIcon = $derived(
+		includeActiveNote
+			? activeNoteStatus.status === "ready"
+				? "file-text"
+				: "file-x"
+			: "file-minus",
+	);
 
 	let fileInputEl: HTMLInputElement | null = $state(null);
 
@@ -151,14 +197,15 @@
 		{/if}
 		<button
 			class="lumina-chat__context-badge"
-			class:is-active={includeActiveNote}
-			aria-label={$tStore("settings.rag.autoIncludeActive.name")}
+			class:is-active={includeActiveNote && activeNoteStatus.status === "ready"}
+			class:is-unavailable={includeActiveNote && activeNoteStatus.status !== "ready"}
+			aria-label={activeNoteTooltip}
+			title={activeNoteTooltip}
 			onclick={onToggleActiveNote}
+			type="button"
 		>
-			<span use:icon={includeActiveNote ? "file-text" : "file-minus"}></span>
-			<span>{includeActiveNote
-					? $tStore("settings.chat.context.includeNote") || "Include Note"
-					: $tStore("settings.chat.context.excludeNote") || "Exclude Note"}</span>
+			<span use:icon={activeNoteIcon}></span>
+			<span class="lumina-chat__context-badge-label">{activeNoteLabel}</span>
 		</button>
 	</div>
 </div>
