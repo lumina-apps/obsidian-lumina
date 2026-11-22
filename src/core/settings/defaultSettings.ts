@@ -80,6 +80,8 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		cachePersistCheckpointInterval: 1,
 		topK: 5,
 		minSimilarity: 0.0,
+		relatedNotesMinSimilarity: 0.0, // 0 = 자동
+		duplicateThreshold: 0.0, // 0 = 자동
 		syncMode: 'watch',
 		maxFileSizeMB: 50,
 		excludeCodeBlocks: false,

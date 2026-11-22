@@ -452,6 +452,16 @@ export interface TranslationSettingsRagMinSimilarity {
 	desc: string;
 }
 
+export interface TranslationSettingsRagRelatedNotesMinSimilarity {
+	name: string;
+	desc: string;
+}
+
+export interface TranslationSettingsRagDuplicateThreshold {
+	name: string;
+	desc: string;
+}
+
 export interface TranslationSettingsRagMaxFileSize {
 	name: string;
 	desc: string;
@@ -521,6 +531,8 @@ export interface TranslationSettingsRag {
   topK: TranslationSettingsRagTopK;
   syncMode: TranslationSettingsRagSyncMode;
 	minSimilarity: TranslationSettingsRagMinSimilarity;
+	relatedNotesMinSimilarity: TranslationSettingsRagRelatedNotesMinSimilarity;
+	duplicateThreshold: TranslationSettingsRagDuplicateThreshold;
 	maxFileSize: TranslationSettingsRagMaxFileSize;
 	contentFilter: TranslationSettingsRagContentFilter;
 	reindex: TranslationSettingsRagReindex;

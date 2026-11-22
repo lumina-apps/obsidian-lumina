@@ -83,6 +83,21 @@ export function getAdaptiveMinSimilarity(
 }
 
 /**
+ * 중복 노트 판정에 사용할 코사인 유사도 임계값을 반환합니다.
+ * 사용자 설정값(> 0)이 있으면 우선 적용하고, 없으면 모델 특성에 따라
+ * 내장 Granite 0.90, 그 외 모델 0.85를 사용합니다.
+ */
+export function getDuplicateThreshold(
+	modelName?: string,
+	userThreshold?: number,
+): number {
+	if (typeof userThreshold === 'number' && userThreshold > 0) {
+		return userThreshold;
+	}
+	return modelName?.toLowerCase().includes('granite-embedding') ? 0.90 : 0.85;
+}
+
+/**
  * 문서의 여러 하위 청크 임베딩으로부터 L2 정규화된 대표 중심 벡터(Centroid)를 계산합니다.
  * 단일 첫 청크(200자)만 사용할 때 발생하는 제목/템플릿 편향을 방지합니다.
  */

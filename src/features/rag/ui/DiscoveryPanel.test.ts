@@ -65,6 +65,11 @@ vi.mock('../utils/discoveryContext', () => ({
 
 import DiscoveryPanel from './DiscoveryPanel.svelte';
 import type LuminaPlugin from '../../../main';
+import { discoveryState } from '../../../core/store/discoveryStore';
+import { settingsStore } from '../../../core/store/settingsStore';
+import { buildContextFromActiveFile } from '../utils/discoveryContext';
+import type { TFile } from 'obsidian';
+import type { LuminaSettings } from '../../../core/settings/settings.types';
 
 function createMockPlugin(): LuminaPlugin {
 	return {
@@ -108,6 +113,17 @@ describe('DiscoveryPanel 검색 빈 상태 및 오류 처리', () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
 		mockSearchVault.mockReset();
+		vi.mocked(buildContextFromActiveFile).mockClear();
+		discoveryState.set({
+			activeFile: null,
+			isSearching: false,
+			similarNotes: [],
+			duplicateNote: null,
+			recommendedTags: [],
+			lastSearchedFilePath: null,
+			stagedItems: [],
+		});
+		settingsStore.set({ chat: {} } as unknown as LuminaSettings);
 		target = document.createElement('div');
 		document.body.appendChild(target);
 	});
@@ -183,5 +199,43 @@ describe('DiscoveryPanel 검색 빈 상태 및 오류 처리', () => {
 
 		expect(target.querySelectorAll('.lumina-discovery__card')).toHaveLength(0);
 		expect(target.querySelector('.lumina-discovery__empty')).not.toBeNull();
+	});
+
+	it('임계값 설정이 변경되면 동일 노트에 대해서도 연관 노트 컨텍스트를 즉시 재조회한다', async () => {
+		const activeFile = { path: 'notes/active.md', extension: 'md', stat: { mtime: 100 } } as unknown as TFile;
+		discoveryState.set({
+			activeFile,
+			isSearching: false,
+			similarNotes: [],
+			duplicateNote: null,
+			recommendedTags: [],
+			lastSearchedFilePath: null,
+			stagedItems: [],
+		});
+		settingsStore.set({
+			chat: {},
+			rag: { minSimilarity: 0, relatedNotesMinSimilarity: 0, duplicateThreshold: 0 },
+		} as unknown as LuminaSettings);
+
+		comp = mount(DiscoveryPanel, {
+			target,
+			props: { plugin: createMockPlugin(), isActive: true },
+		});
+		flushSync();
+
+		await vi.advanceTimersByTimeAsync(700);
+		flushSync();
+		expect(buildContextFromActiveFile).toHaveBeenCalledTimes(1);
+
+		// 동일 파일/동일 mtime 상태에서 설정 스토어의 임계값 변경
+		settingsStore.set({
+			chat: {},
+			rag: { minSimilarity: 0, relatedNotesMinSimilarity: 0.45, duplicateThreshold: 0.8 },
+		} as unknown as LuminaSettings);
+		flushSync();
+
+		await vi.advanceTimersByTimeAsync(700);
+		flushSync();
+		expect(buildContextFromActiveFile).toHaveBeenCalledTimes(2);
 	});
 });

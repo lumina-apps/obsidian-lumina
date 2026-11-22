@@ -410,6 +410,14 @@
         "name": "Min. Ähnlichkeit",
         "desc": "Ergebnisse unterhalb dieses Relevanzwerts ausschließen (0~1) (Standard: 0.0)"
       },
+      "relatedNotesMinSimilarity": {
+        "name": "Min. Ähnlichkeit für verwandte Notizen",
+        "desc": "Mindestähnlichkeit für das Panel „Verwandte Notizen“ (0~1). 0 = automatisch: verwendet die Min. Ähnlichkeit, falls gesetzt, sonst einen modellabhängigen Standardwert. Anpassen, wenn Ihr Embedding-Modell zu viele oder zu wenige verwandte Notizen liefert. (Standard: 0)"
+      },
+      "duplicateThreshold": {
+        "name": "Duplikat-Schwellenwert",
+        "desc": "Ähnlichkeit, ab der eine verwandte Notiz als mögliches Duplikat markiert wird (0~1). 0 = automatisch: 0.90 für das integrierte Modell, 0.85 für andere. (Standard: 0)"
+      },
       "maxFileSize": {
         "name": "Max. Dateigröße (MB)",
         "desc": "Dateien, die größer sind, werden von der Indizierung ausgeschlossen. 0 = kein Limit. Standard: 50 MB"

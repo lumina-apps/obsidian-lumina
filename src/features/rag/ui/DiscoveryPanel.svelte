@@ -175,13 +175,18 @@
 		}
 	}
 
-	// ── $effect: activeFile/isActive/filterQuery/인덱싱 상태 감지 (Context 모드) ──
+	// ── $effect: activeFile/isActive/filterQuery/인덱싱 상태/임계값 설정 감지 (Context 모드) ──
 	$effect(() => {
 		const file = $discoveryState.activeFile;
 		const status = $indexingState.status;
 		const active = isActive;
 		const filter = filterQuery;
 		const canSearch = status === 'ready' || hasBeenReady;
+		// 설정 슬라이더 변경 시 현재 노트의 연관 노트/중복 판정이 즉시 갱신되도록 구독
+		const ragSettings = $settingsStore?.rag ?? plugin.settings.rag;
+		const minSim = ragSettings?.minSimilarity ?? 0;
+		const relatedMinSim = ragSettings?.relatedNotesMinSimilarity ?? 0;
+		const dupThreshold = ragSettings?.duplicateThreshold ?? 0;
 
 		if (contextTimer) clearTimeout(contextTimer);
 
@@ -206,7 +211,7 @@
 
 		if (active && canSearch) {
 			const mtime = file.stat?.mtime ?? 0;
-			const currentKey = `${file.path}|${filter}|${mtime}`;
+			const currentKey = `${file.path}|${filter}|${mtime}|${minSim}|${relatedMinSim}|${dupThreshold}`;
 			if (currentKey !== lastContextKey) {
 				contextTimer = setTimeout(() => {
 					void updateContext(file, filter, currentKey);

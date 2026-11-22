@@ -410,6 +410,14 @@
         "name": "Min Similarity",
         "desc": "Exclude results below this relevance score (0~1) (Default: 0.0)"
       },
+      "relatedNotesMinSimilarity": {
+        "name": "Related Notes Min Similarity",
+        "desc": "Minimum similarity for the Related Notes panel (0~1). 0 = automatic: uses Min Similarity if set, otherwise a model-aware default. Adjust if your embedding model shows too many or too few related notes. (Default: 0)"
+      },
+      "duplicateThreshold": {
+        "name": "Duplicate Threshold",
+        "desc": "Similarity at or above which a related note is flagged as a possible duplicate (0~1). 0 = automatic: 0.90 for the built-in model, 0.85 for others. (Default: 0)"
+      },
       "maxFileSize": {
         "name": "Max File Size (MB)",
         "desc": "Exclude files larger than this size from indexing. 0 = no limit. Default: 50 MB"

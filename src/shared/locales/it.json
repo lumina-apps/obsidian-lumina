@@ -410,6 +410,14 @@
         "name": "Similarità Min",
         "desc": "Escludi risultati al di sotto di questo punteggio (0~1) (Predefinito: 0.0)"
       },
+      "relatedNotesMinSimilarity": {
+        "name": "Similarità min note correlate",
+        "desc": "Similarità minima per il pannello Note Correlate (0~1). 0 = automatico: usa la Similarità Min se impostata, altrimenti un valore predefinito in base al modello. Regola se il tuo modello di embedding mostra troppe o troppo poche note correlate. (Predefinito: 0)"
+      },
+      "duplicateThreshold": {
+        "name": "Soglia duplicati",
+        "desc": "Similarità oltre la quale una nota correlata viene segnalata come possibile duplicato (0~1). 0 = automatico: 0.90 per il modello integrato, 0.85 per gli altri. (Predefinito: 0)"
+      },
       "maxFileSize": {
         "name": "Dimensione max file (MB)",
         "desc": "Escludi i file più grandi di questa dimensione dall'indicizzazione. 0 = nessun limite. Predefinito: 50 MB"
