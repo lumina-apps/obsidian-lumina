@@ -264,9 +264,14 @@ async function run() {
 	const input = new InputController(client);
 	const reporter = new TestReporter();
 
-	// Clean up any residual test files from previous crashed runs & close leftover test leaves
+	// 이전 비정상 종료 실행에서 남은 테스트 파일 및 탭 정리
 	await client.evaluate(`(async () => {
-		const cleanupPaths = ['__lumina_e2e_test__.md', '__lumina_e2e_mcp_test__.md'];
+		const cleanupPaths = [
+			'__lumina_e2e_test__.md',
+			'__lumina_e2e_mcp_test__.md',
+			'__lumina_e2e_voice_test__.md',
+			'__lumina_e2e_batch_test__',
+		];
 		for (const p of cleanupPaths) {
 			const f = app.vault.getAbstractFileByPath(p);
 			if (f) await app.vault.delete(f, true);
@@ -274,6 +279,8 @@ async function run() {
 		app.workspace.getLeavesOfType('lumina-chat').forEach(l => l.detach());
 		app.workspace.getLeavesOfType('lumina-debug-panel').forEach(l => l.detach());
 		app.workspace.getLeavesOfType('lumina-graph').forEach(l => l.detach());
+		app.workspace.getLeavesOfType('lumina-split-chat').forEach(l => l.detach());
+		app.workspace.getLeavesOfType('lumina-batch-studio').forEach(l => l.detach());
 	})()`);
 
 	// ─── SUITE 1: Core Lifecycle & Registrations ─────────────────────────────
@@ -2461,6 +2468,769 @@ async function run() {
 			}
 		} catch (err) {
 			reporter.record('Live LLM Provider Completion', false, err.message, Date.now() - t0);
+		}
+	}
+
+	// ─── SUITE 11: Pro Entitlement Gate & Feature Visibility ──────────────────
+	reporter.startSuite('Pro Entitlement Gate & Feature Visibility');
+	let isProUnlocked = false;
+	{
+		const tGate = Date.now();
+		try {
+			const proStatus = await client.evaluate(`(() => {
+				const lumina = app.plugins.plugins['lumina'];
+				const cmds = Object.keys(app.commands.commands);
+				const views = Object.keys(app.viewRegistry.viewByType);
+				return {
+					hasSplitCmd: cmds.includes('lumina:open-split-chat'),
+					hasBatchCmd: cmds.includes('lumina:open-batch-studio'),
+					hasVoiceToggleCmd: cmds.includes('lumina:toggle-voice-note-recording'),
+					hasVoiceUploadCmd: cmds.includes('lumina:transcribe-audio-file'),
+					hasSplitView: views.includes('lumina-split-chat'),
+					hasBatchView: views.includes('lumina-batch-studio'),
+					hasVoiceManager: !!lumina?.voiceNoteManager,
+					hasVoiceRibbon: !!lumina?.voiceRibbonEl,
+					voiceRibbonSetting: lumina?.settings?.voiceNote?.showRibbonIcon ?? true,
+				};
+			})()`);
+
+			const anyProActive =
+				proStatus.hasSplitCmd ||
+				proStatus.hasBatchCmd ||
+				proStatus.hasVoiceToggleCmd ||
+				proStatus.hasVoiceUploadCmd ||
+				proStatus.hasSplitView ||
+				proStatus.hasBatchView ||
+				proStatus.hasVoiceManager;
+
+			const allProActive =
+				proStatus.hasSplitCmd &&
+				proStatus.hasBatchCmd &&
+				proStatus.hasVoiceToggleCmd &&
+				proStatus.hasVoiceUploadCmd &&
+				proStatus.hasSplitView &&
+				proStatus.hasBatchView &&
+				proStatus.hasVoiceManager;
+
+			isProUnlocked = allProActive;
+
+			if (!anyProActive) {
+				reporter.record(
+					'Free Mode: Pro Commands, Views & Voice Manager Hidden',
+					true,
+					'All 4 Pro commands, 2 Pro views, VoiceNoteManager, and Voice ribbon are completely hidden',
+					Date.now() - tGate
+				);
+
+				// 무료 모드에서 채팅 헤더 비교 버튼 및 /arena 슬래시 명령어 은닉 확인
+				const tChatGate = Date.now();
+				try {
+					await client.evaluate(`(async () => {
+						app.workspace.getLeavesOfType('lumina-chat').forEach(l => l.detach());
+						app.commands.executeCommandById('lumina:open-chat');
+						const deadline = Date.now() + 3000;
+						while (Date.now() < deadline) {
+							if (document.querySelector('.lumina-chat-view textarea')) break;
+							await new Promise(r => setTimeout(r, 100));
+						}
+					})()`);
+					await sleep(250);
+
+					const chatGate = await client.evaluate(`(async () => {
+						const hasSplitHeaderBtn = !!document.querySelector('.lumina-chat__header svg.lumina-split-chat');
+						const textarea = document.querySelector('.lumina-chat-view textarea');
+						let hasArenaSlash = false;
+						if (textarea) {
+							const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+							setter.call(textarea, '/arena');
+							textarea.dispatchEvent(new Event('input', { bubbles: true }));
+							await new Promise(r => setTimeout(r, 200));
+							const badges = Array.from(document.querySelectorAll('.lumina-slash-selector__item-badge')).map(el => (el.textContent || '').trim());
+							hasArenaSlash = badges.includes('/arena');
+							setter.call(textarea, '');
+							textarea.dispatchEvent(new Event('input', { bubbles: true }));
+						}
+						return { hasSplitHeaderBtn, hasArenaSlash };
+					})()`);
+
+					reporter.record(
+						'Free Mode: Split Chat Button & /arena Slash Command Hidden',
+						!chatGate.hasSplitHeaderBtn && !chatGate.hasArenaSlash,
+						`Split button hidden: ${!chatGate.hasSplitHeaderBtn}, /arena hidden: ${!chatGate.hasArenaSlash}`,
+						Date.now() - tChatGate
+					);
+				} finally {
+					await client.evaluate(`(() => {
+						app.workspace.getLeavesOfType('lumina-chat').forEach(l => l.detach());
+					})()`);
+				}
+
+				// 무료 모드에서 Misc 설정 탭 및 설정 검색에 Voice-to-Note 미노출 확인
+				const tSettingsGate = Date.now();
+				try {
+					await client.evaluate(`(async () => {
+						app.setting.open();
+						app.setting.openTabById('lumina');
+						const deadline = Date.now() + 3000;
+						while (Date.now() < deadline) {
+							if (document.querySelector('.lumina-settings__nav-btn')) break;
+							await new Promise(r => setTimeout(r, 100));
+						}
+					})()`);
+					await sleep(250);
+
+					const voiceSettingGate = await client.evaluate(`(async () => {
+						const container = app.setting.activeTab?.containerEl;
+						const navBtns = Array.from(container?.querySelectorAll('.lumina-settings__nav-btn:not(.lumina-settings__nav-btn--advanced)') || []);
+						navBtns[navBtns.length - 1]?.click();
+						await new Promise(r => setTimeout(r, 200));
+						const hiddenInMisc = !(container?.textContent || '').includes('AI Voice-to-Note');
+
+						const searchInput = container?.querySelector('.lumina-settings__search-input');
+						let hiddenInSearch = true;
+						if (searchInput) {
+							const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+							setter.call(searchInput, 'voice');
+							searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+							await new Promise(r => setTimeout(r, 200));
+							hiddenInSearch = !(container?.textContent || '').includes('AI Voice-to-Note');
+							setter.call(searchInput, '');
+							searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+						}
+						return { hiddenInMisc, hiddenInSearch };
+					})()`);
+
+					await input.pressEscape();
+					await sleep(250);
+
+					reporter.record(
+						'Free Mode: Voice-to-Note Settings Hidden in Misc & Search',
+						voiceSettingGate.hiddenInMisc && voiceSettingGate.hiddenInSearch,
+						`Hidden in Misc: ${voiceSettingGate.hiddenInMisc}, Hidden in Search: ${voiceSettingGate.hiddenInSearch}`,
+						Date.now() - tSettingsGate
+					);
+				} catch (err) {
+					await input.pressEscape();
+					reporter.record('Free Mode: Voice-to-Note Settings Hidden in Misc & Search', false, err.message, Date.now() - tSettingsGate);
+				}
+			} else if (allProActive) {
+				reporter.recordSkip(
+					'Free Mode: Pro Feature Gate Verification',
+					'Skipped: Running in LUMINA_DEV_PRO=true build (Pro features unlocked)',
+					Date.now() - tGate
+				);
+			} else {
+				reporter.record(
+					'Pro Entitlement Consistency',
+					false,
+					`Partial Pro state detected: ${JSON.stringify(proStatus)}`,
+					Date.now() - tGate
+				);
+			}
+		} catch (err) {
+			reporter.record('Pro Entitlement Gate & Feature Visibility', false, err.message, Date.now() - tGate);
+		}
+	}
+
+	// ─── SUITE 12: Split Chat (Model Compare - Pro) ─────────────────────────
+	reporter.startSuite('Split Chat / Model Compare (Pro)');
+	if (!isProUnlocked) {
+		reporter.recordSkip(
+			'Split Chat (Model Compare) E2E Suite',
+			'Skipped: Pro features locked in current build (build with LUMINA_DEV_PRO=true to run)'
+		);
+	} else {
+		const tSplitEntry = Date.now();
+		let origSplitPrefsJson = 'null';
+		try {
+			origSplitPrefsJson = await client.evaluate(`(() => {
+				const lumina = app.plugins.plugins['lumina'];
+				return JSON.stringify(lumina.settings.chat?.splitChat ?? null);
+			})()`);
+
+			// 1. 진입점 확인: 채팅 헤더 버튼, /arena 슬래시 명령, SplitChatView 마운트
+			await client.evaluate(`(async () => {
+				app.workspace.getLeavesOfType('lumina-chat').forEach(l => l.detach());
+				app.workspace.getLeavesOfType('lumina-split-chat').forEach(l => l.detach());
+				app.commands.executeCommandById('lumina:open-chat');
+				const deadline = Date.now() + 3000;
+				while (Date.now() < deadline) {
+					if (document.querySelector('.lumina-chat-view textarea')) break;
+					await new Promise(r => setTimeout(r, 100));
+				}
+			})()`);
+			await sleep(300);
+
+			const entryCheck = await client.evaluate(`(async () => {
+				const splitSvg = document.querySelector('.lumina-chat__header svg.lumina-split-chat');
+				const splitBtn = splitSvg?.closest('button');
+				const textarea = document.querySelector('.lumina-chat-view textarea');
+				let hasArenaSlash = false;
+				if (textarea) {
+					const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+					setter.call(textarea, '/arena');
+					textarea.dispatchEvent(new Event('input', { bubbles: true }));
+					await new Promise(r => setTimeout(r, 200));
+					const badges = Array.from(document.querySelectorAll('.lumina-slash-selector__item-badge')).map(el => (el.textContent || '').trim());
+					hasArenaSlash = badges.includes('/arena');
+					setter.call(textarea, '');
+					textarea.dispatchEvent(new Event('input', { bubbles: true }));
+				}
+
+				splitBtn?.click();
+				const deadline = Date.now() + 4000;
+				while (Date.now() < deadline) {
+					if (document.querySelector('.lumina-split-root')) break;
+					await new Promise(r => setTimeout(r, 100));
+				}
+
+				const splitLeaves = app.workspace.getLeavesOfType('lumina-split-chat');
+				return {
+					hasHeaderBtn: !!splitBtn,
+					hasArenaSlash,
+					leafCount: splitLeaves.length,
+					hasSplitRoot: !!document.querySelector('.lumina-split-root'),
+					hasSplitHeader: !!document.querySelector('.lumina-split-header'),
+					hasProBadge: !!document.querySelector('.lumina-split-pro-badge'),
+					hasInputArea: !!document.querySelector('.lumina-split-root .lumina-chat__input-container'),
+				};
+			})()`);
+
+			reporter.record(
+				'Split Chat Entry Points (Header Button, /arena Slash & View Mount)',
+				entryCheck.hasHeaderBtn &&
+					entryCheck.hasArenaSlash &&
+					entryCheck.leafCount > 0 &&
+					entryCheck.hasSplitRoot &&
+					entryCheck.hasSplitHeader &&
+					entryCheck.hasProBadge &&
+					entryCheck.hasInputArea,
+				`HeaderBtn: ${entryCheck.hasHeaderBtn}, /arena: ${entryCheck.hasArenaSlash}, Mounted: ${entryCheck.hasSplitRoot}, ProBadge: ${entryCheck.hasProBadge}`,
+				Date.now() - tSplitEntry
+			);
+
+			// 2. 레이아웃/컨텍스트 모드 전환, 모델 슬롯 추가·제거, 히스토리 드로어 토글
+			const tSplitUi = Date.now();
+			const uiCheck = await client.evaluate(`(async () => {
+				const root = document.querySelector('.lumina-split-root');
+				if (!root) return { success: false, reason: 'Split root not mounted' };
+
+				// 레이아웃 모드 토글 (Side-by-Side <-> Blind)
+				const layoutBtns = Array.from(root.querySelectorAll('.lumina-split-header__left .lumina-split-header__seg-btn'));
+				layoutBtns[1]?.click();
+				await new Promise(r => setTimeout(r, 120));
+				const blindActive = layoutBtns[1]?.classList.contains('is-active') ?? false;
+				layoutBtns[0]?.click();
+				await new Promise(r => setTimeout(r, 120));
+				const sideBySideRestored = layoutBtns[0]?.classList.contains('is-active') ?? false;
+
+				// 컨텍스트 모드 토글 (Independent <-> Winner)
+				const ctxBtns = Array.from(root.querySelectorAll('.lumina-split-header__context-group .lumina-split-header__seg-btn'));
+				ctxBtns[1]?.click();
+				await new Promise(r => setTimeout(r, 120));
+				const winnerActive = ctxBtns[1]?.classList.contains('is-active') ?? false;
+				ctxBtns[0]?.click();
+				await new Promise(r => setTimeout(r, 120));
+				const independentRestored = ctxBtns[0]?.classList.contains('is-active') ?? false;
+
+				// 슬롯 추가 및 제거 (프로바이더가 구성된 경우) 또는 연결 안내 빈 상태 확인
+				const addBtn = root.querySelector('.lumina-split-header__add-btn');
+				let slotTestOk = false;
+				let slotDetail = '';
+				if (addBtn && !addBtn.disabled) {
+					const beforeCount = root.querySelectorAll('.lumina-split-slotbar__cell, .lumina-split-slotbar__mobile-tab').length;
+					addBtn.click();
+					await new Promise(r => setTimeout(r, 150));
+					const afterAddCount = root.querySelectorAll('.lumina-split-slotbar__cell, .lumina-split-slotbar__mobile-tab').length;
+					const removeBtns = root.querySelectorAll('.lumina-split-slotbar__remove-btn');
+					const lastRemoveBtn = removeBtns[removeBtns.length - 1];
+					lastRemoveBtn?.click();
+					await new Promise(r => setTimeout(r, 150));
+					const afterRemoveCount = root.querySelectorAll('.lumina-split-slotbar__cell, .lumina-split-slotbar__mobile-tab').length;
+					slotTestOk = afterAddCount === beforeCount + 1 && afterRemoveCount === beforeCount;
+					slotDetail = 'Slots ' + beforeCount + ' -> ' + afterAddCount + ' -> ' + afterRemoveCount;
+				} else {
+					const hasSetupBtn = !!root.querySelector('.lumina-split-empty .lumina-chat__setup-btn');
+					slotTestOk = hasSetupBtn;
+					slotDetail = 'No verified provider (setup CTA shown: ' + hasSetupBtn + ')';
+				}
+
+				// 히스토리 드로어 열기/닫기
+				const historyBtn = root.querySelector('.lumina-split-header__left .lumina-split-header__icon-btn');
+				historyBtn?.click();
+				await new Promise(r => setTimeout(r, 150));
+				const drawerOpened = !!root.querySelector('.lumina-split-root__drawer-wrap');
+				historyBtn?.click();
+				await new Promise(r => setTimeout(r, 150));
+				const drawerClosed = !root.querySelector('.lumina-split-root__drawer-wrap');
+
+				return {
+					success: blindActive && sideBySideRestored && winnerActive && independentRestored && slotTestOk && drawerOpened && drawerClosed,
+					blindActive,
+					sideBySideRestored,
+					winnerActive,
+					independentRestored,
+					slotDetail,
+					drawerOpened,
+					drawerClosed,
+				};
+			})()`);
+
+			reporter.record(
+				'Split Chat Mode Toggles, Slot Add/Remove & History Drawer',
+				uiCheck.success,
+				`Blind: ${uiCheck.blindActive}, WinnerCtx: ${uiCheck.winnerActive}, ${uiCheck.slotDetail}, Drawer: ${uiCheck.drawerOpened}/${uiCheck.drawerClosed}`,
+				Date.now() - tSplitUi
+			);
+		} catch (err) {
+			reporter.record('Split Chat (Model Compare) E2E Suite', false, err.message, Date.now() - tSplitEntry);
+		} finally {
+			await client.evaluate(`(async () => {
+				const lumina = app.plugins.plugins['lumina'];
+				const orig = ${origSplitPrefsJson};
+				if (lumina?.settings?.chat) {
+					if (orig === null) {
+						delete lumina.settings.chat.splitChat;
+					} else {
+						lumina.settings.chat.splitChat = orig;
+					}
+					await lumina.saveSettings();
+				}
+				app.workspace.getLeavesOfType('lumina-split-chat').forEach(l => l.detach());
+				app.workspace.getLeavesOfType('lumina-chat').forEach(l => l.detach());
+			})()`);
+		}
+	}
+
+	// ─── SUITE 13: Batch Studio (Pro) ────────────────────────────────────────
+	reporter.startSuite('Batch Studio (Pro)');
+	if (!isProUnlocked) {
+		reporter.recordSkip(
+			'Batch Studio E2E Suite',
+			'Skipped: Pro features locked in current build (build with LUMINA_DEV_PRO=true to run)'
+		);
+	} else {
+		const tBatch = Date.now();
+		try {
+			// 1. 커맨드로 Batch Studio 열기 및 기본 레시피/탭 확인
+			const batchOpen = await client.evaluate(`(async () => {
+				app.workspace.getLeavesOfType('lumina-batch-studio').forEach(l => l.detach());
+				app.commands.executeCommandById('lumina:open-batch-studio');
+				const deadline = Date.now() + 4000;
+				while (Date.now() < deadline) {
+					if (document.querySelector('div.lumina-batch-studio')) break;
+					await new Promise(r => setTimeout(r, 100));
+				}
+				const studio = document.querySelector('div.lumina-batch-studio');
+				return {
+					leafCount: app.workspace.getLeavesOfType('lumina-batch-studio').length,
+					hasStudio: !!studio,
+					hasProBadge: !!studio?.querySelector('.lumina-batch-pro-badge'),
+					recipeCount: studio?.querySelectorAll('.lumina-batch-recipe-tab').length || 0,
+					mainTabCount: studio?.querySelectorAll('.lumina-batch-main-tab').length || 0,
+				};
+			})()`);
+
+			reporter.record(
+				'Open Batch Studio via Command & Mount Recipes/Tabs',
+				batchOpen.leafCount > 0 &&
+					batchOpen.hasStudio &&
+					batchOpen.hasProBadge &&
+					batchOpen.recipeCount === 4 &&
+					batchOpen.mainTabCount === 2,
+				`Recipes: ${batchOpen.recipeCount}, MainTabs: ${batchOpen.mainTabCount}, ProBadge: ${batchOpen.hasProBadge}`,
+				Date.now() - tBatch
+			);
+
+			// 2. 임시 폴더 및 노트 2건 생성 -> Autolink 샘플 테스트 -> 배치 실행 -> 검수 -> 일괄 적용 -> 원클릭 롤백
+			const tBatchFlow = Date.now();
+			const alphaOrig = 'This E2E test document explicitly mentions LuminaBatchBeta in plain text so local autolink detection can propose a wikilink cleanly.';
+			const betaOrig = 'This E2E test document explicitly mentions LuminaBatchAlpha in plain text so local autolink detection can propose a wikilink cleanly.';
+
+			await client.evaluate(`(async () => {
+				const folder = '__lumina_e2e_batch_test__';
+				const existing = app.vault.getAbstractFileByPath(folder);
+				if (existing) await app.vault.delete(existing, true);
+				await app.vault.createFolder(folder);
+				await app.vault.create(folder + '/LuminaBatchAlpha.md', ${JSON.stringify(alphaOrig)});
+				await app.vault.create(folder + '/LuminaBatchBeta.md', ${JSON.stringify(betaOrig)});
+			})()`);
+			await sleep(500);
+
+			const batchFlow = await client.evaluate(`(async () => {
+				const studio = document.querySelector('div.lumina-batch-studio');
+				if (!studio) return { success: false, reason: 'Batch Studio not mounted' };
+
+				// 작업 공간 탭이 활성 상태인지 확인하고 접힌 설정 영역이 있으면 펼친 뒤 Autolink 레시피(2번째 탭) 선택
+				const mainTabs = studio.querySelectorAll('.lumina-batch-main-tab');
+				mainTabs[0]?.click();
+				await new Promise(r => setTimeout(r, 100));
+				studio.querySelector('.lumina-batch-collapsed-bar button')?.click();
+				await new Promise(r => setTimeout(r, 100));
+
+				const recipeTabs = studio.querySelectorAll('.lumina-batch-recipe-tab');
+				recipeTabs[1]?.click();
+				await new Promise(r => setTimeout(r, 150));
+				const hasAutolinkBanner = !!studio.querySelector('.lumina-batch-info-banner');
+
+				// 폴더 범위 전환 및 테스트 폴더 경로 입력
+				const scopeBtns = studio.querySelectorAll('.lumina-batch-segmented button');
+				scopeBtns[1]?.click();
+				await new Promise(r => setTimeout(r, 100));
+
+				const folderInput = studio.querySelector('input[list="lumina-batch-folder-list"]');
+				const inputSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+				if (folderInput) {
+					inputSetter.call(folderInput, '__lumina_e2e_batch_test__');
+					folderInput.dispatchEvent(new Event('input', { bubbles: true }));
+				}
+				const tagInput = studio.querySelector('.lumina-batch-field-split input[type="text"]');
+				if (tagInput && tagInput.value) {
+					inputSetter.call(tagInput, '');
+					tagInput.dispatchEvent(new Event('input', { bubbles: true }));
+				}
+				await new Promise(r => setTimeout(r, 300));
+
+				// 1개 샘플 테스트 실행
+				const sampleBtn = studio.querySelector('.lumina-batch-sample-box button.lumina-batch-btn');
+				sampleBtn?.click();
+				let sampleMatched = false;
+				const sampleDeadline = Date.now() + 5000;
+				while (Date.now() < sampleDeadline) {
+					const addedLines = Array.from(studio.querySelectorAll('.lumina-batch-sample-preview .lumina-batch-diff-line.is-added'));
+					if (addedLines.some(el => (el.textContent || '').includes('[[LuminaBatch'))) {
+						sampleMatched = true;
+						break;
+					}
+					await new Promise(r => setTimeout(r, 100));
+				}
+
+				// 전체 배치 실행
+				const startBtn = studio.querySelector('.lumina-batch-start-btn');
+				startBtn?.click();
+				let batchCompleted = false;
+				const runDeadline = Date.now() + 8000;
+				while (Date.now() < runDeadline) {
+					if (studio.querySelector('.lumina-batch-status-pill.is-completed')) {
+						batchCompleted = true;
+						break;
+					}
+					await new Promise(r => setTimeout(r, 100));
+				}
+
+				const queueItems = studio.querySelectorAll('.lumina-batch-queue-item');
+				queueItems[0]?.click();
+				await new Promise(r => setTimeout(r, 150));
+				const hasDiffInspector = !!studio.querySelector('.lumina-batch-inspector-pane .lumina-batch-diff-preview');
+
+				// 선택 항목 일괄 적용
+				const bulkApplyBtn = studio.querySelector('.lumina-batch-bulk-apply-btn');
+				bulkApplyBtn?.click();
+				let appliedToDisk = false;
+				const applyDeadline = Date.now() + 5000;
+				while (Date.now() < applyDeadline) {
+					const fAlpha = app.vault.getAbstractFileByPath('__lumina_e2e_batch_test__/LuminaBatchAlpha.md');
+					const fBeta = app.vault.getAbstractFileByPath('__lumina_e2e_batch_test__/LuminaBatchBeta.md');
+					if (fAlpha && fBeta) {
+						const cAlpha = await app.vault.read(fAlpha);
+						const cBeta = await app.vault.read(fBeta);
+						if (cAlpha.includes('[[LuminaBatchBeta]]') && cBeta.includes('[[LuminaBatchAlpha]]')) {
+							appliedToDisk = true;
+							break;
+						}
+					}
+					await new Promise(r => setTimeout(r, 100));
+				}
+
+				// 히스토리 탭으로 이동 후 원클릭 롤백 수행
+				mainTabs[1]?.click();
+				await new Promise(r => setTimeout(r, 200));
+				const rollbackTrigger = studio.querySelector('.lumina-batch-history-card button.lumina-batch-btn');
+				rollbackTrigger?.click();
+				await new Promise(r => setTimeout(r, 120));
+				const rollbackConfirm = studio.querySelector('.lumina-batch-confirm-inline button.mod-warning');
+				rollbackConfirm?.click();
+
+				let rolledBackOnDisk = false;
+				const rbDeadline = Date.now() + 5000;
+				while (Date.now() < rbDeadline) {
+					const hasRolledBackBadge = !!studio.querySelector('.lumina-batch-history-card .lumina-batch-status-pill.is-applied');
+					const fAlpha = app.vault.getAbstractFileByPath('__lumina_e2e_batch_test__/LuminaBatchAlpha.md');
+					const fBeta = app.vault.getAbstractFileByPath('__lumina_e2e_batch_test__/LuminaBatchBeta.md');
+					if (hasRolledBackBadge && fAlpha && fBeta) {
+						const cAlpha = await app.vault.read(fAlpha);
+						const cBeta = await app.vault.read(fBeta);
+						if (!cAlpha.includes('[[LuminaBatchBeta]]') && !cBeta.includes('[[LuminaBatchAlpha]]')) {
+							rolledBackOnDisk = true;
+							break;
+						}
+					}
+					await new Promise(r => setTimeout(r, 100));
+				}
+
+				return {
+					success: hasAutolinkBanner && sampleMatched && batchCompleted && queueItems.length === 2 && hasDiffInspector && appliedToDisk && rolledBackOnDisk,
+					hasAutolinkBanner,
+					sampleMatched,
+					batchCompleted,
+					queueCount: queueItems.length,
+					hasDiffInspector,
+					appliedToDisk,
+					rolledBackOnDisk,
+				};
+			})()`);
+
+			reporter.record(
+				'Batch Studio Sample, Autolink Run, Inspector, Bulk Apply & Rollback',
+				batchFlow.success,
+				`Sample: ${batchFlow.sampleMatched}, Completed: ${batchFlow.batchCompleted} (queue: ${batchFlow.queueCount}), Diff: ${batchFlow.hasDiffInspector}, Applied: ${batchFlow.appliedToDisk}, RolledBack: ${batchFlow.rolledBackOnDisk}`,
+				Date.now() - tBatchFlow
+			);
+		} catch (err) {
+			reporter.record('Batch Studio (Pro) E2E Suite', false, err.message, Date.now() - tBatch);
+		} finally {
+			await client.evaluate(`(async () => {
+				app.workspace.getLeavesOfType('lumina-batch-studio').forEach(l => l.detach());
+				const folder = app.vault.getAbstractFileByPath('__lumina_e2e_batch_test__');
+				if (folder) await app.vault.delete(folder, true);
+			})()`);
+		}
+	}
+
+	// ─── SUITE 14: Voice-to-Note (Pro) ───────────────────────────────────────
+	reporter.startSuite('Voice-to-Note (Pro)');
+	if (!isProUnlocked) {
+		reporter.recordSkip(
+			'Voice-to-Note E2E Suite',
+			'Skipped: Pro features locked in current build (build with LUMINA_DEV_PRO=true to run)'
+		);
+	} else {
+		const tVoiceMeta = Date.now();
+		try {
+			// 1. VoiceNoteManager, 커맨드, 리본 및 설정 섹션 확인
+			const voiceReady = await client.evaluate(`(() => {
+				const lumina = app.plugins.plugins['lumina'];
+				const cmds = Object.keys(app.commands.commands);
+				const showRibbonSetting = lumina?.settings?.voiceNote?.showRibbonIcon ?? true;
+				return {
+					hasManager: !!lumina?.voiceNoteManager,
+					hasToggleCmd: cmds.includes('lumina:toggle-voice-note-recording'),
+					hasUploadCmd: cmds.includes('lumina:transcribe-audio-file'),
+					ribbonOk: !showRibbonSetting || !!lumina?.voiceRibbonEl,
+				};
+			})()`);
+
+			await client.evaluate(`(async () => {
+				app.setting.open();
+				app.setting.openTabById('lumina');
+				const deadline = Date.now() + 3000;
+				while (Date.now() < deadline) {
+					if (document.querySelector('.lumina-settings__nav-btn')) break;
+					await new Promise(r => setTimeout(r, 100));
+				}
+			})()`);
+			await sleep(250);
+
+			const voiceSettingVisible = await client.evaluate(`(async () => {
+				const container = app.setting.activeTab?.containerEl;
+				const navBtns = Array.from(container?.querySelectorAll('.lumina-settings__nav-btn:not(.lumina-settings__nav-btn--advanced)') || []);
+				navBtns[navBtns.length - 1]?.click();
+				await new Promise(r => setTimeout(r, 200));
+				return (container?.textContent || '').includes('AI Voice-to-Note');
+			})()`);
+
+			await input.pressEscape();
+			await sleep(250);
+
+			reporter.record(
+				'Voice-to-Note Manager, Commands, Ribbon & Settings Section',
+				voiceReady.hasManager &&
+					voiceReady.hasToggleCmd &&
+					voiceReady.hasUploadCmd &&
+					voiceReady.ribbonOk &&
+					voiceSettingVisible,
+				`Manager: ${voiceReady.hasManager}, Cmds: ${voiceReady.hasToggleCmd}/${voiceReady.hasUploadCmd}, Ribbon: ${voiceReady.ribbonOk}, Settings: ${voiceSettingVisible}`,
+				Date.now() - tVoiceMeta
+			);
+
+			// 2. 마크다운 뷰 헤더 마이크 버튼, 합성 마이크 스트림 기반 녹음 위젯(자막/일시정지/재개/취소) 및 타임스탬프 싱크 재생
+			const tVoiceFlow = Date.now();
+			const voiceFlow = await client.evaluate(`(async () => {
+				const lumina = app.plugins.plugins['lumina'];
+				const testPath = '__lumina_e2e_voice_test__.md';
+				const existing = app.vault.getAbstractFileByPath(testPath);
+				if (existing) await app.vault.delete(existing, true);
+
+				const testFile = await app.vault.create(testPath, '# Voice E2E Test\\n\\nTesting Voice-to-Note header action and recorder pill.\\n');
+				const leaf = app.workspace.getLeaf(false);
+				await leaf.openFile(testFile);
+				await new Promise(r => setTimeout(r, 400));
+
+				const hasViewAction = !!leaf.view?.containerEl?.querySelector('.lumina-voice-view-action');
+
+				// 합성 오디오 스트림으로 getUserMedia 임시 모킹 (하드웨어 마이크 없이 MediaRecorder 동작 검증)
+				const origMediaDevices = navigator.mediaDevices;
+				const origGetUserMedia = origMediaDevices?.getUserMedia?.bind(origMediaDevices);
+				const AudioCtx = window.AudioContext || window.webkitAudioContext;
+				const audioCtx = new AudioCtx();
+				const dest = audioCtx.createMediaStreamDestination();
+				const osc = audioCtx.createOscillator();
+				osc.connect(dest);
+				osc.start();
+
+				if (!navigator.mediaDevices) {
+					Object.defineProperty(navigator, 'mediaDevices', {
+						configurable: true,
+						value: { getUserMedia: async () => dest.stream },
+					});
+				} else {
+					navigator.mediaDevices.getUserMedia = async () => dest.stream;
+				}
+
+				let pillMounted = false;
+				let hasTimerAndSelect = false;
+				let captionsToggled = false;
+				let pausedOk = false;
+				let resumedOk = false;
+				let cancelledCleanly = false;
+				let timestampSeekOk = false;
+
+				try {
+					app.commands.executeCommandById('lumina:toggle-voice-note-recording');
+					const pillDeadline = Date.now() + 4000;
+					while (Date.now() < pillDeadline) {
+						if (document.querySelector('.lumina-voice-pill-wrap .lumina-voice-pill')) {
+							pillMounted = true;
+							break;
+						}
+						await new Promise(r => setTimeout(r, 100));
+					}
+
+					if (pillMounted) {
+						const wrap = document.querySelector('.lumina-voice-pill-wrap');
+						hasTimerAndSelect =
+							!!wrap?.querySelector('.lumina-voice-timer') &&
+							!!wrap?.querySelector('.lumina-voice-select');
+
+						// 자막 토글 버튼 클릭
+						const controls = wrap?.querySelector('.lumina-voice-controls');
+						const plainBtns = Array.from(controls?.querySelectorAll('button.lumina-voice-btn:not(.lumina-voice-btn--icon):not(.lumina-voice-btn--primary)') || []);
+						plainBtns[0]?.click();
+						await new Promise(r => setTimeout(r, 150));
+						captionsToggled = !!wrap?.querySelector('.lumina-voice-captions');
+
+						// 일시정지 -> 재개 -> 취소
+						const iconBtns = Array.from(controls?.querySelectorAll('button.lumina-voice-btn--icon') || []);
+						iconBtns[0]?.click();
+						await new Promise(r => setTimeout(r, 150));
+						pausedOk = !!wrap?.querySelector('.lumina-voice-dot.is-paused');
+
+						const resumeBtns = Array.from(controls?.querySelectorAll('button.lumina-voice-btn--icon') || []);
+						resumeBtns[0]?.click();
+						await new Promise(r => setTimeout(r, 150));
+						resumedOk = !wrap?.querySelector('.lumina-voice-dot.is-paused');
+
+						const cancelBtns = Array.from(controls?.querySelectorAll('button.lumina-voice-btn--icon') || []);
+						cancelBtns[cancelBtns.length - 1]?.click();
+						const closeDeadline = Date.now() + 2000;
+						while (Date.now() < closeDeadline) {
+							if (!document.querySelector('.lumina-voice-pill')) {
+								cancelledCleanly = true;
+								break;
+							}
+							await new Promise(r => setTimeout(r, 50));
+						}
+					}
+
+					// 타임스탬프 링크(#lumina-ts=12) 클릭 시 임베드 오디오 시킹 동작 검증
+					const viewContent = leaf.view?.containerEl?.querySelector('.view-content');
+					if (viewContent) {
+						const sr = 8000;
+						const numSamples = sr * 15;
+						const wavBuf = new ArrayBuffer(44 + numSamples);
+						const dv = new DataView(wavBuf);
+						const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(off + i, s.charCodeAt(i)); };
+						writeStr(0, 'RIFF');
+						dv.setUint32(4, 36 + numSamples, true);
+						writeStr(8, 'WAVE');
+						writeStr(12, 'fmt ');
+						dv.setUint32(16, 16, true);
+						dv.setUint16(20, 1, true);
+						dv.setUint16(22, 1, true);
+						dv.setUint32(24, sr, true);
+						dv.setUint32(28, sr, true);
+						dv.setUint16(32, 1, true);
+						dv.setUint16(34, 8, true);
+						writeStr(36, 'data');
+						dv.setUint32(40, numSamples, true);
+						const wavUrl = URL.createObjectURL(new Blob([wavBuf], { type: 'audio/wav' }));
+
+						const host = document.createElement('div');
+						const audioEl = document.createElement('audio');
+						audioEl.src = wavUrl;
+						let playCalled = false;
+						audioEl.play = () => {
+							playCalled = true;
+							return Promise.resolve();
+						};
+						const tsLink = document.createElement('a');
+						tsLink.setAttribute('href', '#lumina-ts=12');
+						tsLink.textContent = '[00:12]';
+						host.appendChild(audioEl);
+						host.appendChild(tsLink);
+						viewContent.appendChild(host);
+
+						const metaDeadline = Date.now() + 2000;
+						while (Date.now() < metaDeadline && audioEl.readyState < 1) {
+							await new Promise(r => setTimeout(r, 50));
+						}
+
+						tsLink.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+						await new Promise(r => setTimeout(r, 100));
+						timestampSeekOk = playCalled && Math.round(audioEl.currentTime) === 12;
+
+						host.remove();
+						URL.revokeObjectURL(wavUrl);
+					}
+				} finally {
+					lumina?.voiceNoteManager?.cancelRecording?.();
+					try { osc.stop(); } catch {}
+					try { await audioCtx.close(); } catch {}
+					if (origMediaDevices && origGetUserMedia) {
+						origMediaDevices.getUserMedia = origGetUserMedia;
+					}
+					leaf.detach();
+					const f = app.vault.getAbstractFileByPath(testPath);
+					if (f) await app.vault.delete(f, true);
+				}
+
+				return {
+					success: hasViewAction && pillMounted && hasTimerAndSelect && captionsToggled && pausedOk && resumedOk && cancelledCleanly && timestampSeekOk,
+					hasViewAction,
+					pillMounted,
+					hasTimerAndSelect,
+					captionsToggled,
+					pausedOk,
+					resumedOk,
+					cancelledCleanly,
+					timestampSeekOk,
+				};
+			})()`);
+
+			reporter.record(
+				'Voice-to-Note Action Button, Recorder Pill Lifecycle & Timestamp Seek',
+				voiceFlow.success,
+				`ViewAction: ${voiceFlow.hasViewAction}, Pill: ${voiceFlow.pillMounted}, Captions: ${voiceFlow.captionsToggled}, Pause/Resume: ${voiceFlow.pausedOk}/${voiceFlow.resumedOk}, Cancel: ${voiceFlow.cancelledCleanly}, Seek12s: ${voiceFlow.timestampSeekOk}`,
+				Date.now() - tVoiceFlow
+			);
+		} catch (err) {
+			reporter.record('Voice-to-Note (Pro) E2E Suite', false, err.message, Date.now() - tVoiceMeta);
+		} finally {
+			await client.evaluate(`(async () => {
+				app.plugins.plugins['lumina']?.voiceNoteManager?.cancelRecording?.();
+				const f = app.vault.getAbstractFileByPath('__lumina_e2e_voice_test__.md');
+				if (f) await app.vault.delete(f, true);
+			})()`);
 		}
 	}
 
