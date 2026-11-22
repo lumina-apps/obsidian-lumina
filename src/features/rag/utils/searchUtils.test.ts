@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { filterParentChunks, getAdaptiveMinSimilarity, computeCentroidEmbedding } from './searchUtils';
+import { filterParentChunks, getAdaptiveMinSimilarity, getDuplicateThreshold, computeCentroidEmbedding } from './searchUtils';
 import type { App } from 'obsidian';
 import type { ParentChunk, ChildChunk } from '../../../shared/types/rag.types';
 
@@ -56,6 +56,15 @@ describe('searchUtils - getAdaptiveMinSimilarity & computeCentroidEmbedding', ()
 		expect(getAdaptiveMinSimilarity(0.68, 'text-embedding-3-small')).toBe(0.37);
 		expect(getAdaptiveMinSimilarity(0.55, 'ibm-granite/granite-embedding-97m-multilingual-r2')).toBe(0.55);
 		expect(getAdaptiveMinSimilarity(0.55, 'text-embedding-3-small', 0.45)).toBe(0.45);
+	});
+
+	it('getDuplicateThreshold uses model defaults and respects explicit overrides', () => {
+		expect(getDuplicateThreshold('ibm-granite/granite-embedding-97m-multilingual-r2')).toBe(0.90);
+		expect(getDuplicateThreshold('text-embedding-f2llm-v2-0.6b')).toBe(0.85);
+		expect(getDuplicateThreshold(undefined)).toBe(0.85);
+		// 0 = 자동
+		expect(getDuplicateThreshold('ibm-granite/granite-embedding-97m-multilingual-r2', 0)).toBe(0.90);
+		expect(getDuplicateThreshold('text-embedding-f2llm-v2-0.6b', 0.8)).toBe(0.8);
 	});
 
 	it('computeCentroidEmbedding returns L2-normalized mean vector across child chunks', () => {

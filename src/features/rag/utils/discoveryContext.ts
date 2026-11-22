@@ -7,7 +7,7 @@ import { searchVault } from '../search';
 import { collectRecommendedTags } from '../tagExtractor';
 import { preprocessMarkdown } from '../../../shared/utils/markdownPreprocessor';
 import { rerankChunks } from '../reranker';
-import { filterParentChunks, getAdaptiveMinSimilarity, computeCentroidEmbedding } from './searchUtils';
+import { filterParentChunks, getAdaptiveMinSimilarity, getDuplicateThreshold, computeCentroidEmbedding } from './searchUtils';
 import { debugLogger } from '../../../shared/debugLogger';
 import { normalizeError } from '../../../shared/utils/errorUtils';
 
@@ -44,7 +44,7 @@ export async function buildContextFromActiveFile(
 			? embConfig.modelId
 			: 'ibm-granite/granite-embedding-97m-multilingual-r2';
 
-	const cacheKey = `${plugin.indexer.projectId}|${file.path}|${file.stat?.mtime ?? 0}|${filterQuery.trim()}|${plugin.indexer.indexedFileCount}|${activeModelName}|${plugin.settings.connections?.rerankerModelId ?? ''}`;
+	const cacheKey = `${plugin.indexer.projectId}|${file.path}|${file.stat?.mtime ?? 0}|${filterQuery.trim()}|${plugin.indexer.indexedFileCount}|${activeModelName}|${plugin.settings.connections?.rerankerModelId ?? ''}|${plugin.settings.rag?.minSimilarity ?? 0}|${plugin.settings.rag?.relatedNotesMinSimilarity ?? 0}|${plugin.settings.rag?.duplicateThreshold ?? 0}`;
 	const cached = contextResultCache.get(cacheKey);
 	if (cached) {
 		// LRU 갱신
@@ -60,10 +60,11 @@ export async function buildContextFromActiveFile(
 	let results: SearchResult[] = [];
 	let queryText = '';
 
+	// 연관 노트 전용 임계값(> 0)이 있으면 우선, 없으면 기존처럼 minSimilarity → 모델 적응형 순으로 결정
 	const adaptiveMinSim = getAdaptiveMinSimilarity(
 		0.55,
 		activeModelName,
-		plugin.settings.rag?.minSimilarity,
+		plugin.settings.rag?.relatedNotesMinSimilarity || plugin.settings.rag?.minSimilarity,
 	);
 
 	if (otherParentChunks.length > 0) {
@@ -143,7 +144,7 @@ export async function buildContextFromActiveFile(
 	if (signal?.aborted) return emptyResult;
 
 	const isSubstantialNote = queryText.trim().length >= 80;
-	const duplicateThreshold = activeModelName.toLowerCase().includes('granite-embedding') ? 0.90 : 0.85;
+	const duplicateThreshold = getDuplicateThreshold(activeModelName, plugin.settings.rag?.duplicateThreshold);
 	const duplicate = isSubstantialNote
 		? (results.find(r => (r.rawVectorScore ?? r.vectorScore ?? r.score) >= duplicateThreshold && r.chunk.text.trim().length >= 80) ?? null)
 		: null;
