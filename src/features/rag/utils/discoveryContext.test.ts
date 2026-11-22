@@ -84,4 +84,41 @@ describe('buildContextFromActiveFile - threshold settings', () => {
 		const custom = await buildContextFromActiveFile(makePlugin({ duplicateThreshold: 0.8 }), makeFile(), '');
 		expect(custom.duplicateNote?.chunk.path).toBe('other.md');
 	});
+
+	it('invalidates the context cache for the same file when thresholds change', async () => {
+		const hit = (score: number) => ({
+			chunk: { id: 'pb', path: 'other.md', text: 'y'.repeat(200) },
+			score,
+			vectorScore: score,
+			rawVectorScore: score,
+		}) as unknown as SearchResult;
+
+		const sameFile = makeFile();
+		searchVaultMock.mockResolvedValue([hit(0.82)]);
+
+		const first = await buildContextFromActiveFile(
+			makePlugin({ relatedNotesMinSimilarity: 0.3, duplicateThreshold: 0 }),
+			sameFile,
+			'',
+		);
+		expect(first.duplicateNote).toBeNull();
+		expect(searchVaultMock).toHaveBeenCalledTimes(1);
+
+		// 동일 파일(동일 mtime)에서 캐시 히트
+		await buildContextFromActiveFile(
+			makePlugin({ relatedNotesMinSimilarity: 0.3, duplicateThreshold: 0 }),
+			sameFile,
+			'',
+		);
+		expect(searchVaultMock).toHaveBeenCalledTimes(1);
+
+		// 임계값 변경 시 캐시 미스되어 재검색 및 중복 판정 반영
+		const second = await buildContextFromActiveFile(
+			makePlugin({ relatedNotesMinSimilarity: 0.3, duplicateThreshold: 0.8 }),
+			sameFile,
+			'',
+		);
+		expect(searchVaultMock).toHaveBeenCalledTimes(2);
+		expect(second.duplicateNote?.chunk.path).toBe('other.md');
+	});
 });
