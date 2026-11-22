@@ -209,6 +209,22 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 
 		addSliderWithInput(
 			new Setting(el)
+				.setName(t('settings.rag.relatedNotesMinSimilarity.name'))
+				.setDesc(t('settings.rag.relatedNotesMinSimilarity.desc')),
+			{ min: 0, max: 1, step: 0.05, value: s.relatedNotesMinSimilarity },
+			wrapAsync(async (val) => { s.relatedNotesMinSimilarity = val; await tab.saveAndSync(); }),
+		);
+
+		addSliderWithInput(
+			new Setting(el)
+				.setName(t('settings.rag.duplicateThreshold.name'))
+				.setDesc(t('settings.rag.duplicateThreshold.desc')),
+			{ min: 0, max: 1, step: 0.05, value: s.duplicateThreshold },
+			wrapAsync(async (val) => { s.duplicateThreshold = val; await tab.saveAndSync(); }),
+		);
+
+		addSliderWithInput(
+			new Setting(el)
 				.setName(t('settings.rag.maxFileSize.name'))
 				.setDesc(t('settings.rag.maxFileSize.desc')),
 			{ min: 0, max: 500, step: 5, value: s.maxFileSizeMB },
