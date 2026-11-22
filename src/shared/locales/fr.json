@@ -410,6 +410,14 @@
         "name": "Similarité min",
         "desc": "Exclure les résultats en dessous de ce score (0~1) (Par défaut : 0.0)"
       },
+      "relatedNotesMinSimilarity": {
+        "name": "Similarité min des notes associées",
+        "desc": "Similarité minimale pour le panneau Notes associées (0~1). 0 = automatique : utilise la Similarité min si elle est définie, sinon une valeur par défaut adaptée au modèle. Ajustez si votre modèle d'embedding affiche trop ou trop peu de notes associées. (Par défaut : 0)"
+      },
+      "duplicateThreshold": {
+        "name": "Seuil de doublon",
+        "desc": "Similarité à partir de laquelle une note associée est signalée comme doublon possible (0~1). 0 = automatique : 0.90 pour le modèle intégré, 0.85 pour les autres. (Par défaut : 0)"
+      },
       "maxFileSize": {
         "name": "Taille max. des fichiers (Mo)",
         "desc": "Exclure les fichiers plus volumineux de l'indexation. 0 = pas de limite. Défaut : 50 Mo"
