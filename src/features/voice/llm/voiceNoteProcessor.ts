@@ -157,9 +157,10 @@ function applyVaultAutoLinksForNewNote(app: App, content: string): string {
 			termsMap.set(lower, normalized);
 		}
 		const cache = app.metadataCache?.getFileCache?.(f);
-		const rawAliases = cache?.frontmatter?.aliases;
+		const fm: Record<string, unknown> | undefined = cache?.frontmatter;
+		const rawAliases = fm?.aliases;
 		if (rawAliases) {
-			const aliases = Array.isArray(rawAliases) ? rawAliases : [rawAliases];
+			const aliases: unknown[] = Array.isArray(rawAliases) ? rawAliases : [rawAliases];
 			for (const alias of aliases) {
 				if (typeof alias === 'string' && alias.trim()) {
 					const normAlias = alias.trim().normalize('NFC');

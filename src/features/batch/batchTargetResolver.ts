@@ -100,7 +100,7 @@ function shouldSmartSkipFromCache(
 	options: BatchRecipeOptions,
 ): boolean {
 	const cache = app.metadataCache?.getFileCache(file);
-	const fm = cache?.frontmatter as Record<string, unknown> | undefined;
+	const fm: Record<string, unknown> | undefined = cache?.frontmatter;
 
 	if (recipeId === 'frontmatter' && options.fmMergeMode === 'empty-only') {
 		const hasTags = normalizeFrontmatterTags(fm?.tags).length > 0;

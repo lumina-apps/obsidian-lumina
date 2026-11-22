@@ -266,7 +266,7 @@ export class LocalWhisperSttEngine implements ISttEngine {
 		});
 
 		const basePath = getVaultBasePath(this.app);
-		const configDir = this.app.vault.configDir || '.obsidian';
+		const configDir = this.app.vault.configDir;
 		const cacheDir = joinSystemPath(basePath, configDir, 'plugins', 'lumina', 'storage', 'models');
 
 		worker.postMessage({

@@ -64,8 +64,8 @@ export interface SplitSlotResponse {
 	hasTokenLimitBeenHit?: boolean;
 }
 
-/** 라운드별 우승 선택 결과 (특정 슬롯 ID, 무승부, 둘 다 별로, 미선택) */
-export type SplitWinnerChoice = string | 'tie' | 'both_bad' | null;
+/** 라운드별 우승 선택 결과 (특정 슬롯 ID, 'tie'(무승부), 'both_bad'(둘 다 별로), null(미선택)) */
+export type SplitWinnerChoice = string | null;
 
 /** 비교 대화의 1개 라운드(Turn) */
 export interface SplitTurn {

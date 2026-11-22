@@ -132,11 +132,6 @@ export class VoiceNoteManager {
 				const isActive = s.status === 'recording' || s.status === 'paused';
 				for (const btn of this.injectedActionBtns) {
 					btn.classList.toggle('is-active', isActive);
-					if (isActive) {
-						btn.style.color = 'var(--text-error, #e05252)';
-					} else {
-						btn.style.removeProperty('color');
-					}
 				}
 			});
 		}
@@ -173,9 +168,6 @@ export class VoiceNoteManager {
 			if (btn) {
 				btn.classList.add('lumina-voice-view-action');
 				btn.classList.toggle('is-active', isActive);
-				if (isActive) {
-					btn.style.color = 'var(--text-error, #e05252)';
-				}
 				this.injectedActionBtns.add(btn);
 			}
 		}
@@ -394,10 +386,13 @@ export class VoiceNoteManager {
 	openAudioFilePicker(): void {
 		if (!canUseFeature('voice-note') || this.isDestroyed || typeof document === 'undefined') return;
 
-		const input = document.createElement('input');
-		input.type = 'file';
-		input.accept = 'audio/*,.m4a,.mp3,.wav,.webm,.ogg';
-		input.style.display = 'none';
+		const input = document.body.createEl('input', {
+			cls: 'lumina-voice-file-input',
+			attr: {
+				type: 'file',
+				accept: 'audio/*,.m4a,.mp3,.wav,.webm,.ogg',
+			},
+		});
 
 		input.addEventListener('change', () => {
 			const file = input.files?.[0];
@@ -424,7 +419,6 @@ export class VoiceNoteManager {
 			});
 		});
 
-		document.body.appendChild(input);
 		input.click();
 	}
 
@@ -594,7 +588,7 @@ export class VoiceNoteManager {
 		if (review.createdNewFile && review.targetFilePath) {
 			const file = this.plugin.app.vault.getAbstractFileByPath(review.targetFilePath);
 			if (file instanceof TFile) {
-				await this.plugin.app.vault.delete(file);
+				await this.plugin.app.fileManager.trashFile(file);
 			}
 		} else if (review.insertedRange && this.targetEditor) {
 			this.targetEditor.replaceRange('', review.insertedRange.from, review.insertedRange.to);
@@ -1060,15 +1054,11 @@ export class VoiceNoteManager {
 	private ensureOverlayMounted(): void {
 		if (typeof document === 'undefined' || this.isDestroyed) return;
 		if (!this.overlayContainerEl) {
-			const root = document.createElement('div');
-			root.className = 'lumina-voice-overlay-root';
-			document.body.appendChild(root);
+			const root = document.body.createDiv({ cls: 'lumina-voice-overlay-root' });
 			this.overlayContainerEl = root;
 
-			this.pillHostEl = document.createElement('div');
-			this.reviewHostEl = document.createElement('div');
-			root.appendChild(this.pillHostEl);
-			root.appendChild(this.reviewHostEl);
+			this.pillHostEl = root.createDiv();
+			this.reviewHostEl = root.createDiv();
 
 			this.mountedPill = mount(VoiceRecorderPill, {
 				target: this.pillHostEl,

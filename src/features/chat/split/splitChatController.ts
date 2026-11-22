@@ -1,5 +1,4 @@
 import { Notice, type App } from 'obsidian';
-import { get } from 'svelte/store';
 import type LuminaPlugin from '../../../main';
 import { canUseFeature } from '../../../core/store/entitlementStore';
 import {
@@ -408,16 +407,19 @@ export class SplitChatController {
 		const turn = state.turns[turnIndex];
 		const activeSlot = state.slots.find((s) => s.slotId === slotId);
 		const existingResp = turn.responses[slotId];
-		if (!activeSlot && !existingResp) return;
-
-		const targetSlot: SplitSlotConfig = activeSlot
-			? { ...activeSlot }
-			: {
-					slotId,
-					label: slotId,
-					providerId: existingResp!.providerId,
-					modelId: existingResp!.modelId,
-				};
+		let targetSlot: SplitSlotConfig;
+		if (activeSlot) {
+			targetSlot = { ...activeSlot };
+		} else if (existingResp) {
+			targetSlot = {
+				slotId,
+				label: slotId,
+				providerId: existingResp.providerId,
+				modelId: existingResp.modelId,
+			};
+		} else {
+			return;
+		}
 
 		const priorTurns = state.turns.slice(0, turnIndex);
 		let sharedContext = this.turnSharedContextCache.get(turnId);

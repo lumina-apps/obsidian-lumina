@@ -97,6 +97,9 @@ describe('VoiceNoteManager', () => {
 					getAbstractFileByPath: vi.fn().mockReturnValue(activeFile),
 					adapter: { getBasePath: () => '' },
 				},
+				fileManager: {
+					trashFile: vi.fn().mockResolvedValue(undefined),
+				},
 				workspace: {
 					getActiveViewOfType: vi.fn().mockReturnValue({
 						file: activeFile,
@@ -154,6 +157,7 @@ describe('VoiceNoteManager', () => {
 
 	afterEach(() => {
 		document.querySelectorAll('.lumina-voice-overlay-root').forEach((el) => el.remove());
+		document.querySelectorAll('.lumina-voice-file-input').forEach((el) => el.remove());
 		Object.defineProperty(navigator, 'mediaDevices', {
 			configurable: true,
 			value: origMediaDevices,
@@ -274,5 +278,71 @@ describe('VoiceNoteManager', () => {
 		expect(document.querySelector('.lumina-voice-overlay-root')).toBeNull();
 		expect(get(voiceStore).status).toBe('idle');
 		headerHost.remove();
+	});
+
+	it('새 노트가 생성된 경우 undoReview()는 vault.delete 대신 fileManager.trashFile을 호출한다', async () => {
+		grantVoiceEntitlement();
+
+		const createdFile = new TFile();
+		createdFile.path = 'Voice Note 2026-01-01.md';
+		createdFile.name = 'Voice Note 2026-01-01.md';
+		createdFile.basename = 'Voice Note 2026-01-01';
+		createdFile.extension = 'md';
+
+		(mockPlugin.app.workspace.getActiveViewOfType as ReturnType<typeof vi.fn>).mockReturnValue(null);
+		(mockPlugin.app.workspace.getActiveFile as ReturnType<typeof vi.fn>).mockReturnValue(null);
+		(mockPlugin.app.vault.create as ReturnType<typeof vi.fn>).mockResolvedValue(createdFile);
+		(mockPlugin.app.vault.getAbstractFileByPath as ReturnType<typeof vi.fn>).mockReturnValue(createdFile);
+
+		vi.spyOn(sttResolver, 'resolveSttEngine').mockReturnValue({
+			id: 'mock-stt',
+			label: 'Mock STT',
+			transcribe: vi.fn().mockResolvedValue({
+				text: '새 노트 테스트 음성입니다.',
+				segments: [{ startSec: 0, endSec: 2, text: '새 노트 테스트 음성입니다.' }],
+				engineLabel: 'Mock STT',
+			}),
+		});
+		vi.spyOn(llmProviders, 'createProvider').mockReturnValue({
+			providerId: 'prov-1',
+			listModels: vi.fn(),
+			chat: vi.fn().mockResolvedValue({ content: '정리된 새 노트 본문' }),
+			stream: vi.fn(),
+			embed: vi.fn(),
+		});
+
+		const manager = new VoiceNoteManager(mockPlugin);
+		await manager.init();
+		await manager.startRecording();
+		await manager.stopAndProcess();
+
+		expect(get(voiceStore).reviewResult?.createdNewFile).toBe(true);
+
+		await manager.undoReview();
+
+		expect(mockPlugin.app.fileManager.trashFile).toHaveBeenCalledWith(createdFile);
+		expect(mockPlugin.app.vault.delete).not.toHaveBeenCalled();
+		expect(get(voiceStore).status).toBe('idle');
+
+		manager.destroy();
+	});
+
+	it('openAudioFilePicker()는 인라인 스타일 대신 lumina-voice-file-input 클래스를 부여한다', async () => {
+		grantVoiceEntitlement();
+		const clickSpy = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {});
+
+		const manager = new VoiceNoteManager(mockPlugin);
+		await manager.init();
+		manager.openAudioFilePicker();
+
+		const input = document.body.querySelector<HTMLInputElement>('input.lumina-voice-file-input');
+		expect(input).not.toBeNull();
+		expect(input?.type).toBe('file');
+		expect(input?.accept).toBe('audio/*,.m4a,.mp3,.wav,.webm,.ogg');
+		expect(input?.style.display).toBe('');
+		expect(clickSpy).toHaveBeenCalledTimes(1);
+
+		input?.remove();
+		manager.destroy();
 	});
 });

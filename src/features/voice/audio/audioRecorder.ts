@@ -47,6 +47,49 @@ const VAD_MIN_SPEECH_SEC = 0.4;
 const VAD_IDLE_DROP_SEC = 2.5;
 /** 복구 백업 저장 주기 (ms) */
 const BACKUP_TICK_INTERVAL_MS = 15000;
+/** 실시간 PCM 수집용 AudioWorklet 프로세서 등록 이름 */
+const PCM_WORKLET_PROCESSOR_NAME = 'lumina-pcm-capture';
+
+/**
+ * AudioWorklet 스레드에서 128샘플 렌더 퀀텀을 4096샘플 프레임으로 모아
+ * 메인 스레드(VAD 청킹)로 zero-copy 전송하는 인라인 프로세서 코드
+ */
+const PCM_WORKLET_PROCESSOR_CODE = `
+class LuminaPcmCaptureProcessor extends AudioWorkletProcessor {
+	constructor() {
+		super();
+		this._buffer = new Float32Array(4096);
+		this._offset = 0;
+		this._stopped = false;
+		this.port.onmessage = (ev) => {
+			if (ev.data === 'stop') {
+				this._stopped = true;
+			}
+		};
+	}
+	process(inputs) {
+		if (this._stopped) return false;
+		const input = inputs[0] && inputs[0][0];
+		if (!input) return true;
+		let idx = 0;
+		while (idx < input.length) {
+			const space = this._buffer.length - this._offset;
+			const count = Math.min(space, input.length - idx);
+			this._buffer.set(input.subarray(idx, idx + count), this._offset);
+			this._offset += count;
+			idx += count;
+			if (this._offset >= this._buffer.length) {
+				const frame = this._buffer;
+				this.port.postMessage(frame, [frame.buffer]);
+				this._buffer = new Float32Array(4096);
+				this._offset = 0;
+			}
+		}
+		return true;
+	}
+}
+registerProcessor('${PCM_WORKLET_PROCESSOR_NAME}', LuminaPcmCaptureProcessor);
+`;
 
 /**
  * 현재 플랫폼(데스크톱 Electron / iOS / Android)이 지원하는 최적 오디오 MIME을 반환합니다.
@@ -95,7 +138,8 @@ export class VoiceAudioRecorder {
 	private audioContext: AudioContext | null = null;
 	private analyser: AnalyserNode | null = null;
 	private sourceNode: MediaStreamAudioSourceNode | null = null;
-	private processorNode: ScriptProcessorNode | null = null;
+	private workletNode: AudioWorkletNode | null = null;
+	private workletBlobUrl: string | null = null;
 	private silentGainNode: GainNode | null = null;
 
 	private recordedChunks: Blob[] = [];
@@ -251,7 +295,9 @@ export class VoiceAudioRecorder {
 		const AudioCtx =
 			typeof AudioContext !== 'undefined'
 				? AudioContext
-				: (globalThis as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+				: typeof window !== 'undefined'
+					? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+					: undefined;
 		if (!AudioCtx) return;
 
 		try {
@@ -262,26 +308,75 @@ export class VoiceAudioRecorder {
 			this.analyser.fftSize = 256;
 			this.sourceNode.connect(this.analyser);
 
-			// 실시간 VAD 청크용 PCM 수집 (지원 환경에서 동작)
-			if (typeof ctx.createScriptProcessor === 'function') {
-				const processor = ctx.createScriptProcessor(4096, 1, 1);
-				const silentGain = ctx.createGain();
-				silentGain.gain.value = 0;
-
-				processor.onaudioprocess = (ev: AudioProcessingEvent) => {
-					if (!this.isRecording || this.isPaused) return;
-					const input = ev.inputBuffer.getChannelData(0);
-					this.handlePcmFrame(new Float32Array(input), ctx.sampleRate);
-				};
-
-				this.sourceNode.connect(processor);
-				processor.connect(silentGain);
-				silentGain.connect(ctx.destination);
-				this.processorNode = processor;
-				this.silentGainNode = silentGain;
+			// 실시간 VAD 청크용 PCM 수집 (AudioWorklet 지원 환경에서 비동기 연결)
+			if (this.callbacks.onSpeechChunk) {
+				void this.setupPcmWorklet(ctx, this.sourceNode);
 			}
 		} catch {
 			// 오디오 분석기 초기화 실패 시에도 MediaRecorder 본녹음은 계속 유지
+		}
+	}
+
+	/**
+	 * deprecated된 ScriptProcessorNode 대신 AudioWorkletNode로 실시간 PCM 프레임을 수집합니다.
+	 */
+	private async setupPcmWorklet(
+		ctx: AudioContext,
+		sourceNode: MediaStreamAudioSourceNode,
+	): Promise<void> {
+		if (
+			typeof AudioWorkletNode === 'undefined' ||
+			!ctx.audioWorklet ||
+			typeof ctx.audioWorklet.addModule !== 'function' ||
+			typeof URL === 'undefined' ||
+			typeof URL.createObjectURL !== 'function'
+		) {
+			return;
+		}
+
+		let workletUrl: string | null = null;
+		try {
+			const blob = new Blob([PCM_WORKLET_PROCESSOR_CODE], {
+				type: 'application/javascript',
+			});
+			workletUrl = URL.createObjectURL(blob);
+			this.workletBlobUrl = workletUrl;
+			await ctx.audioWorklet.addModule(workletUrl);
+
+			// 비동기 모듈 로드 중 녹음이 중단되었거나 컨텍스트가 교체된 경우 연결 생략
+			if (!this.isRecording || this.audioContext !== ctx || this.sourceNode !== sourceNode) {
+				return;
+			}
+
+			const workletNode = new AudioWorkletNode(ctx, PCM_WORKLET_PROCESSOR_NAME, {
+				numberOfInputs: 1,
+				numberOfOutputs: 1,
+				channelCount: 1,
+			});
+			const silentGain = ctx.createGain();
+			silentGain.gain.value = 0;
+
+			workletNode.port.onmessage = (ev: MessageEvent<unknown>) => {
+				if (!this.isRecording || this.isPaused) return;
+				if (ev.data instanceof Float32Array) {
+					this.handlePcmFrame(ev.data, ctx.sampleRate);
+				}
+			};
+
+			sourceNode.connect(workletNode);
+			workletNode.connect(silentGain);
+			silentGain.connect(ctx.destination);
+			this.workletNode = workletNode;
+			this.silentGainNode = silentGain;
+		} catch {
+			// AudioWorklet 미지원 또는 초기화 실패 시에도 MediaRecorder 본녹음은 계속 유지
+		} finally {
+			if (workletUrl && typeof URL.revokeObjectURL === 'function') {
+				URL.revokeObjectURL(workletUrl);
+			}
+			if (this.workletBlobUrl === workletUrl) {
+				this.workletBlobUrl = null;
+			}
 		}
 	}
 
@@ -381,12 +476,12 @@ export class VoiceAudioRecorder {
 				const normalized = Math.min(1, rms * 3.5);
 				this.callbacks.onLevel?.(normalized);
 			}
-			if (typeof requestAnimationFrame === 'function') {
-				this.levelRafId = requestAnimationFrame(updateLevel);
+			if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+				this.levelRafId = window.requestAnimationFrame(updateLevel);
 			}
 		};
-		if (typeof requestAnimationFrame === 'function') {
-			this.levelRafId = requestAnimationFrame(updateLevel);
+		if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+			this.levelRafId = window.requestAnimationFrame(updateLevel);
 		}
 
 		// 경과 시간 타이머 (1초 간격)
@@ -429,8 +524,12 @@ export class VoiceAudioRecorder {
 		this.isRecording = false;
 		this.isPaused = false;
 
-		if (this.levelRafId !== null && typeof cancelAnimationFrame === 'function') {
-			cancelAnimationFrame(this.levelRafId);
+		if (
+			this.levelRafId !== null &&
+			typeof window !== 'undefined' &&
+			typeof window.cancelAnimationFrame === 'function'
+		) {
+			window.cancelAnimationFrame(this.levelRafId);
 			this.levelRafId = null;
 		}
 		if (this.elapsedTimerId !== null) {
@@ -442,15 +541,34 @@ export class VoiceAudioRecorder {
 			this.backupTimerId = null;
 		}
 
+		if (
+			this.workletBlobUrl &&
+			typeof URL !== 'undefined' &&
+			typeof URL.revokeObjectURL === 'function'
+		) {
+			URL.revokeObjectURL(this.workletBlobUrl);
+			this.workletBlobUrl = null;
+		}
+
+		if (this.workletNode) {
+			try {
+				this.workletNode.port.postMessage('stop');
+				this.workletNode.port.onmessage = null;
+				this.workletNode.port.close();
+			} catch {
+				// 워크렛 포트 정리 오류 무시
+			}
+		}
+
 		try {
-			this.processorNode?.disconnect();
+			this.workletNode?.disconnect();
 			this.silentGainNode?.disconnect();
 			this.sourceNode?.disconnect();
 			this.analyser?.disconnect();
 		} catch {
 			// 노드 연결 해제 오류 무시
 		}
-		this.processorNode = null;
+		this.workletNode = null;
 		this.silentGainNode = null;
 		this.sourceNode = null;
 		this.analyser = null;

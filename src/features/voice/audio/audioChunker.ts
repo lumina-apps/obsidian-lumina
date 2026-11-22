@@ -122,8 +122,10 @@ export async function resampleToMono16k(audioBuffer: AudioBuffer): Promise<Float
 	const OfflineCtx =
 		typeof OfflineAudioContext !== 'undefined'
 			? OfflineAudioContext
-			: (globalThis as unknown as { webkitOfflineAudioContext?: typeof OfflineAudioContext })
-					.webkitOfflineAudioContext;
+			: typeof window !== 'undefined'
+				? (window as unknown as { webkitOfflineAudioContext?: typeof OfflineAudioContext })
+						.webkitOfflineAudioContext
+				: undefined;
 
 	if (OfflineCtx) {
 		try {
@@ -209,7 +211,9 @@ export async function decodeBlobToMono16k(
 	const AudioCtx =
 		typeof AudioContext !== 'undefined'
 			? AudioContext
-			: (globalThis as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+			: typeof window !== 'undefined'
+				? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+				: undefined;
 
 	if (!AudioCtx) {
 		throw new Error('AudioContext is not supported in this environment.');

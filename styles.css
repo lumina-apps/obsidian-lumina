@@ -3464,7 +3464,13 @@ html body .modal-container.lumina-settings-modal-container {
 	border: 0;
 }
 
+/* Voice-to-Note: 헤더 액션 버튼 활성 상태 및 숨겨진 오디오 파일 입력 */
+.clickable-icon.lumina-voice-view-action.is-active,
+.lumina-voice-view-action.is-active {
+	color: var(--text-error, #e05252);
+}
 
-
-
+.lumina-voice-file-input {
+	display: none;
+}
 

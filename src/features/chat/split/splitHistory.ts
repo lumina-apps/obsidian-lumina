@@ -195,7 +195,7 @@ export async function loadSplitSessionsList(
 
 	for (const file of files) {
 		const cache = app.metadataCache.getFileCache(file);
-		let fm = (cache?.frontmatter as Record<string, unknown> | undefined) ?? null;
+		let fm: Record<string, unknown> | null = cache?.frontmatter ?? null;
 
 		if (!fm || !fm.id || !fm.sessionType) {
 			try {

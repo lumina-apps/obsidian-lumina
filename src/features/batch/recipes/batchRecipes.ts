@@ -235,9 +235,8 @@ async function runFrontmatterRecipe(
 		return { proposed: null, skipReason: 'too-short', tokensUsed: 0 };
 	}
 
-	const fm = app.metadataCache?.getFileCache(file)?.frontmatter as
-		| Record<string, unknown>
-		| undefined;
+	const fm: Record<string, unknown> | undefined =
+		app.metadataCache?.getFileCache(file)?.frontmatter;
 	const beforeTags = normalizeFrontmatterTags(fm?.tags);
 	const beforeDescription =
 		typeof fm?.description === 'string' ? fm.description.trim() : '';
@@ -472,9 +471,8 @@ async function runCustomPromptRecipe(
 
 	if (options.customOutputMode === 'frontmatter-key') {
 		const key = options.customFrontmatterKey.trim() || 'ai_summary';
-		const fm = app.metadataCache?.getFileCache(file)?.frontmatter as
-			| Record<string, unknown>
-			| undefined;
+		const fm: Record<string, unknown> | undefined =
+			app.metadataCache?.getFileCache(file)?.frontmatter;
 		const prevRaw = fm?.[key];
 		const beforeCustomFmVal =
 			prevRaw === undefined || prevRaw === null
