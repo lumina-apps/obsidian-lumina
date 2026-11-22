@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EmbeddingWorkerBridge } from './workerBridge';
+import { DocumentParserRouter } from './parsers/DocumentParserRouter';
 
 const mockWorkerPoolInit = vi.fn().mockResolvedValue(undefined);
 const mockWorkerPoolTerminate = vi.fn();
@@ -168,5 +169,16 @@ describe('EmbeddingWorkerBridge', () => {
 			expect.objectContaining({ modelName: 'test-model', cacheDir: '/mock/cache', pluginDir: '/mock/plugin' }),
 			undefined
 		);
+	});
+
+	it('should delegate parse() to DocumentParserRouter.parseBinary', async () => {
+		const spy = vi.spyOn(DocumentParserRouter, 'parseBinary').mockResolvedValue('parsed binary text');
+		const buf = new ArrayBuffer(8);
+
+		const result = await bridge.parse(buf, 'docx');
+
+		expect(spy).toHaveBeenCalledWith(buf, 'docx');
+		expect(result).toBe('parsed binary text');
+		spy.mockRestore();
 	});
 });

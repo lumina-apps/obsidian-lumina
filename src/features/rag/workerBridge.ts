@@ -9,6 +9,7 @@ import { WORKER_COMPRESSED_BASE64 } from './worker/workerCode';
 import { decompressWorkerCode } from './utils/workerCodec';
 import { EmbeddingCacheManager } from './utils/EmbeddingCacheManager';
 import { WorkerPool, type EmbeddingProgressCallback, type WorkerInstance } from './utils/WorkerPool';
+import { DocumentParserRouter } from './parsers/DocumentParserRouter';
 import { debugLogger } from '../../shared/debugLogger';
 
 export class EmbeddingWorkerBridge {
@@ -239,27 +240,8 @@ export class EmbeddingWorkerBridge {
 		await this.cacheManager.persistCache();
 	}
 
-	/** ArrayBuffer 문서를 Worker에서 비동기 파싱합니다 (120초 타임아웃 보호). */
+	/** ArrayBuffer 문서를 비동기 파싱합니다. */
 	async parse(buffer: ArrayBuffer, ext: string): Promise<string> {
-		await this.ensureReady();
-		const inst = this.workerPool.getAnyReadyWorker();
-		if (!inst || !this.isReady) {
-			throw new Error(t('uiMessages.ragWorkerNotReady'));
-		}
-		const requestId = generateUUID();
-		let timeoutId: number | null = null;
-		try {
-			const result = await new Promise<string>((resolve, reject) => {
-				timeoutId = window.setTimeout(() => {
-					inst.parseRequests.reject(requestId, new Error('Worker parse request timed out'));
-				}, 120_000);
-				inst.parseRequests.add(requestId, resolve, reject);
-				inst.worker.postMessage({ type: 'parse', requestId, buffer, ext }, [buffer]);
-			});
-			return result;
-		} finally {
-			if (timeoutId) window.clearTimeout(timeoutId);
-			this.resetIdleTimer();
-		}
+		return await DocumentParserRouter.parseBinary(buffer, ext);
 	}
 }

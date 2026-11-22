@@ -11,11 +11,6 @@
 
 import { env, pipeline, type FeatureExtractionPipeline } from '@huggingface/transformers';
 import type { WorkerRequest, WorkerResponse } from '../../../shared/types/rag.types';
-import { PdfParser } from '../parsers/PdfParser';
-import { DocxParser } from '../parsers/DocxParser';
-import { XlsxParser } from '../parsers/XlsxParser';
-import { PptxParser } from '../parsers/PptxParser';
-import { EpubParser } from '../parsers/EpubParser';
 
 interface EnvWasmConfig {
 	numThreads?: number;
@@ -236,32 +231,6 @@ async function embedTexts(requestId: string, texts: string[]): Promise<void> {
 	}
 }
 
-// ─── Parse ────────────────────────────────────────────────────────────────────
-
-async function parseDocument(requestId: string, buffer: ArrayBuffer, ext: string): Promise<void> {
-	try {
-		let text = '';
-		if (ext === 'pdf') {
-			text = await PdfParser.parse(buffer);
-		} else if (ext === 'docx') {
-			text = await DocxParser.parse(buffer);
-		} else if (ext === 'xlsx' || ext === 'xls') {
-			text = await XlsxParser.parse(buffer);
-		} else if (ext === 'pptx') {
-			text = await PptxParser.parse(buffer);
-		} else if (ext === 'epub') {
-			text = await EpubParser.parse(buffer);
-		}
-		send({ type: 'parseResult', requestId, text });
-	} catch (err) {
-		send({
-			type: 'error',
-			requestId,
-			message: err instanceof Error ? err.message : String(err),
-		});
-	}
-}
-
 // ─── Message Handler ─────────────────────────────────────────────────────────
 
 self.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
@@ -281,10 +250,6 @@ self.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
 
 			case 'embed':
 				await embedTexts(msg.requestId, msg.texts);
-				break;
-
-			case 'parse':
-				await parseDocument(msg.requestId, msg.buffer, msg.ext);
 				break;
 
 			case 'terminate':
