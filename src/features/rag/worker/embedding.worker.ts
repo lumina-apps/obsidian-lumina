@@ -9,7 +9,12 @@
  *    순수 Web Worker + transformers.js 만 사용.
  */
 
-import { env, pipeline, type FeatureExtractionPipeline } from '@huggingface/transformers';
+import {
+	env,
+	pipeline,
+	type AutomaticSpeechRecognitionPipeline,
+	type FeatureExtractionPipeline,
+} from '@huggingface/transformers';
 import type { WorkerRequest, WorkerResponse } from '../../../shared/types/rag.types';
 
 interface EnvWasmConfig {
@@ -63,6 +68,31 @@ const wasmConfig: EnvWasmConfig = {
 
 customEnv.wasm = wasmConfig;
 
+const WASM_CDN_BASE = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/dist/';
+
+/**
+ * transformers.js v3의 env.wasm과 실제 ONNX 런타임 설정(backends.onnx.wasm)을 동기화합니다.
+ */
+function configureWasmEnvironment(cacheDir: string): void {
+	env.cacheDir = cacheDir;
+	env.allowRemoteModels = true;
+	env.allowLocalModels = false;
+
+	const targetWasm: EnvWasmConfig = {
+		numThreads,
+		simd: true,
+		proxy: false,
+		wasmPaths: WASM_CDN_BASE,
+	};
+	customEnv.wasm = { ...(customEnv.wasm ?? {}), ...targetWasm };
+	if (customEnv.backends?.onnx) {
+		customEnv.backends.onnx.wasm = {
+			...(customEnv.backends.onnx.wasm ?? {}),
+			...targetWasm,
+		};
+	}
+}
+
 // ─── Tokenizer Hotfix ─────────────────────────────────────────────────────────
 // ibm-granite 97m-r2 모델의 tokenizer.json 내 merges가 배열의 배열 형식으로 되어 있어
 // transformers.js v2의 BPE 토크나이저 초기화 시 (x.split is not a function) 에러가 발생합니다.
@@ -97,6 +127,7 @@ JSON.parse = function(text: string, reviver?: Parameters<typeof originalJSONPars
 // ─── State ────────────────────────────────────────────────────────────────────
 
 let extractor: FeatureExtractionPipeline | null = null;
+let transcriber: AutomaticSpeechRecognitionPipeline | null = null;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -107,29 +138,8 @@ function send(msg: WorkerResponse): void {
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 async function initModel(modelName: string, cacheDir: string, _pluginDir?: string): Promise<void> {
-	// 캐시 디렉토리 지정 (Electron 환경에서는 절대 경로 전달 필요)
-	env.cacheDir = cacheDir;
-
-	// 원격 모델 허용 (첫 실행 시 자동 다운로드)
-	env.allowRemoteModels = true;
-
-	// 환경 설정
-	// blob url 형태의 worker에서는 '/models/' 로컬 fetch가 오류를 발생시키므로 false로 설정
-	env.allowLocalModels = false;
-	
-	// transformers.js v3는 외부 WASM 파일을 동적으로 로드해야 합니다.
-	// Blob URL Worker에서는 import.meta.url이 "app://obsidian.md/"로 치환되어(esbuild post-process),
-	// app:// 프로토콜로 fetch 시도 시 CORS/Origin 이슈로 실패합니다.
-	// 
-	// transformers.js의 backends/onnx.js 모듈은 ONNX_ENV.wasm.wasmPaths가 없으면
-	// 자동으로 CDN URL(https://cdn.jsdelivr.net/npm/@huggingface/transformers@${version}/dist/)을
-	// 설정합니다. 따라서 env.wasm.wasmPaths를 명시적으로 설정하여 ONNX 런타임이
-	// Blob URL Worker에서 WASM 파일을 정상적으로 로드할 수 있도록 합니다.
-	// (CDN .mjs 내부의 Node.js import('worker_threads')는 esbuild의 process 폴리필로 무력화됩니다.)
-	const WASM_CDN_BASE = `https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/dist/`;
-	
-	// env.wasm.wasmPaths를 설정하면 transformers.js가 이 값을 ONNX 런타임에 전달합니다.
-	customEnv.wasm!.wasmPaths = WASM_CDN_BASE;
+	// Blob URL Worker 환경에서 WASM 경로·스레드·프록시 설정을 ONNX 런타임까지 동기화
+	configureWasmEnvironment(cacheDir);
 	
 	// 파이프라인 생성
 	// transformers.js v3에서는 dtype으로 모델 파일을 선택합니다.
@@ -231,6 +241,86 @@ async function embedTexts(requestId: string, texts: string[]): Promise<void> {
 	}
 }
 
+// ─── Whisper (Voice-to-Note 온디바이스 STT) ──────────────────────────────────
+
+async function initWhisperModel(modelName: string, cacheDir: string): Promise<void> {
+	configureWasmEnvironment(cacheDir);
+
+	const fileProgressMap = new Map<string, number>();
+	let maxOverallPct = 0;
+
+	interface ProgressInfo {
+		status: string;
+		file?: string;
+		progress?: number;
+	}
+
+	const pipe = await pipeline('automatic-speech-recognition', modelName, {
+		progress_callback: (info: ProgressInfo) => {
+			if (info.status === 'ready') return;
+			if (info.file) {
+				if (info.status === 'initiate') {
+					fileProgressMap.set(info.file, 0);
+				} else if (info.status === 'progress') {
+					fileProgressMap.set(info.file, info.progress ?? 0);
+				} else if (info.status === 'done' || info.status === 'download') {
+					fileProgressMap.set(info.file, 100);
+				}
+			}
+			if (fileProgressMap.size > 0) {
+				let total = 0;
+				for (const pct of fileProgressMap.values()) total += pct;
+				const overallPct = total / fileProgressMap.size;
+				if (overallPct > maxOverallPct) maxOverallPct = overallPct;
+				send({
+					type: 'progress',
+					progress: maxOverallPct / 100,
+					status: info.status === 'progress' ? 'downloading' : info.status,
+				});
+			}
+		},
+	});
+	transcriber = pipe;
+	send({ type: 'whisper-ready' });
+}
+
+async function transcribeWithWhisper(
+	requestId: string,
+	audioData: Float32Array,
+	language?: string,
+): Promise<void> {
+	if (!transcriber) {
+		send({ type: 'error', requestId, message: 'Whisper model is not initialized.' });
+		return;
+	}
+	try {
+		const langOption = language && language !== 'auto' ? language : undefined;
+		const output = await transcriber(audioData, {
+			return_timestamps: true,
+			chunk_length_s: 30,
+			stride_length_s: 5,
+			task: 'transcribe',
+			...(langOption ? { language: langOption } : {}),
+		});
+		const single = Array.isArray(output) ? output[0] : output;
+		send({
+			type: 'whisper-result',
+			requestId,
+			text: single?.text ?? '',
+			chunks: (single?.chunks ?? []).map((c) => ({
+				timestamp: [c.timestamp?.[0] ?? 0, c.timestamp?.[1] ?? null],
+				text: c.text ?? '',
+			})),
+		});
+	} catch (err) {
+		send({
+			type: 'error',
+			requestId,
+			message: err instanceof Error ? err.message : String(err),
+		});
+	}
+}
+
 // ─── Message Handler ─────────────────────────────────────────────────────────
 
 self.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
@@ -252,8 +342,23 @@ self.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
 				await embedTexts(msg.requestId, msg.texts);
 				break;
 
+			case 'whisper-init':
+				await initWhisperModel(msg.modelName, msg.cacheDir).catch((err) => {
+					send({
+						type: 'error',
+						requestId: 'whisper-init',
+						message: `Whisper load failed: ${err instanceof Error ? err.message : String(err)}`,
+					});
+				});
+				break;
+
+			case 'whisper-transcribe':
+				await transcribeWithWhisper(msg.requestId, msg.audioData, msg.language);
+				break;
+
 			case 'terminate':
 				extractor = null;
+				transcriber = null;
 				self.close();
 				break;
 		}

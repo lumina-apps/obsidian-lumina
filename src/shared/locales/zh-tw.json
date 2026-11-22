@@ -1324,5 +1324,132 @@
       "rolledBackBadge": "已復原",
       "snapshotsMissing": "沒有可用於復原的快照。"
     }
+  },
+  "voiceNote": {
+    "cmdToggleRecord": "開始/停止 Voice-to-Note 錄音",
+    "cmdUploadAudio": "上傳音訊檔案產生筆記",
+    "fileMenuTitle": "將音訊轉換為智慧筆記",
+    "settings": {
+      "heading": "AI Voice-to-Note",
+      "recordMode": {
+        "name": "錄音與寫入模式",
+        "desc": "選擇在錄音結束後由 AI 統一整理，或在說話時即時插入到游標位置。",
+        "postProcess": "錄音結束後 AI 整理（建議）",
+        "liveInsert": "即時插入游標位置"
+      },
+      "defaultTemplate": {
+        "name": "預設範本",
+        "desc": "產生語音筆記時預設使用的輸出結構。",
+        "clean": "精簡整理",
+        "meeting": "會議紀錄 / 課堂筆記",
+        "verbatim": "逐字聽寫"
+      },
+      "audioStorage": {
+        "name": "音訊檔案保留",
+        "desc": "將原始音訊儲存在儲存庫中以關聯時間軸播放，或在轉錄後刪除。",
+        "vault": "儲存至儲存庫（建議）",
+        "discard": "轉錄後刪除"
+      },
+      "audioFolder": {
+        "name": "音訊儲存資料夾",
+        "desc": "用來存放錄音檔案的儲存庫內資料夾路徑。",
+        "placeholder": "Attachments/Voice"
+      },
+      "sttMode": {
+        "name": "語音辨識 (STT) 引擎",
+        "desc": "自動模式會重複使用已連線的 OpenAI、Groq、Gemini 或桌面端本地 Whisper。",
+        "auto": "自動（已連線 API 或本地 Whisper）",
+        "provider": "指定已連線的服務商",
+        "localWhisper": "本地 Whisper（桌面端，免費/離線）"
+      },
+      "sttProvider": {
+        "name": "STT 服務商",
+        "desc": "用於語音辨識的已連線服務商。",
+        "noneAvailable": "未連線支援 STT 的服務商"
+      },
+      "llmModel": {
+        "name": "筆記整理模型",
+        "desc": "用於校對與結構化筆記的已連線 LLM（預設自動跟隨目前工作階段/任務模型）。",
+        "autoOption": "自動（目前工作階段 / 任務模型）"
+      },
+      "localWhisperModel": {
+        "name": "本地 Whisper 模型",
+        "desc": "離線執行或未設定雲端 STT 金鑰時使用的本地模型（僅限桌面端）。",
+        "tiny": "whisper-tiny（最快，多語言）",
+        "base": "whisper-base（均衡）",
+        "small": "whisper-small（更高準確率）"
+      },
+      "language": {
+        "name": "語音語言提示",
+        "desc": "用於提升辨識準確率的 ISO 語言代碼（如 zh、en、ko）或自動偵測。",
+        "auto": "自動偵測"
+      },
+      "autoWikiLink": {
+        "name": "自動雙向連結 ([[...]])",
+        "desc": "在產生的筆記中自動為相符的既有筆記標題與別名加上雙向連結。"
+      },
+      "includeRawTranscript": {
+        "name": "包含原始逐字稿摺疊區塊",
+        "desc": "在筆記末尾附加帶時間軸的原始轉錄文字摺疊標註區塊。"
+      },
+      "customVocabulary": {
+        "name": "專有名詞詞表",
+        "desc": "以逗號或換行分隔的專案名稱、人名或專業術語，用於提升辨識與校對準確率。",
+        "placeholder": "Lumina, Obsidian, RAG..."
+      }
+    },
+    "recorder": {
+      "title": "Voice-to-Note",
+      "recording": "錄音中",
+      "paused": "已暫停",
+      "pause": "暫停",
+      "resume": "繼續",
+      "stopAndProcess": "完成",
+      "cancel": "取消",
+      "captionsToggle": "字幕",
+      "noCaptionsYet": "正在聆聽語音...",
+      "mobileScreenHint": "長時間錄音時請保持螢幕開啟。",
+      "recoverPrompt": "發現未完成的錄音紀錄",
+      "recoverBtn": "復原",
+      "discardRecoverBtn": "捨棄",
+      "closeError": "關閉"
+    },
+    "progress": {
+      "stepTranscribing": "正在轉錄音訊 (1/3)...",
+      "stepLinking": "正在比對儲存庫上下文與術語 (2/3)...",
+      "stepFormatting": "正在結構化整理筆記 (3/3)...",
+      "loadingLocalModel": "正在載入本地 Whisper 模型 ({{pct}}%)...",
+      "chunkProgress": "正在轉錄分段 ({{current}}/{{total}})..."
+    },
+    "review": {
+      "applyBtn": "套用",
+      "reprocessLabel": "重新整理",
+      "rawOnlyBtn": "僅保留原文",
+      "undoBtn": "復原",
+      "appliedNotice": "已套用語音筆記。",
+      "reformattedNotice": "已依所選範本重新整理筆記。",
+      "undoneNotice": "已復原本次語音筆記插入。"
+    },
+    "templates": {
+      "clean": "精簡整理",
+      "meeting": "會議紀錄",
+      "verbatim": "逐字聽寫"
+    },
+    "output": {
+      "summaryTitle": "核心摘要",
+      "rawTranscriptTitle": "原始逐字稿 (時間軸)"
+    },
+    "notices": {
+      "micPermissionDenied": "麥克風權限被拒絕或無法使用。",
+      "noAudioRecorded": "錄音中未偵測到有效語音。",
+      "noSttAvailable": "沒有可用的 STT 引擎。請連線 OpenAI、Groq、Gemini 或使用桌面端本地 Whisper。",
+      "noLlmAvailable": "未設定可用於整理筆記的已驗證 LLM，已直接插入原始轉錄文字。",
+      "localWhisperMobileUnsupported": "本地 Whisper 僅支援桌面端。行動端請連線 OpenAI、Groq 或 Gemini。",
+      "fileTooLargeDecodeError": "音訊檔案解碼分段失敗。",
+      "transcribeFailed": "Voice-to-Note 處理失敗: {{error}}",
+      "recoveredSuccess": "已復原並轉換未完成的錄音。",
+      "createdNote": "已建立語音筆記: {{path}}",
+      "audioSaved": "已儲存音訊檔案: {{path}}"
+    }
   }
 }

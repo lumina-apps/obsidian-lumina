@@ -1324,5 +1324,132 @@
       "rolledBackBadge": "Restauré",
       "snapshotsMissing": "Aucun instantané disponible pour l'annulation."
     }
+  },
+  "voiceNote": {
+    "cmdToggleRecord": "Démarrer/arrêter l'enregistrement Voice-to-Note",
+    "cmdUploadAudio": "Transcrire un fichier audio en note",
+    "fileMenuTitle": "Convertir l'audio en Note Intelligente",
+    "settings": {
+      "heading": "AI Voice-to-Note",
+      "recordMode": {
+        "name": "Mode d'enregistrement",
+        "desc": "Formater après la fin de l'enregistrement ou insérer en direct au curseur.",
+        "postProcess": "Formater après enregistrement (Recommandé)",
+        "liveInsert": "Insertion en direct au curseur"
+      },
+      "defaultTemplate": {
+        "name": "Modèle par défaut",
+        "desc": "Structure de sortie par défaut pour les notes vocales.",
+        "clean": "Note structurée",
+        "meeting": "Réunion / Cours",
+        "verbatim": "Dictée littérale"
+      },
+      "audioStorage": {
+        "name": "Conservation du fichier audio",
+        "desc": "Garder l'audio dans le coffre pour lecture par horodatage ou le supprimer après transcription.",
+        "vault": "Enregistrer dans le coffre (Recommandé)",
+        "discard": "Supprimer après transcription"
+      },
+      "audioFolder": {
+        "name": "Dossier audio",
+        "desc": "Dossier du coffre où enregistrer les fichiers audio.",
+        "placeholder": "Attachments/Voice"
+      },
+      "sttMode": {
+        "name": "Moteur voix-texte (STT)",
+        "desc": "Auto réutilise OpenAI, Groq, Gemini connectés ou Whisper local sur ordinateur.",
+        "auto": "Auto (API connectée ou Whisper local)",
+        "provider": "Fournisseur connecté spécifique",
+        "localWhisper": "Whisper local (Ordinateur, Gratuit/Hors ligne)"
+      },
+      "sttProvider": {
+        "name": "Fournisseur STT",
+        "desc": "Fournisseur connecté utilisé pour la reconnaissance vocale.",
+        "noneAvailable": "Aucun fournisseur compatible STT connecté"
+      },
+      "llmModel": {
+        "name": "Modèle de mise en forme",
+        "desc": "LLM connecté utilisé pour nettoyer et structurer les notes.",
+        "autoOption": "Auto (Modèle actif / de tâche)"
+      },
+      "localWhisperModel": {
+        "name": "Modèle Whisper local",
+        "desc": "Modèle local utilisé hors ligne ou sans clé STT cloud (ordinateur uniquement).",
+        "tiny": "whisper-tiny (Plus rapide, Multilingue)",
+        "base": "whisper-base (Équilibré)",
+        "small": "whisper-small (Meilleure précision)"
+      },
+      "language": {
+        "name": "Indice de langue parlée",
+        "desc": "Code ISO optionnel (ex. fr, en, ko) ou détection automatique.",
+        "auto": "Détection automatique"
+      },
+      "autoWikiLink": {
+        "name": "Liens wiki automatiques ([[...]])",
+        "desc": "Lier automatiquement les titres et alias de notes existantes du coffre."
+      },
+      "includeRawTranscript": {
+        "name": "Inclure le bloc de transcription brute",
+        "desc": "Ajouter un bloc pliable avec la transcription horodatée en bas de la note."
+      },
+      "customVocabulary": {
+        "name": "Vocabulaire personnalisé",
+        "desc": "Noms de projets, personnes ou termes séparés par des virgules ou retours à la ligne.",
+        "placeholder": "Lumina, Obsidian, RAG..."
+      }
+    },
+    "recorder": {
+      "title": "Voice-to-Note",
+      "recording": "Enregistrement",
+      "paused": "En pause",
+      "pause": "Pause",
+      "resume": "Reprendre",
+      "stopAndProcess": "Terminer",
+      "cancel": "Annuler",
+      "captionsToggle": "Sous-titres",
+      "noCaptionsYet": "Écoute en cours...",
+      "mobileScreenHint": "Gardez l'écran allumé lors de longs enregistrements.",
+      "recoverPrompt": "Enregistrement inachevé trouvé",
+      "recoverBtn": "Récupérer",
+      "discardRecoverBtn": "Ignorer",
+      "closeError": "Fermer"
+    },
+    "progress": {
+      "stepTranscribing": "Transcription audio (1/3)...",
+      "stepLinking": "Mise en correspondance du coffre (2/3)...",
+      "stepFormatting": "Structuration de la note (3/3)...",
+      "loadingLocalModel": "Chargement du modèle Whisper local ({{pct}}%)...",
+      "chunkProgress": "Transcription du segment {{current}}/{{total}}..."
+    },
+    "review": {
+      "applyBtn": "Appliquer",
+      "reprocessLabel": "Reformater",
+      "rawOnlyBtn": "Texte brut",
+      "undoBtn": "Annuler",
+      "appliedNotice": "Note vocale appliquée.",
+      "reformattedNotice": "Note reformatée.",
+      "undoneNotice": "Insertion annulée."
+    },
+    "templates": {
+      "clean": "Structurée",
+      "meeting": "Réunion",
+      "verbatim": "Littérale"
+    },
+    "output": {
+      "summaryTitle": "Résumé",
+      "rawTranscriptTitle": "Transcription originale (Chronologie)"
+    },
+    "notices": {
+      "micPermissionDenied": "Permission microphone refusée ou indisponible.",
+      "noAudioRecorded": "Aucune voix détectée dans l'enregistrement.",
+      "noSttAvailable": "Aucun moteur STT disponible. Connectez OpenAI, Groq, Gemini ou utilisez Whisper local.",
+      "noLlmAvailable": "Aucun LLM vérifié connecté. Transcription brute insérée à la place.",
+      "localWhisperMobileUnsupported": "Whisper local n'est pris en charge que sur ordinateur.",
+      "fileTooLargeDecodeError": "Échec du décodage audio pour le découpage.",
+      "transcribeFailed": "Échec de Voice-to-Note : {{error}}",
+      "recoveredSuccess": "Enregistrement inachevé récupéré et traité.",
+      "createdNote": "Note vocale créée : {{path}}",
+      "audioSaved": "Audio enregistré : {{path}}"
+    }
   }
 }

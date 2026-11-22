@@ -96,4 +96,36 @@ describe('CommandManager Pro Split 동적 커맨드 게이트', () => {
 		cm.syncProCommands();
 		expect(removeCommand).toHaveBeenCalledWith('obsidian-lumina:open-batch-studio');
 	});
+
+	it('Pro Voice-to-Note 비활성 시 미등록, 활성 시 2개 동적 등록, 해제 시 모두 제거한다', () => {
+		const { plugin, registeredCommands, removeCommand } = createMockPluginForCommands();
+		const ensureSpy = vi.fn().mockResolvedValue(null);
+		(plugin as unknown as { ensureVoiceNoteManager: () => Promise<unknown> }).ensureVoiceNoteManager = ensureSpy;
+
+		const cm = new CommandManager(plugin);
+		cm.registerCommands();
+		expect(registeredCommands.some((c) => c.id === 'toggle-voice-note-recording')).toBe(false);
+		expect(registeredCommands.some((c) => c.id === 'transcribe-audio-file')).toBe(false);
+
+		setEntitlementState({
+			tier: 'pro',
+			status: 'active',
+			enabledFeatures: new Set(['voice-note']),
+		});
+		cm.syncProCommands();
+
+		const toggleCmd = registeredCommands.find((c) => c.id === 'toggle-voice-note-recording');
+		const uploadCmd = registeredCommands.find((c) => c.id === 'transcribe-audio-file');
+		expect(toggleCmd).toBeDefined();
+		expect(uploadCmd).toBeDefined();
+
+		toggleCmd?.callback?.();
+		uploadCmd?.callback?.();
+		expect(ensureSpy).toHaveBeenCalledTimes(2);
+
+		resetEntitlementState();
+		cm.syncProCommands();
+		expect(removeCommand).toHaveBeenCalledWith('obsidian-lumina:toggle-voice-note-recording');
+		expect(removeCommand).toHaveBeenCalledWith('obsidian-lumina:transcribe-audio-file');
+	});
 });

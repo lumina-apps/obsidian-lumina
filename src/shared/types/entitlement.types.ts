@@ -1,5 +1,5 @@
 /** Pro 기능 식별자 목록 */
-export type ProFeatureId = 'split-chat' | 'batch-studio';
+export type ProFeatureId = 'split-chat' | 'batch-studio' | 'voice-note';
 
 /** 라이선스 티어 */
 export type LicenseTier = 'free' | 'pro';

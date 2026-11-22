@@ -11,11 +11,13 @@ import type {
 	EditorSuggestTriggerInfo,
 } from 'obsidian';
 import type LuminaPlugin from '../../main';
+import { canUseFeature } from '../../core/store/entitlementStore';
 import type { QuickAction } from '../../shared/types/settings.types';
 import { t } from '../../shared/locales/helpers';
 import { openPromptBar } from './promptBarExtension';
 
 const PROMPT_BAR_ACTION_ID = '__prompt_bar__';
+const VOICE_NOTE_ACTION_ID = '__voice_note__';
 
 export class InlineAISuggest extends EditorSuggest<QuickAction> {
 	private plugin: LuminaPlugin;
@@ -58,19 +60,35 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 	}
 
 	getSuggestions(context: EditorSuggestContext): QuickAction[] {
+		const trimmedQuery = context.query.trim();
+		const lowerQuery = trimmedQuery.toLowerCase();
+		const voiceAction: QuickAction | null = canUseFeature('voice-note')
+			? {
+					id: VOICE_NOTE_ACTION_ID,
+					name: t('voiceNote.cmdToggleRecord'),
+					prompt: '',
+					actionType: 'append',
+				}
+			: null;
+		const matchingVoice =
+			voiceAction && (!lowerQuery || voiceAction.name.toLowerCase().includes(lowerQuery))
+				? [voiceAction]
+				: [];
+
 		const { quickActionProviderId, quickActionModelId } = this.plugin.settings.connections;
 		if (!quickActionProviderId || !quickActionModelId) {
-			return [{
-				id: '__unconfigured__',
-				name: t('uiMessages.qaNotConfigured'),
-				prompt: '',
-				actionType: 'replace'
-			}];
+			return [
+				...matchingVoice,
+				{
+					id: '__unconfigured__',
+					name: t('uiMessages.qaNotConfigured'),
+					prompt: '',
+					actionType: 'replace',
+				},
+			];
 		}
 
 		const actions = this.plugin.settings.chat.quickActions || [];
-		const trimmedQuery = context.query.trim();
-		const lowerQuery = trimmedQuery.toLowerCase();
 		const promptBarAction: QuickAction = {
 			id: PROMPT_BAR_ACTION_ID,
 			name: t('uiMessages.promptBar.inlineSuggestName'),
@@ -79,11 +97,11 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 		};
 
 		if (!lowerQuery) {
-			return [promptBarAction, ...actions];
+			return [promptBarAction, ...matchingVoice, ...actions];
 		}
 
 		const filtered = actions.filter((a) => a.name.toLowerCase().includes(lowerQuery));
-		return [...filtered, promptBarAction];
+		return [...filtered, ...matchingVoice, promptBarAction];
 	}
 
 	renderSuggestion(action: QuickAction, el: HTMLElement): void {
@@ -92,6 +110,11 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 				? t('uiMessages.promptBar.inlineSuggestCustom', { query: action.prompt })
 				: t('uiMessages.promptBar.inlineSuggestName');
 			el.createSpan({ text: `✍️ ${label}`, cls: 'lumina-inline-suggest-name' });
+			return;
+		}
+
+		if (action.id === VOICE_NOTE_ACTION_ID) {
+			el.createSpan({ text: `🎙️ ${action.name}`, cls: 'lumina-inline-suggest-name' });
 			return;
 		}
 
@@ -122,6 +145,14 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 
 		// 트리거 문자열 제거
 		editor.replaceRange('', start, end);
+
+		if (action.id === VOICE_NOTE_ACTION_ID) {
+			if (!canUseFeature('voice-note')) return;
+			void this.plugin.ensureVoiceNoteManager().then((manager) => {
+				void manager?.toggleRecording();
+			});
+			return;
+		}
 
 		if (action.id === '__unconfigured__') {
 			const appWithSetting = this.plugin.app as unknown as {

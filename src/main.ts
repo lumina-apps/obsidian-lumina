@@ -18,6 +18,7 @@ import { normalizeError } from './shared/utils/errorUtils';
 import { runMigrations, migrateRemovedProviders } from './core/settings/migrations';
 import { activateView, activateMainView, closeView } from './core/views/viewHelper';
 import { canUseFeature, entitlementStore, initEntitlementStore, resetEntitlementState } from './core/store/entitlementStore';
+import { resetVoiceStore } from './core/store/voiceStore';
 import { cleanupApprovalListener } from './features/chat/utils/approvalListener';
 import { SettingsManager } from './core/settings/settingsManager';
 import { CommandManager } from './core/commands/commandManager';
@@ -28,6 +29,7 @@ import type { McpManager } from './core/mcp/mcpManager';
 import type { QuickActionHandler } from './features/editor/quickActionHandler';
 import type { FrontmatterManager } from './features/frontmatter/frontmatterManager';
 import type { CanvasManager } from './features/canvas/canvasManager';
+import type { VoiceNoteManager } from './features/voice/voiceManager';
 // Lazy Loading Type
 import type { LuminaSettingTab } from './core/settings/settingTab';
 
@@ -97,16 +99,19 @@ export default class LuminaPlugin extends Plugin {
 	isFirstRun: boolean = false;
 	private ribbonEl: HTMLElement | null = null;
 	private graphRibbonEl: HTMLElement | null = null;
+	private voiceRibbonEl: HTMLElement | null = null;
 	public settingTab: LazyLuminaSettingTab | null = null;
 	public frontmatterManager!: FrontmatterManager;
 	public quickActionHandler!: QuickActionHandler;
 	public canvasManager?: CanvasManager;
+	public voiceNoteManager: VoiceNoteManager | null = null;
 
 	/** 플러그인 언로드 여부 — 비동기 초기화 중 언로드되면 MCP 생성을 건너뛰기 위한 플래그 */
 	private _unloaded = false;
 	private hasRegisteredSplitView = false;
 	private hasRegisteredBatchView = false;
 	private unsubSplitEntitlement: (() => void) | null = null;
+	private voiceManagerLoading: Promise<VoiceNoteManager | null> | null = null;
 
 	/** 플러그인이 언로드 과정에 있는지 반환 */
 	get isUnloaded(): boolean {
@@ -236,6 +241,9 @@ export default class LuminaPlugin extends Plugin {
 			this.quickActionHandler = new QuickActionHandler(this);
 			this.commandManager.registerCommands();
 			this.eventManager.registerEvents();
+			if (canUseFeature('voice-note')) {
+				void this.ensureVoiceNoteManager();
+			}
 			this.unsubSplitEntitlement = entitlementStore.subscribe(() => {
 				this.syncSplitEntitlement();
 			});
@@ -303,11 +311,19 @@ export default class LuminaPlugin extends Plugin {
 			this.removeRibbonButton(this.graphRibbonEl);
 			this.graphRibbonEl = null;
 		}
+		if (this.voiceRibbonEl) {
+			this.removeRibbonButton(this.voiceRibbonEl);
+			this.voiceRibbonEl = null;
+		}
 		this.indexer?.destroy();
 		this.embeddingWorker?.terminate();
 		this.watchManager?.clearWatchEvents();
 		this.frontmatterManager?.destroy();
 		this.canvasManager?.destroy();
+		this.voiceNoteManager?.destroy();
+		this.voiceNoteManager = null;
+		this.voiceManagerLoading = null;
+		resetVoiceStore();
 		cleanupApprovalListener();
 		void this.mcpManager?.destroy();
 		// 프로젝트별 인덱서 캐시 정리
@@ -350,6 +366,34 @@ export default class LuminaPlugin extends Plugin {
 		this.hasRegisteredBatchView = true;
 	}
 
+	/** Pro 권한('voice-note') 활성 시 VoiceNoteManager를 1회 지연 로드하여 초기화 */
+	public async ensureVoiceNoteManager(): Promise<VoiceNoteManager | null> {
+		if (!canUseFeature('voice-note') || this._unloaded) return null;
+		if (this.voiceNoteManager) return this.voiceNoteManager;
+		if (this.voiceManagerLoading) return this.voiceManagerLoading;
+
+		this.voiceManagerLoading = (async () => {
+			try {
+				const { VoiceNoteManager: RealVoiceManager } = await import('./features/voice/voiceManager');
+				if (this._unloaded || !canUseFeature('voice-note')) {
+					return null;
+				}
+				const manager = new RealVoiceManager(this);
+				await manager.init();
+				if (this._unloaded || !canUseFeature('voice-note')) {
+					manager.destroy();
+					return null;
+				}
+				this.voiceNoteManager = manager;
+				return manager;
+			} finally {
+				this.voiceManagerLoading = null;
+			}
+		})();
+
+		return this.voiceManagerLoading;
+	}
+
 	/** 런타임 권한 변경 시 View·커맨드 등록/해제 동기화 */
 	private syncSplitEntitlement(): void {
 		if (canUseFeature('split-chat')) {
@@ -366,7 +410,17 @@ export default class LuminaPlugin extends Plugin {
 			closeView(this.app.workspace, BATCH_STUDIO_VIEW_TYPE);
 		}
 
+		if (canUseFeature('voice-note')) {
+			void this.ensureVoiceNoteManager();
+		} else {
+			this.voiceNoteManager?.destroy();
+			this.voiceNoteManager = null;
+			this.voiceManagerLoading = null;
+			resetVoiceStore();
+		}
+
 		this.commandManager.syncProCommands();
+		this.updateRibbonIcon();
 	}
 
 	// ─── Locales ────────────────────────────────────────────────────────
@@ -487,6 +541,31 @@ export default class LuminaPlugin extends Plugin {
 			if (this.graphRibbonEl) {
 				this.removeRibbonButton(this.graphRibbonEl);
 				this.graphRibbonEl = null;
+			}
+		}
+
+		// 3. Voice-to-Note Ribbon Icon (Pro 권한 활성 시에만 노출)
+		const showVoiceRibbon =
+			canUseFeature('voice-note') && (this.settings?.voiceNote?.showRibbonIcon ?? true);
+		if (showVoiceRibbon) {
+			if (!this.voiceRibbonEl) {
+				this.voiceRibbonEl = this.addRibbonIcon(
+					'lumina-voice-note',
+					t('voiceNote.cmdToggleRecord'),
+					() => {
+						if (!canUseFeature('voice-note')) return;
+						void this.ensureVoiceNoteManager().then((manager) => {
+							void manager?.toggleRecording();
+						});
+					},
+				);
+			} else {
+				this.voiceRibbonEl.setAttribute('aria-label', t('voiceNote.cmdToggleRecord'));
+			}
+		} else {
+			if (this.voiceRibbonEl) {
+				this.removeRibbonButton(this.voiceRibbonEl);
+				this.voiceRibbonEl = null;
 			}
 		}
 	}

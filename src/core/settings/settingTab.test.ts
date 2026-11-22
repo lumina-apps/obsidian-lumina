@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LuminaSettingTab } from './settingTab';
 import { DEFAULT_SETTINGS } from './defaultSettings';
 import { initProjectStore } from '../store/projectStore';
+import { resetEntitlementState, setEntitlementState } from '../store/entitlementStore';
 import type LuminaPlugin from '../../main';
 import type { App } from 'obsidian';
 
@@ -553,6 +554,50 @@ describe('LuminaSettingTab scroll preservation', () => {
 				} finally {
 					(Platform as { isMobile: boolean }).isMobile = origIsMobile;
 					(Platform as { isDesktop: boolean }).isDesktop = origIsDesktop;
+				}
+			});
+		});
+
+		describe('Voice-to-Note Pro 설정 완전 은닉 게이트', () => {
+			it('voice-note 권한이 비활성(기본)이면 Misc 탭과 설정 검색에서 관련 항목이 전혀 노출되지 않는다', () => {
+				resetEntitlementState();
+				try {
+					tab.activeTab = 'misc';
+					tab.display();
+					expect(container.textContent).not.toContain('AI Voice-to-Note');
+
+					// 설정 검색에서도 노출되지 않아야 함
+					tab.searchQuery = 'voice';
+					tab.refreshDisplay();
+					expect(container.textContent).not.toContain('AI Voice-to-Note');
+
+					tab.searchQuery = 'whisper';
+					tab.refreshDisplay();
+					const visibleWhisperItems = Array.from(
+						container.querySelectorAll<HTMLElement>('.setting-item'),
+					).filter(
+						(el) =>
+							el.style.display !== 'none' &&
+							(el.textContent ?? '').toLowerCase().includes('speech-to-text'),
+					);
+					expect(visibleWhisperItems).toHaveLength(0);
+
+					// 권한 활성화 시 Misc 탭에 Voice 설정이 렌더링되고, 해제 시 다시 숨겨짐
+					setEntitlementState({
+						tier: 'pro',
+						status: 'active',
+						enabledFeatures: new Set(['voice-note']),
+					});
+					tab.searchQuery = '';
+					tab.activeTab = 'misc';
+					tab.display();
+					expect(container.textContent).toContain('AI Voice-to-Note');
+
+					resetEntitlementState();
+					tab.display();
+					expect(container.textContent).not.toContain('AI Voice-to-Note');
+				} finally {
+					resetEntitlementState();
 				}
 			});
 		});

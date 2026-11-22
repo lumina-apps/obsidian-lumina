@@ -6,8 +6,11 @@ import { addPendingAttachment, activeSidebarTab } from '../store/chatStore';
 import { setBatchTargetFolder } from '../store/batchStore';
 import { canUseFeature } from '../store/entitlementStore';
 import { updateDiscoveryState } from '../store/discoveryStore';
-import { Notice, Menu, MenuItem, TFolder } from 'obsidian';
+import { Notice, Menu, MenuItem, TFile, TFolder } from 'obsidian';
 import { debugLogger } from '../../shared/debugLogger';
+
+/** 우클릭 음성 변환 메뉴를 표시할 오디오 확장자 목록 */
+const VOICE_AUDIO_EXTENSIONS = new Set(['m4a', 'mp3', 'wav', 'webm', 'ogg']);
 
 export class EventManager {
 	private plugin: LuminaPlugin;
@@ -46,6 +49,20 @@ export class EventManager {
 								});
 							});
 					});
+
+					if (canUseFeature('voice-note')) {
+						target.addItem((subItem) => {
+							subItem
+								.setTitle(t('voiceNote.cmdToggleRecord'))
+								.setIcon('lumina-voice-note')
+								.onClick(() => {
+									debugLogger.logSystem('events', 'context-menu: voice-note recording triggered');
+									void this.plugin.ensureVoiceNoteManager().then((manager) => {
+										void manager?.toggleRecording();
+									});
+								});
+						});
+					}
 
 					if (selection.trim()) {
 						target.addItem((subItem) => {
@@ -120,30 +137,55 @@ export class EventManager {
 			}),
 		);
 
-		// ── 파일 탐색기 폴더 컨텍스트 메뉴 (Pro Batch Studio) ───────────
+		// ── 파일 탐색기 컨텍스트 메뉴 (Pro Batch Studio / Pro Voice-to-Note) ──
 		this.plugin.registerEvent(
 			this.plugin.app.workspace.on('file-menu', (menu, abstractFile) => {
 				if (!this.plugin.settings.misc.contextMenuEnabled) return;
-				if (!canUseFeature('batch-studio')) return;
-				if (!(abstractFile instanceof TFolder)) return;
 
-				menu.addItem((item) => {
-					item
-						.setTitle(`✨ Lumina: ${t('batchStudio.folderMenuTitle')}`)
-						.setIcon('lumina-batch-studio')
-						.setSection('action')
-						.onClick(() => {
-							debugLogger.logSystem(
-								'events',
-								`file-menu: batch studio triggered (folder=${abstractFile.path})`,
-							);
-							const applied = setBatchTargetFolder(abstractFile.path);
-							if (!applied) {
-								new Notice(t('batchStudio.execution.alreadyRunningNotice'));
-							}
-							void activateMainView(this.plugin.app.workspace, BATCH_STUDIO_VIEW_TYPE);
-						});
-				});
+				if (abstractFile instanceof TFolder) {
+					if (!canUseFeature('batch-studio')) return;
+
+					menu.addItem((item) => {
+						item
+							.setTitle(`✨ Lumina: ${t('batchStudio.folderMenuTitle')}`)
+							.setIcon('lumina-batch-studio')
+							.setSection('action')
+							.onClick(() => {
+								debugLogger.logSystem(
+									'events',
+									`file-menu: batch studio triggered (folder=${abstractFile.path})`,
+								);
+								const applied = setBatchTargetFolder(abstractFile.path);
+								if (!applied) {
+									new Notice(t('batchStudio.execution.alreadyRunningNotice'));
+								}
+								void activateMainView(this.plugin.app.workspace, BATCH_STUDIO_VIEW_TYPE);
+							});
+					});
+					return;
+				}
+
+				if (
+					abstractFile instanceof TFile &&
+					canUseFeature('voice-note') &&
+					VOICE_AUDIO_EXTENSIONS.has(abstractFile.extension.toLowerCase())
+				) {
+					menu.addItem((item) => {
+						item
+							.setTitle(`✨ Lumina: ${t('voiceNote.fileMenuTitle')}`)
+							.setIcon('lumina-voice-note')
+							.setSection('action')
+							.onClick(() => {
+								debugLogger.logSystem(
+									'events',
+									`file-menu: voice-note triggered (file=${abstractFile.path})`,
+								);
+								void this.plugin.ensureVoiceNoteManager().then((manager) => {
+									void manager?.transcribeVaultFile(abstractFile);
+								});
+							});
+					});
+				}
 			}),
 		);
 

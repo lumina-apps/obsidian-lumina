@@ -1324,5 +1324,132 @@
       "rolledBackBadge": "復元済み",
       "snapshotsMissing": "復元可能なスナップショットがありません。"
     }
+  },
+  "voiceNote": {
+    "cmdToggleRecord": "Voice-to-Note 録音の開始/停止",
+    "cmdUploadAudio": "音声ファイルをアップロードしてノート作成",
+    "fileMenuTitle": "音声ファイルをスマートノートに変換",
+    "settings": {
+      "heading": "AI Voice-to-Note",
+      "recordMode": {
+        "name": "録音・反映モード",
+        "desc": "録音終了後にAIがまとめて整理するか、話しながらカーソル位置に挿入するかを選択します。",
+        "postProcess": "録音終了後にAI整理（推奨）",
+        "liveInsert": "カーソル位置へリアルタイム挿入"
+      },
+      "defaultTemplate": {
+        "name": "デフォルトテンプレート",
+        "desc": "音声ノートの基本出力フォーマットです。",
+        "clean": "すっきり整理",
+        "meeting": "会議録 / 講義",
+        "verbatim": "そのまま文字起こし"
+      },
+      "audioStorage": {
+        "name": "音声ファイルの保持",
+        "desc": "元の音声をVaultに保存してタイムスタンプと連携するか、変換後に削除するかを選択します。",
+        "vault": "Vaultに保存（推奨）",
+        "discard": "変換後に削除"
+      },
+      "audioFolder": {
+        "name": "音声保存フォルダ",
+        "desc": "録音した音声ファイルを保存するVault内のフォルダパスです。",
+        "placeholder": "Attachments/Voice"
+      },
+      "sttMode": {
+        "name": "音声認識 (STT) エンジン",
+        "desc": "自動モードでは接続済みのOpenAI、Groq、Gemini、またはデスクトップ版ローカルWhisperを再利用します。",
+        "auto": "自動（接続済みAPIまたはローカルWhisper）",
+        "provider": "接続済みプロバイダーを指定",
+        "localWhisper": "ローカルWhisper（デスクトップ、無料/オフライン）"
+      },
+      "sttProvider": {
+        "name": "STT プロバイダー",
+        "desc": "音声認識に使用する接続済みプロバイダーを選択します。",
+        "noneAvailable": "STT対応の接続済みプロバイダーがありません"
+      },
+      "llmModel": {
+        "name": "ノート整理モデル",
+        "desc": "文字起こしを整形・構造化する接続済みLLMです（デフォルトはアクティブ/Taskモデルを自動使用）。",
+        "autoOption": "自動（アクティブ / Task モデル）"
+      },
+      "localWhisperModel": {
+        "name": "ローカルWhisperモデル",
+        "desc": "オフライン時やクラウドSTTキーがない場合に使用するオンデバイスモデルです（デスクトップ専用）。",
+        "tiny": "whisper-tiny（最速・多言語）",
+        "base": "whisper-base（バランス型）",
+        "small": "whisper-small（高精度）"
+      },
+      "language": {
+        "name": "音声言語ヒント",
+        "desc": "認識精度を高めるISO言語コード（例: ja, en, ko）または自動検出です。",
+        "auto": "自動検出"
+      },
+      "autoWikiLink": {
+        "name": "自動Wikiリンク ([[...]])",
+        "desc": "生成されたノート内で既存のVaultノート名やエイリアスに一致する語句を自動リンクします。"
+      },
+      "includeRawTranscript": {
+        "name": "元の文字起こしコールアウトを含める",
+        "desc": "ノートの末尾にタイムスタンプ付きの元の文字起こしを折りたたみコールアウトとして追加します。"
+      },
+      "customVocabulary": {
+        "name": "固有名詞 / 専門用語辞書",
+        "desc": "プロジェクト名、人名、専門用語をカンマまたは改行区切りで入力すると認識・補正精度が向上します。",
+        "placeholder": "Lumina, Obsidian, RAG..."
+      }
+    },
+    "recorder": {
+      "title": "Voice-to-Note",
+      "recording": "録音中",
+      "paused": "一時停止中",
+      "pause": "一時停止",
+      "resume": "再開",
+      "stopAndProcess": "完了",
+      "cancel": "キャンセル",
+      "captionsToggle": "字幕",
+      "noCaptionsYet": "音声を聞き取っています...",
+      "mobileScreenHint": "長時間の録音中は画面をオフにしないでください。",
+      "recoverPrompt": "未完了の録音データが見つかりました",
+      "recoverBtn": "復元",
+      "discardRecoverBtn": "破棄",
+      "closeError": "閉じる"
+    },
+    "progress": {
+      "stepTranscribing": "音声を文字起こし中 (1/3)...",
+      "stepLinking": "Vault文脈と用語を照合中 (2/3)...",
+      "stepFormatting": "ノートを構造化中 (3/3)...",
+      "loadingLocalModel": "ローカルWhisperモデルを読み込み中 ({{pct}}%)...",
+      "chunkProgress": "音声チャンクを文字起こし中 ({{current}}/{{total}})..."
+    },
+    "review": {
+      "applyBtn": "適用",
+      "reprocessLabel": "再整理",
+      "rawOnlyBtn": "原文のみ",
+      "undoBtn": "取り消す",
+      "appliedNotice": "音声ノートを適用しました。",
+      "reformattedNotice": "選択したテンプレートでノートを再整理しました。",
+      "undoneNotice": "音声ノートの挿入を元に戻しました。"
+    },
+    "templates": {
+      "clean": "整理",
+      "meeting": "議事録",
+      "verbatim": "書き起こし"
+    },
+    "output": {
+      "summaryTitle": "要約",
+      "rawTranscriptTitle": "元の文字起こし (タイムライン)"
+    },
+    "notices": {
+      "micPermissionDenied": "マイクの権限が拒否されたか利用できません。",
+      "noAudioRecorded": "録音中に音声が検出されませんでした。",
+      "noSttAvailable": "利用可能なSTTエンジンがありません。OpenAI・Groq・Geminiを接続するか、デスクトップ版ローカルWhisperをご使用ください。",
+      "noLlmAvailable": "ノート整理用の認証済みLLMがないため、元の文字起こしテキストのみ挿入しました。",
+      "localWhisperMobileUnsupported": "ローカルWhisperはデスクトップ版のみ対応しています。モバイルではOpenAI、Groq、またはGeminiを接続してください。",
+      "fileTooLargeDecodeError": "分割処理のための音声ファイルデコードに失敗しました。",
+      "transcribeFailed": "Voice-to-Note の処理に失敗しました: {{error}}",
+      "recoveredSuccess": "未完了の録音を復元してノートに変換しました。",
+      "createdNote": "音声ノートを作成しました: {{path}}",
+      "audioSaved": "音声を保存しました: {{path}}"
+    }
   }
 }

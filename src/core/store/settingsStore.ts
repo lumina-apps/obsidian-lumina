@@ -95,5 +95,15 @@ export function syncSettingsStore(settings: LuminaSettings): void {
 		webSearch: { ...settings.webSearch, providers: [...settings.webSearch.providers] },
 		canvas: { ...settings.canvas },
 		projects: { ...settings.projects, list: [...settings.projects.list.map(p => ({ ...p }))] },
+		...(settings.voiceNote
+			? {
+					voiceNote: {
+						...settings.voiceNote,
+						...(settings.voiceNote.customVocabulary
+							? { customVocabulary: [...settings.voiceNote.customVocabulary] }
+							: {}),
+					},
+				}
+			: {}),
 	});
 }

@@ -1324,5 +1324,132 @@
       "rolledBackBadge": "已回滚",
       "snapshotsMissing": "没有可用于回滚的快照。"
     }
+  },
+  "voiceNote": {
+    "cmdToggleRecord": "开始/停止 Voice-to-Note 录音",
+    "cmdUploadAudio": "上传音频文件生成笔记",
+    "fileMenuTitle": "将音频转换为智能笔记",
+    "settings": {
+      "heading": "AI Voice-to-Note",
+      "recordMode": {
+        "name": "录音与写入模式",
+        "desc": "选择在录音结束后由 AI 统一整理，还是在说话时实时插入到光标位置。",
+        "postProcess": "录音结束后 AI 整理（推荐）",
+        "liveInsert": "实时插入光标位置"
+      },
+      "defaultTemplate": {
+        "name": "默认模板",
+        "desc": "生成语音笔记时默认使用的输出结构。",
+        "clean": "精简整理",
+        "meeting": "会议纪要 / 课堂笔记",
+        "verbatim": "逐字听写"
+      },
+      "audioStorage": {
+        "name": "音频文件保留",
+        "desc": "将原始音频保存在库中以关联时间戳播放，或在转写后删除。",
+        "vault": "保存到库中（推荐）",
+        "discard": "转写后删除"
+      },
+      "audioFolder": {
+        "name": "音频保存文件夹",
+        "desc": "用于存放录音文件的库内文件夹路径。",
+        "placeholder": "Attachments/Voice"
+      },
+      "sttMode": {
+        "name": "语音识别 (STT) 引擎",
+        "desc": "自动模式会复用已连接的 OpenAI、Groq、Gemini 或桌面端本地 Whisper。",
+        "auto": "自动（已连接 API 或本地 Whisper）",
+        "provider": "指定已连接的服务商",
+        "localWhisper": "本地 Whisper（桌面端，免费/离线）"
+      },
+      "sttProvider": {
+        "name": "STT 服务商",
+        "desc": "用于语音识别的已连接服务商。",
+        "noneAvailable": "未连接支持 STT 的服务商"
+      },
+      "llmModel": {
+        "name": "笔记整理模型",
+        "desc": "用于校对与结构化笔记的已连接 LLM（默认自动跟随当前会话/任务模型）。",
+        "autoOption": "自动（当前会话 / 任务模型）"
+      },
+      "localWhisperModel": {
+        "name": "本地 Whisper 模型",
+        "desc": "离线运行或未配置云端 STT 密钥时使用的本地模型（仅限桌面端）。",
+        "tiny": "whisper-tiny（最快，多语言）",
+        "base": "whisper-base（均衡）",
+        "small": "whisper-small（更高准确率）"
+      },
+      "language": {
+        "name": "语音语言提示",
+        "desc": "用于提升识别准确率的 ISO 语言代码（如 zh、en、ko）或自动检测。",
+        "auto": "自动检测"
+      },
+      "autoWikiLink": {
+        "name": "自动双链 ([[...]])",
+        "desc": "在生成的笔记中自动为匹配的已有笔记标题及别名添加双向链接。"
+      },
+      "includeRawTranscript": {
+        "name": "包含原始转录折叠块",
+        "desc": "在笔记末尾附加带时间戳的原始转录文本折叠标注块。"
+      },
+      "customVocabulary": {
+        "name": "专有名词词表",
+        "desc": "以逗号或换行分隔的项目名、人名或专业术语，用于提升识别与纠错准确率。",
+        "placeholder": "Lumina, Obsidian, RAG..."
+      }
+    },
+    "recorder": {
+      "title": "Voice-to-Note",
+      "recording": "录音中",
+      "paused": "已暂停",
+      "pause": "暂停",
+      "resume": "继续",
+      "stopAndProcess": "完成",
+      "cancel": "取消",
+      "captionsToggle": "字幕",
+      "noCaptionsYet": "正在聆听语音...",
+      "mobileScreenHint": "长时间录音时请保持屏幕常亮。",
+      "recoverPrompt": "发现未完成的录音记录",
+      "recoverBtn": "恢复",
+      "discardRecoverBtn": "丢弃",
+      "closeError": "关闭"
+    },
+    "progress": {
+      "stepTranscribing": "正在转录音频 (1/3)...",
+      "stepLinking": "正在匹配库内上下文与术语 (2/3)...",
+      "stepFormatting": "正在结构化整理笔记 (3/3)...",
+      "loadingLocalModel": "正在加载本地 Whisper 模型 ({{pct}}%)...",
+      "chunkProgress": "正在转录分段 ({{current}}/{{total}})..."
+    },
+    "review": {
+      "applyBtn": "应用",
+      "reprocessLabel": "重新整理",
+      "rawOnlyBtn": "仅保留原文",
+      "undoBtn": "撤销",
+      "appliedNotice": "已应用语音笔记。",
+      "reformattedNotice": "已按所选模板重新整理笔记。",
+      "undoneNotice": "已撤销本次语音笔记插入。"
+    },
+    "templates": {
+      "clean": "精简整理",
+      "meeting": "会议纪要",
+      "verbatim": "逐字听写"
+    },
+    "output": {
+      "summaryTitle": "核心摘要",
+      "rawTranscriptTitle": "原始转录 (时间轴)"
+    },
+    "notices": {
+      "micPermissionDenied": "麦克风权限被拒绝或不可用。",
+      "noAudioRecorded": "录音中未检测到有效语音。",
+      "noSttAvailable": "没有可用的 STT 引擎。请连接 OpenAI、Groq、Gemini 或使用桌面端本地 Whisper。",
+      "noLlmAvailable": "未配置可用于整理笔记的已验证 LLM，已直接插入原始转录文本。",
+      "localWhisperMobileUnsupported": "本地 Whisper 仅支持桌面端。移动端请连接 OpenAI、Groq 或 Gemini。",
+      "fileTooLargeDecodeError": "音频文件解码分段失败。",
+      "transcribeFailed": "Voice-to-Note 处理失败: {{error}}",
+      "recoveredSuccess": "已恢复并转换未完成的录音。",
+      "createdNote": "已创建语音笔记: {{path}}",
+      "audioSaved": "已保存音频文件: {{path}}"
+    }
   }
 }

@@ -12,6 +12,7 @@ import type {
 } from '../../shared/types/settings.types';
 import type { ProjectSettings } from '../../shared/types/project.types';
 import type { SplitChatPreferences } from '../../shared/types/splitChat.types';
+import type { VoiceNotePreferences } from '../../shared/types/voice.types';
 
 // ─── Section 1: Connections & Models ────────────────────────────────────────
 
@@ -238,4 +239,6 @@ export interface LuminaSettings {
 	canvas: CanvasSettings;
 	/** 프로젝트 구분 설정 */
 	projects: ProjectSettings;
+	/** 스마트 음성 노트(Voice-to-Note) 선택 설정 (사용 전까지 미정의 유지) */
+	voiceNote?: VoiceNotePreferences;
 }

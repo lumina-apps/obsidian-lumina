@@ -1369,6 +1369,134 @@ export interface TranslationBatchStudio {
   history: TranslationBatchStudioHistory;
 }
 
+export interface TranslationVoiceNote {
+  cmdToggleRecord: string;
+  cmdUploadAudio: string;
+  fileMenuTitle: string;
+  settings: {
+    heading: string;
+    recordMode: {
+      name: string;
+      desc: string;
+      postProcess: string;
+      liveInsert: string;
+    };
+    defaultTemplate: {
+      name: string;
+      desc: string;
+      clean: string;
+      meeting: string;
+      verbatim: string;
+    };
+    audioStorage: {
+      name: string;
+      desc: string;
+      vault: string;
+      discard: string;
+    };
+    audioFolder: {
+      name: string;
+      desc: string;
+      placeholder: string;
+    };
+    sttMode: {
+      name: string;
+      desc: string;
+      auto: string;
+      provider: string;
+      localWhisper: string;
+    };
+    sttProvider: {
+      name: string;
+      desc: string;
+      noneAvailable: string;
+    };
+    llmModel: {
+      name: string;
+      desc: string;
+      autoOption: string;
+    };
+    localWhisperModel: {
+      name: string;
+      desc: string;
+      tiny: string;
+      base: string;
+      small: string;
+    };
+    language: {
+      name: string;
+      desc: string;
+      auto: string;
+    };
+    autoWikiLink: {
+      name: string;
+      desc: string;
+    };
+    includeRawTranscript: {
+      name: string;
+      desc: string;
+    };
+    customVocabulary: {
+      name: string;
+      desc: string;
+      placeholder: string;
+    };
+  };
+  recorder: {
+    title: string;
+    recording: string;
+    paused: string;
+    pause: string;
+    resume: string;
+    stopAndProcess: string;
+    cancel: string;
+    captionsToggle: string;
+    noCaptionsYet: string;
+    mobileScreenHint: string;
+    recoverPrompt: string;
+    recoverBtn: string;
+    discardRecoverBtn: string;
+    closeError: string;
+  };
+  progress: {
+    stepTranscribing: string;
+    stepLinking: string;
+    stepFormatting: string;
+    loadingLocalModel: string;
+    chunkProgress: string;
+  };
+  review: {
+    applyBtn: string;
+    reprocessLabel: string;
+    rawOnlyBtn: string;
+    undoBtn: string;
+    appliedNotice: string;
+    reformattedNotice: string;
+    undoneNotice: string;
+  };
+  templates: {
+    clean: string;
+    meeting: string;
+    verbatim: string;
+  };
+  output: {
+    summaryTitle: string;
+    rawTranscriptTitle: string;
+  };
+  notices: {
+    micPermissionDenied: string;
+    noAudioRecorded: string;
+    noSttAvailable: string;
+    noLlmAvailable: string;
+    localWhisperMobileUnsupported: string;
+    fileTooLargeDecodeError: string;
+    transcribeFailed: string;
+    recoveredSuccess: string;
+    createdNote: string;
+    audioSaved: string;
+  };
+}
+
 // 최상위 Translation 타입
 export interface Translation {
   settings: TranslationSettings;
@@ -1385,6 +1513,7 @@ export interface Translation {
   modal: TranslationModal;
   splitChat: TranslationSplitChat;
   batchStudio: TranslationBatchStudio;
+  voiceNote: TranslationVoiceNote;
 }
 
 // DeepPartial 타입

@@ -101,6 +101,17 @@ export type WorkerRequest =
 			buffer: ArrayBuffer;
 			ext: string;
 	  }
+	| {
+			type: 'whisper-init';
+			cacheDir: string;
+			modelName: string;
+	  }
+	| {
+			type: 'whisper-transcribe';
+			requestId: string;
+			audioData: Float32Array;
+			language?: string;
+	  }
 	| { type: 'terminate' };
 
 /** 워커 → 메인 스레드 */
@@ -120,6 +131,13 @@ export type WorkerResponse =
 			type: 'parseResult';
 			requestId: string;
 			text: string;
+	  }
+	| { type: 'whisper-ready' }
+	| {
+			type: 'whisper-result';
+			requestId: string;
+			text: string;
+			chunks: Array<{ timestamp: [number, number | null]; text: string }>;
 	  }
 	| {
 			type: 'error';

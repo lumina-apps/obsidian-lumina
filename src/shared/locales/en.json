@@ -1324,5 +1324,132 @@
       "rolledBackBadge": "Rolled Back",
       "snapshotsMissing": "No snapshots available to rollback."
     }
+  },
+  "voiceNote": {
+    "cmdToggleRecord": "Toggle Voice-to-Note recording",
+    "cmdUploadAudio": "Transcribe audio file to note",
+    "fileMenuTitle": "Convert audio to Smart Note",
+    "settings": {
+      "heading": "AI Voice-to-Note",
+      "recordMode": {
+        "name": "Recording Mode",
+        "desc": "Choose whether to format after recording stops or insert sentences live at cursor.",
+        "postProcess": "Format after recording (Recommended)",
+        "liveInsert": "Live insert at cursor"
+      },
+      "defaultTemplate": {
+        "name": "Default Template",
+        "desc": "Default output structure for voice notes.",
+        "clean": "Clean Note",
+        "meeting": "Meeting / Lecture",
+        "verbatim": "Verbatim Dictation"
+      },
+      "audioStorage": {
+        "name": "Audio File Retention",
+        "desc": "Keep original audio in your vault with timestamp playback, or delete after transcription.",
+        "vault": "Save in vault (Recommended)",
+        "discard": "Delete after transcription"
+      },
+      "audioFolder": {
+        "name": "Audio Folder",
+        "desc": "Vault folder where recorded audio files are saved.",
+        "placeholder": "Attachments/Voice"
+      },
+      "sttMode": {
+        "name": "Speech-to-Text Engine",
+        "desc": "Auto reuses connected OpenAI, Groq, Gemini, or desktop local Whisper.",
+        "auto": "Auto (Connected API or Local Whisper)",
+        "provider": "Specific connected provider",
+        "localWhisper": "Local Whisper (Desktop, Free/Offline)"
+      },
+      "sttProvider": {
+        "name": "STT Provider",
+        "desc": "Connected provider used for speech recognition.",
+        "noneAvailable": "No STT-capable provider connected"
+      },
+      "llmModel": {
+        "name": "Note Formatting Model",
+        "desc": "Connected LLM used to clean and structure notes (auto follows active chat/task model).",
+        "autoOption": "Auto (Active / Task Model)"
+      },
+      "localWhisperModel": {
+        "name": "Local Whisper Model",
+        "desc": "On-device model used when running offline or without a cloud STT key (desktop only).",
+        "tiny": "whisper-tiny (Fastest, Multilingual)",
+        "base": "whisper-base (Balanced)",
+        "small": "whisper-small (Higher Accuracy)"
+      },
+      "language": {
+        "name": "Spoken Language Hint",
+        "desc": "Optional ISO language code (e.g. ko, en, ja) or auto-detect.",
+        "auto": "Auto-detect"
+      },
+      "autoWikiLink": {
+        "name": "Auto Wiki-Links ([[...]])",
+        "desc": "Automatically link matching existing vault note titles and aliases in generated notes."
+      },
+      "includeRawTranscript": {
+        "name": "Include Raw Transcript Callout",
+        "desc": "Append a collapsible callout with timestamped raw transcript at the bottom."
+      },
+      "customVocabulary": {
+        "name": "Custom Vocabulary",
+        "desc": "Comma or newline-separated project names, people, or technical terms to improve accuracy.",
+        "placeholder": "Lumina, Obsidian, RAG..."
+      }
+    },
+    "recorder": {
+      "title": "Voice-to-Note",
+      "recording": "Recording",
+      "paused": "Paused",
+      "pause": "Pause",
+      "resume": "Resume",
+      "stopAndProcess": "Done",
+      "cancel": "Cancel",
+      "captionsToggle": "Captions",
+      "noCaptionsYet": "Listening for speech...",
+      "mobileScreenHint": "Keep screen awake during long recordings.",
+      "recoverPrompt": "Unfinished recording found",
+      "recoverBtn": "Recover",
+      "discardRecoverBtn": "Discard",
+      "closeError": "Close"
+    },
+    "progress": {
+      "stepTranscribing": "Transcribing audio (1/3)...",
+      "stepLinking": "Matching vault context & terms (2/3)...",
+      "stepFormatting": "Structuring note (3/3)...",
+      "loadingLocalModel": "Loading local Whisper model ({{pct}}%)...",
+      "chunkProgress": "Transcribing chunk {{current}}/{{total}}..."
+    },
+    "review": {
+      "applyBtn": "Apply",
+      "reprocessLabel": "Reformat",
+      "rawOnlyBtn": "Raw Only",
+      "undoBtn": "Discard",
+      "appliedNotice": "Voice note applied.",
+      "reformattedNotice": "Note reformatted.",
+      "undoneNotice": "Voice note insertion reverted."
+    },
+    "templates": {
+      "clean": "Clean",
+      "meeting": "Meeting",
+      "verbatim": "Verbatim"
+    },
+    "output": {
+      "summaryTitle": "Summary",
+      "rawTranscriptTitle": "Raw Transcript (Timeline)"
+    },
+    "notices": {
+      "micPermissionDenied": "Microphone permission denied or unavailable.",
+      "noAudioRecorded": "No speech detected in recording.",
+      "noSttAvailable": "No STT engine available. Connect OpenAI, Groq, Gemini, or use desktop Local Whisper.",
+      "noLlmAvailable": "No verified LLM provider connected for note formatting. Inserted raw transcript instead.",
+      "localWhisperMobileUnsupported": "Local Whisper is only supported on desktop. Please connect OpenAI, Groq, or Gemini on mobile.",
+      "fileTooLargeDecodeError": "Failed to decode audio file for splitting.",
+      "transcribeFailed": "Voice-to-Note failed: {{error}}",
+      "recoveredSuccess": "Recovered and processed unfinished recording.",
+      "createdNote": "Created voice note: {{path}}",
+      "audioSaved": "Audio saved: {{path}}"
+    }
   }
 }

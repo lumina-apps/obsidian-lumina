@@ -20,6 +20,7 @@ export class CommandManager {
 	private registeredQuickActionIds: string[] = [];
 	private isSplitCommandRegistered = false;
 	private isBatchCommandRegistered = false;
+	private isVoiceCommandRegistered = false;
 
 	constructor(plugin: LuminaPlugin) {
 		this.plugin = plugin;
@@ -234,6 +235,41 @@ export class CommandManager {
 		} else if (!isBatchEntitled && this.isBatchCommandRegistered) {
 			appWithCommands.commands?.removeCommand(`${this.plugin.manifest.id}:${batchCmdId}`);
 			this.isBatchCommandRegistered = false;
+		}
+
+		// 3. Voice-to-Note Pro 커맨드
+		const isVoiceEntitled = canUseFeature('voice-note');
+		const voiceToggleCmdId = 'toggle-voice-note-recording';
+		const voiceUploadCmdId = 'transcribe-audio-file';
+
+		if (isVoiceEntitled && !this.isVoiceCommandRegistered) {
+			this.plugin.addCommand({
+				id: voiceToggleCmdId,
+				name: t('voiceNote.cmdToggleRecord'),
+				callback: () => {
+					if (!canUseFeature('voice-note')) return;
+					debugLogger.logSystem('commands', 'Command executed: toggle-voice-note-recording');
+					void this.plugin.ensureVoiceNoteManager().then((manager) => {
+						void manager?.toggleRecording();
+					});
+				},
+			});
+			this.plugin.addCommand({
+				id: voiceUploadCmdId,
+				name: t('voiceNote.cmdUploadAudio'),
+				callback: () => {
+					if (!canUseFeature('voice-note')) return;
+					debugLogger.logSystem('commands', 'Command executed: transcribe-audio-file');
+					void this.plugin.ensureVoiceNoteManager().then((manager) => {
+						manager?.openAudioFilePicker();
+					});
+				},
+			});
+			this.isVoiceCommandRegistered = true;
+		} else if (!isVoiceEntitled && this.isVoiceCommandRegistered) {
+			appWithCommands.commands?.removeCommand(`${this.plugin.manifest.id}:${voiceToggleCmdId}`);
+			appWithCommands.commands?.removeCommand(`${this.plugin.manifest.id}:${voiceUploadCmdId}`);
+			this.isVoiceCommandRegistered = false;
 		}
 	}
 

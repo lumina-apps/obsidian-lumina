@@ -16,6 +16,8 @@ import { getVaultId } from '../../../features/rag/storage';
 import { runMigrations } from '../migrations';
 import { activateView, closeView } from '../../views/viewHelper';
 import { DEBUG_VIEW_TYPE } from '../../../shared/constants/viewTypes';
+import { canUseFeature } from '../../store/entitlementStore';
+import { renderVoiceSettingsSection } from './voice/VoiceSettingsSection';
 
 export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 	const s = tab.plugin.settings.misc;
@@ -84,6 +86,11 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 				await tab.saveAndSync();
 			});
 		});
+
+	// ── Smart Voice-to-Note (Pro 권한 활성 시에만 렌더링) ───────────────────
+	if (canUseFeature('voice-note')) {
+		renderVoiceSettingsSection(tab, el);
+	}
 
 	// ── 고급 ─────────────────────────────────────────────────────────────
 
