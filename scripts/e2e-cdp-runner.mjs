@@ -713,22 +713,36 @@ async function run() {
 			const toggleResult = await client.evaluate(`(async () => {
 				const badges = Array.from(document.querySelectorAll('.lumina-chat__context-badge'));
 				if (badges.length === 0) return { success: false, reason: 'Badge not found' };
-				const noteBadge = badges.find(b => {
-					const text = (b.textContent || '') + (b.getAttribute('aria-label') || '');
-					return text.includes('Note') || text.includes('노트');
-				}) || badges[badges.length - 1];
+				// Active Note 토글 배지는 툴바 우측 마지막 .lumina-chat__context-badge
+				const noteBadge = badges[badges.length - 1];
 
-				const initialActive = noteBadge.classList.contains('is-active');
+				const getBadgeState = (el) => ({
+					isActive: el.classList.contains('is-active'),
+					isUnavailable: el.classList.contains('is-unavailable'),
+					label: (el.textContent || '').trim(),
+					ariaLabel: el.getAttribute('aria-label') || '',
+				});
+
+				const before = getBadgeState(noteBadge);
 				noteBadge.click();
 				await new Promise(r => setTimeout(r, 100));
-				const toggledActive = noteBadge.classList.contains('is-active');
+				const after = getBadgeState(noteBadge);
 				// toggle back to original
 				noteBadge.click();
 				await new Promise(r => setTimeout(r, 100));
+
+				const stateChanged =
+					before.isActive !== after.isActive ||
+					before.isUnavailable !== after.isUnavailable ||
+					before.label !== after.label ||
+					before.ariaLabel !== after.ariaLabel;
+
 				return {
-					success: initialActive !== toggledActive,
-					initialActive,
-					toggledActive,
+					success: stateChanged,
+					initialActive: before.isActive,
+					toggledActive: after.isActive,
+					beforeLabel: before.label,
+					afterLabel: after.label,
 					hasTokenBadge: !!document.querySelector('.lumina-chat__token-stats, .lumina-chat__hint-inline')
 				};
 			})()`);
@@ -736,7 +750,7 @@ async function run() {
 			reporter.record(
 				'Active Note Context Toggle & Token Badge',
 				toggleResult.success,
-				`Toggled: ${toggleResult.initialActive} -> ${toggleResult.toggledActive}, Token badge: ${toggleResult.hasTokenBadge}`,
+				`Toggled: ${toggleResult.initialActive} (${toggleResult.beforeLabel}) -> ${toggleResult.toggledActive} (${toggleResult.afterLabel}), Token badge: ${toggleResult.hasTokenBadge}`,
 				Date.now() - tActiveNote
 			);
 		} catch (err) {

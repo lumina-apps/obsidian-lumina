@@ -296,12 +296,18 @@ export class AntigravityProvider extends BaseCliAgent {
 			// 토큰 사용량
 			if (step.usage && typeof step.usage === 'object') {
 				const u = step.usage as Record<string, number>;
+				const inputTokens =
+					(u.input_tokens || u.inputTokens || 0) +
+					(u.cache_creation_input_tokens || 0) +
+					(u.cache_read_input_tokens || 0);
+				const outputTokens = u.output_tokens || u.outputTokens || 0;
+				const totalTokens = u.total_tokens || u.totalTokens || (inputTokens + outputTokens);
 				events.push({
 					type: 'usage',
 					usage: {
-						inputTokens: u.input_tokens || u.inputTokens,
-						outputTokens: u.output_tokens || u.outputTokens,
-						totalTokens: u.total_tokens || u.totalTokens,
+						inputTokens,
+						outputTokens,
+						totalTokens,
 					},
 					raw,
 				});
@@ -400,11 +406,29 @@ export class AntigravityProvider extends BaseCliAgent {
 			}
 		}
 
-		// 3. Antigravity result / response / message 이벤트
+		// 3. Antigravity result / response / message 이벤트 (usage 동시 포함 지원)
 		if (eventType === 'result' || eventType === 'response') {
+			const events: CliEvent[] = [];
+			if (obj.usage && typeof obj.usage === 'object') {
+				const u = obj.usage as Record<string, number>;
+				const inputTokens =
+					(u.input_tokens || u.inputTokens || 0) +
+					(u.cache_creation_input_tokens || 0) +
+					(u.cache_read_input_tokens || 0);
+				const outputTokens = u.output_tokens || u.outputTokens || 0;
+				const totalTokens = u.total_tokens || u.totalTokens || (inputTokens + outputTokens);
+				events.push({
+					type: 'usage',
+					usage: { inputTokens, outputTokens, totalTokens },
+					raw,
+				});
+			}
 			const resText = extractTextFromUnknown(obj.result || obj.response || obj.data || obj.content);
 			if (resText) {
-				return { type: 'text', content: resText, raw };
+				events.push({ type: 'text', content: resText, raw });
+			}
+			if (events.length > 0) {
+				return events.length === 1 ? events[0] : events;
 			}
 		}
 
@@ -446,12 +470,18 @@ export class AntigravityProvider extends BaseCliAgent {
 		// 8. 사용량 (Usage) 이벤트
 		if (obj.usage && typeof obj.usage === 'object') {
 			const u = obj.usage as Record<string, number>;
+			const inputTokens =
+				(u.input_tokens || u.inputTokens || 0) +
+				(u.cache_creation_input_tokens || 0) +
+				(u.cache_read_input_tokens || 0);
+			const outputTokens = u.output_tokens || u.outputTokens || 0;
+			const totalTokens = u.total_tokens || u.totalTokens || (inputTokens + outputTokens);
 			return {
 				type: 'usage',
 				usage: {
-					inputTokens: u.input_tokens || u.inputTokens,
-					outputTokens: u.output_tokens || u.outputTokens,
-					totalTokens: u.total_tokens || u.totalTokens,
+					inputTokens,
+					outputTokens,
+					totalTokens,
 				},
 				raw,
 			};

@@ -7,7 +7,7 @@ import {
 	setEntitlementState,
 } from '../store/entitlementStore';
 import * as viewHelper from '../views/viewHelper';
-import { SPLIT_CHAT_VIEW_TYPE } from '../../shared/constants/viewTypes';
+import { BATCH_STUDIO_VIEW_TYPE, SPLIT_CHAT_VIEW_TYPE } from '../../shared/constants/viewTypes';
 
 function createMockPluginForCommands() {
 	const registeredCommands: Array<{ id: string; name: string; callback?: () => void }> = [];
@@ -70,5 +70,30 @@ describe('CommandManager Pro Split 동적 커맨드 게이트', () => {
 		resetEntitlementState();
 		cm.syncProCommands();
 		expect(removeCommand).toHaveBeenCalledWith('obsidian-lumina:open-split-chat');
+	});
+
+	it('Pro Batch Studio 활성화 시 open-batch-studio를 동적 등록하고 비활성화 시 제거한다', () => {
+		const { plugin, registeredCommands, removeCommand } = createMockPluginForCommands();
+		const activateSpy = vi.spyOn(viewHelper, 'activateMainView').mockResolvedValue(undefined);
+
+		const cm = new CommandManager(plugin);
+		cm.registerCommands();
+		expect(registeredCommands.some((c) => c.id === 'open-batch-studio')).toBe(false);
+
+		setEntitlementState({
+			tier: 'pro',
+			status: 'active',
+			enabledFeatures: new Set(['batch-studio']),
+		});
+		cm.syncProCommands();
+
+		const batchCmd = registeredCommands.find((c) => c.id === 'open-batch-studio');
+		expect(batchCmd).toBeDefined();
+		batchCmd?.callback?.();
+		expect(activateSpy).toHaveBeenCalledWith(plugin.app.workspace, BATCH_STUDIO_VIEW_TYPE);
+
+		resetEntitlementState();
+		cm.syncProCommands();
+		expect(removeCommand).toHaveBeenCalledWith('obsidian-lumina:open-batch-studio');
 	});
 });

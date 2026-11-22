@@ -97,6 +97,21 @@ describe('promptBuilder', () => {
 		expect(messages[1].content).toBe('Short ans');
 	});
 
+	it('should exclude <think> blocks when calculating token budget in tokens memoryMethod', () => {
+		mockChatSettings.memoryMethod = 'tokens';
+		mockChatSettings.maxContextTokens = 20;
+
+		const hugeThink = '<think>' + 'reasoning '.repeat(100) + '</think>\n';
+		mockHistory = [
+			{ id: 'm1', role: 'user', content: 'Question 1', isStreaming: false, timestamp: 1 },
+			{ id: 'm2', role: 'assistant', content: `${hugeThink}Short answer`, isStreaming: false, timestamp: 2 },
+		];
+
+		const messages = buildMessages(mockHistory, 'Follow up', { chat: mockChatSettings, providerType: 'openai' });
+		expect(messages.some(m => m.role === 'assistant' && m.content === 'Short answer')).toBe(true);
+		expect(messages.some(m => m.role === 'user' && m.content === 'Question 1')).toBe(true);
+	});
+
 	it('should inject RAG context', () => {
 		const ragContext = 'This is a rag context chunk.';
 		const messages = buildMessages(mockHistory, 'What does the context say?', {

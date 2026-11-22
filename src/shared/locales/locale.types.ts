@@ -1145,6 +1145,7 @@ export interface TranslationModal {
 
 export interface TranslationSplitChat {
   title: string;
+  proBadge: string;
   commandTitle: string;
   openTooltip: string;
   newComparison: string;
@@ -1219,6 +1220,154 @@ export interface TranslationSplitChat {
   exportReportResult: string;
 }
 
+export interface TranslationBatchStudioRecipes {
+  frontmatter: string;
+  frontmatterDesc: string;
+  autolink: string;
+  autolinkDesc: string;
+  summaryCallout: string;
+  summaryCalloutDesc: string;
+  customPrompt: string;
+  customPromptDesc: string;
+}
+
+export interface TranslationBatchStudioTarget {
+  sectionTitle: string;
+  scopeVault: string;
+  scopeFolder: string;
+  folderPlaceholder: string;
+  tagFilterPlaceholder: string;
+  skipExistingFm: string;
+  skipExistingCallout: string;
+  minCharsLabel: string;
+  matchedSummary: string;
+  collapsedSummary: string;
+  expandConfig: string;
+  collapseConfig: string;
+}
+
+export interface TranslationBatchStudioOptions {
+  sectionTitle: string;
+  modelLabel: string;
+  modelAutoTask: string;
+  noModelConfigured: string;
+  localOnlyAutolinkNotice: string;
+  generateTagsLabel: string;
+  generateDescriptionLabel: string;
+  fmMergeModeLabel: string;
+  fmModeEmptyOnly: string;
+  fmModeMerge: string;
+  fmModeOverwrite: string;
+  calloutTitleLabel: string;
+  calloutTitlePlaceholder: string;
+  customPromptPlaceholder: string;
+  outputModeLabel: string;
+  outputFmKey: string;
+  outputPrepend: string;
+  outputAppend: string;
+  outputReplace: string;
+  fmKeyPlaceholder: string;
+  insertVarHint: string;
+}
+
+export interface TranslationBatchStudioSample {
+  sectionTitle: string;
+  selectNote: string;
+  runSampleBtn: string;
+  runningSample: string;
+  noTargetNotes: string;
+  sampleResultTitle: string;
+  sampleNoChanges: string;
+  sampleError: string;
+}
+
+export interface TranslationBatchStudioExecution {
+  estimateSummary: string;
+  estimateLocalOnly: string;
+  snapshotNotice: string;
+  startBtn: string;
+  pauseBtn: string;
+  resumeBtn: string;
+  cancelBtn: string;
+  retryFailedBtn: string;
+  statusIdle: string;
+  statusRunning: string;
+  statusPaused: string;
+  statusCompleted: string;
+  progressSummary: string;
+  rateLimitWaiting: string;
+}
+
+export interface TranslationBatchStudioQueue {
+  title: string;
+  tabAll: string;
+  tabStaged: string;
+  tabApplied: string;
+  tabSkipped: string;
+  tabFailed: string;
+  selectAll: string;
+  deselectAll: string;
+  emptyQueue: string;
+  statusQueued: string;
+  statusRunning: string;
+  statusStaged: string;
+  statusApplied: string;
+  statusRejected: string;
+  statusSkipped: string;
+  statusFailed: string;
+}
+
+export interface TranslationBatchStudioInspector {
+  title: string;
+  emptySelection: string;
+  openNoteBtn: string;
+  beforeLabel: string;
+  afterLabel: string;
+  noChanges: string;
+  tagsLabel: string;
+  descriptionLabel: string;
+  customKeyLabel: string;
+  addTagPlaceholder: string;
+  addTagBtn: string;
+  removeTagAria: string;
+  rejectBtn: string;
+  acceptSingleBtn: string;
+  acceptAllSelectedBtn: string;
+  appliedBadge: string;
+  rejectedBadge: string;
+  skippedBadge: string;
+  errorTitle: string;
+  applySuccessSingle: string;
+  applySuccessBatch: string;
+}
+
+export interface TranslationBatchStudioHistory {
+  tabTitle: string;
+  emptyHistory: string;
+  batchSummary: string;
+  rollbackBtn: string;
+  rollbackConfirm: string;
+  rollbackDone: string;
+  rolledBackBadge: string;
+  snapshotsMissing: string;
+}
+
+export interface TranslationBatchStudio {
+  title: string;
+  commandTitle: string;
+  folderMenuTitle: string;
+  proBadge: string;
+  workspaceTab: string;
+  recipes: TranslationBatchStudioRecipes;
+  target: TranslationBatchStudioTarget;
+  options: TranslationBatchStudioOptions;
+  sample: TranslationBatchStudioSample;
+  execution: TranslationBatchStudioExecution;
+  queue: TranslationBatchStudioQueue;
+  inspector: TranslationBatchStudioInspector;
+  history: TranslationBatchStudioHistory;
+}
+
 // 최상위 Translation 타입
 export interface Translation {
   settings: TranslationSettings;
@@ -1234,6 +1383,7 @@ export interface Translation {
   projects: TranslationProjects;
   modal: TranslationModal;
   splitChat: TranslationSplitChat;
+  batchStudio: TranslationBatchStudio;
 }
 
 // DeepPartial 타입

@@ -77,7 +77,7 @@ export function initEntitlementStore(): void {
 		setEntitlementState({
 			tier: 'pro',
 			status: 'active',
-			enabledFeatures: new Set<ProFeatureId>(['split-chat']),
+			enabledFeatures: new Set<ProFeatureId>(['split-chat', 'batch-studio']),
 			expiresAt: null,
 			verifiedAt: Date.now(),
 		});

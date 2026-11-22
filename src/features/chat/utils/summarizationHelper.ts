@@ -315,7 +315,10 @@ export async function summarizeConversation(
 	}
 
 	// 압축 통계 (배너/Notice 표시용)
-	const tokensSaved = targetMessagesToSummarize.reduce((acc, m) => acc + estimateTokens(m.content), 0);
+	const tokensSaved = targetMessagesToSummarize.reduce(
+		(acc, m) => acc + estimateTokens(m.content, providerConfig.type),
+		0,
+	);
 
 	// 스토어에서 요약 대상 메시지를 요약 메시지 하나로 치환 (전 모드에서 실제 공간 확보)
 	const targetIds = new Set(targetMessagesToSummarize.map(m => m.id));

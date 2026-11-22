@@ -5,6 +5,7 @@ import { isMarkdownFile } from '../../shared/utils/fileUtils';
 import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
 import { stripThinkTags } from '../../shared/utils/llmTextSanitizer';
+import { sanitizeGeneratedFrontmatterData } from '../../shared/utils/frontmatterSanitizer';
 import { createProvider } from '../../core/llm-providers';
 import { StripFrontmatterModal } from './stripFrontmatterModal';
 import type LuminaPlugin from '../../main';
@@ -18,67 +19,7 @@ interface LuminaFrontmatter {
 	description?: string;
 }
 
-const PLACEHOLDER_TAG_PATTERNS: readonly RegExp[] = [
-	/^tag\d*$/i,
-	/^example\d*$/i,
-	/^placeholder\d*$/i,
-	/^sample\d*$/i,
-	/^keyword\d*$/i,
-	/^topic\d*$/i,
-	/^태그\d*$/,
-	/^예시\d*$/,
-	/^키워드\d*$/,
-	/^<.*>$/,
-];
-
-const PLACEHOLDER_DESCRIPTIONS = new Set<string>([
-	"one-sentence summary of the document's core content",
-	'one-sentence summary of the document',
-	'summary of the document',
-]);
-
-/** LLM이 생성한 프론트매터 데이터에서 플레이스홀더·중복·선행 # 기호 등을 정제 */
-export function sanitizeGeneratedFrontmatterData(
-	raw: unknown,
-): { tags: string[]; description: string } | null {
-	if (typeof raw !== 'object' || raw === null) {
-		return null;
-	}
-	const record = raw as Record<string, unknown>;
-	const rawTags = Array.isArray(record.tags) ? record.tags : [];
-	const rawDesc = typeof record.description === 'string' ? record.description.trim() : '';
-
-	const cleanedTags: string[] = [];
-	const seenLower = new Set<string>();
-
-	for (const item of rawTags) {
-		if (typeof item !== 'string') continue;
-		const cleaned = item.trim().replace(/^#+/, '').trim();
-		if (!cleaned) continue;
-		if (PLACEHOLDER_TAG_PATTERNS.some(pattern => pattern.test(cleaned))) continue;
-
-		const lower = cleaned.toLowerCase();
-		if (seenLower.has(lower)) continue;
-		seenLower.add(lower);
-		cleanedTags.push(cleaned);
-		if (cleanedTags.length >= 3) break;
-	}
-
-	const isPlaceholderDesc =
-		!rawDesc ||
-		/^<.*>$/.test(rawDesc) ||
-		PLACEHOLDER_DESCRIPTIONS.has(rawDesc.toLowerCase());
-	const description = isPlaceholderDesc ? '' : rawDesc;
-
-	if (cleanedTags.length === 0 && !description) {
-		return null;
-	}
-
-	return {
-		tags: cleanedTags,
-		description,
-	};
-}
+export { sanitizeGeneratedFrontmatterData };
 
 /** 두 값이 깊은 동등인지 비교 (프론트매터의 원시값/배열/객체 비교용) */
 function deepEqual(a: unknown, b: unknown): boolean {

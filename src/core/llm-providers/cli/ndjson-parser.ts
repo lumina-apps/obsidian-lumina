@@ -1,4 +1,5 @@
 import type { CliEvent } from '../../../shared/types/cliAgent.types';
+import type { TokenUsage } from '../../../shared/types/llm.types';
 
 /**
  * ANSI Escape 코드를 안전하게 제거합니다.
@@ -452,4 +453,27 @@ export function inferFileEditEventsFromToolCall(
 	}
 
 	return [];
+}
+
+/**
+ * CLI 에이전트가 스트림 도중 여러 차례 usage 이벤트(예: message_start, message_delta, result)를 방출할 때
+ * 부분 필드가 직전 값을 0으로 덮어쓰지 않도록 안전하게 병합합니다.
+ */
+export function mergeCliTokenUsage(
+	prev: TokenUsage | undefined,
+	incoming: Partial<TokenUsage>,
+): TokenUsage {
+	const incomingIn = incoming.inputTokens ?? 0;
+	const incomingOut = incoming.outputTokens ?? 0;
+	const inputTokens = incomingIn > 0 ? incomingIn : (prev?.inputTokens ?? 0);
+	const outputTokens = incomingOut > 0 ? incomingOut : (prev?.outputTokens ?? 0);
+	const rawTotal = incoming.totalTokens ?? 0;
+	const computedTotal = inputTokens + outputTokens;
+	const totalTokens = rawTotal >= computedTotal && rawTotal > 0 ? rawTotal : computedTotal;
+
+	return {
+		inputTokens,
+		outputTokens,
+		totalTokens,
+	};
 }

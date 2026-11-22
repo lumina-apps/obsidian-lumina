@@ -27,6 +27,9 @@ export interface GeminiStreamChunk {
 	usageMetadata?: {
 		promptTokenCount?: number;
 		candidatesTokenCount?: number;
+		thoughtsTokenCount?: number;
+		toolUsePromptTokenCount?: number;
+		cachedContentTokenCount?: number;
 		totalTokenCount?: number;
 	};
 }
@@ -48,6 +51,9 @@ export interface GeminiResponse {
 	usageMetadata?: {
 		promptTokenCount?: number;
 		candidatesTokenCount?: number;
+		thoughtsTokenCount?: number;
+		toolUsePromptTokenCount?: number;
+		cachedContentTokenCount?: number;
 		totalTokenCount?: number;
 	};
 }
@@ -64,11 +70,14 @@ export const GOOGLE_MODELS = [
 	'text-embedding-004',
 ];
 
-/** Gemini usageMetadata → TokenUsage 매핑 */
+/** Gemini usageMetadata → TokenUsage 매핑 (thoughtsTokenCount 및 toolUsePromptTokenCount 포함) */
 export function mapUsageMetadata(meta: GeminiStreamChunk['usageMetadata']): TokenUsage {
+	const inputTokens = (meta?.promptTokenCount ?? 0) + (meta?.toolUsePromptTokenCount ?? 0);
+	const outputTokens = (meta?.candidatesTokenCount ?? 0) + (meta?.thoughtsTokenCount ?? 0);
+	const totalTokens = meta?.totalTokenCount ?? (inputTokens + outputTokens);
 	return {
-		inputTokens: meta?.promptTokenCount ?? 0,
-		outputTokens: meta?.candidatesTokenCount ?? 0,
-		totalTokens: meta?.totalTokenCount ?? 0,
+		inputTokens,
+		outputTokens,
+		totalTokens,
 	};
 }

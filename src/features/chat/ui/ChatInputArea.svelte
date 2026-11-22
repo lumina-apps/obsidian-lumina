@@ -167,13 +167,18 @@
 	});
 
 	// ── 실시간 입력 예상 토큰 계산 ────────────────────────────────────────────
+	const selectedProviderType = $derived(
+		providers.find((p: LLMProviderConfig) => p.id === selectedProviderId)?.type,
+	);
+
 	const tokenEstimation = $derived.by(() => {
 		return estimateInputTokensDetails({
 			inputText,
 			attachments,
-			includeActiveNote,
+			includeActiveNote: includeActiveNote && activeNoteStatus.status === "ready",
 			activeFileInfo,
 			systemPrompt: activeSystemPrompt?.content,
+			providerType: selectedProviderType,
 			getFileSize: (path) => {
 				const file = plugin.app.vault.getAbstractFileByPath(path);
 				return file && "stat" in file && typeof file.stat.size === "number"
@@ -181,7 +186,13 @@
 					: undefined;
 			},
 			getFolderSize: (path, maxBytes) => {
-				return calculateFolderSize(plugin.app, path, maxBytes);
+				return calculateFolderSize(
+					plugin.app,
+					path,
+					maxBytes,
+					15,
+					$activeProject?.ragExcludedPaths,
+				);
 			},
 		});
 	});

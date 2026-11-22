@@ -133,8 +133,8 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 		const estimatedInputTokens = debugLogger.isEnabled
 			? messagesForLLM.reduce((acc, m) => {
 					const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
-					return acc + estimateTokens(c);
-				}, 0)
+					return acc + estimateTokens(c, opts.providerType);
+				}, 0) + (!useTextTools && chatOptions.tools?.length ? estimateTokens(JSON.stringify(chatOptions.tools), opts.providerType) : 0)
 			: undefined;
 
 		const requestId = debugLogger.logRequest({
@@ -208,6 +208,11 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 			...(rawResponse.finishReason ? { stopReason: rawResponse.finishReason } : {}),
 		});
 
+		// ── token usage 누적 (한도 도달 조기 반환 전에도 해당 라운드 사용량 보존) ──
+		if (rawResponse.usage) {
+			tokenUsage = accumulateTokenUsage(tokenUsage, rawResponse.usage);
+		}
+
 		// ── 토큰 한도 체크 ────────────────────────────────────────────────────
 		if (isTokenLimitReached(rawResponse.finishReason)) {
 			hasTokenLimitBeenHit = true;
@@ -231,11 +236,6 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 			if (textToAdd) {
 				accumulatedText = accumulatedText ? accumulatedText + '\n\n' + textToAdd : textToAdd;
 			}
-		}
-
-		// ── token usage 누적 ──────────────────────────────────────────────────
-		if (rawResponse.usage) {
-			tokenUsage = accumulateTokenUsage(tokenUsage, rawResponse.usage);
 		}
 
 		// ── tool call이 없으면 종료 ───────────────────────────────────────────

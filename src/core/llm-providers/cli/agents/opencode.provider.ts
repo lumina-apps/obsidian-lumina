@@ -299,17 +299,13 @@ export class OpenCodeProvider extends BaseCliAgent {
 			eventType === 'summary' ||
 			partType === 'step-finish'
 		) {
-			const resText = extractTextFromUnknown(obj.response || obj.result || obj.data);
-			if (resText) {
-				return { type: 'text', content: resText, raw };
-			}
-
+			const events: CliEvent[] = [];
 			const tokens = (part?.tokens || obj.usage || obj.tokenUsage) as Record<string, unknown> | undefined;
 			if (tokens && typeof tokens === 'object') {
 				const inputTokens = Number(tokens.input || tokens.inputTokens || tokens.input_tokens || 0);
 				const outputTokens = Number(tokens.output || tokens.outputTokens || tokens.output_tokens || 0);
 				const totalTokens = Number(tokens.total || tokens.totalTokens || tokens.total_tokens || (inputTokens + outputTokens));
-				return {
+				events.push({
 					type: 'usage',
 					usage: {
 						inputTokens,
@@ -317,7 +313,16 @@ export class OpenCodeProvider extends BaseCliAgent {
 						totalTokens,
 					},
 					raw,
-				};
+				});
+			}
+
+			const resText = extractTextFromUnknown(obj.response || obj.result || obj.data);
+			if (resText) {
+				events.push({ type: 'text', content: resText, raw });
+			}
+
+			if (events.length > 0) {
+				return events.length === 1 ? events[0] : events;
 			}
 		}
 

@@ -61,6 +61,8 @@ export interface PromptBuilderOptions {
 	activeFilePath?: string;
 	/** 치환될 활성 파일 제목 (basename) */
 	activeFileTitle?: string;
+	/** 프로바이더별 토큰 추정 가중치 적용용 타입 */
+	providerType?: string;
 }
 
 /**
@@ -74,7 +76,7 @@ export function buildMessages(
 	userText: string,
 	opts: PromptBuilderOptions,
 ): ChatMessage[] {
-	const { chat, attachmentContext, ragContext, sessionSummary, summaryUpToMessageId } = opts;
+	const { chat, attachmentContext, ragContext, sessionSummary, summaryUpToMessageId, providerType } = opts;
 
 	// ── 1. 시스템 프롬프트 구성 ───────────────────────────────────────────────
 	const project = getActiveProject();
@@ -161,15 +163,18 @@ export function buildMessages(
 			}
 		}
 	} else if (chat.memoryMethod === 'tokens') {
-		// 토큰 기반: 뒤에서부터 토큰 합산 (정규식 기반 가중치 추정)
+		// 토큰 기반: 뒤에서부터 토큰 합산 (실제 전송 시 제거되는 assistant <think> 블록 제외)
 		let tokenCount = 0;
 		const maxTokens = chat.maxContextTokens;
 		const collected: UIChatMessage[] = [];
 		for (let i = turns.length - 1; i >= 0; i--) {
-			const estimated = estimateTokens(turns[i].content);
+			const turn = turns[i];
+			const effectiveContent = turn.role === 'assistant' ? stripThinkTags(turn.content) : turn.content;
+			if (turn.role === 'assistant' && !effectiveContent.trim()) continue;
+			const estimated = estimateTokens(effectiveContent, providerType);
 			if (tokenCount + estimated > maxTokens) break;
 			tokenCount += estimated;
-			collected.unshift(turns[i]);
+			collected.unshift(turn);
 		}
 		trimmedTurns = collected;
 	} else {

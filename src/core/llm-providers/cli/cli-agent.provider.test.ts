@@ -8,7 +8,7 @@ import { ProcessManager } from './process-manager';
 import type { LLMProviderConfig } from '../../../shared/types/settings.types';
 import type { ChatMessage } from '../../../shared/types/llm.types';
 import type { CliExecuteOptions } from '../../../shared/types/cliAgent.types';
-import { stripAnsiCodes } from './ndjson-parser';
+import { stripAnsiCodes, mergeCliTokenUsage } from './ndjson-parser';
 import { toVaultRelativePath } from '../../../shared/utils/fileUtils';
 import type LuminaPlugin from '../../../main';
 
@@ -775,20 +775,27 @@ claude-3-5-haiku
 				expect(res.content).toBe('Claude is thinking...');
 			});
 
-			it('Claude Code result 이벤트에서 usage와 result를 모두 보존한다', () => {
+			it('Claude Code result 이벤트에서 캐시 토큰을 포함해 usage와 result를 모두 보존한다', () => {
 				const sample = {
 					type: 'result',
 					subtype: 'success',
 					result: 'Final result',
 					usage: {
 						input_tokens: 50,
+						cache_creation_input_tokens: 100,
+						cache_read_input_tokens: 400,
 						output_tokens: 25,
 					},
 				};
-				const res = map(sample) as Array<{ type: string }>;
+				const res = map(sample) as Array<{ type: string; usage?: { inputTokens: number; outputTokens: number; totalTokens: number } }>;
 				expect(Array.isArray(res)).toBe(true);
 				expect(res).toHaveLength(2);
 				expect(res[0].type).toBe('usage');
+				expect(res[0].usage).toEqual({
+					inputTokens: 550,
+					outputTokens: 25,
+					totalTokens: 575,
+				});
 				expect(res[1].type).toBe('text');
 			});
 
@@ -1266,6 +1273,18 @@ claude-3-5-haiku
 
 		it('빈 문자열을 안전하게 처리한다', () => {
 			expect(toVaultRelativePath(mockPlugin, '')).toBe('');
+		});
+	});
+
+	describe('mergeCliTokenUsage - 부분 usage 이벤트 안전 병합', () => {
+		it('message_start 이후 outputTokens만 온 message_delta가 직전 inputTokens를 0으로 덮어쓰지 않는다', () => {
+			const afterStart = mergeCliTokenUsage(undefined, { inputTokens: 1200, outputTokens: 0, totalTokens: 1200 });
+			const afterDelta = mergeCliTokenUsage(afterStart, { inputTokens: 0, outputTokens: 80, totalTokens: 80 });
+			expect(afterDelta).toEqual({
+				inputTokens: 1200,
+				outputTokens: 80,
+				totalTokens: 1280,
+			});
 		});
 	});
 

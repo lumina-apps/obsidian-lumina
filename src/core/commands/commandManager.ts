@@ -3,7 +3,7 @@ import type { MarkdownFileInfo } from 'obsidian';
 import type LuminaPlugin from '../../main';
 import { t } from '../../shared/locales/helpers';
 import { activateView, activateMainView } from '../views/viewHelper';
-import { CHAT_VIEW_TYPE, DEBUG_VIEW_TYPE, GRAPH_VIEW_TYPE, SPLIT_CHAT_VIEW_TYPE } from '../../shared/constants/viewTypes';
+import { CHAT_VIEW_TYPE, DEBUG_VIEW_TYPE, GRAPH_VIEW_TYPE, SPLIT_CHAT_VIEW_TYPE, BATCH_STUDIO_VIEW_TYPE } from '../../shared/constants/viewTypes';
 import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
 import { activeSidebarTab } from '../store/chatStore';
@@ -19,6 +19,7 @@ export class CommandManager {
 	private plugin: LuminaPlugin;
 	private registeredQuickActionIds: string[] = [];
 	private isSplitCommandRegistered = false;
+	private isBatchCommandRegistered = false;
 
 	constructor(plugin: LuminaPlugin) {
 		this.plugin = plugin;
@@ -189,16 +190,19 @@ export class CommandManager {
 	}
 
 	/**
-	 * Pro 권한 상태에 따라 Split / Arena 커맨드를 동적으로 등록하거나 제거합니다.
+	 * Pro 권한 상태에 따라 Split / Batch Studio 커맨드를 동적으로 등록하거나 제거합니다.
 	 * 미인증 상태에서는 Obsidian 단축키 목록에도 노출되지 않도록 완전히 제거합니다.
 	 */
 	syncProCommands(): void {
-		const isEntitled = canUseFeature('split-chat');
-		const cmdId = 'open-split-chat';
+		const appWithCommands = this.plugin.app as unknown as ObsidianAppWithCommands;
 
-		if (isEntitled && !this.isSplitCommandRegistered) {
+		// 1. Split Chat Pro 커맨드
+		const isSplitEntitled = canUseFeature('split-chat');
+		const splitCmdId = 'open-split-chat';
+
+		if (isSplitEntitled && !this.isSplitCommandRegistered) {
 			this.plugin.addCommand({
-				id: cmdId,
+				id: splitCmdId,
 				name: t('splitChat.commandTitle'),
 				callback: () => {
 					if (!canUseFeature('split-chat')) return;
@@ -207,10 +211,29 @@ export class CommandManager {
 				},
 			});
 			this.isSplitCommandRegistered = true;
-		} else if (!isEntitled && this.isSplitCommandRegistered) {
-			const appWithCommands = this.plugin.app as unknown as ObsidianAppWithCommands;
-			appWithCommands.commands?.removeCommand(`${this.plugin.manifest.id}:${cmdId}`);
+		} else if (!isSplitEntitled && this.isSplitCommandRegistered) {
+			appWithCommands.commands?.removeCommand(`${this.plugin.manifest.id}:${splitCmdId}`);
 			this.isSplitCommandRegistered = false;
+		}
+
+		// 2. Batch Studio Pro 커맨드
+		const isBatchEntitled = canUseFeature('batch-studio');
+		const batchCmdId = 'open-batch-studio';
+
+		if (isBatchEntitled && !this.isBatchCommandRegistered) {
+			this.plugin.addCommand({
+				id: batchCmdId,
+				name: t('batchStudio.commandTitle'),
+				callback: () => {
+					if (!canUseFeature('batch-studio')) return;
+					debugLogger.logSystem('commands', 'Command executed: open-batch-studio');
+					void activateMainView(this.plugin.app.workspace, BATCH_STUDIO_VIEW_TYPE);
+				},
+			});
+			this.isBatchCommandRegistered = true;
+		} else if (!isBatchEntitled && this.isBatchCommandRegistered) {
+			appWithCommands.commands?.removeCommand(`${this.plugin.manifest.id}:${batchCmdId}`);
+			this.isBatchCommandRegistered = false;
 		}
 	}
 

@@ -4,6 +4,9 @@ import { ChatView, CHAT_VIEW_TYPE } from './features/chat/chatView';
 import { DebugView, DEBUG_VIEW_TYPE } from './features/debug/debugView';
 import { GraphView, GRAPH_VIEW_TYPE } from './features/graph/graphView';
 import { SplitChatView, SPLIT_CHAT_VIEW_TYPE } from './features/chat/split/splitChatView';
+import { BatchStudioView, BATCH_STUDIO_VIEW_TYPE } from './features/batch/batchStudioView';
+import { abortActiveBatchRun } from './features/batch/batchController';
+import { resetBatchStore } from './core/store/batchStore';
 import type { LuminaSettings } from './core/settings/settings.types';
 import { EmbeddingWorkerBridge } from './features/rag/workerBridge';
 import { VaultIndexer } from './features/rag/indexer';
@@ -102,6 +105,7 @@ export default class LuminaPlugin extends Plugin {
 	/** 플러그인 언로드 여부 — 비동기 초기화 중 언로드되면 MCP 생성을 건너뛰기 위한 플래그 */
 	private _unloaded = false;
 	private hasRegisteredSplitView = false;
+	private hasRegisteredBatchView = false;
 	private unsubSplitEntitlement: (() => void) | null = null;
 
 	/** 플러그인이 언로드 과정에 있는지 반환 */
@@ -147,6 +151,9 @@ export default class LuminaPlugin extends Plugin {
 		this.registerView(GRAPH_VIEW_TYPE, (leaf) => new GraphView(leaf, this));
 		if (canUseFeature('split-chat')) {
 			this.ensureSplitViewRegistered();
+		}
+		if (canUseFeature('batch-studio')) {
+			this.ensureBatchViewRegistered();
 		}
 
 		// ── 리본 아이콘 ────────────────────────────────────────────────
@@ -285,6 +292,8 @@ export default class LuminaPlugin extends Plugin {
 		this._unloaded = true;
 		this.unsubSplitEntitlement?.();
 		this.unsubSplitEntitlement = null;
+		abortActiveBatchRun();
+		resetBatchStore();
 		resetEntitlementState();
 		if (this.ribbonEl) {
 			this.removeRibbonButton(this.ribbonEl);
@@ -334,22 +343,37 @@ export default class LuminaPlugin extends Plugin {
 		this.hasRegisteredSplitView = true;
 	}
 
+	/** Pro 권한 활성 시 BatchStudioView를 1회 지연 등록 */
+	private ensureBatchViewRegistered(): void {
+		if (this.hasRegisteredBatchView) return;
+		this.registerView(BATCH_STUDIO_VIEW_TYPE, (leaf) => new BatchStudioView(leaf, this));
+		this.hasRegisteredBatchView = true;
+	}
+
 	/** 런타임 권한 변경 시 View·커맨드 등록/해제 동기화 */
 	private syncSplitEntitlement(): void {
 		if (canUseFeature('split-chat')) {
 			this.ensureSplitViewRegistered();
-			this.commandManager.syncProCommands();
 		} else {
-			this.commandManager.syncProCommands();
 			closeView(this.app.workspace, SPLIT_CHAT_VIEW_TYPE);
 		}
+
+		if (canUseFeature('batch-studio')) {
+			this.ensureBatchViewRegistered();
+		} else {
+			abortActiveBatchRun();
+			resetBatchStore();
+			closeView(this.app.workspace, BATCH_STUDIO_VIEW_TYPE);
+		}
+
+		this.commandManager.syncProCommands();
 	}
 
 	// ─── Locales ────────────────────────────────────────────────────────
 
 	refreshLocales(): void {
 		this.updateRibbonIcon();
-		for (const type of [CHAT_VIEW_TYPE, GRAPH_VIEW_TYPE, DEBUG_VIEW_TYPE, SPLIT_CHAT_VIEW_TYPE]) {
+		for (const type of [CHAT_VIEW_TYPE, GRAPH_VIEW_TYPE, DEBUG_VIEW_TYPE, SPLIT_CHAT_VIEW_TYPE, BATCH_STUDIO_VIEW_TYPE]) {
 			const leaves = this.app.workspace.getLeavesOfType(type);
 			leaves.forEach((leaf) => {
 				const view = leaf.view;

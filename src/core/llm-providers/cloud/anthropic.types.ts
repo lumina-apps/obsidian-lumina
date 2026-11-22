@@ -15,13 +15,17 @@ export interface AnthropicBlock {
 
 // ─── Streaming Chunk ────────────────────────────────────────────────────────
 
+export interface AnthropicUsagePayload {
+	input_tokens?: number;
+	output_tokens?: number;
+	cache_creation_input_tokens?: number;
+	cache_read_input_tokens?: number;
+}
+
 export interface AnthropicStreamChunk {
 	type: string;
 	message?: {
-		usage?: {
-			input_tokens?: number;
-			output_tokens?: number;
-		};
+		usage?: AnthropicUsagePayload;
 	};
 	index?: number;
 	content_block?: {
@@ -37,9 +41,7 @@ export interface AnthropicStreamChunk {
 		partial_json?: string;
 		stop_reason?: string | null;
 	};
-	usage?: {
-		output_tokens?: number;
-	};
+	usage?: AnthropicUsagePayload;
 	error?: {
 		type?: string;
 		message?: string;
@@ -56,10 +58,7 @@ export interface AnthropicResponse {
 		name?: string;
 		input?: Record<string, unknown>;
 	}>;
-	usage?: {
-		input_tokens?: number;
-		output_tokens?: number;
-	};
+	usage?: AnthropicUsagePayload;
 	stop_reason?: string | null;
 }
 

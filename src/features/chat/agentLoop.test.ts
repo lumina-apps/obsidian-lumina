@@ -170,11 +170,12 @@ describe('agentLoop', () => {
 			expect(result.fullResponse).toBeDefined();
 		});
 
-		it('토큰 한도 도달 시 hasTokenLimitBeenHit 플래그를 true로 반환한다', async () => {
+		it('토큰 한도 도달 시 hasTokenLimitBeenHit 플래그를 true로 반환하고 해당 라운드 usage를 보존한다', async () => {
 			const mockProvider: ILLMProvider = {
 				chat: vi.fn().mockResolvedValue({
 					content: 'Cut off answer...',
 					toolCalls: [],
+					usage: { inputTokens: 120, outputTokens: 100, totalTokens: 220 },
 					finishReason: 'max_tokens',
 				}),
 			} as any;
@@ -192,6 +193,7 @@ describe('agentLoop', () => {
 
 			expect(result.hasTokenLimitBeenHit).toBe(true);
 			expect(result.fullResponse).toContain('Cut off answer...');
+			expect(result.tokenUsage).toEqual({ inputTokens: 120, outputTokens: 100, totalTokens: 220 });
 		});
 	});
 });

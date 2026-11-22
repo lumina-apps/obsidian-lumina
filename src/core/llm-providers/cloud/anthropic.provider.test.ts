@@ -234,6 +234,82 @@ describe('AnthropicProvider', () => {
 			const parsedBody = JSON.parse(callArg.body) as Record<string, unknown>;
 			expect(parsedBody.temperature).toBeUndefined();
 		});
+
+		it('should include cache_creation_input_tokens and cache_read_input_tokens in inputTokens', async () => {
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					content: [{ type: 'text', text: 'Cached response' }],
+					stop_reason: 'end_turn',
+					usage: {
+						input_tokens: 12,
+						cache_creation_input_tokens: 100,
+						cache_read_input_tokens: 2000,
+						output_tokens: 45,
+					},
+				},
+			} as RequestUrlResponse);
+
+			const res = await provider.chat(
+				[{ role: 'user', content: 'hello' }],
+				{ model: 'claude-sonnet-4-5' },
+			);
+
+			expect(res.usage).toEqual({
+				inputTokens: 2112,
+				outputTokens: 45,
+				totalTokens: 2157,
+			});
+		});
+
+		it('should preserve cached inputTokens across message_start and message_delta in streaming', async () => {
+			const events = [
+				'data: ' + JSON.stringify({
+					type: 'message_start',
+					message: {
+						usage: {
+							input_tokens: 10,
+							cache_creation_input_tokens: 50,
+							cache_read_input_tokens: 400,
+							output_tokens: 1,
+						},
+					},
+				}),
+				'data: ' + JSON.stringify({ type: 'content_block_start', index: 0, content_block: { type: 'text' } }),
+				'data: ' + JSON.stringify({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'OK' } }),
+				'data: ' + JSON.stringify({
+					type: 'message_delta',
+					delta: { stop_reason: 'end_turn' },
+					usage: { output_tokens: 25 },
+				}),
+			];
+
+			const stream = new ReadableStream({
+				start(controller) {
+					for (const ev of events) {
+						controller.enqueue(new TextEncoder().encode(ev + '\n'));
+					}
+					controller.close();
+				},
+			});
+
+			window.fetch = vi.fn().mockResolvedValue({
+				ok: true,
+				body: stream,
+			});
+
+			const res = await provider.chat(
+				[{ role: 'user', content: 'hello' }],
+				{ model: 'claude-sonnet-4-5' },
+				() => {},
+			);
+
+			expect(res.usage).toEqual({
+				inputTokens: 460,
+				outputTokens: 25,
+				totalTokens: 485,
+			});
+		});
 	});
 });
 

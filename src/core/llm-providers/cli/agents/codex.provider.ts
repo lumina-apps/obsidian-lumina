@@ -306,16 +306,13 @@ export class CodexProvider extends BaseCliAgent {
 
 		// 6. 결과 및 사용량 (turn.completed / usage / result)
 		if (eventType === 'turn.completed' || eventType === 'usage' || eventType === 'result') {
-			const resText = extractTextFromUnknown(item?.response || item?.result || item?.data || obj.response || obj.result || obj.data);
-			if (resText) {
-				return { type: 'text', content: resText, raw };
-			}
+			const events: CliEvent[] = [];
 			const u = (obj.usage || item?.usage || obj.tokenUsage) as Record<string, number> | undefined;
 			if (u && typeof u === 'object') {
 				const inputTokens = u.input_tokens || u.prompt_tokens || u.inputTokens || 0;
 				const outputTokens = u.output_tokens || u.completion_tokens || u.outputTokens || 0;
 				const totalTokens = u.total_tokens || u.totalTokens || (inputTokens + outputTokens);
-				return {
+				events.push({
 					type: 'usage',
 					usage: {
 						inputTokens,
@@ -323,7 +320,14 @@ export class CodexProvider extends BaseCliAgent {
 						totalTokens,
 					},
 					raw,
-				};
+				});
+			}
+			const resText = extractTextFromUnknown(item?.response || item?.result || item?.data || obj.response || obj.result || obj.data);
+			if (resText) {
+				events.push({ type: 'text', content: resText, raw });
+			}
+			if (events.length > 0) {
+				return events.length === 1 ? events[0] : events;
 			}
 		}
 

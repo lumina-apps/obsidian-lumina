@@ -89,5 +89,17 @@ describe('entitlementStore', () => {
 		});
 		expect(get(isProActive)).toBe(true);
 		expect(canUseFeature('split-chat')).toBe(false);
+		expect(canUseFeature('batch-studio')).toBe(false);
+	});
+
+	it('batch-studio Pro 권한 역시 기본 잠금 상태이며 활성 시에만 true를 반환한다', () => {
+		expect(canUseFeature('batch-studio')).toBe(false);
+		setEntitlementState({
+			tier: 'pro',
+			status: 'active',
+			enabledFeatures: new Set(['batch-studio']),
+		});
+		expect(canUseFeature('batch-studio')).toBe(true);
+		expect(canUseFeature('split-chat')).toBe(false);
 	});
 });

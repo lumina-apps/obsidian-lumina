@@ -102,6 +102,7 @@ export async function executeSplitSlotCall(
 		summaryUpToMessageId: undefined,
 		activeFilePath: sharedContext.activeFilePath,
 		activeFileTitle: sharedContext.activeFileTitle,
+		providerType: providerConfig.type,
 	});
 
 	if (sharedContext.multimodalImages.length > 0) {
@@ -133,7 +134,7 @@ export async function executeSplitSlotCall(
 				: '';
 	const estimatedInputTokens = llmMessages.reduce((acc, m) => {
 		const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
-		return acc + estimateTokens(c);
+		return acc + estimateTokens(c, providerConfig.type);
 	}, 0);
 
 	const requestId = debugLogger.logRequest({
@@ -202,7 +203,7 @@ export async function executeSplitSlotCall(
 
 		const finishedAt = Date.now();
 		const durationMs = Math.max(1, finishedAt - startedAt);
-		const outputTokenCount = tokenUsage?.outputTokens || estimateTokens(fullResponse);
+		const outputTokenCount = tokenUsage?.outputTokens || estimateTokens(fullResponse, providerConfig.type);
 		const tokensPerSecond =
 			outputTokenCount > 0
 				? Number(((outputTokenCount / durationMs) * 1000).toFixed(1))

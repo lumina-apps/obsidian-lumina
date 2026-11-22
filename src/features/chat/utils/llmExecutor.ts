@@ -116,7 +116,7 @@ export async function executeLlmCall(
 					: '';
 		const estimatedInputTokens = llmMessages.reduce((acc, m) => {
 			const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
-			return acc + estimateTokens(c);
+			return acc + estimateTokens(c, providerConfig.type);
 		}, 0);
 
 		const requestId = debugLogger.logRequest({

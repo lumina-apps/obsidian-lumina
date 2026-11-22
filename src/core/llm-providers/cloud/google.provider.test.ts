@@ -12,6 +12,7 @@ vi.mock('obsidian', () => ({
 }));
 
 import { GoogleProvider } from './google.provider';
+import { mapUsageMetadata } from './google.types';
 
 describe('GoogleProvider', () => {
 	const PROVIDER_ID = 'test-google';
@@ -242,6 +243,39 @@ describe('GoogleProvider', () => {
 			const results = await provider.embed(texts, { model: 'text-embedding-004' });
 			expect(results).toHaveLength(150);
 			expect(mockRequestUrl).toHaveBeenCalledTimes(2);
+		});
+	});
+
+	describe('mapUsageMetadata', () => {
+		it('should include thoughtsTokenCount in outputTokens and toolUsePromptTokenCount in inputTokens', () => {
+			const mapped = mapUsageMetadata({
+				promptTokenCount: 260,
+				toolUsePromptTokenCount: 40,
+				candidatesTokenCount: 50,
+				thoughtsTokenCount: 150,
+				cachedContentTokenCount: 100,
+				totalTokenCount: 500,
+			});
+
+			expect(mapped).toEqual({
+				inputTokens: 300,
+				outputTokens: 200,
+				totalTokens: 500,
+			});
+		});
+
+		it('should compute totalTokens fallback when totalTokenCount is omitted', () => {
+			const mapped = mapUsageMetadata({
+				promptTokenCount: 100,
+				candidatesTokenCount: 20,
+				thoughtsTokenCount: 30,
+			});
+
+			expect(mapped).toEqual({
+				inputTokens: 100,
+				outputTokens: 50,
+				totalTokens: 150,
+			});
 		});
 	});
 });

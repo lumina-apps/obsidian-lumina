@@ -36,5 +36,16 @@ describe('tokenEstimator', () => {
 		const largeEnglish = 'a'.repeat(10000);
 		expect(estimateTokens(largeEnglish)).toBe(2500);
 	});
+
+	it('should apply provider-specific CJK weights for OpenAI/Google vs Anthropic/default', () => {
+		const korean = '안녕하세요'; // 5 CJK chars
+		// OpenAI / Google: 5 * 0.95 = 4.75 -> ceil = 5
+		expect(estimateTokens(korean, 'openai')).toBe(5);
+		expect(estimateTokens(korean, 'google')).toBe(5);
+		expect(estimateTokens(korean, 'cli-codex')).toBe(5);
+		// Anthropic / default: 5 * 1.5 = 7.5 -> ceil = 8
+		expect(estimateTokens(korean, 'anthropic')).toBe(8);
+		expect(estimateTokens(korean)).toBe(8);
+	});
 });
 

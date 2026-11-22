@@ -67,6 +67,7 @@
 		<div class="lumina-split-header__brand">
 			<span class="lumina-split-header__brand-icon" use:iconAction={"lumina-split-chat"}></span>
 			<span class="lumina-split-header__title">{$tS("splitChat.title")}</span>
+			<span class="lumina-split-pro-badge">{$tS("splitChat.proBadge")}</span>
 		</div>
 
 		<div class="lumina-split-header__segmented" role="group" aria-label="Layout mode">
@@ -214,6 +215,16 @@
 		font-size: 13px;
 		color: var(--text-normal);
 		margin-right: 4px;
+	}
+
+	.lumina-split-pro-badge {
+		padding: 1px 6px;
+		border-radius: 999px;
+		font-size: 10px;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		background: var(--interactive-accent);
+		color: var(--text-on-accent);
 	}
 
 	.lumina-split-header__brand-icon {

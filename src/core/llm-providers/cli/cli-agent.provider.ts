@@ -8,7 +8,7 @@ import { OpenCodeProvider } from './agents/opencode.provider';
 import { AntigravityProvider } from './agents/antigravity.provider';
 import type { BaseCliAgent } from './base-cli-agent';
 import { getDefaultCwd } from './process-manager';
-import { isDuplicateCliSnapshotText } from './ndjson-parser';
+import { isDuplicateCliSnapshotText, mergeCliTokenUsage } from './ndjson-parser';
 
 /**
  * 멀티턴 대화 메시지 배열을 CLI 에이전트에 전달할 단일 프롬프트 문자열로 변환합니다.
@@ -155,11 +155,7 @@ export class CliAgentProvider implements ILLMProvider {
             }
 
             if (event.type === 'usage' && event.usage) {
-                usage = {
-                    inputTokens: event.usage.inputTokens || 0,
-                    outputTokens: event.usage.outputTokens || 0,
-                    totalTokens: event.usage.totalTokens || 0,
-                };
+                usage = mergeCliTokenUsage(usage, event.usage);
             }
 
             if (event.type === 'error' && event.content) {

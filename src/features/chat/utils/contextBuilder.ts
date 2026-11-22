@@ -355,6 +355,7 @@ export async function buildLlmContext(
 		summaryUpToMessageId: get(summaryUpToMessageId),
 		activeFilePath: shared.activeFilePath,
 		activeFileTitle: shared.activeFileTitle,
+		providerType: providerConfig.type,
 	});
 
 	// 툴 사용 지침 주입 (CLI 에이전트는 자체 네이티브/설정 도구를 사용하므로 Lumina 텍스트 툴 프롬프트 주입 생략)

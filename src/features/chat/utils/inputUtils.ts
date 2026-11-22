@@ -1,6 +1,7 @@
 import { App, TFile, TFolder } from "obsidian";
 import type { ContextAttachment } from "../../../shared/types/chat.types";
 import { estimateTokens } from "../../../shared/utils/tokenEstimator";
+import { isExcluded } from "../../../shared/utils/exclusions";
 
 export function splitProviderModel(val: string): [string, string] {
 	const idx = val.indexOf("::");
@@ -48,6 +49,8 @@ export interface EstimateInputTokensOptions {
 	getFileSize?: (path: string) => number | undefined;
 	getFolderSize?: (path: string, maxBytes?: number) => { size: number; isOverLimit: boolean } | number | undefined;
 	maxTokenThreshold?: number;
+	/** 프로바이더별 텍스트/이미지 토큰 추정 가중치 적용용 타입 */
+	providerType?: string;
 }
 
 export interface EstimatedTokensResult {
@@ -65,6 +68,7 @@ export function calculateFolderSize(
 	folderPath: string,
 	maxBytes: number = 300_000,
 	maxDepth: number = 15,
+	excludedPaths?: string[],
 ): { size: number; isOverLimit: boolean } {
 	const folder = app.vault.getAbstractFileByPath(folderPath);
 	if (!(folder instanceof TFolder)) {
@@ -78,10 +82,12 @@ export function calculateFolderSize(
 	function traverse(f: TFolder, depth: number) {
 		if (isOverLimit || depth > maxDepth) return;
 		if (visited.has(f.path)) return;
+		if (depth > 1 && excludedPaths?.length && isExcluded(f.path, excludedPaths)) return;
 		visited.add(f.path);
 
 		for (const child of f.children) {
 			if (isOverLimit) break;
+			if (depth > 1 && excludedPaths?.length && isExcluded(child.path, excludedPaths)) continue;
 			if (child instanceof TFile && child.extension === "md") {
 				totalSize += child.stat.size;
 				if (totalSize >= maxBytes) {
@@ -100,6 +106,36 @@ export function calculateFolderSize(
 
 export const IMAGE_TOKEN_ESTIMATE = 1_600;
 const IMAGE_EXTENSIONS_SET = new Set(["png", "jpg", "jpeg", "webp", "gif"]);
+const BINARY_DOC_EXTENSIONS_SET = new Set(["pdf", "docx", "xlsx", "xls", "pptx", "epub"]);
+
+/**
+ * 프로바이더별 공식 비전 토큰 산출 기준에 따른 이미지당 예상 토큰을 반환합니다.
+ * - OpenAI (`openai`, `cli-codex`): High Detail 4타일 기준 85 + 170 * 4 = 765
+ * - Google Gemini (`google`, `cli-antigravity`): 타일(768px) 기준 258 * 3 = 774
+ * - Anthropic Claude 및 기본값: 1568px 리사이즈 상한 기준 1,600
+ */
+export function getImageTokenEstimate(providerType?: string): number {
+	if (!providerType) return IMAGE_TOKEN_ESTIMATE;
+	const normalized = providerType.toLowerCase();
+	if (normalized === "openai" || normalized === "cli-codex") {
+		return 765;
+	}
+	if (normalized === "google" || normalized === "cli-antigravity") {
+		return 774;
+	}
+	return IMAGE_TOKEN_ESTIMATE;
+}
+
+/**
+ * 파일 크기(바이트)와 확장자를 기반으로 대략적인 텍스트 토큰을 추정합니다.
+ * 압축 컨테이너 기반 바이너리 문서(PDF/Office)는 원시 바이트 대비 실제 추출 텍스트 비중이 낮으므로 보정합니다.
+ */
+function estimateTokensFromFileSize(size: number, ext: string): number {
+	if (BINARY_DOC_EXTENSIONS_SET.has(ext)) {
+		return Math.min(Math.ceil(size / 12), 30_000);
+	}
+	return Math.ceil(size / 3);
+}
 
 export function estimateInputTokensDetails(options: EstimateInputTokensOptions): EstimatedTokensResult {
 	const {
@@ -111,13 +147,15 @@ export function estimateInputTokensDetails(options: EstimateInputTokensOptions):
 		getFileSize,
 		getFolderSize,
 		maxTokenThreshold = 100_000,
+		providerType,
 	} = options;
 
+	const imageTokenEstimate = getImageTokenEstimate(providerType);
 	let tokens = 0;
 	let isOverLimit = false;
 
 	if (inputText.trim()) {
-		tokens += estimateTokens(inputText);
+		tokens += estimateTokens(inputText, providerType);
 	}
 
 	for (const att of attachments) {
@@ -128,18 +166,18 @@ export function estimateInputTokensDetails(options: EstimateInputTokensOptions):
 
 		if (att.content) {
 			if (att.content.startsWith("data:image/")) {
-				tokens += IMAGE_TOKEN_ESTIMATE;
+				tokens += imageTokenEstimate;
 			} else {
-				tokens += estimateTokens(att.content);
+				tokens += estimateTokens(att.content, providerType);
 			}
 		} else if (att.path && (att.type === "file" || att.type === "active_note" || att.type === "canvas")) {
 			const ext = att.path.split(".").pop()?.toLowerCase() || "";
 			if (IMAGE_EXTENSIONS_SET.has(ext)) {
-				tokens += IMAGE_TOKEN_ESTIMATE;
+				tokens += imageTokenEstimate;
 			} else {
 				const size = getFileSize ? getFileSize(att.path) : undefined;
 				if (typeof size === "number") {
-					tokens += Math.ceil(size / 3);
+					tokens += estimateTokensFromFileSize(size, ext);
 				}
 			}
 		} else if (att.type === "url") {
@@ -170,15 +208,15 @@ export function estimateInputTokensDetails(options: EstimateInputTokensOptions):
 		if (!alreadyIncluded) {
 			const ext = activeFileInfo.path.split(".").pop()?.toLowerCase() || "";
 			if (IMAGE_EXTENSIONS_SET.has(ext)) {
-				tokens += IMAGE_TOKEN_ESTIMATE;
+				tokens += imageTokenEstimate;
 			} else {
-				tokens += Math.ceil(activeFileInfo.size / 3);
+				tokens += estimateTokensFromFileSize(activeFileInfo.size, ext);
 			}
 		}
 	}
 
 	if (tokens > 0 && systemPrompt?.trim()) {
-		tokens += estimateTokens(systemPrompt);
+		tokens += estimateTokens(systemPrompt, providerType);
 	}
 
 	if (tokens >= maxTokenThreshold) {

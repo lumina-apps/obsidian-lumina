@@ -260,12 +260,17 @@ export class ClaudeCodeProvider extends BaseCliAgent {
 				(effectiveObj.message as Record<string, unknown> | undefined)?.usage ||
 				(obj.message as Record<string, unknown> | undefined)?.usage) as Record<string, number> | undefined;
 			if (usageObj && typeof usageObj === 'object') {
+				const inputTokens =
+					(usageObj.input_tokens || usageObj.inputTokens || 0) +
+					(usageObj.cache_creation_input_tokens || 0) +
+					(usageObj.cache_read_input_tokens || 0);
+				const outputTokens = usageObj.output_tokens || usageObj.outputTokens || 0;
 				events.push({
 					type: 'usage',
 					usage: {
-						inputTokens: usageObj.input_tokens || usageObj.inputTokens || 0,
-						outputTokens: usageObj.output_tokens || usageObj.outputTokens || 0,
-						totalTokens: (usageObj.input_tokens || usageObj.inputTokens || 0) + (usageObj.output_tokens || usageObj.outputTokens || 0),
+						inputTokens,
+						outputTokens,
+						totalTokens: inputTokens + outputTokens,
 					},
 					raw,
 				});

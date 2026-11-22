@@ -1,10 +1,12 @@
 import type LuminaPlugin from '../../main';
 import { t } from '../../shared/locales/helpers';
-import { activateView } from '../views/viewHelper';
-import { CHAT_VIEW_TYPE } from '../../shared/constants/viewTypes';
+import { activateMainView, activateView } from '../views/viewHelper';
+import { BATCH_STUDIO_VIEW_TYPE, CHAT_VIEW_TYPE } from '../../shared/constants/viewTypes';
 import { addPendingAttachment, activeSidebarTab } from '../store/chatStore';
+import { setBatchTargetFolder } from '../store/batchStore';
+import { canUseFeature } from '../store/entitlementStore';
 import { updateDiscoveryState } from '../store/discoveryStore';
-import { Notice, Menu, MenuItem } from 'obsidian';
+import { Notice, Menu, MenuItem, TFolder } from 'obsidian';
 import { debugLogger } from '../../shared/debugLogger';
 
 export class EventManager {
@@ -114,6 +116,30 @@ export class EventManager {
 							});
 						}
 					}
+				});
+			}),
+		);
+
+		// ── 파일 탐색기 폴더 컨텍스트 메뉴 (Pro Batch Studio) ───────────
+		this.plugin.registerEvent(
+			this.plugin.app.workspace.on('file-menu', (menu, abstractFile) => {
+				if (!this.plugin.settings.misc.contextMenuEnabled) return;
+				if (!canUseFeature('batch-studio')) return;
+				if (!(abstractFile instanceof TFolder)) return;
+
+				menu.addItem((item) => {
+					item
+						.setTitle(`✨ Lumina: ${t('batchStudio.folderMenuTitle')}`)
+						.setIcon('lumina-batch-studio')
+						.setSection('action')
+						.onClick(() => {
+							debugLogger.logSystem(
+								'events',
+								`file-menu: batch studio triggered (folder=${abstractFile.path})`,
+							);
+							setBatchTargetFolder(abstractFile.path);
+							void activateMainView(this.plugin.app.workspace, BATCH_STUDIO_VIEW_TYPE);
+						});
 				});
 			}),
 		);

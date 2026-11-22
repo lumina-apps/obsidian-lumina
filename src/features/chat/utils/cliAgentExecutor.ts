@@ -10,6 +10,7 @@ import {
 	extractTextFromUnknown,
 	isDuplicateCliSnapshotText,
 	extractCandidateFilePaths,
+	mergeCliTokenUsage,
 } from '../../../core/llm-providers/cli/ndjson-parser';
 import { debugLogger, formatMessagesForDebugLog } from '../../../shared/debugLogger';
 import { estimateTokens } from '../../../shared/utils/tokenEstimator';
@@ -232,7 +233,7 @@ export async function executeCliAgentCall(
 	const startTime = Date.now();
 	const estimatedInputTokens = ctx.llmMessages.reduce((acc, m) => {
 		const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
-		return acc + estimateTokens(c);
+		return acc + estimateTokens(c, providerConfig.type);
 	}, 0);
 
 	const systemMsg = ctx.llmMessages.find((m) => m.role === 'system');
@@ -419,16 +420,12 @@ export async function executeCliAgentCall(
 
 				case 'usage':
 					if (event.usage) {
+						tokenUsage = mergeCliTokenUsage(tokenUsage, event.usage);
 						debugLogger.logDebug(
 							'cli-agent',
-							`Token usage: in=${event.usage.inputTokens}, out=${event.usage.outputTokens}, total=${event.usage.totalTokens}`,
+							`Token usage: in=${tokenUsage.inputTokens}, out=${tokenUsage.outputTokens}, total=${tokenUsage.totalTokens}`,
 						);
-						tokenUsage = {
-							inputTokens: event.usage.inputTokens || 0,
-							outputTokens: event.usage.outputTokens || 0,
-							totalTokens: event.usage.totalTokens || 0,
-						};
-						setCliUsage(assistantId, event.usage);
+						setCliUsage(assistantId, tokenUsage);
 					}
 					break;
 

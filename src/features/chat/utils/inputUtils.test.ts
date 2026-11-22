@@ -344,6 +344,36 @@ describe("inputUtils", () => {
 			});
 			expect(withSys.tokens).toBeGreaterThan(withoutSys.tokens);
 		});
+
+		it("should apply provider-specific image token estimates (OpenAI 765, Google 774, Anthropic 1600)", () => {
+			const imgAttachment = [
+				{
+					type: "file" as const,
+					name: "chart.png",
+					path: "attachments/chart.png",
+				},
+			];
+			expect(estimateInputTokensDetails({ inputText: "", attachments: imgAttachment, providerType: "openai" }).tokens).toBe(765);
+			expect(estimateInputTokensDetails({ inputText: "", attachments: imgAttachment, providerType: "google" }).tokens).toBe(774);
+			expect(estimateInputTokensDetails({ inputText: "", attachments: imgAttachment, providerType: "anthropic" }).tokens).toBe(1600);
+		});
+
+		it("should damp binary document (PDF) size-based token estimation to avoid container overhead inflation", () => {
+			const res = estimateInputTokensDetails({
+				inputText: "",
+				attachments: [
+					{
+						type: "file",
+						name: "report.pdf",
+						path: "docs/report.pdf",
+					},
+				],
+				getFileSize: () => 3_000_000, // 3MB PDF
+			});
+			// 3,000,000 / 12 = 250,000 -> capped at 30,000 (not 1,000,000 / >100k)
+			expect(res.tokens).toBe(30_000);
+			expect(res.isOverLimit).toBe(false);
+		});
 	});
 
 	describe("calculateFolderSize", () => {
