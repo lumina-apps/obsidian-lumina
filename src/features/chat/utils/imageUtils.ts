@@ -46,8 +46,8 @@ export async function resizeImageDataUrl(
 		return dataUrl;
 	}
 
-	const isJsdom = typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent);
-	const effectiveTimeout = timeoutMs ?? (isJsdom ? 200 : 5000);
+	const isTestEnv = typeof process !== 'undefined' && Boolean(process.env?.VITEST);
+	const effectiveTimeout = timeoutMs ?? (isTestEnv ? 200 : 5000);
 
 	return new Promise((resolve) => {
 		let timer: number | null = null;

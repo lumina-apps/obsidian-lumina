@@ -3553,8 +3553,9 @@ body.is-mobile .vertical-tab-content-container .lumina-settings button {
 }
 
 /* Obsidian DropdownComponent의 .is-measuring 상태에서도 모바일 설정 폭(100%)을 넘지 않도록 제한 */
-body.is-mobile .vertical-tab-content-container .lumina-settings select.dropdown.is-measuring {
-	max-width: 100% !important;
+html body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings .setting-item-control select.dropdown.is-measuring,
+html body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings select.dropdown.is-measuring {
+	max-width: 100%;
 }
 
 body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card {
