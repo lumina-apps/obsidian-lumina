@@ -6,8 +6,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { RequestUrlResponse } from 'obsidian';
 
 // ── Obsidian 의존성 모킹 ──
-const mockRequestUrl = vi.fn();
+const { mockRequestUrl, mockPlatform } = vi.hoisted(() => ({
+	mockRequestUrl: vi.fn(),
+	mockPlatform: { isMobile: false },
+}));
 vi.mock('obsidian', () => ({
+	Platform: mockPlatform,
 	requestUrl: (...args: unknown[]) => mockRequestUrl(...args),
 }));
 
@@ -34,6 +38,7 @@ describe('AnthropicProvider', () => {
 	});
 
 	afterEach(() => {
+		mockPlatform.isMobile = false;
 		vi.unstubAllGlobals();
 	});
 
@@ -309,6 +314,75 @@ describe('AnthropicProvider', () => {
 				outputTokens: 25,
 				totalTokens: 485,
 			});
+		});
+
+		it('모바일에서 스트리밍 fetch가 CORS TypeError로 실패하면 requestUrl 비스트리밍으로 폴백한다', async () => {
+			mockPlatform.isMobile = true;
+			window.fetch = vi.fn().mockRejectedValue(new TypeError('Load failed'));
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					content: [{ type: 'text', text: 'Fallback Claude response' }],
+					stop_reason: 'end_turn',
+				},
+			} as RequestUrlResponse);
+
+			const chunks: string[] = [];
+			const res = await provider.chat(
+				[{ role: 'user', content: 'hello' }],
+				{ model: 'claude-sonnet-4-5' },
+				(c) => chunks.push(c),
+			);
+
+			expect(mockRequestUrl).toHaveBeenCalledTimes(1);
+			expect(chunks).toEqual(['Fallback Claude response']);
+			expect(res.content).toBe('Fallback Claude response');
+		});
+
+		it('데스크탑에서는 스트리밍 fetch TypeError 시 requestUrl로 폴백하지 않는다', async () => {
+			mockPlatform.isMobile = false;
+			window.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+
+			await expect(
+				provider.chat(
+					[{ role: 'user', content: 'hello' }],
+					{ model: 'claude-sonnet-4-5' },
+					() => {},
+				),
+			).rejects.toThrow('Failed to fetch');
+			expect(mockRequestUrl).not.toHaveBeenCalled();
+		});
+
+		it('모바일 CORS 폴백 후 비스트리밍 응답이 ttftTimeoutMs를 넘기더라도 연장된 타임아웃 내에서는 성공한다', async () => {
+			vi.useFakeTimers();
+			try {
+				mockPlatform.isMobile = true;
+				window.fetch = vi.fn().mockRejectedValue(new TypeError('Load failed'));
+				mockRequestUrl.mockImplementation(
+					() => new Promise((resolve) => {
+						setTimeout(() => {
+							resolve({
+								text: '{}',
+								json: {
+									content: [{ type: 'text', text: 'Delayed Claude response' }],
+									stop_reason: 'end_turn',
+								},
+							} as RequestUrlResponse);
+						}, 15_000);
+					}),
+				);
+
+				const promise = provider.chat(
+					[{ role: 'user', content: 'hello' }],
+					{ model: 'claude-sonnet-4-5', ttftTimeoutMs: 5000 },
+					() => {},
+				);
+				await vi.advanceTimersByTimeAsync(15_000);
+				const res = await promise;
+				expect(res.content).toBe('Delayed Claude response');
+			} finally {
+				vi.useRealTimers();
+			}
 		});
 	});
 });

@@ -10,6 +10,7 @@ import { rerankChunks } from '../reranker';
 import { filterParentChunks, getAdaptiveMinSimilarity, getDuplicateThreshold, computeCentroidEmbedding } from './searchUtils';
 import { debugLogger } from '../../../shared/debugLogger';
 import { normalizeError } from '../../../shared/utils/errorUtils';
+import { findSupportedProvider } from '../../../shared/utils/modelUtils';
 
 export interface ContextUpdateResult {
 	similarNotes: SearchResult[];
@@ -115,7 +116,7 @@ export async function buildContextFromActiveFile(
 		const rerankerModelId = plugin.settings.connections.rerankerModelId;
 
 		if (rerankerProviderId && rerankerModelId && results.length > 1 && queryText) {
-			const providerConfig = plugin.settings.connections.providers.find((p: LLMProviderConfig) => p.id === rerankerProviderId);
+			const providerConfig = findSupportedProvider(plugin.settings.connections.providers, rerankerProviderId);
 			if (providerConfig) {
 				try {
 					results = await rerankChunks(

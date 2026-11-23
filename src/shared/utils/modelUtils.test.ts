@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { Platform } from 'obsidian';
 import {
 	buildChatModelOptions,
 	buildEmbeddingModelOptions,
@@ -11,6 +12,10 @@ import {
 	sortWithFavorites,
 	sortModelOptionsWithFavorites,
 	isEmbeddingModel,
+	isDesktopOnlyProviderType,
+	isProviderSupportedOnCurrentPlatform,
+	findSupportedProvider,
+	isRagEffectiveOnCurrentPlatform,
 	warnIfReasoningModel,
 	getModelContextLimit,
 	getEffectiveContextLimit,
@@ -231,6 +236,87 @@ describe('modelUtils', () => {
 				});
 				expect(summaryLimit).toBe(200000);
 			});
+		});
+	});
+
+	describe('Platform-aware provider filtering', () => {
+		it('모바일 환경에서는 ollama, lmstudio, cli-* 프로바이더를 모델 목록에서 제외하고 데스크탑에서는 유지한다', () => {
+			const origIsMobile = Platform.isMobile;
+			const providersWithLmStudio: LLMProviderConfig[] = [
+				...mockProviders,
+				{
+					id: 'lmstudio-1',
+					type: 'lmstudio',
+					credential: '',
+					availableModels: ['qwen2.5-coder'],
+					isVerified: true,
+				},
+			];
+
+			try {
+				expect(isDesktopOnlyProviderType('ollama')).toBe(true);
+				expect(isDesktopOnlyProviderType('lmstudio')).toBe(true);
+				expect(isDesktopOnlyProviderType('cli-claude-code')).toBe(true);
+				expect(isDesktopOnlyProviderType('openai')).toBe(false);
+
+				// 데스크탑: 모두 포함
+				(Platform as { isMobile: boolean }).isMobile = false;
+				expect(isProviderSupportedOnCurrentPlatform('ollama')).toBe(true);
+				expect(buildChatModelOptions(providersWithLmStudio).map(o => o.value)).toEqual(
+					expect.arrayContaining([
+						'openai-1::gpt-4o',
+						'ollama-1::llama3:latest',
+						'lmstudio-1::qwen2.5-coder',
+						'claude-cli-1::claude-3-7-sonnet',
+					]),
+				);
+
+				// 모바일: 클라우드/커스텀만 남고 로컬/CLI 제외
+				(Platform as { isMobile: boolean }).isMobile = true;
+				expect(isProviderSupportedOnCurrentPlatform('ollama')).toBe(false);
+				expect(isProviderSupportedOnCurrentPlatform('cli-claude-code')).toBe(false);
+				expect(isProviderSupportedOnCurrentPlatform('openai')).toBe(true);
+
+				const mobileChat = buildChatModelOptions(providersWithLmStudio).map(o => o.value);
+				expect(mobileChat).toEqual(['openai-1::gpt-4o', 'anthropic-1::claude-3-7-sonnet']);
+
+				const mobileEmbed = buildEmbeddingModelOptions(providersWithLmStudio).map(o => o.value);
+				expect(mobileEmbed).toEqual(['openai-1::text-embedding-3-small']);
+
+				const mobileDedicated = buildDedicatedModelOptions(providersWithLmStudio).map(o => o.value);
+				expect(mobileDedicated).toEqual(['openai-1::gpt-4o', 'anthropic-1::claude-3-7-sonnet']);
+
+				const mobileFlat = flattenProviderModels(providersWithLmStudio).map(m => m.providerId);
+				expect(mobileFlat).toEqual(['openai-1', 'openai-1', 'anthropic-1']);
+
+				expect(findSupportedProvider(providersWithLmStudio, 'ollama-1')).toBeUndefined();
+				expect(findSupportedProvider(providersWithLmStudio, 'claude-cli-1')).toBeUndefined();
+				expect(findSupportedProvider(providersWithLmStudio, 'openai-1')?.id).toBe('openai-1');
+
+				expect(
+					isRagEffectiveOnCurrentPlatform({
+						ragEnabled: true,
+						embedding: { mode: 'auto', providerId: '', modelId: '' },
+						providers: providersWithLmStudio,
+					}),
+				).toBe(false);
+				expect(
+					isRagEffectiveOnCurrentPlatform({
+						ragEnabled: true,
+						embedding: { mode: 'custom', providerId: 'ollama-1', modelId: 'nomic-embed' },
+						providers: providersWithLmStudio,
+					}),
+				).toBe(false);
+				expect(
+					isRagEffectiveOnCurrentPlatform({
+						ragEnabled: true,
+						embedding: { mode: 'custom', providerId: 'openai-1', modelId: 'text-embedding-3-small' },
+						providers: providersWithLmStudio,
+					}),
+				).toBe(true);
+			} finally {
+				(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+			}
 		});
 	});
 });

@@ -276,5 +276,21 @@ describe('runShellCommandHandler 검증', () => {
 				(Platform as { isWin: boolean }).isWin = origIsWin;
 			}
 		});
+
+		it('모바일 환경에서는 승인 모달을 띄우지 않고 run_shell_command를 즉시 차단한다', async () => {
+			const origIsDesktop = Platform.isDesktop;
+			(Platform as { isDesktop: boolean }).isDesktop = false;
+			const approvalSpy = vi.spyOn(approvalManager, 'requestActionApproval').mockResolvedValue(true);
+
+			try {
+				const res = await runShellCommandHandler({ command: 'echo hello' }, ctx, pathGuard);
+				expect(res.isError).toBe(true);
+				const text = res.content[0].type === 'text' ? res.content[0].text : '';
+				expect(text).toContain('Desktop');
+				expect(approvalSpy).not.toHaveBeenCalled();
+			} finally {
+				(Platform as { isDesktop: boolean }).isDesktop = origIsDesktop;
+			}
+		});
 	});
 });

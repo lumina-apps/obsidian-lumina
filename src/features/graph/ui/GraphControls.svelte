@@ -168,6 +168,11 @@
 		flex-direction: column;
 	}
 
+	:global(body.is-mobile) .lumina-graph-controls {
+		width: min(260px, calc(100vw - 24px));
+		max-width: calc(100vw - 24px);
+	}
+
 	.lumina-graph-controls__header {
 		display: flex;
 		justify-content: space-between;

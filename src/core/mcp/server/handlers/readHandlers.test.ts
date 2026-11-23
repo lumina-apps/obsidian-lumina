@@ -64,6 +64,7 @@ describe('readHandlers', () => {
 		const mockVault = {
 			getAbstractFileByPath: vi.fn((path: string) => mockFiles.get(path)?.file || null),
 			read: vi.fn(async (file: TFile) => mockFiles.get(file.path)?.content || ''),
+			readBinary: vi.fn(async () => new Uint8Array([1, 2, 3]).buffer),
 			getFiles: vi.fn(() => Array.from(mockFiles.values()).map(v => v.file)),
 			getMarkdownFiles: vi.fn(() =>
 				Array.from(mockFiles.values())
@@ -219,6 +220,19 @@ describe('readHandlers', () => {
 			const text = res.content[0].type === 'text' ? res.content[0].text : '';
 			expect(text).toContain('[Binary file: image.png (PNG)');
 			expect(text).toContain('Binary reading not supported');
+		});
+
+		it('embeddingWorker가 null인 모바일 환경에서도 PDF/DOCX 문서를 메인 파서로 읽는다', async () => {
+			const { DocumentParserRouter } = await import('../../../../features/rag/parsers/DocumentParserRouter');
+			const parseBinarySpy = vi.spyOn(DocumentParserRouter, 'parseBinary').mockResolvedValue('Parsed mobile PDF text');
+			(ctx.plugin as unknown as { embeddingWorker: null }).embeddingWorker = null;
+
+			const res = await readNoteHandler({ path: 'doc.pdf' }, ctx, pathGuard);
+			expect(res.isError).toBeFalsy();
+			const text = res.content[0].type === 'text' ? res.content[0].text : '';
+			expect(text).toBe('Parsed mobile PDF text');
+			expect(parseBinarySpy).toHaveBeenCalledWith(expect.any(ArrayBuffer), 'pdf');
+			parseBinarySpy.mockRestore();
 		});
 	});
 

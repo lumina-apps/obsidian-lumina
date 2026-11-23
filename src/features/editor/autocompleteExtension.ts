@@ -1,6 +1,7 @@
 import { StateField, StateEffect } from '@codemirror/state';
 import { EditorView, Decoration, WidgetType, ViewPlugin, ViewUpdate, keymap } from '@codemirror/view';
 import { Prec } from '@codemirror/state';
+import { Platform } from 'obsidian';
 import type { AutocompleteHandler } from './autocompleteHandler';
 import { aiEditAnnotation } from './editorAnnotations';
 
@@ -110,6 +111,10 @@ export const autocompletePlugin = (handler: AutocompleteHandler) => ViewPlugin.f
 	}
 
 	update(update: ViewUpdate) {
+		// 모바일 가상 키보드에는 Tab/ArrowRight 수락 수단이 없으므로 백그라운드 자동완성 API 호출을 생략
+		if (typeof Platform !== 'undefined' && Platform?.isMobile) {
+			return;
+		}
 		if (update.docChanged) {
 			if (this.timer) window.clearTimeout(this.timer);
 

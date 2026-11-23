@@ -38,11 +38,13 @@ class SelectionMiniIconTooltipView implements TooltipView {
 		setIcon(iconEl, 'sparkles');
 		btn.createSpan({ cls: 'lumina-mini-trigger-label', text: 'AI' });
 
-		// 클릭 시 에디터 선택 영역이 해제되지 않도록 mousedown 기본 동작 차단
-		btn.addEventListener('mousedown', (e) => {
+		// 클릭/터치 시 에디터 선택 영역이 해제되지 않도록 기본 동작 차단
+		const preserveSelection = (e: Event) => {
 			e.preventDefault();
 			e.stopPropagation();
-		});
+		};
+		btn.addEventListener('mousedown', preserveSelection);
+		btn.addEventListener('pointerdown', preserveSelection);
 
 		btn.addEventListener('click', (e) => {
 			e.preventDefault();
@@ -129,10 +131,18 @@ export function buildSelectionMiniIconExtension(
 				this.scheduleCheck(80);
 			};
 
+			// 모바일 스크롤/선택 핸들 전환으로 pointercancel이 발생해도 고착되지 않도록 상태 해제
+			private onPointerCancel = () => {
+				if (!this.isPointerDown) return;
+				this.isPointerDown = false;
+				this.scheduleCheck(120);
+			};
+
 			constructor(view: EditorView) {
 				this.view = view;
 				view.dom.addEventListener('pointerdown', this.onPointerDown);
 				window.addEventListener('pointerup', this.onPointerUp);
+				window.addEventListener('pointercancel', this.onPointerCancel);
 			}
 
 			update(update: ViewUpdate) {
@@ -182,6 +192,7 @@ export function buildSelectionMiniIconExtension(
 				}
 				this.view.dom.removeEventListener('pointerdown', this.onPointerDown);
 				window.removeEventListener('pointerup', this.onPointerUp);
+				window.removeEventListener('pointercancel', this.onPointerCancel);
 			}
 		},
 	);

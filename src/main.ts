@@ -330,6 +330,10 @@ export default class LuminaPlugin extends Plugin {
 		import('./features/rag/projectIndexCache').then(({ projectIndexCache }) => {
 			projectIndexCache.destroyAll();
 		}).catch(() => { /* ignore */ });
+		// PDF 파서 워커 Blob URL 정리
+		import('./features/rag/parsers/PdfParser').then(({ disposePdfWorker }) => {
+			disposePdfWorker();
+		}).catch(() => { /* ignore */ });
 	}
 
 	// ─── Settings ───────────────────────────────────────────────────────

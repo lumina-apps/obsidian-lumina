@@ -6,8 +6,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { RequestUrlResponse } from 'obsidian';
 
 // ── Obsidian 의존성 모킹 ──
-const mockRequestUrl = vi.fn();
+const { mockRequestUrl, mockPlatform } = vi.hoisted(() => ({
+	mockRequestUrl: vi.fn(),
+	mockPlatform: { isMobile: false },
+}));
 vi.mock('obsidian', () => ({
+	Platform: mockPlatform,
 	requestUrl: (...args: unknown[]) => mockRequestUrl(...args),
 }));
 
@@ -237,6 +241,37 @@ describe('OpenAICompatProvider', () => {
 			expect(body.max_tokens).toBeUndefined();
 			expect(body.temperature).toBeUndefined();
 			expect(body.stop).toBeUndefined();
+		});
+
+		it('모바일에서 custom 원격 엔드포인트의 스트리밍 fetch가 CORS TypeError로 실패하면 requestUrl 비스트리밍으로 폴백한다', async () => {
+			mockPlatform.isMobile = true;
+			try {
+				vi.stubGlobal('window', {
+					get setTimeout() { return globalThis.setTimeout; },
+					get clearTimeout() { return globalThis.clearTimeout; },
+					fetch: vi.fn().mockRejectedValue(new TypeError('Load failed')),
+				});
+				mockRequestUrl.mockResolvedValue({
+					text: '{}',
+					json: {
+						choices: [{ message: { content: 'Fallback custom remote response' }, finish_reason: 'stop' }],
+					},
+				} as RequestUrlResponse);
+
+				const remoteCustom = new OpenAICompatProvider('remote-c', 'custom', 'https://api.together.xyz', 'sk-remote');
+				const chunks: string[] = [];
+				const res = await remoteCustom.chat(
+					[{ role: 'user', content: 'hello' }],
+					{ model: 'meta-llama/Llama-3-70b' },
+					(c) => chunks.push(c),
+				);
+
+				expect(mockRequestUrl).toHaveBeenCalledTimes(1);
+				expect(chunks).toEqual(['Fallback custom remote response']);
+				expect(res.content).toBe('Fallback custom remote response');
+			} finally {
+				mockPlatform.isMobile = false;
+			}
 		});
 	});
 });

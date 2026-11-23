@@ -24,6 +24,7 @@ import { activateView } from '../../../core/views/viewHelper';
 import { CHAT_VIEW_TYPE } from '../../../shared/constants/viewTypes';
 import { debugLogger } from '../../../shared/debugLogger';
 import { t } from '../../../shared/locales/helpers';
+import { findSupportedProvider } from '../../../shared/utils/modelUtils';
 import type { ContextAttachment, UIChatMessage } from '../../../shared/types/chat.types';
 import type {
 	SplitChatSession,
@@ -559,7 +560,8 @@ export class SplitChatController {
 		const msgsForTitle: UIChatMessage[] = [firstMsg];
 
 		if (taskProviderId && taskModelId) {
-			const taskProvider = providers.find((p) => p.id === taskProviderId && p.isVerified);
+			const candidateTask = findSupportedProvider(providers, taskProviderId);
+			const taskProvider = candidateTask?.isVerified ? candidateTask : undefined;
 			if (taskProvider) {
 				try {
 					return await generateTitleWithLLM(
@@ -575,7 +577,8 @@ export class SplitChatController {
 		}
 
 		for (const slot of slots) {
-			const providerCfg = providers.find((p) => p.id === slot.providerId && p.isVerified);
+			const candidateSlot = findSupportedProvider(providers, slot.providerId);
+			const providerCfg = candidateSlot?.isVerified ? candidateSlot : undefined;
 			if (providerCfg) {
 				const model = resolveModelId(providerCfg, slot.modelId);
 				if (model) {

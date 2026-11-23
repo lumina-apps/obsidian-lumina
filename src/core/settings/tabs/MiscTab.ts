@@ -359,10 +359,12 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 							// 7. 프론트매터 및 MCP 매니저(내장 서버, 외부 연결, CLI 설정) 정리
 							tab.plugin.frontmatterManager?.clearEvents();
 							if (tab.plugin.mcpManager) {
-								try {
-									await tab.plugin.mcpManager.cleanupCliMcp();
-								} catch (e) {
-									debugLogger.logWarn('mcp', `CLI MCP 설정 정리 실패: ${e}`);
+								if (Platform.isDesktop) {
+									try {
+										await tab.plugin.mcpManager.cleanupCliMcp();
+									} catch (e) {
+										debugLogger.logWarn('mcp', `CLI MCP 설정 정리 실패: ${e}`);
+									}
 								}
 								try {
 									await tab.plugin.mcpManager.destroy();

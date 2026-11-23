@@ -13,6 +13,10 @@ import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
 import { estimateTokens } from '../../shared/utils/tokenEstimator';
 import { getVaultBasePath } from '../../shared/utils/fileUtils';
+import {
+	findSupportedProvider,
+	isProviderSupportedOnCurrentPlatform,
+} from '../../shared/utils/modelUtils';
 import { sanitizeDisplayContent } from '../../shared/utils/llmTextSanitizer';
 import type { ChatMessage, TokenUsage } from '../../shared/types/llm.types';
 import { activateView } from '../../core/views/viewHelper';
@@ -219,7 +223,7 @@ export class QuickActionHandler {
 
 		const isValidVerifiedPair = (pid?: string, mid?: string): pid is string => {
 			if (!pid || !mid) return false;
-			const p = connections.providers.find(prov => prov.id === pid);
+			const p = findSupportedProvider(connections.providers, pid);
 			return Boolean(p && p.isVerified);
 		};
 
@@ -243,7 +247,9 @@ export class QuickActionHandler {
 				modelId = activeProject.defaultModelId!;
 			}
 			if (!providerId || !modelId) {
-				const verified = connections.providers.filter(p => p.isVerified && p.availableModels.length > 0);
+				const verified = connections.providers.filter(
+					p => p.isVerified && p.availableModels.length > 0 && isProviderSupportedOnCurrentPlatform(p.type),
+				);
 				if (verified.length > 0) {
 					providerId = verified[0].id;
 					modelId = verified[0].availableModels[0];
@@ -252,7 +258,7 @@ export class QuickActionHandler {
 		} else {
 			// replace / append 인라인 퀵 액션은 속도·비용 최적화를 위해 전용 퀵 액션 모델 지정 필수 (/ai 서제스트와 정책 통일)
 			if (connections.quickActionProviderId && connections.quickActionModelId) {
-				const configuredProvider = connections.providers.find(p => p.id === connections.quickActionProviderId);
+				const configuredProvider = findSupportedProvider(connections.providers, connections.quickActionProviderId);
 				if (!configuredProvider || !configuredProvider.isVerified) {
 					new Notice(t('uiMessages.qaInvalidProvider'));
 					return;
@@ -279,7 +285,7 @@ export class QuickActionHandler {
 			return;
 		}
 
-		const providerConfig = connections.providers.find(p => p.id === providerId);
+		const providerConfig = findSupportedProvider(connections.providers, providerId);
 		if (!providerConfig || !providerConfig.isVerified) {
 			const invalidMsg = action.actionType === 'chat' ? t('settings.translation.noValidModel') : t('uiMessages.qaInvalidProvider');
 			if (options?.onError) {

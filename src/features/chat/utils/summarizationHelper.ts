@@ -14,6 +14,7 @@ import { estimateTokens } from '../promptBuilder';
 import { stripThinkTags } from '../../../shared/utils/llmTextSanitizer';
 import { formatLlmError } from '../../../shared/utils/llmErrorFormatter';
 import { getVaultBasePath } from '../../../shared/utils/fileUtils';
+import { findSupportedProvider } from '../../../shared/utils/modelUtils';
 import { resolveHistoryLocation } from './historyLocation';
 
 /** 디버그 로그에 남길 요약 본문 최대 길이 (과도한 메모리/표시 방지) */
@@ -135,7 +136,8 @@ async function runSummaryLlm(
 	const { taskProviderId, taskModelId, providers } = plugin.settings.connections;
 
 	if (taskProviderId && taskModelId) {
-		const tpConfig = providers.find(p => p.id === taskProviderId && p.isVerified);
+		const candidateProvider = findSupportedProvider(providers, taskProviderId);
+		const tpConfig = candidateProvider?.isVerified ? candidateProvider : undefined;
 		if (tpConfig) {
 			const taskResult = await executeSummaryRequest(plugin, tpConfig, taskModelId, prompt, true);
 			if (taskResult.content) {

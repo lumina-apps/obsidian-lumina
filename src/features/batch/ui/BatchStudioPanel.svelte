@@ -1463,7 +1463,7 @@
 
 	.lumina-batch-setup-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
 		gap: 12px;
 		padding: 12px 16px 8px;
 		max-height: 430px;
@@ -1778,10 +1778,45 @@
 	}
 
 	@media (max-width: 720px) {
+		.lumina-batch-studio {
+			overflow-y: auto;
+		}
+
+		.lumina-batch-setup-grid {
+			max-height: 220px;
+		}
+
 		.lumina-batch-workbench {
 			grid-template-columns: 1fr;
-			grid-template-rows: 220px 1fr;
+			grid-template-rows: 200px minmax(160px, 1fr);
+			min-height: 360px;
+			flex-shrink: 0;
 		}
+
+		.lumina-batch-queue-pane {
+			border-right: none;
+			border-bottom: 1px solid var(--background-modifier-border);
+		}
+	}
+
+	:global(body.is-mobile) .lumina-batch-studio {
+		overflow-y: auto;
+	}
+
+	:global(body.is-mobile) .lumina-batch-setup-grid {
+		max-height: 220px;
+	}
+
+	:global(body.is-mobile) .lumina-batch-workbench {
+		grid-template-columns: 1fr;
+		grid-template-rows: 200px minmax(160px, 1fr);
+		min-height: 360px;
+		flex-shrink: 0;
+	}
+
+	:global(body.is-mobile) .lumina-batch-queue-pane {
+		border-right: none;
+		border-bottom: 1px solid var(--background-modifier-border);
 	}
 
 	.lumina-batch-queue-pane {

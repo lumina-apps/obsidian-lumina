@@ -6,8 +6,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { RequestUrlResponse } from 'obsidian';
 
 // ── Obsidian 의존성 모킹 ──
-const mockRequestUrl = vi.fn();
+const { mockRequestUrl, mockPlatform } = vi.hoisted(() => ({
+	mockRequestUrl: vi.fn(),
+	mockPlatform: { isMobile: false },
+}));
 vi.mock('obsidian', () => ({
+	Platform: mockPlatform,
 	requestUrl: (...args: unknown[]) => mockRequestUrl(...args),
 }));
 
@@ -35,6 +39,7 @@ describe('GoogleProvider', () => {
 	});
 
 	afterEach(() => {
+		mockPlatform.isMobile = false;
 		vi.unstubAllGlobals();
 	});
 
@@ -216,6 +221,65 @@ describe('GoogleProvider', () => {
 					}),
 				}),
 			);
+		});
+
+		it('모바일에서 스트리밍 fetch가 CORS TypeError로 실패하면 requestUrl 비스트리밍으로 폴백한다', async () => {
+			mockPlatform.isMobile = true;
+			window.fetch = vi.fn().mockRejectedValue(new TypeError('Load failed'));
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					candidates: [{
+						content: { parts: [{ text: 'Fallback Gemini response' }] },
+						finishReason: 'STOP',
+					}],
+				},
+			} as RequestUrlResponse);
+
+			const chunks: string[] = [];
+			const res = await provider.chat(
+				[{ role: 'user', content: 'hello' }],
+				{ model: 'gemini-2.0-flash' },
+				(c) => chunks.push(c),
+			);
+
+			expect(mockRequestUrl).toHaveBeenCalledTimes(1);
+			expect(chunks).toEqual(['Fallback Gemini response']);
+			expect(res.content).toBe('Fallback Gemini response');
+		});
+
+		it('모바일 CORS 폴백 후 비스트리밍 응답이 ttftTimeoutMs를 넘기더라도 연장된 타임아웃 내에서는 성공한다', async () => {
+			vi.useFakeTimers();
+			try {
+				mockPlatform.isMobile = true;
+				window.fetch = vi.fn().mockRejectedValue(new TypeError('Load failed'));
+				mockRequestUrl.mockImplementation(
+					() => new Promise((resolve) => {
+						setTimeout(() => {
+							resolve({
+								text: '{}',
+								json: {
+									candidates: [{
+										content: { parts: [{ text: 'Delayed Gemini response' }] },
+										finishReason: 'STOP',
+									}],
+								},
+							} as RequestUrlResponse);
+						}, 15_000);
+					}),
+				);
+
+				const promise = provider.chat(
+					[{ role: 'user', content: 'hello' }],
+					{ model: 'gemini-2.0-flash', ttftTimeoutMs: 5000 },
+					() => {},
+				);
+				await vi.advanceTimersByTimeAsync(15_000);
+				const res = await promise;
+				expect(res.content).toBe('Delayed Gemini response');
+			} finally {
+				vi.useRealTimers();
+			}
 		});
 	});
 

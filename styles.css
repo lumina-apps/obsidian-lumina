@@ -2372,6 +2372,7 @@ html body .modal-container.lumina-settings-modal-container {
 /* Top action bar — row with two buttons side by side */
 .lumina-diff-banner {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
 	gap: 8px;
 	padding: 4px 0;
@@ -3472,5 +3473,152 @@ html body .modal-container.lumina-settings-modal-container {
 
 .lumina-voice-file-input {
 	display: none;
+}
+
+/* ─── Mobile Compatibility & Touch Overrides (.is-mobile scoped) ───────────── */
+
+.vertical-tab-content-container .lumina-settings .lumina-provider-card.is-desktop-only-mobile {
+	grid-template-columns: 1fr;
+	border-style: dashed;
+	opacity: 0.85;
+}
+
+.vertical-tab-content-container .lumina-settings .lumina-provider-card.is-desktop-only-mobile .setting-item-description,
+.vertical-tab-content-container .lumina-settings .lumina-provider-card.is-missing-key .lumina-provider-card__setting-type .setting-item-description {
+	display: block;
+	margin-top: 4px;
+}
+
+body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings {
+	padding: 12px 16px 32px 16px;
+	max-width: 100%;
+	box-sizing: border-box;
+	overflow-x: clip;
+}
+
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-settings__search,
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-settings__nav,
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-settings__body,
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-settings__section-heading,
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-settings__info-box,
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-feature-card,
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-settings__footer,
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-settings__footer-info {
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item {
+	flex-direction: column;
+	align-items: stretch;
+	gap: 10px;
+	padding: 14px 12px;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-info {
+	padding-left: 0;
+	min-width: 0;
+	max-width: 100%;
+}
+
+body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-name,
+body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-description {
+	min-width: 0;
+	max-width: 100%;
+	overflow-wrap: anywhere;
+}
+
+body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control {
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
+	justify-content: flex-start;
+	flex-wrap: wrap;
+	padding-right: 0;
+	box-sizing: border-box;
+}
+
+body.is-mobile .vertical-tab-content-container .lumina-settings select,
+body.is-mobile .vertical-tab-content-container .lumina-settings input[type="text"],
+body.is-mobile .vertical-tab-content-container .lumina-settings input[type="password"],
+body.is-mobile .vertical-tab-content-container .lumina-settings textarea,
+body.is-mobile .vertical-tab-content-container .lumina-settings button {
+	max-width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+}
+
+/* Obsidian DropdownComponent의 .is-measuring 상태에서도 모바일 설정 폭(100%)을 넘지 않도록 제한 */
+body.is-mobile .vertical-tab-content-container .lumina-settings select.dropdown.is-measuring {
+	max-width: 100% !important;
+}
+
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card {
+	grid-template-columns: minmax(0, 1fr);
+	min-width: 0;
+	max-width: 100%;
+	padding: 14px 14px 12px 14px;
+	box-sizing: border-box;
+}
+
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card .setting-item {
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
+}
+
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-provider-card__setting-type,
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-provider-card__setting-url,
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-provider-card__setting-binary,
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-provider-card__setting-credential,
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-provider-card__setting-actions {
+	grid-column: 1 / -1;
+	min-width: 0;
+}
+
+/* Voice-to-Note 모바일 플로팅 바 하단 Safe Area 오프셋 보장 */
+body.is-mobile .lumina-voice-pill-wrap.is-mobile,
+body.is-mobile .lumina-voice-review-wrap.is-mobile {
+	bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+}
+
+body.is-mobile .cm-editor .cm-tooltip.lumina-mini-trigger,
+body.is-mobile .cm-tooltip.lumina-mini-trigger {
+	height: 36px;
+	min-height: 36px;
+	min-width: 44px;
+	padding: 0 12px;
+	font-size: 12px;
+}
+
+body.is-mobile .cm-tooltip.lumina-promptbar {
+	max-width: calc(100vw - 24px);
+}
+
+body.is-mobile .cm-tooltip.lumina-promptbar button.lumina-promptbar-submit-btn {
+	width: 36px;
+	height: 36px;
+	min-width: 36px;
+}
+
+body.is-mobile .cm-tooltip.lumina-promptbar button.lumina-promptbar-mode-btn,
+body.is-mobile .cm-tooltip.lumina-promptbar button.lumina-promptbar-btn,
+body.is-mobile .cm-tooltip.lumina-promptbar button.lumina-promptbar-chip {
+	height: 36px;
+	min-height: 36px;
+}
+
+body.is-mobile .lumina-diff-btn,
+body.is-mobile .lumina-diff-banner-btn {
+	min-height: 36px;
+	padding: 6px 12px;
+}
+
+body.is-mobile .lumina-popup-selector__list {
+	max-height: min(240px, 40dvh);
 }
 

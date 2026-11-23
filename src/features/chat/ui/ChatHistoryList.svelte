@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { App } from "obsidian";
 	import { onMount } from "svelte";
 	import type { ChatSession } from "../../../shared/types/chat.types";
 	import type { ChatController } from "../chatController";
@@ -6,6 +7,7 @@
 	import { activeProjectId } from "../../../core/store/projectStore";
 	import { tStore } from "../../../shared/locales/index";
 	import { formatDate } from "../../../shared/utils/dateUtils";
+	import { confirmWithModal } from "../../../shared/utils/modal";
 	import {
 		SVG_BACK_ARROW,
 		SVG_REFRESH,
@@ -19,11 +21,13 @@
 	import { debugLogger } from "../../../shared/debugLogger";
 
 	let {
+		app,
 		ctrl,
 		onBeforeSelect,
 		onSessionSelect,
 		onBack,
 	}: {
+		app?: App;
 		ctrl: ChatController;
 		onBeforeSelect?: () => Promise<void>;
 		onSessionSelect: () => void;
@@ -107,7 +111,12 @@
 
 	async function handleDelete(e: Event, sessionId: string) {
 		e.stopPropagation();
-		if (confirm($tStore('settings.chat.history.deleteConfirm') || "Are you sure you want to delete this chat history?")) {
+		const confirmed = !app || (await confirmWithModal(
+			app,
+			$tStore('common.delete'),
+			$tStore('settings.chat.history.deleteConfirm') || "Are you sure you want to delete this chat history?",
+		));
+		if (confirmed) {
 			const success = await ctrl.removeSession(sessionId);
 			if (success) {
 				await loadSessions();

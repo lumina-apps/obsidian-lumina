@@ -1,9 +1,78 @@
 /** LLM 모델 옵션 빌드, 파싱, 임베딩 판별 유틸리티 */
 
-import { Notice } from 'obsidian';
+import { Notice, Platform } from 'obsidian';
 import { PROVIDER_LABELS, PROVIDER_CATEGORIES, isCliProvider } from '../types/settings.types';
 import type { LLMProviderConfig, ProviderType, FavoriteModel } from '../types/settings.types';
 import { t } from '../locales/helpers';
+
+/**
+ * 데스크탑 전용 프로바이더 타입(로컬 LLM 서버 또는 CLI 에이전트)인지 판별합니다.
+ */
+export function isDesktopOnlyProviderType(providerType: ProviderType): boolean {
+	const category = PROVIDER_CATEGORIES[providerType];
+	return category === 'local' || category === 'cli';
+}
+
+/**
+ * 현재 런타임이 모바일 환경인지 안전하게 판별합니다.
+ * 일부 단위 테스트의 부분 obsidian mock에 Platform이 없는 경우에도 예외 없이 false를 반환합니다.
+ */
+function readIsMobilePlatform(): boolean {
+	try {
+		return typeof Platform !== 'undefined' && Boolean(Platform?.isMobile);
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * 현재 플랫폼(데스크탑/모바일)에서 해당 프로바이더를 실행할 수 있는지 반환합니다.
+ * 모바일 환경에서는 로컬(Ollama/LM Studio)과 CLI 프로바이더를 제외합니다.
+ */
+export function isProviderSupportedOnCurrentPlatform(providerType: ProviderType): boolean {
+	const isMobile = readIsMobilePlatform();
+	return !isMobile || !isDesktopOnlyProviderType(providerType);
+}
+
+/**
+ * 프로바이더 목록에서 ID가 일치하고 현재 플랫폼에서 지원되는 프로바이더를 조회합니다.
+ * 데스크탑 전용(로컬/CLI) 프로바이더가 동기화된 모바일 환경에서의 잘못된 호출을 차단할 때 사용합니다.
+ */
+export function findSupportedProvider(
+	providers: readonly LLMProviderConfig[] | undefined,
+	providerId?: string,
+): LLMProviderConfig | undefined {
+	if (!providerId || !providers || providers.length === 0) return undefined;
+	const found = providers.find((p) => p.id === providerId);
+	if (!found || !isProviderSupportedOnCurrentPlatform(found.type)) return undefined;
+	return found;
+}
+
+/**
+ * 현재 플랫폼 기준 RAG 런타임 실효 활성화 여부를 반환합니다.
+ * 모바일에서 로컬 임베딩(`auto`)이거나 커스텀 임베딩 대상 프로바이더가 데스크탑 전용이면 false를 반환합니다.
+ */
+export function isRagEffectiveOnCurrentPlatform(
+	connections: {
+		ragEnabled: boolean;
+		embedding: { mode: string; providerId: string; modelId: string };
+		providers: readonly LLMProviderConfig[];
+	} | undefined,
+): boolean {
+	if (!connections?.ragEnabled) return false;
+	const isMobile = readIsMobilePlatform();
+	if (!isMobile) return true;
+	if (connections.embedding.mode === 'auto') {
+		return false;
+	}
+	if (connections.embedding.mode === 'custom') {
+		if (!connections.embedding.providerId || !connections.embedding.modelId) {
+			return false;
+		}
+		return Boolean(findSupportedProvider(connections.providers, connections.embedding.providerId));
+	}
+	return false;
+}
 
 export interface ModelOption {
 	value: string;
@@ -58,7 +127,9 @@ export function buildProviderModelOptions(
 	localWarning: string = ' ⚠️',
 ): ModelOption[] {
 	const options: ModelOption[] = [];
-	const verified = providers.filter(p => p.isVerified && p.availableModels.length > 0);
+	const verified = providers.filter(
+		p => p.isVerified && p.availableModels.length > 0 && isProviderSupportedOnCurrentPlatform(p.type),
+	);
 
 	for (const p of verified) {
 		const isLocal = PROVIDER_CATEGORIES[p.type] === 'local' || p.type === 'custom';
@@ -148,17 +219,19 @@ export function flattenProviderModels(
 	providers: LLMProviderConfig[],
 	favoriteModels?: FavoriteModel[],
 ): FlattenedModel[] {
-	return providers.flatMap((p) =>
-		p.availableModels.map((m) => ({
-			providerId: p.id,
-			providerType: p.type,
-			providerName: PROVIDER_LABELS[p.type] || p.type,
-			modelId: m,
-			label: m,
-			value: `${p.id}::${m}`,
-			isFavorite: isFavoriteModel(favoriteModels, p.id, m),
-		})),
-	);
+	return providers
+		.filter((p) => isProviderSupportedOnCurrentPlatform(p.type))
+		.flatMap((p) =>
+			p.availableModels.map((m) => ({
+				providerId: p.id,
+				providerType: p.type,
+				providerName: PROVIDER_LABELS[p.type] || p.type,
+				modelId: m,
+				label: m,
+				value: `${p.id}::${m}`,
+				isFavorite: isFavoriteModel(favoriteModels, p.id, m),
+			})),
+		);
 }
 
 /** 즐겨찾기 모델을 상단으로 정렬한 평탄화 모델 목록 반환 */

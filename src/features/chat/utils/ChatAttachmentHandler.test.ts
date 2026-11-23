@@ -143,6 +143,35 @@ describe('ChatAttachmentHandler', () => {
 			const result = await ChatAttachmentHandler.parseAttachment(mockApp, att);
 			expect(result).toBeNull();
 		});
+
+		it('embeddingWorker 없이도 바이너리 문서(.docx/.pdf)를 DocumentParserRouter로 파싱한다', async () => {
+			const { DocumentParserRouter } = await import('../../rag/parsers/DocumentParserRouter');
+			const parseBinarySpy = vi.spyOn(DocumentParserRouter, 'parseBinary').mockResolvedValue('Extracted PDF text');
+
+			const file = new TFile();
+			file.path = 'Docs/spec.pdf';
+			file.name = 'spec.pdf';
+			file.basename = 'spec';
+			file.extension = 'pdf';
+
+			mockVault.getAbstractFileByPath.mockReturnValue(file);
+			mockVault.readBinary.mockResolvedValue(new Uint8Array([1, 2, 3]).buffer);
+
+			const att: ContextAttachment = {
+				type: 'file',
+				path: 'Docs/spec.pdf',
+				name: 'spec.pdf',
+			};
+			const pluginWithoutWorker = { embeddingWorker: null } as unknown as import('../../../main').default;
+
+			const result = await ChatAttachmentHandler.parseAttachment(mockApp, att, pluginWithoutWorker);
+			expect(parseBinarySpy).toHaveBeenCalledWith(expect.any(ArrayBuffer), 'pdf');
+			expect(result).toEqual({
+				type: 'text',
+				content: '[첨부 파일: spec.pdf]\nExtracted PDF text',
+			});
+			parseBinarySpy.mockRestore();
+		});
 	});
 
 	describe('parseCanvasAttachment', () => {

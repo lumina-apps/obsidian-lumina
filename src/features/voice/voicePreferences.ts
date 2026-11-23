@@ -7,12 +7,11 @@
  */
 
 import type LuminaPlugin from '../../main';
-import { Platform } from 'obsidian';
 import type { LuminaSettings } from '../../core/settings/settings.types';
 import { syncSettingsStore } from '../../core/store/settingsStore';
-import { isCliProvider, type LLMProviderConfig, type ProviderType } from '../../shared/types/settings.types';
+import type { LLMProviderConfig, ProviderType } from '../../shared/types/settings.types';
 import type { VoiceNotePreferences } from '../../shared/types/voice.types';
-import { isEmbeddingModel } from '../../shared/utils/modelUtils';
+import { isEmbeddingModel, isProviderSupportedOnCurrentPlatform } from '../../shared/utils/modelUtils';
 
 /** Voice-to-Note 기본 설정값 (메모리 머지 전용, data.json에 자동 주입하지 않음) */
 export const DEFAULT_VOICE_PREFERENCES: Required<VoiceNotePreferences> = {
@@ -146,7 +145,7 @@ export function getVoiceEligibleLlmProviders(
 	return providers
 		.filter((p) => {
 			if (!p.isVerified || p.availableModels.length === 0) return false;
-			if (Platform.isMobile && isCliProvider(p.type)) return false;
+			if (!isProviderSupportedOnCurrentPlatform(p.type)) return false;
 			return true;
 		})
 		.map((p) => {

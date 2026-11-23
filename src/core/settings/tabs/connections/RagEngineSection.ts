@@ -19,6 +19,7 @@ import {
 	toProviderModelValue,
 	normalizeError,
 } from '../../../../shared/utils/settingHelpers';
+import { isProviderSupportedOnCurrentPlatform } from '../../../../shared/utils/modelUtils';
 import { PROVIDER_CATEGORIES } from '../../../../shared/types/settings.types';
 
 export function renderRagEngineSection(tab: LuminaSettingTab, el: HTMLElement): void {
@@ -28,7 +29,14 @@ export function renderRagEngineSection(tab: LuminaSettingTab, el: HTMLElement): 
 
 	const descEl = createMultilineDesc(`${t('settings.connections.ragEngine.desc')}\n${t('settings.connections.ragEngine.privacyNotice')}`);
 
-	const isMobileLocked = Platform.isMobile && s.embedding.mode === 'auto';
+	const customEmbeddingProvider = s.embedding.mode === 'custom'
+		? s.providers.find(p => p.id === s.embedding.providerId)
+		: undefined;
+	const isMobileUnsupportedCustom = Platform.isMobile
+		&& s.embedding.mode === 'custom'
+		&& Boolean(customEmbeddingProvider)
+		&& !isProviderSupportedOnCurrentPlatform(customEmbeddingProvider!.type);
+	const isMobileLocked = (Platform.isMobile && s.embedding.mode === 'auto') || isMobileUnsupportedCustom;
 	if (Platform.isMobile) {
 		tab.infoBox(
 			el,
@@ -37,13 +45,13 @@ export function renderRagEngineSection(tab: LuminaSettingTab, el: HTMLElement): 
 		);
 	}
 
-	const ragCard = el.createDiv({ cls: `lumina-feature-card${s.ragEnabled ? ' is-active' : ''}` });
+	const ragCard = el.createDiv({ cls: `lumina-feature-card${s.ragEnabled && !isMobileLocked ? ' is-active' : ''}` });
 
 	new Setting(ragCard)
 		.setName(t('settings.connections.ragEngine.name'))
 		.setDesc(descEl)
 		.addToggle(toggle => {
-			toggle.setValue(s.ragEnabled).onChange(async (val) => {
+			toggle.setValue(isMobileLocked ? false : s.ragEnabled).onChange(async (val) => {
 				s.ragEnabled = val;
 				await tab.saveAndSync();
 				if (val && !(Platform.isMobile && s.embedding.mode === 'auto')) {
@@ -66,12 +74,8 @@ export function renderRagEngineSection(tab: LuminaSettingTab, el: HTMLElement): 
 				tab.refreshDisplay();
 			});
 			if (isMobileLocked) {
+				// UI에서만 비활성 표시하며, 동기화된 데스크탑 ragEnabled 설정 원본은 덮어쓰지 않음
 				toggle.setDisabled(true);
-				// 강제 끄기 (혹시 켜져있는 상태로 동기화되었을 수 있으므로)
-				if (s.ragEnabled) {
-					s.ragEnabled = false;
-					void tab.saveAndSync();
-				}
 			}
 		});
 
@@ -135,7 +139,27 @@ function renderEmbeddingModelSelector(tab: LuminaSettingTab, el: HTMLElement): v
 		}
 		await tab.saveAndSync();
 
-		if (s.ragEnabled && !(Platform.isMobile && s.embedding.mode === 'auto')) {
+		const selectedCustomProvider = s.embedding.mode === 'custom'
+			? s.providers.find(p => p.id === s.embedding.providerId)
+			: undefined;
+		const isMobileBlockedSelection = Platform.isMobile && (
+			s.embedding.mode === 'auto'
+			|| (Boolean(selectedCustomProvider) && !isProviderSupportedOnCurrentPlatform(selectedCustomProvider!.type))
+		);
+
+		if (isMobileBlockedSelection) {
+			// 모바일에서 auto 또는 미지원 로컬 임베딩으로 전환 시 실행 중이던 인덱서/감시기를 즉시 정리 (ragEnabled 원본은 유지)
+			tab.plugin.watchManager?.clearWatchEvents?.();
+			if (tab.plugin.indexer) {
+				tab.plugin.indexer.destroy();
+				tab.plugin.indexer = null;
+			}
+			if (tab.plugin.embeddingWorker) {
+				tab.plugin.embeddingWorker.terminate();
+				tab.plugin.embeddingWorker = null;
+			}
+			setIndexingStatus('idle');
+		} else if (s.ragEnabled) {
 			initEmbeddingWorker(tab.plugin).catch((err: unknown) =>
 				debugLogger.logError('rag', normalizeError(err, `임베딩 모델 변경 후 초기화 실패: ${err}`))
 			);

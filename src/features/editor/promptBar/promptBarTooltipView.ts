@@ -1,6 +1,6 @@
 import type { StateField } from '@codemirror/state';
 import type { EditorView, TooltipView, ViewUpdate } from '@codemirror/view';
-import { Scope } from 'obsidian';
+import { Platform, Scope } from 'obsidian';
 import type LuminaPlugin from '../../../main';
 import type { QuickAction } from '../../../shared/types/settings.types';
 import {
@@ -130,7 +130,7 @@ export class PromptBarTooltipView implements TooltipView {
 				return;
 			}
 
-			if (e.key === 'Enter' && !e.shiftKey) {
+			if (!Platform.isMobile && e.key === 'Enter' && !e.shiftKey) {
 				this.handledKeyEvents.add(e);
 				e.preventDefault();
 				this.submitCustomPrompt();

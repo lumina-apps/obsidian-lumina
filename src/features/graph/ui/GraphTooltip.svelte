@@ -4,10 +4,11 @@
 
 	let { node, x, y }: { node: GraphNode; x: number; y: number } = $props();
 
-	// Avoid clipping out of window
+	// 뷰포트 좌우·상하 경계 밖으로 툴팁이 잘리지 않도록 좌표 클램핑
 	let tooltipWidth = 200;
-	let adjustedX = $derived(x + 15 + tooltipWidth > window.innerWidth ? x - tooltipWidth - 15 : x + 15);
-	let adjustedY = $derived(y + 15);
+	let rawX = $derived(x + 15 + tooltipWidth > window.innerWidth ? x - tooltipWidth - 15 : x + 15);
+	let adjustedX = $derived(Math.max(8, Math.min(rawX, window.innerWidth - tooltipWidth - 8)));
+	let adjustedY = $derived(Math.max(8, Math.min(y + 15, window.innerHeight - 96)));
 
 </script>
 

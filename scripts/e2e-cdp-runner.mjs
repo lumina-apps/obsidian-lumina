@@ -283,6 +283,13 @@ async function run() {
 		app.workspace.getLeavesOfType('lumina-batch-studio').forEach(l => l.detach());
 	})()`);
 
+	const mobileOnly = process.argv.includes('--mobile-only');
+	if (mobileOnly) {
+		await runMobileSuite(client, input, reporter);
+		client.close();
+		return reporter.summary();
+	}
+
 	// ─── SUITE 1: Core Lifecycle & Registrations ─────────────────────────────
 	reporter.startSuite('Core Lifecycle & Registrations');
 	{
@@ -3234,8 +3241,1505 @@ async function run() {
 		}
 	}
 
+	// ─── SUITE 15: Mobile Environment Emulation & Compatibility ──────────────
+	await runMobileSuite(client, input, reporter);
+
 	client.close();
 	return reporter.summary();
+}
+
+/**
+ * SUITE 15: 모바일 환경 에뮬레이션 및 호환성 검증 스위트
+ * - CDP 모바일 뷰포트(390x844) + 터치 에뮬레이션
+ * - Platform.isMobile = true 전환 및 Node.js 전용 모듈(path, http, child_process 등) require 차단 상태에서 콜드 부팅
+ * - 모바일 설정 탭(로컬/CLI 프로바이더 필터링, RAG 클라우드 임베딩 선택기 노출, MCP 로컬/외부 서버 숨김)
+ * - 모바일 채팅 뷰(MCP 팝업 데스크탑 항목 숨김, .is-mobile 터치 액션 버튼 상시 노출)
+ */
+async function runMobileSuite(client, input, reporter) {
+	reporter.startSuite('Mobile Environment Emulation & Compatibility');
+	const tMobileStart = Date.now();
+
+	try {
+		// 1. CDP 모바일 뷰포트 및 터치 에뮬레이션 활성화
+		await client.send('Emulation.setDeviceMetricsOverride', {
+			width: 390,
+			height: 844,
+			deviceScaleFactor: 3,
+			mobile: true,
+		});
+		await client.send('Emulation.setTouchEmulationEnabled', {
+			enabled: true,
+			maxTouchPoints: 5,
+		});
+
+		// 2. 모바일 모드 전환 + Node.js built-in require 차단 훅 + 플러그인 콜드 리로드
+		const tBoot = Date.now();
+		const bootResult = await client.evaluate(`(async () => {
+			// 원본 상태 백업 (window.__luminaMobileE2EBackup)
+			const luminaBefore = app.plugins.plugins['lumina'];
+			const manifestObj = app.plugins.manifests['lumina'];
+			const adapter = app.vault.adapter;
+			const origAdapterRead = adapter.read.bind(adapter);
+			const origAdapterGetBasePath = typeof adapter.getBasePath === 'function' ? adapter.getBasePath.bind(adapter) : null;
+
+			window.__luminaMobileE2EBackup = {
+				appIsMobile: app.isMobile,
+				manifestIsDesktopOnly: manifestObj ? manifestObj.isDesktopOnly : true,
+				leftSplitCollapsed: Boolean(app.workspace.leftSplit?.collapsed),
+				rightSplitCollapsed: Boolean(app.workspace.rightSplit?.collapsed),
+				bodyClasses: {
+					isMobile: document.body.classList.contains('is-mobile'),
+					isPhone: document.body.classList.contains('is-phone'),
+					isDesktop: document.body.classList.contains('is-desktop'),
+				},
+				origRequire: window.require,
+				origAdapterRead,
+				origAdapterGetBasePath,
+				settingsJson: luminaBefore ? JSON.stringify(luminaBefore.settings) : null,
+			};
+
+			// 플러그인 언로드
+			if (app.plugins.enabledPlugins.has('lumina')) {
+				await app.plugins.disablePlugin('lumina');
+				await new Promise(r => setTimeout(r, 200));
+			}
+
+			// require.cache에서 lumina 번들 제거
+			if (window.require && window.require.cache) {
+				for (const k of Object.keys(window.require.cache)) {
+					if (k.includes('obsidian-lumina') || k.includes('plugins/lumina')) {
+						delete window.require.cache[k];
+					}
+				}
+			}
+
+			// 이전 빌드에서 남아 있는 Lumina Svelte 스타일 태그를 제거하여 새 번들의 CSS가 정상 주입되도록 보장
+			document.head.querySelectorAll('style[id^="svelte-"]').forEach((el) => {
+				if ((el.textContent || '').includes('lumina-')) el.remove();
+			});
+
+			// app 및 body 클래스를 모바일로 전환 (manifest.isDesktopOnly도 메모리에서 임시 해제)
+			window.__luminaForceMobilePlatform = true;
+			app.isMobile = true;
+			if (manifestObj) manifestObj.isDesktopOnly = false;
+			document.body.classList.remove('is-desktop');
+			document.body.classList.add('is-mobile', 'is-phone');
+			// 데스크탑 Obsidian DOM에는 WorkspaceMobile의 .mod-visible 관리자가 없으므로
+			// 모바일 에뮬레이션 동안 활성 rootSplit 탭 컨테이너만 표시되도록 임시 스타일 주입 (finally에서 제거)
+			let mobileCompatStyle = document.getElementById('__lumina-mobile-e2e-compat__');
+			if (!mobileCompatStyle) {
+				mobileCompatStyle = document.createElement('style');
+				mobileCompatStyle.id = '__lumina-mobile-e2e-compat__';
+				mobileCompatStyle.textContent = 'body.is-phone .mod-root .workspace-tabs.mod-active { display: flex !important; }';
+				document.head.appendChild(mobileCompatStyle);
+			}
+
+			// 이미 로드된 __luminaObsidianMod가 있으면 즉시 Platform도 모바일로 전환
+			if (window.__luminaObsidianMod && window.__luminaObsidianMod.Platform) {
+				const p = window.__luminaObsidianMod.Platform;
+				if (!window.__luminaOrigPlatform) {
+					window.__luminaOrigPlatform = {
+						isMobile: p.isMobile,
+						isDesktop: p.isDesktop,
+						isDesktopApp: p.isDesktopApp,
+						isMobileApp: p.isMobileApp,
+						isPhone: p.isPhone,
+						isIosApp: p.isIosApp,
+					};
+				}
+				Object.defineProperty(p, 'isMobile', { value: true, configurable: true, writable: true });
+				Object.defineProperty(p, 'isDesktop', { value: false, configurable: true, writable: true });
+				Object.defineProperty(p, 'isDesktopApp', { value: false, configurable: true, writable: true });
+				Object.defineProperty(p, 'isMobileApp', { value: true, configurable: true, writable: true });
+				Object.defineProperty(p, 'isPhone', { value: true, configurable: true, writable: true });
+				Object.defineProperty(p, 'isIosApp', { value: true, configurable: true, writable: true });
+			}
+
+			// Obsidian eval 소스(# sourceURL=plugin:lumina) 및 경로 기반 스택 프레임 판별
+			const isFromLuminaStack = (stack) => {
+				return stack.includes('plugin:lumina')
+					|| stack.includes('plugins/lumina')
+					|| stack.includes('obsidian-lumina')
+					|| stack.includes('eval at loadPlugin');
+			};
+			window.__luminaMobileE2EIsFromLuminaStack = isFromLuminaStack;
+
+			// CapacitorAdapter(모바일) 환경 시뮬레이션: Lumina 스택에서의 getBasePath 호출만 차단·기록
+			const blockedGetBasePathCalls = [];
+			window.__luminaMobileE2EBlockedGetBasePath = blockedGetBasePathCalls;
+			if (origAdapterGetBasePath) {
+				adapter.getBasePath = function() {
+					const stack = (new Error().stack || '');
+					if (isFromLuminaStack(stack)) {
+						blockedGetBasePathCalls.push(stack.split('\\n')[1]?.trim() || 'lumina');
+						throw new Error('Mobile WebView simulation: FileSystemAdapter.getBasePath is not available');
+					}
+					return origAdapterGetBasePath();
+				};
+			}
+
+			// Node.js / Electron 전용 모듈 require 차단 훅 설치 (Lumina 번들에서 호출 시 기록 및 예외 발생)
+			const origReq = window.__luminaMobileE2EBackup.origRequire;
+			const blockedModules = new Set([
+				'path', 'node:path',
+				'child_process', 'node:child_process',
+				'http', 'node:http',
+				'https', 'node:https',
+				'http2', 'node:http2',
+				'net', 'node:net',
+				'crypto', 'node:crypto',
+				'stream', 'node:stream',
+				'fs', 'node:fs',
+				'os', 'node:os',
+				'buffer', 'node:buffer',
+				'util', 'node:util',
+				'zlib', 'node:zlib',
+				'url', 'node:url',
+				'events', 'node:events',
+				'electron', 'node:electron',
+				'worker_threads', 'node:worker_threads',
+				'perf_hooks', 'node:perf_hooks',
+				'tty', 'node:tty',
+				'dns', 'node:dns',
+				'tls', 'node:tls',
+			]);
+			const blockedCalls = [];
+			window.__luminaMobileE2EBlockedRequire = blockedCalls;
+			const hookedRequire = function(modId) {
+				if (blockedModules.has(modId)) {
+					const stack = (new Error().stack || '');
+					if (isFromLuminaStack(stack)) {
+						blockedCalls.push(modId);
+						throw new Error('Mobile WebView simulation: Node module "' + modId + '" is not available');
+					}
+				}
+				return origReq.apply(this, arguments);
+			};
+			Object.assign(hookedRequire, origReq);
+			hookedRequire.cache = origReq.cache;
+			hookedRequire.resolve = origReq.resolve;
+			window.require = hookedRequire;
+
+			// 훅 셀프 체크: plugin:lumina 스택 매칭 및 차단 예외 동작 확인 후 카운터 초기화
+			const hookSelfCheckOk = Boolean(
+				isFromLuminaStack('at load (plugin:lumina:1:1)') &&
+				(() => {
+					try {
+						const fn = new Function('return window.require("child_process");//# sourceURL=plugin:lumina');
+						fn();
+						return false;
+					} catch {
+						return blockedCalls.length > 0;
+					}
+				})()
+			);
+			blockedCalls.length = 0;
+			blockedGetBasePathCalls.length = 0;
+
+			// 모바일 상태에서 Lumina 콜드 부팅
+			await app.plugins.enablePlugin('lumina');
+			await new Promise(r => setTimeout(r, 600));
+
+			const lumina = app.plugins.plugins['lumina'];
+			const Platform = window.__luminaObsidianMod?.Platform;
+			const isMobileFlag = Boolean(Platform && Platform.isMobile && !Platform.isDesktop);
+			const prevAgentEnabled = lumina?.settings?.chat?.agentEnabled;
+			if (lumina?.settings?.chat) {
+				lumina.settings.chat.agentEnabled = true;
+			}
+			const tools = lumina?.mcpManager?.getAllTools?.() || [];
+			if (lumina?.settings?.chat && prevAgentEnabled !== undefined) {
+				lumina.settings.chat.agentEnabled = prevAgentEnabled;
+			}
+			const hasBuiltInTools = tools.length > 0;
+			const hasShellTool = tools.some(t => t.name === 'run_shell_command');
+			const localHttpServerStopped = !lumina?.mcpManager?.localServer;
+
+			return {
+				loaded: !!lumina,
+				isMobileFlag,
+				hookSelfCheckOk,
+				platformHookMissing: !isMobileFlag,
+				blockedCalls,
+				blockedGetBasePathCalls,
+				localHttpServerStopped,
+				hasBuiltInTools,
+				hasShellTool,
+				toolCount: tools.length,
+			};
+		})()`);
+
+		reporter.record(
+			'Mobile Cold Boot, Zero Node.js Require & Built-in Agent Tool Filtering',
+			bootResult.loaded &&
+				bootResult.isMobileFlag &&
+				bootResult.hookSelfCheckOk &&
+				bootResult.blockedCalls.length === 0 &&
+				bootResult.blockedGetBasePathCalls.length === 0 &&
+				bootResult.localHttpServerStopped &&
+				bootResult.hasBuiltInTools &&
+				!bootResult.hasShellTool,
+			bootResult.platformHookMissing
+				? 'Platform hook missing (build with npm run build:dev or LUMINA_MOBILE_TEST=true npm run build)'
+				: `Loaded: ${bootResult.loaded}, HookSelfCheck: ${bootResult.hookSelfCheckOk}, BlockedNodeRequires: ${bootResult.blockedCalls.length}, BlockedGetBasePath: ${bootResult.blockedGetBasePathCalls.length}, LocalHTTP: ${!bootResult.localHttpServerStopped ? 'running(ERR)' : 'stopped(OK)'}, Tools: ${bootResult.toolCount} (shell=${bootResult.hasShellTool})`,
+			Date.now() - tBoot
+		);
+
+		// 3. 모바일 설정 탭 검증 (로컬/CLI 프로바이더 제외, RAG 클라우드 임베딩 선택기 노출, MCP 로컬/외부 서버 숨김)
+		const tSettings = Date.now();
+		const settingsResult = await client.evaluate(`(async () => {
+			const lumina = app.plugins.plugins['lumina'];
+			const origProviders = JSON.parse(JSON.stringify(lumina.settings.connections.providers || []));
+			const origRagEnabled = lumina.settings.connections.ragEnabled;
+			const origEmbedding = JSON.parse(JSON.stringify(lumina.settings.connections.embedding));
+
+			try {
+				if (lumina.settings.connections.providers.length === 0) {
+					lumina.settings.connections.providers.push({
+						id: '__mobile_e2e_temp_provider__',
+						type: 'openai',
+						credential: '',
+						availableModels: ['text-embedding-3-small'],
+						isVerified: true,
+					});
+				}
+				lumina.settings.connections.ragEnabled = false;
+				lumina.settings.connections.embedding = { mode: 'auto', providerId: '', modelId: '' };
+
+				app.setting.open();
+				app.setting.openTabById('lumina');
+				const deadline = Date.now() + 3000;
+				while (Date.now() < deadline) {
+					if (document.querySelector('.lumina-settings__nav-btn')) break;
+					await new Promise(r => setTimeout(r, 100));
+				}
+				await new Promise(r => setTimeout(r, 200));
+
+				const container = app.setting.activeTab?.containerEl;
+				const initNavBtns = Array.from(container?.querySelectorAll('.lumina-settings__nav-btn:not(.lumina-settings__nav-btn--advanced)') || []);
+				if (initNavBtns[0] && !initNavBtns[0].classList.contains('is-active')) {
+					initNavBtns[0].click();
+					await new Promise(r => setTimeout(r, 200));
+				}
+				const providerSelect = container?.querySelector('.lumina-provider-card__setting-type select');
+				const optionValues = Array.from(providerSelect?.options || []).map(o => o.value);
+				const forbiddenTypes = ['ollama', 'lmstudio', 'cli-claude-code', 'cli-codex', 'cli-opencode', 'cli-antigravity'];
+				const hasForbiddenProvider = optionValues.some(v => forbiddenTypes.includes(v));
+
+				// 고급 설정 활성화 시 ragEnabled=false(모바일 auto 잠금) 상태에서도 클라우드 임베딩 선택기가 노출되는지 확인
+				const advBtn = container?.querySelector('.lumina-settings__nav-btn--advanced');
+				if (advBtn && !advBtn.classList.contains('is-active')) {
+					advBtn.click();
+					await new Promise(r => setTimeout(r, 200));
+				}
+				const warningBoxes = container?.querySelectorAll('.lumina-settings__info-box--warning') || [];
+				const hasEmbeddingSelectorInAdvanced = warningBoxes.length >= 3;
+
+				// MCP 탭 전환 → 모바일에서는 내장 에이전트 섹션(헤딩 1개)만 노출되고 로컬/외부 서버는 숨겨져야 함
+				const navBtns = Array.from(container?.querySelectorAll('.lumina-settings__nav-btn:not(.lumina-settings__nav-btn--advanced)') || []);
+				const mcpTabBtn = navBtns[3]; // connections(0), chat(1), rag(2), mcp(3)
+				mcpTabBtn?.click();
+				await new Promise(r => setTimeout(r, 200));
+
+				const mcpHeadings = container?.querySelectorAll('.lumina-settings__section-heading') || [];
+				const mcpAddServerCta = container?.querySelector('.lumina-setting-cta');
+				const mcpMobileIsolated = mcpHeadings.length === 1 && !mcpAddServerCta;
+
+				return {
+					success: optionValues.length > 0 && !hasForbiddenProvider && hasEmbeddingSelectorInAdvanced && mcpMobileIsolated,
+					optionCount: optionValues.length,
+					hasForbiddenProvider,
+					hasEmbeddingSelectorInAdvanced,
+					warningCount: warningBoxes.length,
+					mcpHeadingsCount: mcpHeadings.length,
+					mcpMobileIsolated,
+				};
+			} finally {
+				lumina.settings.connections.providers = origProviders;
+				lumina.settings.connections.ragEnabled = origRagEnabled;
+				lumina.settings.connections.embedding = origEmbedding;
+				app.setting.close();
+				// 모바일 모달 닫힘 애니메이션 완료까지 대기
+				const closeDeadline = Date.now() + 1500;
+				while (Date.now() < closeDeadline) {
+					if (!document.querySelector('.modal-container')) break;
+					await new Promise(r => setTimeout(r, 50));
+				}
+			}
+		})()`);
+
+		reporter.record(
+			'Mobile Settings: Local/CLI Filtered, RAG Cloud Selector Accessible & MCP Tab Isolated',
+			settingsResult.success,
+			`CloudOptions: ${settingsResult.optionCount} (forbidden=${settingsResult.hasForbiddenProvider}), RAGSelectorVisible: ${settingsResult.hasEmbeddingSelectorInAdvanced} (warnings=${settingsResult.warningCount}), MCPHeadings: ${settingsResult.mcpHeadingsCount}`,
+			Date.now() - tSettings
+		);
+
+		// 3-B. Synced Vault Resilience & Mobile Settings Responsive Overflow 검증
+		const tSyncedSettings = Date.now();
+		const syncedSettingsResult = await client.evaluate(`(async () => {
+			const lumina = app.plugins.plugins['lumina'];
+			const origProviders = JSON.parse(JSON.stringify(lumina.settings.connections.providers || []));
+			const origRagEnabled = lumina.settings.connections.ragEnabled;
+			const origEmbedding = JSON.parse(JSON.stringify(lumina.settings.connections.embedding));
+
+			try {
+				lumina.settings.connections.providers = [
+					{
+						id: '__sync_ollama__',
+						type: 'ollama',
+						credential: '',
+						availableModels: ['llama3'],
+						isVerified: true,
+					},
+					{
+						id: '__sync_cli__',
+						type: 'cli-claude-code',
+						credential: '',
+						availableModels: ['claude-sonnet-4'],
+						isVerified: true,
+					},
+					{
+						id: '__sync_openai_missing_key__',
+						type: 'openai',
+						credential: '',
+						availableModels: ['gpt-4o'],
+						isVerified: true,
+					},
+				];
+				lumina.settings.connections.ragEnabled = true;
+				lumina.settings.connections.embedding = { mode: 'auto', providerId: '', modelId: '' };
+				await lumina.saveSettings();
+
+				app.setting.open();
+				app.setting.openTabById('lumina');
+				const navDeadline = Date.now() + 3000;
+				while (Date.now() < navDeadline) {
+					if (document.querySelector('.lumina-settings__nav-btn')) break;
+					await new Promise(r => setTimeout(r, 100));
+				}
+				const container = app.setting.activeTab?.containerEl;
+				const navBtns = Array.from(container?.querySelectorAll('.lumina-settings__nav-btn:not(.lumina-settings__nav-btn--advanced)') || []);
+				if (navBtns[0] && !navBtns[0].classList.contains('is-active')) {
+					navBtns[0].click();
+				}
+				const deadline = Date.now() + 3000;
+				while (Date.now() < deadline) {
+					if (container?.querySelector('.lumina-provider-card')) break;
+					await new Promise(r => setTimeout(r, 100));
+				}
+				await new Promise(r => setTimeout(r, 250));
+				const desktopOnlyCards = container?.querySelectorAll('.lumina-provider-card.is-desktop-only-mobile').length || 0;
+				const missingKeyCards = container?.querySelectorAll('.lumina-provider-card.is-missing-key').length || 0;
+				const ragPreserved = lumina.settings.connections.ragEnabled === true;
+
+				const cs = container ? getComputedStyle(container) : null;
+				const padLeft = cs ? parseFloat(cs.paddingLeft || '0') : 999;
+				const padRight = cs ? parseFloat(cs.paddingRight || '0') : 999;
+				const noHorizontalOverflow = container ? container.scrollWidth <= container.clientWidth + 4 : false;
+				const compactPadding = padLeft <= 20 && padRight <= 20;
+				const offenders = [];
+				if (container && !noHorizontalOverflow) {
+					const cRect = container.getBoundingClientRect();
+					for (const child of Array.from(container.querySelectorAll('*'))) {
+						const r = child.getBoundingClientRect();
+						if (r.right > cRect.right + 2) {
+							offenders.push(String(child.tagName).toLowerCase() + '.' + String(child.className || '').trim().split(/\\s+/).slice(0, 2).join('.') + '=' + Math.round(r.right) + '/' + Math.round(r.width));
+							if (offenders.length >= 3) break;
+						}
+					}
+				}
+
+				return {
+					success: ragPreserved && desktopOnlyCards === 2 && missingKeyCards === 1 && noHorizontalOverflow && compactPadding,
+					ragPreserved,
+					desktopOnlyCards,
+					missingKeyCards,
+					noHorizontalOverflow,
+					padLeft,
+					padRight,
+					scrollWidth: container?.scrollWidth ?? -1,
+					clientWidth: container?.clientWidth ?? -1,
+					offenders,
+				};
+			} finally {
+				lumina.settings.connections.providers = origProviders;
+				lumina.settings.connections.ragEnabled = origRagEnabled;
+				lumina.settings.connections.embedding = origEmbedding;
+				await lumina.saveSettings();
+				app.setting.close();
+				// 모바일 모달 닫힘 애니메이션 완료까지 대기
+				const closeDeadline = Date.now() + 1500;
+				while (Date.now() < closeDeadline) {
+					if (!document.querySelector('.modal-container')) break;
+					await new Promise(r => setTimeout(r, 50));
+				}
+			}
+		})()`);
+
+		reporter.record(
+			'Mobile Synced Vault Resilience & Settings Responsive Overflow',
+			syncedSettingsResult.success,
+			`ragPreserved=${syncedSettingsResult.ragPreserved}, desktopOnlyCards=${syncedSettingsResult.desktopOnlyCards}, missingKeyCards=${syncedSettingsResult.missingKeyCards}, overflowOK=${syncedSettingsResult.noHorizontalOverflow} (${syncedSettingsResult.scrollWidth}/${syncedSettingsResult.clientWidth}), pad=(${syncedSettingsResult.padLeft},${syncedSettingsResult.padRight})${syncedSettingsResult.offenders?.length ? `, offenders=[${syncedSettingsResult.offenders.join(', ')}]` : ''}`,
+			Date.now() - tSyncedSettings
+		);
+
+		// 3-C. Mobile ChatTab(자동완성 잠금+원본보존) & RagTab(모바일 경고+프로젝트 전환 무오류) 검증
+		const tChatRagTabs = Date.now();
+		const chatRagTabsResult = await client.evaluate(`(async () => {
+			const lumina = app.plugins.plugins['lumina'];
+			const origChatEnableAutocomplete = lumina.settings.chat.enableAutocomplete;
+			const origTaskProviderId = lumina.settings.connections.taskProviderId;
+			const origTaskModelId = lumina.settings.connections.taskModelId;
+			const origProviders = JSON.parse(JSON.stringify(lumina.settings.connections.providers || []));
+			const origRagEnabled = lumina.settings.connections.ragEnabled;
+			const origEmbedding = JSON.parse(JSON.stringify(lumina.settings.connections.embedding));
+			const origProjects = JSON.parse(JSON.stringify(lumina.settings.projects.list || []));
+			const origActiveProj = lumina.settings.projects.activeProjectId;
+
+			try {
+				lumina.settings.connections.providers = [{
+					id: '__mobile_chat_rag_prov__',
+					type: 'openai',
+					credential: 'sk-test',
+					availableModels: ['gpt-4o-mini'],
+					isVerified: true,
+				}];
+				lumina.settings.connections.taskProviderId = '__mobile_chat_rag_prov__';
+				lumina.settings.connections.taskModelId = 'gpt-4o-mini';
+				lumina.settings.chat.enableAutocomplete = true;
+				lumina.settings.connections.ragEnabled = true;
+				lumina.settings.connections.embedding = { mode: 'auto', providerId: '', modelId: '' };
+				if (!lumina.settings.projects.list.some(p => p.id === '__mobile_e2e_proj__')) {
+					lumina.settings.projects.list.push({
+						id: '__mobile_e2e_proj__',
+						name: 'Mobile E2E Project',
+						historySubfolder: '',
+						ragIncludedPaths: [],
+						ragExcludedPaths: [],
+					});
+				}
+				await lumina.saveSettings();
+
+				app.setting.open();
+				app.setting.openTabById('lumina');
+				const navDeadline = Date.now() + 3000;
+				while (Date.now() < navDeadline) {
+					if (document.querySelector('.lumina-settings__nav-btn')) break;
+					await new Promise(r => setTimeout(r, 100));
+				}
+				await new Promise(r => setTimeout(r, 200));
+
+				const container = app.setting.activeTab?.containerEl;
+				const navBtns = Array.from(container?.querySelectorAll('.lumina-settings__nav-btn:not(.lumina-settings__nav-btn--advanced)') || []);
+				// Chat 탭(index 1)
+				navBtns[1]?.click();
+				await new Promise(r => setTimeout(r, 200));
+				const chatText = container?.textContent || '';
+				const chatTabNoOverflow = container ? container.scrollWidth <= container.clientWidth + 4 : false;
+				const subSettingsHidden = !chatText.includes('Autocomplete Prompt');
+				const originalAutocompletePreserved = lumina.settings.chat.enableAutocomplete === true;
+
+				// Rag 탭(index 2)
+				navBtns[2]?.click();
+				await new Promise(r => setTimeout(r, 200));
+				const ragWarnings = container?.querySelectorAll('.lumina-settings__info-box--warning')?.length || 0;
+				const ragTabNoOverflow = container ? container.scrollWidth <= container.clientWidth + 4 : false;
+
+				// 프로젝트 전환 버튼 클릭 시 모바일 auto 상태에서 에러 없이 전환되고 indexer를 띄우지 않아야 함
+				const activateBtns = Array.from(container?.querySelectorAll('.lumina-feature-card button') || [])
+					.filter(b => b.textContent?.trim() && !b.querySelector('svg'));
+				let switchCompleted = false;
+				if (activateBtns.length > 0) {
+					activateBtns[activateBtns.length - 1].click();
+					await new Promise(r => setTimeout(r, 250));
+					switchCompleted = !lumina.indexer;
+				} else {
+					switchCompleted = !lumina.indexer;
+				}
+
+				return {
+					success: chatTabNoOverflow && subSettingsHidden && originalAutocompletePreserved && ragWarnings >= 1 && ragTabNoOverflow && switchCompleted,
+					chatTabNoOverflow,
+					subSettingsHidden,
+					originalAutocompletePreserved,
+					ragWarnings,
+					ragTabNoOverflow,
+					switchCompleted,
+				};
+			} finally {
+				lumina.settings.chat.enableAutocomplete = origChatEnableAutocomplete;
+				lumina.settings.connections.taskProviderId = origTaskProviderId;
+				lumina.settings.connections.taskModelId = origTaskModelId;
+				lumina.settings.connections.providers = origProviders;
+				lumina.settings.connections.ragEnabled = origRagEnabled;
+				lumina.settings.connections.embedding = origEmbedding;
+				lumina.settings.projects.list = origProjects;
+				lumina.settings.projects.activeProjectId = origActiveProj;
+				await lumina.saveSettings();
+				app.setting.close();
+				// 모바일 모달 닫힘 애니메이션 완료까지 대기
+				const closeDeadline = Date.now() + 1500;
+				while (Date.now() < closeDeadline) {
+					if (!document.querySelector('.modal-container')) break;
+					await new Promise(r => setTimeout(r, 50));
+				}
+			}
+		})()`);
+
+		reporter.record(
+			'Mobile ChatTab & RagTab: Autocomplete Locked Safely, RAG Warning & Project Switch',
+			chatRagTabsResult.success,
+			`ChatOverflowOK=${chatRagTabsResult.chatTabNoOverflow}, AutocompleteSubHidden=${chatRagTabsResult.subSettingsHidden}, OrigPreserved=${chatRagTabsResult.originalAutocompletePreserved}, RagWarnings=${chatRagTabsResult.ragWarnings}, RagOverflowOK=${chatRagTabsResult.ragTabNoOverflow}, SwitchSafe=${chatRagTabsResult.switchCompleted}`,
+			Date.now() - tChatRagTabs
+		);
+
+		// 4. 모바일 채팅 뷰, ModelSelector 뷰포트 경계/필터링, MCP Quick Popup 및 터치 액션 버튼 상시 노출 검증
+		const tChatUi = Date.now();
+		const chatUiResult = await client.evaluate(`(async () => {
+			const lumina = app.plugins.plugins['lumina'];
+			const origProviders = JSON.parse(JSON.stringify(lumina.settings.connections.providers || []));
+			const origProjects = JSON.parse(JSON.stringify(lumina.settings.projects.list || []));
+
+			try {
+				// CLI/로컬 프로바이더가 함께 존재해도 클라우드 모델만 노출되고, MCP 버튼이 활성화되는지 검증
+				lumina.settings.connections.providers = [
+					{
+						id: '__mobile_chat_cloud_prov__',
+						type: 'openai',
+						credential: 'sk-test',
+						availableModels: ['gpt-4o'],
+						isVerified: true,
+					},
+					{
+						id: '__mobile_chat_ollama_prov__',
+						type: 'ollama',
+						credential: '',
+						availableModels: ['llama3'],
+						isVerified: true,
+					},
+				];
+				for (const proj of lumina.settings.projects.list) {
+					proj.defaultProviderId = '__mobile_chat_cloud_prov__';
+					proj.defaultModelId = 'gpt-4o';
+				}
+				await lumina.saveSettings();
+
+				app.workspace.getLeavesOfType('lumina-chat').forEach(l => l.detach());
+				app.commands.executeCommandById('lumina:open-chat');
+				const deadline = Date.now() + 3000;
+				while (Date.now() < deadline) {
+					if (document.querySelector('.lumina-chat')) break;
+					await new Promise(r => setTimeout(r, 100));
+				}
+				await new Promise(r => setTimeout(r, 300));
+
+				// ModelSelector 드롭다운 경계(0 <= left, right <= 390) 및 데스크탑 전용(ollama/llama3) 제외 검증
+				const modelTrigger = document.querySelector('.lumina-model-selector__trigger');
+				modelTrigger?.click();
+				await new Promise(r => setTimeout(r, 200));
+				const modelDropdown = document.querySelector('.lumina-model-selector__dropdown');
+				const ddRect = modelDropdown?.getBoundingClientRect();
+				const dropdownInBounds = Boolean(modelDropdown && ddRect && ddRect.left >= 0 && ddRect.right <= 390);
+				const dropdownText = Array.from(modelDropdown?.querySelectorAll('.lumina-popup-selector__item') || [])
+					.map(el => (el.textContent || '').toLowerCase())
+					.join(' | ');
+				const desktopModelsExcluded = !dropdownText.includes('llama3') && !dropdownText.includes('ollama');
+				modelTrigger?.click();
+				await new Promise(r => setTimeout(r, 100));
+
+				// 채팅 하단 툴바에서 MCP(Agent & MCP Tools) 아이콘 버튼 클릭
+				const mcpBtn = document.querySelector('.lumina-chat__toolbar-btn[aria-label="Agent & MCP Tools"]');
+				mcpBtn?.click();
+				await new Promise(r => setTimeout(r, 200));
+
+				const popup = document.querySelector('.lumina-mcp-popup');
+				const hasAgentToggle = !!popup?.querySelector('.lumina-mcp-popup__item-agent');
+				const hasDesktopAdvancedToggle = !!popup?.querySelector('.lumina-mcp-popup__advanced-toggle');
+				const hasLocalServerToggle = !!popup?.querySelector('.lumina-mcp-popup__item-local');
+
+				// 팝업 닫기
+				mcpBtn?.click();
+				await new Promise(r => setTimeout(r, 100));
+
+				// 히스토리 버튼을 열어 ChatHistoryList 컴포넌트를 마운트시키고 .is-mobile CSS 규칙 및 computed opacity 확인
+				const historySvg = document.querySelector('.lumina-chat__header svg.lucide-history');
+				const historyBtn = historySvg?.closest('button');
+				historyBtn?.click();
+				await new Promise(r => setTimeout(r, 200));
+
+				const styleTags = Array.from(document.querySelectorAll('style'));
+				const touchActionsVisible = styleTags.some(s => {
+					const txt = s.textContent || '';
+					return txt.includes('.is-mobile') &&
+						(txt.includes('lumina-history__actions') || txt.includes('lumina-message__actions'));
+				});
+				const historyActionsEl = document.querySelector('.lumina-history__actions');
+				const historyActionsOpacity = historyActionsEl ? getComputedStyle(historyActionsEl).opacity : null;
+				const historyOpacityOk = historyActionsEl ? historyActionsOpacity === '1' : true;
+
+				historyBtn?.click();
+				await new Promise(r => setTimeout(r, 100));
+
+				return {
+					success: !!popup && hasAgentToggle && !hasDesktopAdvancedToggle && !hasLocalServerToggle && touchActionsVisible && dropdownInBounds && desktopModelsExcluded && historyOpacityOk,
+					popupOpened: !!popup,
+					hasAgentToggle,
+					hasDesktopAdvancedToggle,
+					hasLocalServerToggle,
+					touchActionsVisible,
+					dropdownInBounds,
+					ddLeft: ddRect?.left ?? -1,
+					ddRight: ddRect?.right ?? -1,
+					desktopModelsExcluded,
+					historyActionsOpacity,
+				};
+			} finally {
+				lumina.settings.connections.providers = origProviders;
+				lumina.settings.projects.list = origProjects;
+				await lumina.saveSettings();
+			}
+		})()`);
+
+		reporter.record(
+			'Mobile Chat UI: ModelSelector Bounds/Filter, MCP Isolation & Touch Opacity',
+			chatUiResult.success,
+			`Popup: ${chatUiResult.popupOpened}, ModelBounds: ${chatUiResult.dropdownInBounds} (${Math.round(chatUiResult.ddLeft)}..${Math.round(chatUiResult.ddRight)}), OllamaFiltered: ${chatUiResult.desktopModelsExcluded}, TouchCssRule: ${chatUiResult.touchActionsVisible}, HistoryOpacity: ${chatUiResult.historyActionsOpacity ?? 'n/a'}`,
+			Date.now() - tChatUi
+		);
+
+		// 4-B. Mobile Built-in Agent Execution Without embeddingWorker (create_note & read_note)
+		const tAgentExec = Date.now();
+		const agentExecResult = await client.evaluate(`(async () => {
+			const lumina = app.plugins.plugins['lumina'];
+			const origAgentEnabled = lumina.settings.chat.agentEnabled;
+			const origExecutionMode = lumina.settings.chat.agentExecutionMode;
+			const origRespectExclusions = lumina.settings.mcp.agentRespectRagExclusions;
+			const tempNotePath = '__lumina_mobile_agent_e2e__.md';
+			const abortController = new AbortController();
+
+			try {
+				lumina.settings.chat.agentEnabled = true;
+				lumina.settings.chat.agentExecutionMode = 'edit';
+				lumina.settings.mcp.agentRespectRagExclusions = false;
+
+				if (!document.querySelector('.lumina-chat')) {
+					app.commands.executeCommandById('lumina:open-chat');
+					const chatDeadline = Date.now() + 3000;
+					while (Date.now() < chatDeadline) {
+						if (document.querySelector('.lumina-chat')) break;
+						await new Promise(r => setTimeout(r, 100));
+					}
+				}
+				await new Promise(r => setTimeout(r, 250));
+
+				const existing = app.vault.getAbstractFileByPath(tempNotePath);
+				if (existing) {
+					await app.vault.delete(existing, true);
+				}
+
+				const noWorker = lumina.embeddingWorker === null;
+				const tools = lumina.mcpManager?.getAllTools?.() || [];
+				const createTool = tools.find(t => t.name === 'create_note');
+				const readTool = tools.find(t => t.name === 'read_note');
+				if (!createTool || !readTool) {
+					return { success: false, noWorker, approved: false, createError: false, readMatched: false, reason: 'missing create_note/read_note' };
+				}
+
+				const createPromise = lumina.mcpManager.callTool(
+					createTool._serverId,
+					'create_note',
+					{
+						path: tempNotePath,
+						content: '# Mobile Agent E2E\\nExecuted without embeddingWorker',
+					},
+					abortController.signal,
+				);
+
+				let approved = false;
+				for (let i = 0; i < 30; i++) {
+					await new Promise(r => setTimeout(r, 100));
+					const acceptBtn = document.querySelector('.lumina-inline-approval-card button.mod-cta');
+					if (acceptBtn) {
+						acceptBtn.click();
+						approved = true;
+						break;
+					}
+				}
+				if (!approved) {
+					abortController.abort();
+				}
+
+				let createTimerId = null;
+				const createRes = await Promise.race([
+					createPromise,
+					new Promise((resolve) => {
+						createTimerId = setTimeout(() => {
+							abortController.abort();
+							resolve({ isError: true, timedOut: true, content: [{ type: 'text', text: 'create_note timed out after 5000ms' }] });
+						}, 5000);
+					}),
+				]);
+				if (createTimerId !== null) clearTimeout(createTimerId);
+
+				let readRes = null;
+				let readText = '';
+				if (approved && !createRes?.isError) {
+					readRes = await lumina.mcpManager.callTool(readTool._serverId, 'read_note', {
+						path: tempNotePath,
+					});
+					readText = readRes?.content?.[0]?.text || '';
+				}
+				const readMatched = readText.includes('Executed without embeddingWorker');
+				const ok = noWorker && approved && !createRes?.isError && !readRes?.isError && readMatched;
+
+				return {
+					success: ok,
+					noWorker,
+					approved,
+					createError: Boolean(createRes?.isError),
+					readError: Boolean(readRes?.isError),
+					readMatched,
+				};
+			} finally {
+				abortController.abort();
+				app.workspace.getLeavesOfType('markdown').forEach(l => {
+					if (l.view?.file?.path === tempNotePath) l.detach();
+				});
+				const f = app.vault.getAbstractFileByPath(tempNotePath);
+				if (f) {
+					try { await app.vault.delete(f, true); } catch {}
+				}
+				lumina.settings.chat.agentEnabled = origAgentEnabled;
+				lumina.settings.chat.agentExecutionMode = origExecutionMode;
+				lumina.settings.mcp.agentRespectRagExclusions = origRespectExclusions;
+				await lumina.saveSettings();
+			}
+		})()`);
+
+		reporter.record(
+			'Mobile Built-in Agent Execution (create_note & read_note without Worker)',
+			agentExecResult.success,
+			`NoWorker: ${agentExecResult.noWorker}, Approved: ${agentExecResult.approved}, CreateErr: ${agentExecResult.createError}, ReadMatched: ${agentExecResult.readMatched}`,
+			Date.now() - tAgentExec
+		);
+
+		// 4-C. Debug Panel ConfirmModal & Graph View Mobile Mount
+		const tDebugGraph = Date.now();
+		const debugGraphResult = await client.evaluate(`(async () => {
+			const lumina = app.plugins.plugins['lumina'];
+			const origDebugMode = lumina.settings.misc.debugMode;
+			let debugOverflowOk = false;
+			let modalOpened = false;
+			let modalCanceled = false;
+			let graphMounted = false;
+			let graphOverflowOk = false;
+
+			try {
+				lumina.settings.misc.debugMode = true;
+				await lumina.saveSettings();
+
+				app.workspace.getLeavesOfType('lumina-debug-panel').forEach(l => l.detach());
+				app.commands.executeCommandById('lumina:open-devlog');
+				const dbgDeadline = Date.now() + 3000;
+				while (Date.now() < dbgDeadline) {
+					if (document.querySelector('.lumina-debug')) break;
+					await new Promise(r => setTimeout(r, 100));
+				}
+				await new Promise(r => setTimeout(r, 250));
+
+				const dbgLeaf = app.workspace.getLeavesOfType('lumina-debug-panel')[0];
+				const dbgEl = dbgLeaf?.view?.contentEl;
+				debugOverflowOk = dbgEl ? dbgEl.scrollWidth <= dbgEl.clientWidth + 4 : false;
+
+				const clearBtn = document.querySelector('.lumina-debug__action-btn--danger');
+				if (clearBtn && !clearBtn.disabled) {
+					clearBtn.click();
+					let modal = null;
+					const modalOpenDeadline = Date.now() + 1500;
+					while (Date.now() < modalOpenDeadline) {
+						modal = document.querySelector('.modal-container .modal');
+						if (modal) break;
+						await new Promise(r => setTimeout(r, 50));
+					}
+					modalOpened = !!modal;
+					if (modal) {
+						const cancelBtn = Array.from(modal.querySelectorAll('.modal-content button'))
+							.find(b => !b.classList.contains('mod-warning') && !b.classList.contains('mod-cta'))
+							|| Array.from(modal.querySelectorAll('button'))
+								.find(b => !b.classList.contains('mod-warning') && !b.classList.contains('mod-cta'))
+							|| modal.querySelector('.modal-close-button')
+							|| modal.querySelector('.modal-header-button');
+						cancelBtn?.click();
+						// 모바일 모달 닫힘 애니메이션(animateClose) 완료까지 폴링 대기
+						const modalCloseDeadline = Date.now() + 1500;
+						while (Date.now() < modalCloseDeadline) {
+							if (!document.querySelector('.modal-container .modal')) {
+								modalCanceled = true;
+								break;
+							}
+							await new Promise(r => setTimeout(r, 50));
+						}
+					}
+				}
+
+				app.workspace.leftSplit?.collapse?.();
+				app.workspace.rightSplit?.collapse?.();
+				app.workspace.getLeavesOfType('lumina-graph').forEach(l => l.detach());
+				app.commands.executeCommandById('lumina:open-graph-view');
+				const grpDeadline = Date.now() + 3000;
+				while (Date.now() < grpDeadline) {
+					if (document.querySelector('.lumina-graph-panel')) break;
+					await new Promise(r => setTimeout(r, 100));
+				}
+				await new Promise(r => setTimeout(r, 250));
+
+				const grpLeaf = app.workspace.getLeavesOfType('lumina-graph')[0];
+				const grpEl = grpLeaf?.view?.contentEl;
+				const hasGraphPanel = !!grpEl?.querySelector('.lumina-graph-panel');
+				const hasGraphSub = Boolean(grpEl?.querySelector('.lumina-graph-controls') || grpEl?.querySelector('.lumina-graph-panel__empty'));
+				graphMounted = hasGraphPanel && hasGraphSub;
+				graphOverflowOk = grpEl ? grpEl.scrollWidth <= grpEl.clientWidth + 4 : false;
+
+				return {
+					success: debugOverflowOk && modalOpened && modalCanceled && graphMounted && graphOverflowOk,
+					debugOverflowOk,
+					modalOpened,
+					modalCanceled,
+					graphMounted,
+					graphOverflowOk,
+				};
+			} finally {
+				document.querySelectorAll('.modal-container .modal-close-button, .modal-container .modal-header-button').forEach(b => b.click());
+				const cleanupDeadline = Date.now() + 800;
+				while (Date.now() < cleanupDeadline) {
+					if (!document.querySelector('.modal-container')) break;
+					await new Promise(r => setTimeout(r, 50));
+				}
+				app.workspace.getLeavesOfType('lumina-debug-panel').forEach(l => l.detach());
+				app.workspace.getLeavesOfType('lumina-graph').forEach(l => l.detach());
+				lumina.settings.misc.debugMode = origDebugMode;
+				await lumina.saveSettings();
+			}
+		})()`);
+
+		reporter.record(
+			'Mobile Debug Panel ConfirmModal & Graph View Mount',
+			debugGraphResult.success,
+			`DebugOverflowOK: ${debugGraphResult.debugOverflowOk}, ConfirmModal: ${debugGraphResult.modalOpened}->${debugGraphResult.modalCanceled}, GraphMounted: ${debugGraphResult.graphMounted}, GraphOverflowOK: ${debugGraphResult.graphOverflowOk}`,
+			Date.now() - tDebugGraph
+		);
+
+		// 4-D. Mobile PromptBar Enter Newline & PdfParser End-to-End Smoke
+		const tPromptPdf = Date.now();
+		const promptPdfResult = await client.evaluate(`(async () => {
+			const lumina = app.plugins.plugins['lumina'];
+			const tempNotePath = '__lumina_mobile_promptbar_e2e__.md';
+			const tempPdfPath = '__lumina_mobile_parser_e2e__.pdf';
+			const origProviders = JSON.parse(JSON.stringify(lumina.settings.connections.providers || []));
+			const origQaProv = lumina.settings.connections.quickActionProviderId;
+			const origQaModel = lumina.settings.connections.quickActionModelId;
+
+			const buildMinimalPdf = (text) => {
+				const esc = text.replace(/([()\\\\])/g, '\\\\$1');
+				const stream = 'BT\\n/F1 12 Tf\\n72 720 Td\\n(' + esc + ') Tj\\nET';
+				const objs = [
+					'1 0 obj\\n<< /Type /Catalog /Pages 2 0 R >>\\nendobj\\n',
+					'2 0 obj\\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\\nendobj\\n',
+					'3 0 obj\\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\\nendobj\\n',
+					'4 0 obj\\n<< /Length ' + stream.length + ' >>\\nstream\\n' + stream + '\\nendstream\\nendobj\\n',
+					'5 0 obj\\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\\nendobj\\n',
+				];
+				let pdf = '%PDF-1.4\\n';
+				const offsets = [0];
+				for (const o of objs) {
+					offsets.push(pdf.length);
+					pdf += o;
+				}
+				const xrefOffset = pdf.length;
+				pdf += 'xref\\n0 ' + (objs.length + 1) + '\\n0000000000 65535 f \\n';
+				for (let i = 1; i <= objs.length; i++) {
+					pdf += String(offsets[i]).padStart(10, '0') + ' 00000 n \\n';
+				}
+				pdf += 'trailer\\n<< /Size ' + (objs.length + 1) + ' /Root 1 0 R >>\\nstartxref\\n' + xrefOffset + '\\n%%EOF\\n';
+				const bytes = new Uint8Array(pdf.length);
+				for (let i = 0; i < pdf.length; i++) bytes[i] = pdf.charCodeAt(i) & 0xff;
+				return bytes.buffer;
+			};
+
+			let promptBarOpened = false;
+			let promptBarWithinViewport = false;
+			let promptBarLeft = -1;
+			let promptBarRight = -1;
+			let promptBarWidth = -1;
+			let viewportWidth = window.innerWidth;
+			let enterDidNotPreventDefault = false;
+			let hasEditor = false;
+			let pdfParsedText = false;
+
+			try {
+				lumina.settings.connections.providers = [{
+					id: '__mobile_prompt_prov__',
+					type: 'openai',
+					credential: 'sk-test',
+					availableModels: ['gpt-4o-mini'],
+					isVerified: true,
+				}];
+				lumina.settings.connections.quickActionProviderId = '__mobile_prompt_prov__';
+				lumina.settings.connections.quickActionModelId = 'gpt-4o-mini';
+
+				// 모바일 390px 에디터 공간 확보를 위해 좌/우 사이드바 접기
+				app.workspace.leftSplit?.collapse?.();
+				app.workspace.rightSplit?.collapse?.();
+
+				// 1) 마크다운 노트 열고 인라인 프롬프트 바 호출 → Enter 시 제출(preventDefault)되지 않고 줄바꿈 허용 확인
+				const oldNote = app.vault.getAbstractFileByPath(tempNotePath);
+				if (oldNote) await app.vault.delete(oldNote, true);
+				const noteFile = await app.vault.create(tempNotePath, 'Sample mobile paragraph for prompt bar test.');
+				let existingRootLeaf = app.workspace.getMostRecentLeaf(app.workspace.rootSplit);
+				if (!existingRootLeaf) {
+					app.workspace.iterateRootLeaves((l) => {
+						if (!existingRootLeaf) existingRootLeaf = l;
+					});
+				}
+				const leaf = existingRootLeaf
+					? (app.workspace.setActiveLeaf(existingRootLeaf, { focus: true }), app.workspace.getLeaf('tab'))
+					: app.workspace.createLeafInParent(app.workspace.rootSplit, 0);
+				const setMobileFlags = (mob) => {
+					const p = window.__luminaObsidianMod?.Platform;
+					if (p) {
+						Object.defineProperty(p, 'isMobile', { value: mob, configurable: true, writable: true });
+						Object.defineProperty(p, 'isDesktop', { value: !mob, configurable: true, writable: true });
+						Object.defineProperty(p, 'isDesktopApp', { value: !mob, configurable: true, writable: true });
+						Object.defineProperty(p, 'isMobileApp', { value: mob, configurable: true, writable: true });
+						Object.defineProperty(p, 'isPhone', { value: mob, configurable: true, writable: true });
+						Object.defineProperty(p, 'isIosApp', { value: mob, configurable: true, writable: true });
+					}
+					app.isMobile = mob;
+				};
+				// 데스크탑 Obsidian의 MarkdownView 생성자가 Platform.isMobile=true 시 없는 mobileToolbar.isVisible를
+				// 참조해 NPE가 발생하므로, 뷰 생성(openFile) 구간만 일시 해제 후 즉시 모바일 플래그 복원
+				setMobileFlags(false);
+				try {
+					await leaf.openFile(noteFile, { state: { mode: 'source' } });
+				} finally {
+					setMobileFlags(true);
+				}
+				app.workspace.setActiveLeaf(leaf, { focus: true });
+				await new Promise(r => setTimeout(r, 350));
+				const mdView = leaf.view;
+				hasEditor = Boolean(mdView?.editor);
+				if (mdView?.editor) {
+					mdView.editor.focus();
+					mdView.editor.setSelection({ line: 0, ch: 0 }, { line: 0, ch: 6 });
+					app.commands.executeCommandById('lumina:open-inline-prompt-bar');
+					const pbDeadline = Date.now() + 3000;
+					while (Date.now() < pbDeadline) {
+						const b = document.querySelector('.lumina-promptbar');
+						if (b && b.getBoundingClientRect().width > 0) break;
+						await new Promise(r => setTimeout(r, 100));
+					}
+					const bar = document.querySelector('.lumina-promptbar');
+					if (bar) {
+						promptBarOpened = true;
+						const rect = bar.getBoundingClientRect();
+						promptBarLeft = Math.round(rect.left);
+						promptBarRight = Math.round(rect.right);
+						promptBarWidth = Math.round(rect.width);
+						viewportWidth = window.innerWidth;
+						promptBarWithinViewport = rect.width > 50 && rect.right <= window.innerWidth + 2 && rect.left >= -2;
+						const ta = bar.querySelector('textarea');
+						if (ta) {
+							ta.value = 'Line1';
+							const ev = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+							const notCancelled = ta.dispatchEvent(ev);
+							enterDidNotPreventDefault = notCancelled && Boolean(document.querySelector('.lumina-promptbar'));
+							ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+						}
+						document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+						bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+					}
+				}
+
+				// 2) 실제 PDF 바이너리를 볼트에 생성 후 내장 read_note MCP 툴로 PdfParser.parse() 스모크 검증
+				const oldPdf = app.vault.getAbstractFileByPath(tempPdfPath);
+				if (oldPdf) await app.vault.delete(oldPdf, true);
+				await app.vault.createBinary(tempPdfPath, buildMinimalPdf('Mobile PDF Smoke'));
+				const prevAgentEnabled = lumina.settings.chat.agentEnabled;
+				lumina.settings.chat.agentEnabled = true;
+				const tools = lumina.mcpManager?.getAllTools?.() || [];
+				const readTool = tools.find(t => t.name === 'read_note');
+				if (readTool) {
+					const pdfRes = await lumina.mcpManager.callTool(readTool._serverId, 'read_note', { path: tempPdfPath });
+					const extracted = pdfRes?.content?.[0]?.text || '';
+					pdfParsedText = !pdfRes?.isError && extracted.includes('Mobile PDF Smoke');
+				}
+				lumina.settings.chat.agentEnabled = prevAgentEnabled;
+
+				return {
+					success: promptBarOpened && promptBarWithinViewport && enterDidNotPreventDefault && pdfParsedText,
+					promptBarOpened,
+					promptBarWithinViewport,
+					promptBarLeft,
+					promptBarRight,
+					promptBarWidth,
+					viewportWidth,
+					enterDidNotPreventDefault,
+					hasEditor,
+					pdfParsedText,
+				};
+			} finally {
+				app.workspace.getLeavesOfType('markdown').forEach(l => {
+					if (l.view?.file?.path === tempNotePath) l.detach();
+				});
+				for (const p of [tempNotePath, tempPdfPath]) {
+					const f = app.vault.getAbstractFileByPath(p);
+					if (f) { try { await app.vault.delete(f, true); } catch {} }
+				}
+				lumina.settings.connections.providers = origProviders;
+				lumina.settings.connections.quickActionProviderId = origQaProv;
+				lumina.settings.connections.quickActionModelId = origQaModel;
+			}
+		})()`);
+
+		reporter.record(
+			'Mobile PromptBar Enter Newline & PdfParser End-to-End Smoke',
+			promptPdfResult.success,
+			`PromptBar=${promptPdfResult.promptBarOpened} (hasEditor=${promptPdfResult.hasEditor}, inBounds=${promptPdfResult.promptBarWithinViewport} [${promptPdfResult.promptBarLeft}..${promptPdfResult.promptBarRight}/${promptPdfResult.viewportWidth}, w=${promptPdfResult.promptBarWidth}], enterNewlineOK=${promptPdfResult.enterDidNotPreventDefault}), PdfExtracted=${promptPdfResult.pdfParsedText}`,
+			Date.now() - tPromptPdf
+		);
+
+		// 5. 모바일 Pro 기능 검증 (Split Chat 모바일 탭 레이아웃, Voice-to-Note 로컬 Whisper 제외 및 .is-mobile 필, Batch Studio 마운트)
+		const isMobileProUnlocked = await client.evaluate(`(() => {
+			const cmds = Object.keys(app.commands.commands);
+			return cmds.includes('lumina:open-split-chat') &&
+				cmds.includes('lumina:open-batch-studio') &&
+				cmds.includes('lumina:toggle-voice-note-recording');
+		})()`);
+
+		if (!isMobileProUnlocked) {
+			reporter.recordSkip(
+				'Mobile Pro Features (Split Chat, Voice-to-Note & Batch Studio)',
+				'Skipped: Pro features locked in current build (run with "npm run build:dev" when LUMINA_DEV_PRO=true to test Pro on mobile)'
+			);
+		} else {
+			// 5-A. Mobile Split Chat (Pro): 모바일 컴팩트 슬롯 탭(.lumina-split-slotbar__mobile-tab) 렌더링 및 슬롯 전환
+			const tMobileSplit = Date.now();
+			const mobileSplitResult = await client.evaluate(`(async () => {
+				const lumina = app.plugins.plugins['lumina'];
+				const origProviders = JSON.parse(JSON.stringify(lumina.settings.connections.providers || []));
+				try {
+					// 슬롯 A/B가 생성되도록 최소 1개의 검증된 클라우드 프로바이더(모델 2개) 보장
+					const desktopOnlyTypes = new Set(['ollama', 'lmstudio', 'cli-claude-code', 'cli-codex', 'cli-opencode', 'cli-antigravity']);
+					const hasVerified = lumina.settings.connections.providers.some(
+						p => !desktopOnlyTypes.has(p.type) && p.isVerified && (p.availableModels?.length || 0) >= 2
+					);
+					if (!hasVerified) {
+						lumina.settings.connections.providers.push({
+							id: '__mobile_split_temp_prov__',
+							type: 'openai',
+							credential: 'sk-test',
+							availableModels: ['gpt-4o', 'gpt-4o-mini'],
+							isVerified: true,
+						});
+						await lumina.saveSettings();
+					}
+
+					app.workspace.getLeavesOfType('lumina-split-chat').forEach(l => l.detach());
+					app.commands.executeCommandById('lumina:open-split-chat');
+					const deadline = Date.now() + 3500;
+					while (Date.now() < deadline) {
+						if (document.querySelector('.lumina-split-root')) break;
+						await new Promise(r => setTimeout(r, 100));
+					}
+					await new Promise(r => setTimeout(r, 250));
+
+					const root = document.querySelector('.lumina-split-root');
+					const hasMobileSlotBar = !!root?.querySelector('.lumina-split-slotbar__mobile');
+					const hasDesktopGrid = !!root?.querySelector('.lumina-split-slotbar__grid');
+					const mobileTabs = Array.from(root?.querySelectorAll('.lumina-split-slotbar__mobile-tab') || []);
+
+					let tabSwitchOk = false;
+					if (mobileTabs.length >= 2) {
+						mobileTabs[1].click();
+						await new Promise(r => setTimeout(r, 150));
+						tabSwitchOk = mobileTabs[1].classList.contains('is-active');
+					}
+
+					return {
+						success: !!root && hasMobileSlotBar && !hasDesktopGrid && mobileTabs.length >= 2 && tabSwitchOk,
+						hasMobileSlotBar,
+						hasDesktopGrid,
+						mobileTabCount: mobileTabs.length,
+						tabSwitchOk,
+					};
+				} finally {
+					lumina.settings.connections.providers = origProviders;
+					await lumina.saveSettings();
+					app.workspace.getLeavesOfType('lumina-split-chat').forEach(l => l.detach());
+				}
+			})()`);
+
+			reporter.record(
+				'Mobile Split Chat (Pro): Compact Mobile Slot Tabs & Tab Switching',
+				mobileSplitResult.success,
+				`MobileSlotBar: ${mobileSplitResult.hasMobileSlotBar} (DesktopGrid=${mobileSplitResult.hasDesktopGrid}), Tabs: ${mobileSplitResult.mobileTabCount}, SwitchToB: ${mobileSplitResult.tabSwitchOk}`,
+				Date.now() - tMobileSplit
+			);
+
+			// 5-B. Mobile Voice-to-Note (Pro): 설정에서 local-whisper 제외, 사전 점검 차단 & .is-mobile 필 위치 검증
+			const tMobileVoice = Date.now();
+			const mobileVoiceResult = await client.evaluate(`(async () => {
+				const lumina = app.plugins.plugins['lumina'];
+				const origProviders = JSON.parse(JSON.stringify(lumina.settings.connections.providers || []));
+				const origVoiceNote = lumina.settings.voiceNote ? JSON.parse(JSON.stringify(lumina.settings.voiceNote)) : undefined;
+				let localWhisperExcluded = false;
+				let localModelSettingHidden = false;
+				let localWhisperBlocked = false;
+				let mobilePillMounted = false;
+				let pillHasIsMobileClass = false;
+				let pillBottomPx = -1;
+
+				try {
+					// 1) Misc 탭 -> Voice-to-Note 설정에서 local-whisper 옵션이 제외되었는지 확인
+					app.setting.open();
+					app.setting.openTabById('lumina');
+					const deadline = Date.now() + 3000;
+					while (Date.now() < deadline) {
+						if (document.querySelector('.lumina-settings__nav-btn')) break;
+						await new Promise(r => setTimeout(r, 100));
+					}
+					await new Promise(r => setTimeout(r, 200));
+
+					const container = app.setting.activeTab?.containerEl;
+					const navBtns = Array.from(container?.querySelectorAll('.lumina-settings__nav-btn:not(.lumina-settings__nav-btn--advanced)') || []);
+					navBtns[navBtns.length - 1]?.click(); // Misc 탭
+					await new Promise(r => setTimeout(r, 200));
+
+					const selects = Array.from(container?.querySelectorAll('select') || []);
+					const sttModeSelect = selects.find(s => Array.from(s.options).some(o => o.value === 'provider'));
+					if (sttModeSelect) {
+						const sttOptions = Array.from(sttModeSelect.options).map(o => o.value);
+						localWhisperExcluded = !sttOptions.includes('local-whisper');
+					}
+					const hasWhisperModelSelect = selects.some(s => Array.from(s.options).some(o => o.value.includes('Xenova/whisper')));
+					localModelSettingHidden = !hasWhisperModelSelect;
+					app.setting.close();
+					// 모바일 모달 닫힘 애니메이션 완료까지 대기
+					const closeDeadline = Date.now() + 1500;
+					while (Date.now() < closeDeadline) {
+						if (!document.querySelector('.modal-container')) break;
+						await new Promise(r => setTimeout(r, 50));
+					}
+
+					// 2) 합성 오디오 스트림 설정 후 sttMode='local-whisper' 사전 차단 + 'auto' 필 마운트/하단 위치 검증
+					lumina.settings.connections.providers = [{
+						id: '__mobile_voice_cloud_prov__',
+						type: 'openai',
+						credential: 'sk-test',
+						availableModels: ['gpt-4o-mini', 'whisper-1'],
+						isVerified: true,
+					}];
+					lumina.settings.voiceNote = { ...(origVoiceNote || {}), sttMode: 'local-whisper' };
+					await lumina.saveSettings();
+
+					const origMediaDevices = navigator.mediaDevices;
+					const origGetUserMedia = origMediaDevices?.getUserMedia?.bind(origMediaDevices);
+					const AudioCtx = window.AudioContext || window.webkitAudioContext;
+					const audioCtx = new AudioCtx();
+					const dest = audioCtx.createMediaStreamDestination();
+					const osc = audioCtx.createOscillator();
+					osc.connect(dest);
+					osc.start();
+
+					if (!navigator.mediaDevices) {
+						Object.defineProperty(navigator, 'mediaDevices', {
+							configurable: true,
+							value: { getUserMedia: async () => dest.stream },
+						});
+					} else {
+						navigator.mediaDevices.getUserMedia = async () => dest.stream;
+					}
+
+					try {
+						// 2-A. sttMode='local-whisper'일 때 모바일 사전 점검으로 차단되어 위젯이 마운트되지 않아야 함
+						app.commands.executeCommandById('lumina:toggle-voice-note-recording');
+						await new Promise(r => setTimeout(r, 400));
+						localWhisperBlocked = !document.querySelector('.lumina-voice-pill-wrap');
+						if (!localWhisperBlocked) {
+							lumina?.voiceNoteManager?.cancelRecording?.();
+							await new Promise(r => setTimeout(r, 150));
+						}
+
+						// 2-B. 유효한 클라우드 프로바이더 + sttMode='auto'로 녹음 위젯(.is-mobile, bottom >= 60px) 마운트
+						lumina.settings.voiceNote = { ...(origVoiceNote || {}), sttMode: 'auto' };
+						await lumina.saveSettings();
+
+						app.commands.executeCommandById('lumina:toggle-voice-note-recording');
+						const pillDeadline = Date.now() + 3500;
+						while (Date.now() < pillDeadline) {
+							const wrap = document.querySelector('.lumina-voice-pill-wrap');
+							if (wrap) {
+								mobilePillMounted = true;
+								pillHasIsMobileClass = wrap.classList.contains('is-mobile');
+								pillBottomPx = parseFloat(getComputedStyle(wrap).bottom || '-1');
+								break;
+							}
+							await new Promise(r => setTimeout(r, 100));
+						}
+					} finally {
+						lumina?.voiceNoteManager?.cancelRecording?.();
+						try { osc.stop(); } catch {}
+						try { await audioCtx.close(); } catch {}
+						if (origMediaDevices && origGetUserMedia) {
+							origMediaDevices.getUserMedia = origGetUserMedia;
+						}
+					}
+				} finally {
+					lumina.settings.connections.providers = origProviders;
+					lumina.settings.voiceNote = origVoiceNote;
+					await lumina.saveSettings();
+				}
+
+				const pillBottomOk = pillBottomPx >= 60;
+				return {
+					success: localWhisperExcluded && localModelSettingHidden && localWhisperBlocked && mobilePillMounted && pillHasIsMobileClass && pillBottomOk,
+					localWhisperExcluded,
+					localModelSettingHidden,
+					localWhisperBlocked,
+					mobilePillMounted,
+					pillHasIsMobileClass,
+					pillBottomPx,
+				};
+			})()`);
+
+			reporter.record(
+				'Mobile Voice-to-Note (Pro): Pre-flight Block, Local Whisper Hidden & Pill Offset (.is-mobile)',
+				mobileVoiceResult.success,
+				`LocalWhisperExcluded: ${mobileVoiceResult.localWhisperExcluded}, PreFlightBlocked: ${mobileVoiceResult.localWhisperBlocked}, WhisperModelHidden: ${mobileVoiceResult.localModelSettingHidden}, MobilePill: ${mobileVoiceResult.mobilePillMounted} (.is-mobile=${mobileVoiceResult.pillHasIsMobileClass}, bottom=${mobileVoiceResult.pillBottomPx}px)`,
+				Date.now() - tMobileVoice
+			);
+
+			// 5-C. Mobile Batch Studio (Pro): 모바일 뷰포트 마운트, 로컬 Autolink 배치 실행 및 워크벤치 가시성 확인
+			const tMobileBatch = Date.now();
+			const mobileBatchResult = await client.evaluate(`(async () => {
+				const folder = '__lumina_mobile_batch_e2e__';
+				try {
+					app.workspace.leftSplit?.collapse?.();
+					app.workspace.rightSplit?.collapse?.();
+
+					const existingFolder = app.vault.getAbstractFileByPath(folder);
+					if (existingFolder) await app.vault.delete(existingFolder, true);
+					await app.vault.createFolder(folder);
+					await app.vault.create(
+						folder + '/MobileBatchAlpha.md',
+						'This mobile E2E test document explicitly mentions MobileBatchBeta in plain text so local autolink detection can propose a wikilink cleanly.'
+					);
+					await app.vault.create(
+						folder + '/MobileBatchBeta.md',
+						'This mobile E2E test document explicitly mentions MobileBatchAlpha in plain text so local autolink detection can propose a wikilink cleanly.'
+					);
+					await new Promise(r => setTimeout(r, 200));
+
+					app.workspace.getLeavesOfType('lumina-batch-studio').forEach(l => l.detach());
+					app.commands.executeCommandById('lumina:open-batch-studio');
+					const deadline = Date.now() + 3500;
+					while (Date.now() < deadline) {
+						if (document.querySelector('div.lumina-batch-studio')) break;
+						await new Promise(r => setTimeout(r, 100));
+					}
+					await new Promise(r => setTimeout(r, 200));
+
+					const studio = document.querySelector('div.lumina-batch-studio');
+					const recipeTabs = studio?.querySelectorAll('.lumina-batch-recipe-tab') || [];
+					const hasProBadge = !!studio?.querySelector('.lumina-batch-pro-badge');
+					const noOverflow = studio ? studio.scrollWidth <= studio.clientWidth + 4 : false;
+
+					let wbHeight = 0;
+					let wbHeightExpanded = 0;
+					let noOverflowAfterRun = false;
+
+					if (studio) {
+						// 작업 공간 탭 활성화 및 설정 영역 펼치기
+						const mainTabs = studio.querySelectorAll('.lumina-batch-main-tab');
+						mainTabs[0]?.click();
+						await new Promise(r => setTimeout(r, 100));
+						studio.querySelector('.lumina-batch-collapsed-bar button')?.click();
+						await new Promise(r => setTimeout(r, 100));
+
+						// 로컬 전용 Autolink 레시피(2번째 탭) 및 테스트 폴더 범위 지정
+						const updatedRecipeTabs = studio.querySelectorAll('.lumina-batch-recipe-tab');
+						updatedRecipeTabs[1]?.click();
+						await new Promise(r => setTimeout(r, 150));
+
+						const scopeBtns = studio.querySelectorAll('.lumina-batch-segmented button');
+						scopeBtns[1]?.click();
+						await new Promise(r => setTimeout(r, 100));
+
+						const folderInput = studio.querySelector('input[list="lumina-batch-folder-list"]');
+						const inputSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+						if (folderInput) {
+							inputSetter.call(folderInput, folder);
+							folderInput.dispatchEvent(new Event('input', { bubbles: true }));
+						}
+						const tagInput = studio.querySelector('.lumina-batch-field-split input[type="text"]');
+						if (tagInput && tagInput.value) {
+							inputSetter.call(tagInput, '');
+							tagInput.dispatchEvent(new Event('input', { bubbles: true }));
+						}
+						await new Promise(r => setTimeout(r, 300));
+
+						// 배치 실행으로 state.queue.length > 0 상태 및 .lumina-batch-workbench 마운트 유도
+						const startBtn = studio.querySelector('.lumina-batch-start-btn');
+						startBtn?.click();
+
+						const runDeadline = Date.now() + 8000;
+						while (Date.now() < runDeadline) {
+							if (studio.querySelector('.lumina-batch-status-pill.is-completed') && studio.querySelector('.lumina-batch-workbench')) {
+								break;
+							}
+							await new Promise(r => setTimeout(r, 100));
+						}
+						await new Promise(r => setTimeout(r, 100));
+
+						const workbench = studio.querySelector('.lumina-batch-workbench');
+						wbHeight = workbench ? workbench.getBoundingClientRect().height : 0;
+						noOverflowAfterRun = studio.scrollWidth <= studio.clientWidth + 4;
+
+						// 설정 영역을 다시 펼쳐도 모바일 CSS(min-height: 360px, flex-shrink: 0)로 워크벤치가 찌그러지지 않는지 확인
+						studio.querySelector('.lumina-batch-collapsed-bar button')?.click();
+						await new Promise(r => setTimeout(r, 150));
+						const workbenchExpanded = studio.querySelector('.lumina-batch-workbench');
+						wbHeightExpanded = workbenchExpanded ? workbenchExpanded.getBoundingClientRect().height : 0;
+					}
+
+					const ok = !!studio &&
+						recipeTabs.length === 4 &&
+						hasProBadge &&
+						noOverflow &&
+						noOverflowAfterRun &&
+						wbHeight >= 120 &&
+						wbHeightExpanded >= 120;
+
+					return {
+						success: ok,
+						mounted: !!studio,
+						recipeCount: recipeTabs.length,
+						hasProBadge,
+						noOverflow,
+						noOverflowAfterRun,
+						wbHeight: Math.round(wbHeight),
+						wbHeightExpanded: Math.round(wbHeightExpanded),
+					};
+				} finally {
+					app.workspace.getLeavesOfType('lumina-batch-studio').forEach(l => l.detach());
+					const folderObj = app.vault.getAbstractFileByPath(folder);
+					if (folderObj) {
+						try { await app.vault.delete(folderObj, true); } catch {}
+					}
+				}
+			})()`);
+
+			reporter.record(
+				'Mobile Batch Studio (Pro): View Mount, Overflow & Workbench Visibility',
+				mobileBatchResult.success,
+				`Mounted: ${mobileBatchResult.mounted}, Recipes: ${mobileBatchResult.recipeCount}, ProBadge: ${mobileBatchResult.hasProBadge}, OverflowOK: ${mobileBatchResult.noOverflow}/${mobileBatchResult.noOverflowAfterRun}, WorkbenchH: ${mobileBatchResult.wbHeight}px (expanded=${mobileBatchResult.wbHeightExpanded}px)`,
+				Date.now() - tMobileBatch
+			);
+		}
+
+		// 6. 전체 모바일 시나리오 종료 후 Node.js require / getBasePath 호출 재감사
+		const tFinalAudit = Date.now();
+		const finalAudit = await client.evaluate(`(() => {
+			const blockedReq = window.__luminaMobileE2EBlockedRequire || [];
+			const blockedBasePath = window.__luminaMobileE2EBlockedGetBasePath || [];
+			return {
+				success: blockedReq.length === 0 && blockedBasePath.length === 0,
+				blockedReq,
+				blockedBasePath,
+			};
+		})()`);
+
+		reporter.record(
+			'Mobile Final Runtime Audit: Zero Blocked Node.js Require & getBasePath Calls',
+			finalAudit.success,
+			`BlockedRequires: ${finalAudit.blockedReq.length}${finalAudit.blockedReq.length ? ` [${finalAudit.blockedReq.join(', ')}]` : ''}, BlockedGetBasePath: ${finalAudit.blockedBasePath.length}`,
+			Date.now() - tFinalAudit
+		);
+	} catch (err) {
+		reporter.record('Mobile Environment Emulation & Compatibility', false, err.message, Date.now() - tMobileStart);
+	} finally {
+		// 5. 데스크탑 환경 100% 원상복구
+		try {
+			await client.send('Emulation.clearDeviceMetricsOverride');
+			await client.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+		} catch {}
+
+		await client.evaluate(`(async () => {
+			const backup = window.__luminaMobileE2EBackup;
+			if (!backup) return;
+
+			if (backup.origRequire) {
+				window.require = backup.origRequire;
+			}
+			if (backup.origAdapterRead) {
+				app.vault.adapter.read = backup.origAdapterRead;
+			}
+			if (backup.origAdapterGetBasePath) {
+				app.vault.adapter.getBasePath = backup.origAdapterGetBasePath;
+			}
+
+			window.__luminaForceMobilePlatform = false;
+			const Platform = window.__luminaObsidianMod?.Platform;
+			const origPlatform = window.__luminaOrigPlatform;
+			if (Platform && origPlatform) {
+				Object.defineProperty(Platform, 'isMobile', { value: origPlatform.isMobile, configurable: true, writable: true });
+				Object.defineProperty(Platform, 'isDesktop', { value: origPlatform.isDesktop, configurable: true, writable: true });
+				Object.defineProperty(Platform, 'isDesktopApp', { value: origPlatform.isDesktopApp, configurable: true, writable: true });
+				Object.defineProperty(Platform, 'isMobileApp', { value: origPlatform.isMobileApp, configurable: true, writable: true });
+				Object.defineProperty(Platform, 'isPhone', { value: origPlatform.isPhone, configurable: true, writable: true });
+				Object.defineProperty(Platform, 'isIosApp', { value: origPlatform.isIosApp, configurable: true, writable: true });
+			}
+
+			app.isMobile = backup.appIsMobile;
+			if (app.plugins.manifests['lumina']) {
+				app.plugins.manifests['lumina'].isDesktopOnly = backup.manifestIsDesktopOnly;
+			}
+
+			if (!backup.bodyClasses.isMobile) document.body.classList.remove('is-mobile');
+			if (!backup.bodyClasses.isPhone) document.body.classList.remove('is-phone');
+			if (backup.bodyClasses.isDesktop) document.body.classList.add('is-desktop');
+			document.getElementById('__lumina-mobile-e2e-compat__')?.remove();
+
+			if (backup.leftSplitCollapsed) app.workspace.leftSplit?.collapse?.();
+			else app.workspace.leftSplit?.expand?.();
+			if (backup.rightSplitCollapsed) app.workspace.rightSplit?.collapse?.();
+			else app.workspace.rightSplit?.expand?.();
+
+			if (app.plugins.enabledPlugins.has('lumina')) {
+				await app.plugins.disablePlugin('lumina');
+				await new Promise(r => setTimeout(r, 200));
+			}
+			// 테스트 종료 후 플러그인 재활성화 전 Lumina Svelte 스타일 캐시도 함께 정리
+			document.head.querySelectorAll('style[id^="svelte-"]').forEach((el) => {
+				if ((el.textContent || '').includes('lumina-')) el.remove();
+			});
+			await app.plugins.enablePlugin('lumina');
+			await new Promise(r => setTimeout(r, 500));
+
+			const lumina = app.plugins.plugins['lumina'];
+			if (lumina && backup.settingsJson) {
+				lumina.settings = JSON.parse(backup.settingsJson);
+				await lumina.saveSettings();
+			}
+			delete window.__luminaMobileE2EBackup;
+			delete window.__luminaMobileE2EBlockedGetBasePath;
+			delete window.__luminaMobileE2EBlockedRequire;
+			delete window.__luminaMobileE2EIsFromLuminaStack;
+			delete window.__luminaObsidianMod;
+			delete window.__luminaOrigPlatform;
+		})()`);
+	}
 }
 
 run()

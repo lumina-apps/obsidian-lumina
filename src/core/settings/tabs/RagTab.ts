@@ -1,4 +1,4 @@
-import { Notice, Setting, ButtonComponent } from 'obsidian';
+import { Notice, Platform, Setting, ButtonComponent } from 'obsidian';
 import { ProjectSettingsModal } from '../../../features/projects/ui/ProjectSettingsModal';
 import type { LuminaSettingTab } from '../settingTab';
 import { wrapAsync, addSliderWithInput } from '../../../shared/utils/settingHelpers';
@@ -7,6 +7,7 @@ import { indexingState } from '../../store/ragStore';
 import { ConfirmModal } from '../../../shared/utils/modal';
 import { syncProjectStore } from '../../../core/store/projectStore';
 import { resolveHistoryBasePath, sanitizeHistorySubfolder } from '../../../shared/utils/historyPathUtils';
+import { isRagEffectiveOnCurrentPlatform } from '../../../shared/utils/modelUtils';
 
 /** 경로 설정 변경 후 자동 재인덱싱 디바운스 타이머 */
 let pathChangeDebounceTimer: number | null = null;
@@ -45,7 +46,9 @@ function triggerReindexAfterPathChange(tab: LuminaSettingTab, invalidateContentF
 
 export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 	const s = tab.plugin.settings.rag;
-	const ragEnabled = tab.plugin.settings.connections.ragEnabled;
+	const connections = tab.plugin.settings.connections;
+	const rawRagEnabled = connections.ragEnabled;
+	const effectiveRagEnabled = isRagEffectiveOnCurrentPlatform(connections);
 
 	// 임베딩 모델 위치 안내
 	tab.infoBox(
@@ -54,7 +57,9 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 		'info'
 	);
 
-	if (!ragEnabled) {
+	if (Platform.isMobile && rawRagEnabled && !effectiveRagEnabled) {
+		tab.infoBox(el, t('settings.connections.ragEngine.mobileWarning'), 'warning');
+	} else if (!rawRagEnabled) {
 		tab.infoBox(el, t('settings.rag.disabledWarning'), 'warning');
 	}
 
@@ -92,8 +97,8 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 						await tab.saveAndSync();
 						syncProjectStore(projects.list, projects.activeProjectId);
 						tab.plugin.refreshSettingTab();
-						// RAG 인덱서 hot-swap
-						if (tab.plugin.settings.connections.ragEnabled) {
+						// RAG 인덱서 hot-swap (모바일 auto/미지원 로컬 임베딩 시에는 생략)
+						if (isRagEffectiveOnCurrentPlatform(tab.plugin.settings.connections)) {
 							const { switchProjectIndex } = await import('../../../features/rag/ragInitializer');
 							void switchProjectIndex(tab.plugin, project.id);
 						}

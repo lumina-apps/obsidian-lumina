@@ -296,7 +296,8 @@
       "sendMode": {
         "name": "Send Message Mode",
         "enter": "Enter to send",
-        "ctrlEnter": "Ctrl + Enter to send"
+        "ctrlEnter": "Ctrl + Enter to send",
+        "mobileNote": "On mobile devices, Enter inserts a new line; tap the send button to send."
       },
       "quickActions": {
         "name": "User Custom Quick Actions (Commands)",
@@ -335,6 +336,7 @@
         "name": "Enable Inline Autocomplete (Ghost Text)",
         "desc": "When you pause typing, Task LLM will predict the next sentence and show it as ghost text (Tab: accept all, →: accept first word).",
         "needsTaskModel": "To use this feature, you must first specify a Task model in the Connections tab.",
+        "mobileUnsupported": "Inline ghost-text autocomplete is not available on mobile devices because virtual keyboards lack Tab/Arrow acceptance keys.",
         "promptName": "Autocomplete Prompt",
         "promptDesc": "Instruction sent to the LLM for inline autocomplete. Leave empty to use the default prompt.",
         "contextLengthName": "Autocomplete Context Length (chars)",

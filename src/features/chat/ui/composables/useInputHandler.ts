@@ -1,3 +1,4 @@
+import { Platform } from "obsidian";
 import { tick } from "svelte";
 import type LuminaPlugin from "../../../../main";
 import type { ContextAttachment } from "../../../../shared/types/chat.types";
@@ -33,13 +34,14 @@ export function createKeydownHandler(ctx: KeydownContext): (e: KeyboardEvent) =>
 
 		const sendKey = plugin.settings.chat.sendKey;
 		const isComposing = e.isComposing;
+		const isMobile = typeof Platform !== "undefined" && Boolean(Platform?.isMobile);
 
-		if (sendKey === "enter" && e.key === "Enter" && !e.shiftKey) {
+		if (!isMobile && sendKey === "enter" && e.key === "Enter" && !e.shiftKey) {
 			if (isLoading) return;
 			if (isComposing) return; // IME 조합 중 Enter는 조합 완료용이므로 전송 방지
 			e.preventDefault();
 			onSendMessage();
-		} else if (sendKey === "ctrl_enter" && e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+		} else if (!isMobile && sendKey === "ctrl_enter" && e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
 			if (isLoading) return;
 			if (isComposing) return; // IME 조합 중 Enter는 조합 완료용이므로 전송 방지
 			e.preventDefault();

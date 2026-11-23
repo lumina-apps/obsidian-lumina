@@ -10,6 +10,7 @@ import {
 } from '../../core/settings/defaultSettings';
 import type LuminaPlugin from '../../main';
 import { debugLogger } from '../../shared/debugLogger';
+import { findSupportedProvider } from '../../shared/utils/modelUtils';
 
 const PROMPT_LABEL_PREFIX_RE = /^(?:Context text|Output|Continuation)\s*:\s*/i;
 const MARKDOWN_LINE_PREFIX_RE = /^\s*(?:[-*+]\s+|\d+\.\s+|#{1,6}\s+|>\s+)*/;
@@ -232,7 +233,7 @@ export class AutocompleteHandler {
 		const { taskProviderId, taskModelId, providers } = this.plugin.settings.connections;
 		if (!taskProviderId || !taskModelId) return null;
 
-		const providerConfig = providers.find(p => p.id === taskProviderId);
+		const providerConfig = findSupportedProvider(providers, taskProviderId);
 		if (!providerConfig || !providerConfig.isVerified) return null;
 
 		if (!contextText.trim()) return null;

@@ -1,4 +1,4 @@
-import { Setting } from 'obsidian';
+import { Platform, Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
 import { t } from '../../../../shared/locales/helpers';
 
@@ -7,9 +7,12 @@ export function renderSendModeSection(tab: LuminaSettingTab, el: HTMLElement): v
 
 	tab.sectionHeading(el, t('settings.chat.sendMode.name'));
 
-	new Setting(el)
-		.setName(t('settings.chat.sendMode.name'))
-		.addDropdown(drop => {
+	const sendSetting = new Setting(el)
+		.setName(t('settings.chat.sendMode.name'));
+	if (Platform.isMobile) {
+		sendSetting.setDesc(t('settings.chat.sendMode.mobileNote'));
+	}
+	sendSetting.addDropdown(drop => {
 			drop
 				.addOption('enter', t('settings.chat.sendMode.enter'))
 				.addOption('ctrl_enter', t('settings.chat.sendMode.ctrlEnter'))

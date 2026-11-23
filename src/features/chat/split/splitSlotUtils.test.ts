@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { Platform } from 'obsidian';
 import type { LLMProviderConfig } from '../../../shared/types/settings.types';
 import {
 	createNextSplitSlot,
@@ -90,5 +91,20 @@ describe('splitSlotUtils', () => {
 		expect(next).not.toBeNull();
 		expect(next?.label).toBe('C');
 		expect(next?.modelId).toBe('gpt-4.1');
+	});
+
+	it('모바일 환경에서 getSplitEligibleProviders는 ollama, lmstudio, cli-*를 제외한다', () => {
+		const origIsMobile = Platform.isMobile;
+		(Platform as { isMobile: boolean }).isMobile = true;
+		try {
+			const eligible = getSplitEligibleProviders([
+				...providers,
+				{ id: 'ol', type: 'ollama', credential: '', availableModels: ['llama3'], isVerified: true },
+				{ id: 'lms', type: 'lmstudio', credential: '', availableModels: ['qwen2.5'], isVerified: true },
+			]);
+			expect(eligible.map((p) => p.id)).toEqual(['p-openai', 'p-anthropic']);
+		} finally {
+			(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+		}
 	});
 });

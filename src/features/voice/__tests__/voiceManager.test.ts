@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { TFile } from 'obsidian';
+import { Platform, TFile } from 'obsidian';
 import { get } from 'svelte/store';
 import { DEFAULT_SETTINGS } from '../../../core/settings/defaultSettings';
 import { resetEntitlementState, setEntitlementState } from '../../../core/store/entitlementStore';
@@ -342,7 +342,76 @@ describe('VoiceNoteManager', () => {
 		expect(input?.style.display).toBe('');
 		expect(clickSpy).toHaveBeenCalledTimes(1);
 
-		input?.remove();
+		input?.dispatchEvent(new Event('cancel'));
+		expect(document.body.querySelector('input.lumina-voice-file-input')).toBeNull();
+
 		manager.destroy();
+	});
+
+	it('STT 파이프라인 실패 시 stopAndProcess()는 IndexedDB 백업을 삭제하지 않고 보존한다', async () => {
+		grantVoiceEntitlement();
+		vi.mocked(recoveryStore.hasBackupSession).mockResolvedValue(true);
+		vi.spyOn(sttResolver, 'resolveSttEngine').mockReturnValue({
+			id: 'mock-stt',
+			label: 'Mock STT',
+			transcribe: vi.fn().mockRejectedValue(new Error('Network timeout')),
+		});
+
+		const manager = new VoiceNoteManager(mockPlugin);
+		await manager.init();
+		await manager.startRecording();
+		await manager.stopAndProcess();
+
+		expect(recoveryStore.clearBackupSession).not.toHaveBeenCalled();
+		expect(get(voiceStore).status).toBe('error');
+		expect(get(voiceStore).hasRecoverableSession).toBe(true);
+
+		manager.destroy();
+	});
+
+	it('모바일 환경에서 local-whisper 설정 시 녹음 시작 전 사전 차단한다', async () => {
+		const origIsMobile = Platform.isMobile;
+		grantVoiceEntitlement();
+		mockPlugin.settings.voiceNote = {
+			...(mockPlugin.settings.voiceNote ?? {}),
+			sttMode: 'local-whisper',
+		};
+
+		try {
+			(Platform as { isMobile: boolean }).isMobile = true;
+			const manager = new VoiceNoteManager(mockPlugin);
+			await manager.init();
+			await manager.startRecording();
+
+			expect(navigator.mediaDevices.getUserMedia).not.toHaveBeenCalled();
+			expect(get(voiceStore).status).toBe('error');
+			manager.destroy();
+		} finally {
+			(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+		}
+	});
+
+	it('모바일 환경에서 local-whisper 설정 시 openAudioFilePicker()도 파일 선택기를 열기 전 사전 차단한다', async () => {
+		const origIsMobile = Platform.isMobile;
+		grantVoiceEntitlement();
+		mockPlugin.settings.voiceNote = {
+			...(mockPlugin.settings.voiceNote ?? {}),
+			sttMode: 'local-whisper',
+		};
+
+		const createElSpy = vi.spyOn(document.body, 'createEl');
+		try {
+			(Platform as { isMobile: boolean }).isMobile = true;
+			const manager = new VoiceNoteManager(mockPlugin);
+			await manager.init();
+			manager.openAudioFilePicker();
+
+			expect(createElSpy).not.toHaveBeenCalled();
+			expect(get(voiceStore).status).toBe('error');
+			manager.destroy();
+		} finally {
+			createElSpy.mockRestore();
+			(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+		}
 	});
 });

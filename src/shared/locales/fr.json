@@ -296,7 +296,8 @@
       "sendMode": {
         "name": "Mode d'envoi de message",
         "enter": "Entrée pour envoyer",
-        "ctrlEnter": "Ctrl + Entrée pour envoyer"
+        "ctrlEnter": "Ctrl + Entrée pour envoyer",
+        "mobileNote": "Sur mobile, la touche Entrée insère un saut de ligne ; appuyez sur le bouton d'envoi pour envoyer."
       },
       "quickActions": {
         "name": "Actions rapides personnalisées par l'utilisateur (Commandes)",
@@ -335,6 +336,7 @@
         "name": "Activer la saisie semi-automatique en ligne (Ghost Text)",
         "desc": "Lorsque vous faites une pause dans la frappe, Task LLM prédit la phrase suivante et l'affiche sous forme de texte fantôme (Tab : tout accepter, → : accepter le premier mot).",
         "needsTaskModel": "Pour utiliser cette fonctionnalité, vous devez d'abord spécifier un modèle de Tâche dans l'onglet Connexions.",
+        "mobileUnsupported": "La saisie semi-automatique en ligne n'est pas disponible sur mobile car les claviers virtuels ne disposent pas des touches Tab/→ d'acceptation.",
         "promptName": "Prompt de saisie semi-automatique",
         "promptDesc": "Instruction envoyée au LLM pour la saisie semi-automatique en ligne. Laisser vide pour utiliser le prompt par défaut.",
         "contextLengthName": "Longueur du contexte de saisie semi-automatique (caractères)",

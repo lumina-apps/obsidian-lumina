@@ -270,6 +270,37 @@ describe('AutocompleteHandler & Inline Autocomplete', () => {
 				vi.useRealTimers();
 			}
 		});
+
+		it('모바일 환경에서는 텍스트 삽입 시 백그라운드 자동완성 요청을 생략한다', async () => {
+			vi.useFakeTimers();
+			const { Platform } = await import('obsidian');
+			const origIsMobile = Platform.isMobile;
+			try {
+				(Platform as { isMobile: boolean }).isMobile = true;
+				const fetchSpy = vi.spyOn(handler, 'fetchSuggestion').mockResolvedValue('next');
+				const parent = document.createElement('div');
+				document.body.appendChild(parent);
+
+				const view = new EditorView({
+					state: EditorState.create({
+						doc: 'Hello world',
+						selection: { anchor: 11 },
+						extensions: [buildInlineAutocompleteExtension(handler)],
+					}),
+					parent,
+				});
+
+				view.dispatch({ changes: { from: 11, to: 11, insert: '!' } });
+				vi.advanceTimersByTime(1000);
+				expect(fetchSpy).not.toHaveBeenCalled();
+
+				view.destroy();
+				parent.remove();
+			} finally {
+				(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+				vi.useRealTimers();
+			}
+		});
 	});
 
 	describe('splitFirstWord & partial suggestion acceptance', () => {

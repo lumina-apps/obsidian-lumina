@@ -2,12 +2,16 @@
  * openai.provider.test.ts
  * OpenAI API 통합 — 모델 목록 조회, 에러 처리 검증
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { RequestUrlResponse } from 'obsidian';
 
 // ── Obsidian 의존성 모킹 ──
-const mockRequestUrl = vi.fn();
+const { mockRequestUrl, mockPlatform } = vi.hoisted(() => ({
+	mockRequestUrl: vi.fn(),
+	mockPlatform: { isMobile: false },
+}));
 vi.mock('obsidian', () => ({
+	Platform: mockPlatform,
 	requestUrl: (...args: unknown[]) => mockRequestUrl(...args),
 	request: vi.fn(),
 	Notice: vi.fn(),
@@ -23,6 +27,11 @@ describe('OpenAIProvider', () => {
 	beforeEach(() => {
 		mockRequestUrl.mockReset();
 		provider = new OpenAIProvider(PROVIDER_ID, API_KEY);
+	});
+
+	afterEach(() => {
+		mockPlatform.isMobile = false;
+		vi.unstubAllGlobals();
 	});
 
 	describe('constructor', () => {
@@ -177,6 +186,113 @@ describe('OpenAIProvider', () => {
 				{ role: 'user', content: 'hi' },
 				{ role: 'user', content: 'next question' },
 			]);
+		});
+
+		it('모바일에서 스트리밍 fetch가 CORS TypeError로 실패하면 requestUrl 비스트리밍으로 폴백한다', async () => {
+			mockPlatform.isMobile = true;
+			vi.stubGlobal('window', {
+				get setTimeout() { return globalThis.setTimeout; },
+				get clearTimeout() { return globalThis.clearTimeout; },
+				fetch: vi.fn().mockRejectedValue(new TypeError('Load failed')),
+			});
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					choices: [{ message: { content: 'Fallback OpenAI response' }, finish_reason: 'stop' }],
+				},
+			} as RequestUrlResponse);
+
+			const chunks: string[] = [];
+			const res = await provider.chat(
+				[{ role: 'user', content: 'hello' }],
+				{ model: 'gpt-4o' },
+				(c) => chunks.push(c),
+			);
+
+			expect(mockRequestUrl).toHaveBeenCalledTimes(1);
+			const callArg = mockRequestUrl.mock.calls[0][0] as { body: string };
+			const parsedBody = JSON.parse(callArg.body) as Record<string, unknown>;
+			expect(parsedBody.stream).toBe(false);
+			expect(parsedBody.stream_options).toBeUndefined();
+			expect(chunks).toEqual(['Fallback OpenAI response']);
+			expect(res.content).toBe('Fallback OpenAI response');
+		});
+
+		it('모바일에서도 AbortError 발생 시 requestUrl로 폴백하지 않고 그대로 중단한다', async () => {
+			mockPlatform.isMobile = true;
+			const abortErr = new Error('Aborted');
+			abortErr.name = 'AbortError';
+			vi.stubGlobal('window', {
+				get setTimeout() { return globalThis.setTimeout; },
+				get clearTimeout() { return globalThis.clearTimeout; },
+				fetch: vi.fn().mockRejectedValue(abortErr),
+			});
+
+			await expect(
+				provider.chat(
+					[{ role: 'user', content: 'hello' }],
+					{ model: 'gpt-4o' },
+					() => {},
+				),
+			).rejects.toThrow('Aborted');
+			expect(mockRequestUrl).not.toHaveBeenCalled();
+		});
+
+		it('모바일에서도 HTTP 오류 응답(400 등) 시 requestUrl로 폴백하지 않는다', async () => {
+			mockPlatform.isMobile = true;
+			vi.stubGlobal('window', {
+				get setTimeout() { return globalThis.setTimeout; },
+				get clearTimeout() { return globalThis.clearTimeout; },
+				fetch: vi.fn().mockResolvedValue({
+					ok: false,
+					status: 400,
+					text: vi.fn().mockResolvedValue('Bad Request'),
+				}),
+			});
+
+			await expect(
+				provider.chat(
+					[{ role: 'user', content: 'hello' }],
+					{ model: 'gpt-4o' },
+					() => {},
+				),
+			).rejects.toThrow('HTTP 400');
+			expect(mockRequestUrl).not.toHaveBeenCalled();
+		});
+
+		it('모바일 CORS 폴백 후 비스트리밍 응답이 ttftTimeoutMs를 넘기더라도 연장된 타임아웃 내에서는 성공한다', async () => {
+			vi.useFakeTimers();
+			try {
+				mockPlatform.isMobile = true;
+				vi.stubGlobal('window', {
+					get setTimeout() { return globalThis.setTimeout; },
+					get clearTimeout() { return globalThis.clearTimeout; },
+					fetch: vi.fn().mockRejectedValue(new TypeError('Load failed')),
+				});
+				mockRequestUrl.mockImplementation(
+					() => new Promise((resolve) => {
+						setTimeout(() => {
+							resolve({
+								text: '{}',
+								json: {
+									choices: [{ message: { content: 'Delayed OpenAI response' }, finish_reason: 'stop' }],
+								},
+							} as RequestUrlResponse);
+						}, 15_000);
+					}),
+				);
+
+				const promise = provider.chat(
+					[{ role: 'user', content: 'hello' }],
+					{ model: 'gpt-4o', ttftTimeoutMs: 5000 },
+					() => {},
+				);
+				await vi.advanceTimersByTimeAsync(15_000);
+				const res = await promise;
+				expect(res.content).toBe('Delayed OpenAI response');
+			} finally {
+				vi.useRealTimers();
+			}
 		});
 	});
 });

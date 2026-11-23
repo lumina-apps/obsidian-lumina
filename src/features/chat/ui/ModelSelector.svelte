@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Platform } from "obsidian";
 	import { tStore } from "../../../shared/locales/index";
 	import type { LLMProviderConfig, FavoriteModel } from "../../../shared/types/settings.types";
 	import { stripProviderSuffix, type FlattenedModel } from "../../../shared/utils/modelUtils";
@@ -33,6 +34,7 @@
 	// ═══════════════════════════════════════════════════════════════════════════
 	let isOpen = $state(false);
 	let searchQuery = $state("");
+	let mobileDropdownTop = $state<number | null>(null);
 	let containerEl: HTMLDivElement | null = $state(null);
 	let inputEl: HTMLInputElement | null = $state(null);
 	let listEl: HTMLDivElement | null = $state(null);
@@ -74,11 +76,20 @@
 		e.stopPropagation();
 		isOpen = !isOpen;
 		if (isOpen) {
+			if (Platform.isMobile && containerEl) {
+				const rect = containerEl.getBoundingClientRect();
+				mobileDropdownTop = rect.bottom > 0 ? Math.round(rect.bottom + 4) : 56;
+			} else {
+				mobileDropdownTop = null;
+			}
 			searchQuery = "";
 			nav.resetIndex();
-			setTimeout(() => {
-				inputEl?.focus();
-			}, 50);
+			// 모바일에서는 드롭다운 오픈 시 소프트 키보드가 즉시 팝업되지 않도록 자동 포커스 생략
+			if (!Platform.isMobile) {
+				setTimeout(() => {
+					inputEl?.focus();
+				}, 50);
+			}
 		}
 	}
 
@@ -138,6 +149,7 @@
 		<div
 			class="lumina-popup-selector lumina-model-selector__dropdown"
 			class:lumina-model-selector__dropdown--left={dropdownAlign === "left"}
+			style={Platform.isMobile && mobileDropdownTop !== null ? `top: ${mobileDropdownTop}px;` : undefined}
 		>
 			<div class="lumina-model-selector__search-wrap">
 				<input
@@ -234,6 +246,15 @@
 	.lumina-model-selector__dropdown--left {
 		left: 0;
 		right: auto;
+	}
+
+	:global(body.is-mobile) .lumina-model-selector__dropdown,
+	:global(body.is-mobile) .lumina-model-selector__dropdown--left {
+		position: fixed;
+		left: 12px;
+		right: 12px;
+		width: auto;
+		max-width: none;
 	}
 
 	.lumina-model-selector__search-wrap {

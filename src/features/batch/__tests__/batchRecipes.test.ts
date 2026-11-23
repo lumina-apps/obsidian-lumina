@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TFile, type App } from 'obsidian';
+import { Platform, TFile, type App } from 'obsidian';
 import type LuminaPlugin from '../../../main';
 import { createProvider } from '../../../core/llm-providers';
 import { DEFAULT_SETTINGS } from '../../../core/settings/defaultSettings';
 import type { BatchRecipeOptions } from '../../../shared/types/batch.types';
-import { executeRecipeForFile } from '../recipes/batchRecipes';
+import { executeRecipeForFile, getBatchEligibleProviders } from '../recipes/batchRecipes';
 
 vi.mock('../../../core/llm-providers', () => ({
 	createProvider: vi.fn(),
@@ -178,5 +178,23 @@ describe('batchRecipes', () => {
 			afterCustomFmVal: '액션 아이템: 사과 수확하기',
 			summaryText: 'action_item',
 		});
+	});
+
+	it('모바일 환경에서 getBatchEligibleProviders는 ollama, lmstudio, cli-*를 제외한다', () => {
+		const origIsMobile = Platform.isMobile;
+		(Platform as { isMobile: boolean }).isMobile = true;
+		try {
+			const eligible = getBatchEligibleProviders([
+				{ id: 'ol', type: 'ollama', credential: '', availableModels: ['llama3'], isVerified: true },
+				{ id: 'lms', type: 'lmstudio', credential: '', availableModels: ['qwen2.5'], isVerified: true },
+				{ id: 'cli', type: 'cli-claude-code', credential: '', availableModels: ['claude'], isVerified: true },
+				{ id: 'cust', type: 'custom', credential: 'sk', baseUrl: 'https://api.together.xyz', availableModels: ['llama-70b'], isVerified: true },
+				{ id: 'oai', type: 'openai', credential: 'sk', availableModels: ['text-embedding-3-small', 'gpt-4o'], isVerified: true },
+			]);
+			expect(eligible.map((p) => p.id)).toEqual(['cust', 'oai']);
+			expect(eligible[1].availableModels).toEqual(['gpt-4o']);
+		} finally {
+			(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+		}
 	});
 });

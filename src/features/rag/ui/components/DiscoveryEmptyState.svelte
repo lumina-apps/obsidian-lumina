@@ -1,6 +1,6 @@
 <script lang="ts">
+	import { Platform, type App } from 'obsidian';
 	import { tStore } from '../../../../shared/locales/index';
-	import type { App } from 'obsidian';
 
 	let { app } = $props<{ app: App }>();
 
@@ -16,6 +16,9 @@
 	<div class="lumina-discovery__empty-icon">🔍</div>
 	<p>{$tStore('discovery.emptyStateText')}</p>
 	<p class="lumina-discovery__empty-sub">{$tStore('discovery.emptyStateSub')}</p>
+	{#if Platform.isMobile}
+		<p class="lumina-discovery__empty-mobile">{$tStore('settings.connections.ragEngine.mobileWarning')}</p>
+	{/if}
 	<button class="lumina-discovery__setup-btn" onclick={handleSettingsOpen}>
 		⚙️ {$tStore('common.settings')}
 	</button>
@@ -42,6 +45,17 @@
 		font-size: 12px;
 		opacity: 0.8;
 		margin-top: 4px;
+	}
+
+	.lumina-discovery__empty-mobile {
+		font-size: 12px;
+		color: var(--text-warning);
+		background: rgba(245, 158, 11, 0.1);
+		border: 1px solid rgba(245, 158, 11, 0.3);
+		border-radius: 6px;
+		padding: 8px 10px;
+		margin-top: 8px;
+		line-height: 1.45;
 	}
 
 	.lumina-discovery__setup-btn {

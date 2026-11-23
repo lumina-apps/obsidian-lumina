@@ -2,6 +2,7 @@ import { Notice, Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
 import { t } from '../../../../shared/locales/helpers';
 import { createFeatureCard, createMultilineDesc } from '../../../../shared/utils/settingHelpers';
+import { isProviderSupportedOnCurrentPlatform } from '../../../../shared/utils/modelUtils';
 import type { McpSettings } from '../../../../shared/types/settings.types';
 
 const AGENT_DEFAULT_MAX_STEPS = 15;
@@ -19,7 +20,9 @@ export function renderAgentSection(tab: LuminaSettingTab, el: HTMLElement, _s: M
 		.addToggle(toggle => {
 			toggle.setValue(tab.plugin.settings.chat.agentEnabled).onChange(async (val) => {
 				if (val) {
-					const isConfigured = tab.plugin.settings.connections.providers.some(p => p.isVerified);
+					const isConfigured = tab.plugin.settings.connections.providers.some(
+						p => p.isVerified && isProviderSupportedOnCurrentPlatform(p.type),
+					);
 					if (!isConfigured) {
 						new Notice(t('uiMessages.agentModeLlmRequired'));
 						toggle.setValue(false);

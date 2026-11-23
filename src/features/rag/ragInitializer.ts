@@ -18,6 +18,10 @@ import { getActiveProject } from '../../core/store/projectStore';
 import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
 import { normalizeHistoryRootPath } from '../../shared/utils/historyPathUtils';
+import {
+	isProviderSupportedOnCurrentPlatform,
+	isRagEffectiveOnCurrentPlatform,
+} from '../../shared/utils/modelUtils';
 import type LuminaPlugin from '../../main';
 
 /** 기본 임베딩 모델 (auto 모드). 다국어 지원. */
@@ -62,6 +66,9 @@ export async function initEmbeddingWorker(
 		const providerConfig = hasCustom ? providers.find(p => p.id === embedding.providerId) : undefined;
 
 		if (hasCustom && !providerConfig) {
+			if (Platform.isMobile) {
+				throw new Error(t('uiMessages.errMobileAuto'));
+			}
 			debugLogger.logWarn('rag', `임베딩 프로바이더(${embedding.providerId})를 찾을 수 없어 auto 모드로 폴백합니다.`);
 			embedding.mode = 'auto';
 			embedding.providerId = '';
@@ -74,6 +81,10 @@ export async function initEmbeddingWorker(
 		}
 
 		if (providerConfig && embedding.modelId) {
+			// 모바일에서는 데스크탑 전용 로컬 임베딩 프로바이더(Ollama/LM Studio 등) 차단
+			if (!isProviderSupportedOnCurrentPlatform(providerConfig.type)) {
+				throw new Error(t('settings.connections.customEmbedding.mobileWarn'));
+			}
 			modelName = embedding.modelId;
 			const provider = createProvider(providerConfig);
 			embedFn = (texts: string[]) => provider.embed(texts, { model: modelName });
@@ -208,8 +219,8 @@ export async function initEmbeddingWorker(
 		debugLogger.logError('rag', normalizeError(err, `embedding worker init failed: ${err}`));
 		plugin.embeddingWorker?.terminate();
 		plugin.embeddingWorker = null;
-		// 초기화 실패 시 RAG 토글을 false로 되돌림
-		if (plugin.settings.connections.ragEnabled) {
+		// 시작 시 또는 모바일 환경에서는 동기화된 데스크탑 ragEnabled 설정을 덮어쓰지 않고 오류 상태만 표시
+		if (plugin.settings.connections.ragEnabled && !isStartup && !Platform.isMobile) {
 			plugin.settings.connections.ragEnabled = false;
 			await plugin.saveSettings();
 			plugin.refreshSettingTab();
@@ -228,7 +239,8 @@ export async function switchProjectIndex(
 	plugin: LuminaPlugin,
 	newProjectId: string,
 ): Promise<void> {
-	if (!plugin.settings.connections.ragEnabled) return;
+	// 모바일 auto 또는 데스크탑 전용 로컬 임베딩 상태에서는 프로젝트 전환 시 워커 초기화를 시도하지 않음
+	if (!isRagEffectiveOnCurrentPlatform(plugin.settings.connections)) return;
 
 	// 현재 인덱서 watch 이벤트 해제
 	plugin.watchManager.clearWatchEvents();
@@ -266,7 +278,7 @@ export async function switchProjectIndex(
 
 	if (embedding.mode === 'custom' && embedding.providerId && embedding.modelId) {
 		const providerConfig = providers.find(p => p.id === embedding.providerId);
-		if (providerConfig) {
+		if (providerConfig && isProviderSupportedOnCurrentPlatform(providerConfig.type)) {
 			modelName = embedding.modelId;
 			const provider = createProvider(providerConfig);
 			embedFn = (texts: string[]) => provider.embed(texts, { model: modelName });

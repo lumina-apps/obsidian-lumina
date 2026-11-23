@@ -35,6 +35,7 @@ export async function resizeImageDataUrl(
 	dataUrl: string,
 	maxEdge = DEFAULT_MAX_IMAGE_EDGE,
 	maxSizeBytes = DEFAULT_MAX_IMAGE_BYTES,
+	timeoutMs?: number,
 ): Promise<string> {
 	if (!dataUrl.startsWith('data:image/')) return dataUrl;
 	// GIF는 캔버스 렌더링 시 첫 프레임 정지화상이 되므로 변환 생략
@@ -44,6 +45,9 @@ export async function resizeImageDataUrl(
 	if (typeof window === 'undefined' || typeof document === 'undefined' || typeof Image === 'undefined') {
 		return dataUrl;
 	}
+
+	const isJsdom = typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent);
+	const effectiveTimeout = timeoutMs ?? (isJsdom ? 200 : 5000);
 
 	return new Promise((resolve) => {
 		let timer: number | null = null;
@@ -56,11 +60,13 @@ export async function resizeImageDataUrl(
 			}
 		};
 
-		// jsdom이나 가상 환경에서 onload가 발화되지 않을 때를 대비한 안전 타임아웃
+		// 실환경(모바일 고해상도 이미지) 디코딩 여유를 5초로 두고, jsdom 가상 환경에서는 200ms 유지
 		timer = window.setTimeout(() => {
 			cleanup();
+			img.onload = null;
+			img.onerror = null;
 			resolve(dataUrl);
-		}, 200);
+		}, effectiveTimeout);
 
 		img.onload = () => {
 			cleanup();

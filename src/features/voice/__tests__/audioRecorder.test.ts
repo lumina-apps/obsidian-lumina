@@ -253,4 +253,60 @@ describe('VoiceAudioRecorder', () => {
 		expect(audioCtxConstructSpy).toHaveBeenCalledTimes(1);
 		recorder.cancel();
 	});
+
+	it('iOS WKWebView 등에서 AudioContext가 suspended 상태로 생성되면 resume()을 호출한다', async () => {
+		vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(9);
+		vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+
+		const resumeMock = vi.fn().mockResolvedValue(undefined);
+		const SuspendedBase = window.AudioContext;
+		class SuspendedAudioContext extends SuspendedBase {
+			state: AudioContextState = 'suspended';
+			resume = resumeMock;
+		}
+		vi.stubGlobal('AudioContext', SuspendedAudioContext);
+
+		const recorder = new VoiceAudioRecorder({
+			onSpeechChunk: vi.fn(),
+		});
+
+		await recorder.start();
+		expect(resumeMock).toHaveBeenCalledTimes(1);
+		recorder.cancel();
+	});
+
+	it('iOS 등에서 MediaRecorder.pause/resume가 예외를 던져도 중단 없이 상태와 버퍼를 안전하게 처리한다', async () => {
+		vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(15);
+		vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+
+		const BaseRecorder = globalThis.MediaRecorder;
+		class ThrowingPauseResumeRecorder extends BaseRecorder {
+			override pause() {
+				throw new Error('InvalidStateError: pause not supported');
+			}
+			override resume() {
+				throw new Error('InvalidStateError: resume not supported');
+			}
+		}
+		vi.stubGlobal('MediaRecorder', ThrowingPauseResumeRecorder);
+
+		const onSpeechChunk = vi.fn();
+		const recorder = new VoiceAudioRecorder({ onSpeechChunk });
+		await recorder.start();
+		await vi.waitFor(() => {
+			expect(createdWorkletNodes).toHaveLength(1);
+		});
+
+		const voicedFrame1 = new Float32Array(4096).fill(0.2);
+		const voicedFrame2 = new Float32Array(4096).fill(0.2);
+		createdWorkletNodes[0].port.onmessage?.({ data: voicedFrame1 } as MessageEvent<unknown>);
+		createdWorkletNodes[0].port.onmessage?.({ data: voicedFrame2 } as MessageEvent<unknown>);
+
+		expect(() => recorder.pause()).not.toThrow();
+		expect(onSpeechChunk).toHaveBeenCalledTimes(1);
+		expect(() => recorder.resume()).not.toThrow();
+
+		const res = await recorder.stop();
+		expect(res.fullBlob.size).toBeGreaterThan(0);
+	});
 });

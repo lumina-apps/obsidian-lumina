@@ -222,4 +222,27 @@ describe('MCP Lifecycle & Integration', () => {
 		expect(mcpManager.pathGuard).toBeDefined();
 		expect(typeof mcpManager.pathGuard.isAgentPathAllowed).toBe('function');
 	});
+
+	it('모바일 환경에서는 syncServers()가 조기 반환하고 run_shell_command 없이 내장 에이전트 도구만 노출한다', async () => {
+		(Platform as { isDesktop: boolean }).isDesktop = false;
+		(Platform as { isMobile: boolean }).isMobile = true;
+		try {
+			mockPlugin.settings.chat.agentEnabled = true;
+			mockPlugin.settings.mcp.serverEnabled = true;
+			mockPlugin.settings.mcp.serverEnableShellCommands = true;
+			mockPlugin.settings.mcp.clientToolsEnabled = true;
+
+			await mcpManager.syncServers();
+
+			expect(mcpManager.localServer).toBeNull();
+			expect(mcpManager.clients.size).toBe(0);
+
+			const tools = mcpManager.getAllTools();
+			expect(tools.some((t) => t.name === 'read_note')).toBe(true);
+			expect(tools.some((t) => t.name === 'run_shell_command')).toBe(false);
+		} finally {
+			(Platform as { isDesktop: boolean }).isDesktop = true;
+			(Platform as { isMobile: boolean }).isMobile = false;
+		}
+	});
 });

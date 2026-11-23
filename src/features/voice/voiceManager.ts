@@ -7,7 +7,7 @@
  *   원클릭 재정리/되돌리기, 타임스탬프 오디오 싱크 재생, 미완료 녹음 복구 담당
  */
 
-import { Editor, type EventRef, MarkdownView, Notice, TFile, normalizePath } from 'obsidian';
+import { Editor, type EventRef, MarkdownView, Notice, Platform, TFile, normalizePath } from 'obsidian';
 import { mount, unmount } from 'svelte';
 import type LuminaPlugin from '../../main';
 import { canUseFeature } from '../../core/store/entitlementStore';
@@ -200,6 +200,10 @@ export class VoiceNoteManager {
 		}
 
 		const prefs = getVoicePreferences(this.plugin.settings);
+		if (!this.preflightMobileStt(prefs)) {
+			return;
+		}
+
 		const view = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
 		this.targetFile = view?.file ?? this.plugin.app.workspace.getActiveFile() ?? null;
 		this.targetEditor = view?.editor ?? null;
@@ -334,7 +338,7 @@ export class VoiceNoteManager {
 		const precomputedSegments =
 			prefs.recordMode === 'live-insert' ? getVoiceState().liveSegments : [];
 
-		await this.runTranscriptionAndFormattingPipeline({
+		const succeeded = await this.runTranscriptionAndFormattingPipeline({
 			blob: recorded.fullBlob,
 			filename,
 			templateId,
@@ -343,8 +347,12 @@ export class VoiceNoteManager {
 			existingAudioVaultPath: null,
 		});
 
-		await clearBackupSession();
-		patchVoiceState({ hasRecoverableSession: false });
+		if (succeeded) {
+			await clearBackupSession();
+			patchVoiceState({ hasRecoverableSession: false });
+		} else if (await hasBackupSession()) {
+			patchVoiceState({ hasRecoverableSession: true });
+		}
 	}
 
 	/**
@@ -381,10 +389,35 @@ export class VoiceNoteManager {
 	}
 
 	/**
+	 * 모바일 환경에서 로컬 Whisper 또는 유효하지 않은 STT 설정이 선택되었는지 사전 점검합니다.
+	 */
+	private preflightMobileStt(prefs: ReturnType<typeof getVoicePreferences>): boolean {
+		if (!Platform.isMobile) return true;
+		try {
+			resolveSttEngine(this.plugin.app, this.plugin.settings.connections.providers, prefs);
+			return true;
+		} catch (err: unknown) {
+			const msg = normalizeError(err).message;
+			new Notice(msg);
+			patchVoiceState({
+				status: 'error',
+				errorMessage: msg,
+				audioLevel: 0,
+			});
+			return false;
+		}
+	}
+
+	/**
 	 * 시스템 파일 선택기를 열어 로컬 오디오 파일을 업로드·변환합니다.
 	 */
 	openAudioFilePicker(): void {
 		if (!canUseFeature('voice-note') || this.isDestroyed || typeof document === 'undefined') return;
+
+		const prefs = getVoicePreferences(this.plugin.settings);
+		if (!this.preflightMobileStt(prefs)) {
+			return;
+		}
 
 		const input = document.body.createEl('input', {
 			cls: 'lumina-voice-file-input',
@@ -394,12 +427,39 @@ export class VoiceNoteManager {
 			},
 		});
 
+		let fallbackTimerId: number | null = null;
+		const cleanupPicker = () => {
+			if (fallbackTimerId !== null && typeof window !== 'undefined') {
+				window.clearTimeout(fallbackTimerId);
+				fallbackTimerId = null;
+			}
+			if (typeof window !== 'undefined') {
+				window.removeEventListener('focus', handleWindowFocus);
+			}
+			input.remove();
+		};
+		const handleWindowFocus = () => {
+			if (typeof window === 'undefined') return;
+			// cancel 이벤트를 지원하지 않는 구형 모바일 WebView 대비 300ms 후 미선택 <input> 정리
+			fallbackTimerId = window.setTimeout(() => {
+				fallbackTimerId = null;
+				if (input.isConnected && (!input.files || input.files.length === 0)) {
+					cleanupPicker();
+				}
+			}, 300);
+		};
+
+		input.addEventListener('cancel', cleanupPicker);
+		if (typeof window !== 'undefined') {
+			window.addEventListener('focus', handleWindowFocus, { once: true });
+		}
+
 		input.addEventListener('change', () => {
 			const file = input.files?.[0];
-			input.remove();
+			cleanupPicker();
 			if (!file) return;
 
-			const prefs = getVoicePreferences(this.plugin.settings);
+			const latestPrefs = getVoicePreferences(this.plugin.settings);
 			const view = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
 			this.targetFile = view?.file && view.file.extension === 'md' ? view.file : null;
 			this.targetEditor = view?.editor ?? null;
@@ -412,7 +472,7 @@ export class VoiceNoteManager {
 			void this.runTranscriptionAndFormattingPipeline({
 				blob: file,
 				filename: file.name || `upload_${formatDateStampForFile(new Date())}.m4a`,
-				templateId: prefs.defaultTemplate,
+				templateId: latestPrefs.defaultTemplate,
 				userMemoDiff: '',
 				precomputedSegments: [],
 				existingAudioVaultPath: null,
@@ -453,7 +513,7 @@ export class VoiceNoteManager {
 		this.ensureOverlayMounted();
 		this.abortController = new AbortController();
 
-		await this.runTranscriptionAndFormattingPipeline({
+		const succeeded = await this.runTranscriptionAndFormattingPipeline({
 			blob: fullBlob,
 			filename,
 			templateId: backup.templateId,
@@ -462,9 +522,11 @@ export class VoiceNoteManager {
 			existingAudioVaultPath: null,
 		});
 
-		await clearBackupSession();
-		patchVoiceState({ hasRecoverableSession: false });
-		new Notice(t('voiceNote.notices.recoveredSuccess'));
+		if (succeeded) {
+			await clearBackupSession();
+			patchVoiceState({ hasRecoverableSession: false });
+			new Notice(t('voiceNote.notices.recoveredSuccess'));
+		}
 	}
 
 	/** 미완료 백업 세션 폐기 */
@@ -728,7 +790,7 @@ export class VoiceNoteManager {
 		userMemoDiff: string;
 		precomputedSegments: TranscriptSegment[];
 		existingAudioVaultPath: string | null;
-	}): Promise<void> {
+	}): Promise<boolean> {
 		const prefs = getVoicePreferences(this.plugin.settings);
 		const signal = this.abortController?.signal;
 
@@ -748,7 +810,7 @@ export class VoiceNoteManager {
 					patchVoiceState({ status: 'idle' });
 					new Notice(t('voiceNote.notices.noAudioRecorded'));
 					this.unmountOverlayIfIdle();
-					return;
+					return true;
 				}
 
 				const engine = this.getOrCreateSttEngine(prefs);
@@ -757,7 +819,7 @@ export class VoiceNoteManager {
 					patchVoiceState({ status: 'idle' });
 					new Notice(t('voiceNote.notices.noAudioRecorded'));
 					this.unmountOverlayIfIdle();
-					return;
+					return true;
 				}
 
 				const promptHint = [this.targetFile?.basename, ...prefs.customVocabulary]
@@ -766,7 +828,7 @@ export class VoiceNoteManager {
 
 				const allResults: SttTranscriptionResult[] = [];
 				for (let i = 0; i < chunks.length; i++) {
-					if (signal?.aborted || this.isDestroyed) return;
+					if (signal?.aborted || this.isDestroyed) return false;
 					if (chunks.length > 1) {
 						patchVoiceState({
 							progressDetail: t('voiceNote.progress.chunkProgress', {
@@ -804,7 +866,7 @@ export class VoiceNoteManager {
 				patchVoiceState({ status: 'idle' });
 				new Notice(t('voiceNote.notices.noAudioRecorded'));
 				this.unmountOverlayIfIdle();
-				return;
+				return true;
 			}
 
 			// 볼트에 오디오 파일 저장 (옵션 활성 시)
@@ -871,8 +933,10 @@ export class VoiceNoteManager {
 				progressStep: 0,
 				progressDetail: '',
 			});
+			return true;
 		} catch (err: unknown) {
 			this.handlePipelineError(err);
+			return false;
 		}
 	}
 

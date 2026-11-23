@@ -1,20 +1,24 @@
-import { TFile, normalizePath, App, FileSystemAdapter } from 'obsidian';
+import { TFile, normalizePath, App, FileSystemAdapter, Platform } from 'obsidian';
 
 /**
  * 볼트 파일 시스템의 로컬 절대 경로를 반환합니다.
+ * 모바일 환경에서는 로컬 파일시스템 절대 경로를 사용하지 않으므로 빈 문자열을 반환합니다.
  */
 export function getVaultBasePath(appOrPlugin: App | { app?: App; vault?: { adapter: unknown } }): string {
+	if (typeof Platform !== 'undefined' && Boolean(Platform?.isMobile)) {
+		return '';
+	}
 	const app = 'app' in appOrPlugin && appOrPlugin.app ? appOrPlugin.app : (appOrPlugin as App);
 	const adapter = app?.vault?.adapter;
-	if (typeof (adapter as unknown as { getBasePath?: () => string })?.getBasePath === 'function') {
-		return (adapter as unknown as { getBasePath: () => string }).getBasePath();
-	}
 	try {
+		if (typeof (adapter as unknown as { getBasePath?: () => string })?.getBasePath === 'function') {
+			return (adapter as unknown as { getBasePath: () => string }).getBasePath();
+		}
 		if (typeof FileSystemAdapter !== 'undefined' && FileSystemAdapter && adapter instanceof FileSystemAdapter) {
 			return adapter.getBasePath();
 		}
 	} catch {
-		// Ignore environments where FileSystemAdapter is unavailable
+		// FileSystemAdapter 미지원 또는 getBasePath 예외 환경 무시
 	}
 	return typeof process !== 'undefined' && typeof process.cwd === 'function' ? process.cwd() : '';
 }
@@ -27,31 +31,34 @@ export function joinSystemPath(...segments: string[]): string {
 	const filtered = segments.filter((s) => s.length > 0);
 	if (filtered.length === 0) return '';
 
-	try {
-		const pathModName = ['pa', 'th'].join('');
-		if (typeof window !== 'undefined') {
-			const win = window as unknown as {
-				require?: (mod: string) => { join?: (...args: string[]) => string };
-			};
-			if (typeof win.require === 'function') {
-				const pathMod = win.require(pathModName);
+	const isMobile = typeof Platform !== 'undefined' && Boolean(Platform?.isMobile);
+	if (!isMobile) {
+		try {
+			const pathModName = ['pa', 'th'].join('');
+			if (typeof window !== 'undefined') {
+				const win = window as unknown as {
+					require?: (mod: string) => { join?: (...args: string[]) => string };
+				};
+				if (typeof win.require === 'function') {
+					const pathMod = win.require(pathModName);
+					if (pathMod && typeof pathMod.join === 'function') {
+						return pathMod.join(...filtered);
+					}
+				}
+			}
+			// eslint-disable-next-line @typescript-eslint/no-require-imports -- 데스크탑/테스트 런타임 폴백
+			const nodeRequire = typeof require === 'function'
+				? (require as unknown as (mod: string) => { join?: (...args: string[]) => string })
+				: undefined;
+			if (typeof nodeRequire === 'function') {
+				const pathMod = nodeRequire(pathModName);
 				if (pathMod && typeof pathMod.join === 'function') {
 					return pathMod.join(...filtered);
 				}
 			}
+		} catch {
+			// 모바일 등 path 모듈 미지원 환경에서는 아래 순수 JS 폴백 사용
 		}
-		// eslint-disable-next-line @typescript-eslint/no-require-imports -- 데스크탑/테스트 런타임 폴백
-		const nodeRequire = typeof require === 'function'
-			? (require as unknown as (mod: string) => { join?: (...args: string[]) => string })
-			: undefined;
-		if (typeof nodeRequire === 'function') {
-			const pathMod = nodeRequire(pathModName);
-			if (pathMod && typeof pathMod.join === 'function') {
-				return pathMod.join(...filtered);
-			}
-		}
-	} catch {
-		// 모바일 등 path 모듈 미지원 환경에서는 아래 순수 JS 폴백 사용
 	}
 
 	const sep = filtered[0].includes('\\') ? '\\' : '/';

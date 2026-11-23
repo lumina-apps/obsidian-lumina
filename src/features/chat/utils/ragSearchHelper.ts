@@ -9,6 +9,7 @@ import type { ChatRagSource, RagPipelineStep } from '../../../shared/types/chat.
 import type { RagChunkMeta } from '../../../shared/types/debug.types';
 import type { RagSettings, ConnectionsSettings } from '../../../core/settings/settings.types';
 import { rerankChunks } from '../../rag/reranker';
+import { findSupportedProvider } from '../../../shared/utils/modelUtils';
 
 /** RAG 검색 수행 여부 결정 */
 export function resolveRagSearchFlag(opts: {
@@ -101,8 +102,11 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 		
 		// [1] Searching
 		emitStep('searching');
-		
-		const useReranker = !!(connections.rerankerProviderId && connections.rerankerModelId);
+
+		const rerankerProviderConfig = (connections.rerankerProviderId && connections.rerankerModelId)
+			? findSupportedProvider(connections.providers, connections.rerankerProviderId)
+			: undefined;
+		const useReranker = Boolean(rerankerProviderConfig);
 		
 		// 리랭커 사용 시에는 K * 2 개 추출
 		const initialTopK = useReranker ? rag.topK * 2 : rag.topK;
@@ -126,15 +130,9 @@ export async function performRagSearch(params: PerformRagSearchParams): Promise<
 		}
 
 		// [2] Reranking
-		if (useReranker) {
+		if (rerankerProviderConfig) {
 			emitStep('reranking');
-			const providerConfig = connections.providers.find(p => p.id === connections.rerankerProviderId);
-			if (providerConfig) {
-				results = await rerankChunks(userText, results, providerConfig, connections.rerankerModelId, rag.topK, signal);
-			} else {
-				// config not found, fallback to topK
-				results = results.slice(0, rag.topK);
-			}
+			results = await rerankChunks(userText, results, rerankerProviderConfig, connections.rerankerModelId, rag.topK, signal);
 		}
 
 		// [3] Generating (End of Pipeline)

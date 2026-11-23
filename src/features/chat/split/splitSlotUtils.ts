@@ -10,6 +10,7 @@ import type {
 import {
 	flattenProviderModels,
 	isEmbeddingModel,
+	isProviderSupportedOnCurrentPlatform,
 	sortWithFavorites,
 } from '../../../shared/utils/modelUtils';
 
@@ -32,7 +33,13 @@ export function getSplitEligibleProviders(
 	providers: readonly LLMProviderConfig[],
 ): LLMProviderConfig[] {
 	return providers
-		.filter((p) => !isCliProvider(p.type) && p.isVerified && p.availableModels.length > 0)
+		.filter(
+			(p) =>
+				!isCliProvider(p.type) &&
+				isProviderSupportedOnCurrentPlatform(p.type) &&
+				p.isVerified &&
+				p.availableModels.length > 0,
+		)
 		.map((p) => {
 			const chatModels = p.availableModels.filter((m) => !isEmbeddingModel(p.type, m));
 			return {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Platform } from 'obsidian';
 	import { onMount, onDestroy } from 'svelte';
 	import ForceGraph from 'force-graph';
 	import type { GraphData, GraphNode, GraphEdge } from '../../../shared/types/graph.types';
@@ -75,9 +76,13 @@
 			.onNodeHover((node, prevNode) => {
 				if (node) {
 					hoveredNode = node as GraphNode;
-					// Get screen coordinates of node
+					// fixed 툴팁 배치를 위해 컨테이너 뷰포트 오프셋을 합산한 화면 좌표 계산
 					const pos = graph.graph2ScreenCoords((node as ForceNode).x, (node as ForceNode).y);
-					hoveredPos = pos;
+					const rect = container?.getBoundingClientRect();
+					hoveredPos = {
+						x: pos.x + (rect?.left ?? 0),
+						y: pos.y + (rect?.top ?? 0),
+					};
 					updateGraphState({ focusedPath: (node as GraphNode).id });
 					container.style.cursor = 'pointer';
 				} else {
@@ -88,7 +93,26 @@
 				}
 			})
 			.onNodeClick(node => {
-				onNodeClick((node as GraphNode).id);
+				const clicked = node as GraphNode;
+				// 모바일에서는 첫 탭으로 툴팁/이웃 하이라이트 미리보기를 표시하고, 동일 노드 재탭 시 노트를 엽니다.
+				if (Platform.isMobile && hoveredNode?.id !== clicked.id) {
+					hoveredNode = clicked;
+					const pos = graph.graph2ScreenCoords((node as ForceNode).x, (node as ForceNode).y);
+					const rect = container?.getBoundingClientRect();
+					hoveredPos = {
+						x: pos.x + (rect?.left ?? 0),
+						y: pos.y + (rect?.top ?? 0),
+					};
+					updateGraphState({ focusedPath: clicked.id });
+					return;
+				}
+				onNodeClick(clicked.id);
+			})
+			.onBackgroundClick(() => {
+				// 빈 배경 탭/클릭 시 선택·미리보기 툴팁과 포커스 하이라이트 해제
+				hoveredNode = null;
+				hoveredPos = null;
+				updateGraphState({ focusedPath: null });
 			})
 			.cooldownTicks(100);
 

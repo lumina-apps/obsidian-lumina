@@ -296,7 +296,8 @@
       "sendMode": {
         "name": "Modo de envío de mensajes",
         "enter": "Enter para enviar",
-        "ctrlEnter": "Ctrl + Enter para enviar"
+        "ctrlEnter": "Ctrl + Enter para enviar",
+        "mobileNote": "En dispositivos móviles, Enter inserta un salto de línea; toca el botón de enviar para enviar el mensaje."
       },
       "quickActions": {
         "name": "Acciones rápidas personalizadas del usuario (Comandos)",
@@ -335,6 +336,7 @@
         "name": "Habilitar autocompletado en línea (Ghost Text)",
         "desc": "Cuando haces una pausa al escribir, Task LLM predecirá la siguiente oración y la mostrará como texto fantasma (Tab: aceptar todo, →: aceptar primera palabra).",
         "needsTaskModel": "Para usar esta función, primero debe especificar un modelo de Tarea en la pestaña Conexiones.",
+        "mobileUnsupported": "El autocompletado en línea no está disponible en dispositivos móviles porque los teclados virtuales no tienen teclas Tab/→ para aceptar.",
         "promptName": "Prompt de autocompletado",
         "promptDesc": "Instrucción enviada al LLM para el autocompletado en línea. Déjelo vacío para usar el prompt predeterminado.",
         "contextLengthName": "Longitud del contexto de autocompletado (caracteres)",

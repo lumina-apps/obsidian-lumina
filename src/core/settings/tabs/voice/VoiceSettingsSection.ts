@@ -111,14 +111,21 @@ export function renderVoiceSettingsSection(tab: LuminaSettingTab, el: HTMLElemen
 		.addDropdown((dd) => {
 			dd.addOption('auto', t('voiceNote.settings.sttMode.auto'));
 			dd.addOption('provider', t('voiceNote.settings.sttMode.provider'));
-			if (!Platform.isMobile) {
-				dd.addOption('local-whisper', t('voiceNote.settings.sttMode.localWhisper'));
+			if (!Platform.isMobile || prefs.sttMode === 'local-whisper') {
+				const label = Platform.isMobile
+					? `${t('voiceNote.settings.sttMode.localWhisper')} (Desktop)`
+					: t('voiceNote.settings.sttMode.localWhisper');
+				dd.addOption('local-whisper', label);
 			}
 			dd.setValue(prefs.sttMode).onChange(async (val) => {
 				await updateVoicePreferences(tab.plugin, { sttMode: val as VoiceSttEngineMode });
 				tab.refreshDisplay(true);
 			});
 		});
+
+	if (Platform.isMobile && prefs.sttMode === 'local-whisper') {
+		tab.infoBox(el, t('voiceNote.notices.localWhisperMobileUnsupported'), 'warning');
+	}
 
 	if (prefs.sttMode === 'provider') {
 		const capableProviders = getSttCapableProviders(tab.plugin.settings.connections.providers);

@@ -1,6 +1,7 @@
 import { TFile, TFolder, normalizePath } from 'obsidian';
 import { t } from '../../../../shared/locales/helpers';
 import { sanitizeFilePath } from '../../../../shared/utils/fileUtils';
+import { DocumentParserRouter } from '../../../../features/rag/parsers/DocumentParserRouter';
 import { applyReadLimit, getStringArg, getStringOptArg, getNumberArg, blockIfPathNotAllowed, getDailyNotePath } from '../handlerHelpers';
 import type { ToolArguments, ToolHandlerContext, ToolResult } from '../toolTypes';
 import type { PathGuard } from '../pathGuard';
@@ -15,18 +16,19 @@ async function readFileSafely(file: TFile, ctx: ToolHandlerContext): Promise<str
 	const ext = file.extension?.toLowerCase() || '';
 
 	if (DOCUMENT_EXTENSIONS.has(ext)) {
-		if (ctx.plugin.embeddingWorker) {
-			try {
-				const buffer = await ctx.plugin.app.vault.readBinary(file);
-				const parsed = await ctx.plugin.embeddingWorker.parse(buffer, ext);
-				if (parsed && parsed.trim().length > 0) {
-					return parsed;
-				}
-			} catch (e) {
-				return `[Document file: ${file.path} (${ext.toUpperCase()}), failed to parse content: ${e}]`;
+		try {
+			const buffer = await ctx.plugin.app.vault.readBinary(file);
+			// 워커 미초기화 환경(모바일·RAG 비활성 등)에서도 메인 파서 라우터로 직접 파싱
+			const parsed = ctx.plugin.embeddingWorker
+				? await ctx.plugin.embeddingWorker.parse(buffer, ext)
+				: await DocumentParserRouter.parseBinary(buffer, ext);
+			if (parsed && parsed.trim().length > 0) {
+				return parsed;
 			}
+		} catch (e) {
+			return `[Document file: ${file.path} (${ext.toUpperCase()}), failed to parse content: ${e}]`;
 		}
-		return `[Document file: ${file.path} (${ext.toUpperCase()}), size: ${file.stat.size} bytes. Text parser not initialized.]`;
+		return `[Document file: ${file.path} (${ext.toUpperCase()}), size: ${file.stat.size} bytes. Empty or unsupported document content.]`;
 	}
 
 	if (!TEXT_EXTENSIONS.has(ext) && ext !== '') {

@@ -55,14 +55,17 @@ describe('fileAttachmentUtils', () => {
 	});
 
 	describe('readBinaryDocument', () => {
-		it('returns null and triggers notice when embeddingWorker is not ready', async () => {
+		it('embeddingWorker가 없어도 DocumentParserRouter로 폴백해 파싱 결과를 반환한다', async () => {
+			const { DocumentParserRouter } = await import('../../rag/parsers/DocumentParserRouter');
+			const parseBinarySpy = vi.spyOn(DocumentParserRouter, 'parseBinary').mockResolvedValue('Fallback parsed document');
 			const file = new File(['dummy binary'], 'test.pdf', { type: 'application/pdf' });
 			const t = vi.fn((k: string) => k);
 			const mockPlugin = {} as unknown as LuminaPlugin;
 
 			const result = await readBinaryDocument(file, 'pdf', mockPlugin, t);
-			expect(result).toBeNull();
-			expect(t).toHaveBeenCalledWith('uiMessages.attachWorkerNotReady');
+			expect(result).toBe('Fallback parsed document');
+			expect(parseBinarySpy).toHaveBeenCalledWith(expect.any(ArrayBuffer), 'pdf');
+			expect(t).not.toHaveBeenCalledWith('uiMessages.attachWorkerNotReady');
 		});
 
 		it('calls embeddingWorker.parse when worker is available', async () => {
@@ -75,6 +78,16 @@ describe('fileAttachmentUtils', () => {
 
 			const result = await readBinaryDocument(file, 'pdf', mockPlugin);
 			expect(result).toBe('Parsed document content');
+		});
+
+		it('파싱 중 예외가 발생하면 안전하게 null을 반환한다', async () => {
+			const { DocumentParserRouter } = await import('../../rag/parsers/DocumentParserRouter');
+			vi.spyOn(DocumentParserRouter, 'parseBinary').mockRejectedValue(new Error('corrupt file'));
+			const file = new File(['bad binary'], 'broken.docx', { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+			const mockPlugin = {} as unknown as LuminaPlugin;
+
+			const result = await readBinaryDocument(file, 'docx', mockPlugin);
+			expect(result).toBeNull();
 		});
 	});
 

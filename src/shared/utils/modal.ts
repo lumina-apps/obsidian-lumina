@@ -3,14 +3,17 @@ import { t } from '../locales/helpers';
 
 export class ConfirmModal extends Modal {
 	private onConfirm: () => void;
+	private onCancel?: () => void;
 	private title: string;
 	private message: string;
+	private settled = false;
 
-	constructor(app: App, title: string, message: string, onConfirm: () => void) {
+	constructor(app: App, title: string, message: string, onConfirm: () => void, onCancel?: () => void) {
 		super(app);
 		this.title = title;
 		this.message = message;
 		this.onConfirm = onConfirm;
+		this.onCancel = onCancel;
 	}
 
 	onOpen() {
@@ -30,14 +33,47 @@ export class ConfirmModal extends Modal {
 				btn
 					.setButtonText(t('uiMessages.modalProceed'))
 					.setCta()
-					.onClick(() => { this.onConfirm(); this.close(); })
+					.onClick(() => {
+						if (!this.settled) {
+							this.settled = true;
+							this.onConfirm();
+						}
+						this.close();
+					})
 			);
 	}
 
 	onClose() {
 		const { contentEl } = this;
 		contentEl.empty();
+		if (!this.settled) {
+			this.settled = true;
+			this.onCancel?.();
+		}
 	}
+}
+
+/**
+ * Obsidian ConfirmModal을 Promise 형태로 열어 사용자 확인/취소 결과를 반환합니다.
+ * 확인 클릭 시 true, 취소·Esc·외부 클릭으로 닫히면 false를 반환합니다.
+ */
+export function confirmWithModal(app: App, title: string, message: string): Promise<boolean> {
+	return new Promise((resolve) => {
+		let resolved = false;
+		const settle = (accepted: boolean) => {
+			if (resolved) return;
+			resolved = true;
+			resolve(accepted);
+		};
+
+		new ConfirmModal(
+			app,
+			title,
+			message,
+			() => settle(true),
+			() => settle(false),
+		).open();
+	});
 }
 
 /** LLM 연결 성공 후 에이전트(베타) 활성화를 묻는 전용 모달 */

@@ -1,9 +1,12 @@
 <script lang="ts">
+	import { Notice, Platform, normalizePath } from 'obsidian';
 	import { onMount, onDestroy, tick } from 'svelte';
 	import type LuminaPlugin from '../../../main';
 	import { debugLogger, MAX_DEBUG_ENTRIES } from '../../../shared/debugLogger';
 	import { t } from '../../../shared/locales/helpers';
 	import type { DebugLogEntry, DebugLogType } from '../../../shared/types/debug.types';
+	import { copyToClipboard } from '../../../shared/utils/clipboardUtils';
+	import { confirmWithModal } from '../../../shared/utils/modal';
 	import DebugHeader from './DebugHeader.svelte';
 	import DebugFilterBar from './DebugFilterBar.svelte';
 	import DebugEmptyState from './DebugEmptyState.svelte';
@@ -93,22 +96,37 @@
 	}
 
 	// ── 액션 ──────────────────────────────────────────────────────────────────
-	function clearLogs() {
-		if (confirm(t('uiMessages.debugDelAllMsg'))) {
+	async function clearLogs() {
+		if (await confirmWithModal(plugin.app, t('uiMessages.debugDelAll'), t('uiMessages.debugDelAllMsg'))) {
 			debugLogger.clear();
 		}
 	}
 
-	function exportLogs() {
-		const blob = new Blob([JSON.stringify(entries, null, 2)], {
+	async function exportLogs() {
+		const json = JSON.stringify(entries, null, 2);
+		const fileName = `lumina-devlog-${Date.now()}.json`;
+
+		// 모바일 WKWebView에서는 <a download>가 동작하지 않으므로 볼트 파일 저장 후 클립보드 폴백
+		if (Platform.isMobile) {
+			const targetPath = normalizePath(fileName);
+			try {
+				await plugin.app.vault.create(targetPath, json);
+				new Notice(t('uiMessages.noteSaved', { path: targetPath }));
+			} catch {
+				await copyToClipboard(json, t('uiMessages.copiedToClipboard'));
+			}
+			return;
+		}
+
+		const blob = new Blob([json], {
 			type: 'application/json',
 		});
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
 		a.href = url;
-		a.download = `lumina-devlog-${Date.now()}.json`;
+		a.download = fileName;
 		a.click();
-		URL.revokeObjectURL(url);
+		window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 	}
 
 	function toggleAutoScroll() {

@@ -63,4 +63,44 @@ describe('createProvider factory', () => {
 		expect(isLocalProvider('custom', 'https://api.mistral.ai/v1')).toBe(false);
 		expect(isLocalEndpointUrl('https://api.moonshot.ai/v1')).toBe(false);
 	});
+
+	it('모바일 환경에서는 ollama/lmstudio 생성을 차단하고 custom 원격 엔드포인트는 허용한다', () => {
+		const origIsMobile = Platform.isMobile;
+		(Platform as { isMobile: boolean }).isMobile = true;
+		try {
+			expect(() =>
+				createProvider({
+					id: 'ollama-sync',
+					type: 'ollama',
+					credential: '',
+					baseUrl: 'http://localhost:11434',
+					availableModels: ['llama3'],
+					isVerified: true,
+				}),
+			).toThrow();
+
+			expect(() =>
+				createProvider({
+					id: 'lmstudio-sync',
+					type: 'lmstudio',
+					credential: '',
+					baseUrl: 'http://localhost:1234',
+					availableModels: ['qwen2.5'],
+					isVerified: true,
+				}),
+			).toThrow();
+
+			const remoteCustom = createProvider({
+				id: 'custom-remote',
+				type: 'custom',
+				credential: 'sk-remote',
+				baseUrl: 'https://api.together.xyz/v1',
+				availableModels: ['llama-3.3-70b'],
+				isVerified: true,
+			});
+			expect(remoteCustom.providerId).toBe('custom-remote');
+		} finally {
+			(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+		}
+	});
 });

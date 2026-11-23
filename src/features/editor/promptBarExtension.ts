@@ -2,7 +2,7 @@ import { StateField, RangeSetBuilder } from '@codemirror/state';
 import type { Extension } from '@codemirror/state';
 import { EditorView, Decoration, showTooltip } from '@codemirror/view';
 import type { DecorationSet } from '@codemirror/view';
-import { Editor, MarkdownView, Notice, Platform, editorInfoField } from 'obsidian';
+import { Editor, MarkdownView, Notice, editorInfoField } from 'obsidian';
 import type { MarkdownFileInfo } from 'obsidian';
 import type LuminaPlugin from '../../main';
 import { t } from '../../shared/locales/helpers';
@@ -152,7 +152,7 @@ export function buildPromptBarExtension(plugin: LuminaPlugin): Extension {
 					nextTooltip = {
 						pos: payload.from,
 						end: payload.to,
-						above: !Platform.isMobile,
+						above: true,
 						strictSide: false,
 						create(view: EditorView) {
 							return new PromptBarTooltipView(plugin, view, promptBarField, newState);

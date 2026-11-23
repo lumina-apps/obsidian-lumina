@@ -1,5 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
-import { createPromptTemplateInserter } from "./useInputHandler";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { Platform } from "obsidian";
+import { createKeydownHandler, createPromptTemplateInserter } from "./useInputHandler";
+import type LuminaPlugin from "../../../../main";
 
 describe("useInputHandler - createPromptTemplateInserter", () => {
 	it("커서 위치(텍스트 중간)에 프롬프트를 삽입하고 커서를 삽입 텍스트 끝으로 이동한다", async () => {
@@ -47,5 +49,40 @@ describe("useInputHandler - createPromptTemplateInserter", () => {
 
 		insert("추가");
 		expect(inputText).toBe("기존 추가");
+	});
+});
+
+describe("useInputHandler - createKeydownHandler", () => {
+	const origIsMobile = Platform.isMobile;
+
+	afterEach(() => {
+		(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+	});
+
+	it("데스크탑 sendKey=enter에서는 Enter 입력 시 메시지를 전송하고 모바일에서는 줄바꿈을 허용한다", () => {
+		const onSendMessage = vi.fn();
+		const plugin = {
+			settings: { chat: { sendKey: "enter" } },
+		} as unknown as LuminaPlugin;
+		const handler = createKeydownHandler({
+			plugin,
+			showSlashSelector: false,
+			showContextSelector: false,
+			onSendMessage,
+		});
+
+		// 데스크탑: Enter 전송
+		(Platform as { isMobile: boolean }).isMobile = false;
+		const desktopEv = { key: "Enter", shiftKey: false, isComposing: false, preventDefault: vi.fn() } as unknown as KeyboardEvent;
+		handler(desktopEv);
+		expect(desktopEv.preventDefault).toHaveBeenCalledTimes(1);
+		expect(onSendMessage).toHaveBeenCalledTimes(1);
+
+		// 모바일: 가상 키보드 Enter는 줄바꿈으로 유지
+		(Platform as { isMobile: boolean }).isMobile = true;
+		const mobileEv = { key: "Enter", shiftKey: false, isComposing: false, preventDefault: vi.fn() } as unknown as KeyboardEvent;
+		handler(mobileEv);
+		expect(mobileEv.preventDefault).not.toHaveBeenCalled();
+		expect(onSendMessage).toHaveBeenCalledTimes(1);
 	});
 });

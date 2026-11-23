@@ -1,11 +1,15 @@
 <script lang="ts">
+	import type { App } from "obsidian";
 	import { t } from "../../../shared/locales/helpers";
+	import { confirmWithModal } from "../../../shared/utils/modal";
 
 	let {
+		app,
 		content,
 		onSave,
 		onCancel,
 	}: {
+		app?: App;
 		content: string;
 		onSave: (content: string) => void;
 		onCancel: () => void;
@@ -17,17 +21,19 @@
 		// content가 변경될 때마다 편집 내용 초기화 (편집 모드 진입 시점)
 		editContent = content;
 	});
+
+	async function handleConfirmSave(): Promise<void> {
+		if (!app || (await confirmWithModal(app, t("uiMessages.saveAndSend"), t("uiMessages.editConfirm")))) {
+			onSave(editContent);
+		}
+	}
 </script>
 
 <div class="lumina-message__edit-area">
 	<textarea bind:value={editContent} class="lumina-message__edit-textarea" rows="3"></textarea>
 	<div class="lumina-message__edit-actions">
 		<button class="lumina-message__edit-btn" onclick={onCancel}>{t("common.cancel")}</button>
-		<button class="lumina-message__edit-btn lumina-message__edit-btn--primary" onclick={() => {
-			if (window.confirm(t("uiMessages.editConfirm"))) {
-				onSave(editContent);
-			}
-		}}>{t("uiMessages.saveAndSend")}</button>
+		<button class="lumina-message__edit-btn lumina-message__edit-btn--primary" onclick={() => void handleConfirmSave()}>{t("uiMessages.saveAndSend")}</button>
 	</div>
 </div>
 

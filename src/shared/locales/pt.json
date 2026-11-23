@@ -296,7 +296,8 @@
       "sendMode": {
         "name": "Modo de Envio de Mensagem",
         "enter": "Enter para enviar",
-        "ctrlEnter": "Ctrl + Enter para enviar"
+        "ctrlEnter": "Ctrl + Enter para enviar",
+        "mobileNote": "Em dispositivos móveis, Enter insere uma quebra de linha; toque no botão de envio para enviar."
       },
       "quickActions": {
         "name": "Ações rápidas personalizadas do usuário (Comandos)",
@@ -335,6 +336,7 @@
         "name": "Ativar preenchimento automático embutido (Ghost Text)",
         "desc": "Quando você faz uma pausa na digitação, o Task LLM prevê a próxima frase e a exibe como texto fantasma (Tab: aceitar tudo, →: aceitar primeira palavra).",
         "needsTaskModel": "Para usar este recurso, você deve primeiro especificar um modelo de Tarefa na guia Conexões.",
+        "mobileUnsupported": "O preenchimento automático em linha não está disponível em dispositivos móveis porque teclados virtuais não possuem teclas Tab/→.",
         "promptName": "Prompt de Preenchimento Automático",
         "promptDesc": "Instrução enviada ao LLM para preenchimento automático embutido. Deixe em branco para usar o prompt padrão.",
         "contextLengthName": "Tamanho do Contexto de Preenchimento Automático (caracteres)",

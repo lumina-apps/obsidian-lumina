@@ -226,7 +226,7 @@
 	}
 
 	.lumina-voice-pill-wrap.is-mobile {
-		bottom: 12px;
+		bottom: calc(64px + env(safe-area-inset-bottom, 0px));
 		left: 12px;
 		right: 12px;
 		transform: none;

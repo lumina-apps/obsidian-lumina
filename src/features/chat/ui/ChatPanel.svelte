@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { tick, onMount, onDestroy, untrack } from "svelte";
-	import { Notice } from "obsidian";
+	import { Notice, Platform } from "obsidian";
 	import type LuminaPlugin from "../../../main";
 	import { ChatController } from "../chatController";
 	import ChatHistoryList from "./ChatHistoryList.svelte";
@@ -203,7 +203,9 @@
 		includeActiveNote = plugin.settings.rag.includeActiveNote;
 		useRagContext = plugin.settings.connections.ragEnabled;
 		ctrl = new ChatController(plugin);
-		textareaEl?.focus();
+		if (!Platform.isMobile) {
+			textareaEl?.focus();
+		}
 	}
 
 	onMount(() => {
@@ -328,7 +330,9 @@
 		attachments = [];
 		tick().then(() => {
 			resetTextareaHeight();
-			textareaEl?.focus();
+			if (!Platform.isMobile) {
+				textareaEl?.focus();
+			}
 		});
 
 		await executeStreamOperation((signal) =>
@@ -486,6 +490,7 @@
 		<div class="lumina-chat__history-wrap">
 			{#if ctrl}
 				<ChatHistoryList
+					app={plugin.app}
 					{ctrl}
 					onBeforeSelect={async () => {
 						if ($isLoading) cancelStream();

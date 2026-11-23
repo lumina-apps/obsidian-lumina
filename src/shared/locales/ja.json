@@ -296,7 +296,8 @@
       "sendMode": {
         "name": "メッセージ送信モード",
         "enter": "Enterで送信",
-        "ctrlEnter": "Ctrl + Enterで送信"
+        "ctrlEnter": "Ctrl + Enterで送信",
+        "mobileNote": "モバイル環境ではEnterで改行され、送信ボタンをタップして送信します。"
       },
       "quickActions": {
         "name": "ユーザーカスタムクイックアクション (コマンド)",
@@ -335,6 +336,7 @@
         "name": "インライン自動補完 (Ghost Text) を有効にする",
         "desc": "入力中に一時停止すると、Task LLMが次の文を予測してゴーストテキストとして表示します（Tab: すべて確定、→: 最初の単語を確定）。",
         "needsTaskModel": "この機能を使用するには、まず「接続」タブでTaskモデルを指定する必要があります。",
+        "mobileUnsupported": "モバイルの仮想キーボードには確定用のTab/→キーがないため、インライン自動補完は利用できません。",
         "promptName": "自動補完プロンプト",
         "promptDesc": "インライン自動補完リクエスト時にLLMへ送信する指示文です。空欄の場合はデフォルトのプロンプトが使用されます。",
         "contextLengthName": "自動補完コンテキスト長（文字数）",

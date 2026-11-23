@@ -110,6 +110,7 @@
 	<div class="lumina-message__body">
 		{#if isEditing}
 			<MessageEditArea
+				{app}
 				content={message.content}
 				onSave={handleEditSave}
 				onCancel={handleEditCancel}

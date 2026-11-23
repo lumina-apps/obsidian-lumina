@@ -6,12 +6,22 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { RequestUrlResponse } from 'obsidian';
 
 // ── Obsidian 의존성 모킹 ──
-const mockRequestUrl = vi.fn();
+const { mockRequestUrl, mockPlatform } = vi.hoisted(() => ({
+	mockRequestUrl: vi.fn(),
+	mockPlatform: { isMobile: false },
+}));
 vi.mock('obsidian', () => ({
+	Platform: mockPlatform,
 	requestUrl: (...args: unknown[]) => mockRequestUrl(...args),
 }));
 
-import { IdleTimeoutController, requestUrlWithAbort, raiseApiError, readStreamLines } from './provider-helpers';
+import {
+	IdleTimeoutController,
+	requestUrlWithAbort,
+	raiseApiError,
+	readStreamLines,
+	isMobileStreamingCorsFallbackError,
+} from './provider-helpers';
 
 beforeEach(() => {
 	mockRequestUrl.mockReset();
@@ -200,6 +210,54 @@ describe('readStreamLines', () => {
 		});
 
 		expect(lines).toEqual(['line 1']);
+	});
+});
+
+describe('isMobileStreamingCorsFallbackError', () => {
+	afterEach(() => {
+		mockPlatform.isMobile = false;
+	});
+
+	it('모바일에서 TypeError(CORS/네트워크 차단) 발생 시 true를 반환한다', () => {
+		mockPlatform.isMobile = true;
+		expect(isMobileStreamingCorsFallbackError(new TypeError('Load failed'))).toBe(true);
+	});
+
+	it('데스크탑에서는 TypeError여도 false를 반환한다', () => {
+		mockPlatform.isMobile = false;
+		expect(isMobileStreamingCorsFallbackError(new TypeError('Load failed'))).toBe(false);
+	});
+
+	it('AbortError, IdleTimeoutError, 일반 Error는 false를 반환한다', () => {
+		mockPlatform.isMobile = true;
+		const abortErr = new TypeError('Aborted');
+		abortErr.name = 'AbortError';
+		const idleErr = new TypeError('Timed out');
+		idleErr.name = 'IdleTimeoutError';
+
+		expect(isMobileStreamingCorsFallbackError(abortErr)).toBe(false);
+		expect(isMobileStreamingCorsFallbackError(idleErr)).toBe(false);
+		expect(isMobileStreamingCorsFallbackError(new Error('HTTP 400'))).toBe(false);
+	});
+
+	it('switchToNonStreamingFallback 호출 시 짧은 TTFT 경과 후에도 중단되지 않고 여유 타임아웃으로 전환된다', () => {
+		vi.useFakeTimers();
+		try {
+			const ctrl = new IdleTimeoutController(undefined, 5000, 2000);
+			vi.advanceTimersByTime(4000);
+			expect(ctrl.signal.aborted).toBe(false);
+
+			ctrl.switchToNonStreamingFallback(60_000);
+			vi.advanceTimersByTime(15_000);
+			expect(ctrl.signal.aborted).toBe(false);
+
+			vi.advanceTimersByTime(45_000);
+			expect(ctrl.signal.aborted).toBe(true);
+			expect((ctrl.signal.reason as Error)?.name).toBe('IdleTimeoutError');
+			ctrl.cleanup();
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 });
 

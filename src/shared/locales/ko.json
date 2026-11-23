@@ -296,7 +296,8 @@
       "sendMode": {
         "name": "메시지 전송 방식",
         "enter": "Enter로 전송",
-        "ctrlEnter": "Ctrl + Enter로 전송"
+        "ctrlEnter": "Ctrl + Enter로 전송",
+        "mobileNote": "모바일 환경에서는 Enter가 줄바꿈으로 동작하며 전송 버튼으로 메시지를 보냅니다."
       },
       "quickActions": {
         "name": "유저 커스텀 퀵 액션 (커맨드)",
@@ -335,6 +336,7 @@
         "name": "인라인 자동완성 (Ghost Text) 사용",
         "desc": "글을 작성하다 멈추면 Task LLM이 다음 문장을 예측해 회색 텍스트로 보여줍니다 (Tab: 전체 수락, →: 첫 단어 수락).",
         "needsTaskModel": "이 기능을 사용하려면 연결 탭에서 Task 모델을 먼저 지정해야 합니다.",
+        "mobileUnsupported": "모바일 가상 키보드에는 Tab/→ 수락 키가 없어 인라인 자동완성 기능을 사용할 수 없습니다.",
         "promptName": "자동완성 프롬프트",
         "promptDesc": "인라인 자동완성 요청 시 LLM에 전달할 지시문입니다. 비워두면 기본 프롬프트가 사용됩니다.",
         "contextLengthName": "자동완성 컨텍스트 길이 (글자 수)",

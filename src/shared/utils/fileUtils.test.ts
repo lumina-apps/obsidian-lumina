@@ -11,7 +11,7 @@ import {
 	toVaultRelativePath,
 	joinSystemPath,
 } from './fileUtils';
-import { TFile, App } from 'obsidian';
+import { TFile, App, Platform } from 'obsidian';
 
 describe('fileUtils', () => {
 	let mockApp: App;
@@ -235,6 +235,45 @@ describe('fileUtils', () => {
 		it('빈 세그먼트를 무시하고 모두 비어 있으면 빈 문자열을 반환한다', () => {
 			expect(joinSystemPath('', '')).toBe('');
 			expect(joinSystemPath('/vault', '')).toBe('/vault');
+		});
+
+		it('모바일 환경에서는 window.require("path")를 호출하지 않고 순수 문자열 결합만 수행한다', () => {
+			const origIsMobile = Platform.isMobile;
+			const winObj = window as unknown as { require?: (mod: string) => unknown };
+			const origRequire = winObj.require;
+			const requireSpy = vi.fn(() => {
+				throw new Error('path should not be required on mobile');
+			});
+			winObj.require = requireSpy;
+			(Platform as { isMobile: boolean }).isMobile = true;
+
+			try {
+				expect(joinSystemPath('/vault', '.obsidian', 'plugins', 'lumina')).toBe('/vault/.obsidian/plugins/lumina');
+				expect(requireSpy).not.toHaveBeenCalled();
+			} finally {
+				(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+				winObj.require = origRequire;
+			}
+		});
+	});
+
+	describe('getVaultBasePath', () => {
+		it('모바일 환경에서는 adapter.getBasePath를 호출하지 않고 빈 문자열을 반환한다', () => {
+			const origIsMobile = Platform.isMobile;
+			const getBasePathSpy = vi.fn(() => '/should/not/call');
+			const mobileApp = {
+				vault: {
+					adapter: { getBasePath: getBasePathSpy },
+				},
+			} as unknown as App;
+
+			(Platform as { isMobile: boolean }).isMobile = true;
+			try {
+				expect(getVaultBasePath(mobileApp)).toBe('');
+				expect(getBasePathSpy).not.toHaveBeenCalled();
+			} finally {
+				(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+			}
 		});
 	});
 });

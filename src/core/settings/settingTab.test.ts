@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Setting } from 'obsidian';
 import { LuminaSettingTab } from './settingTab';
 import { DEFAULT_SETTINGS } from './defaultSettings';
 import { initProjectStore } from '../store/projectStore';
+import { indexingState, setIndexingStatus } from '../store/ragStore';
 import { resetEntitlementState, setEntitlementState } from '../store/entitlementStore';
 import type LuminaPlugin from '../../main';
 import type { App } from 'obsidian';
@@ -552,6 +554,249 @@ describe('LuminaSettingTab scroll preservation', () => {
 					expect(headings.length).toBe(1);
 					expect(container.querySelector('.lumina-setting-cta')).toBeNull();
 				} finally {
+					(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+					(Platform as { isDesktop: boolean }).isDesktop = origIsDesktop;
+				}
+			});
+
+			it('모바일에서 동기화된 데스크탑 ragEnabled=true(auto), 로컬/CLI 프로바이더, 빈 SecretStorage 키를 훼손 없이 안전하게 렌더링한다', async () => {
+				const { Platform } = await import('obsidian');
+				const origIsMobile = Platform.isMobile;
+				const origIsDesktop = Platform.isDesktop;
+
+				try {
+					(Platform as { isMobile: boolean }).isMobile = true;
+					(Platform as { isDesktop: boolean }).isDesktop = false;
+
+					mockPlugin.settings.connections.ragEnabled = true;
+					mockPlugin.settings.connections.embedding = { mode: 'auto', providerId: '', modelId: '' };
+					mockPlugin.settings.connections.providers = [
+						{ id: 'ol', type: 'ollama', credential: '', availableModels: ['llama3'], isVerified: true },
+						{ id: 'oai', type: 'openai', credential: '', availableModels: ['gpt-4o'], isVerified: true },
+					];
+
+					tab.activeTab = 'connections';
+					tab.display();
+
+					// 1) 데스크탑 RAG 설정(ragEnabled=true)과 saveSettings가 덮어써지지 않아야 함
+					expect(mockPlugin.settings.connections.ragEnabled).toBe(true);
+					expect(mockPlugin.saveSettings).not.toHaveBeenCalled();
+
+					// 2) 데스크탑 전용(ollama) 카드는 읽기 전용 안내 카드로 렌더링되고 원본 타입 유지
+					const readonlyCards = container.querySelectorAll('.lumina-provider-card.is-desktop-only-mobile');
+					expect(readonlyCards).toHaveLength(1);
+					expect(mockPlugin.settings.connections.providers[0].type).toBe('ollama');
+
+					// 3) SecretStorage 미동기화(credential='') 클라우드 카드는 isVerified를 훼손하지 않고 키 입력 경고를 표시
+					expect(mockPlugin.settings.connections.providers[1].isVerified).toBe(true);
+					const oaiCard = container.querySelectorAll('.lumina-provider-card')[1];
+					expect(oaiCard.classList.contains('is-verified')).toBe(false);
+					expect(oaiCard.textContent).toContain('⚠️');
+				} finally {
+					(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+					(Platform as { isDesktop: boolean }).isDesktop = origIsDesktop;
+				}
+			});
+
+			it('모바일에서 Factory Reset 실행 시 동기화된 CLI MCP 설정(cleanupCliMcp)을 건드리지 않는다', async () => {
+				const { Platform } = await import('obsidian');
+				const { ConfirmModal } = await import('../../shared/utils/modal');
+				const origIsMobile = Platform.isMobile;
+				const origIsDesktop = Platform.isDesktop;
+
+				let confirmPromise: Promise<void> | undefined;
+				const modalOpenSpy = vi.spyOn(ConfirmModal.prototype, 'open').mockImplementation(function (this: InstanceType<typeof ConfirmModal>) {
+					const cb = (this as unknown as { onConfirm: () => Promise<void> }).onConfirm;
+					confirmPromise = Promise.resolve(cb());
+				});
+
+				(mockApp as unknown as { vault: unknown }).vault = {
+					configDir: '.obsidian',
+					adapter: {
+						exists: vi.fn().mockResolvedValue(false),
+						rmdir: vi.fn().mockResolvedValue(undefined),
+					},
+				};
+				(mockApp as unknown as { workspace: unknown }).workspace = {
+					getLeavesOfType: vi.fn().mockReturnValue([]),
+				};
+
+				const cleanupCliMcp = vi.fn().mockResolvedValue(undefined);
+				const mcpDestroy = vi.fn().mockResolvedValue(undefined);
+				mockPlugin.mcpManager = { cleanupCliMcp, destroy: mcpDestroy } as never;
+				mockPlugin.settingsManager = { clearAllSecrets: vi.fn() } as never;
+				mockPlugin.commandManager = { registerQuickActions: vi.fn() } as never;
+				mockPlugin.saveData = vi.fn().mockResolvedValue(undefined);
+				mockPlugin.loadSettings = vi.fn().mockImplementation(async () => {
+					mockPlugin.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+					mockPlugin.settings.connections.ragEnabled = false;
+				});
+
+				try {
+					(Platform as { isMobile: boolean }).isMobile = true;
+					(Platform as { isDesktop: boolean }).isDesktop = false;
+
+					tab.activeTab = 'misc';
+					tab.showAdvanced = true;
+					tab.display();
+
+					const resetBtn = Array.from(container.querySelectorAll<HTMLButtonElement>('button'))
+						.find((b) => b.textContent?.includes('Reset') || b.textContent?.includes('초기화'));
+					resetBtn?.click();
+					await confirmPromise;
+					await new Promise((r) => setTimeout(r, 20));
+
+					expect(cleanupCliMcp).not.toHaveBeenCalled();
+					expect(mcpDestroy).toHaveBeenCalled();
+				} finally {
+					modalOpenSpy.mockRestore();
+					(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+					(Platform as { isDesktop: boolean }).isDesktop = origIsDesktop;
+				}
+			});
+
+			it('모바일에서 custom 로컬 임베딩(ollama) 잠금 및 custom→auto 전환 시 실행 중인 인덱서를 정리한다', async () => {
+				const { Platform } = await import('obsidian');
+				const { get } = await import('svelte/store');
+				const origIsMobile = Platform.isMobile;
+				const origIsDesktop = Platform.isDesktop;
+
+				const indexerDestroy = vi.fn();
+				const workerTerminate = vi.fn();
+				const clearWatchEvents = vi.fn();
+				mockPlugin.indexer = { destroy: indexerDestroy } as never;
+				mockPlugin.embeddingWorker = { terminate: workerTerminate } as never;
+				mockPlugin.watchManager = { clearWatchEvents } as never;
+				setIndexingStatus('ready');
+
+				let capturedEmbeddingOnChange: ((val: string) => Promise<void>) | undefined;
+				const modelSelSpy = vi.spyOn(tab, 'addModelSelector').mockImplementation(
+					(_setting, options, _curVal, _curLabel, onChange) => {
+						// customEmbedding 선택기는 항상 'auto' 옵션을 포함함
+						if (options.some((o) => o.value === 'auto')) {
+							capturedEmbeddingOnChange = onChange;
+						}
+					},
+				);
+
+				try {
+					(Platform as { isMobile: boolean }).isMobile = true;
+					(Platform as { isDesktop: boolean }).isDesktop = false;
+
+					mockPlugin.settings.connections.ragEnabled = true;
+					mockPlugin.settings.connections.providers = [
+						{ id: 'ol', type: 'ollama', credential: '', baseUrl: 'http://localhost:11434', availableModels: ['nomic-embed'], isVerified: true },
+						{ id: 'oai', type: 'openai', credential: 'sk', availableModels: ['text-embedding-3-small'], isVerified: true },
+					];
+					mockPlugin.settings.connections.embedding = {
+						mode: 'custom',
+						providerId: 'ol',
+						modelId: 'nomic-embed',
+					};
+
+					tab.activeTab = 'connections';
+					tab.showAdvanced = true;
+					tab.display();
+
+					// 1) custom 대상이 동기화된 로컬(ollama)이면 RAG 카드가 비활성 잠금 처리
+					const activeCards = container.querySelectorAll('.lumina-feature-card.is-active');
+					expect(activeCards).toHaveLength(0);
+
+					// 2) custom → auto 전환 시 인덱서·워커·감시기가 정리되고 ragEnabled 원본은 보존됨
+					await capturedEmbeddingOnChange?.('auto');
+					expect(clearWatchEvents).toHaveBeenCalled();
+					expect(indexerDestroy).toHaveBeenCalled();
+					expect(workerTerminate).toHaveBeenCalled();
+					expect(mockPlugin.indexer).toBeNull();
+					expect(mockPlugin.embeddingWorker).toBeNull();
+					expect(get(indexingState).status).toBe('idle');
+					expect(mockPlugin.settings.connections.ragEnabled).toBe(true);
+				} finally {
+					modelSelSpy.mockRestore();
+					setIndexingStatus('idle');
+					(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+					(Platform as { isDesktop: boolean }).isDesktop = origIsDesktop;
+				}
+			});
+
+			it('모바일에서 RagTab 모바일 경고, Agent 데스크탑 프로바이더 필터, Chat/QuickAction/SendMode/Voice 경고를 렌더링한다', async () => {
+				const { Platform } = await import('obsidian');
+				const origIsMobile = Platform.isMobile;
+				const origIsDesktop = Platform.isDesktop;
+
+				const capturedToggles: Array<{ setValue: ReturnType<typeof vi.fn>; setDisabled: ReturnType<typeof vi.fn>; onChangeCb?: (v: boolean) => Promise<void> }> = [];
+				const addToggleSpy = vi.spyOn(Setting.prototype, 'addToggle').mockImplementation(function (this: Setting, cb) {
+					const toggleObj: {
+						setValue: ReturnType<typeof vi.fn>;
+						setDisabled: ReturnType<typeof vi.fn>;
+						onChange: ReturnType<typeof vi.fn>;
+						onChangeCb?: (v: boolean) => Promise<void>;
+					} = {
+						setValue: vi.fn().mockReturnThis(),
+						setDisabled: vi.fn().mockReturnThis(),
+						onChange: vi.fn().mockImplementation((fn: (v: boolean) => Promise<void>) => {
+							toggleObj.onChangeCb = fn;
+							return toggleObj;
+						}),
+					};
+					capturedToggles.push(toggleObj);
+					cb(toggleObj as never);
+					return this;
+				});
+
+				try {
+					(Platform as { isMobile: boolean }).isMobile = true;
+					(Platform as { isDesktop: boolean }).isDesktop = false;
+
+					// 1) RagTab: ragEnabled=true & auto 모드일 때 모바일 경고 표시
+					mockPlugin.settings.connections.ragEnabled = true;
+					mockPlugin.settings.connections.embedding = { mode: 'auto', providerId: '', modelId: '' };
+					tab.activeTab = 'rag';
+					tab.display();
+					expect(container.querySelectorAll('.lumina-settings__info-box--warning').length).toBeGreaterThanOrEqual(1);
+
+					// 2) AgentSection: 데스크탑 전용 프로바이더(ollama)만 인증되어 있으면 모바일 Agent 활성화 거부
+					mockPlugin.settings.connections.providers = [
+						{ id: 'ol', type: 'ollama', credential: '', availableModels: ['llama3'], isVerified: true },
+					];
+					mockPlugin.settings.chat.agentEnabled = false;
+					capturedToggles.length = 0;
+					tab.activeTab = 'mcp';
+					tab.display();
+					await capturedToggles[0]?.onChangeCb?.(true);
+					expect(mockPlugin.settings.chat.agentEnabled).toBe(false);
+
+					// 3) ChatTab: SendMode 모바일 안내 및 자동완성 토글 잠금 + 원본 enableAutocomplete 보존 + 하위 설정 숨김
+					mockPlugin.settings.connections.providers = [
+						{ id: 'oai', type: 'openai', credential: 'sk', availableModels: ['gpt-4o-mini'], isVerified: true },
+					];
+					mockPlugin.settings.connections.taskProviderId = 'oai';
+					mockPlugin.settings.connections.taskModelId = 'gpt-4o-mini';
+					mockPlugin.settings.chat.enableAutocomplete = true;
+					tab.activeTab = 'chat';
+					tab.display();
+					expect(mockPlugin.settings.chat.enableAutocomplete).toBe(true);
+					expect(container.textContent).not.toContain('Autocomplete Prompt');
+					expect(container.textContent).toContain('tap the send button');
+
+					// 4) VoiceSettingsSection: 동기화된 sttMode='local-whisper' 시 라벨 옵션 유지 및 경고 박스 표시
+					setEntitlementState({
+						tier: 'pro',
+						status: 'active',
+						enabledFeatures: new Set(['voice-note']),
+					});
+					mockPlugin.settings.voiceNote = { sttMode: 'local-whisper' };
+					tab.activeTab = 'misc';
+					tab.display();
+					const sttSelect = Array.from(container.querySelectorAll('select')).find((sel) =>
+						Array.from(sel.options).some((opt) => opt.value === 'provider'),
+					);
+					expect(sttSelect).toBeDefined();
+					expect(sttSelect?.value).toBe('local-whisper');
+					expect(container.querySelectorAll('.lumina-settings__info-box--warning').length).toBeGreaterThanOrEqual(1);
+				} finally {
+					addToggleSpy.mockRestore();
+					resetEntitlementState();
 					(Platform as { isMobile: boolean }).isMobile = origIsMobile;
 					(Platform as { isDesktop: boolean }).isDesktop = origIsDesktop;
 				}

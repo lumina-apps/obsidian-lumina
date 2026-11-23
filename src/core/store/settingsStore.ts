@@ -12,6 +12,10 @@
 import { writable, derived } from 'svelte/store';
 import type { LuminaSettings } from '../settings/settings.types';
 import { debugLogger } from '../../shared/debugLogger';
+import {
+	isProviderSupportedOnCurrentPlatform,
+	isRagEffectiveOnCurrentPlatform,
+} from '../../shared/utils/modelUtils';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -25,15 +29,17 @@ settingsStore.subscribe((settings) => {
 
 // ─── Derived ──────────────────────────────────────────────────────────────────
 
-/** 검증된 프로바이더 목록 */
+/** 검증된 프로바이더 목록 (현재 플랫폼에서 실행 가능한 프로바이더만 노출) */
 export const verifiedProviders = derived(settingsStore, ($s) =>
-	$s?.connections.providers.filter(p => p.isVerified && p.availableModels.length > 0) ?? [],
+	$s?.connections.providers.filter(
+		p => p.isVerified && p.availableModels.length > 0 && isProviderSupportedOnCurrentPlatform(p.type),
+	) ?? [],
 );
 
-/** RAG 활성화 여부 */
+/** RAG 활성화 여부 (모바일 auto/미지원 로컬 임베딩 모드에서는 설정을 훼손하지 않고 런타임 비활성화) */
 export const isRagEnabled = derived(
 	settingsStore,
-	($s) => $s?.connections.ragEnabled ?? false,
+	($s) => isRagEffectiveOnCurrentPlatform($s?.connections),
 );
 
 /** 즐겨찾기 모델 목록 */

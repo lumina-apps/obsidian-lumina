@@ -18,7 +18,7 @@ const PLUGIN_ID = 'lumina';
 /** 볼트 절대 경로 */
 function getBasePath(app: App): string {
 	const adapter = app.vault.adapter;
-	if (adapter instanceof FileSystemAdapter) {
+	if (typeof FileSystemAdapter !== 'undefined' && FileSystemAdapter && adapter instanceof FileSystemAdapter) {
 		return adapter.getBasePath();
 	}
 	throw new Error(t('uiMessages.fsAdapterErr'));
@@ -50,7 +50,7 @@ export function getVaultId(app: App): string {
 		return rawAppId.trim().replace(/[^a-zA-Z0-9_-]/g, '_');
 	}
 	const adapter = app.vault?.adapter;
-	if (adapter instanceof FileSystemAdapter) {
+	if (typeof FileSystemAdapter !== 'undefined' && FileSystemAdapter && adapter instanceof FileSystemAdapter) {
 		return hashString(adapter.getBasePath()).toString(36);
 	}
 	if (typeof app.vault?.getName === 'function') {

@@ -12,6 +12,8 @@ import {
 	resampleLinearMono,
 	TARGET_SAMPLE_RATE,
 } from './audioChunker';
+import { debugLogger } from '../../../shared/debugLogger';
+import { normalizeError } from '../../../shared/utils/errorUtils';
 
 /** 녹음 종료 결과 */
 export interface RecordedAudioResult {
@@ -218,7 +220,12 @@ export class VoiceAudioRecorder {
 		this.accumulatedMs += Date.now() - this.activeStartedAtMs;
 		this.isPaused = true;
 		if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
-			this.mediaRecorder.pause();
+			try {
+				this.mediaRecorder.pause();
+			} catch (err: unknown) {
+				// 일부 iOS WKWebView/Safari 버전에서 MediaRecorder.pause() 미지원·예외 방어
+				debugLogger.logWarn('voice', `MediaRecorder.pause 실패: ${normalizeError(err).message}`);
+			}
 		}
 		this.flushSpeechBufferIfReady(true);
 		this.callbacks.onLevel?.(0);
@@ -234,7 +241,11 @@ export class VoiceAudioRecorder {
 		this.chunkStartedAtMs = this.activeStartedAtMs;
 		this.lastSpeechAtMs = this.activeStartedAtMs;
 		if (this.mediaRecorder && this.mediaRecorder.state === 'paused') {
-			this.mediaRecorder.resume();
+			try {
+				this.mediaRecorder.resume();
+			} catch (err: unknown) {
+				debugLogger.logWarn('voice', `MediaRecorder.resume 실패: ${normalizeError(err).message}`);
+			}
 		}
 	}
 
@@ -302,6 +313,11 @@ export class VoiceAudioRecorder {
 
 		try {
 			const ctx = new AudioCtx();
+			if (ctx.state === 'suspended' && typeof ctx.resume === 'function') {
+				void ctx.resume().catch(() => {
+					// iOS WKWebView 자동정지 해제 실패 시에도 MediaRecorder 본녹음 유지
+				});
+			}
 			this.audioContext = ctx;
 			this.sourceNode = ctx.createMediaStreamSource(stream);
 			this.analyser = ctx.createAnalyser();

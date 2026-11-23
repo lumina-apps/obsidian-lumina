@@ -296,7 +296,8 @@
       "sendMode": {
         "name": "訊息發送方式",
         "enter": "按 Enter 發送",
-        "ctrlEnter": "按 Ctrl + Enter 發送"
+        "ctrlEnter": "按 Ctrl + Enter 發送",
+        "mobileNote": "在行動裝置上，按 Enter 會換行，請點擊傳送按鈕發送訊息。"
       },
       "quickActions": {
         "name": "使用者自訂快速操作 (命令)",
@@ -335,6 +336,7 @@
         "name": "啟用內聯自動補全 (Ghost Text)",
         "desc": "當您暫停輸入時，Task LLM將預測下一句並將其顯示為幽靈文本（Tab：全部接受，→：接受第一個詞）。",
         "needsTaskModel": "要使用此功能，您必須先在「連線」分頁中指定一個 Task 模型。",
+        "mobileUnsupported": "由於行動裝置虛擬鍵盤缺少 Tab/→ 接受鍵，行動裝置上無法使用行內自動補全功能。",
         "promptName": "自動補全提示詞",
         "promptDesc": "內聯自動補全時發送給 LLM 的指令。留空則使用預設提示詞。",
         "contextLengthName": "自動補全上下文長度（字元數）",

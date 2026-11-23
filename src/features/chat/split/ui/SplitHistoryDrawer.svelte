@@ -1,7 +1,9 @@
 <script lang="ts">
+	import type { App } from "obsidian";
 	import { activeProjectId } from "../../../../core/store/projectStore";
 	import { debugLogger } from "../../../../shared/debugLogger";
 	import type { tStore } from "../../../../shared/locales/index";
+	import { confirmWithModal } from "../../../../shared/utils/modal";
 	import {
 		SVG_CHECK,
 		SVG_CLOSE,
@@ -17,6 +19,7 @@
 	import type { SplitChatController } from "../splitChatController";
 
 	let {
+		app,
 		ctrl,
 		currentSessionId,
 		refreshTick = 0,
@@ -25,6 +28,7 @@
 		onNewComparison,
 		onClose,
 	}: {
+		app?: App;
 		ctrl: SplitChatController;
 		currentSessionId: string | null;
 		refreshTick?: number;
@@ -103,7 +107,8 @@
 
 	async function handleDelete(e: Event, sessionId: string): Promise<void> {
 		e.stopPropagation();
-		if (window.confirm($tS("splitChat.historyDeleteConfirm"))) {
+		const confirmed = !app || (await confirmWithModal(app, $tS("common.delete"), $tS("splitChat.historyDeleteConfirm")));
+		if (confirmed) {
 			const ok = await ctrl.deleteHistorySession(sessionId);
 			if (ok) {
 				await loadSessions();

@@ -296,7 +296,8 @@
       "sendMode": {
         "name": "Nachrichtensende-Modus",
         "enter": "Enter zum Senden",
-        "ctrlEnter": "Strg + Enter zum Senden"
+        "ctrlEnter": "Strg + Enter zum Senden",
+        "mobileNote": "Auf Mobilgeräten fügt Enter einen Zeilenumbruch ein; tippen Sie zum Senden auf die Senden-Schaltfläche."
       },
       "quickActions": {
         "name": "Benutzerdefinierte Schnellaktionen (Befehle)",
@@ -335,6 +336,7 @@
         "name": "Inline-Autovervollständigung (Ghost Text) aktivieren",
         "desc": "Wenn Sie mit dem Tippen innehalten, sagt Task LLM den nächsten Satz voraus und zeigt ihn als Geistertext an (Tab: alles akzeptieren, →: erstes Wort akzeptieren).",
         "needsTaskModel": "Um diese Funktion nutzen zu können, müssen Sie zuerst ein Task-Modell im Tab Verbindungen festlegen.",
+        "mobileUnsupported": "Die Inline-Autovervollständigung ist auf Mobilgeräten nicht verfügbar, da virtuelle Tastaturen keine Tab-/Pfeiltasten zur Übernahme bieten.",
         "promptName": "Autovervollständigungs-Prompt",
         "promptDesc": "Anweisung an das LLM für die Inline-Autovervollständigung. Leer lassen, um den Standard-Prompt zu verwenden.",
         "contextLengthName": "Kontextlänge der Autovervollständigung (Zeichen)",

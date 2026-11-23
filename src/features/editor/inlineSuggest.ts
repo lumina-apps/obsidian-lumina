@@ -14,6 +14,7 @@ import type LuminaPlugin from '../../main';
 import { canUseFeature } from '../../core/store/entitlementStore';
 import type { QuickAction } from '../../shared/types/settings.types';
 import { t } from '../../shared/locales/helpers';
+import { isProviderSupportedOnCurrentPlatform } from '../../shared/utils/modelUtils';
 import { openPromptBar } from './promptBarExtension';
 
 const PROMPT_BAR_ACTION_ID = '__prompt_bar__';
@@ -75,8 +76,14 @@ export class InlineAISuggest extends EditorSuggest<QuickAction> {
 				? [voiceAction]
 				: [];
 
-		const { quickActionProviderId, quickActionModelId } = this.plugin.settings.connections;
-		if (!quickActionProviderId || !quickActionModelId) {
+		const { quickActionProviderId, quickActionModelId, providers } = this.plugin.settings.connections;
+		const matchedProvider = quickActionProviderId
+			? (providers ?? []).find((p) => p.id === quickActionProviderId)
+			: undefined;
+		const isUnsupportedOnCurrentPlatform = Boolean(
+			matchedProvider && !isProviderSupportedOnCurrentPlatform(matchedProvider.type),
+		);
+		if (!quickActionProviderId || !quickActionModelId || isUnsupportedOnCurrentPlatform) {
 			return [
 				...matchingVoice,
 				{

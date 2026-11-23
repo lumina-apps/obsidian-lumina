@@ -14,6 +14,14 @@ export const runShellCommandHandler = async (
 	ctx: ToolHandlerContext,
 	_pathGuard: PathGuard,
 ): Promise<ToolResult> => {
+	// 모바일(Capacitor WebView)에서는 child_process 미지원 → 승인 모달 전 즉시 차단
+	if (typeof Platform !== 'undefined' && !Platform.isDesktop) {
+		return {
+			isError: true,
+			content: [{ type: 'text', text: 'Shell command execution is only supported on Desktop.' }],
+		};
+	}
+
 	if (!ctx.plugin.settings.mcp.serverEnableShellCommands) {
 		return {
 			isError: true,

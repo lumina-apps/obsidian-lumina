@@ -6,6 +6,7 @@ import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
 import { stripThinkTags } from '../../shared/utils/llmTextSanitizer';
 import { sanitizeGeneratedFrontmatterData } from '../../shared/utils/frontmatterSanitizer';
+import { findSupportedProvider } from '../../shared/utils/modelUtils';
 import { createProvider } from '../../core/llm-providers';
 import { StripFrontmatterModal } from './stripFrontmatterModal';
 import type LuminaPlugin from '../../main';
@@ -227,7 +228,7 @@ export class FrontmatterManager {
 		const { taskProviderId, taskModelId, providers } = this.plugin.settings.connections;
 		if (!taskProviderId || !taskModelId) return;
 
-		const providerConfig = providers.find(p => p.id === taskProviderId);
+		const providerConfig = findSupportedProvider(providers, taskProviderId);
 		if (!providerConfig || !providerConfig.isVerified) return;
 
 		try {

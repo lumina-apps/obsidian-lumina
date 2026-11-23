@@ -157,6 +157,7 @@
 
 		{#if isEditing}
 			<MessageEditArea
+				{app}
 				content={turn.userMessage.content}
 				onSave={handleSaveEdit}
 				onCancel={() => (isEditing = false)}

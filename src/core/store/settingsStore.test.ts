@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { get } from 'svelte/store';
-import { settingsStore, syncSettingsStore } from './settingsStore';
+import { Platform } from 'obsidian';
+import { settingsStore, syncSettingsStore, verifiedProviders, isRagEnabled } from './settingsStore';
 import { DEFAULT_SETTINGS } from '../settings/defaultSettings';
 import type { LuminaSettings } from '../settings/settings.types';
 
@@ -70,5 +71,51 @@ describe('settingsStore', () => {
 
 		expect(() => syncSettingsStore(brokenSettings)).not.toThrow();
 		expect(get(settingsStore)?.chat.systemPrompts).toEqual([]);
+	});
+
+	it('모바일 환경에서 verifiedProviders는 로컬/CLI를 제외하고 isRagEnabled는 auto 모드에서 false를 반환한다', () => {
+		const origIsMobile = Platform.isMobile;
+		try {
+			const syncedSettings: LuminaSettings = {
+				...DEFAULT_SETTINGS,
+				connections: {
+					...DEFAULT_SETTINGS.connections,
+					ragEnabled: true,
+					embedding: { mode: 'auto', providerId: '', modelId: '' },
+					providers: [
+						{ id: 'oai', type: 'openai', credential: 'sk', availableModels: ['gpt-4o'], isVerified: true },
+						{ id: 'ol', type: 'ollama', credential: '', availableModels: ['llama3'], isVerified: true },
+						{ id: 'cli', type: 'cli-claude-code', credential: '', availableModels: ['claude'], isVerified: true },
+					],
+				},
+			};
+
+			(Platform as { isMobile: boolean }).isMobile = true;
+			syncSettingsStore(syncedSettings);
+			expect(get(verifiedProviders).map(p => p.id)).toEqual(['oai']);
+			expect(get(isRagEnabled)).toBe(false);
+
+			// 모바일에서도 custom 클라우드 임베딩이 설정되면 isRagEnabled는 true 유지
+			syncSettingsStore({
+				...syncedSettings,
+				connections: {
+					...syncedSettings.connections,
+					embedding: { mode: 'custom', providerId: 'oai', modelId: 'text-embedding-3-small' },
+				},
+			});
+			expect(get(isRagEnabled)).toBe(true);
+
+			// 모바일에서 custom 대상이 동기화된 로컬 프로바이더(ollama)인 경우 false 반환
+			syncSettingsStore({
+				...syncedSettings,
+				connections: {
+					...syncedSettings.connections,
+					embedding: { mode: 'custom', providerId: 'ol', modelId: 'nomic-embed' },
+				},
+			});
+			expect(get(isRagEnabled)).toBe(false);
+		} finally {
+			(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+		}
 	});
 });

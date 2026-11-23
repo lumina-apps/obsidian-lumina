@@ -5,7 +5,15 @@
 import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, TokenUsage, ToolCall } from '../../../shared/types/llm.types';
 import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
-import { extractSystemContent, raiseApiError, readStreamLines, requestUrlWithAbort, IdleTimeoutController } from '../provider-helpers';
+import {
+	extractSystemContent,
+	raiseApiError,
+	readStreamLines,
+	requestUrlWithAbort,
+	IdleTimeoutController,
+	isMobileStreamingCorsFallbackError,
+} from '../provider-helpers';
+import { debugLogger } from '../../../shared/debugLogger';
 import { ANTHROPIC_MODELS } from './anthropic.types';
 import type { AnthropicResponse } from './anthropic.types';
 import { formatAnthropicMessages, formatAnthropicTools } from './anthropic-message-formatter';
@@ -157,12 +165,34 @@ export class AnthropicProvider implements ILLMProvider {
 		const timeoutCtrl = new IdleTimeoutController(options.signal, options.ttftTimeoutMs, options.interTokenTimeoutMs);
 
 		return timeoutCtrl.run(async () => {
-			const response = await window.fetch(url, {
-				method: 'POST',
-				headers,
-				body: JSON.stringify(payload),
-				signal: timeoutCtrl.signal,
-			});
+			let response: Response;
+			try {
+				response = await window.fetch(url, {
+					method: 'POST',
+					headers,
+					body: JSON.stringify(payload),
+					signal: timeoutCtrl.signal,
+				});
+			} catch (err: unknown) {
+				if (isMobileStreamingCorsFallbackError(err)) {
+					debugLogger.logWarn('llm', `Anthropic streaming fetch blocked on mobile, falling back to requestUrl: ${err.message}`);
+					timeoutCtrl.switchToNonStreamingFallback();
+					const nonStreamPayload = this.buildPayload(options, messages, false);
+					const res = await requestUrlWithAbort({
+						url,
+						method: 'POST',
+						headers: this.buildHeaders(),
+						body: JSON.stringify(nonStreamPayload),
+					}, timeoutCtrl.signal);
+					const data = res.json as AnthropicResponse;
+					const parsed = parseAnthropicNonStreamResponse(res.text, data);
+					if (parsed.fullContent) {
+						onChunk?.(parsed.fullContent);
+					}
+					return parsed;
+				}
+				throw err;
+			}
 
 			if (!response.ok) {
 				const errText = await response.text();

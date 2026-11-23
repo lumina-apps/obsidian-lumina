@@ -4,11 +4,12 @@
  */
 import type { ChatMessage } from '../../shared/types/llm.types';
 import { t } from '../../shared/locales/helpers';
-import { requestUrl, type RequestUrlParam, type RequestUrlResponse } from 'obsidian';
+import { Platform, requestUrl, type RequestUrlParam, type RequestUrlResponse } from 'obsidian';
 
 export class IdleTimeoutController {
 	private controller: AbortController;
 	private timeoutId: number | null = null;
+	private ttftMs: number;
 	private interTokenMs: number;
 	
 	constructor(
@@ -30,6 +31,7 @@ export class IdleTimeoutController {
 		}
 
 		const actualTtft = (ttftMs && ttftMs > 0) ? Math.max(ttftMs, 5000) : 0;
+		this.ttftMs = actualTtft;
 		if (actualTtft > 0) {
 			this.timeoutId = window.setTimeout(() => {
 				const err = new Error(t('settings.providerErrors.timeoutTTFT', { fallback: 'Timeout: First token response took too long' }));
@@ -41,6 +43,27 @@ export class IdleTimeoutController {
 	
 	get signal(): AbortSignal {
 		return this.controller.signal;
+	}
+
+	/**
+	 * 모바일 CORS 폴백으로 비스트리밍 요청(`requestUrl`)으로 전환할 때
+	 * 짧은 TTFT 타이머를 해제하고 전체 응답 완료까지 대기 가능한 여유 타임아웃으로 재설정합니다.
+	 */
+	switchToNonStreamingFallback(fallbackTimeoutMs: number = 120_000): void {
+		if (this.timeoutId !== null) {
+			window.clearTimeout(this.timeoutId);
+			this.timeoutId = null;
+		}
+		if (this.signal.aborted) return;
+
+		const totalBudgetMs = Math.max(fallbackTimeoutMs, this.ttftMs, this.interTokenMs);
+		if (totalBudgetMs > 0) {
+			this.timeoutId = window.setTimeout(() => {
+				const err = new Error(t('settings.providerErrors.timeoutTTFT', { fallback: 'Timeout: Response took too long' }));
+				err.name = 'IdleTimeoutError';
+				this.controller.abort(err);
+			}, totalBudgetMs);
+		}
 	}
 	
 	onChunkReceived() {
@@ -232,4 +255,21 @@ export async function readStreamLines(
 	} finally {
 		reader.releaseLock();
 	}
+}
+
+/**
+ * 모바일 WebView에서 스트리밍 window.fetch()가 CORS·네트워크 TypeError로 차단됐는지 판별합니다.
+ * 데스크탑 환경이나 AbortError/IdleTimeoutError, HTTP 상태 오류에서는 폴백하지 않습니다.
+ */
+export function isMobileStreamingCorsFallbackError(err: unknown): err is TypeError {
+	if (typeof Platform === 'undefined' || !Platform?.isMobile) {
+		return false;
+	}
+	if (!(err instanceof TypeError)) {
+		return false;
+	}
+	if (err.name === 'AbortError' || err.name === 'IdleTimeoutError') {
+		return false;
+	}
+	return true;
 }

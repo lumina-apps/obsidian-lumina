@@ -8,7 +8,13 @@ import type {
 } from '../../shared/types/llm.types';
 import { formatOpenAIMessages, formatOpenAITools } from './openai-formatter';
 import type { OpenAIResponse, OpenAIToolCallInfo } from './openai-types';
-import { readStreamLines, requestUrlWithAbort, IdleTimeoutController } from './provider-helpers';
+import {
+	readStreamLines,
+	requestUrlWithAbort,
+	IdleTimeoutController,
+	isMobileStreamingCorsFallbackError,
+} from './provider-helpers';
+import { debugLogger } from '../../shared/debugLogger';
 import {
 	mapOpenAIUsage,
 	convertOpenAIToolCalls,
@@ -179,12 +185,28 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 		timeoutCtrl: IdleTimeoutController,
 		onChunk: (chunk: string) => void,
 	): Promise<ChatResponse> {
-		const response = await window.fetch(url, {
-			method: 'POST',
-			headers,
-			body: JSON.stringify(payload),
-			signal: timeoutCtrl.signal,
-		});
+		let response: Response;
+		try {
+			response = await window.fetch(url, {
+				method: 'POST',
+				headers,
+				body: JSON.stringify(payload),
+				signal: timeoutCtrl.signal,
+			});
+		} catch (err: unknown) {
+			if (isMobileStreamingCorsFallbackError(err)) {
+				debugLogger.logWarn('llm', `${this.type} streaming fetch blocked on mobile, falling back to requestUrl: ${err.message}`);
+				timeoutCtrl.switchToNonStreamingFallback();
+				const nonStreamPayload: Record<string, unknown> = { ...payload, stream: false };
+				delete nonStreamPayload.stream_options;
+				const fallbackRes = await this.handleNonStreamingChat(url, headers, nonStreamPayload, timeoutCtrl);
+				if (fallbackRes.content) {
+					onChunk(fallbackRes.content);
+				}
+				return fallbackRes;
+			}
+			throw err;
+		}
 
 		if (!response.ok) {
 			const errText = await response.text();

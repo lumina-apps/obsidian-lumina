@@ -105,16 +105,13 @@ export class ChatAttachmentHandler {
 			return { type: 'image', content: resized };
 		}
 
-		// 2. 바이너리 문서 파일 처리 (파서 워커 사용)
+		// 2. 바이너리 문서 파일 처리 (워커 미사용 시 DocumentParserRouter 직접 폴백)
 		if (['pdf', 'docx', 'xlsx', 'xls', 'pptx', 'epub'].includes(ext)) {
-			if (plugin?.embeddingWorker) {
-				const buffer = await app.vault.readBinary(file);
-				const text = await plugin.embeddingWorker.parse(buffer, ext);
-				return this.createTextPayload(`[첨부 파일: ${att.name}]\n${text}`);
-			} else {
-				debugLogger.logWarn('chat_attachment', `Worker not ready to parse binary file: ${file.name}`);
-				return null;
-			}
+			const buffer = await app.vault.readBinary(file);
+			const text = plugin?.embeddingWorker
+				? await plugin.embeddingWorker.parse(buffer, ext)
+				: await DocumentParserRouter.parseBinary(buffer, ext);
+			return this.createTextPayload(`[첨부 파일: ${att.name}]\n${text}`);
 		}
 
 		// 3. 텍스트 및 소스 코드 파일 처리 (SUPPORTED_EXTENSIONS, TEXT_EXTS)
@@ -270,15 +267,13 @@ export class ChatAttachmentHandler {
 		}
 
 		if (['pdf', 'docx', 'xlsx', 'xls', 'pptx', 'epub'].includes(ext)) {
-			if (plugin?.embeddingWorker) {
-				const buffer = await app.vault.readBinary(file);
-				const text = await plugin.embeddingWorker.parse(buffer, ext);
-				return this.createTextPayload(
-					t('settings.chat.context.activeNotePrefix', { name: file.basename }) + '\n' + text,
-				);
-			}
-			debugLogger.logWarn('chat_attachment', `Worker not ready to parse binary file: ${file.name}`);
-			return null;
+			const buffer = await app.vault.readBinary(file);
+			const text = plugin?.embeddingWorker
+				? await plugin.embeddingWorker.parse(buffer, ext)
+				: await DocumentParserRouter.parseBinary(buffer, ext);
+			return this.createTextPayload(
+				t('settings.chat.context.activeNotePrefix', { name: file.basename }) + '\n' + text,
+			);
 		}
 
 		const content = await app.vault.read(file);

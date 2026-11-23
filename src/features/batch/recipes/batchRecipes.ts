@@ -26,7 +26,7 @@ import {
 	sanitizeGeneratedFrontmatterData,
 } from '../../../shared/utils/frontmatterSanitizer';
 import { stripThinkTags } from '../../../shared/utils/llmTextSanitizer';
-import { isEmbeddingModel } from '../../../shared/utils/modelUtils';
+import { isEmbeddingModel, isProviderSupportedOnCurrentPlatform } from '../../../shared/utils/modelUtils';
 
 /** 배치 LLM 호출 시 출력 잘림을 방지하기 위한 기본 최대 출력 토큰 */
 const BATCH_DEFAULT_MAX_OUTPUT_TOKENS = 1200;
@@ -48,7 +48,13 @@ export function getBatchEligibleProviders(
 	providers: readonly LLMProviderConfig[],
 ): LLMProviderConfig[] {
 	return providers
-		.filter((p) => !isCliProvider(p.type) && p.isVerified && p.availableModels.length > 0)
+		.filter(
+			(p) =>
+				!isCliProvider(p.type) &&
+				isProviderSupportedOnCurrentPlatform(p.type) &&
+				p.isVerified &&
+				p.availableModels.length > 0,
+		)
 		.map((p) => {
 			const chatModels = p.availableModels.filter((m) => !isEmbeddingModel(p.type, m));
 			return {

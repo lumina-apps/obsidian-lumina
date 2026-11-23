@@ -138,7 +138,9 @@
 		includeActiveNote = plugin.settings.rag.includeActiveNote;
 		useRagContext = plugin.settings.connections.ragEnabled;
 		ctrl = new SplitChatController(plugin);
-		textareaEl?.focus();
+		if (!Platform.isMobile) {
+			textareaEl?.focus();
+		}
 
 		if (rootEl && typeof ResizeObserver !== "undefined") {
 			containerWidth = rootEl.clientWidth || 960;
@@ -217,7 +219,9 @@
 		attachments = [];
 		void tick().then(() => {
 			resizeTextarea(textareaEl);
-			textareaEl?.focus();
+			if (!Platform.isMobile) {
+				textareaEl?.focus();
+			}
 		});
 
 		autoScroll.resetUserScrolledUp();
@@ -405,6 +409,7 @@
 	{#if showHistory && ctrl}
 		<div class="lumina-split-root__drawer-wrap">
 			<SplitHistoryDrawer
+				app={plugin.app}
 				{ctrl}
 				currentSessionId={$splitChatStore.sessionId}
 				refreshTick={historyRefreshTick}

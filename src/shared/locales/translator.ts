@@ -7,6 +7,7 @@ import { ConfirmModal } from '../utils/modal';
 import { addDynamicLocale, removeDynamicLocale, setLanguage, t } from './helpers';
 import { debugLogger } from '../debugLogger';
 import { normalizeError } from '../utils/errorUtils';
+import { findSupportedProvider, isProviderSupportedOnCurrentPlatform } from '../utils/modelUtils';
 
 export interface TranslationDeps {
     providers: LLMProviderConfig[];
@@ -21,12 +22,16 @@ export async function translatePluginLocales(app: App, deps: TranslationDeps): P
 
     const activeProject = deps.activeProject;
     if (activeProject?.defaultProviderId && activeProject?.defaultModelId) {
-        providerConfig = deps.providers.find((p: LLMProviderConfig) => p.id === activeProject.defaultProviderId);
-        modelName = activeProject.defaultModelId;
+        providerConfig = findSupportedProvider(deps.providers, activeProject.defaultProviderId);
+        if (providerConfig) {
+            modelName = activeProject.defaultModelId;
+        }
     }
 
     if (!providerConfig) {
-        providerConfig = deps.providers.find((p: LLMProviderConfig) => p.isVerified && p.availableModels.length > 0);
+        providerConfig = deps.providers.find(
+            (p: LLMProviderConfig) => p.isVerified && p.availableModels.length > 0 && isProviderSupportedOnCurrentPlatform(p.type),
+        );
         modelName = providerConfig?.availableModels[0] || '';
     }
 

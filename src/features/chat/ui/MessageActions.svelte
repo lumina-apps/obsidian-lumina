@@ -4,6 +4,7 @@
 	import { t } from "../../../shared/locales/helpers";
 	import { copyToClipboard } from "../../../shared/utils/clipboardUtils";
 	import { sanitizeDisplayContent } from "../../../shared/utils/llmTextSanitizer";
+	import { confirmWithModal } from "../../../shared/utils/modal";
 	import { icon } from "../../../shared/utils/iconAction";
 	import {
 		appendToActiveNote,
@@ -43,8 +44,8 @@
 		openSaveAsNoteModal(app, contentToSave);
 	}
 
-	function handleRegenerate(): void {
-		if (window.confirm(t("uiMessages.regenerateConfirm"))) {
+	async function handleRegenerate(): Promise<void> {
+		if (await confirmWithModal(app, t("uiMessages.regenerate"), t("uiMessages.regenerateConfirm"))) {
 			onRegenerate?.(message.id);
 		}
 	}

@@ -38,7 +38,7 @@
 	// Utils
 	import { filterParentChunks, getAdaptiveMinSimilarity } from '../utils/searchUtils';
 	import { insertLinkToActiveEditor } from '../../../shared/utils/editorUtils';
-	import { Notice, Keymap, type TFile } from 'obsidian';
+	import { Notice, Keymap, Platform, type TFile } from 'obsidian';
 	import { debugLogger } from '../../../shared/debugLogger';
 	import { normalizeError } from '../../../shared/utils/errorUtils';
 
@@ -283,7 +283,7 @@
 	}
 
 	async function handleOpenInSplit(path: string) {
-		plugin.app.workspace.openLinkText(path, '', 'split');
+		plugin.app.workspace.openLinkText(path, '', Platform.isMobile ? 'tab' : 'split');
 	}
 
 	async function handleToggleStage(result: SearchResult) {

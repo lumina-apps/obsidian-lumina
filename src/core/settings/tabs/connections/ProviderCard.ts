@@ -13,14 +13,25 @@ import { CliAgentProvider } from '../../../llm-providers/cli/cli-agent.provider'
 import { AgentBetaModal } from '../../../../shared/utils/modal';
 import { t } from '../../../../shared/locales/helpers';
 import { normalizeError } from '../../../../shared/utils/settingHelpers';
+import { isDesktopOnlyProviderType } from '../../../../shared/utils/modelUtils';
 import { debugLogger } from '../../../../shared/debugLogger';
 import { debounce } from '../../../../shared/utils/debounce';
 
 export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provider: LLMProviderConfig): void {
+	// 모바일에서는 데스크탑에서 동기화된 로컬/CLI 연결 설정 원본을 훼손하지 않고 읽기 전용 안내 카드만 표시
+	if (Platform.isMobile && isDesktopOnlyProviderType(provider.type)) {
+		const readonlyCard = el.createDiv({ cls: 'lumina-provider-card is-desktop-only-mobile' });
+		new Setting(readonlyCard)
+			.setName(PROVIDER_LABELS[provider.type] || provider.type)
+			.setDesc(t('settings.connections.apiKey.mobileLocalWarning'));
+		return;
+	}
+
 	const category = PROVIDER_CATEGORIES[provider.type];
 	const isCli = category === 'cli';
 	const requiresBaseUrl = !isCli && (category === 'local' || provider.type === 'custom');
 	const requiresApiKey = !isCli && category !== 'local';
+	const isMissingSyncedKey = requiresApiKey && provider.type !== 'custom' && provider.isVerified && !provider.credential?.trim();
 
 	const debouncedSave = debounce(() => {
 		tab.saveAndSync().catch((err: unknown) => {
@@ -28,11 +39,19 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 		});
 	}, 400);
 
-	const card = el.createDiv({ cls: `lumina-provider-card${provider.isVerified ? ' is-verified' : ''}` });
+	const card = el.createDiv({
+		cls: `lumina-provider-card${provider.isVerified && !isMissingSyncedKey ? ' is-verified' : ''}${isMissingSyncedKey ? ' is-missing-key' : ''}`,
+	});
+
+	const statusDesc = isMissingSyncedKey
+		? `⚠️ ${t('settings.providerErrors.missingKey')}`
+		: provider.isVerified
+			? `✅ ${t('settings.connections.apiKey.connected')}`
+			: t('settings.connections.apiKey.notConnected');
 
 	const typeSetting = new Setting(card)
 		.setName('Provider')
-		.setDesc(provider.isVerified ? `✅ ${t('settings.connections.apiKey.connected')}` : t('settings.connections.apiKey.notConnected'))
+		.setDesc(statusDesc)
 		.addDropdown(drop => {
 			for (const [val, label] of Object.entries(PROVIDER_LABELS)) {
 				if (Platform.isMobile && (PROVIDER_CATEGORIES[val as ProviderType] === 'local' || PROVIDER_CATEGORIES[val as ProviderType] === 'cli')) continue;

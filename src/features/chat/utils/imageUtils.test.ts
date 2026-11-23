@@ -195,5 +195,26 @@ describe('imageUtils', () => {
 
 			expect(res).toBe(dataUrl);
 		});
+
+		it('사용자 지정 timeoutMs 내에 로드되지 않으면 onload 핸들러를 정리하고 원본을 반환한다', async () => {
+			const tracker: {
+				img: { onload: (() => void) | null; onerror: (() => void) | null } | null;
+			} = { img: null };
+			class SlowImage {
+				public onload: (() => void) | null = null;
+				public onerror: (() => void) | null = null;
+				set src(_val: string) {
+					tracker.img = this;
+				}
+			}
+			globalThis.Image = SlowImage as unknown as typeof Image;
+
+			const dataUrl = 'data:image/png;base64,slowImage';
+			const res = await resizeImageDataUrl(dataUrl, 1568, 1024 * 1024, 25);
+
+			expect(res).toBe(dataUrl);
+			expect(tracker.img?.onload).toBeNull();
+			expect(tracker.img?.onerror).toBeNull();
+		});
 	});
 });

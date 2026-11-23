@@ -317,6 +317,7 @@ export interface TranslationSettingsChatSendMode {
   name: string;
   enter: string;
   ctrlEnter: string;
+  mobileNote: string;
 }
 
 export interface TranslationSettingsChatQuickActionsDefaultsItem {
@@ -361,6 +362,7 @@ export interface TranslationSettingsChatEnableAutocomplete {
   name: string;
   desc: string;
   needsTaskModel: string;
+  mobileUnsupported: string;
   promptName: string;
   promptDesc: string;
   contextLengthName: string;

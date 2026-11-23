@@ -107,6 +107,11 @@ export function createProvider(config: LLMProviderConfig): ILLMProvider {
 		// 로컬 및 커스텀
 		case 'ollama':
 		case 'lmstudio':
+			if (typeof Platform !== 'undefined' && Boolean(Platform?.isMobile)) {
+				throw new Error(t('settings.connections.apiKey.mobileLocalWarning'));
+			}
+			return new OpenAICompatProvider(id, type, baseUrl!, credential || 'ollama');
+
 		case 'custom': {
 			return new OpenAICompatProvider(id, type, baseUrl!, credential || 'ollama');
 		}

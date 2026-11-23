@@ -1,4 +1,4 @@
-import { Setting, type ButtonComponent } from 'obsidian';
+import { Platform, Setting, type ButtonComponent } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
 import {
 	DEFAULT_AUTOCOMPLETE_CONTEXT_LENGTH,
@@ -9,6 +9,7 @@ import { wrapAsync } from '../../../../shared/utils/settingHelpers';
 import { t } from '../../../../shared/locales/helpers';
 import { createButtonContainer } from '../../../../shared/utils/domUtils';
 import { resolveQuickActionSlashIds } from '../../../../shared/utils/slashCommandId';
+import { isProviderSupportedOnCurrentPlatform } from '../../../../shared/utils/modelUtils';
 
 /**
  * ButtonComponent에 setWarning()이 있으면 호출합니다.
@@ -63,20 +64,31 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 				});
 		});
 
-	const hasTaskModel = !!tab.plugin.settings.connections.taskModelId;
-	if (!hasTaskModel && s.enableAutocomplete) {
+	const matchedTaskProvider = tab.plugin.settings.connections.providers.find(
+		p => p.id === tab.plugin.settings.connections.taskProviderId,
+	);
+	const isTaskProviderUnsupported = Boolean(
+		matchedTaskProvider && !isProviderSupportedOnCurrentPlatform(matchedTaskProvider.type),
+	);
+	const hasTaskModel = Boolean(tab.plugin.settings.connections.taskModelId) && !isTaskProviderUnsupported;
+	if (!Platform.isMobile && !hasTaskModel && s.enableAutocomplete) {
 		s.enableAutocomplete = false;
 		void tab.saveAndSync();
 	}
-	
+
+	const isAutocompleteDisabledOnMobile = Platform.isMobile;
+	const autocompleteDesc = isAutocompleteDisabledOnMobile
+		? t('settings.chat.enableAutocomplete.desc') + '\n\n⚠️ ' + t('settings.chat.enableAutocomplete.mobileUnsupported')
+		: hasTaskModel
+			? t('settings.chat.enableAutocomplete.desc')
+			: t('settings.chat.enableAutocomplete.desc') + '\n\n⚠️ ' + t('settings.chat.enableAutocomplete.needsTaskModel');
+
 	new Setting(el)
 		.setName(t('settings.chat.enableAutocomplete.name'))
-		.setDesc(hasTaskModel 
-			? t('settings.chat.enableAutocomplete.desc') 
-			: t('settings.chat.enableAutocomplete.desc') + '\n\n⚠️ ' + t('settings.chat.enableAutocomplete.needsTaskModel'))
+		.setDesc(autocompleteDesc)
 		.addToggle(toggle => {
-			toggle.setValue(s.enableAutocomplete)
-				.setDisabled(!hasTaskModel)
+			toggle.setValue(isAutocompleteDisabledOnMobile ? false : s.enableAutocomplete)
+				.setDisabled(isAutocompleteDisabledOnMobile || !hasTaskModel)
 				.onChange(async (val) => {
 					s.enableAutocomplete = val;
 					await tab.saveAndSync();
@@ -84,14 +96,14 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 				});
 		});
 
-	if (s.enableAutocomplete) {
+	if (s.enableAutocomplete && !isAutocompleteDisabledOnMobile) {
 		const autocompletePromptSetting = new Setting(el)
 			.setName(t('settings.chat.enableAutocomplete.promptName'))
 			.setDesc(t('settings.chat.enableAutocomplete.promptDesc'))
 			.addTextArea(text => {
 				let composing = false;
 				text.inputEl.addClass('lumina-prompt-card__content');
-				text.inputEl.setCssStyles({ width: '100%', minWidth: '300px' });
+				text.inputEl.setCssStyles({ width: '100%', minWidth: '0' });
 				text.inputEl.rows = 4;
 				text.inputEl.placeholder = DEFAULT_AUTOCOMPLETE_PROMPT;
 				text.inputEl.addEventListener('compositionstart', () => { composing = true; });

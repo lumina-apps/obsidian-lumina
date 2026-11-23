@@ -4,7 +4,13 @@ import { GOOGLE_MODELS, mapUsageMetadata } from './google.types';
 import type { GeminiResponse } from './google.types';
 import { formatGeminiMessages, formatGeminiTools, getGeminiSystemInstruction } from './google-message-formatter';
 import { readGeminiStreamChunks } from './google-stream-parser';
-import { raiseApiError, requestUrlWithAbort, IdleTimeoutController } from '../provider-helpers';
+import {
+	raiseApiError,
+	requestUrlWithAbort,
+	IdleTimeoutController,
+	isMobileStreamingCorsFallbackError,
+} from '../provider-helpers';
+import { debugLogger } from '../../../shared/debugLogger';
 
 type GeminiCandidate = NonNullable<GeminiResponse['candidates']>[number];
 
@@ -191,12 +197,44 @@ export class GoogleProvider implements ILLMProvider {
 		const timeoutCtrl = new IdleTimeoutController(options.signal, options.ttftTimeoutMs, options.interTokenTimeoutMs);
 
 		return timeoutCtrl.run(async () => {
-			const response = await window.fetch(url, {
-				method: 'POST',
-				headers,
-				body: JSON.stringify(payload),
-				signal: timeoutCtrl.signal,
-			});
+			let response: Response;
+			try {
+				response = await window.fetch(url, {
+					method: 'POST',
+					headers,
+					body: JSON.stringify(payload),
+					signal: timeoutCtrl.signal,
+				});
+			} catch (err: unknown) {
+				if (isMobileStreamingCorsFallbackError(err)) {
+					debugLogger.logWarn('llm', `Google streaming fetch blocked on mobile, falling back to requestUrl: ${err.message}`);
+					timeoutCtrl.switchToNonStreamingFallback();
+					const fallback = this.buildRequest('generateContent', options, messages, includeTools);
+					const res = await requestUrlWithAbort({
+						url: fallback.url,
+						method: 'POST',
+						headers: fallback.headers,
+						body: JSON.stringify(fallback.payload),
+					}, timeoutCtrl.signal);
+					const data = res.json as GeminiResponse;
+					const candidate = data.candidates?.[0];
+					if (!candidate) {
+						throw new Error(`Google Gemini API returned an empty response. Response: ${res.text}`);
+					}
+					const parsed = parseNonStreamingResponse(candidate);
+					const fallbackUsage = data.usageMetadata ? mapUsageMetadata(data.usageMetadata) : undefined;
+					if (parsed.fullContent) {
+						onChunk?.(parsed.fullContent);
+					}
+					return {
+						content: parsed.fullContent,
+						toolCalls: parsed.toolCalls,
+						usage: fallbackUsage,
+						finishReason: candidate.finishReason || undefined,
+					};
+				}
+				throw err;
+			}
 
 			if (!response.ok) {
 				const errText = await response.text();

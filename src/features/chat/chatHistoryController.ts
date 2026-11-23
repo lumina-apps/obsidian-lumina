@@ -24,6 +24,7 @@ import {
 import type { ChatSession } from '../../shared/types/chat.types';
 import { getActiveProject } from '../../core/store/projectStore';
 import { sanitizeDisplayContent } from '../../shared/utils/llmTextSanitizer';
+import { findSupportedProvider } from '../../shared/utils/modelUtils';
 import { resolveHistoryLocation, type ResolvedHistoryLocation } from './utils/historyLocation';
 
 export class ChatHistoryController {
@@ -75,7 +76,7 @@ export class ChatHistoryController {
 		if (!title) {
 			const { taskProviderId, taskModelId, providers } = connections;
 			if (taskProviderId && taskModelId) {
-				const providerConfig = providers.find(p => p.id === taskProviderId);
+				const providerConfig = findSupportedProvider(providers, taskProviderId);
 				if (providerConfig) {
 					try {
 						title = await generateTitleWithLLM(msgs, providerConfig, taskModelId, this.plugin.settings);
@@ -86,7 +87,7 @@ export class ChatHistoryController {
 			}
 			// task 모델이 없거나 task 모델 생성에 실패한 경우 메인 LLM으로 시도
 			if (!title) {
-				const mainProviderConfig = providers.find(p => p.id === providerId);
+				const mainProviderConfig = findSupportedProvider(providers, providerId);
 				if (mainProviderConfig) {
 					try {
 						title = await generateTitleWithLLM(msgs, mainProviderConfig, modelId, this.plugin.settings);

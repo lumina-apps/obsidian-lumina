@@ -2,6 +2,8 @@ import { Notice } from "obsidian";
 import type { ContextAttachment } from "../../../shared/types/chat.types";
 import type LuminaPlugin from "../../../main";
 import { debugLogger } from "../../../shared/debugLogger";
+import { normalizeError } from "../../../shared/utils/errorUtils";
+import { DocumentParserRouter } from "../../rag/parsers/DocumentParserRouter";
 
 import { resizeImageDataUrl, MAX_ATTACHMENT_FILE_SIZE } from "./imageUtils";
 
@@ -84,15 +86,19 @@ export async function readBinaryDocument(
 	file: File,
 	ext: string,
 	plugin?: LuminaPlugin,
-	t?: (key: string, vars?: Record<string, string>) => string,
+	_t?: (key: string, vars?: Record<string, string>) => string,
 ): Promise<string | null> {
-	if (!plugin?.embeddingWorker) {
-		debugLogger.logWarn('file_attachment', `Worker not ready to parse binary file: ${file.name}`);
-		if (t) new Notice(t('uiMessages.attachWorkerNotReady'));
+	try {
+		const buffer = await file.arrayBuffer();
+		// 워커가 준비된 경우 워커 경유 파싱, 미초기화(모바일·클라우드 임베딩 등) 시 메인 라우터로 직접 파싱
+		if (plugin?.embeddingWorker) {
+			return await plugin.embeddingWorker.parse(buffer, ext);
+		}
+		return await DocumentParserRouter.parseBinary(buffer, ext);
+	} catch (err) {
+		debugLogger.logWarn('file_attachment', `Failed to parse binary file (${file.name}): ${normalizeError(err).message}`);
 		return null;
 	}
-	const buffer = await file.arrayBuffer();
-	return plugin.embeddingWorker.parse(buffer, ext);
 }
 
 export async function readFileContent(

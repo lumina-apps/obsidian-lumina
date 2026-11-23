@@ -14,6 +14,7 @@ export default defineConfig({
 			'ajv-formats': resolve(__dirname, 'src/core/mocks/ajv-formats.js'),
 			underscore: resolve(__dirname, 'src/core/mocks/underscore.js'),
 			obsidian: resolve(__dirname, 'src/core/mocks/obsidian.js'),
+			'pdfjs-dist': resolve(__dirname, 'node_modules/pdfjs-dist/legacy/build/pdf.mjs'),
 		},
 		extensions: ['.svelte.ts', '.ts', '.js', '.svelte'],
 	},
