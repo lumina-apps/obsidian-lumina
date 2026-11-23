@@ -700,7 +700,9 @@
       "tableNotice": "📊 Tabellenänderungen erkannt. In der Live-Vorschau können Inline-Diffs durch Tabellen-Widgets verdeckt werden.",
       "switchToSourceMode": "In den Quellmodus wechseln",
       "viewInEditor": "Im Editor anzeigen",
-      "tableBadge": "Tabelle"
+      "tableBadge": "Tabelle",
+      "mcpTool": "MCP-Tool: {{name}}",
+      "mcpToolDesc": "Der Agent möchte ein externes Tool verwenden."
     },
     "emptyResponseTokenLimit": "⚠️ Das Modell hat eine leere Antwort zurückgegeben. Die Generierung wurde gestoppt, da das Limit für maximale Ausgabe-Token erreicht wurde. Bitte erhöhen Sie das Limit für \"Maximale Ausgabe-Token\" in den Einstellungen.",
     "tokenLimitHitWarning": "\n\n⚠️ (Die Generierung wurde unterbrochen, da das Limit für maximale Ausgabetoken erreicht wurde. Bitte erhöhen Sie den Wert \"Max Output Tokens\" in den Einstellungen.)",
@@ -868,7 +870,8 @@
       "targetModified": "Zieltext wurde während des Wartens geändert.",
       "noChanges": "Keine Änderungen zum Übernehmen.",
       "thinking": "Denkt nach..."
-    }
+    },
+    "errorLoadingSettings": "Einstellungs-Tab konnte nicht geladen werden."
   },
   "mcpServerTools": {
     "read_active_note": {
@@ -1460,6 +1463,17 @@
       "recoveredSuccess": "Unvollständige Aufnahme wiederhergestellt und verarbeitet.",
       "createdNote": "Sprachnotiz erstellt: {{path}}",
       "audioSaved": "Audio gespeichert: {{path}}"
+    }
+  },
+  "summarization": {
+    "prompt": {
+      "intro": "Hier ist ein Chatverlauf zwischen einem Benutzer und einer KI.\n\n",
+      "previousSummary": "[Zusammenfassung des bisherigen Gesprächs]\n",
+      "instructionWithSummary": "Aufbauend auf der obigen Zusammenfassung und unter Einbeziehung des folgenden zusätzlichen Gesprächs fassen Sie bitte die wichtigsten Punkte, den Kontext und die Ziele des Benutzers umfassend zusammen. Schreiben Sie die Zusammenfassung so klar, dass eine andere KI den bisherigen Gesprächsverlauf vollständig nachvollziehen kann.\n\n",
+      "instructionWithoutSummary": "Bitte fassen Sie die wichtigsten Punkte, den Kontext und die Ziele des Benutzers im folgenden Gesprächsverlauf umfassend zusammen. Schreiben Sie die Zusammenfassung so klar, dass eine andere KI den Gesprächsverlauf vollständig nachvollziehen kann.\n\n",
+      "additionalConversation": "[Zusätzliches Gespräch]\n",
+      "roleUser": "Benutzer",
+      "roleAI": "KI"
     }
   }
 }

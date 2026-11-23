@@ -814,6 +814,8 @@ export interface TranslationUiMessages {
     switchToSourceMode?: string;
     viewInEditor?: string;
     tableBadge?: string;
+    mcpTool: string;
+    mcpToolDesc: string;
   };
   errorLoadingSettings: string;
   emptyResponseTokenLimit: string;

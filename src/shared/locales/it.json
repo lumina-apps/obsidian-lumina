@@ -700,7 +700,9 @@
       "tableNotice": "📊 Rilevate modifiche alla tabella. In Live Preview, le differenze inline potrebbero essere nascoste dai widget della tabella.",
       "switchToSourceMode": "Passa alla modalità sorgente",
       "viewInEditor": "Visualizza nell'editor",
-      "tableBadge": "Tabella"
+      "tableBadge": "Tabella",
+      "mcpTool": "Strumento MCP: {{name}}",
+      "mcpToolDesc": "L'agente desidera utilizzare uno strumento esterno."
     },
     "emptyResponseTokenLimit": "⚠️ Il modello ha restituito una risposta vuota. La generazione è stata interrotta perché è stato raggiunto il limite massimo di token di output. Aumenta il limite \"Token di output massimi\" nelle impostazioni.",
     "tokenLimitHitWarning": "\n\n⚠️ (La generazione è stata interrotta perché è stato raggiunto il limite massimo di token di output. Aumenta il valore di \"Token di output massimi\" nelle impostazioni.)",
@@ -868,7 +870,8 @@
       "targetModified": "Il testo di destinazione è stato modificato durante l'attesa.",
       "noChanges": "Nessuna modifica da applicare.",
       "thinking": "Elaborazione..."
-    }
+    },
+    "errorLoadingSettings": "Impossibile caricare la scheda delle impostazioni."
   },
   "mcpServerTools": {
     "read_active_note": {
@@ -1460,6 +1463,17 @@
       "recoveredSuccess": "Registrazione incompleta recuperata ed elaborata.",
       "createdNote": "Nota vocale creata: {{path}}",
       "audioSaved": "Audio salvato: {{path}}"
+    }
+  },
+  "summarization": {
+    "prompt": {
+      "intro": "Ecco una cronologia della chat tra un utente e un’IA.\n\n",
+      "previousSummary": "[Riepilogo della conversazione precedente]\n",
+      "instructionWithSummary": "Partendo dal riepilogo precedente qui sopra e includendo la conversazione aggiuntiva qui sotto, riassumi in modo completo i punti chiave, il contesto e gli obiettivi dell'utente dell'intera conversazione. Scrivi il riepilogo in modo chiaro affinché un'altra IA possa comprendere appieno il flusso precedente.\n\n",
+      "instructionWithoutSummary": "Riassumi in modo completo i punti chiave, il contesto e gli obiettivi dell'utente della cronologia della conversazione qui sotto. Scrivi il riepilogo in modo chiaro affinché un'altra IA possa comprendere appieno il flusso della conversazione.\n\n",
+      "additionalConversation": "[Conversazione aggiuntiva]\n",
+      "roleUser": "Utente",
+      "roleAI": "IA"
     }
   }
 }

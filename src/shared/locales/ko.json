@@ -700,7 +700,9 @@
       "tableNotice": "📊 표(Table) 변경점이 포함되어 있습니다. 라이브 프리뷰에서는 표 위젯에 의해 인라인 Diff가 가려질 수 있습니다.",
       "switchToSourceMode": "소스 모드로 전환",
       "viewInEditor": "에디터에서 보기",
-      "tableBadge": "표"
+      "tableBadge": "표",
+      "mcpTool": "MCP 도구: {{name}}",
+      "mcpToolDesc": "에이전트가 외부 도구를 사용하려고 합니다."
     },
     "emptyResponseTokenLimit": "⚠️ 모델이 빈 응답을 반환했습니다. 최대 출력 토큰(Max Output Tokens) 제한에 도달하여 생성이 중단되었습니다. 설정의 [최대 출력 토큰] 제한을 늘려주세요.",
     "tokenLimitHitWarning": "\n\n⚠️ (최대 출력 토큰 제한에 도달하여 답변이 도중에 끊겼습니다. 설정의 [최대 출력 토큰] 값을 늘려주세요.)",
@@ -868,7 +870,8 @@
       "targetModified": "승인 대기 중 대상 텍스트가 변경되어 적용을 취소했습니다.",
       "noChanges": "변경된 내용이 없습니다.",
       "thinking": "생각 중..."
-    }
+    },
+    "errorLoadingSettings": "설정 탭을 불러오는 데 실패했습니다."
   },
   "mcpServerTools": {
     "read_active_note": {
@@ -1460,6 +1463,17 @@
       "recoveredSuccess": "미완료된 녹음을 복구하여 노트로 변환했습니다.",
       "createdNote": "음성 노트를 생성했습니다: {{path}}",
       "audioSaved": "오디오 파일을 저장했습니다: {{path}}"
+    }
+  },
+  "summarization": {
+    "prompt": {
+      "intro": "다음은 사용자와 AI 간의 채팅 기록입니다.\n\n",
+      "previousSummary": "[이전 대화 요약]\n",
+      "instructionWithSummary": "위의 이전 대화 요약에 이어서, 아래의 추가 대화를 포함하여 전체 대화의 핵심 내용, 문맥, 사용자의 목적 등을 종합적으로 요약해 주세요. 요약은 다른 AI가 읽었을 때 이전 대화 흐름을 완벽히 이해할 수 있도록 명확하게 작성해야 합니다.\n\n",
+      "instructionWithoutSummary": "아래 대화 기록의 핵심 내용, 문맥, 사용자의 목적 등을 종합적으로 요약해 주세요. 요약은 다른 AI가 읽었을 때 대화 흐름을 완벽히 이해할 수 있도록 명확하게 작성해야 합니다.\n\n",
+      "additionalConversation": "[추가 대화]\n",
+      "roleUser": "사용자",
+      "roleAI": "AI"
     }
   }
 }

@@ -700,7 +700,9 @@
       "tableNotice": "📊 Modifications de tableau détectées. En Aperçu en direct, les diffs en ligne peuvent être masquées par les widgets de tableau.",
       "switchToSourceMode": "Passer en mode source",
       "viewInEditor": "Afficher dans l'éditeur",
-      "tableBadge": "Tableau"
+      "tableBadge": "Tableau",
+      "mcpTool": "Outil MCP : {{name}}",
+      "mcpToolDesc": "L'agent souhaite utiliser un outil externe."
     },
     "emptyResponseTokenLimit": "⚠️ Le modèle a renvoyé une réponse vide. La génération a été arrêtée car la limite de jetons de sortie maximaux a été atteinte. Veuillez augmenter la limite de \"jetons de sortie maximaux\" dans les paramètres.",
     "tokenLimitHitWarning": "\n\n⚠️ (La génération a été interrompue car la limite de jetons de sortie maximaux a été atteinte. Veuillez augmenter la valeur de \"jetons de sortie maximaux\" dans les paramètres.)",
@@ -868,7 +870,8 @@
       "targetModified": "Le texte cible a été modifié pendant l'attente.",
       "noChanges": "Aucune modification à appliquer.",
       "thinking": "Réflexion..."
-    }
+    },
+    "errorLoadingSettings": "Échec du chargement de l'onglet des paramètres."
   },
   "mcpServerTools": {
     "read_active_note": {
@@ -1460,6 +1463,17 @@
       "recoveredSuccess": "Enregistrement inachevé récupéré et traité.",
       "createdNote": "Note vocale créée : {{path}}",
       "audioSaved": "Audio enregistré : {{path}}"
+    }
+  },
+  "summarization": {
+    "prompt": {
+      "intro": "Voici un historique de discussion entre un utilisateur et une IA.\n\n",
+      "previousSummary": "[Résumé de la conversation précédente]\n",
+      "instructionWithSummary": "En vous appuyant sur le résumé précédent ci-dessus et en incluant la conversation supplémentaire ci-dessous, résumez de manière complète les points clés, le contexte et les objectifs de l'utilisateur pour l'ensemble de la conversation. Rédigez le résumé clairement afin qu'une autre IA puisse comprendre parfaitement le fil de la discussion.\n\n",
+      "instructionWithoutSummary": "Veuillez résumer de manière complète les points clés, le contexte et les objectifs de l'utilisateur dans l'historique de conversation ci-dessous. Rédigez le résumé clairement afin qu'une autre IA puisse comprendre parfaitement le fil de la discussion.\n\n",
+      "additionalConversation": "[Conversation supplémentaire]\n",
+      "roleUser": "Utilisateur",
+      "roleAI": "IA"
     }
   }
 }

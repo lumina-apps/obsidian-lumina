@@ -700,7 +700,9 @@
       "tableNotice": "📊 Modificações em tabelas detetadas. Na Pré-visualização ao vivo, os diffs em linha podem ser ocultados por widgets de tabela.",
       "switchToSourceMode": "Mudar para modo fonte",
       "viewInEditor": "Ver no editor",
-      "tableBadge": "Tabela"
+      "tableBadge": "Tabela",
+      "mcpTool": "Ferramenta MCP: {{name}}",
+      "mcpToolDesc": "O agente deseja usar uma ferramenta externa."
     },
     "emptyResponseTokenLimit": "⚠️ O modelo retornou uma resposta vazia. A geração foi interrompida porque o limite de Tokens Máximos de Saída foi atingido. Aumente o limite de \"Tokens Máximos de Saída\" nas configurações.",
     "tokenLimitHitWarning": "\n\n⚠️ (A geração foi interrompida porque o limite de Tokens Máximos de Saída foi atingido. Aumente o valor de \"Tokens Máximos de Saída\" nas configurações.)",
@@ -868,7 +870,8 @@
       "targetModified": "O texto de destino foi modificado durante a espera.",
       "noChanges": "Nenhuma alteração para aplicar.",
       "thinking": "Pensando..."
-    }
+    },
+    "errorLoadingSettings": "Falha ao carregar a aba de configurações."
   },
   "mcpServerTools": {
     "read_active_note": {
@@ -1460,6 +1463,17 @@
       "recoveredSuccess": "Gravação inacabada recuperada e processada.",
       "createdNote": "Nota de voz criada: {{path}}",
       "audioSaved": "Áudio salvo: {{path}}"
+    }
+  },
+  "summarization": {
+    "prompt": {
+      "intro": "Aqui está o histórico de conversa entre um usuário e uma IA.\n\n",
+      "previousSummary": "[Resumo da conversa anterior]\n",
+      "instructionWithSummary": "Com base no resumo anterior acima e incluindo a conversa adicional abaixo, resuma de forma abrangente os pontos principais, o contexto e os objetivos do usuário de toda a conversa. Escreva o resumo com clareza para que outra IA compreenda totalmente o fluxo anterior.\n\n",
+      "instructionWithoutSummary": "Resuma de forma abrangente os pontos principais, o contexto e os objetivos do usuário do histórico de conversa abaixo. Escreva o resumo com clareza para que outra IA compreenda totalmente o fluxo da conversa.\n\n",
+      "additionalConversation": "[Conversa adicional]\n",
+      "roleUser": "Usuário",
+      "roleAI": "IA"
     }
   }
 }

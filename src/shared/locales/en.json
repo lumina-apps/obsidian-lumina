@@ -700,7 +700,9 @@
       "tableNotice": "📊 Table modifications detected. In Live Preview, inline diffs may be hidden by table widgets.",
       "switchToSourceMode": "Switch to Source Mode",
       "viewInEditor": "View in Editor",
-      "tableBadge": "Table"
+      "tableBadge": "Table",
+      "mcpTool": "MCP Tool: {{name}}",
+      "mcpToolDesc": "The agent wants to use an external tool."
     },
     "emptyResponseTokenLimit": "⚠️ The model returned an empty response. Generation was stopped because the Max Output Tokens limit was reached. Please increase the \"Max Output Tokens\" limit in settings.",
     "tokenLimitHitWarning": "\n\n⚠️ (Generation was interrupted because the Max Output Tokens limit was reached. Please increase the \"Max Output Tokens\" value in settings.)",
@@ -868,7 +870,8 @@
       "targetModified": "Target text was modified while waiting for approval.",
       "noChanges": "No changes to apply.",
       "thinking": "Thinking..."
-    }
+    },
+    "errorLoadingSettings": "Failed to load settings tab."
   },
   "mcpServerTools": {
     "read_active_note": {
@@ -1460,6 +1463,17 @@
       "recoveredSuccess": "Recovered and processed unfinished recording.",
       "createdNote": "Created voice note: {{path}}",
       "audioSaved": "Audio saved: {{path}}"
+    }
+  },
+  "summarization": {
+    "prompt": {
+      "intro": "Here is a chat history between a user and an AI.\n\n",
+      "previousSummary": "[Previous Conversation Summary]\n",
+      "instructionWithSummary": "Building on the previous summary above and including the additional conversation below, please comprehensively summarize the key points, context, and user goals of the entire conversation. Write the summary clearly so another AI can fully understand the prior conversation flow.\n\n",
+      "instructionWithoutSummary": "Please comprehensively summarize the key points, context, and user goals of the conversation history below. Write the summary clearly so another AI can fully understand the conversation flow.\n\n",
+      "additionalConversation": "[Additional Conversation]\n",
+      "roleUser": "User",
+      "roleAI": "AI"
     }
   }
 }

@@ -60,7 +60,7 @@
 
 	function getActionTitle(req: ApprovalRequest): string {
 		if (req.actionType === 'edit') return $tStore("uiMessages.actionApproval.editNote") || `Edit Note`;
-		if (req.actionType === 'mcp_tool') return $tStore("uiMessages.actionApproval.mcpTool") || `MCP Tool: ${req.metadata?.toolName || 'Unknown'}`;
+		if (req.actionType === 'mcp_tool') return $tStore("uiMessages.actionApproval.mcpTool", { name: req.metadata?.toolName || 'Unknown' });
 		return $tStore("uiMessages.actionApproval.title", { action: req.actionType?.toUpperCase() || "" }) || `Approval Required: ${req.actionType}`;
 	}
 

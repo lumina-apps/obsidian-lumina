@@ -130,4 +130,47 @@ describe('Locale Helpers', () => {
 			expect(getLangSuffix('system')).toBe('ZH');
 		});
 	});
+
+	describe('로케일 키 정합성', () => {
+		function flattenKeys(obj: Record<string, unknown>, prefix = ''): string[] {
+			const keys: string[] = [];
+			for (const [k, v] of Object.entries(obj)) {
+				const fullKey = prefix ? `${prefix}.${k}` : k;
+				if (v && typeof v === 'object' && !Array.isArray(v)) {
+					keys.push(...flattenKeys(v as Record<string, unknown>, fullKey));
+				} else {
+					keys.push(fullKey);
+				}
+			}
+			return keys;
+		}
+
+		it('모든 11개 로케일 JSON 파일이 en.json의 모든 키를 포함한다', async () => {
+			const fs = await import('fs');
+			const path = await import('path');
+			const localesDir = path.resolve(__dirname);
+			const enJson = JSON.parse(fs.readFileSync(path.join(localesDir, 'en.json'), 'utf8')) as Record<string, unknown>;
+			const enKeys = flattenKeys(enJson);
+
+			const localeFiles = ['de', 'en', 'es', 'fr', 'it', 'ja', 'ko', 'pt', 'ru', 'zh', 'zh-tw'];
+			for (const code of localeFiles) {
+				const data = JSON.parse(fs.readFileSync(path.join(localesDir, `${code}.json`), 'utf8')) as Record<string, unknown>;
+				const keySet = new Set(flattenKeys(data));
+				const missing = enKeys.filter(k => !keySet.has(k));
+				expect(missing, `${code}.json 누락 키`).toEqual([]);
+			}
+		});
+
+		it('복구된 uiMessages 및 summarization 키가 키 문자열이 아닌 번역 텍스트를 반환한다', async () => {
+			addDynamicLocale('en', getEnLocale());
+			await setLanguage('en');
+
+			expect(t('uiMessages.errorLoadingSettings')).toBe('Failed to load settings tab.');
+			expect(t('uiMessages.actionApproval.mcpTool', { name: 'search' })).toBe('MCP Tool: search');
+			expect(t('uiMessages.actionApproval.mcpToolDesc')).not.toBe('uiMessages.actionApproval.mcpToolDesc');
+			expect(t('summarization.prompt.intro')).not.toBe('summarization.prompt.intro');
+			expect(t('summarization.prompt.roleUser')).toBe('User');
+			expect(t('summarization.prompt.roleAI')).toBe('AI');
+		});
+	});
 });

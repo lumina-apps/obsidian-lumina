@@ -51,16 +51,10 @@
 	<div class="lumina-chat__rag-banner">
 		<div class="lumina-chat__rag-banner-content">
 			{#if indexingState.status === "loading-model"}
-				<strong>
-					{$tStore("settings.rag.init.loadingModel") ||
-						$tStore("settings.rag.init.downloading")}
-				</strong>
+				<strong>{$tStore("settings.rag.init.loadingModel")}</strong>
 				<span>{$tStore("settings.rag.init.loadingModelDesc") || ""}</span>
 			{:else}
-				<strong>
-					{$tStore("settings.rag.init.indexingVault") ||
-						$tStore("settings.rag.init.indexingNotes")}
-				</strong>
+				<strong>{$tStore("settings.rag.init.indexingVault")}</strong>
 				<span>
 					{($tStore("settings.rag.init.indexingProgressText") || "")
 						.replace("{{processed}}", indexingState.processedFiles.toString())

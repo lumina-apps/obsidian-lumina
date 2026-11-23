@@ -700,7 +700,9 @@
       "tableNotice": "📊 偵測到表格修改。在即時預覽模式下，行內 Diff 可能會被表格元件遮蔽。",
       "switchToSourceMode": "切換至原始碼模式",
       "viewInEditor": "在編輯器中檢視",
-      "tableBadge": "表格"
+      "tableBadge": "表格",
+      "mcpTool": "MCP 工具: {{name}}",
+      "mcpToolDesc": "代理程式想要使用外部工具。"
     },
     "emptyResponseTokenLimit": "⚠️ 模組傳回了空回應。由於達到最大輸出 Token 限制，生成已停止。請在設定中增加「最大輸出 Token」限制。",
     "tokenLimitHitWarning": "\n\n⚠️ (由於達到最大輸出 Token 限制，生成已中斷。請在設定中增加「最大輸出 Token」值。)",
@@ -868,7 +870,8 @@
       "targetModified": "等待確認期間目標文字已被修改，已取消套用。",
       "noChanges": "沒有可套用的變更。",
       "thinking": "思考中..."
-    }
+    },
+    "errorLoadingSettings": "載入設定分頁失敗。"
   },
   "mcpServerTools": {
     "read_active_note": {
@@ -1460,6 +1463,17 @@
       "recoveredSuccess": "已復原並轉換未完成的錄音。",
       "createdNote": "已建立語音筆記: {{path}}",
       "audioSaved": "已儲存音訊檔案: {{path}}"
+    }
+  },
+  "summarization": {
+    "prompt": {
+      "intro": "以下是使用者與 AI 之間的聊天記錄。\n\n",
+      "previousSummary": "[先前的對話摘要]\n",
+      "instructionWithSummary": "請結合上方的歷史摘要與下方的補充對話，全面總結整個對話的核心內容、上下文與使用者目標。摘要需清晰明確，以便其他 AI 閱讀時能完整理解先前的對話脈絡。\n\n",
+      "instructionWithoutSummary": "請全面總結以下對話記錄的核心內容、上下文與使用者目標。摘要需清晰明確，以便其他 AI 閱讀時能完整理解對話脈絡。\n\n",
+      "additionalConversation": "[補充對話]\n",
+      "roleUser": "使用者",
+      "roleAI": "AI"
     }
   }
 }

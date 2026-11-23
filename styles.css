@@ -3533,6 +3533,7 @@ body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-de
 }
 
 body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control {
+	position: relative;
 	width: 100%;
 	min-width: 0;
 	max-width: 100%;
@@ -3552,10 +3553,10 @@ body.is-mobile .vertical-tab-content-container .lumina-settings button {
 	box-sizing: border-box;
 }
 
-/* Obsidian DropdownComponent의 .is-measuring 상태에서도 모바일 설정 폭(100%)을 넘지 않도록 제한 */
-html body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings .setting-item-control select.dropdown.is-measuring,
-html body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings select.dropdown.is-measuring {
-	max-width: 100%;
+/* Obsidian DropdownComponent의 .is-measuring 클론이 모바일 설정 폭 우측을 넘지 않도록 끝단에 정렬 */
+body.is-mobile .vertical-tab-content-container .lumina-settings select.dropdown.is-measuring {
+	inset-inline-start: auto;
+	inset-inline-end: 0;
 }
 
 body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card {

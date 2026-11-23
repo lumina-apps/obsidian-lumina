@@ -700,7 +700,9 @@
       "tableNotice": "📊 检测到表格修改。在实时预览模式下，内联 Diff 可能会被表格组件遮挡。",
       "switchToSourceMode": "切换到源码模式",
       "viewInEditor": "在编辑器中查看",
-      "tableBadge": "表格"
+      "tableBadge": "表格",
+      "mcpTool": "MCP 工具: {{name}}",
+      "mcpToolDesc": "智能体请求使用外部工具。"
     },
     "emptyResponseTokenLimit": "⚠️ 模型返回了空响应。由于达到最大输出 Token 限制，生成已停止。请在设置中增加“最大输出 Token”限制。",
     "tokenLimitHitWarning": "\n\n⚠️ (由于达到最大输出 Token 限制，生成已中断。请在设置中增加“最大输出 Token”值。)",
@@ -868,7 +870,8 @@
       "targetModified": "等待确认期间目标文本已被修改，已取消应用。",
       "noChanges": "没有需要应用的更改。",
       "thinking": "正在思考..."
-    }
+    },
+    "errorLoadingSettings": "加载设置选项卡失败。"
   },
   "mcpServerTools": {
     "read_active_note": {
@@ -1460,6 +1463,17 @@
       "recoveredSuccess": "已恢复并转换未完成的录音。",
       "createdNote": "已创建语音笔记: {{path}}",
       "audioSaved": "已保存音频文件: {{path}}"
+    }
+  },
+  "summarization": {
+    "prompt": {
+      "intro": "以下是用户与 AI 之间的聊天记录。\n\n",
+      "previousSummary": "[之前的对话摘要]\n",
+      "instructionWithSummary": "请结合上方的历史摘要和下方的补充对话，全面总结整个对话的核心内容、上下文和用户目标。摘要需清晰明确，以便其他 AI 阅读时能够完整理解先前的对话脉络。\n\n",
+      "instructionWithoutSummary": "请全面总结以下对话记录的核心内容、上下文和用户目标。摘要需清晰明确，以便其他 AI 阅读时能够完整理解对话脉络。\n\n",
+      "additionalConversation": "[补充对话]\n",
+      "roleUser": "用户",
+      "roleAI": "AI"
     }
   }
 }

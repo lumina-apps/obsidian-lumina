@@ -700,7 +700,9 @@
       "tableNotice": "📊 テーブル変更が含まれています。ライブプレビューでは表ウィジェットによってインラインDiffが隠れる場合があります。",
       "switchToSourceMode": "ソースモードに切替",
       "viewInEditor": "エディタで表示",
-      "tableBadge": "表"
+      "tableBadge": "表",
+      "mcpTool": "MCP ツール: {{name}}",
+      "mcpToolDesc": "エージェントが外部ツールを使用しようとしています。"
     },
     "emptyResponseTokenLimit": "⚠️ モデルが空の応答を返しました。最大出力トークン（Max Output Tokens）制限に達したため、生成が中断されました。設定の「最大出力トークン」制限を増やしてください。",
     "tokenLimitHitWarning": "\n\n⚠️ （最大出力トークン制限に達したため、回答が途中で途切れました。設定の「最大出力トークン」の値を増やしてください。）",
@@ -868,7 +870,8 @@
       "targetModified": "承認待ちの間に対象テキストが変更されたため中止しました。",
       "noChanges": "適用する変更はありません。",
       "thinking": "思考中..."
-    }
+    },
+    "errorLoadingSettings": "設定タブの読み込みに失敗しました。"
   },
   "mcpServerTools": {
     "read_active_note": {
@@ -1460,6 +1463,17 @@
       "recoveredSuccess": "未完了の録音を復元してノートに変換しました。",
       "createdNote": "音声ノートを作成しました: {{path}}",
       "audioSaved": "音声を保存しました: {{path}}"
+    }
+  },
+  "summarization": {
+    "prompt": {
+      "intro": "以下はユーザーとAIのチャット履歴です。\n\n",
+      "previousSummary": "[これまでの会話の要約]\n",
+      "instructionWithSummary": "上記のこれまでの要約に続けて、以下の追加の会話を含め、会話全体の要点、文脈、ユーザーの目的などを総合的に要約してください。別のAIが読んだときにこれまでの会話の流れを完全に理解できるよう明確に記述してください。\n\n",
+      "instructionWithoutSummary": "以下の会話履歴の要点、文脈、ユーザーの目的などを総合的に要約してください。別のAIが読んだときに会話の流れを完全に理解できるよう明確に記述してください。\n\n",
+      "additionalConversation": "[追加の会話]\n",
+      "roleUser": "ユーザー",
+      "roleAI": "AI"
     }
   }
 }
