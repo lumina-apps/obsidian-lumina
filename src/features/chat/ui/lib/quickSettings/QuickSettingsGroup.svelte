@@ -106,4 +106,13 @@
 		font-weight: 600;
 		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 	}
+
+	/* 모바일 프리셋 버튼: 터치 영역 확보 및 텍스트 줄바꿈 방지 */
+	:global(body.is-mobile) .lumina-qs__btn {
+		min-height: 30px;
+		padding: 6px 4px;
+		white-space: nowrap;
+		box-shadow: none;
+		height: auto;
+	}
 </style>

@@ -120,5 +120,17 @@
 		background: var(--interactive-accent);
 		color: var(--text-on-accent);
 	}
+
+	/* 모바일 파일 수정 배지: 말풍선 폭 초과 방지 및 경로 말줄임 */
+	:global(body.is-mobile) .lumina-cli-file-edit {
+		max-width: 100%;
+		box-sizing: border-box;
+	}
+
+	:global(body.is-mobile) .lumina-cli-file-edit__path {
+		flex: 1 1 auto;
+		min-width: 0;
+		max-width: 140px;
+	}
 </style>
 

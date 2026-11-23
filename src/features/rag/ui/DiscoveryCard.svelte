@@ -220,10 +220,38 @@
 		background: var(--background-modifier-hover);
 	}
 
-	:global(.is-mobile) .lumina-discovery__action-btn {
-		padding: 8px 12px;
-		font-size: 12px;
-		margin-top: 4px;
+	/* 모바일(폰+태블릿) 카드 헤더·배지·액션 버튼 터치 크기 및 랩핑 보장 */
+	:global(body.is-mobile) .lumina-discovery__card-header {
+		gap: 8px;
+	}
+
+	:global(body.is-mobile) .lumina-discovery__card-score {
+		flex-shrink: 0;
+		white-space: nowrap;
+	}
+
+	:global(body.is-mobile) .lumina-discovery__card-actions {
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	:global(body.is-mobile) .lumina-discovery__action-btn {
+		padding: 6px 10px;
+		font-size: 11.5px;
+		white-space: nowrap;
+		min-height: 32px;
+		height: auto;
+		margin-top: 2px;
+		box-shadow: none;
+	}
+
+	/* 좁은 탐색 드로어(<= 440px)에서만 버튼 3종을 균등 확장 */
+	@container (max-width: 440px) {
+		:global(body.is-mobile) .lumina-discovery__action-btn {
+			flex: 1 1 auto;
+			justify-content: center;
+			padding: 6px 8px;
+		}
 	}
 
 	.lumina-discovery__action-btn.is-staged {

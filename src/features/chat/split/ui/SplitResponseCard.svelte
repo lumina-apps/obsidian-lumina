@@ -656,4 +656,21 @@
 			opacity: 0;
 		}
 	}
+
+	/* 모바일 응답 카드 액션·정지 버튼 터치 영역 및 마크다운 표 가로 스크롤 */
+	:global(body.is-mobile) .clickable-icon.lumina-split-card__action-btn,
+	:global(body.is-mobile) .clickable-icon.lumina-split-card__stop-btn {
+		width: 28px;
+		height: 28px;
+		min-width: 28px;
+		min-height: 28px;
+		padding: 0;
+	}
+
+	:global(body.is-mobile) .lumina-split-card__content :global(table) {
+		display: block;
+		max-width: 100%;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+	}
 </style>

@@ -506,4 +506,46 @@
 		padding: 4px 6px;
 		outline: none;
 	}
+
+	/* 모바일 히스토리 항목: 메타 정보 말줄임 및 우측 액션 버튼 크기 고정 */
+	:global(body.is-mobile) .lumina-history__item {
+		gap: 8px;
+		padding: 10px;
+	}
+
+	:global(body.is-mobile) .lumina-history__item-main {
+		flex: 1 1 0%;
+		min-width: 0;
+	}
+
+	:global(body.is-mobile) .lumina-history__item-meta {
+		min-width: 0;
+		white-space: nowrap;
+		overflow: hidden;
+	}
+
+	:global(body.is-mobile) .lumina-history__item-meta span:first-child {
+		flex-shrink: 0;
+	}
+
+	:global(body.is-mobile) .lumina-history__item-meta span:last-child {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		min-width: 0;
+	}
+
+	:global(body.is-mobile) .lumina-history__actions {
+		flex-shrink: 0;
+		gap: 2px;
+	}
+
+	:global(body.is-mobile) .lumina-history__action-btn {
+		width: 28px;
+		height: 28px;
+		min-width: 28px;
+		min-height: 28px;
+		padding: 0;
+		box-shadow: none;
+	}
 </style>

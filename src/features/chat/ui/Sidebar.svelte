@@ -100,4 +100,21 @@
 		height: 100%;
 		flex-direction: column;
 	}
+
+	/* 모바일 상단 탭: 긴 번역 라벨 줄바꿈 방지 및 버튼 기본 스타일 초기화 */
+	:global(body.is-mobile) .lumina-sidebar__tabs {
+		padding: 6px 8px 0 8px;
+	}
+
+	:global(body.is-mobile) .lumina-sidebar__tab {
+		min-width: 0;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		padding: 8px 8px;
+		font-size: 12.5px;
+		box-shadow: none;
+		border-radius: 6px 6px 0 0;
+		height: auto;
+	}
 </style>

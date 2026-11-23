@@ -382,4 +382,18 @@
 		width: 15px;
 		height: 15px;
 	}
+
+	/* 모바일 분할 채팅 헤더 패딩 및 .clickable-icon 터치 영역 보정 */
+	:global(body.is-mobile) .lumina-split-header {
+		padding: 6px 10px;
+	}
+
+	:global(body.is-mobile) .clickable-icon.lumina-split-header__icon-btn {
+		width: 32px;
+		height: 32px;
+		min-width: 32px;
+		min-height: 32px;
+		padding: 0;
+		flex-shrink: 0;
+	}
 </style>

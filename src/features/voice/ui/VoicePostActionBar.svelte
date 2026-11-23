@@ -84,10 +84,7 @@
 
 	.lumina-voice-review-wrap.is-mobile {
 		bottom: calc(64px + env(safe-area-inset-bottom, 0px));
-		left: 12px;
-		right: 12px;
-		transform: none;
-		max-width: none;
+		max-width: min(680px, calc(100vw - 32px));
 	}
 
 	.lumina-voice-review-bar {
@@ -102,8 +99,18 @@
 		flex-wrap: wrap;
 	}
 
-	.is-mobile .lumina-voice-review-bar {
-		justify-content: space-between;
+	/* 좁은 화면(스마트폰 <= 600px)에서만 하단 전체 폭으로 확장 */
+	@media (max-width: 600px) {
+		.lumina-voice-review-wrap.is-mobile {
+			left: 12px;
+			right: 12px;
+			transform: none;
+			max-width: none;
+		}
+
+		.is-mobile .lumina-voice-review-bar {
+			justify-content: space-between;
+		}
 	}
 
 	.lumina-voice-rbtn {

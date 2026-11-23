@@ -68,6 +68,8 @@ vi.mock('obsidian', () => {
 		Platform: {
 			isDesktop: true,
 			isMobile: false,
+			isPhone: false,
+			isTablet: false,
 			isDesktopApp: true,
 			isWin: false,
 			isMacOS: false,

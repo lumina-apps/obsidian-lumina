@@ -212,4 +212,18 @@
 		width: 14px;
 		height: 14px;
 	}
+
+	/* 모바일(폰+태블릿) 퀵 설정 팝오버 폭 안전 제한 및 좁은 컨테이너 전체 폭 배치 */
+	:global(body.is-mobile) .lumina-qs {
+		max-width: calc(100% - 16px);
+		box-sizing: border-box;
+	}
+
+	@container (max-width: 520px) {
+		:global(body.is-mobile) .lumina-qs {
+			left: 8px;
+			right: 8px;
+			width: auto;
+		}
+	}
 </style>

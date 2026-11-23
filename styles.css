@@ -3490,7 +3490,7 @@ html body .modal-container.lumina-settings-modal-container {
 }
 
 body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings {
-	padding: 12px 16px 32px 16px;
+	padding: 16px 24px 36px 24px;
 	max-width: 100%;
 	box-sizing: border-box;
 	overflow-x: clip;
@@ -3509,38 +3509,24 @@ body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-settings
 	box-sizing: border-box;
 }
 
-body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item {
-	flex-direction: column;
-	align-items: stretch;
-	gap: 10px;
-	padding: 14px 12px;
-	min-width: 0;
-	max-width: 100%;
-	box-sizing: border-box;
+/* 모바일(폰+태블릿) 설정 공통 터치 타겟 및 오버플로우 방어 */
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-settings__search {
+	height: 36px;
+	padding: 0 10px;
 }
 
-body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-info {
-	padding-left: 0;
-	min-width: 0;
-	max-width: 100%;
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-settings__search-input {
+	font-size: 13.5px;
 }
 
-body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-name,
-body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-description {
-	min-width: 0;
-	max-width: 100%;
-	overflow-wrap: anywhere;
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-settings__search-clear {
+	width: 26px;
+	height: 26px;
+	box-shadow: none;
 }
 
-body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control {
-	position: relative;
-	width: 100%;
-	min-width: 0;
-	max-width: 100%;
-	justify-content: flex-start;
-	flex-wrap: wrap;
-	padding-right: 0;
-	box-sizing: border-box;
+body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav {
+	top: -16px;
 }
 
 body.is-mobile .vertical-tab-content-container .lumina-settings select,
@@ -3553,33 +3539,222 @@ body.is-mobile .vertical-tab-content-container .lumina-settings button {
 	box-sizing: border-box;
 }
 
+/* 모바일 모델 선택 버튼 등 긴 버튼 텍스트 말줄임 */
+body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control button {
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-prompt-vars__btn {
+	padding: 4px 10px;
+	min-height: 28px;
+	font-size: 11.5px;
+}
+
 /* Obsidian DropdownComponent의 .is-measuring 클론이 모바일 설정 폭 우측을 넘지 않도록 끝단에 정렬 */
 body.is-mobile .vertical-tab-content-container .lumina-settings select.dropdown.is-measuring {
 	inset-inline-start: auto;
 	inset-inline-end: 0;
 }
 
-body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card {
-	grid-template-columns: minmax(0, 1fr);
-	min-width: 0;
-	max-width: 100%;
-	padding: 14px 14px 12px 14px;
-	box-sizing: border-box;
+/* 좁은 화면(스마트폰) 외곽 패딩 및 스티키 nav 오프셋 일치 */
+@media (max-width: 600px) {
+	body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings {
+		padding: 12px 16px 32px 16px;
+	}
+
+	body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav {
+		top: -12px;
+	}
 }
 
-body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card .setting-item {
-	width: 100%;
-	min-width: 0;
-	max-width: 100%;
-}
+/* 좁은 설정 컨테이너(폰·태블릿 분할 창 <= 600px)에서만 2행 내비게이션·수직 스택·1열 카드 적용 */
+@container (max-width: 600px) {
+	body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav-separator {
+		display: none;
+	}
 
-body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-provider-card__setting-type,
-body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-provider-card__setting-url,
-body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-provider-card__setting-binary,
-body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-provider-card__setting-credential,
-body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-provider-card__setting-actions {
-	grid-column: 1 / -1;
-	min-width: 0;
+	body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn:not(.lumina-settings__nav-btn--advanced) {
+		flex: 1 1 25%;
+		min-width: 0;
+		padding: 7px 4px;
+		font-size: 12px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-settings__nav button.lumina-settings__nav-btn.lumina-settings__nav-btn--advanced {
+		flex: 0 0 36px;
+		min-width: 36px;
+		padding: 7px 0;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 10px;
+		padding: 14px 12px;
+		min-width: 0;
+		max-width: 100%;
+		box-sizing: border-box;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-info {
+		padding-left: 0;
+		min-width: 0;
+		max-width: 100%;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-name,
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-description {
+		min-width: 0;
+		max-width: 100%;
+		overflow-wrap: anywhere;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control {
+		position: relative;
+		width: 100%;
+		min-width: 0;
+		max-width: 100%;
+		justify-content: flex-start;
+		flex-wrap: wrap;
+		padding-right: 0;
+		box-sizing: border-box;
+	}
+
+	/* 좁은 설정 컨테이너 컨트롤 폭 100% 통일 (드롭다운·텍스트·스택 컨트롤) */
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control select:not(.is-measuring),
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control select.dropdown:not(.is-measuring),
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control .lumina-dropdown-ellipsis,
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control textarea {
+		width: 100%;
+		max-width: 100%;
+		min-width: 0;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control input[type="text"],
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control input[type="password"],
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control input[type="search"],
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control input[type="url"],
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control input[type="number"]:only-child {
+		flex: 1 1 160px;
+		width: 100%;
+		max-width: 100%;
+		min-width: 0;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-stacked-control .setting-item-control {
+		width: 100%;
+		max-width: 100%;
+	}
+
+	/* 슬라이더 + 숫자 입력 콤보가 좁은 폭에서도 한 행에 정렬되도록 인라인 minWidth/width 오버라이드 */
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control input[type="range"] {
+		flex: 1 1 120px;
+		width: auto;
+		min-width: 0 !important;
+		max-width: 100%;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control input[type="range"] ~ input[type="number"],
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control input.lumina-slider-number {
+		flex: 0 0 64px;
+		width: 64px !important;
+		max-width: 72px;
+		min-width: 0;
+		text-align: right;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card {
+		grid-template-columns: minmax(0, 1fr);
+		min-width: 0;
+		max-width: 100%;
+		padding: 14px 14px 12px 14px;
+		box-sizing: border-box;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card .setting-item {
+		width: 100%;
+		min-width: 0;
+		max-width: 100%;
+	}
+
+	/* MCP 서버 카드의 데스크탑 2열 grid-column 배치를 1열로 해제 */
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card.mcp-server-card > .setting-item {
+		grid-column: 1 / -1;
+		grid-row: auto;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-provider-card__setting-type,
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-provider-card__setting-url,
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-provider-card__setting-binary,
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-provider-card__setting-credential,
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card .lumina-provider-card__setting-actions {
+		grid-column: 1 / -1;
+		min-width: 0;
+	}
+
+	/* 퀵 액션·시스템 프롬프트 카드 인라인 스타일 충돌 해제 및 터치 여백 개선 */
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-prompt-card[open] {
+		padding: 10px 12px 12px;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-prompt-card__name {
+		min-width: 0;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-prompt-card .setting-item {
+		align-items: stretch !important;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-prompt-card .setting-item-info {
+		max-width: 100% !important;
+		margin-right: 0 !important;
+		white-space: normal !important;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-prompt-card .setting-item-control {
+		justify-content: flex-start !important;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings textarea.lumina-prompt-card__content {
+		min-width: 0 !important;
+		width: 100% !important;
+		max-width: 100% !important;
+		box-sizing: border-box;
+	}
+
+	/* 피처 카드(프로젝트/RAG/로컬서버/음성 등) 이중 패딩 축소 */
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-feature-card {
+		padding: 4px 12px;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-feature-card .setting-item {
+		padding: 12px 4px;
+	}
+
+	/* 설정 하단 후원 푸터 세로 배치 최적화 */
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-settings__footer {
+		padding: 14px;
+		gap: 12px;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-settings__footer-info {
+		min-width: 0;
+		width: 100%;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-settings__footer-actions {
+		width: 100%;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-settings__footer a.lumina-settings__footer-btn {
+		flex: 1 1 auto;
+		justify-content: center;
+	}
 }
 
 /* Voice-to-Note 모바일 플로팅 바 하단 Safe Area 오프셋 보장 */
@@ -3623,4 +3798,335 @@ body.is-mobile .lumina-diff-banner-btn {
 body.is-mobile .lumina-popup-selector__list {
 	max-height: min(240px, 40dvh);
 }
+
+/* ─── Mobile Chat View Responsive Overrides (.is-mobile scoped) ───────────── */
+
+/* 모바일(폰+태블릿) 뷰 컨테이너 기본 여백 제거·터치 타겟·컨테이너 쿼리 기준 설정 */
+body.is-mobile .view-content.lumina-chat-view,
+body.is-mobile .view-content.lumina-split-view {
+	padding: 0;
+	overflow: hidden;
+}
+
+body.is-mobile .lumina-chat {
+	container-type: inline-size;
+	min-width: 0;
+	max-width: 100%;
+	overflow-x: hidden;
+}
+
+body.is-mobile .lumina-chat__header .clickable-icon.lumina-chat__icon-btn,
+body.is-mobile .lumina-chat__icon-btn {
+	flex-shrink: 0;
+	width: 32px;
+	height: 32px;
+	min-width: 32px;
+	min-height: 32px;
+	padding: 0;
+	box-shadow: none;
+}
+
+body.is-mobile .lumina-chat__rag-badge {
+	flex-shrink: 0;
+	white-space: nowrap;
+	height: 28px;
+	padding: 0 8px;
+	font-size: 10.5px;
+	box-sizing: border-box;
+}
+
+body.is-mobile .lumina-chat__toggle-btn {
+	flex-shrink: 0;
+	white-space: nowrap;
+	height: 28px;
+	min-height: 28px;
+	padding: 0 10px;
+	font-size: 11px;
+	border-radius: 6px;
+	box-shadow: none;
+	box-sizing: border-box;
+}
+
+body.is-mobile .lumina-chat__input-area {
+	padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+	gap: 6px;
+}
+
+body.is-mobile .lumina-chat__input-toolbar {
+	flex-wrap: wrap;
+	row-gap: 6px;
+	column-gap: 6px;
+}
+
+body.is-mobile .lumina-chat__toolbar-group {
+	flex-shrink: 0;
+	gap: 4px;
+	align-items: center;
+}
+
+body.is-mobile .lumina-chat__toolbar-btn {
+	min-width: 30px;
+	min-height: 30px;
+	height: 30px;
+	padding: 5px 7px;
+	flex-shrink: 0;
+	justify-content: center;
+	box-shadow: none;
+}
+
+body.is-mobile .lumina-chat__toolbar-right {
+	flex: 1 1 auto;
+	min-width: 0;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 4px;
+}
+
+/* 모바일(폰+태블릿)에서는 가상 키보드 특성상 Enter 전송 단축키 안내 숨김 */
+body.is-mobile .lumina-chat__hint-inline {
+	display: none;
+}
+
+body.is-mobile .lumina-chat__token-stats {
+	white-space: nowrap;
+	flex-shrink: 0;
+	font-size: 10.5px;
+	padding: 2px 6px;
+}
+
+body.is-mobile .lumina-chat__context-badge {
+	white-space: nowrap;
+	flex-shrink: 0;
+	min-height: 26px;
+	height: auto;
+	padding: 3px 8px;
+	font-size: 10px;
+	max-width: 100%;
+	box-shadow: none;
+	box-sizing: border-box;
+}
+
+body.is-mobile .lumina-chat__textarea {
+	font-size: 14px;
+	line-height: 20px;
+}
+
+body.is-mobile button.lumina-chat__send-btn,
+body.is-mobile button.lumina-chat__clear-btn {
+	width: 32px;
+	height: 32px;
+	min-width: 32px;
+	min-height: 32px;
+	padding: 0;
+	box-shadow: none;
+}
+
+/* 좁은 채팅 컨테이너(폰·태블릿 사이드바/분할창 <= 520px)에서는 헤더 2행 배치 및 팝업 전체 폭 확장 */
+@container (max-width: 520px) {
+	body.is-mobile .lumina-chat__header {
+		flex-wrap: wrap;
+		row-gap: 8px;
+		column-gap: 4px;
+		padding: 10px 10px 8px;
+	}
+
+	body.is-mobile .lumina-chat__controls {
+		display: contents;
+	}
+
+	body.is-mobile .lumina-chat__title {
+		order: 1;
+		flex: 1 1 auto;
+		min-width: 0;
+		margin-right: auto;
+	}
+
+	body.is-mobile .lumina-chat__header .clickable-icon.lumina-chat__icon-btn,
+	body.is-mobile .lumina-chat__icon-btn {
+		order: 2;
+	}
+
+	body.is-mobile .lumina-chat__header::after {
+		content: "";
+		order: 3;
+		flex-basis: 100%;
+		width: 100%;
+		height: 0;
+	}
+
+	body.is-mobile .lumina-chat__header .lumina-model-selector {
+		order: 4;
+		flex: 1 1 0%;
+		width: auto;
+		min-width: 0;
+	}
+
+	body.is-mobile .lumina-chat__rag-badge {
+		order: 5;
+		display: block;
+		line-height: 26px;
+		text-align: center;
+		max-width: 150px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	body.is-mobile .lumina-chat__toggle-btn {
+		order: 6;
+	}
+
+	body.is-mobile .lumina-chat__input-area {
+		padding: 6px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+	}
+
+	body.is-mobile .lumina-chat__input-toolbar {
+		padding: 0 2px;
+	}
+
+	body.is-mobile .lumina-chat__context-badge-label {
+		max-width: 96px;
+	}
+
+	body.is-mobile .lumina-chat__textarea-wrap {
+		padding: 8px 10px;
+	}
+
+	/* 좁은 채팅 입력창 상단 팝업 컨테이너 폭 맞춤 */
+	body.is-mobile .lumina-chat__input-container > .lumina-popup-selector {
+		left: 0;
+		right: 0;
+		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
+	}
+}
+
+/* ─── Mobile Project Modal, Debug, Editor & Dialog Overrides (.is-mobile) ─ */
+
+/* 프로젝트 설정 모달(.modal 내부이므로 자체 컨테이너 쿼리 기준 설정) */
+body.is-mobile .lumina-settings-modal {
+	container-type: inline-size;
+}
+
+body.is-mobile .lumina-settings-modal .lumina-folder-tree-container {
+	overflow-x: auto;
+}
+
+body.is-mobile .lumina-settings-modal details span {
+	word-break: break-word;
+}
+
+@container (max-width: 520px) {
+	body.is-mobile .lumina-settings-modal .setting-item {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 8px;
+		padding: 12px 4px;
+	}
+
+	body.is-mobile .lumina-settings-modal .setting-item-info {
+		margin-right: 0;
+		width: 100%;
+	}
+
+	body.is-mobile .lumina-settings-modal .setting-item-control {
+		width: 100%;
+		justify-content: flex-start;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	body.is-mobile .lumina-settings-modal .setting-item-control input[type="text"],
+	body.is-mobile .lumina-settings-modal .setting-item-control select,
+	body.is-mobile .lumina-settings-modal .setting-item-control textarea {
+		width: 100% !important;
+		max-width: 100% !important;
+		min-width: 0 !important;
+		box-sizing: border-box;
+	}
+
+	body.is-mobile .lumina-settings-modal details {
+		padding: 10px 12px;
+	}
+
+	body.is-mobile .lumina-settings-modal .lumina-sticky-save-setting .setting-item-control button.mod-cta {
+		width: 100%;
+		justify-content: center;
+	}
+}
+
+/* 디버그 패널 모바일 공통 터치 영역 및 좁은 화면 테이블 폭 조정 */
+body.is-mobile .lumina-debug__header {
+	padding: 8px 10px;
+	gap: 6px;
+}
+
+body.is-mobile .lumina-debug__action-btn {
+	width: 30px;
+	height: 30px;
+	min-width: 30px;
+	min-height: 30px;
+	padding: 0;
+}
+
+@media (max-width: 600px) {
+	body.is-mobile .lumina-debug__table td:first-child {
+		width: 84px;
+		word-break: break-word;
+	}
+
+	body.is-mobile .lumina-debug__table td {
+		padding: 6px 8px;
+		font-size: 11px;
+	}
+}
+
+/* 에디터 인라인 프롬프트바·모달 모바일 공통 줄바꿈 및 좁은 화면 여백 보정 */
+body.is-mobile .cm-tooltip.lumina-promptbar .lumina-promptbar-status {
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+body.is-mobile .cm-tooltip.lumina-promptbar .lumina-promptbar-model-chip {
+	max-width: 100%;
+	min-width: 0;
+}
+
+body.is-mobile .cm-tooltip.lumina-promptbar .lumina-promptbar-review {
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+body.is-mobile .lumina-cli-diff-modal__header {
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+body.is-mobile .lumina-cli-diff-modal__meta {
+	flex-wrap: wrap;
+}
+
+body.is-mobile .lumina-cli-diff-modal__path {
+	word-break: break-all;
+}
+
+body.is-mobile .lumina-agent-beta-modal .lumina-agent-beta-modal__actions {
+	flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+	body.is-mobile .cm-tooltip.lumina-promptbar .lumina-promptbar-kbd {
+		display: none;
+	}
+
+	body.is-mobile .lumina-cli-diff-modal {
+		padding: 12px 14px;
+	}
+
+	body.is-mobile .lumina-agent-beta-modal .lumina-agent-beta-modal__actions button {
+		flex: 1 1 auto;
+		justify-content: center;
+	}
+}
+
 

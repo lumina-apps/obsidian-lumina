@@ -1799,24 +1799,47 @@
 		}
 	}
 
+	/* 모바일(폰+태블릿) 배치 스튜디오 컨테이너 쿼리 기준 및 긴 경로 줄바꿈 */
 	:global(body.is-mobile) .lumina-batch-studio {
-		overflow-y: auto;
+		container-type: inline-size;
 	}
 
-	:global(body.is-mobile) .lumina-batch-setup-grid {
-		max-height: 220px;
+	:global(body.is-mobile) .lumina-batch-inspector-path {
+		word-break: break-all;
 	}
 
-	:global(body.is-mobile) .lumina-batch-workbench {
-		grid-template-columns: 1fr;
-		grid-template-rows: 200px minmax(160px, 1fr);
-		min-height: 360px;
-		flex-shrink: 0;
+	@media (max-width: 720px) {
+		:global(body.is-mobile) .lumina-batch-studio {
+			overflow-y: auto;
+		}
 	}
 
-	:global(body.is-mobile) .lumina-batch-queue-pane {
-		border-right: none;
-		border-bottom: 1px solid var(--background-modifier-border);
+	/* 좁은 배치 스튜디오(폰·태블릿 분할 창 <= 720px)에서만 1열 스택 및 줄바꿈 적용 */
+	@container (max-width: 720px) {
+		:global(body.is-mobile) .lumina-batch-setup-grid {
+			max-height: 220px;
+		}
+
+		:global(body.is-mobile) .lumina-batch-workbench {
+			grid-template-columns: 1fr;
+			grid-template-rows: 200px minmax(160px, 1fr);
+			min-height: 360px;
+			flex-shrink: 0;
+		}
+
+		:global(body.is-mobile) .lumina-batch-queue-pane {
+			border-right: none;
+			border-bottom: 1px solid var(--background-modifier-border);
+		}
+
+		:global(body.is-mobile) .lumina-batch-field-row,
+		:global(body.is-mobile) .lumina-batch-field-split,
+		:global(body.is-mobile) .lumina-batch-setup-footer,
+		:global(body.is-mobile) .lumina-batch-progress-meta,
+		:global(body.is-mobile) .lumina-batch-inspector-header,
+		:global(body.is-mobile) .lumina-batch-confirm-inline {
+			flex-wrap: wrap;
+		}
 	}
 
 	.lumina-batch-queue-pane {

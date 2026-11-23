@@ -263,4 +263,40 @@
 		border-radius: 8px;
 		overflow-x: auto;
 	}
+
+	/* 모바일(폰+태블릿) 집중 보기 모달 높이·제목 말줄임·아이콘 버튼 터치 보정 */
+	:global(body.is-mobile) .lumina-split-focus-modal {
+		max-height: 90vh;
+	}
+
+	:global(body.is-mobile) .lumina-split-focus-modal__title {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	:global(body.is-mobile) .clickable-icon.lumina-split-focus-modal__btn {
+		width: 32px;
+		height: 32px;
+		min-width: 32px;
+		min-height: 32px;
+		padding: 0;
+	}
+
+	/* 좁은 화면(스마트폰 <= 600px)에서만 모달 여백 축소 */
+	@media (max-width: 600px) {
+		:global(body.is-mobile) .lumina-split-focus-backdrop {
+			padding: 10px;
+		}
+
+		:global(body.is-mobile) .lumina-split-focus-modal__header {
+			padding: 10px 12px;
+			gap: 8px;
+		}
+
+		:global(body.is-mobile) .lumina-split-focus-modal__body {
+			padding: 12px 14px;
+		}
+	}
 </style>

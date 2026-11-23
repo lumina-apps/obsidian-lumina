@@ -489,4 +489,27 @@
 		opacity: 0.4;
 		cursor: not-allowed;
 	}
+
+	/* 모바일 승인 카드: 긴 파일 경로 말줄임 및 헤더/표 안내 줄바꿈 허용 */
+	:global(body.is-mobile) .lumina-inline-approvals {
+		padding: 8px;
+	}
+
+	:global(body.is-mobile) .lumina-inline-approval-header {
+		flex-wrap: wrap;
+		gap: 4px 8px;
+		min-width: 0;
+	}
+
+	:global(body.is-mobile) .lumina-inline-approval-path {
+		min-width: 0;
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	:global(body.is-mobile) .lumina-inline-approval-table-hint {
+		flex-wrap: wrap;
+	}
 </style>

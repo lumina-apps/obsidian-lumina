@@ -365,4 +365,18 @@
 	input:checked + .lumina-toggle-slider:before {
 		transform: translateX(12px);
 	}
+
+	/* 모바일 MCP 팝업: 공통 폭 제한 및 좁은 컨테이너(<= 520px)에서 입력 컨테이너 전체 폭 확장 */
+	:global(body.is-mobile) .lumina-mcp-popup {
+		max-width: 100%;
+		box-sizing: border-box;
+	}
+
+	@container (max-width: 520px) {
+		:global(body.is-mobile) .lumina-mcp-popup {
+			left: 0;
+			right: 0;
+			width: 100%;
+		}
+	}
 </style>

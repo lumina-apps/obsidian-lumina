@@ -203,4 +203,18 @@
 		width: 14px;
 		height: 14px;
 	}
+
+	/* 모바일 프롬프트 피커 팝업: 공통 폭 제한 및 좁은 컨테이너(<= 520px)에서 입력 컨테이너 전체 폭 확장 */
+	:global(body.is-mobile) .lumina-prompt-picker {
+		max-width: 100%;
+		box-sizing: border-box;
+	}
+
+	@container (max-width: 520px) {
+		:global(body.is-mobile) .lumina-prompt-picker {
+			left: 0;
+			right: 0;
+			width: 100%;
+		}
+	}
 </style>

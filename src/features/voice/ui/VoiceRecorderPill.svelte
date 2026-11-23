@@ -227,10 +227,7 @@
 
 	.lumina-voice-pill-wrap.is-mobile {
 		bottom: calc(64px + env(safe-area-inset-bottom, 0px));
-		left: 12px;
-		right: 12px;
-		transform: none;
-		max-width: none;
+		max-width: min(680px, calc(100vw - 32px));
 	}
 
 	.lumina-voice-pill {
@@ -248,11 +245,21 @@
 		flex-wrap: wrap;
 	}
 
-	.is-mobile .lumina-voice-pill {
-		width: 100%;
-		justify-content: space-between;
-		border-radius: 14px;
-		padding: 10px 12px;
+	/* 좁은 화면(스마트폰 <= 600px)에서만 화면 전체 폭 확장 및 컨트롤 2행 배치 */
+	@media (max-width: 600px) {
+		.lumina-voice-pill-wrap.is-mobile {
+			left: 12px;
+			right: 12px;
+			transform: none;
+			max-width: none;
+		}
+
+		.is-mobile .lumina-voice-pill {
+			width: 100%;
+			justify-content: space-between;
+			border-radius: 14px;
+			padding: 10px 12px;
+		}
 	}
 
 	.lumina-voice-left {
@@ -359,6 +366,24 @@
 
 	.is-mobile .lumina-voice-btn--icon {
 		min-width: 38px;
+	}
+
+	/* 좁은 화면(스마트폰 <= 600px)에서만 컨트롤 줄바꿈·우측 정렬 및 상태 메시지 폭 확장 */
+	@media (max-width: 600px) {
+		.is-mobile .lumina-voice-controls,
+		.is-mobile .lumina-voice-actions {
+			flex-wrap: wrap;
+			width: 100%;
+			justify-content: flex-end;
+			gap: 8px;
+		}
+
+		.is-mobile .lumina-voice-status-text,
+		.is-mobile .lumina-voice-error-text {
+			flex: 1 1 120px;
+			min-width: 0;
+			max-width: 100%;
+		}
 	}
 
 	.lumina-voice-captions {

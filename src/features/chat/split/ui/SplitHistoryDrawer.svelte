@@ -587,4 +587,22 @@
 		background: var(--background-primary);
 		color: var(--text-normal);
 	}
+
+	/* 모바일 히스토리 드로어 최대 폭 제한 및 액션 버튼 터치 영역 확대 */
+	:global(body.is-mobile) .lumina-split-drawer {
+		max-width: calc(100vw - 48px);
+	}
+
+	:global(body.is-mobile) .lumina-split-drawer__actions {
+		flex-shrink: 0;
+	}
+
+	:global(body.is-mobile) .lumina-split-drawer__action-btn,
+	:global(body.is-mobile) .lumina-split-drawer__icon-btn {
+		width: 28px;
+		height: 28px;
+		min-width: 28px;
+		min-height: 28px;
+		padding: 0;
+	}
 </style>

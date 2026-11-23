@@ -398,6 +398,11 @@
 		font-family: var(--font-interface);
 	}
 
+	/* 모바일(폰+태블릿) 탐색 뷰 컨테이너 쿼리 기준 설정 */
+	:global(body.is-mobile) .lumina-discovery {
+		container-type: inline-size;
+	}
+
 	.lumina-discovery__content {
 		flex: 1;
 		overflow-y: auto;

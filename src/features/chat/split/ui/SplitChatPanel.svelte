@@ -79,7 +79,8 @@
 
 	let ctrl = $state<SplitChatController | null>(null);
 
-	const isCompact = $derived(Platform.isMobile || containerWidth < 680);
+	// 스마트폰은 항상 컴팩트 탭 모드, 태블릿·데스크탑은 실제 컨테이너 폭(680px) 기준으로 나란히 비교 지원
+	const isCompact = $derived(Boolean(Platform.isPhone) || containerWidth < 680);
 
 	const eligibleProviders = $derived(getSplitEligibleProviders($verifiedProviders));
 	const hasEligibleProvider = $derived(eligibleProviders.length > 0);

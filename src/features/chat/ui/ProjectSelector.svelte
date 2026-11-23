@@ -311,4 +311,26 @@
 		background: var(--background-modifier-hover);
 		color: var(--text-normal);
 	}
+
+	/* 모바일 프로젝트 선택기: 헤더 폭 초과 방지 및 터치 타겟 보정 */
+	:global(body.is-mobile) .lumina-project-selector {
+		min-width: 0;
+		max-width: 100%;
+	}
+
+	:global(body.is-mobile) .lumina-project-selector__trigger {
+		max-width: min(180px, 100%);
+		box-shadow: none;
+		height: auto;
+	}
+
+	:global(body.is-mobile) .lumina-project-selector__dropdown {
+		max-width: min(260px, calc(100vw - 24px));
+	}
+
+	:global(body.is-mobile) .lumina-project-selector__item {
+		padding: 9px 12px;
+		box-shadow: none;
+		height: auto;
+	}
 </style>

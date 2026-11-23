@@ -357,5 +357,14 @@
 	.lumina-cli-tool-call__btn:hover {
 		opacity: 0.9;
 	}
+
+	/* 모바일 CLI 도구 호출 승인 바: 좁은 폭에서 버튼 줄바꿈 허용 */
+	:global(body.is-mobile) .lumina-cli-tool-call__approval-bar {
+		flex-wrap: wrap;
+	}
+
+	:global(body.is-mobile) .lumina-cli-tool-call__approval-actions {
+		margin-left: auto;
+	}
 </style>
 

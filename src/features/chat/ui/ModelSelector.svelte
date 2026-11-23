@@ -34,7 +34,7 @@
 	// ═══════════════════════════════════════════════════════════════════════════
 	let isOpen = $state(false);
 	let searchQuery = $state("");
-	let mobileDropdownTop = $state<number | null>(null);
+	let mobileDropdownStyle = $state<string | undefined>(undefined);
 	let containerEl: HTMLDivElement | null = $state(null);
 	let inputEl: HTMLInputElement | null = $state(null);
 	let listEl: HTMLDivElement | null = $state(null);
@@ -78,9 +78,19 @@
 		if (isOpen) {
 			if (Platform.isMobile && containerEl) {
 				const rect = containerEl.getBoundingClientRect();
-				mobileDropdownTop = rect.bottom > 0 ? Math.round(rect.bottom + 4) : 56;
+				const top = rect.bottom > 0 ? Math.round(rect.bottom + 4) : 56;
+				const viewportW = typeof window !== "undefined" ? window.innerWidth : 390;
+				if (viewportW > 600) {
+					// 태블릿 등 넓은 모바일 화면에서는 트리거 좌/우 기준 360px 앵커 팝오버로 표시
+					const dropdownW = Math.min(360, viewportW - 24);
+					const rawLeft = dropdownAlign === "left" ? rect.left : rect.right - dropdownW;
+					const clampedLeft = Math.max(12, Math.min(rawLeft, viewportW - dropdownW - 12));
+					mobileDropdownStyle = `top: ${top}px; left: ${Math.round(clampedLeft)}px; right: auto; width: ${dropdownW}px; max-width: calc(100vw - 24px);`;
+				} else {
+					mobileDropdownStyle = `top: ${top}px;`;
+				}
 			} else {
-				mobileDropdownTop = null;
+				mobileDropdownStyle = undefined;
 			}
 			searchQuery = "";
 			nav.resetIndex();
@@ -149,7 +159,7 @@
 		<div
 			class="lumina-popup-selector lumina-model-selector__dropdown"
 			class:lumina-model-selector__dropdown--left={dropdownAlign === "left"}
-			style={Platform.isMobile && mobileDropdownTop !== null ? `top: ${mobileDropdownTop}px;` : undefined}
+			style={Platform.isMobile ? mobileDropdownStyle : undefined}
 		>
 			<div class="lumina-model-selector__search-wrap">
 				<input
@@ -277,5 +287,23 @@
 
 	.lumina-model-selector__search:focus {
 		border-color: var(--interactive-accent);
+	}
+
+	/* 모바일(폰+태블릿) 모델 선택기 축소 허용 및 좁은 컨테이너(<= 520px) 전체 폭 확장 */
+	:global(body.is-mobile) .lumina-model-selector {
+		min-width: 0;
+		max-width: 100%;
+	}
+
+	@container (max-width: 520px) {
+		:global(body.is-mobile) .lumina-model-selector {
+			width: 100%;
+		}
+	}
+
+	:global(body.is-mobile) .lumina-model-selector__trigger {
+		min-height: 28px;
+		padding: 5px 10px;
+		font-size: 11.5px;
 	}
 </style>

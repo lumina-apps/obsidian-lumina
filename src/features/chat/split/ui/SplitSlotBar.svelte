@@ -573,4 +573,23 @@
 		align-items: center;
 		gap: 6px;
 	}
+
+	/* 모바일 슬롯 바 툴 버튼 터치 영역 확대 */
+	:global(body.is-mobile) .lumina-split-slotbar {
+		padding: 8px 10px;
+	}
+
+	:global(body.is-mobile) .clickable-icon.lumina-split-slotbar__tool-btn {
+		min-width: 30px;
+		min-height: 30px;
+		height: 30px;
+		padding: 0 7px;
+		box-shadow: none;
+	}
+
+	:global(body.is-mobile) .lumina-split-slotbar__temp-reset {
+		height: auto;
+		box-shadow: none;
+		padding: 4px 8px;
+	}
 </style>

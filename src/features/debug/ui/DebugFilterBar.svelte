@@ -106,4 +106,13 @@
 		color: var(--text-normal);
 		border-color: var(--background-modifier-border-hover);
 	}
+
+	/* 모바일 디버그 필터 버튼 터치 타겟 보강 */
+	:global(body.is-mobile) .lumina-debug__filter-btn {
+		padding: 4px 9px;
+		font-size: 11px;
+		min-height: 26px;
+		height: auto;
+		box-shadow: none;
+	}
 </style>

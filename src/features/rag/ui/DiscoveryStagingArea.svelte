@@ -193,4 +193,23 @@
 		background: var(--background-modifier-border);
 		color: var(--text-muted);
 	}
+
+	/* 모바일 하단 Safe Area 여백 및 버튼 네이티브 그림자 초기화 */
+	:global(body.is-mobile) .lumina-discovery__staging-area {
+		padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+	}
+
+	:global(body.is-mobile) .lumina-discovery__start-chat-btn {
+		min-height: 38px;
+		height: auto;
+		box-shadow: none;
+	}
+
+	:global(body.is-mobile) .lumina-discovery__clear-staging-btn {
+		width: 28px;
+		height: 28px;
+		align-items: center;
+		justify-content: center;
+		box-shadow: none;
+	}
 </style>

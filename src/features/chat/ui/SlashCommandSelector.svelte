@@ -150,4 +150,11 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
+
+	/* 모바일 슬래시 배지 폭 축소로 명령어 이름·설명 가독 공간 확보 */
+	:global(body.is-mobile) .lumina-slash-selector__item-badge {
+		min-width: 48px;
+		max-width: 96px;
+		flex-shrink: 0;
+	}
 </style>

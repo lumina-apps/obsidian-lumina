@@ -408,4 +408,13 @@
 		background: var(--background-secondary);
 		border: 1px solid var(--background-modifier-border);
 	}
+
+	/* 모바일 프롬프트 액션 버튼 터치 영역 보정 */
+	:global(body.is-mobile) .clickable-icon.lumina-split-turn__prompt-btn {
+		width: 28px;
+		height: 28px;
+		min-width: 28px;
+		min-height: 28px;
+		padding: 0;
+	}
 </style>

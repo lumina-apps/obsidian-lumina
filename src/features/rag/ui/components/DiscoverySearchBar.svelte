@@ -70,4 +70,23 @@
 		display: flex;
 		padding: 4px;
 	}
+
+	/* 모바일 터치 입력 높이 및 초기화 버튼 타겟 보강 */
+	:global(body.is-mobile) .lumina-discovery__search-bar {
+		min-height: 36px;
+		padding: 4px 10px;
+	}
+
+	:global(body.is-mobile) .lumina-discovery__search-input {
+		font-size: 13.5px;
+	}
+
+	:global(body.is-mobile) .lumina-discovery__clear-btn {
+		width: 26px;
+		height: 26px;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
+		box-shadow: none;
+	}
 </style>

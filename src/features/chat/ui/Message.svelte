@@ -647,4 +647,92 @@
 		color: white;
 		border-color: var(--interactive-accent-hover);
 	}
+
+	/* 모바일(폰+태블릿) 말풍선 오버플로우 방지·헤더 말줄임·액션 버튼 터치 타겟 보정 */
+	:global(body.is-mobile) .lumina-message {
+		min-width: 0;
+		max-width: 100%;
+		box-sizing: border-box;
+	}
+
+	:global(body.is-mobile) .lumina-message__header {
+		flex-wrap: wrap;
+		gap: 4px 8px;
+		min-width: 0;
+	}
+
+	:global(body.is-mobile) .lumina-message__role {
+		min-width: 0;
+		flex: 1 1 auto;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		display: block;
+	}
+
+	:global(body.is-mobile) .lumina-message__time {
+		white-space: nowrap;
+		flex-shrink: 0;
+		margin-left: auto;
+	}
+
+	:global(body.is-mobile) .lumina-message__summary-stats {
+		white-space: normal;
+		max-width: 100%;
+	}
+
+	:global(body.is-mobile) .lumina-message__body,
+	:global(body.is-mobile) .lumina-message__content {
+		min-width: 0;
+		max-width: 100%;
+	}
+
+	:global(body.is-mobile) .lumina-message__content :global(table) {
+		display: block;
+		max-width: 100%;
+		overflow-x: auto;
+	}
+
+	:global(body.is-mobile) .lumina-message__content :global(img) {
+		max-width: 100%;
+		height: auto;
+	}
+
+	:global(body.is-mobile) .lumina-tool-indicator,
+	:global(body.is-mobile) .lumina-message__activity {
+		max-width: 100%;
+		width: fit-content;
+		white-space: normal;
+		word-break: break-word;
+		box-sizing: border-box;
+	}
+
+	:global(body.is-mobile) .lumina-message :global(.clickable-icon.lumina-message__action-btn),
+	:global(body.is-mobile) .lumina-message :global(.lumina-message__action-btn) {
+		width: 30px;
+		height: 30px;
+		min-width: 30px;
+		min-height: 30px;
+		padding: 0;
+		box-shadow: none;
+	}
+
+	/* 좁은 채팅 컨테이너(폰·태블릿 사이드바 <= 520px)에서만 말풍선 좌우 여백 축소 */
+	@container (max-width: 520px) {
+		:global(body.is-mobile) .lumina-message {
+			padding: 10px 12px;
+		}
+
+		:global(body.is-mobile) .lumina-message--user {
+			margin-left: 14px;
+		}
+
+		:global(body.is-mobile) .lumina-message--assistant {
+			margin-right: 4px;
+		}
+
+		:global(body.is-mobile) .lumina-message--context-summary {
+			margin-left: 8px;
+		}
+	}
 </style>
