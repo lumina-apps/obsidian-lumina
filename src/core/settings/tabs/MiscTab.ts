@@ -126,7 +126,7 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 						}
 					});
 				text.inputEl.type = 'number';
-				text.inputEl.setCssStyles({ width: '50px' });
+				text.inputEl.addClass('lumina-slider-number', 'lumina-slider-number--compact');
 			});
 
 		new Setting(el)
@@ -190,7 +190,7 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 						}
 					});
 				text.inputEl.type = 'number';
-				text.inputEl.setCssStyles({ width: '60px' });
+				text.inputEl.addClass('lumina-slider-number');
 			});
 
 		let folderDepthSlider: SliderComponent;
@@ -222,7 +222,7 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 						}
 					});
 				text.inputEl.type = 'number';
-				text.inputEl.setCssStyles({ width: '50px' });
+				text.inputEl.addClass('lumina-slider-number', 'lumina-slider-number--compact');
 			});
 
 		new Setting(el)

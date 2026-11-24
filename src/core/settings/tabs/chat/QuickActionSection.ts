@@ -103,7 +103,6 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 			.addTextArea(text => {
 				let composing = false;
 				text.inputEl.addClass('lumina-prompt-card__content');
-				text.inputEl.setCssStyles({ width: '100%', minWidth: '0' });
 				text.inputEl.rows = 4;
 				text.inputEl.placeholder = DEFAULT_AUTOCOMPLETE_PROMPT;
 				text.inputEl.addEventListener('compositionstart', () => { composing = true; });
@@ -118,9 +117,7 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 					await tab.saveAndSync();
 				});
 			});
-		autocompletePromptSetting.settingEl.setCssStyles({ display: 'flex', alignItems: 'flex-start' });
-		autocompletePromptSetting.infoEl.setCssStyles({ flex: '0 0 auto', maxWidth: '45%', marginRight: '20px' });
-		autocompletePromptSetting.controlEl.setCssStyles({ flex: '1 1 auto', width: '100%', justifyContent: 'flex-end', display: 'flex' });
+		autocompletePromptSetting.settingEl.addClass('lumina-autocomplete-prompt-setting');
 
 		new Setting(el)
 			.setName(t('settings.chat.enableAutocomplete.contextLengthName'))
@@ -271,8 +268,7 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 			.setName(t('settings.chat.quickActions.actionPrompt'))
 			.addTextArea(text => {
 				let composing = false;
-				text.inputEl.addClass('lumina-prompt-card__content');
-				text.inputEl.setCssStyles({ width: '100%', minWidth: '300px' });
+				text.inputEl.addClass('lumina-prompt-card__content', 'lumina-prompt-card__content--action');
 				text.inputEl.rows = 4;
 				text.inputEl.addEventListener('compositionstart', () => { composing = true; });
 				text.inputEl.addEventListener('compositionend', () => {
@@ -289,9 +285,7 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 				});
 			});
 
-		promptSetting.settingEl.setCssStyles({ display: 'flex', alignItems: 'flex-start' });
-		promptSetting.infoEl.setCssStyles({ flex: '0 0 auto', whiteSpace: 'nowrap', marginRight: '20px' });
-		promptSetting.controlEl.setCssStyles({ flex: '1 1 auto', width: '100%', justifyContent: 'flex-end', display: 'flex' });
+		promptSetting.settingEl.addClass('lumina-prompt-card__prompt-setting');
 
 		// Delete button
 		const deleteSetting = new Setting(body)

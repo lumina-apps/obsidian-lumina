@@ -139,7 +139,9 @@
 				bind:selectedModelId
 			/>
 		{/if}
+	</div>
 
+	<div class="lumina-chat__actions">
 		{#if canUseSplitChat && onOpenSplitChat}
 			<button
 				class="clickable-icon lumina-chat__icon-btn"

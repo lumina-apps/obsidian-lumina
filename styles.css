@@ -815,6 +815,56 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 	margin-top: 4px;
 }
 
+/* 슬라이더 + 숫자 입력 콤보 및 프롬프트 텍스트영역 데스크탑 기본 배치 */
+.lumina-settings .setting-item-control input[type="range"].lumina-slider-range {
+	min-width: 200px;
+}
+
+.lumina-settings .setting-item-control input.lumina-slider-number {
+	width: 60px;
+	text-align: right;
+}
+
+.lumina-settings .setting-item-control input.lumina-slider-number--compact {
+	width: 50px;
+}
+
+.lumina-settings .setting-item.lumina-autocomplete-prompt-setting,
+.lumina-settings .lumina-prompt-card .setting-item.lumina-prompt-card__prompt-setting {
+	display: flex;
+	align-items: flex-start;
+}
+
+.lumina-settings .setting-item.lumina-autocomplete-prompt-setting .setting-item-info {
+	flex: 0 0 auto;
+	max-width: 45%;
+	margin-right: 20px;
+}
+
+.lumina-settings .lumina-prompt-card .setting-item.lumina-prompt-card__prompt-setting .setting-item-info {
+	flex: 0 0 auto;
+	white-space: nowrap;
+	margin-right: 20px;
+}
+
+.lumina-settings .setting-item.lumina-autocomplete-prompt-setting .setting-item-control,
+.lumina-settings .lumina-prompt-card .setting-item.lumina-prompt-card__prompt-setting .setting-item-control {
+	display: flex;
+	flex: 1 1 auto;
+	width: 100%;
+	justify-content: flex-end;
+}
+
+.lumina-settings .setting-item.lumina-autocomplete-prompt-setting textarea.lumina-prompt-card__content {
+	width: 100%;
+	min-width: 0;
+}
+
+.lumina-settings .lumina-prompt-card textarea.lumina-prompt-card__content--action {
+	width: 100%;
+	min-width: 300px;
+}
+
 .lumina-prompt-vars {
 	display: flex;
 	flex-direction: row;
@@ -1246,6 +1296,7 @@ body .lumina-model-suggest-modal .suggestion-item.is-selected-default::after {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	gap: 8px;
 	padding: 12px 8px 6px;
 	border-bottom: 1px solid var(--background-modifier-border);
 	background: var(--background-secondary);
@@ -1258,6 +1309,7 @@ body .lumina-model-suggest-modal .suggestion-item.is-selected-default::after {
 	display: flex;
 	align-items: center;
 	gap: 6px;
+	margin-right: auto;
 	font-size: 14px;
 	font-weight: 700;
 	color: var(--text-normal);
@@ -1271,7 +1323,8 @@ body .lumina-model-suggest-modal .suggestion-item.is-selected-default::after {
 	filter: drop-shadow(0 2px 6px rgba(168, 85, 247, 0.25));
 }
 
-.lumina-chat__controls {
+.lumina-chat__controls,
+.lumina-chat__actions {
 	display: flex;
 	align-items: center;
 	gap: 8px;
@@ -2320,6 +2373,11 @@ div.lumina-diff-added-widget {
    (nav z-index는 이제 --layer-modal 직하로 낮아졌으므로 9999 오버라이드는 방어적으로만 유지) */
 html body .modal-container.lumina-settings-modal-container {
 	z-index: 9999;
+}
+
+.lumina-settings-modal .setting-item-control select.lumina-settings-modal__select {
+	max-width: 230px;
+	text-overflow: ellipsis;
 }
 
 /* ── Diff Extension Styles ── */
@@ -3651,18 +3709,21 @@ body.is-mobile .vertical-tab-content-container .lumina-settings select.dropdown.
 		max-width: 100%;
 	}
 
-	/* 슬라이더 + 숫자 입력 콤보가 좁은 폭에서도 한 행에 정렬되도록 인라인 minWidth/width 오버라이드 */
+	/* 슬라이더 + 숫자 입력 콤보가 좁은 폭에서도 한 행에 정렬되도록 선택자 명시도로 오버라이드 */
+	body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings .setting-item-control input[type="range"],
 	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control input[type="range"] {
 		flex: 1 1 120px;
 		width: auto;
-		min-width: 0 !important;
+		min-width: 0;
 		max-width: 100%;
 	}
 
+	body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings .setting-item-control input[type="range"] ~ input[type="number"],
+	body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings .setting-item-control input.lumina-slider-number,
 	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control input[type="range"] ~ input[type="number"],
 	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control input.lumina-slider-number {
 		flex: 0 0 64px;
-		width: 64px !important;
+		width: 64px;
 		max-width: 72px;
 		min-width: 0;
 		text-align: right;
@@ -3697,7 +3758,7 @@ body.is-mobile .vertical-tab-content-container .lumina-settings select.dropdown.
 		min-width: 0;
 	}
 
-	/* 퀵 액션·시스템 프롬프트 카드 인라인 스타일 충돌 해제 및 터치 여백 개선 */
+	/* 퀵 액션·시스템 프롬프트 카드 데스크탑 배치 해제 및 터치 여백 개선 */
 	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-prompt-card[open] {
 		padding: 10px 12px 12px;
 	}
@@ -3706,24 +3767,28 @@ body.is-mobile .vertical-tab-content-container .lumina-settings select.dropdown.
 		min-width: 0;
 	}
 
+	body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-prompt-card .setting-item,
 	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-prompt-card .setting-item {
-		align-items: stretch !important;
+		align-items: stretch;
 	}
 
+	body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-prompt-card .setting-item .setting-item-info,
 	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-prompt-card .setting-item-info {
-		max-width: 100% !important;
-		margin-right: 0 !important;
-		white-space: normal !important;
+		max-width: 100%;
+		margin-right: 0;
+		white-space: normal;
 	}
 
+	body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings .lumina-prompt-card .setting-item .setting-item-control,
 	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-prompt-card .setting-item-control {
-		justify-content: flex-start !important;
+		justify-content: flex-start;
 	}
 
+	body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings textarea.lumina-prompt-card__content,
 	body.is-mobile .vertical-tab-content-container .lumina-settings textarea.lumina-prompt-card__content {
-		min-width: 0 !important;
-		width: 100% !important;
-		max-width: 100% !important;
+		min-width: 0;
+		width: 100%;
+		max-width: 100%;
 		box-sizing: border-box;
 	}
 
@@ -3854,8 +3919,7 @@ body.is-mobile .lumina-chat__input-area {
 
 body.is-mobile .lumina-chat__input-toolbar {
 	flex-wrap: wrap;
-	row-gap: 6px;
-	column-gap: 6px;
+	gap: 6px;
 }
 
 body.is-mobile .lumina-chat__toolbar-group {
@@ -3925,13 +3989,8 @@ body.is-mobile button.lumina-chat__clear-btn {
 @container (max-width: 520px) {
 	body.is-mobile .lumina-chat__header {
 		flex-wrap: wrap;
-		row-gap: 8px;
-		column-gap: 4px;
+		gap: 8px 4px;
 		padding: 10px 10px 8px;
-	}
-
-	body.is-mobile .lumina-chat__controls {
-		display: contents;
 	}
 
 	body.is-mobile .lumina-chat__title {
@@ -3941,28 +4000,28 @@ body.is-mobile button.lumina-chat__clear-btn {
 		margin-right: auto;
 	}
 
-	body.is-mobile .lumina-chat__header .clickable-icon.lumina-chat__icon-btn,
-	body.is-mobile .lumina-chat__icon-btn {
+	body.is-mobile .lumina-chat__actions {
 		order: 2;
+		gap: 4px;
 	}
 
-	body.is-mobile .lumina-chat__header::after {
-		content: "";
+	body.is-mobile .lumina-chat__controls {
 		order: 3;
-		flex-basis: 100%;
+		flex: 1 0 100%;
 		width: 100%;
-		height: 0;
+		min-width: 0;
+		gap: 4px;
 	}
 
 	body.is-mobile .lumina-chat__header .lumina-model-selector {
-		order: 4;
+		order: 1;
 		flex: 1 1 0%;
 		width: auto;
 		min-width: 0;
 	}
 
 	body.is-mobile .lumina-chat__rag-badge {
-		order: 5;
+		order: 2;
 		display: block;
 		line-height: 26px;
 		text-align: center;
@@ -3972,7 +4031,7 @@ body.is-mobile button.lumina-chat__clear-btn {
 	}
 
 	body.is-mobile .lumina-chat__toggle-btn {
-		order: 6;
+		order: 3;
 	}
 
 	body.is-mobile .lumina-chat__input-area {
@@ -4036,12 +4095,15 @@ body.is-mobile .lumina-settings-modal details span {
 		gap: 8px;
 	}
 
+	body.is-mobile .lumina-settings-modal-container .modal .lumina-settings-modal .setting-item-control input[type="text"],
+	body.is-mobile .lumina-settings-modal-container .modal .lumina-settings-modal .setting-item-control select,
+	body.is-mobile .lumina-settings-modal-container .modal .lumina-settings-modal .setting-item-control textarea,
 	body.is-mobile .lumina-settings-modal .setting-item-control input[type="text"],
 	body.is-mobile .lumina-settings-modal .setting-item-control select,
 	body.is-mobile .lumina-settings-modal .setting-item-control textarea {
-		width: 100% !important;
-		max-width: 100% !important;
-		min-width: 0 !important;
+		width: 100%;
+		max-width: 100%;
+		min-width: 0;
 		box-sizing: border-box;
 	}
 

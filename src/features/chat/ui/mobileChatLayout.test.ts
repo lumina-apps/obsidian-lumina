@@ -118,8 +118,8 @@ describe('Mobile Chat View Layout CSS Isolation & Completeness', () => {
 		const requiredSnippets = [
 			'body.is-mobile .view-content.lumina-chat-view',
 			'body.is-mobile .lumina-chat__header',
+			'body.is-mobile .lumina-chat__actions',
 			'body.is-mobile .lumina-chat__controls',
-			'body.is-mobile .lumina-chat__header::after',
 			'body.is-mobile .lumina-chat__header .lumina-model-selector',
 			'body.is-mobile .lumina-chat__rag-badge',
 			'body.is-mobile .lumina-chat__toggle-btn',
@@ -388,5 +388,14 @@ describe('Mobile Chat View Layout CSS Isolation & Completeness', () => {
 			'utf8',
 		);
 		expect(focusModalContent).toContain('@media (max-width: 600px)');
+	});
+
+	it('styles.css에 Obsidian CSS 린트 경고 유발 구문(!important, column-gap, display: contents)이 없어야 한다', () => {
+		const stylesContent = fs.readFileSync(stylesPath, 'utf8');
+		const withoutComments = stylesContent.replace(/\/\*[\s\S]*?\*\//g, '');
+
+		expect(withoutComments).not.toMatch(/!important\b/);
+		expect(withoutComments).not.toMatch(/\bcolumn-gap\s*:/);
+		expect(withoutComments).not.toMatch(/\bdisplay\s*:\s*contents\b/);
 	});
 });

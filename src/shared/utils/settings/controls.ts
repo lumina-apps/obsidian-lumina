@@ -116,7 +116,7 @@ export function addSliderWithInput(
 					if (inp) inp.value = String(val);
 					onChange(val);
 				});
-			slider.sliderEl.setCssStyles({ minWidth: '200px' });
+			slider.sliderEl.addClass('lumina-slider-range');
 		})
 		.addText(text => {
 			text.inputEl.type = 'number';
@@ -125,7 +125,6 @@ export function addSliderWithInput(
 			text.inputEl.max = String(opts.max);
 			text.inputEl.step = String(opts.step);
 			text.inputEl.value = String(opts.value);
-			text.inputEl.setCssStyles({ width: '60px', textAlign: 'right' });
 			text.onChange(raw => {
 				const n = parseFloat(raw);
 				if (!isNaN(n) && n >= opts.min && n <= opts.max) {

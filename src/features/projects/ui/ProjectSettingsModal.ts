@@ -164,8 +164,8 @@ export class ProjectSettingsModal extends Modal {
 					}
 				});
 				
-				// Make sure the dropdown can handle long text without breaking layout
-				dropdown.selectEl.setCssStyles({ maxWidth: '230px', textOverflow: 'ellipsis' });
+				// 긴 모델/프롬프트 이름도 레이아웃을 깨지 않도록 말줄임 클래스 적용
+				dropdown.selectEl.addClass('lumina-settings-modal__select');
 			});
 
 		// --- Default System Prompt Selector ---
@@ -191,8 +191,8 @@ export class ProjectSettingsModal extends Modal {
 					this.systemPromptId = value;
 				});
 
-				// Make sure the dropdown can handle long text without breaking layout
-				dropdown.selectEl.setCssStyles({ maxWidth: '230px', textOverflow: 'ellipsis' });
+				// 긴 모델/프롬프트 이름도 레이아웃을 깨지 않도록 말줄임 클래스 적용
+				dropdown.selectEl.addClass('lumina-settings-modal__select');
 			});
 
 		const getDescendantPaths = (folder: TFolder): string[] => {
