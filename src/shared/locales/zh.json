@@ -36,6 +36,8 @@
       "apiKey": {
         "name": "API 密钥与模型注册",
         "mobileLocalWarning": "移动端无法使用本地 LLM。",
+        "useNativeToolsName": "使用原生工具调用",
+        "useNativeToolsDesc": "通过 API 的 tools 字段传递工具,而非文本提示。适用于支持原生工具调用的本地模型(如 Qwen3、Llama 3.1+)。默认:关闭。",
         "addConnection": "+ 添加新 LLM 连接",
         "apiKey": "API 密钥",
         "endpointUrl": "端点 URL",
@@ -944,7 +946,7 @@
       "desc": "基于文件夹、标签或文件列表收集相关笔记，并生成 MOC (Map of Content) 中心笔记。"
     },
     "replace_note": {
-      "desc": "替换现有笔记的全部内容。"
+      "desc": "替换现有笔记的全部内容。仅在完全重写时使用；局部或少量修改请优先使用 patch_note。"
     },
     "patch_note": {
       "desc": "对笔记应用一处或多处文本替换。建议优先使用 patches 数组在单次工具调用中批量处理多处更改——这样更高效，并能以统一差异（Diff）的形式一次性向用户展示所有更改。"

@@ -36,6 +36,8 @@
       "apiKey": {
         "name": "Clé API et Enregistrement des modèles",
         "mobileLocalWarning": "Les LLM locaux ne peuvent pas être utilisés sur les appareils mobiles.",
+        "useNativeToolsName": "Utiliser l'appel d'outils natif",
+        "useNativeToolsDesc": "Envoie les outils via le champ tools de l'API au lieu de prompts texte. À activer pour les modèles locaux compatibles (ex. Qwen3, Llama 3.1+). Par défaut : désactivé.",
         "addConnection": "+ Ajouter une nouvelle connexion LLM",
         "apiKey": "Clé API",
         "endpointUrl": "URL du point de terminaison",
@@ -944,7 +946,7 @@
       "desc": "Génère une note MOC (Map of Content) qui collecte et lie des notes associées d'un dossier, par étiquette, ou d'une liste explicite de fichiers."
     },
     "replace_note": {
-      "desc": "Remplace l'intégralité du contenu d'une note existante."
+      "desc": "Remplace l'intégralité du contenu d'une note existante. À utiliser uniquement pour une réécriture complète ; pour des modifications partielles ou mineures, privilégiez patch_note."
     },
     "patch_note": {
       "desc": "Applique un ou plusieurs remplacements de texte à une note. Préférez utiliser le tableau patches pour regrouper plusieurs modifications en un seul appel d'outil — cela est plus efficace et présente toutes les modifications à l'utilisateur en une seule fois sous forme de diff unifié."

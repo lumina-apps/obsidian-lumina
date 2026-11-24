@@ -8,7 +8,7 @@ import {
 	DEFAULT_CLI_BINARIES,
 	isCliProvider,
 } from '../../../../shared/types/settings.types';
-import { createProvider } from '../../../llm-providers/index';
+import { createProvider, isLocalProvider } from '../../../llm-providers/index';
 import { CliAgentProvider } from '../../../llm-providers/cli/cli-agent.provider';
 import { AgentBetaModal } from '../../../../shared/utils/modal';
 import { t } from '../../../../shared/locales/helpers';
@@ -191,6 +191,23 @@ export function renderProviderCard(tab: LuminaSettingTab, el: HTMLElement, provi
 				});
 			});
 		credentialSetting.settingEl.addClass('lumina-provider-card__setting-credential');
+	}
+
+	// 로컬 프로바이더 전용: 네이티브 Tool Calling 사용 토글
+	if (!isCli && isLocalProvider(provider.type, provider.baseUrl)) {
+		const nativeToolsSetting = new Setting(card)
+			.setName(t('settings.connections.apiKey.useNativeToolsName'))
+			.setDesc(t('settings.connections.apiKey.useNativeToolsDesc'))
+			.addToggle(toggle => {
+				toggle
+					.setValue(provider.useNativeTools ?? false)
+					.onChange(async (val) => {
+						provider.useNativeTools = val;
+						debouncedSave.cancel();
+						await tab.saveAndSync();
+					});
+			});
+		nativeToolsSetting.settingEl.addClass('lumina-provider-card__setting-native-tools');
 	}
 
 	const actionsSetting = new Setting(card);

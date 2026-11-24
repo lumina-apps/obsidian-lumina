@@ -33,6 +33,8 @@ export interface TranslationSettingsConnectionsLanguage {
 export interface TranslationSettingsConnectionsApiKey {
   name: string;
   mobileLocalWarning: string;
+  useNativeToolsName: string;
+  useNativeToolsDesc: string;
   addConnection: string;
   apiKey: string;
   endpointUrl: string;

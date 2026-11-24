@@ -36,6 +36,8 @@
       "apiKey": {
         "name": "API 키 및 모델 등록",
         "mobileLocalWarning": "모바일 환경에서는 로컬 모델을 연결하여 사용할 수 없습니다.",
+        "useNativeToolsName": "네이티브 Tool Calling 사용",
+        "useNativeToolsDesc": "텍스트 프롬프트 대신 API의 tools 필드로 도구를 전달합니다. 네이티브 도구 호출을 지원하는 로컬 모델(예: Qwen3, Llama 3.1+)에서 켜세요. 기본값: 꺼짐.",
         "addConnection": "+ 새 LLM 연결 추가",
         "apiKey": "API 키",
         "endpointUrl": "엔드포인트 URL",
@@ -944,7 +946,7 @@
       "desc": "관련 노트를 수집하고 연결하는 MOC(Map of Content) 노트를 생성합니다. 폴더, 태그 또는 파일을 사용하여 포함할 노트를 정의합니다."
     },
     "replace_note": {
-      "desc": "기존 노트의 전체 내용을 바꿉니다."
+      "desc": "기존 노트의 전체 내용을 바꿉니다. 전체 재작성 시에만 사용하고, 일부만 수정할 때는 patch_note를 우선 사용하세요."
     },
     "patch_note": {
       "desc": "노트에 하나 이상의 텍스트 변경 사항을 적용합니다. 여러 변경 사항을 한 번의 도구 호출로 일괄 처리하려면 patches 배열을 사용하는 것이 좋습니다 — 더 효율적이며 모든 변경 사항을 통합 Diff로 한 번에 사용자에게 보여줍니다."

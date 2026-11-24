@@ -36,6 +36,8 @@
       "apiKey": {
         "name": "API Key & Model Registration",
         "mobileLocalWarning": "Local LLMs cannot be used on mobile devices.",
+        "useNativeToolsName": "Use native tool calling",
+        "useNativeToolsDesc": "Send tool schemas via the API's tools field instead of text prompts. Enable for local models with native tool support (e.g. Qwen3, Llama 3.1+). Default: off.",
         "addConnection": "+ Add new LLM connection",
         "apiKey": "API Key",
         "endpointUrl": "Endpoint URL",
@@ -944,7 +946,7 @@
       "desc": "Generate a Map of Content (MOC) note that collects and links related notes. Use folder, tags, or files to define which notes to include."
     },
     "replace_note": {
-      "desc": "Replace the entire content of an existing note."
+      "desc": "Replace the entire content of an existing note. Use only for full rewrites; for partial or small edits, prefer patch_note."
     },
     "patch_note": {
       "desc": "Apply one or more text replacements to a note. Prefer using the patches array to batch multiple changes into a single tool call — this is more efficient and presents all changes to the user at once as a unified diff."

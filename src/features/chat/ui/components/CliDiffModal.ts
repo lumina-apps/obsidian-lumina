@@ -4,6 +4,7 @@ import type { CliFileEditLog } from '../../../../shared/types/cliAgent.types';
 import { toVaultRelativePath } from '../../../../shared/utils/fileUtils';
 import { t } from '../../../../shared/locales/helpers';
 import { debugLogger } from '../../../../shared/debugLogger';
+import { computeInlineDiff, type InlineSegment } from '../../../../shared/utils/inlineDiff';
 
 export class CliDiffModal extends Modal {
 	private fileEdit: CliFileEditLog;
@@ -84,7 +85,18 @@ export class CliDiffModal extends Modal {
 
 		const linesEl = containerEl.createDiv({ cls: 'lumina-cli-diff-lines' });
 
-		for (const ch of changes) {
+		// 인접한 삭제/추가 블록 쌍에 대해 줄별 인라인 diff 세그먼트 계산
+		const inlineMap = new Map<number, (InlineSegment[] | null)[]>();
+		for (let i = 0; i < changes.length - 1; i++) {
+			if (changes[i].removed && changes[i + 1].added) {
+				const inline = computeInlineDiff(changes[i].value, changes[i + 1].value);
+				inlineMap.set(i, inline.removed);
+				inlineMap.set(i + 1, inline.added);
+			}
+		}
+
+		for (let chIdx = 0; chIdx < changes.length; chIdx++) {
+			const ch = changes[chIdx];
 			const lineClass = ch.added
 				? 'lumina-cli-diff-line is-added'
 				: ch.removed
@@ -92,12 +104,27 @@ export class CliDiffModal extends Modal {
 					: 'lumina-cli-diff-line';
 			const marker = ch.added ? '+' : ch.removed ? '-' : ' ';
 			const lines = ch.value.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+			const inlineLines = inlineMap.get(chIdx);
+			const inlineCls = ch.added ? 'lumina-diff-inline-added' : 'lumina-diff-inline-removed';
 
 			for (let i = 0; i < lines.length; i++) {
 				if (i === lines.length - 1 && lines[i] === '') continue;
 				const lineEl = linesEl.createDiv({ cls: lineClass });
 				lineEl.createSpan({ cls: 'lumina-cli-diff-marker', text: marker });
-				lineEl.createSpan({ cls: 'lumina-cli-diff-text', text: lines[i] });
+
+				const segments = inlineLines?.[i];
+				if (segments && segments.length > 0) {
+					const textSpan = lineEl.createSpan({ cls: 'lumina-cli-diff-text' });
+					for (const seg of segments) {
+						if (seg.changed) {
+							textSpan.createSpan({ cls: inlineCls, text: seg.text });
+						} else {
+							textSpan.appendChild(document.createTextNode(seg.text));
+						}
+					}
+				} else {
+					lineEl.createSpan({ cls: 'lumina-cli-diff-text', text: lines[i] });
+				}
 			}
 		}
 	}

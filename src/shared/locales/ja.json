@@ -36,6 +36,8 @@
       "apiKey": {
         "name": "APIキーとモデル登録",
         "mobileLocalWarning": "モバイルデバイスではローカルLLMを使用できません。",
+        "useNativeToolsName": "ネイティブTool Callingを使用",
+        "useNativeToolsDesc": "テキストプロンプトの代わりにAPIのtoolsフィールドでツールを渡します。ネイティブ対応のローカルモデル(例: Qwen3, Llama 3.1+)で有効にしてください。既定: オフ。",
         "addConnection": "+ 新しいLLM接続を追加",
         "apiKey": "APIキー",
         "endpointUrl": "エンドポイントURL",
@@ -944,7 +946,7 @@
       "desc": "フォルダ、タグ、またはファイルリストを基準に関連するノートを収集し、MOC (Map of Content) ハブノートを作成します。"
     },
     "replace_note": {
-      "desc": "既存のノートの全内容を置き換えます。"
+      "desc": "既存のノートの全内容を置き換えます。全面的な書き直しの場合のみ使用し、部分的な編集には patch_note を優先してください。"
     },
     "patch_note": {
       "desc": "ノートに1つ以上のテキスト置換を適用します。複数の変更を1回のツール呼び出しで一括処理するには、patches配列の使用を推奨します。これにより効率が向上し、すべての変更が統合された差分（Diff）として一度にユーザーに表示されます。"

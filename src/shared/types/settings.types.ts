@@ -74,6 +74,8 @@ export interface LLMProviderConfig {
 	baseUrl?: string;
 	availableModels: string[];
 	isVerified: boolean;
+	/** 로컬 프로바이더 전용: 텍스트 기반 대신 네이티브 Tool Calling(tools/tool_calls) 사용 (기본값 false) */
+	useNativeTools?: boolean;
 	/** CLI 에이전트 전용: 실행 파일 경로 */
 	binaryPath?: string;
 	/** CLI 에이전트 전용: 도구 자동 승인 */

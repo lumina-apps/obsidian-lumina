@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { approvalStore, approvalManager } from "../utils/approvalManager";
-	import type { ApprovalRequest } from "../utils/approvalManager";
+	import type { ApprovalRequest, DiffChunk } from "../utils/approvalManager";
 	import { MarkdownView } from "obsidian";
+	import { computeInlineDiff, splitDiffLines, type InlineSegment, type MergedSegment } from "../../../shared/utils/inlineDiff";
 
 	// We receive tStore and plugin as props
 	let { tStore, plugin } = $props<{ tStore: any; plugin?: any }>();
@@ -83,6 +84,70 @@
 	function allChunksDecided(req: ApprovalRequest): boolean {
 		return req.chunks.length > 0 && req.chunks.every(c => c.status !== 'pending');
 	}
+
+	interface RenderedDiffLine {
+		kind: 'added' | 'removed' | 'context' | 'merged';
+		text: string;
+		segments: InlineSegment[] | null;
+		/** 삭제/추가 줄을 한 줄로 병합한 경우의 조각 */
+		mergedSegments?: MergedSegment[];
+	}
+
+	/**
+	 * 청크 내 변경 사항을 줄 단위로 분해합니다.
+	 * 인접한 삭제/추가 쌍 중 짝이 맞는 줄은 한 줄로 병합하여 변경된 단어만 취소선/강조로 보여줍니다.
+	 */
+	function buildChunkLines(changes: DiffChunk['changes']): RenderedDiffLine[] {
+		const result: RenderedDiffLine[] = [];
+		for (let i = 0; i < changes.length; i++) {
+			const change = changes[i];
+			const next = changes[i + 1];
+
+			if (change.removed && next?.added) {
+				const inline = computeInlineDiff(change.value, next.value);
+				const removedLines = splitDiffLines(change.value);
+				const addedLines = splitDiffLines(next.value);
+				let ri = 0;
+				let ai = 0;
+				const pushRemoved = (idx: number) =>
+					result.push({ kind: 'removed', text: removedLines[idx], segments: null });
+				const pushAdded = (idx: number) =>
+					result.push({ kind: 'added', text: addedLines[idx], segments: null });
+
+				for (const m of inline.merged) {
+					while (ri < m.removedIdx) pushRemoved(ri++);
+					while (ai < m.addedIdx) pushAdded(ai++);
+					result.push({
+						kind: 'merged',
+						text: addedLines[m.addedIdx],
+						segments: null,
+						mergedSegments: m.segments,
+					});
+					ri = m.removedIdx + 1;
+					ai = m.addedIdx + 1;
+				}
+				while (ri < removedLines.length) pushRemoved(ri++);
+				while (ai < addedLines.length) pushAdded(ai++);
+				i++;
+				continue;
+			}
+
+			const kind: RenderedDiffLine['kind'] = change.added ? 'added' : change.removed ? 'removed' : 'context';
+			const lines = splitDiffLines(change.value);
+
+			if (lines.length === 0) {
+				if (change.value) {
+					result.push({ kind, text: change.value, segments: null });
+				}
+				continue;
+			}
+
+			for (const text of lines) {
+				result.push({ kind, text, segments: null });
+			}
+		}
+		return result;
+	}
 </script>
 
 <div class="lumina-inline-approvals">
@@ -124,14 +189,37 @@
 									{/if}
 								</div>
 								<div class="lumina-diff-chunk-lines">
-									{#each chunk.changes as change}
+									{#each buildChunkLines(chunk.changes) as line}
 										<div
 											class="lumina-diff-line"
-											class:lumina-diff-line--added={change.added}
-											class:lumina-diff-line--removed={change.removed}
+											class:lumina-diff-line--added={line.kind === 'added'}
+											class:lumina-diff-line--removed={line.kind === 'removed'}
+											class:lumina-diff-line--merged={line.kind === 'merged'}
 										>
-											<span class="lumina-diff-line-marker">{change.added ? '+' : change.removed ? '-' : ' '}</span>
-											<span class="lumina-diff-line-text">{change.value}</span>
+											<span class="lumina-diff-line-marker">{line.kind === 'added' ? '+' : line.kind === 'removed' ? '-' : line.kind === 'merged' ? '~' : ' '}</span>
+											<span class="lumina-diff-line-text">
+												{#if line.mergedSegments}
+													{#each line.mergedSegments as seg}
+														{#if seg.kind === 'removed'}
+															<span class="lumina-diff-inline-removed lumina-diff-inline-strike">{seg.text}</span>
+														{:else if seg.kind === 'added'}
+															<span class="lumina-diff-inline-added">{seg.text}</span>
+														{:else}
+															{seg.text}
+														{/if}
+													{/each}
+												{:else if line.segments}
+													{#each line.segments as seg}
+														{#if seg.changed}
+															<span class={line.kind === 'added' ? 'lumina-diff-inline-added' : 'lumina-diff-inline-removed'}>{seg.text}</span>
+														{:else}
+															{seg.text}
+														{/if}
+													{/each}
+												{:else}
+													{line.text}
+												{/if}
+											</span>
 										</div>
 									{/each}
 								</div>
@@ -428,8 +516,35 @@
 		color: var(--text-error);
 	}
 
+	.lumina-diff-line--merged .lumina-diff-line-marker {
+		color: var(--text-accent);
+	}
+
+	.lumina-diff-inline-strike {
+		text-decoration: line-through;
+		font-weight: 400;
+	}
+
 	.lumina-diff-line-text {
 		flex-grow: 1;
+	}
+
+	.lumina-diff-inline-removed {
+		background-color: rgba(239, 68, 68, 0.45);
+		color: var(--text-normal);
+		font-weight: 600;
+		box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.65);
+		border-radius: 3px;
+		padding: 0 2px;
+	}
+
+	.lumina-diff-inline-added {
+		background-color: rgba(16, 185, 129, 0.42);
+		color: var(--text-normal);
+		font-weight: 600;
+		box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.65);
+		border-radius: 3px;
+		padding: 0 2px;
 	}
 
 	.lumina-diff-chunk-actions {

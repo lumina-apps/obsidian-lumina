@@ -36,6 +36,8 @@
       "apiKey": {
         "name": "API-Schlüssel & Modellregistrierung",
         "mobileLocalWarning": "Lokale LLMs können auf Mobilgeräten nicht verwendet werden.",
+        "useNativeToolsName": "Native Tool-Aufrufe verwenden",
+        "useNativeToolsDesc": "Übergibt Tools über das tools-Feld der API statt per Text-Prompt. Für lokale Modelle mit nativer Tool-Unterstützung (z. B. Qwen3, Llama 3.1+) aktivieren. Standard: aus.",
         "addConnection": "+ Neue LLM-Verbindung hinzufügen",
         "apiKey": "API-Schlüssel",
         "endpointUrl": "Endpoint-URL",
@@ -944,7 +946,7 @@
       "desc": "Erstellt eine MOC-Notiz (Map of Content), die verwandte Notizen aus einem Ordner, nach Tags oder aus einer expliziten Dateiliste sammelt und verlinkt."
     },
     "replace_note": {
-      "desc": "Ersetzt den gesamten Inhalt einer bestehenden Notiz."
+      "desc": "Ersetzt den gesamten Inhalt einer bestehenden Notiz. Nur für vollständige Neufassungen verwenden; für kleine oder teilweise Änderungen patch_note bevorzugen."
     },
     "patch_note": {
       "desc": "Wendet eine oder mehrere Textersetzungen auf eine Notiz an. Verwenden Sie vorzugsweise das Array patches, um mehrere Änderungen in einem einzigen Tool-Aufruf zu bündeln – dies ist effizienter und präsentiert dem Benutzer alle Änderungen auf einmal als einheitliches Diff."

@@ -36,6 +36,8 @@
       "apiKey": {
         "name": "Clave de API y registro de modelos",
         "mobileLocalWarning": "Los LLM locales no se pueden usar en dispositivos móviles.",
+        "useNativeToolsName": "Usar llamadas nativas a herramientas",
+        "useNativeToolsDesc": "Envía las herramientas mediante el campo tools de la API en lugar de prompts de texto. Actívalo para modelos locales con soporte nativo (p. ej. Qwen3, Llama 3.1+). Predeterminado: desactivado.",
         "addConnection": "+ Agregar nueva conexión LLM",
         "apiKey": "Clave de API",
         "endpointUrl": "URL del endpoint",
@@ -944,7 +946,7 @@
       "desc": "Genera una nota MOC (Map of Content) que recopila y enlaza notas relacionadas de una carpeta, por etiqueta o de una lista explícita de archivos."
     },
     "replace_note": {
-      "desc": "Reemplaza todo el contenido de una nota existente."
+      "desc": "Reemplaza todo el contenido de una nota existente. Úsalo solo para reescrituras completas; para ediciones parciales o pequeñas, prefiere patch_note."
     },
     "patch_note": {
       "desc": "Aplica uno o más reemplazos de texto a una nota. Prefiera usar la matriz patches para agrupar múltiples cambios en una sola llamada a la herramienta; esto es más eficiente y presenta todos los cambios al usuario a la vez como un diff unificado."

@@ -22,6 +22,20 @@ import { injectMultimodalImages } from './multimodalHelper';
 import { collectWebSearchTool } from './webSearchToolHelper';
 import { debugLogger } from '../../../shared/debugLogger';
 
+/**
+ * 텍스트 기반 Tool Calling 사용 여부 결정.
+ * 로컬 프로바이더는 기본적으로 텍스트 방식이며, useNativeTools 옵션을 켠 경우에만 네이티브 방식을 사용한다.
+ * CLI 에이전트는 항상 false, reasoner/r1 모델은 항상 텍스트 방식.
+ */
+export function resolveUseTextTools(providerConfig: LLMProviderConfig, resolvedModelId: string): boolean {
+	const type = providerConfig.type ?? 'custom';
+	if (isCliProvider(type)) return false;
+	const useLocal = isLocalProvider(type, providerConfig.baseUrl);
+	const modelName = resolvedModelId.toLowerCase();
+	const isReasoningModel = modelName.includes('reasoner') || modelName.includes('r1');
+	return (useLocal && !providerConfig.useNativeTools) || isReasoningModel;
+}
+
 export interface ResolvedContext {
 	llmMessages: ChatMessage[];
 	ragChunksForLog: RagChunkMeta[] | undefined;
@@ -331,12 +345,9 @@ export async function buildLlmContext(
 	});
 
 	// 프롬프트 빌드
-	const useLocal = isLocalProvider(providerConfig.type ?? 'custom', providerConfig.baseUrl);
 	const isCli = isCliProvider(providerConfig.type ?? 'custom');
 	const isCliAgent = isCli;
-	const modelName = resolvedModelId.toLowerCase();
-	const isReasoningModel = modelName.includes('reasoner') || modelName.includes('r1');
-	const useTextTools = !isCliAgent && (useLocal || isReasoningModel);
+	const useTextTools = resolveUseTextTools(providerConfig, resolvedModelId);
 
 	const webSearchTool = collectWebSearchTool({
 		webSearch: plugin.settings.webSearch,
