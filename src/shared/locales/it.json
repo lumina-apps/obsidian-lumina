@@ -1204,7 +1204,11 @@
     "exportReportTotalTokens": "Token totali",
     "exportReportRound": "Turno {{num}}",
     "exportReportPrompt": "Prompt",
-    "exportReportResult": "Risultato"
+    "exportReportResult": "Risultato",
+    "proMaxSlotsNotice": "Confrontare 3 o 4 modelli contemporaneamente è una funzione Lumina Pro (Gratis supporta 2 modelli).",
+    "proBlindNotice": "La modalità Arena alla cieca è una funzione Lumina Pro.",
+    "proWinnerContextNotice": "Continuare il contesto dalla risposta vincente è una funzione Lumina Pro.",
+    "proExportNotice": "Esportare i report di confronto è una funzione Lumina Pro."
   },
   "batchStudio": {
     "title": "Studio Batch",
@@ -1284,7 +1288,8 @@
       "statusCompleted": "Completato",
       "progressSummary": "{{done}} / {{total}} elaborate ({{percent}}%)",
       "rateLimitWaiting": "Limite raggiunto — riprova tra {{seconds}}s...",
-      "alreadyRunningNotice": "Un'operazione batch è già in corso. Attendi o interrompila prima di selezionare un'altra cartella."
+      "alreadyRunningNotice": "Un'operazione batch è già in corso. Attendi o interrompila prima di selezionare un'altra cartella.",
+      "startBtnFreeLimited": "Avvia batch (Prime {{free}} · +{{locked}} PRO)"
     },
     "queue": {
       "title": "Coda Batch",
@@ -1302,7 +1307,8 @@
       "statusApplied": "Applicata",
       "statusRejected": "Rifiutata",
       "statusSkipped": "Saltata",
-      "statusFailed": "Errore"
+      "statusFailed": "Errore",
+      "statusLocked": "Bloccato PRO"
     },
     "inspector": {
       "title": "Ispettore Diff",
@@ -1336,7 +1342,12 @@
       "rollbackDone": "Ripristinate {{count}} note.",
       "rolledBackBadge": "Ripristinato",
       "snapshotsMissing": "Nessuno snapshot disponibile per il ripristino."
-    }
+    },
+    "proCustomPromptNotice": "La ricetta Prompt personalizzato è una funzione Lumina Pro.",
+    "proBulkApplyNotice": "L’applicazione multipla con un clic è una funzione Lumina Pro. Nella versione gratuita puoi applicare una nota alla volta.",
+    "proInspectorTitle": "Le note rimanenti sono bloccate in modalità gratuita",
+    "proInspectorDesc": "La modalità gratuita elabora le prime {{free}} note per esecuzione (esecuzioni illimitate). Passa a Pro per elaborare tutte le {{locked}} note rimanenti.",
+    "proInspectorCta": "Vedi Pro e licenza"
   },
   "voiceNote": {
     "cmdToggleRecord": "Avvia/interrompi registrazione Voice-to-Note",
@@ -1463,7 +1474,11 @@
       "recoveredSuccess": "Registrazione incompleta recuperata ed elaborata.",
       "createdNote": "Nota vocale creata: {{path}}",
       "audioSaved": "Audio salvato: {{path}}"
-    }
+    },
+    "proMaxDurationReachedNotice": "Raggiunto il limite gratuito di 5 minuti. Salvataggio della dettatura in corso.",
+    "proFileTooLongNotice": "I file audio più lunghi di 5 minuti richiedono Lumina Pro.",
+    "proTemplateNotice": "La formattazione AI (Pulito / Riunione) è una funzione Lumina Pro. La modalità gratuita offre solo dettatura.",
+    "proSettingNotice": "I modelli di formattazione AI, i wiki-link automatici e il vocabolario personalizzato sono funzioni Lumina Pro."
   },
   "summarization": {
     "prompt": {
@@ -1475,5 +1490,22 @@
       "roleUser": "Utente",
       "roleAI": "IA"
     }
+  },
+  "proUpgrade": {
+    "toastAction": "Scopri di più · Licenza →",
+    "modalTitle": "Lumina Pro",
+    "modalSubtitle": "Sblocca flussi di lavoro illimitati continuando a usare le tue chiavi API o modelli locali.",
+    "splitTitle": "Confronto Modelli Pro",
+    "splitDesc": "Confronta fino a 4 modelli insieme, voto alla cieca, contesto dal vincitore ed esportazione Markdown.",
+    "batchTitle": "Batch Studio Pro",
+    "batchDesc": "Elabora interi vault senza il limite di 5 note, applica in un clic ed esegui prompt personalizzati.",
+    "voiceTitle": "AI Voice-to-Note Pro",
+    "voiceDesc": "Registra o trascrivi oltre 5 minuti, formatta con modelli AI, collega [[wikilink]] e usa un glossario.",
+    "licenseHeading": "Hai già una chiave di licenza?",
+    "licensePlaceholder": "Inserisci la chiave di licenza Lumina Pro...",
+    "activateBtn": "Attiva",
+    "licenseEmptyNotice": "Inserisci una chiave di licenza.",
+    "licensePreLaunchNotice": "L’attivazione delle licenze Pro non è ancora aperta. Resta sintonizzato!",
+    "closeBtn": "Chiudi"
   }
 }

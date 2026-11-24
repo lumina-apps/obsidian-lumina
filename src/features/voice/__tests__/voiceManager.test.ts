@@ -2,10 +2,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Platform, TFile } from 'obsidian';
 import { get } from 'svelte/store';
 import { DEFAULT_SETTINGS } from '../../../core/settings/defaultSettings';
-import { resetEntitlementState, setEntitlementState } from '../../../core/store/entitlementStore';
+import {
+	resetEntitlementState,
+	setEntitlementState,
+	setReleasedFeatures,
+} from '../../../core/store/entitlementStore';
 import { resetVoiceStore, voiceStore } from '../../../core/store/voiceStore';
 import * as llmProviders from '../../../core/llm-providers';
 import type LuminaPlugin from '../../../main';
+import * as audioChunker from '../audio/audioChunker';
 import * as sttResolver from '../stt/sttResolver';
 import * as recoveryStore from '../audio/audioRecoveryStore';
 import { VoiceNoteManager } from '../voiceManager';
@@ -412,6 +417,85 @@ describe('VoiceNoteManager', () => {
 		} finally {
 			createElSpy.mockRestore();
 			(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+		}
+	});
+
+	it('Freemium(무료 노출) 상태에서는 LLM을 호출하지 않고 순수 받아쓰기만 반영하며 AI 템플릿 재정리를 차단한다', async () => {
+		setReleasedFeatures(['voice-note']);
+
+		const transcribeSpy = vi.fn().mockResolvedValue({
+			text: '무료 받아쓰기 원문입니다.',
+			segments: [{ startSec: 0, endSec: 3, text: '무료 받아쓰기 원문입니다.' }],
+			engineLabel: 'OpenAI (whisper-1)',
+		});
+		vi.spyOn(sttResolver, 'resolveSttEngine').mockReturnValue({
+			id: 'mock-stt',
+			label: 'Mock STT',
+			transcribe: transcribeSpy,
+		});
+		const createProviderSpy = vi.spyOn(llmProviders, 'createProvider');
+
+		const manager = new VoiceNoteManager(mockPlugin);
+		await manager.init();
+		await manager.startRecording();
+		expect(get(voiceStore).templateId).toBe('verbatim');
+
+		manager.setTemplateId('clean');
+		expect(get(voiceStore).templateId).toBe('verbatim');
+
+		await manager.stopAndProcess();
+		expect(transcribeSpy).toHaveBeenCalledTimes(1);
+		expect(createProviderSpy).not.toHaveBeenCalled();
+		expect(fakeDocContent).toContain('무료 받아쓰기 원문입니다.');
+
+		await manager.reprocessWithTemplate('meeting');
+		expect(createProviderSpy).not.toHaveBeenCalled();
+		expect(get(voiceStore).reviewResult?.templateId).toBe('verbatim');
+
+		manager.destroy();
+	});
+
+	it('Freemium 상태에서 녹음 시간이 5분(300초)에 도달하면 자동 완료되고, 5분 초과 파일 변환은 차단된다', async () => {
+		setReleasedFeatures(['voice-note']);
+		vi.useFakeTimers();
+
+		const transcribeSpy = vi.fn().mockResolvedValue({
+			text: '5분 자동 종료 받아쓰기',
+			segments: [{ startSec: 0, endSec: 300, text: '5분 자동 종료 받아쓰기' }],
+			engineLabel: 'Mock STT',
+		});
+		vi.spyOn(sttResolver, 'resolveSttEngine').mockReturnValue({
+			id: 'mock-stt',
+			label: 'Mock STT',
+			transcribe: transcribeSpy,
+		});
+
+		const manager = new VoiceNoteManager(mockPlugin);
+		try {
+			await manager.init();
+			await manager.startRecording();
+			await vi.advanceTimersByTimeAsync(300_000);
+
+			expect(transcribeSpy).toHaveBeenCalledTimes(1);
+			expect(get(voiceStore).status).toBe('review');
+
+			// 5분 초과 오디오 파일 차단 검증
+			await manager.applyReview();
+			vi.spyOn(audioChunker, 'measureAudioBlobDurationSec').mockResolvedValue(305);
+			(mockPlugin.app.vault as unknown as { readBinary: ReturnType<typeof vi.fn> }).readBinary =
+				vi.fn().mockResolvedValue(new ArrayBuffer(16));
+
+			const longAudioFile = new TFile();
+			longAudioFile.path = 'Recordings/long.m4a';
+			longAudioFile.name = 'long.m4a';
+			longAudioFile.extension = 'm4a';
+
+			await manager.transcribeVaultFile(longAudioFile);
+			expect(transcribeSpy).toHaveBeenCalledTimes(1);
+			expect(get(voiceStore).status).toBe('idle');
+		} finally {
+			manager.destroy();
+			vi.useRealTimers();
 		}
 	});
 });

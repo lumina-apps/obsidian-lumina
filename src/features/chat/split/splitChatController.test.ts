@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS } from '../../../core/settings/defaultSettings';
 import {
 	resetEntitlementState,
 	setEntitlementState,
+	setReleasedFeatures,
 } from '../../../core/store/entitlementStore';
 import {
 	getSplitChatState,
@@ -299,5 +300,57 @@ describe('splitChatController', () => {
 
 		await ctrl.sendPrompt('자동 저장 질문', []);
 		expect(saveHistorySpy).toHaveBeenCalledTimes(1);
+	});
+
+	it('Freemium(무료 노출) 상태에서는 2슬롯만 실행되고 Blind/Winner/내보내기는 제한된다', async () => {
+		setReleasedFeatures(['split-chat']);
+		initSplitSlots([
+			{ slotId: 's1', label: 'A', providerId: 'p1', modelId: 'gpt-4o' },
+			{ slotId: 's2', label: 'B', providerId: 'p2', modelId: 'claude-sonnet' },
+			{ slotId: 's3', label: 'C', providerId: 'p1', modelId: 'gpt-4o' },
+		]);
+		setSplitMode('blind');
+		setSplitContextMode('winner');
+
+		vi.spyOn(contextBuilder, 'prepareSharedTurnContext').mockResolvedValue({
+			attachmentContext: '',
+			multimodalImages: [],
+			failedAttachments: [],
+			ragContext: undefined,
+			ragChunksForLog: undefined,
+			activeFilePath: undefined,
+			activeFileTitle: undefined,
+			attachments: [],
+			ragSkipReason: 'disabled',
+			historyTurnsUsed: 0,
+			summaryApplied: false,
+			historyAttachmentsRestored: 0,
+		});
+		const execSpy = vi.spyOn(splitExecutor, 'executeSplitSlotCall').mockImplementation(async (params) => ({
+			content: `${params.slot.slotId}-응답`,
+			hasTokenLimitBeenHit: false,
+			metrics: { startedAt: 1000, finishedAt: 1100, durationMs: 100 },
+		}));
+
+		await ctrl.sendPrompt('무료 모드 테스트', []);
+		expect(execSpy).toHaveBeenCalledTimes(2);
+		const turn1 = getSplitChatState().turns[0];
+		expect(Object.keys(turn1.responses)).toEqual(['s1', 's2']);
+		expect(turn1.isRevealed).toBe(true);
+		expect(turn1.blindOrder).toBeUndefined();
+
+		setSplitTurnWinner(turn1.id, 's2');
+		await ctrl.sendPrompt('2번째 질문', []);
+		const firstSlotSecondCallHistory = execSpy.mock.calls[2][0].history;
+		expect(firstSlotSecondCallHistory.map((m) => m.content)).toEqual(['무료 모드 테스트', 's1-응답']);
+
+		const exportCurrentOk = await ctrl.exportCurrentComparison();
+		const exportHistoryOk = await ctrl.exportHistorySession('any-id');
+		expect(exportCurrentOk).toBe(false);
+		expect(exportHistoryOk).toBe(false);
+
+		const activateSpy = vi.spyOn(viewHelper, 'activateView').mockResolvedValue(undefined);
+		expect(await ctrl.promoteToSingleChat('s1')).toBe(true);
+		expect(activateSpy).toHaveBeenCalled();
 	});
 });

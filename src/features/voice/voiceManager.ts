@@ -10,7 +10,12 @@
 import { Editor, type EventRef, MarkdownView, Notice, Platform, TFile, normalizePath } from 'obsidian';
 import { mount, unmount } from 'svelte';
 import type LuminaPlugin from '../../main';
-import { canUseFeature } from '../../core/store/entitlementStore';
+import {
+	canUseFeature,
+	canUseProFeature,
+	FREE_MAX_VOICE_DURATION_SEC,
+} from '../../core/store/entitlementStore';
+import { notifyProFeatureLocked } from '../../shared/utils/proUpgradeModal';
 import {
 	appendLiveSegment,
 	getVoiceState,
@@ -29,7 +34,7 @@ import type {
 } from '../../shared/types/voice.types';
 import { normalizeError } from '../../shared/utils/errorUtils';
 import { ensureFolderExists, sanitizeFilePath, sanitizeFilename } from '../../shared/utils/fileUtils';
-import { splitAudioBlobForApi } from './audio/audioChunker';
+import { measureAudioBlobDurationSec, splitAudioBlobForApi } from './audio/audioChunker';
 import {
 	clearBackupSession,
 	hasBackupSession,
@@ -102,6 +107,7 @@ export class VoiceNoteManager {
 	private layoutChangeRef: EventRef | null = null;
 	private unsubVoiceStore: (() => void) | null = null;
 	private isDestroyed = false;
+	private autoStoppingOnLimit = false;
 
 	constructor(plugin: LuminaPlugin) {
 		this.plugin = plugin;
@@ -213,6 +219,8 @@ export class VoiceNoteManager {
 				? await this.plugin.app.vault.read(this.targetFile)
 				: '';
 
+		const isProVoice = canUseProFeature('voice-note');
+		this.autoStoppingOnLimit = false;
 		this.liveInsertStart = this.targetEditor ? this.targetEditor.getCursor() : null;
 		this.liveInsertEnd = this.liveInsertStart ? { ...this.liveInsertStart } : null;
 		this.liveQueuePromise = Promise.resolve();
@@ -221,7 +229,7 @@ export class VoiceNoteManager {
 			status: 'recording',
 			elapsedSec: 0,
 			audioLevel: 0,
-			templateId: prefs.defaultTemplate,
+			templateId: isProVoice ? prefs.defaultTemplate : 'verbatim',
 			recordMode: prefs.recordMode,
 			liveSegments: [],
 			progressStep: 0,
@@ -239,6 +247,19 @@ export class VoiceNoteManager {
 			},
 			onElapsed: (elapsedSec) => {
 				patchVoiceState({ elapsedSec });
+				if (
+					!canUseProFeature('voice-note') &&
+					elapsedSec >= FREE_MAX_VOICE_DURATION_SEC &&
+					!this.autoStoppingOnLimit
+				) {
+					this.autoStoppingOnLimit = true;
+					notifyProFeatureLocked(
+						this.plugin.app,
+						'voice-note',
+						t('voiceNote.proMaxDurationReachedNotice'),
+					);
+					void this.stopAndProcess();
+				}
 			},
 			onBackupTick: (chunks, mimeType, elapsedSec) => {
 				void saveBackupSession({
@@ -287,6 +308,10 @@ export class VoiceNoteManager {
 
 	/** 녹음 중 출력 템플릿 변경 */
 	setTemplateId(templateId: VoiceTemplateId): void {
+		if (!canUseProFeature('voice-note') && templateId !== 'verbatim') {
+			notifyProFeatureLocked(this.plugin.app, 'voice-note', t('voiceNote.proTemplateNotice'));
+			return;
+		}
 		patchVoiceState({ templateId });
 	}
 
@@ -294,6 +319,7 @@ export class VoiceNoteManager {
 	 * 녹음을 취소하고 마이크/임시 데이터를 즉시 정리합니다.
 	 */
 	cancelRecording(): void {
+		this.autoStoppingOnLimit = false;
 		this.abortController?.abort();
 		this.abortController = null;
 		this.recorder?.cancel();
@@ -317,9 +343,10 @@ export class VoiceNoteManager {
 		if (!this.recorder || !canUseFeature('voice-note')) return;
 
 		const prefs = getVoicePreferences(this.plugin.settings);
-		const templateId = getVoiceState().templateId;
+		const templateId = canUseProFeature('voice-note') ? getVoiceState().templateId : 'verbatim';
 		const recorder = this.recorder;
 		this.recorder = null;
+		this.autoStoppingOnLimit = false;
 
 		const recorded = await recorder.stop();
 		await this.liveQueuePromise;
@@ -375,10 +402,13 @@ export class VoiceNoteManager {
 		try {
 			const binary = await this.plugin.app.vault.readBinary(file);
 			const blob = new Blob([binary], { type: mimeFromAudioExtension(file.extension) });
+			const allowed = await this.checkFreeAudioDurationAllowed(blob);
+			if (!allowed) return;
+
 			await this.runTranscriptionAndFormattingPipeline({
 				blob,
 				filename: file.name,
-				templateId: prefs.defaultTemplate,
+				templateId: canUseProFeature('voice-note') ? prefs.defaultTemplate : 'verbatim',
 				userMemoDiff: '',
 				precomputedSegments: [],
 				existingAudioVaultPath: file.path,
@@ -459,24 +489,29 @@ export class VoiceNoteManager {
 			cleanupPicker();
 			if (!file) return;
 
-			const latestPrefs = getVoicePreferences(this.plugin.settings);
-			const view = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
-			this.targetFile = view?.file && view.file.extension === 'md' ? view.file : null;
-			this.targetEditor = view?.editor ?? null;
-			this.liveInsertStart = null;
-			this.liveInsertEnd = null;
+			void (async () => {
+				const allowed = await this.checkFreeAudioDurationAllowed(file);
+				if (!allowed) return;
 
-			this.ensureOverlayMounted();
-			this.abortController = new AbortController();
+				const latestPrefs = getVoicePreferences(this.plugin.settings);
+				const view = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
+				this.targetFile = view?.file && view.file.extension === 'md' ? view.file : null;
+				this.targetEditor = view?.editor ?? null;
+				this.liveInsertStart = null;
+				this.liveInsertEnd = null;
 
-			void this.runTranscriptionAndFormattingPipeline({
-				blob: file,
-				filename: file.name || `upload_${formatDateStampForFile(new Date())}.m4a`,
-				templateId: latestPrefs.defaultTemplate,
-				userMemoDiff: '',
-				precomputedSegments: [],
-				existingAudioVaultPath: null,
-			});
+				this.ensureOverlayMounted();
+				this.abortController = new AbortController();
+
+				await this.runTranscriptionAndFormattingPipeline({
+					blob: file,
+					filename: file.name || `upload_${formatDateStampForFile(new Date())}.m4a`,
+					templateId: canUseProFeature('voice-note') ? latestPrefs.defaultTemplate : 'verbatim',
+					userMemoDiff: '',
+					precomputedSegments: [],
+					existingAudioVaultPath: null,
+				});
+			})();
 		});
 
 		input.click();
@@ -495,6 +530,9 @@ export class VoiceNoteManager {
 		}
 
 		const fullBlob = new Blob(backup.chunks, { type: backup.mimeType });
+		const allowed = await this.checkFreeAudioDurationAllowed(fullBlob, backup.elapsedSec);
+		if (!allowed) return;
+
 		const ext = extensionForMimeType(backup.mimeType);
 		const filename = `recovered_${formatDateStampForFile(new Date(backup.updatedAt))}.${ext}`;
 
@@ -516,7 +554,7 @@ export class VoiceNoteManager {
 		const succeeded = await this.runTranscriptionAndFormattingPipeline({
 			blob: fullBlob,
 			filename,
-			templateId: backup.templateId,
+			templateId: canUseProFeature('voice-note') ? backup.templateId : 'verbatim',
 			userMemoDiff: '',
 			precomputedSegments: [],
 			existingAudioVaultPath: null,
@@ -542,6 +580,14 @@ export class VoiceNoteManager {
 	async reprocessWithTemplate(templateId: VoiceTemplateId): Promise<void> {
 		const review = getVoiceState().reviewResult;
 		if (!review || !canUseFeature('voice-note')) return;
+		if (!canUseProFeature('voice-note')) {
+			if (templateId !== 'verbatim') {
+				notifyProFeatureLocked(this.plugin.app, 'voice-note', t('voiceNote.proTemplateNotice'));
+				return;
+			}
+			await this.replaceWithRawTranscriptOnly();
+			return;
+		}
 
 		const prefs = getVoicePreferences(this.plugin.settings);
 		this.abortController = new AbortController();
@@ -679,6 +725,7 @@ export class VoiceNoteManager {
 	 */
 	destroy(): void {
 		this.isDestroyed = true;
+		this.autoStoppingOnLimit = false;
 		this.abortController?.abort();
 		this.abortController = null;
 		this.recorder?.cancel();
@@ -719,7 +766,8 @@ export class VoiceNoteManager {
 			.then(async () => {
 				if (this.isDestroyed || signal?.aborted) return;
 				const engine = this.getOrCreateSttEngine(prefs);
-				const promptHint = [this.targetFile?.basename, ...prefs.customVocabulary]
+				const vocab = canUseProFeature('voice-note') ? prefs.customVocabulary : [];
+				const promptHint = [this.targetFile?.basename, ...vocab]
 					.filter(Boolean)
 					.join(', ');
 				const res = await engine.transcribe(wavBlob, `live_${Math.floor(offsetSec)}.wav`, {
@@ -822,7 +870,9 @@ export class VoiceNoteManager {
 					return true;
 				}
 
-				const promptHint = [this.targetFile?.basename, ...prefs.customVocabulary]
+				const isProVoice = canUseProFeature('voice-note');
+				const vocab = isProVoice ? prefs.customVocabulary : [];
+				const promptHint = [this.targetFile?.basename, ...vocab]
 					.filter(Boolean)
 					.join(', ');
 
@@ -875,43 +925,60 @@ export class VoiceNoteManager {
 				audioVaultPath = await this.saveAudioToVault(params.blob, params.filename, prefs.audioFolder);
 			}
 
-			patchVoiceState({
-				status: 'processing',
-				progressStep: 2,
-				progressDetail: t('voiceNote.progress.stepLinking'),
-			});
+			const isProVoice = canUseProFeature('voice-note');
+			let finalMarkdown: string;
+			let effectiveTemplateId: VoiceTemplateId = params.templateId;
 
-			const llmOutput = await processTranscriptToNote({
-				plugin: this.plugin,
-				prefs,
-				templateId: params.templateId,
-				rawTranscript,
-				segments,
-				targetFile: this.targetFile,
-				userMemoDiff: params.userMemoDiff,
-				signal,
-				onStage: (step) => {
-					patchVoiceState({
-						progressStep: step,
-						progressDetail:
-							step === 2
-								? t('voiceNote.progress.stepLinking')
-								: t('voiceNote.progress.stepFormatting'),
-					});
-				},
-			});
+			if (isProVoice) {
+				patchVoiceState({
+					status: 'processing',
+					progressStep: 2,
+					progressDetail: t('voiceNote.progress.stepLinking'),
+				});
 
-			if (!llmOutput.usedLlm) {
-				new Notice(t('voiceNote.notices.noLlmAvailable'));
+				const llmOutput = await processTranscriptToNote({
+					plugin: this.plugin,
+					prefs,
+					templateId: params.templateId,
+					rawTranscript,
+					segments,
+					targetFile: this.targetFile,
+					userMemoDiff: params.userMemoDiff,
+					signal,
+					onStage: (step) => {
+						patchVoiceState({
+							progressStep: step,
+							progressDetail:
+								step === 2
+									? t('voiceNote.progress.stepLinking')
+									: t('voiceNote.progress.stepFormatting'),
+						});
+					},
+				});
+
+				if (!llmOutput.usedLlm) {
+					new Notice(t('voiceNote.notices.noLlmAvailable'));
+				}
+
+				finalMarkdown = assembleVoiceNoteMarkdown({
+					formattedBody: llmOutput.formattedBody,
+					segments,
+					rawTranscript,
+					audioVaultPath,
+					includeRawTranscript: prefs.includeRawTranscript,
+				});
+			} else {
+				// 무료 모드: LLM 정리·자동 위키링크 없이 순수 STT 받아쓰기만 반영
+				effectiveTemplateId = 'verbatim';
+				finalMarkdown = assembleVoiceNoteMarkdown({
+					formattedBody: rawTranscript.trim(),
+					segments,
+					rawTranscript,
+					audioVaultPath,
+					includeRawTranscript:
+						Boolean(audioVaultPath) && prefs.includeRawTranscript && segments.length > 0,
+				});
 			}
-
-			const finalMarkdown = assembleVoiceNoteMarkdown({
-				formattedBody: llmOutput.formattedBody,
-				segments,
-				rawTranscript,
-				audioVaultPath,
-				includeRawTranscript: prefs.includeRawTranscript,
-			});
 
 			const writeResult = await this.writeResultToNote(finalMarkdown);
 
@@ -921,7 +988,7 @@ export class VoiceNoteManager {
 				segments,
 				formattedMarkdown: finalMarkdown,
 				audioVaultPath,
-				templateId: params.templateId,
+				templateId: effectiveTemplateId,
 				userMemoSnapshot: params.userMemoDiff,
 				insertedRange: writeResult.insertedRange,
 				createdNewFile: writeResult.createdNewFile,
@@ -938,6 +1005,26 @@ export class VoiceNoteManager {
 			this.handlePipelineError(err);
 			return false;
 		}
+	}
+
+	private async checkFreeAudioDurationAllowed(
+		blob: Blob,
+		knownDurationSec?: number,
+	): Promise<boolean> {
+		if (canUseProFeature('voice-note')) return true;
+
+		const durationSec =
+			knownDurationSec !== undefined && knownDurationSec > 0
+				? knownDurationSec
+				: await measureAudioBlobDurationSec(blob);
+
+		if (durationSec !== null && durationSec > FREE_MAX_VOICE_DURATION_SEC) {
+			patchVoiceState({ status: 'idle', progressStep: 0, progressDetail: '' });
+			this.unmountOverlayIfIdle();
+			notifyProFeatureLocked(this.plugin.app, 'voice-note', t('voiceNote.proFileTooLongNotice'));
+			return false;
+		}
+		return true;
 	}
 
 	private async saveAudioToVault(

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Platform } from "obsidian";
+	import { hasProFeature } from "../../../core/store/entitlementStore";
 	import { voiceStore } from "../../../core/store/voiceStore";
 	import { tStore } from "../../../shared/locales/index";
 	import type { VoiceTemplateId } from "../../../shared/types/voice.types";
@@ -9,12 +10,16 @@
 	let { manager }: { manager: VoiceNoteManager } = $props();
 
 	const state = $derived($voiceStore);
+	const isProVoice = hasProFeature("voice-note");
 	const isMobile = Platform.isMobile;
 	const isVisible = $derived(state.status === "review" && state.reviewResult !== null);
 
 	function handleTemplateSelect(ev: Event): void {
 		const target = ev.currentTarget as HTMLSelectElement;
 		const nextTpl = target.value as VoiceTemplateId;
+		if (!$isProVoice && nextTpl !== "verbatim") {
+			target.value = "verbatim";
+		}
 		void manager.reprocessWithTemplate(nextTpl);
 	}
 </script>
@@ -42,23 +47,29 @@
 				</span>
 				<select
 					class="lumina-voice-rselect"
-					value={state.reviewResult.templateId}
+					value={$isProVoice ? state.reviewResult.templateId : "verbatim"}
 					onchange={handleTemplateSelect}
 					aria-label={$tStore("voiceNote.review.reprocessLabel")}
 				>
-					<option value="clean">{$tStore("voiceNote.templates.clean")}</option>
-					<option value="meeting">{$tStore("voiceNote.templates.meeting")}</option>
 					<option value="verbatim">{$tStore("voiceNote.templates.verbatim")}</option>
+					<option value="clean">
+						{$tStore("voiceNote.templates.clean")}{!$isProVoice ? " 🔒 PRO" : ""}
+					</option>
+					<option value="meeting">
+						{$tStore("voiceNote.templates.meeting")}{!$isProVoice ? " 🔒 PRO" : ""}
+					</option>
 				</select>
 			</label>
 
-			<button
-				type="button"
-				class="lumina-voice-rbtn"
-				onclick={() => void manager.replaceWithRawTranscriptOnly()}
-			>
-				{$tStore("voiceNote.review.rawOnlyBtn")}
-			</button>
+			{#if $isProVoice}
+				<button
+					type="button"
+					class="lumina-voice-rbtn"
+					onclick={() => void manager.replaceWithRawTranscriptOnly()}
+				>
+					{$tStore("voiceNote.review.rawOnlyBtn")}
+				</button>
+			{/if}
 
 			<button
 				type="button"

@@ -1234,6 +1234,10 @@ export interface TranslationSplitChat {
   exportReportRound: string;
   exportReportPrompt: string;
   exportReportResult: string;
+  proMaxSlotsNotice: string;
+  proBlindNotice: string;
+  proWinnerContextNotice: string;
+  proExportNotice: string;
 }
 
 export interface TranslationBatchStudioRecipes {
@@ -1302,6 +1306,7 @@ export interface TranslationBatchStudioExecution {
   estimateLocalOnly: string;
   snapshotNotice: string;
   startBtn: string;
+  startBtnFreeLimited: string;
   pauseBtn: string;
   resumeBtn: string;
   cancelBtn: string;
@@ -1332,6 +1337,7 @@ export interface TranslationBatchStudioQueue {
   statusRejected: string;
   statusSkipped: string;
   statusFailed: string;
+  statusLocked: string;
 }
 
 export interface TranslationBatchStudioInspector {
@@ -1383,6 +1389,11 @@ export interface TranslationBatchStudio {
   queue: TranslationBatchStudioQueue;
   inspector: TranslationBatchStudioInspector;
   history: TranslationBatchStudioHistory;
+  proCustomPromptNotice: string;
+  proBulkApplyNotice: string;
+  proInspectorTitle: string;
+  proInspectorDesc: string;
+  proInspectorCta: string;
 }
 
 export interface TranslationVoiceNote {
@@ -1511,6 +1522,28 @@ export interface TranslationVoiceNote {
     createdNote: string;
     audioSaved: string;
   };
+  proMaxDurationReachedNotice: string;
+  proFileTooLongNotice: string;
+  proTemplateNotice: string;
+  proSettingNotice: string;
+}
+
+export interface TranslationProUpgrade {
+  toastAction: string;
+  modalTitle: string;
+  modalSubtitle: string;
+  splitTitle: string;
+  splitDesc: string;
+  batchTitle: string;
+  batchDesc: string;
+  voiceTitle: string;
+  voiceDesc: string;
+  licenseHeading: string;
+  licensePlaceholder: string;
+  activateBtn: string;
+  licenseEmptyNotice: string;
+  licensePreLaunchNotice: string;
+  closeBtn: string;
 }
 
 // 최상위 Translation 타입
@@ -1530,6 +1563,7 @@ export interface Translation {
   splitChat: TranslationSplitChat;
   batchStudio: TranslationBatchStudio;
   voiceNote: TranslationVoiceNote;
+  proUpgrade: TranslationProUpgrade;
 }
 
 // DeepPartial 타입

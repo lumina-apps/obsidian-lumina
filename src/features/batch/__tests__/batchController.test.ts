@@ -4,6 +4,7 @@ import type LuminaPlugin from '../../../main';
 import { createProvider } from '../../../core/llm-providers';
 import { DEFAULT_SETTINGS } from '../../../core/settings/defaultSettings';
 import {
+	batchQueueCounts,
 	getBatchState,
 	patchBatchState,
 	resetBatchStore,
@@ -12,7 +13,9 @@ import {
 import {
 	resetEntitlementState,
 	setEntitlementState,
+	setReleasedFeatures,
 } from '../../../core/store/entitlementStore';
+import { get } from 'svelte/store';
 import { BatchStudioController } from '../batchController';
 
 vi.mock('../../../core/llm-providers', () => ({
@@ -232,5 +235,52 @@ describe('BatchStudioController', () => {
 		expect(appliedAfterDone).toBe(true);
 		expect(getBatchState().scopeConfig.folderPath).toBe('OtherFolder');
 		expect(getBatchState().isConfigCollapsed).toBe(false);
+	});
+
+	it('Freemium(무료 노출) 상태에서는 상위 5개만 처리되고 나머지는 locked, 일괄 수락·커스텀 프롬프트는 차단된다', async () => {
+		resetEntitlementState();
+		setReleasedFeatures(['batch-studio']);
+
+		for (let i = 1; i <= 7; i++) {
+			const p = `note-${i}.md`;
+			fileObjs[p] = makeFile(p);
+			diskFiles[p] = `${i}번째 노트의 충분한 본문 텍스트입니다. 무료 제한 테스트를 위한 마크다운 문서이며 최소 글자 수 기준을 여유 있게 넘깁니다.`;
+			fmStore[p] = {};
+		}
+		delete fileObjs['a.md'];
+		delete fileObjs['b.md'];
+
+		const chatMock = vi.fn().mockResolvedValue({
+			content: '{"tags": ["무료"], "description": "요약"}',
+			usage: { inputTokens: 20, outputTokens: 10, totalTokens: 30 },
+		});
+		vi.mocked(createProvider).mockReturnValue({
+			chat: chatMock,
+		} as unknown as ReturnType<typeof createProvider>);
+
+		// custom-prompt 레시피는 무료에서 차단되어야 함
+		patchBatchState({ activeRecipeId: 'custom-prompt', recipeOptions: { ...getBatchState().recipeOptions, customPrompt: '요약해줘' } });
+		await controller.startBatch();
+		expect(chatMock).not.toHaveBeenCalled();
+
+		// frontmatter 레시피로 시작하면 7개 중 상위 5개만 staged, 나머지 2개는 locked
+		patchBatchState({ activeRecipeId: 'frontmatter' });
+		await controller.startBatch();
+
+		const state = getBatchState();
+		expect(chatMock).toHaveBeenCalledTimes(5);
+		expect(state.queue).toHaveLength(7);
+		expect(state.queue.slice(0, 5).every((q) => q.status === 'staged')).toBe(true);
+		expect(state.queue.slice(5).every((q) => q.status === 'locked' && !q.selected)).toBe(true);
+
+		const counts = get(batchQueueCounts);
+		expect(counts.total).toBe(5);
+		expect(counts.done).toBe(5);
+		expect(counts.locked).toBe(2);
+
+		// 원클릭 일괄 수락은 차단, 개별 수락은 허용
+		expect(await controller.applyAllSelectedStaged()).toBe(0);
+		expect(await controller.applySingleItem('note-1.md')).toBe(true);
+		expect(fmStore['note-1.md'].tags).toEqual(['무료']);
 	});
 });

@@ -64,7 +64,8 @@ export type BatchItemStatus =
 	| 'applied'
 	| 'rejected'
 	| 'skipped'
-	| 'failed';
+	| 'failed'
+	| 'locked';
 
 /** LLM/로컬 처리로 제안된 변경 내용 */
 export interface BatchProposedChange {

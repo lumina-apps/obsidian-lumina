@@ -4,10 +4,17 @@ import {
 	entitlementStore,
 	isProActive,
 	hasProFeature,
+	canUseProFeature,
+	hasFeatureAccess,
 	canUseFeature,
+	setReleasedFeatures,
 	setEntitlementState,
 	resetEntitlementState,
 	initEntitlementStore,
+	FREE_MAX_SPLIT_SLOTS,
+	PRO_MAX_SPLIT_SLOTS,
+	FREE_MAX_BATCH_FILES,
+	FREE_MAX_VOICE_DURATION_SEC,
 } from './entitlementStore';
 
 describe('entitlementStore', () => {
@@ -118,5 +125,36 @@ describe('entitlementStore', () => {
 
 		resetEntitlementState();
 		expect(canUseFeature('voice-note')).toBe(false);
+	});
+
+	it('Freemium releasedFeatures 설정 시 진입점 접근(canUseFeature)은 열리지만 Pro 등급(canUseProFeature/hasProFeature)은 false를 유지한다', () => {
+		expect(FREE_MAX_SPLIT_SLOTS).toBe(2);
+		expect(PRO_MAX_SPLIT_SLOTS).toBe(4);
+		expect(FREE_MAX_BATCH_FILES).toBe(5);
+		expect(FREE_MAX_VOICE_DURATION_SEC).toBe(300);
+
+		const splitAccess = hasFeatureAccess('split-chat');
+		const splitPro = hasProFeature('split-chat');
+
+		expect(get(splitAccess)).toBe(false);
+		expect(get(splitPro)).toBe(false);
+		expect(canUseProFeature('split-chat')).toBe(false);
+
+		setReleasedFeatures(['split-chat', 'batch-studio', 'voice-note']);
+
+		expect(canUseFeature('split-chat')).toBe(true);
+		expect(canUseFeature('batch-studio')).toBe(true);
+		expect(canUseFeature('voice-note')).toBe(true);
+		expect(get(splitAccess)).toBe(true);
+
+		expect(canUseProFeature('split-chat')).toBe(false);
+		expect(canUseProFeature('batch-studio')).toBe(false);
+		expect(canUseProFeature('voice-note')).toBe(false);
+		expect(get(splitPro)).toBe(false);
+		expect(get(isProActive)).toBe(false);
+
+		resetEntitlementState();
+		expect(canUseFeature('split-chat')).toBe(false);
+		expect(get(splitAccess)).toBe(false);
 	});
 });

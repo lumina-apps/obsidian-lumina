@@ -94,6 +94,7 @@ export const batchStore = writable<BatchStudioState>(createInitialState());
 /** 큐 상태별 개수 요약 파생 스토어 */
 export const batchQueueCounts: Readable<{
 	total: number;
+	locked: number;
 	queued: number;
 	running: number;
 	staged: number;
@@ -104,6 +105,7 @@ export const batchQueueCounts: Readable<{
 	done: number;
 	selectedStaged: number;
 }> = derived(batchStore, ($s) => {
+	let locked = 0;
 	let queued = 0;
 	let running = 0;
 	let staged = 0;
@@ -115,6 +117,9 @@ export const batchQueueCounts: Readable<{
 
 	for (const item of $s.queue) {
 		switch (item.status) {
+			case 'locked':
+				locked++;
+				break;
 			case 'queued':
 				queued++;
 				break;
@@ -140,10 +145,11 @@ export const batchQueueCounts: Readable<{
 		}
 	}
 
-	const total = $s.queue.length;
+	const total = $s.queue.length - locked;
 	const done = staged + applied + rejected + skipped + failed;
 	return {
 		total,
+		locked,
 		queued,
 		running,
 		staged,

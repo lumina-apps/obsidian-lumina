@@ -20,7 +20,12 @@ import {
 	setBatchSelectedPath,
 	updateBatchQueueItem,
 } from '../../core/store/batchStore';
-import { canUseFeature } from '../../core/store/entitlementStore';
+import {
+	canUseFeature,
+	canUseProFeature,
+	FREE_MAX_BATCH_FILES,
+} from '../../core/store/entitlementStore';
+import { notifyProFeatureLocked } from '../../shared/utils/proUpgradeModal';
 import { getActiveProject } from '../../core/store/projectStore';
 import { debugLogger } from '../../shared/debugLogger';
 import { t } from '../../shared/locales/helpers';
@@ -90,6 +95,10 @@ export class BatchStudioController {
 	async runSampleTest(explicitPath?: string): Promise<void> {
 		if (!canUseFeature('batch-studio')) return;
 		const state = getBatchState();
+		if (!canUseProFeature('batch-studio') && state.activeRecipeId === 'custom-prompt') {
+			notifyProFeatureLocked(this.app, 'batch-studio', t('batchStudio.proCustomPromptNotice'));
+			return;
+		}
 
 		const { matched } = resolveTargetFiles(
 			this.app,
@@ -174,6 +183,11 @@ export class BatchStudioController {
 		if (!canUseFeature('batch-studio')) return;
 		const state = getBatchState();
 		if (state.runState === 'running' || state.runState === 'paused') return;
+		const isProBatch = canUseProFeature('batch-studio');
+		if (!isProBatch && state.activeRecipeId === 'custom-prompt') {
+			notifyProFeatureLocked(this.app, 'batch-studio', t('batchStudio.proCustomPromptNotice'));
+			return;
+		}
 
 		// LLM 기반 레시피는 시작 전 모델 및 프롬프트 유효성을 선검증
 		if (state.activeRecipeId !== 'autolink') {
@@ -205,11 +219,12 @@ export class BatchStudioController {
 			return;
 		}
 
-		const initialQueue: BatchQueueItem[] = matched.map((file) => ({
+		const activeLimit = isProBatch ? matched.length : FREE_MAX_BATCH_FILES;
+		const initialQueue: BatchQueueItem[] = matched.map((file, idx) => ({
 			path: file.path,
 			basename: file.basename,
-			status: 'queued',
-			selected: true,
+			status: idx < activeLimit ? 'queued' : 'locked',
+			selected: idx < activeLimit,
 		}));
 
 		const runHistoryId = crypto.randomUUID();
@@ -224,7 +239,9 @@ export class BatchStudioController {
 			activeRunHistoryId: runHistoryId,
 		});
 
-		const targetPaths = new Set(initialQueue.map((q) => q.path));
+		const targetPaths = new Set(
+			initialQueue.filter((q) => q.status === 'queued').map((q) => q.path),
+		);
 		await this.processQueueItems(targetPaths, state.activeRecipeId);
 	}
 
@@ -410,6 +427,10 @@ export class BatchStudioController {
 	 */
 	async applyAllSelectedStaged(): Promise<number> {
 		if (!canUseFeature('batch-studio')) return 0;
+		if (!canUseProFeature('batch-studio')) {
+			notifyProFeatureLocked(this.app, 'batch-studio', t('batchStudio.proBulkApplyNotice'));
+			return 0;
+		}
 		const state = getBatchState();
 		const targets = state.queue.filter(
 			(item) => item.status === 'staged' && item.selected && item.proposed,

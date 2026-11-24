@@ -1204,7 +1204,11 @@
     "exportReportTotalTokens": "Всего токенов",
     "exportReportRound": "Раунд {{num}}",
     "exportReportPrompt": "Запрос",
-    "exportReportResult": "Результат"
+    "exportReportResult": "Результат",
+    "proMaxSlotsNotice": "Одновременное сравнение 3–4 моделей доступно в Lumina Pro (бесплатно — до 2 моделей).",
+    "proBlindNotice": "Слепой режим арены доступен в Lumina Pro.",
+    "proWinnerContextNotice": "Продолжение контекста от выбранного ответа доступно в Lumina Pro.",
+    "proExportNotice": "Экспорт отчётов сравнения доступен в Lumina Pro."
   },
   "batchStudio": {
     "title": "Пакетная студия",
@@ -1284,7 +1288,8 @@
       "statusCompleted": "Завершено",
       "progressSummary": "{{done}} / {{total}} обработано ({{percent}}%)",
       "rateLimitWaiting": "Достигнут лимит запросов — повтор через {{seconds}}с...",
-      "alreadyRunningNotice": "Пакетная обработка уже выполняется. Дождитесь завершения или остановите её перед выбором другой папки."
+      "alreadyRunningNotice": "Пакетная обработка уже выполняется. Дождитесь завершения или остановите её перед выбором другой папки.",
+      "startBtnFreeLimited": "Запустить пакет (первые {{free}} · ещё {{locked}} PRO)"
     },
     "queue": {
       "title": "Очередь",
@@ -1302,7 +1307,8 @@
       "statusApplied": "Применено",
       "statusRejected": "Отклонено",
       "statusSkipped": "Пропущено",
-      "statusFailed": "Ошибка"
+      "statusFailed": "Ошибка",
+      "statusLocked": "Только PRO"
     },
     "inspector": {
       "title": "Инспектор изменений",
@@ -1336,7 +1342,12 @@
       "rollbackDone": "Восстановлено заметок: {{count}}.",
       "rolledBackBadge": "Откат выполнен",
       "snapshotsMissing": "Нет снимков для отката."
-    }
+    },
+    "proCustomPromptNotice": "Пользовательский промпт для пакетной обработки доступен в Lumina Pro.",
+    "proBulkApplyNotice": "Массовое применение в один клик доступно в Lumina Pro. В бесплатной версии можно применять по одной заметке.",
+    "proInspectorTitle": "Остальные заметки заблокированы в бесплатной версии",
+    "proInspectorDesc": "В бесплатной версии обрабатываются первые {{free}} заметок за запуск (число запусков не ограничено). Перейдите на Pro, чтобы обработать все {{locked}} оставшихся заметок сразу.",
+    "proInspectorCta": "О Pro и лицензии"
   },
   "voiceNote": {
     "cmdToggleRecord": "Начать/остановить запись Voice-to-Note",
@@ -1463,7 +1474,11 @@
       "recoveredSuccess": "Незавершённая запись восстановлена и обработана.",
       "createdNote": "Создана голосовая заметка: {{path}}",
       "audioSaved": "Аудио сохранено: {{path}}"
-    }
+    },
+    "proMaxDurationReachedNotice": "Достигнут бесплатный лимит записи (5 минут). Сохраняем текущую диктовку.",
+    "proFileTooLongNotice": "Для аудиофайлов длиннее 5 минут требуется Lumina Pro.",
+    "proTemplateNotice": "ИИ-оформление заметок (Чисто / Встреча) доступно в Lumina Pro. Бесплатно доступна только чистая диктовка.",
+    "proSettingNotice": "Модели ИИ-форматирования, авто-викиссылки и словарь терминов доступны в Lumina Pro."
   },
   "summarization": {
     "prompt": {
@@ -1475,5 +1490,22 @@
       "roleUser": "Пользователь",
       "roleAI": "ИИ"
     }
+  },
+  "proUpgrade": {
+    "toastAction": "Подробнее о Pro · Лицензия →",
+    "modalTitle": "Lumina Pro",
+    "modalSubtitle": "Снимите ограничения на рабочие процессы, используя собственные API-ключи и локальные модели.",
+    "splitTitle": "Сравнение моделей Pro",
+    "splitDesc": "Сравнение до 4 моделей одновременно, слепое голосование, контекст от победителя и экспорт в Markdown.",
+    "batchTitle": "Пакетная студия Pro",
+    "batchDesc": "Обработка всего хранилища без лимита в 5 заметок, применение в один клик и собственные промпты.",
+    "voiceTitle": "AI Voice-to-Note Pro",
+    "voiceDesc": "Запись и расшифровка дольше 5 минут, ИИ-шаблоны, авто-[[викиссылки]] и собственный словарь терминов.",
+    "licenseHeading": "Уже есть лицензионный ключ?",
+    "licensePlaceholder": "Введите лицензионный ключ Lumina Pro...",
+    "activateBtn": "Активировать",
+    "licenseEmptyNotice": "Пожалуйста, введите лицензионный ключ.",
+    "licensePreLaunchNotice": "Лицензирование Pro скоро откроется!",
+    "closeBtn": "Закрыть"
   }
 }

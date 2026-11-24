@@ -10,6 +10,14 @@
 		setBatchSelectedPath,
 		updateBatchQueueItem,
 	} from "../../../core/store/batchStore";
+	import {
+		FREE_MAX_BATCH_FILES,
+		hasProFeature,
+	} from "../../../core/store/entitlementStore";
+	import {
+		notifyProFeatureLocked,
+		openProUpgradeModal,
+	} from "../../../shared/utils/proUpgradeModal";
 	import { verifiedProviders } from "../../../core/store/settingsStore";
 	import { activeProject } from "../../../core/store/projectStore";
 	import { tStore } from "../../../shared/locales/index";
@@ -73,9 +81,16 @@
 
 	const state = $derived($batchStore);
 	const counts = $derived($batchQueueCounts);
+	const isProBatch = hasProFeature("batch-studio");
 	const isRunningOrPaused = $derived(
 		state.runState === "running" || state.runState === "paused",
 	);
+
+	$effect(() => {
+		if (!$isProBatch && state.activeRecipeId === "custom-prompt" && !isRunningOrPaused) {
+			patchBatchState({ activeRecipeId: "frontmatter" });
+		}
+	});
 
 	// 사용 가능한 프로바이더 및 모델 옵션
 	const eligibleProviders = $derived(getBatchEligibleProviders($verifiedProviders));
@@ -128,8 +143,15 @@
 		);
 	});
 
+	const effectiveMatchedForEstimate = $derived(
+		$isProBatch ? resolution.matched : resolution.matched.slice(0, FREE_MAX_BATCH_FILES),
+	);
+	const lockedPreviewCount = $derived(
+		!$isProBatch ? Math.max(0, resolution.matched.length - FREE_MAX_BATCH_FILES) : 0,
+	);
+
 	const resourceEstimate = $derived(
-		estimateBatchResources(resolution.matched, state.activeRecipeId, activeProviderType),
+		estimateBatchResources(effectiveMatchedForEstimate, state.activeRecipeId, activeProviderType),
 	);
 
 	// 필터된 큐 목록
@@ -218,6 +240,14 @@
 
 	function handleRecipeChange(recipeId: BatchRecipeId): void {
 		if (isRunningOrPaused) return;
+		if (recipeId === "custom-prompt" && !$isProBatch) {
+			notifyProFeatureLocked(
+				plugin.app,
+				"batch-studio",
+				$tStore("batchStudio.proCustomPromptNotice"),
+			);
+			return;
+		}
 		patchBatchState({
 			activeRecipeId: recipeId,
 			sampleResult: null,
@@ -308,6 +338,8 @@
 				return "skip-forward";
 			case "failed":
 				return "alert-triangle";
+			case "locked":
+				return "lock";
 		}
 	}
 
@@ -327,6 +359,8 @@
 				return $tStore("batchStudio.queue.statusSkipped");
 			case "failed":
 				return $tStore("batchStudio.queue.statusFailed");
+			case "locked":
+				return $tStore("batchStudio.queue.statusLocked");
 		}
 	}
 
@@ -364,16 +398,21 @@
 
 		<div class="lumina-batch-recipes" role="tablist">
 			{#each recipeDefs as recipe (recipe.id)}
+				{@const isRecipeLocked = recipe.id === "custom-prompt" && !$isProBatch}
 				<button
 					type="button"
 					class="lumina-batch-recipe-tab"
 					class:is-active={state.activeRecipeId === recipe.id}
+					class:is-locked={isRecipeLocked}
 					disabled={isRunningOrPaused}
-					title={recipe.desc}
+					title={isRecipeLocked ? `${recipe.desc} (PRO)` : recipe.desc}
 					onclick={() => handleRecipeChange(recipe.id)}
 				>
 					<span class="lumina-batch-tab-icon" use:icon={recipe.iconName}></span>
 					<span>{recipe.label}</span>
+					{#if isRecipeLocked}
+						<span class="lumina-batch-lock-tag" aria-hidden="true">🔒</span>
+					{/if}
 				</button>
 			{/each}
 		</div>
@@ -494,7 +533,7 @@
 										? state.scopeConfig.folderPath
 										: $tStore("batchStudio.target.scopeVault"),
 								recipe: activeRecipeDef.label,
-								count: counts.total || resolution.matched.length,
+								count: counts.total > 0 ? counts.total : effectiveMatchedForEstimate.length,
 							})}
 						</span>
 					</div>
@@ -930,9 +969,16 @@
 					>
 						<span class="lumina-batch-tab-icon" use:icon={"zap"}></span>
 						<span>
-							{$tStore("batchStudio.execution.startBtn", {
-								count: resolution.matched.length,
-							})}
+							{#if lockedPreviewCount > 0}
+								{$tStore("batchStudio.execution.startBtnFreeLimited", {
+									free: FREE_MAX_BATCH_FILES,
+									locked: lockedPreviewCount,
+								})}
+							{:else}
+								{$tStore("batchStudio.execution.startBtn", {
+									count: resolution.matched.length,
+								})}
+							{/if}
 						</span>
 					</button>
 				</div>
@@ -1018,7 +1064,7 @@
 				<aside class="lumina-batch-queue-pane">
 					<div class="lumina-batch-queue-filters">
 						{#each [
-							{ id: "all", label: $tStore("batchStudio.queue.tabAll"), count: counts.total },
+							{ id: "all", label: $tStore("batchStudio.queue.tabAll"), count: counts.total + counts.locked },
 							{ id: "staged", label: $tStore("batchStudio.queue.tabStaged"), count: counts.staged },
 							{ id: "applied", label: $tStore("batchStudio.queue.tabApplied"), count: counts.applied },
 							{ id: "skipped", label: $tStore("batchStudio.queue.tabSkipped"), count: counts.skipped },
@@ -1056,6 +1102,7 @@
 							<div
 								class="lumina-batch-queue-item"
 								class:is-selected={state.selectedPath === item.path}
+								class:is-locked={item.status === "locked"}
 								role="button"
 								tabindex="0"
 								onclick={() => setBatchSelectedPath(item.path)}
@@ -1084,7 +1131,9 @@
 									<div class="lumina-batch-queue-item__name">{item.basename}</div>
 									<div class="lumina-batch-queue-item__path">{item.path}</div>
 								</div>
-								{#if item.proposed?.summaryText}
+								{#if item.status === "locked"}
+									<span class="lumina-batch-queue-item__badge is-pro">PRO</span>
+								{:else if item.proposed?.summaryText}
 									<span class="lumina-batch-queue-item__badge">
 										{item.proposed.summaryText}
 									</span>
@@ -1123,7 +1172,27 @@
 						</div>
 
 						<div class="lumina-batch-inspector-body">
-							{#if selectedItem.status === "failed"}
+							{#if selectedItem.status === "locked"}
+								<div class="lumina-batch-locked-card">
+									<div class="lumina-batch-locked-card__icon" use:icon={"lock"}></div>
+									<h4 class="lumina-batch-locked-card__title">
+										{$tStore("batchStudio.proInspectorTitle")}
+									</h4>
+									<p class="lumina-batch-locked-card__desc">
+										{$tStore("batchStudio.proInspectorDesc", {
+											free: FREE_MAX_BATCH_FILES,
+											locked: counts.locked,
+										})}
+									</p>
+									<button
+										type="button"
+										class="mod-cta"
+										onclick={() => openProUpgradeModal(plugin.app, "batch-studio")}
+									>
+										{$tStore("batchStudio.proInspectorCta")}
+									</button>
+								</div>
+							{:else if selectedItem.status === "failed"}
 								<div class="lumina-batch-error-box">
 									<strong>{$tStore("batchStudio.inspector.errorTitle")}</strong>
 									<p>{selectedItem.errorMessage ?? ""}</p>
@@ -1328,6 +1397,8 @@
 									<button
 										type="button"
 										class="mod-cta lumina-batch-bulk-apply-btn"
+										class:is-locked={!$isProBatch}
+										title={!$isProBatch ? $tStore("batchStudio.proBulkApplyNotice") : undefined}
 										onclick={() => void controller.applyAllSelectedStaged()}
 									>
 										<span class="lumina-batch-tab-icon" use:icon={"check-check"}></span>
@@ -1335,6 +1406,7 @@
 											{$tStore("batchStudio.inspector.acceptAllSelectedBtn", {
 												count: counts.selectedStaged,
 											})}
+											{#if !$isProBatch} 🔒{/if}
 										</span>
 									</button>
 								{/if}
@@ -1425,6 +1497,16 @@
 		background: var(--interactive-accent);
 		color: var(--text-on-accent);
 		font-weight: 600;
+	}
+
+	.lumina-batch-recipe-tab.is-locked,
+	.lumina-batch-bulk-apply-btn.is-locked {
+		opacity: 0.78;
+	}
+
+	.lumina-batch-lock-tag {
+		font-size: 11px;
+		line-height: 1;
 	}
 
 	.lumina-batch-tab-icon {
@@ -1808,6 +1890,14 @@
 		word-break: break-all;
 	}
 
+	:global(body.is-mobile) .lumina-batch-start-btn,
+	:global(body.is-mobile) .lumina-batch-bulk-apply-btn {
+		flex-wrap: wrap;
+		max-width: 100%;
+		min-height: 38px;
+		height: auto;
+	}
+
 	@media (max-width: 720px) {
 		:global(body.is-mobile) .lumina-batch-studio {
 			overflow-y: auto;
@@ -1837,8 +1927,13 @@
 		:global(body.is-mobile) .lumina-batch-setup-footer,
 		:global(body.is-mobile) .lumina-batch-progress-meta,
 		:global(body.is-mobile) .lumina-batch-inspector-header,
+		:global(body.is-mobile) .lumina-batch-inspector-footer,
 		:global(body.is-mobile) .lumina-batch-confirm-inline {
 			flex-wrap: wrap;
+		}
+
+		:global(body.is-mobile) .lumina-batch-locked-card {
+			padding: 18px 14px;
 		}
 	}
 
@@ -1911,6 +2006,10 @@
 		outline: 1px solid var(--interactive-accent);
 	}
 
+	.lumina-batch-queue-item.is-locked {
+		opacity: 0.65;
+	}
+
 	.lumina-batch-queue-item__icon {
 		display: inline-flex;
 		flex-shrink: 0;
@@ -1931,6 +2030,9 @@
 	}
 	.lumina-batch-queue-item__icon.is-failed {
 		color: var(--text-error);
+	}
+	.lumina-batch-queue-item__icon.is-locked {
+		color: var(--text-muted);
 	}
 
 	.lumina-batch-queue-item__body {
@@ -1961,6 +2063,51 @@
 		background: var(--background-primary-alt);
 		color: var(--text-muted);
 		white-space: nowrap;
+	}
+
+	.lumina-batch-queue-item__badge.is-pro {
+		background: color-mix(in srgb, var(--interactive-accent) 16%, transparent);
+		color: var(--interactive-accent);
+		font-weight: 700;
+	}
+
+	.lumina-batch-locked-card {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		gap: 10px;
+		padding: 36px 24px;
+		border-radius: 10px;
+		border: 1px dashed var(--background-modifier-border);
+		background: var(--background-secondary);
+		margin: auto 0;
+	}
+
+	.lumina-batch-locked-card__icon {
+		display: inline-flex;
+		color: var(--interactive-accent);
+	}
+
+	.lumina-batch-locked-card__icon :global(svg) {
+		width: 24px;
+		height: 24px;
+	}
+
+	.lumina-batch-locked-card__title {
+		margin: 0;
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--text-normal);
+	}
+
+	.lumina-batch-locked-card__desc {
+		margin: 0;
+		max-width: 420px;
+		font-size: 12.5px;
+		line-height: 1.5;
+		color: var(--text-muted);
 	}
 
 	.lumina-batch-inspector-pane {
@@ -2172,6 +2319,11 @@
 	.lumina-batch-status-pill.is-failed {
 		background: rgba(239, 68, 68, 0.15);
 		color: var(--text-error);
+	}
+
+	.lumina-batch-status-pill.is-locked {
+		background: color-mix(in srgb, var(--interactive-accent) 14%, transparent);
+		color: var(--interactive-accent);
 	}
 
 	.lumina-batch-empty {

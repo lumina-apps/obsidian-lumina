@@ -1204,7 +1204,11 @@
     "exportReportTotalTokens": "총 토큰",
     "exportReportRound": "라운드 {{num}}",
     "exportReportPrompt": "질문",
-    "exportReportResult": "채택 결과"
+    "exportReportResult": "채택 결과",
+    "proMaxSlotsNotice": "3~4개 모델 동시 비교는 Lumina Pro 기능입니다 (무료 버전은 2개 모델 비교 지원).",
+    "proBlindNotice": "블라인드 아레나 모드는 Lumina Pro 기능입니다.",
+    "proWinnerContextNotice": "채택한 우승 답변으로 맥락 이어가기는 Lumina Pro 기능입니다.",
+    "proExportNotice": "비교 리포트 마크다운 내보내기는 Lumina Pro 기능입니다."
   },
   "batchStudio": {
     "title": "배치 스튜디오",
@@ -1274,6 +1278,7 @@
       "estimateLocalOnly": "로컬 처리 (0 토큰) · 약 {{seconds}}초",
       "snapshotNotice": "파일 반영 직전 원본 스냅샷이 저장되어 언제든 되돌릴 수 있습니다.",
       "startBtn": "배치 시작 ({{count}}개 노트)",
+      "startBtnFreeLimited": "배치 시작 (상위 {{free}}개 · 외 {{locked}}개 PRO)",
       "pauseBtn": "일시정지",
       "resumeBtn": "재개",
       "cancelBtn": "중단",
@@ -1302,7 +1307,8 @@
       "statusApplied": "적용 완료",
       "statusRejected": "거절됨",
       "statusSkipped": "건너뜀",
-      "statusFailed": "오류"
+      "statusFailed": "오류",
+      "statusLocked": "PRO 잠김"
     },
     "inspector": {
       "title": "변경사항 상세 검수",
@@ -1336,7 +1342,12 @@
       "rollbackDone": "{{count}}개 노트를 원래 상태로 복원했습니다.",
       "rolledBackBadge": "롤백 완료",
       "snapshotsMissing": "되돌릴 수 있는 스냅샷이 없습니다."
-    }
+    },
+    "proCustomPromptNotice": "커스텀 프롬프트 배치 레시피는 Lumina Pro 기능입니다.",
+    "proBulkApplyNotice": "원클릭 일괄 수락은 Lumina Pro 기능입니다. 무료 버전에서는 각 노트를 개별 검수 후 수락할 수 있습니다.",
+    "proInspectorTitle": "나머지 노트는 무료 버전에서 잠겨 있습니다",
+    "proInspectorDesc": "무료 버전에서는 회당 상위 {{free}}개 노트만 처리됩니다 (실행 횟수 무제한). 나머지 {{locked}}개 노트까지 한 번에 처리하고 원클릭 일괄 수락을 사용하려면 Pro를 이용해 주세요.",
+    "proInspectorCta": "Pro 안내 · 라이선스 등록"
   },
   "voiceNote": {
     "cmdToggleRecord": "Voice-to-Note 녹음 시작/중지",
@@ -1463,7 +1474,28 @@
       "recoveredSuccess": "미완료된 녹음을 복구하여 노트로 변환했습니다.",
       "createdNote": "음성 노트를 생성했습니다: {{path}}",
       "audioSaved": "오디오 파일을 저장했습니다: {{path}}"
-    }
+    },
+    "proMaxDurationReachedNotice": "무료 녹음 제한(5분)에 도달하여 현재까지 녹음된 받아쓰기를 저장합니다.",
+    "proFileTooLongNotice": "5분을 초과하는 오디오 파일 변환은 Lumina Pro 기능입니다.",
+    "proTemplateNotice": "AI 노트 정리·회의록 분석은 Lumina Pro 기능입니다. 무료 버전에서는 순수 받아쓰기가 제공됩니다.",
+    "proSettingNotice": "노트 정리 모델, 자동 위키링크, 고유명사 사전은 Lumina Pro 기능입니다."
+  },
+  "proUpgrade": {
+    "toastAction": "Pro 안내 · 라이선스 등록 →",
+    "modalTitle": "Lumina Pro",
+    "modalSubtitle": "보유하신 API 키와 로컬 모델은 그대로 쓰면서 무제한 생산성 워크플로우를 잠금 해제하세요.",
+    "splitTitle": "모델 비교 Pro",
+    "splitDesc": "최대 4개 모델 동시 비교, 블라인드 아레나 투표, 채택 답변으로 맥락 이어가기, 비교 리포트 내보내기를 지원합니다.",
+    "batchTitle": "배치 스튜디오 Pro",
+    "batchDesc": "5개 제한 없이 전체 볼트 노트를 한 번에 처리하고, 원클릭 일괄 수락과 커스텀 프롬프트 레시피를 사용할 수 있습니다.",
+    "voiceTitle": "AI Voice-to-Note Pro",
+    "voiceDesc": "5분 제한 없는 녹음·오디오 변환, AI 깔끔 정리·회의록 템플릿, 자동 [[위키링크]] 연결, 고유명사 사전을 지원합니다.",
+    "licenseHeading": "이미 라이선스 키를 보유하고 계신가요?",
+    "licensePlaceholder": "Lumina Pro 라이선스 키를 입력하세요...",
+    "activateBtn": "활성화",
+    "licenseEmptyNotice": "라이선스 키를 입력해 주세요.",
+    "licensePreLaunchNotice": "Pro 라이선스 인증은 정식 오픈 준비 중입니다.",
+    "closeBtn": "닫기"
   },
   "summarization": {
     "prompt": {

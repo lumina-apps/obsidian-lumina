@@ -42,6 +42,7 @@ if you want to view the source, please visit the github repository of this plugi
 const prod = process.argv[2] === "production";
 const buildOnce = prod || process.argv[2] === "build-dev";
 const devProEnabled = !prod && process.env.LUMINA_DEV_PRO === "true";
+const devPreviewEnabled = !prod && process.env.LUMINA_DEV_PREVIEW === "true";
 // dev 빌드 또는 LUMINA_MOBILE_TEST=true 환경에서 모바일 Platform 훅 주입
 const enableMobileTestHook = !prod || process.env.LUMINA_MOBILE_TEST === "true";
 
@@ -294,6 +295,7 @@ const mainContext = await esbuild.context({
 	outfile,
 	define: {
 		__LUMINA_DEV_PRO__: devProEnabled ? "true" : "false",
+		__LUMINA_DEV_PREVIEW__: devPreviewEnabled ? "true" : "false",
 	},
 });
 
@@ -392,7 +394,7 @@ if (buildOnce) {
 		const sizeKB = (stat.size / 1024).toFixed(1);
 		console.log(`\n📦 Build Complete: main.js is ${sizeMB} MB (${sizeKB} KB)`);
 		if (!prod) {
-			console.log(`ℹ️  Dev build includes inline sourcemap (LUMINA_DEV_PRO=${devProEnabled}). Use "npm run build" for <5MB production bundle.`);
+			console.log(`ℹ️  Dev build includes inline sourcemap (LUMINA_DEV_PRO=${devProEnabled}, LUMINA_DEV_PREVIEW=${devPreviewEnabled}). Use "npm run build" for <5MB production bundle.`);
 		} else if (stat.size > 5 * 1024 * 1024) {
 			console.error(`⚠️  WARNING: main.js is larger than 5 MB (${stat.size} bytes). Obsidian Sync Standard limit exceeded!`);
 		} else {

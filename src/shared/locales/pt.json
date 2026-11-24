@@ -1204,7 +1204,11 @@
     "exportReportTotalTokens": "Total de tokens",
     "exportReportRound": "Rodada {{num}}",
     "exportReportPrompt": "Prompt",
-    "exportReportResult": "Resultado"
+    "exportReportResult": "Resultado",
+    "proMaxSlotsNotice": "Comparar de 3 a 4 modelos simultaneamente é um recurso do Lumina Pro (Grátis suporta 2 modelos).",
+    "proBlindNotice": "O modo Arena Cega é um recurso do Lumina Pro.",
+    "proWinnerContextNotice": "Continuar o contexto a partir da resposta escolhida é um recurso do Lumina Pro.",
+    "proExportNotice": "Exportar relatórios de comparação é um recurso do Lumina Pro."
   },
   "batchStudio": {
     "title": "Estúdio em Lote",
@@ -1284,7 +1288,8 @@
       "statusCompleted": "Concluído",
       "progressSummary": "{{done}} / {{total}} processadas ({{percent}}%)",
       "rateLimitWaiting": "Limite atingido — retomando em {{seconds}}s...",
-      "alreadyRunningNotice": "Um lote já está em andamento. Aguarde ou interrompa-o antes de selecionar outra pasta."
+      "alreadyRunningNotice": "Um lote já está em andamento. Aguarde ou interrompa-o antes de selecionar outra pasta.",
+      "startBtnFreeLimited": "Iniciar lote (Top {{free}} · +{{locked}} PRO)"
     },
     "queue": {
       "title": "Fila do Lote",
@@ -1302,7 +1307,8 @@
       "statusApplied": "Aplicada",
       "statusRejected": "Rejeitada",
       "statusSkipped": "Ignorada",
-      "statusFailed": "Erro"
+      "statusFailed": "Erro",
+      "statusLocked": "Bloqueado PRO"
     },
     "inspector": {
       "title": "Inspetor de Alterações",
@@ -1336,7 +1342,12 @@
       "rollbackDone": "{{count}} notas restauradas.",
       "rolledBackBadge": "Revertido",
       "snapshotsMissing": "Nenhum snapshot disponível para reverter."
-    }
+    },
+    "proCustomPromptNotice": "A receita de prompt personalizado é um recurso do Lumina Pro.",
+    "proBulkApplyNotice": "A aplicação em massa com um clique é um recurso do Lumina Pro. No modo gratuito, aplique uma nota por vez.",
+    "proInspectorTitle": "As notas restantes estão bloqueadas no modo gratuito",
+    "proInspectorDesc": "O modo gratuito processa as {{free}} primeiras notas por execução (execuções ilimitadas). Faça upgrade para Pro para processar as {{locked}} restantes de uma vez.",
+    "proInspectorCta": "Ver Pro e licença"
   },
   "voiceNote": {
     "cmdToggleRecord": "Iniciar/parar gravação Voice-to-Note",
@@ -1463,7 +1474,11 @@
       "recoveredSuccess": "Gravação inacabada recuperada e processada.",
       "createdNote": "Nota de voz criada: {{path}}",
       "audioSaved": "Áudio salvo: {{path}}"
-    }
+    },
+    "proMaxDurationReachedNotice": "Limite gratuito de 5 minutos atingido. Salvando seu ditado agora.",
+    "proFileTooLongNotice": "Arquivos de áudio com mais de 5 minutos exigem o Lumina Pro.",
+    "proTemplateNotice": "Formatação por IA (Limpo / Reunião) é um recurso do Lumina Pro. O modo gratuito oferece apenas ditado.",
+    "proSettingNotice": "Modelos de formatação IA, wiki-links automáticos e vocabulário personalizado são recursos do Lumina Pro."
   },
   "summarization": {
     "prompt": {
@@ -1475,5 +1490,22 @@
       "roleUser": "Usuário",
       "roleAI": "IA"
     }
+  },
+  "proUpgrade": {
+    "toastAction": "Saiba mais · Licença →",
+    "modalTitle": "Lumina Pro",
+    "modalSubtitle": "Desbloqueie fluxos de produtividade ilimitados usando suas próprias chaves API ou modelos locais.",
+    "splitTitle": "Comparador de Modelos Pro",
+    "splitDesc": "Compare até 4 modelos ao mesmo tempo, votação às cegas, contexto do vencedor e exportação em Markdown.",
+    "batchTitle": "Estúdio em Lote Pro",
+    "batchDesc": "Processe cofres inteiros sem o limite de 5 notas, aplique tudo em um clique e use prompts personalizados.",
+    "voiceTitle": "Voice-to-Note IA Pro",
+    "voiceDesc": "Grave ou transcreva além de 5 min, estruture com modelos de IA, conecte [[wikilinks]] e use vocabulário próprio.",
+    "licenseHeading": "Já possui uma chave de licença?",
+    "licensePlaceholder": "Digite sua chave de licença Lumina Pro...",
+    "activateBtn": "Ativar",
+    "licenseEmptyNotice": "Por favor, digite uma chave de licença.",
+    "licensePreLaunchNotice": "O licenciamento Pro ainda está em preparação. Em breve!",
+    "closeBtn": "Fechar"
   }
 }

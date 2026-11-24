@@ -289,3 +289,77 @@ export async function splitAudioBlobForApi(
 
 	return chunks;
 }
+
+/**
+ * 오디오 Blob의 전체 재생 길이(초)를 비파괴적으로 측정합니다.
+ * 무료 5분 제한 검사에 사용되며, 디코딩 불가 환경(테스트 jsdom 등)에서는 null을 반환합니다.
+ */
+export async function measureAudioBlobDurationSec(blob: Blob): Promise<number | null> {
+	if (blob.size === 0) return 0;
+
+	const AudioCtx =
+		typeof AudioContext !== 'undefined'
+			? AudioContext
+			: typeof window !== 'undefined'
+				? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+				: undefined;
+
+	// AudioContext가 없는 환경(예: 단위 테스트용 jsdom)에서는 즉시 null을 반환해 대기 지연을 방지
+	if (!AudioCtx) {
+		return null;
+	}
+
+	const isJsdom =
+		typeof navigator !== 'undefined' &&
+		typeof navigator.userAgent === 'string' &&
+		navigator.userAgent.toLowerCase().includes('jsdom');
+
+	if (
+		!isJsdom &&
+		typeof document !== 'undefined' &&
+		typeof URL !== 'undefined' &&
+		typeof URL.createObjectURL === 'function'
+	) {
+		const metaDuration = await new Promise<number | null>((resolve) => {
+			const audio = document.createElement('audio');
+			const objectUrl = URL.createObjectURL(blob);
+			let settled = false;
+
+			const finish = (val: number | null) => {
+				if (settled) return;
+				settled = true;
+				window.clearTimeout(timerId);
+				audio.removeAttribute('src');
+				audio.load();
+				URL.revokeObjectURL(objectUrl);
+				resolve(val);
+			};
+
+			const timerId = window.setTimeout(() => finish(null), 400);
+			audio.preload = 'metadata';
+			audio.onloadedmetadata = () => {
+				finish(Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : null);
+			};
+			audio.onerror = () => finish(null);
+			audio.src = objectUrl;
+			audio.load();
+		});
+
+		if (metaDuration !== null) {
+			return metaDuration;
+		}
+	}
+
+	const ctx = new AudioCtx();
+	try {
+		const arrayBuf = await blob.arrayBuffer();
+		const audioBuffer = await ctx.decodeAudioData(arrayBuf.slice(0));
+		return Number.isFinite(audioBuffer.duration) ? audioBuffer.duration : null;
+	} catch {
+		return null;
+	} finally {
+		await ctx.close().catch(() => {
+			// 이미 닫힌 AudioContext 무시
+		});
+	}
+}

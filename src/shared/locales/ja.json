@@ -1204,7 +1204,11 @@
     "exportReportTotalTokens": "合計トークン",
     "exportReportRound": "ラウンド {{num}}",
     "exportReportPrompt": "プロンプト",
-    "exportReportResult": "判定結果"
+    "exportReportResult": "判定結果",
+    "proMaxSlotsNotice": "3〜4モデルの同時比較は Lumina Pro の機能です（無料版は2モデルまで）。",
+    "proBlindNotice": "ブラインド比較モードは Lumina Pro の機能です。",
+    "proWinnerContextNotice": "採用した回答で会話を続ける機能は Lumina Pro の機能です。",
+    "proExportNotice": "比較レポートの書き出しは Lumina Pro の機能です。"
   },
   "batchStudio": {
     "title": "バッチスタジオ",
@@ -1284,7 +1288,8 @@
       "statusCompleted": "完了",
       "progressSummary": "{{done}} / {{total}} 処理済み ({{percent}}%)",
       "rateLimitWaiting": "レート制限に達しました — {{seconds}}秒後に自動再開...",
-      "alreadyRunningNotice": "バッチ処理がすでに実行中です。完了または停止してから新しいフォルダを選択してください。"
+      "alreadyRunningNotice": "バッチ処理がすでに実行中です。完了または停止してから新しいフォルダを選択してください。",
+      "startBtnFreeLimited": "バッチ開始（上位{{free}}件・残り{{locked}}件はPRO）"
     },
     "queue": {
       "title": "処理キュー",
@@ -1302,7 +1307,8 @@
       "statusApplied": "適用済み",
       "statusRejected": "却下",
       "statusSkipped": "スキップ",
-      "statusFailed": "エラー"
+      "statusFailed": "エラー",
+      "statusLocked": "PRO限定"
     },
     "inspector": {
       "title": "差分インスペクター",
@@ -1336,7 +1342,12 @@
       "rollbackDone": "{{count}} 件のノートを復元しました。",
       "rolledBackBadge": "復元済み",
       "snapshotsMissing": "復元可能なスナップショットがありません。"
-    }
+    },
+    "proCustomPromptNotice": "カスタムプロンプトの一括実行は Lumina Pro の機能です。",
+    "proBulkApplyNotice": "ワンクリック一括適用は Lumina Pro の機能です。無料版では1件ずつ確認して適用できます。",
+    "proInspectorTitle": "残りのノートは無料版でロックされています",
+    "proInspectorDesc": "無料版では1回につき上位{{free}}件が処理されます（実行回数無制限）。残り{{locked}}件も一括処理してワンクリック適用を使うには Pro をご利用ください。",
+    "proInspectorCta": "Pro案内・ライセンス登録"
   },
   "voiceNote": {
     "cmdToggleRecord": "Voice-to-Note 録音の開始/停止",
@@ -1463,7 +1474,11 @@
       "recoveredSuccess": "未完了の録音を復元してノートに変換しました。",
       "createdNote": "音声ノートを作成しました: {{path}}",
       "audioSaved": "音声を保存しました: {{path}}"
-    }
+    },
+    "proMaxDurationReachedNotice": "無料版の録音上限（5分）に達したため、ここまでの文字起こしを保存します。",
+    "proFileTooLongNotice": "5分を超える音声ファイルの変換には Lumina Pro が必要です。",
+    "proTemplateNotice": "AIノート整理・議事録生成は Lumina Pro の機能です。無料版では文字起こしのみ利用できます。",
+    "proSettingNotice": "AI整理モデル、自動Wikiリンク、専門用語辞書は Lumina Pro の機能です。"
   },
   "summarization": {
     "prompt": {
@@ -1475,5 +1490,22 @@
       "roleUser": "ユーザー",
       "roleAI": "AI"
     }
+  },
+  "proUpgrade": {
+    "toastAction": "Pro案内・ライセンス登録 →",
+    "modalTitle": "Lumina Pro",
+    "modalSubtitle": "お持ちのAPIキーやローカルモデルをそのまま使いながら、無制限の生産性ワークフローを解放しましょう。",
+    "splitTitle": "モデル比較 Pro",
+    "splitDesc": "最大4モデル同時比較、ブラインド投票、採用回答からの文脈引き継ぎ、Markdownレポート書き出しに対応。",
+    "batchTitle": "バッチスタジオ Pro",
+    "batchDesc": "5件制限なしでボルト全体を一括処理し、ワンクリック適用やカスタムプロンプトレシピを利用できます。",
+    "voiceTitle": "AI Voice-to-Note Pro",
+    "voiceDesc": "5分以上の長時間録音・変換、AI整形テンプレート、自動[[Wikiリンク]]、カスタム辞書に対応。",
+    "licenseHeading": "すでにライセンスキーをお持ちですか？",
+    "licensePlaceholder": "Lumina Pro ライセンスキーを入力...",
+    "activateBtn": "有効化",
+    "licenseEmptyNotice": "ライセンスキーを入力してください。",
+    "licensePreLaunchNotice": "Proライセンス認証は現在公開準備中です。",
+    "closeBtn": "閉じる"
   }
 }

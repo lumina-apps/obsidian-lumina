@@ -21,6 +21,7 @@
 	let {
 		app,
 		ctrl,
+		isPro = true,
 		currentSessionId,
 		refreshTick = 0,
 		tStore: tS,
@@ -30,6 +31,7 @@
 	}: {
 		app?: App;
 		ctrl: SplitChatController;
+		isPro?: boolean;
 		currentSessionId: string | null;
 		refreshTick?: number;
 		tStore: typeof tStore;
@@ -293,8 +295,10 @@
 								<button
 									type="button"
 									class="lumina-split-drawer__action-btn"
+									class:is-locked={!isPro}
 									onclick={(e) => handleExport(e, session.id)}
-									aria-label={$tS("splitChat.exportComparison")}
+									aria-label={!isPro ? `${$tS("splitChat.exportComparison")} (PRO)` : $tS("splitChat.exportComparison")}
+									title={!isPro ? `${$tS("splitChat.exportComparison")} (PRO)` : $tS("splitChat.exportComparison")}
 								>
 									<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 										{@html SVG_EXPORT}

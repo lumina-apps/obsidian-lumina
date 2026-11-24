@@ -1204,7 +1204,11 @@
     "exportReportTotalTokens": "Tokens gesamt",
     "exportReportRound": "Runde {{num}}",
     "exportReportPrompt": "Prompt",
-    "exportReportResult": "Ergebnis"
+    "exportReportResult": "Ergebnis",
+    "proMaxSlotsNotice": "Der gleichzeitige Vergleich von 3 bis 4 Modellen ist eine Lumina Pro-Funktion (Free unterstützt 2 Modelle).",
+    "proBlindNotice": "Der Blind-Arena-Modus ist eine Lumina Pro-Funktion.",
+    "proWinnerContextNotice": "Das Fortsetzen des Kontexts aus der gewählten Antwort ist eine Lumina Pro-Funktion.",
+    "proExportNotice": "Der Export von Vergleichsberichten ist eine Lumina Pro-Funktion."
   },
   "batchStudio": {
     "title": "Batch Studio",
@@ -1284,7 +1288,8 @@
       "statusCompleted": "Abgeschlossen",
       "progressSummary": "{{done}} / {{total}} verarbeitet ({{percent}}%)",
       "rateLimitWaiting": "Rate-Limit erreicht — Weiter in {{seconds}}s...",
-      "alreadyRunningNotice": "Ein Batch-Vorgang läuft bereits. Bitte warten Sie oder stoppen Sie ihn, bevor Sie einen neuen Ordner wählen."
+      "alreadyRunningNotice": "Ein Batch-Vorgang läuft bereits. Bitte warten Sie oder stoppen Sie ihn, bevor Sie einen neuen Ordner wählen.",
+      "startBtnFreeLimited": "Batch starten (Top {{free}} · +{{locked}} PRO)"
     },
     "queue": {
       "title": "Warteschlange",
@@ -1302,7 +1307,8 @@
       "statusApplied": "Angewendet",
       "statusRejected": "Abgelehnt",
       "statusSkipped": "Übersprungen",
-      "statusFailed": "Fehler"
+      "statusFailed": "Fehler",
+      "statusLocked": "PRO-gesperrt"
     },
     "inspector": {
       "title": "Diff-Inspektor",
@@ -1336,7 +1342,12 @@
       "rollbackDone": "{{count}} Notizen wiederhergestellt.",
       "rolledBackBadge": "Zurückgesetzt",
       "snapshotsMissing": "Keine Snapshots zum Zurücksetzen vorhanden."
-    }
+    },
+    "proCustomPromptNotice": "Das Rezept „Benutzerdefinierter Prompt“ ist eine Lumina Pro-Funktion.",
+    "proBulkApplyNotice": "Ein-Klick-Sammelübernahme ist eine Lumina Pro-Funktion. Im Free-Modus können Notizen einzeln übernommen werden.",
+    "proInspectorTitle": "Weitere Notizen sind im Free-Modus gesperrt",
+    "proInspectorDesc": "Der Free-Modus verarbeitet die ersten {{free}} Notizen pro Lauf (unbegrenzte Läufe). Mit Pro werden alle {{locked}} weiteren Notizen auf einmal verarbeitet und per Klick übernommen.",
+    "proInspectorCta": "Pro & Lizenz ansehen"
   },
   "voiceNote": {
     "cmdToggleRecord": "Voice-to-Note-Aufnahme starten/stoppen",
@@ -1463,7 +1474,11 @@
       "recoveredSuccess": "Unvollständige Aufnahme wiederhergestellt und verarbeitet.",
       "createdNote": "Sprachnotiz erstellt: {{path}}",
       "audioSaved": "Audio gespeichert: {{path}}"
-    }
+    },
+    "proMaxDurationReachedNotice": "5-Minuten-Limit der Free-Version erreicht. Diktat wird jetzt gespeichert.",
+    "proFileTooLongNotice": "Audiodateien über 5 Minuten erfordern Lumina Pro.",
+    "proTemplateNotice": "KI-Notizformatierung (Aufgeräumt / Besprechung) ist eine Lumina Pro-Funktion. Free bietet reines Diktat.",
+    "proSettingNotice": "KI-Formatierungsmodelle, Auto-Wiki-Links und eigenes Vokabular sind Lumina Pro-Funktionen."
   },
   "summarization": {
     "prompt": {
@@ -1475,5 +1490,22 @@
       "roleUser": "Benutzer",
       "roleAI": "KI"
     }
+  },
+  "proUpgrade": {
+    "toastAction": "Mehr erfahren · Lizenz →",
+    "modalTitle": "Lumina Pro",
+    "modalSubtitle": "Nutzen Sie weiterhin Ihre eigenen API-Schlüssel oder lokalen Modelle und schalten Sie unbegrenzte Workflows frei.",
+    "splitTitle": "Modellvergleich Pro",
+    "splitDesc": "Bis zu 4 Modelle parallel vergleichen, Blind-Arena-Abstimmung, Gewinner-Kontext und Markdown-Berichtsexport.",
+    "batchTitle": "Batch-Studio Pro",
+    "batchDesc": "Gesamte Vaults ohne 5-Notizen-Limit verarbeiten, Änderungen mit einem Klick anwenden und eigene Prompts ausführen.",
+    "voiceTitle": "AI Voice-to-Note Pro",
+    "voiceDesc": "Aufnahmen und Dateien über 5 Minuten, KI-Strukturierung, automatische [[Wiki-Links]] und eigenes Vokabular.",
+    "licenseHeading": "Sie haben bereits einen Lizenzschlüssel?",
+    "licensePlaceholder": "Lumina Pro-Lizenzschlüssel eingeben...",
+    "activateBtn": "Aktivieren",
+    "licenseEmptyNotice": "Bitte geben Sie einen Lizenzschlüssel ein.",
+    "licensePreLaunchNotice": "Die Pro-Lizenzierung wird bald eröffnet!",
+    "closeBtn": "Schließen"
   }
 }

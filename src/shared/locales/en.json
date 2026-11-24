@@ -1204,7 +1204,11 @@
     "exportReportTotalTokens": "Total Tokens",
     "exportReportRound": "Round {{num}}",
     "exportReportPrompt": "Prompt",
-    "exportReportResult": "Result"
+    "exportReportResult": "Result",
+    "proMaxSlotsNotice": "Comparing 3 to 4 models simultaneously is a Lumina Pro feature (Free supports 2 models).",
+    "proBlindNotice": "Blind Arena mode is a Lumina Pro feature.",
+    "proWinnerContextNotice": "Continuing context from the picked winner is a Lumina Pro feature.",
+    "proExportNotice": "Exporting comparison reports is a Lumina Pro feature."
   },
   "batchStudio": {
     "title": "Batch Studio",
@@ -1274,6 +1278,7 @@
       "estimateLocalOnly": "Local processing (0 tokens) · ~{{seconds}}s",
       "snapshotNotice": "Original file snapshots are saved before any changes are written.",
       "startBtn": "Start Batch ({{count}} notes)",
+      "startBtnFreeLimited": "Start Batch (Top {{free}} · +{{locked}} PRO)",
       "pauseBtn": "Pause",
       "resumeBtn": "Resume",
       "cancelBtn": "Stop",
@@ -1302,7 +1307,8 @@
       "statusApplied": "Applied",
       "statusRejected": "Rejected",
       "statusSkipped": "Skipped",
-      "statusFailed": "Failed"
+      "statusFailed": "Failed",
+      "statusLocked": "PRO Locked"
     },
     "inspector": {
       "title": "Diff Inspector",
@@ -1336,7 +1342,12 @@
       "rollbackDone": "Rolled back {{count}} notes.",
       "rolledBackBadge": "Rolled Back",
       "snapshotsMissing": "No snapshots available to rollback."
-    }
+    },
+    "proCustomPromptNotice": "Custom Prompt batch recipe is a Lumina Pro feature.",
+    "proBulkApplyNotice": "One-click bulk apply is a Lumina Pro feature. In Free mode, you can review and apply notes individually.",
+    "proInspectorTitle": "Remaining notes are locked in Free mode",
+    "proInspectorDesc": "Free mode processes the top {{free}} notes per run (unlimited runs). Upgrade to Pro to process all {{locked}} remaining notes at once and unlock one-click bulk apply.",
+    "proInspectorCta": "View Pro & License"
   },
   "voiceNote": {
     "cmdToggleRecord": "Toggle Voice-to-Note recording",
@@ -1463,7 +1474,28 @@
       "recoveredSuccess": "Recovered and processed unfinished recording.",
       "createdNote": "Created voice note: {{path}}",
       "audioSaved": "Audio saved: {{path}}"
-    }
+    },
+    "proMaxDurationReachedNotice": "Reached the 5-minute Free recording limit. Saving your dictation now.",
+    "proFileTooLongNotice": "Audio files longer than 5 minutes require Lumina Pro.",
+    "proTemplateNotice": "AI note formatting (Clean / Meeting) is a Lumina Pro feature. Free mode provides raw speech-to-text dictation.",
+    "proSettingNotice": "AI formatting models, Auto Wiki-Links, and Custom Vocabulary are Lumina Pro features."
+  },
+  "proUpgrade": {
+    "toastAction": "Learn More · License →",
+    "modalTitle": "Lumina Pro",
+    "modalSubtitle": "Unlock unlimited productivity workflows while using your own API keys or local models.",
+    "splitTitle": "Model Compare Pro",
+    "splitDesc": "Compare up to 4 models simultaneously, run Blind Arena voting, continue from picked winners, and export Markdown reports.",
+    "batchTitle": "Batch Studio Pro",
+    "batchDesc": "Process entire vaults without the 5-note limit, apply staged diffs in one click, and run Custom Prompt recipes.",
+    "voiceTitle": "AI Voice-to-Note Pro",
+    "voiceDesc": "Record or transcribe beyond 5 minutes, format notes with AI templates, auto-link [[wikilinks]], and apply custom vocabulary.",
+    "licenseHeading": "Already have a license key?",
+    "licensePlaceholder": "Enter your Lumina Pro license key...",
+    "activateBtn": "Activate",
+    "licenseEmptyNotice": "Please enter a license key.",
+    "licensePreLaunchNotice": "Pro licensing is not yet open. Stay tuned for launch!",
+    "closeBtn": "Close"
   },
   "summarization": {
     "prompt": {

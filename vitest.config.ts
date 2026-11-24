@@ -6,6 +6,7 @@ export default defineConfig({
 	plugins: [svelte()],
 	define: {
 		__LUMINA_DEV_PRO__: false,
+		__LUMINA_DEV_PREVIEW__: false,
 	},
 	resolve: {
 		conditions: ['browser', 'development', 'import'],

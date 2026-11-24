@@ -1,6 +1,11 @@
 import { Notice, type App } from 'obsidian';
 import type LuminaPlugin from '../../../main';
-import { canUseFeature } from '../../../core/store/entitlementStore';
+import {
+	canUseFeature,
+	canUseProFeature,
+	FREE_MAX_SPLIT_SLOTS,
+} from '../../../core/store/entitlementStore';
+import { notifyProFeatureLocked } from '../../../shared/utils/proUpgradeModal';
 import {
 	addMessage,
 	resetChat,
@@ -197,6 +202,7 @@ export class SplitChatController {
 		if (state.slots.length === 0) return;
 
 		const { rag, connections } = this.plugin.settings;
+		const isProSplit = canUseProFeature('split-chat');
 		const updatedAttachments = await resolveAttachmentsWithActiveNote(
 			this.app,
 			attachments,
@@ -209,7 +215,8 @@ export class SplitChatController {
 		const priorTurns = [...state.turns];
 
 		const initialResponses: Record<string, SplitSlotResponse> = {};
-		const slotsSnapshot: SplitSlotConfig[] = state.slots.map((s) => ({ ...s }));
+		const activeSlots = isProSplit ? state.slots : state.slots.slice(0, FREE_MAX_SPLIT_SLOTS);
+		const slotsSnapshot: SplitSlotConfig[] = activeSlots.map((s) => ({ ...s }));
 
 		for (const slot of slotsSnapshot) {
 			const providerCfg = connections.providers.find((p) => p.id === slot.providerId);
@@ -224,7 +231,7 @@ export class SplitChatController {
 			};
 		}
 
-		const isBlind = state.mode === 'blind';
+		const isBlind = isProSplit && state.mode === 'blind';
 		const newTurn: SplitTurn = {
 			id: turnId,
 			userMessage: {
@@ -334,7 +341,10 @@ export class SplitChatController {
 			},
 		});
 
-		const slotHistory = buildSlotHistory(priorTurns, slot.slotId, state.contextMode);
+		const effectiveContextMode: SplitContextMode = canUseProFeature('split-chat')
+			? state.contextMode
+			: 'independent';
+		const slotHistory = buildSlotHistory(priorTurns, slot.slotId, effectiveContextMode);
 
 		try {
 			const result = await executeSplitSlotCall({
@@ -722,6 +732,10 @@ export class SplitChatController {
 
 	async exportCurrentComparison(): Promise<boolean> {
 		if (!canUseFeature('split-chat')) return false;
+		if (!canUseProFeature('split-chat')) {
+			notifyProFeatureLocked(this.app, 'split-chat', t('splitChat.proExportNotice'));
+			return false;
+		}
 		const state = getSplitChatState();
 		if (state.turns.length === 0) {
 			new Notice(t('splitChat.noTurnsToExport'));
@@ -755,6 +769,10 @@ export class SplitChatController {
 
 	async exportHistorySession(sessionId: string): Promise<boolean> {
 		if (!canUseFeature('split-chat')) return false;
+		if (!canUseProFeature('split-chat')) {
+			notifyProFeatureLocked(this.app, 'split-chat', t('splitChat.proExportNotice'));
+			return false;
+		}
 		try {
 			const { basePath, options } = this.resolveLocation();
 			const session = await loadSplitSession(this.app, sessionId, basePath, options);

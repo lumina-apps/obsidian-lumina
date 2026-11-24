@@ -3,6 +3,11 @@
 	import { onDestroy, onMount, tick } from "svelte";
 	import type LuminaPlugin from "../../../../main";
 	import {
+		FREE_MAX_SPLIT_SLOTS,
+		hasProFeature,
+	} from "../../../../core/store/entitlementStore";
+	import { notifyProFeatureLocked } from "../../../../shared/utils/proUpgradeModal";
+	import {
 		indexingProgress,
 		indexingState,
 	} from "../../../../core/store/ragStore";
@@ -78,6 +83,7 @@
 	let containerWidth = $state(960);
 
 	let ctrl = $state<SplitChatController | null>(null);
+	const isProSplit = hasProFeature("split-chat");
 
 	// 스마트폰은 항상 컴팩트 탭 모드, 태블릿·데스크탑은 실제 컨테이너 폭(680px) 기준으로 나란히 비교 지원
 	const isCompact = $derived(Boolean(Platform.isPhone) || containerWidth < 680);
@@ -124,15 +130,26 @@
 		const currentState = $splitChatStore;
 
 		if (currentState.slots.length === 0) {
-			if (savedPrefs?.mode) setSplitMode(savedPrefs.mode);
-			if (savedPrefs?.contextMode) setSplitContextMode(savedPrefs.contextMode);
+			if (savedPrefs?.mode) {
+				setSplitMode($isProSplit || savedPrefs.mode !== "blind" ? savedPrefs.mode : "side-by-side");
+			}
+			if (savedPrefs?.contextMode) {
+				setSplitContextMode(
+					$isProSplit || savedPrefs.contextMode !== "winner"
+						? savedPrefs.contextMode
+						: "independent",
+				);
+			}
 			const initialSlots = pickInitialSplitSlots(
 				eligibleProviders,
 				$favoriteModels,
 				savedPrefs,
 			);
-			if (initialSlots.length > 0) {
-				initSplitSlots(initialSlots);
+			const boundedSlots = $isProSplit
+				? initialSlots
+				: initialSlots.slice(0, FREE_MAX_SPLIT_SLOTS);
+			if (boundedSlots.length > 0) {
+				initSplitSlots(boundedSlots);
 			}
 		}
 
@@ -171,6 +188,21 @@
 		}
 	});
 
+	// 무료 티어일 때 Pro 전용 모드·컨텍스트·초과 슬롯 자동 클램핑
+	$effect(() => {
+		if (!$isProSplit) {
+			if ($splitChatStore.mode === "blind") {
+				setSplitMode("side-by-side");
+			}
+			if ($splitChatStore.contextMode === "winner") {
+				setSplitContextMode("independent");
+			}
+			if ($splitChatStore.slots.length > FREE_MAX_SPLIT_SLOTS) {
+				initSplitSlots($splitChatStore.slots.slice(0, FREE_MAX_SPLIT_SLOTS));
+			}
+		}
+	});
+
 	// 검증된 프로바이더 변경 시 슬롯 유효성 보정
 	$effect(() => {
 		const eligible = eligibleProviders;
@@ -183,7 +215,8 @@
 				$favoriteModels,
 				plugin.settings.chat.splitChat,
 			);
-			if (init.length > 0) initSplitSlots(init);
+			const bounded = $isProSplit ? init : init.slice(0, FREE_MAX_SPLIT_SLOTS);
+			if (bounded.length > 0) initSplitSlots(bounded);
 			return;
 		}
 
@@ -264,7 +297,16 @@
 	}
 
 	function handleAddSlot(): void {
-		if ($splitChatStore.slots.length >= MAX_SPLIT_SLOTS || $isAnySlotStreaming) return;
+		if ($isAnySlotStreaming || !hasEligibleProvider) return;
+		if (!$isProSplit && $splitChatStore.slots.length >= FREE_MAX_SPLIT_SLOTS) {
+			notifyProFeatureLocked(
+				plugin.app,
+				"split-chat",
+				$tStore("splitChat.proMaxSlotsNotice"),
+			);
+			return;
+		}
+		if ($splitChatStore.slots.length >= MAX_SPLIT_SLOTS) return;
 		const nextSlot = createNextSplitSlot(
 			$splitChatStore.slots,
 			eligibleProviders,
@@ -292,11 +334,27 @@
 	}
 
 	function handleChangeMode(next: SplitLayoutMode): void {
+		if (next === "blind" && !$isProSplit) {
+			notifyProFeatureLocked(
+				plugin.app,
+				"split-chat",
+				$tStore("splitChat.proBlindNotice"),
+			);
+			return;
+		}
 		setSplitMode(next);
 		void ctrl?.persistPreferences();
 	}
 
 	function handleChangeContextMode(next: SplitContextMode): void {
+		if (next === "winner" && !$isProSplit) {
+			notifyProFeatureLocked(
+				plugin.app,
+				"split-chat",
+				$tStore("splitChat.proWinnerContextNotice"),
+			);
+			return;
+		}
 		setSplitContextMode(next);
 		void ctrl?.persistPreferences();
 	}
@@ -412,6 +470,7 @@
 			<SplitHistoryDrawer
 				app={plugin.app}
 				{ctrl}
+				isPro={$isProSplit}
 				currentSessionId={$splitChatStore.sessionId}
 				refreshTick={historyRefreshTick}
 				{tStore}
@@ -428,6 +487,8 @@
 			contextMode={$splitChatStore.contextMode}
 			slotCount={$splitChatStore.slots.length}
 			maxSlots={MAX_SPLIT_SLOTS}
+			freeMaxSlots={FREE_MAX_SPLIT_SLOTS}
+			isPro={$isProSplit}
 			isStreaming={$isAnySlotStreaming}
 			hasProvider={hasEligibleProvider}
 			hasTurns={$splitChatStore.turns.length > 0}

@@ -12,6 +12,8 @@
 		contextMode,
 		slotCount,
 		maxSlots,
+		freeMaxSlots = 2,
+		isPro = true,
 		isStreaming,
 		hasProvider,
 		hasTurns,
@@ -33,6 +35,8 @@
 		contextMode: SplitContextMode;
 		slotCount: number;
 		maxSlots: number;
+		freeMaxSlots?: number;
+		isPro?: boolean;
 		isStreaming: boolean;
 		hasProvider: boolean;
 		hasTurns: boolean;
@@ -50,6 +54,9 @@
 		onExport: () => void;
 		onNewChat: () => void;
 	} = $props();
+
+	const isAtFreeSlotLimit = $derived(!isPro && slotCount >= freeMaxSlots);
+	const isAtProSlotLimit = $derived(isPro && slotCount >= maxSlots);
 </script>
 
 <div class="lumina-split-header">
@@ -84,10 +91,11 @@
 				type="button"
 				class="lumina-split-header__seg-btn"
 				class:is-active={mode === "blind"}
-				title={$tS("splitChat.modeBlindTooltip")}
+				class:is-locked={!isPro}
+				title={!isPro ? `${$tS("splitChat.modeBlindTooltip")} (PRO)` : $tS("splitChat.modeBlindTooltip")}
 				onclick={() => onChangeMode("blind")}
 			>
-				🎭 {$tS("splitChat.modeBlind")}
+				🎭 {$tS("splitChat.modeBlind")}{#if !isPro} <span class="lumina-split-lock-mark" aria-hidden="true">🔒</span>{/if}
 			</button>
 		</div>
 	</div>
@@ -111,10 +119,11 @@
 					type="button"
 					class="lumina-split-header__seg-btn"
 					class:is-active={contextMode === "winner"}
-					title={$tS("splitChat.contextWinnerTooltip")}
+					class:is-locked={!isPro}
+					title={!isPro ? `${$tS("splitChat.contextWinnerTooltip")} (PRO)` : $tS("splitChat.contextWinnerTooltip")}
 					onclick={() => onChangeContextMode("winner")}
 				>
-					🏆 {$tS("splitChat.contextWinner")}
+					🏆 {$tS("splitChat.contextWinner")}{#if !isPro} <span class="lumina-split-lock-mark" aria-hidden="true">🔒</span>{/if}
 				</button>
 			</div>
 		</div>
@@ -147,26 +156,34 @@
 		<button
 			type="button"
 			class="lumina-split-header__add-btn"
-			disabled={slotCount >= maxSlots || isStreaming || !hasProvider}
+			class:is-locked={isAtFreeSlotLimit}
+			disabled={isAtProSlotLimit || isStreaming || !hasProvider}
 			onclick={onAddSlot}
-			title={slotCount >= maxSlots
-				? $tS("splitChat.maxModelsReached", { max: maxSlots })
-				: $tS("splitChat.addModel")}
+			title={isAtFreeSlotLimit
+				? $tS("splitChat.proMaxSlotsNotice")
+				: isAtProSlotLimit
+					? $tS("splitChat.maxModelsReached", { max: maxSlots })
+					: $tS("splitChat.addModel")}
 		>
 			<span>+</span>
 			<span class="lumina-split-header__add-label">{$tS("splitChat.addModel")}</span>
-			<span>({slotCount}/{maxSlots})</span>
+			<span>({slotCount}/{maxSlots}){#if isAtFreeSlotLimit} 🔒{/if}</span>
 		</button>
 
 		<button
 			type="button"
 			class="clickable-icon lumina-split-header__icon-btn"
+			class:is-locked={!isPro}
 			disabled={!hasTurns}
-			aria-label={$tS("splitChat.exportComparison")}
-			title={$tS("splitChat.exportComparison")}
+			aria-label={!isPro ? `${$tS("splitChat.exportComparison")} (PRO)` : $tS("splitChat.exportComparison")}
+			title={!isPro ? `${$tS("splitChat.exportComparison")} (PRO)` : $tS("splitChat.exportComparison")}
 			onclick={onExport}
-			use:iconAction={"download"}
-		></button>
+		>
+			<span class="lumina-split-header__icon-inner" use:iconAction={"download"}></span>
+			{#if !isPro}
+				<span class="lumina-split-export-lock" aria-hidden="true">🔒</span>
+			{/if}
+		</button>
 
 		<button
 			type="button"
@@ -285,6 +302,17 @@
 		background: var(--interactive-accent);
 	}
 
+	.lumina-split-header__seg-btn.is-locked,
+	.lumina-split-header__add-btn.is-locked,
+	.lumina-split-header__icon-btn.is-locked {
+		opacity: 0.78;
+	}
+
+	.lumina-split-lock-mark {
+		font-size: 10px;
+		opacity: 0.85;
+	}
+
 	.lumina-split-header__add-btn {
 		all: unset;
 		box-sizing: border-box;
@@ -347,6 +375,7 @@
 	}
 
 	.lumina-split-header__icon-btn {
+		position: relative;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -359,6 +388,21 @@
 		color: var(--text-muted);
 		cursor: pointer;
 		transition: all 0.15s ease;
+	}
+
+	.lumina-split-header__icon-inner {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.lumina-split-export-lock {
+		position: absolute;
+		right: 0;
+		bottom: 0;
+		font-size: 9px;
+		line-height: 1;
+		pointer-events: none;
 	}
 
 	.lumina-split-header__icon-btn:hover:not(:disabled) {

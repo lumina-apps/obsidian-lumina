@@ -1204,7 +1204,11 @@
     "exportReportTotalTokens": "总 Token",
     "exportReportRound": "第 {{num}} 轮",
     "exportReportPrompt": "提问",
-    "exportReportResult": "结果"
+    "exportReportResult": "结果",
+    "proMaxSlotsNotice": "同时对比 3 至 4 个模型为 Lumina Pro 功能（免费版支持 2 个模型）。",
+    "proBlindNotice": "盲测竞技场模式为 Lumina Pro 功能。",
+    "proWinnerContextNotice": "基于胜出回答继续多轮上下文为 Lumina Pro 功能。",
+    "proExportNotice": "导出对比报告为 Lumina Pro 功能。"
   },
   "batchStudio": {
     "title": "批量工作台",
@@ -1284,7 +1288,8 @@
       "statusCompleted": "已完成",
       "progressSummary": "已处理 {{done}} / {{total}} ({{percent}}%)",
       "rateLimitWaiting": "触发速率限制 — {{seconds}} 秒后自动继续...",
-      "alreadyRunningNotice": "已有批量任务正在运行，请等待完成或停止后再切换文件夹。"
+      "alreadyRunningNotice": "已有批量任务正在运行，请等待完成或停止后再切换文件夹。",
+      "startBtnFreeLimited": "开始批处理（前 {{free}} 篇 · 另 {{locked}} 篇需 PRO）"
     },
     "queue": {
       "title": "任务队列",
@@ -1302,7 +1307,8 @@
       "statusApplied": "已应用",
       "statusRejected": "已拒绝",
       "statusSkipped": "已跳过",
-      "statusFailed": "失败"
+      "statusFailed": "失败",
+      "statusLocked": "PRO 锁定"
     },
     "inspector": {
       "title": "变更对比审查",
@@ -1336,7 +1342,12 @@
       "rollbackDone": "已恢复 {{count}} 篇笔记。",
       "rolledBackBadge": "已回滚",
       "snapshotsMissing": "没有可用于回滚的快照。"
-    }
+    },
+    "proCustomPromptNotice": "自定义提示词批处理为 Lumina Pro 功能。",
+    "proBulkApplyNotice": "一键批量应用为 Lumina Pro 功能。免费版可逐篇审阅并应用。",
+    "proInspectorTitle": "其余笔记在免费版中已锁定",
+    "proInspectorDesc": "免费版每次处理前 {{free}} 篇笔记（不限次数）。升级至 Pro 即可一次性处理其余 {{locked}} 篇笔记并解锁一键批量应用。",
+    "proInspectorCta": "查看 Pro 与许可证"
   },
   "voiceNote": {
     "cmdToggleRecord": "开始/停止 Voice-to-Note 录音",
@@ -1463,7 +1474,11 @@
       "recoveredSuccess": "已恢复并转换未完成的录音。",
       "createdNote": "已创建语音笔记: {{path}}",
       "audioSaved": "已保存音频文件: {{path}}"
-    }
+    },
+    "proMaxDurationReachedNotice": "已达到免费版 5 分钟录音上限，正在保存当前听写内容。",
+    "proFileTooLongNotice": "转换超过 5 分钟的音频文件需要 Lumina Pro。",
+    "proTemplateNotice": "AI 笔记整理与会议纪要为 Lumina Pro 功能。免费版仅提供纯语音听写。",
+    "proSettingNotice": "AI 整理模型、自动双向链接和自定义词库为 Lumina Pro 功能。"
   },
   "summarization": {
     "prompt": {
@@ -1475,5 +1490,22 @@
       "roleUser": "用户",
       "roleAI": "AI"
     }
+  },
+  "proUpgrade": {
+    "toastAction": "了解 Pro · 注册许可证 →",
+    "modalTitle": "Lumina Pro",
+    "modalSubtitle": "继续使用您自己的 API 密钥或本地模型，同时解锁无限制的生产力工作流。",
+    "splitTitle": "模型对比 Pro",
+    "splitDesc": "支持最多 4 个模型同时对比、盲测投票、基于胜出回答续写上下文以及导出 Markdown 报告。",
+    "batchTitle": "批处理工作室 Pro",
+    "batchDesc": "突破每次 5 篇限制处理整个库，支持一键批量应用与自定义提示词配方。",
+    "voiceTitle": "AI 语音笔记 Pro",
+    "voiceDesc": "支持超过 5 分钟的录音与转录、AI 智能整理与会议模板、自动 [[双向链接]] 及自定义词库。",
+    "licenseHeading": "已有许可证密钥？",
+    "licensePlaceholder": "请输入 Lumina Pro 许可证密钥...",
+    "activateBtn": "激活",
+    "licenseEmptyNotice": "请输入许可证密钥。",
+    "licensePreLaunchNotice": "Pro 许可证验证功能即将上线，敬请期待！",
+    "closeBtn": "关闭"
   }
 }

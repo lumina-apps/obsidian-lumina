@@ -15,6 +15,8 @@ export interface EntitlementState {
 	status: LicenseStatus;
 	/** 활성화된 Pro 기능 집합 */
 	enabledFeatures: ReadonlySet<ProFeatureId>;
+	/** 무료(Freemium) 기본 노출로 출시된 기능 집합 */
+	releasedFeatures?: ReadonlySet<ProFeatureId>;
 	/** 만료 시각 (Unix ms, 무기한이거나 미설정 시 null) */
 	expiresAt?: number | null;
 	/** 마지막 서버 검증 시각 (Unix ms) */

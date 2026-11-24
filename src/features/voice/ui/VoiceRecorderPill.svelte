@@ -1,5 +1,9 @@
 <script lang="ts">
 	import { Platform } from "obsidian";
+	import {
+		FREE_MAX_VOICE_DURATION_SEC,
+		hasProFeature,
+	} from "../../../core/store/entitlementStore";
 	import { voiceStore } from "../../../core/store/voiceStore";
 	import { tStore } from "../../../shared/locales/index";
 	import type { VoiceTemplateId } from "../../../shared/types/voice.types";
@@ -13,6 +17,7 @@
 	let captionsBoxEl = $state<HTMLDivElement | null>(null);
 
 	const state = $derived($voiceStore);
+	const isProVoice = hasProFeature("voice-note");
 	const isMobile = Platform.isMobile;
 	const isRecordingOrPaused = $derived(
 		state.status === "recording" || state.status === "paused",
@@ -38,7 +43,11 @@
 
 	function handleTemplateChange(ev: Event): void {
 		const target = ev.currentTarget as HTMLSelectElement;
-		manager.setTemplateId(target.value as VoiceTemplateId);
+		const nextTpl = target.value as VoiceTemplateId;
+		if (!$isProVoice && nextTpl !== "verbatim") {
+			target.value = "verbatim";
+		}
+		manager.setTemplateId(nextTpl);
 	}
 </script>
 
@@ -135,19 +144,25 @@
 						{/each}
 					</div>
 
-					<span class="lumina-voice-timer">{formatTimestamp(state.elapsedSec)}</span>
+					<span class="lumina-voice-timer">
+						{formatTimestamp(state.elapsedSec)}{#if !$isProVoice} / {formatTimestamp(FREE_MAX_VOICE_DURATION_SEC)}{/if}
+					</span>
 				</div>
 
 				<div class="lumina-voice-controls">
 					<select
 						class="lumina-voice-select"
-						value={state.templateId}
+						value={$isProVoice ? state.templateId : "verbatim"}
 						onchange={handleTemplateChange}
 						aria-label={$tStore("voiceNote.settings.defaultTemplate.name")}
 					>
-						<option value="clean">{$tStore("voiceNote.templates.clean")}</option>
-						<option value="meeting">{$tStore("voiceNote.templates.meeting")}</option>
 						<option value="verbatim">{$tStore("voiceNote.templates.verbatim")}</option>
+						<option value="clean">
+							{$tStore("voiceNote.templates.clean")}{!$isProVoice ? " 🔒 PRO" : ""}
+						</option>
+						<option value="meeting">
+							{$tStore("voiceNote.templates.meeting")}{!$isProVoice ? " 🔒 PRO" : ""}
+						</option>
 					</select>
 
 					<button
@@ -300,6 +315,7 @@
 		font-variant-numeric: tabular-nums;
 		font-weight: 600;
 		min-width: 42px;
+		white-space: nowrap;
 	}
 
 	.lumina-voice-controls,

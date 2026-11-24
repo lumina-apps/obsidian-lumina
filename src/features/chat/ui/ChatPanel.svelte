@@ -50,7 +50,7 @@
 	import { useChatActions } from "./composables/useChatActions";
 	import { createDropHandler, createDragOverHandler } from "./composables/useFileAttachment";
 	import type { TranslationKeys } from "../../../shared/locales/locale.types";
-	import { hasProFeature } from "../../../core/store/entitlementStore";
+	import { hasFeatureAccess } from "../../../core/store/entitlementStore";
 	import { activateMainView } from "../../../core/views/viewHelper";
 	import { SPLIT_CHAT_VIEW_TYPE } from "../../../shared/constants/viewTypes";
 
@@ -129,7 +129,7 @@
 
 	// ── Controller & Pro 권한 ──────────────────────────────────────────────
 	let ctrl: ChatController | null = $state(null);
-	const splitChatEntitled = hasProFeature("split-chat");
+	const splitChatEntitled = hasFeatureAccess("split-chat");
 
 	function openSplitChat(): void {
 		void activateMainView(plugin.app.workspace, SPLIT_CHAT_VIEW_TYPE);

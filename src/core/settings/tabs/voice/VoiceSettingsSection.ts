@@ -23,8 +23,13 @@ import type {
 	VoiceTemplateId,
 } from '../../../../shared/types/voice.types';
 import { parseProviderModelValue, toProviderModelValue } from '../../../../shared/utils/modelUtils';
-import { canUseFeature } from '../../../store/entitlementStore';
+import { notifyProFeatureLocked } from '../../../../shared/utils/proUpgradeModal';
+import { canUseFeature, canUseProFeature } from '../../../store/entitlementStore';
 import type { LuminaSettingTab } from '../../settingTab';
+
+function appendProBadge(setting: Setting): void {
+	setting.nameEl.createSpan({ text: 'PRO', cls: 'lumina-pro-badge-inline' });
+}
 
 /**
  * Voice-to-Note 설정 섹션을 컨테이너에 렌더링합니다.
@@ -33,6 +38,7 @@ import type { LuminaSettingTab } from '../../settingTab';
 export function renderVoiceSettingsSection(tab: LuminaSettingTab, el: HTMLElement): void {
 	if (!canUseFeature('voice-note')) return;
 
+	const isPro = canUseProFeature('voice-note');
 	const prefs = getVoicePreferences(tab.plugin.settings);
 
 	tab.sectionHeading(el, t('voiceNote.settings.heading'));
@@ -61,17 +67,31 @@ export function renderVoiceSettingsSection(tab: LuminaSettingTab, el: HTMLElemen
 		});
 
 	// 2. 기본 출력 템플릿
-	new Setting(el)
+	const templateSetting = new Setting(el)
 		.setName(t('voiceNote.settings.defaultTemplate.name'))
 		.setDesc(t('voiceNote.settings.defaultTemplate.desc'))
 		.addDropdown((dd) => {
-			dd.addOption('clean', t('voiceNote.settings.defaultTemplate.clean'));
-			dd.addOption('meeting', t('voiceNote.settings.defaultTemplate.meeting'));
 			dd.addOption('verbatim', t('voiceNote.settings.defaultTemplate.verbatim'));
-			dd.setValue(prefs.defaultTemplate).onChange(async (val) => {
+			dd.addOption(
+				'clean',
+				`${t('voiceNote.settings.defaultTemplate.clean')}${!isPro ? ' 🔒 PRO' : ''}`,
+			);
+			dd.addOption(
+				'meeting',
+				`${t('voiceNote.settings.defaultTemplate.meeting')}${!isPro ? ' 🔒 PRO' : ''}`,
+			);
+			dd.setValue(isPro ? prefs.defaultTemplate : 'verbatim').onChange(async (val) => {
+				if (!isPro && val !== 'verbatim') {
+					dd.setValue('verbatim');
+					notifyProFeatureLocked(tab.app, 'voice-note', t('voiceNote.proTemplateNotice'));
+					return;
+				}
 				await updateVoicePreferences(tab.plugin, { defaultTemplate: val as VoiceTemplateId });
 			});
 		});
+	if (!isPro) {
+		appendProBadge(templateSetting);
+	}
 
 	// 3. 오디오 보관 방식
 	new Setting(el)
@@ -167,7 +187,7 @@ export function renderVoiceSettingsSection(tab: LuminaSettingTab, el: HTMLElemen
 
 	// 5. 노트 정리용 LLM 모델 (사용자 연결 프로바이더만 재사용)
 	const llmEligible = getVoiceEligibleLlmProviders(tab.plugin.settings.connections.providers);
-	new Setting(el)
+	const llmSetting = new Setting(el)
 		.setName(t('voiceNote.settings.llmModel.name'))
 		.setDesc(t('voiceNote.settings.llmModel.desc'))
 		.addDropdown((dd) => {
@@ -176,15 +196,20 @@ export function renderVoiceSettingsSection(tab: LuminaSettingTab, el: HTMLElemen
 				for (const model of prov.availableModels) {
 					dd.addOption(
 						toProviderModelValue(prov.id, model),
-						`[${PROVIDER_LABELS[prov.type] ?? prov.type}] ${model}`,
+						`[${PROVIDER_LABELS[prov.type] ?? prov.type}] ${model}${!isPro ? ' 🔒 PRO' : ''}`,
 					);
 				}
 			}
 			const curVal =
-				prefs.llmProviderId && prefs.llmModelId
+				isPro && prefs.llmProviderId && prefs.llmModelId
 					? toProviderModelValue(prefs.llmProviderId, prefs.llmModelId)
 					: '';
 			dd.setValue(curVal).onChange(async (val) => {
+				if (!isPro) {
+					dd.setValue('');
+					notifyProFeatureLocked(tab.app, 'voice-note', t('voiceNote.proSettingNotice'));
+					return;
+				}
 				if (!val) {
 					await updateVoicePreferences(tab.plugin, { llmProviderId: '', llmModelId: '' });
 					return;
@@ -198,6 +223,9 @@ export function renderVoiceSettingsSection(tab: LuminaSettingTab, el: HTMLElemen
 				}
 			});
 		});
+	if (!isPro) {
+		appendProBadge(llmSetting);
+	}
 
 	// 6. 음성 언어 힌트
 	new Setting(el)
@@ -215,14 +243,22 @@ export function renderVoiceSettingsSection(tab: LuminaSettingTab, el: HTMLElemen
 		});
 
 	// 7. 자동 위키링크([[...]])
-	new Setting(el)
+	const wikiLinkSetting = new Setting(el)
 		.setName(t('voiceNote.settings.autoWikiLink.name'))
 		.setDesc(t('voiceNote.settings.autoWikiLink.desc'))
 		.addToggle((toggle) => {
-			toggle.setValue(prefs.autoWikiLink).onChange(async (val) => {
+			toggle.setValue(isPro ? prefs.autoWikiLink : false).onChange(async (val) => {
+				if (!isPro) {
+					toggle.setValue(false);
+					notifyProFeatureLocked(tab.app, 'voice-note', t('voiceNote.proSettingNotice'));
+					return;
+				}
 				await updateVoicePreferences(tab.plugin, { autoWikiLink: val });
 			});
 		});
+	if (!isPro) {
+		appendProBadge(wikiLinkSetting);
+	}
 
 	// 8. 원본 스크립트 접기 콜아웃 포함
 	new Setting(el)
@@ -235,17 +271,36 @@ export function renderVoiceSettingsSection(tab: LuminaSettingTab, el: HTMLElemen
 		});
 
 	// 9. 고유명사 / 전문용어 사전
-	new Setting(el)
+	const vocabSetting = new Setting(el)
 		.setName(t('voiceNote.settings.customVocabulary.name'))
 		.setDesc(t('voiceNote.settings.customVocabulary.desc'))
 		.addTextArea((text) => {
 			text
 				.setPlaceholder(t('voiceNote.settings.customVocabulary.placeholder'))
-				.setValue(formatCustomVocabulary(prefs.customVocabulary))
+				.setValue(isPro ? formatCustomVocabulary(prefs.customVocabulary) : '')
 				.onChange(async (val) => {
+					if (!isPro) {
+						text.setValue('');
+						notifyProFeatureLocked(tab.app, 'voice-note', t('voiceNote.proSettingNotice'));
+						return;
+					}
 					await updateVoicePreferences(tab.plugin, {
 						customVocabulary: parseCustomVocabulary(val),
 					});
 				});
+			if (!isPro) {
+				text.inputEl.readOnly = true;
+				text.inputEl.classList.add('is-locked');
+				// 모바일에서 잠긴 입력창을 탭했을 때 가상 키보드가 올라오지 않도록 즉시 포커스를 해제한다
+				text.inputEl.addEventListener('focus', () => {
+					text.inputEl.blur();
+				});
+				text.inputEl.addEventListener('click', () => {
+					notifyProFeatureLocked(tab.app, 'voice-note', t('voiceNote.proSettingNotice'));
+				});
+			}
 		});
+	if (!isPro) {
+		appendProBadge(vocabSetting);
+	}
 }
