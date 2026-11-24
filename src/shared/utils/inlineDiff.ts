@@ -467,8 +467,8 @@ export function computeInlineDiff(removedText: string, addedText: string): Inlin
 	const removedLines = splitDiffLines(removedText);
 	const addedLines = splitDiffLines(addedText);
 
-	const removedResult: (InlineSegment[] | null)[] = new Array(removedLines.length).fill(null);
-	const addedResult: (InlineSegment[] | null)[] = new Array(addedLines.length).fill(null);
+	const removedResult: (InlineSegment[] | null)[] = new Array<InlineSegment[] | null>(removedLines.length).fill(null);
+	const addedResult: (InlineSegment[] | null)[] = new Array<InlineSegment[] | null>(addedLines.length).fill(null);
 	const mergedResult: MergedLine[] = [];
 
 	if (
