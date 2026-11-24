@@ -38,6 +38,7 @@
 	// Utils
 	import { filterParentChunks, getAdaptiveMinSimilarity } from '../utils/searchUtils';
 	import { insertLinkToActiveEditor } from '../../../shared/utils/editorUtils';
+	import { openLinkTextSafely } from '../../../shared/utils/workspaceNavUtils';
 	import { Notice, Keymap, Platform, type TFile } from 'obsidian';
 	import { debugLogger } from '../../../shared/debugLogger';
 	import { normalizeError } from '../../../shared/utils/errorUtils';
@@ -283,7 +284,8 @@
 	}
 
 	async function handleOpenInSplit(path: string) {
-		plugin.app.workspace.openLinkText(path, '', Platform.isMobile ? 'tab' : 'split');
+		const target = Platform.isMobile && !Platform.isTablet ? 'tab' : 'split';
+		await openLinkTextSafely(plugin.app, path, '', target);
 	}
 
 	async function handleToggleStage(result: SearchResult) {

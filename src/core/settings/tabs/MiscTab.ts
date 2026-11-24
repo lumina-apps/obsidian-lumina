@@ -18,6 +18,7 @@ import { activateView, closeView } from '../../views/viewHelper';
 import { DEBUG_VIEW_TYPE } from '../../../shared/constants/viewTypes';
 import { canUseFeature } from '../../store/entitlementStore';
 import { renderVoiceSettingsSection } from './voice/VoiceSettingsSection';
+import { isRagEffectiveOnCurrentPlatform } from '../../../shared/utils/modelUtils';
 
 export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 	const s = tab.plugin.settings.misc;
@@ -409,8 +410,10 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 
 							// 12. RAG 자동 재인덱싱
 							if (tab.plugin.settings.connections.ragEnabled) {
-								if (Platform.isMobile && tab.plugin.settings.connections.embedding.mode === 'auto') {
-									new Notice(t('uiMessages.noticeMobileRag'), 10000);
+								if (Platform.isMobile && !isRagEffectiveOnCurrentPlatform(tab.plugin.settings.connections)) {
+									if (tab.plugin.settings.connections.embedding.mode === 'auto') {
+										new Notice(t('uiMessages.noticeMobileRag'), 10000);
+									}
 								} else {
 									initEmbeddingWorker(tab.plugin, false, true).catch((err: unknown) => {
 										debugLogger.logError('rag', normalizeError(err, `RAG 재초기화 실패: ${err}`));

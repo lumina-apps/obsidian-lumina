@@ -78,14 +78,20 @@
 		if (isOpen) {
 			if (Platform.isMobile && containerEl) {
 				const rect = containerEl.getBoundingClientRect();
-				const top = rect.bottom > 0 ? Math.round(rect.bottom + 4) : 56;
+				const hostEl = containerEl.closest('.lumina-chat, .lumina-split-root') as HTMLElement | null;
+				const hostRect = hostEl ? hostEl.getBoundingClientRect() : null;
+				const offsetTop = hostRect ? rect.bottom - hostRect.top : rect.bottom;
+				const top = offsetTop > 0 ? Math.round(offsetTop + 4) : 56;
 				const viewportW = typeof window !== "undefined" ? window.innerWidth : 390;
-				if (viewportW > 600) {
-					// 태블릿 등 넓은 모바일 화면에서는 트리거 좌/우 기준 360px 앵커 팝오버로 표시
-					const dropdownW = Math.min(360, viewportW - 24);
-					const rawLeft = dropdownAlign === "left" ? rect.left : rect.right - dropdownW;
-					const clampedLeft = Math.max(12, Math.min(rawLeft, viewportW - dropdownW - 12));
-					mobileDropdownStyle = `top: ${top}px; left: ${Math.round(clampedLeft)}px; right: auto; width: ${dropdownW}px; max-width: calc(100vw - 24px);`;
+				const boundW = hostRect && hostRect.width > 0 ? hostRect.width : viewportW;
+				if (viewportW > 600 && boundW > 384) {
+					// 태블릿 등 넓은 컨테이너에서는 트리거 좌/우 기준 360px 앵커 팝오버로 표시 (컨테이너 상대 좌표 보정)
+					const dropdownW = Math.min(360, boundW - 24);
+					const relLeft = hostRect ? rect.left - hostRect.left : rect.left;
+					const relRight = hostRect ? rect.right - hostRect.left : rect.right;
+					const rawLeft = dropdownAlign === "left" ? relLeft : relRight - dropdownW;
+					const clampedLeft = Math.max(12, Math.min(rawLeft, boundW - dropdownW - 12));
+					mobileDropdownStyle = `top: ${top}px; left: ${Math.round(clampedLeft)}px; right: auto; width: ${dropdownW}px; max-width: calc(100% - 24px);`;
 				} else {
 					mobileDropdownStyle = `top: ${top}px;`;
 				}

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
-	import { TFile, type EventRef } from 'obsidian';
+	import { Platform, TFile, type EventRef } from 'obsidian';
 	import type LuminaPlugin from '../../../main';
 	import { isRagEnabled } from '../../../core/store/settingsStore';
 	import { indexingState } from '../../../core/store/ragStore';
@@ -11,6 +11,7 @@
 	import { tStore } from '../../../shared/locales/index';
 	import { debugLogger } from '../../../shared/debugLogger';
 	import { normalizeError } from '../../../shared/utils/errorUtils';
+	import { resolveSafeLeafTarget, revealLeafOnMobile } from '../../../shared/utils/workspaceNavUtils';
 
 	let { plugin }: { plugin: LuminaPlugin } = $props();
 
@@ -152,8 +153,10 @@
 		try {
 			const file = plugin.app.vault.getAbstractFileByPath(nodeId);
 			if (file instanceof TFile) {
-				const leaf = plugin.app.workspace.getLeaf(false);
+				const workspace = plugin.app.workspace;
+				const leaf = workspace.getLeaf(resolveSafeLeafTarget(workspace, false));
 				await leaf.openFile(file);
+				await revealLeafOnMobile(workspace, leaf);
 			}
 		} catch (e) {
 			debugLogger.logError('graph', normalizeError(e, `Failed to open node file ${nodeId}: ${e}`));
@@ -166,7 +169,22 @@
 		<div class="lumina-graph-panel__empty">
 			<div class="lumina-graph-panel__empty-icon">🔍</div>
 			<p>{$tStore('discovery.emptyStateText')}</p>
-			<p class="lumina-graph-panel__empty-sub">{$tStore('discovery.emptyStateSub')}</p>
+			<p class="lumina-graph-panel__empty-sub">
+				{Platform.isMobile ? $tStore('uiMessages.noticeMobileRag') : $tStore('discovery.emptyStateSub')}
+			</p>
+		</div>
+	{:else if $indexingState.status === 'error'}
+		<div class="lumina-graph-panel__empty">
+			<div class="lumina-graph-panel__empty-icon">⚠️</div>
+			<p>{$indexingState.errorMessage || $tStore('discovery.indexError')}</p>
+		</div>
+	{:else if $indexingState.status === 'idle' && !plugin.indexer}
+		<div class="lumina-graph-panel__empty">
+			<div class="lumina-graph-panel__empty-icon">🔍</div>
+			<p>{$tStore('discovery.emptyStateText')}</p>
+			<p class="lumina-graph-panel__empty-sub">
+				{Platform.isMobile ? $tStore('uiMessages.noticeMobileRag') : $tStore('discovery.emptyStateSub')}
+			</p>
 		</div>
 	{:else if $indexingState.status !== 'ready'}
 		<div class="lumina-graph-panel__empty">

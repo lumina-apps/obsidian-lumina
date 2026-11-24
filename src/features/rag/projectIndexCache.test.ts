@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { Platform } from 'obsidian';
 import { projectIndexCache } from './projectIndexCache';
 import type { VaultIndexer } from './indexer';
 
@@ -9,8 +10,15 @@ function createMockIndexer(): VaultIndexer {
 }
 
 describe('ProjectIndexCache', () => {
+	const origIsMobile = Platform.isMobile;
+
 	beforeEach(() => {
 		projectIndexCache.destroyAll();
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+		(Platform as { isMobile: boolean }).isMobile = origIsMobile;
 	});
 
 	it('should store and retrieve indexers', () => {
@@ -92,6 +100,23 @@ describe('ProjectIndexCache', () => {
 		expect(projectIndexCache.has('p1')).toBe(true);
 		expect(projectIndexCache.has('p2')).toBe(false);
 		expect(projectIndexCache.has('p6')).toBe(true);
+	});
+
+	it('모바일 환경에서는 캐시 한도를 1개로 제한하여 두 번째 프로젝트 추가 시 기존 캐시를 해제한다', () => {
+		(Platform as { isMobile: boolean }).isMobile = true;
+		vi.useFakeTimers();
+
+		const idx1 = createMockIndexer();
+		const idx2 = createMockIndexer();
+		vi.setSystemTime(1000);
+		projectIndexCache.set('p1', idx1);
+		vi.setSystemTime(2000);
+		projectIndexCache.set('p2', idx2, 'p2');
+
+		expect(idx1.destroy).toHaveBeenCalledTimes(1);
+		expect(idx2.destroy).not.toHaveBeenCalled();
+		expect(projectIndexCache.has('p1')).toBe(false);
+		expect(projectIndexCache.has('p2')).toBe(true);
 	});
 });
 

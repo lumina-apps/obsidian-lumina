@@ -111,8 +111,8 @@ export const autocompletePlugin = (handler: AutocompleteHandler) => ViewPlugin.f
 	}
 
 	update(update: ViewUpdate) {
-		// 모바일 가상 키보드에는 Tab/ArrowRight 수락 수단이 없으므로 백그라운드 자동완성 API 호출을 생략
-		if (typeof Platform !== 'undefined' && Platform?.isMobile) {
+		// 스마트폰 가상 키보드에는 Tab/ArrowRight 수락 수단이 없으므로 백그라운드 자동완성 API 호출을 생략 (태블릿은 외장 키보드 허용)
+		if (typeof Platform !== 'undefined' && Platform?.isMobile && !Platform?.isTablet) {
 			return;
 		}
 		if (update.docChanged) {

@@ -1,6 +1,7 @@
-import { TAbstractFile, TFile, Workspace } from 'obsidian';
+import { TAbstractFile, TFile, Workspace, type WorkspaceLeaf } from 'obsidian';
 import { debugLogger } from '../../../shared/debugLogger';
 import { normalizeError } from '../../../shared/utils/errorUtils';
+import { resolveSafeLeafTarget, revealLeafOnMobile } from '../../../shared/utils/workspaceNavUtils';
 
 /**
  * 리프 선택 전략:
@@ -67,12 +68,22 @@ export async function openNoteFile({
 	const abstractFile = vault.getAbstractFileByPath(path);
 
 	if (!abstractFile) {
-		void workspace.openLinkText(path, '', newLeaf);
+		const target = resolveSafeLeafTarget(workspace, newLeaf);
+		await workspace.openLinkText(path, '', target);
+		await revealLeafOnMobile(
+			workspace,
+			(workspace as unknown as { activeLeaf?: WorkspaceLeaf | null }).activeLeaf,
+		);
 		return;
 	}
 
 	if (!(abstractFile instanceof TFile)) {
-		void workspace.openLinkText(path, '', newLeaf);
+		const target = resolveSafeLeafTarget(workspace, newLeaf);
+		await workspace.openLinkText(path, '', target);
+		await revealLeafOnMobile(
+			workspace,
+			(workspace as unknown as { activeLeaf?: WorkspaceLeaf | null }).activeLeaf,
+		);
 		return;
 	}
 
@@ -84,4 +95,5 @@ export async function openNoteFile({
 	}
 
 	await targetLeaf.openFile(abstractFile, { eState: { line } });
+	await revealLeafOnMobile(workspace, targetLeaf);
 }

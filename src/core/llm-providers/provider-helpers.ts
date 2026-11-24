@@ -130,10 +130,27 @@ export async function requestUrlWithAbort(params: RequestUrlParam, signal?: Abor
 	}
 
 	return new Promise((resolve, reject) => {
-		const reqPromise = requestUrl(params);
-		
+		// 모바일 Capacitor 브릿지에서는 throw: false로 요청해 HTTP 4xx/5xx 응답 본문(text/json)을 유실 없이 보존
+		const isMobile = typeof Platform !== 'undefined' && Boolean(Platform?.isMobile);
+		const reqParams: RequestUrlParam = isMobile ? { ...params, throw: false } : params;
+		const reqPromise = requestUrl(reqParams);
+
 		if (!signal) {
-			reqPromise.then(resolve).catch((err) => reject(toError(err)));
+			reqPromise
+				.then((res) => {
+					if (isMobile && typeof res?.status === 'number' && res.status >= 400) {
+						const httpErr = Object.assign(new Error(`Request failed, status ${res.status}`), {
+							status: res.status,
+							text: res.text,
+							json: res.json,
+							headers: res.headers,
+						});
+						reject(httpErr);
+						return;
+					}
+					resolve(res);
+				})
+				.catch((err) => reject(toError(err)));
 			return;
 		}
 
@@ -151,6 +168,16 @@ export async function requestUrlWithAbort(params: RequestUrlParam, signal?: Abor
 
 		reqPromise
 			.then((res) => {
+				if (isMobile && typeof res?.status === 'number' && res.status >= 400) {
+					const httpErr = Object.assign(new Error(`Request failed, status ${res.status}`), {
+						status: res.status,
+						text: res.text,
+						json: res.json,
+						headers: res.headers,
+					});
+					reject(httpErr);
+					return;
+				}
 				resolve(res);
 			})
 			.catch((err) => {

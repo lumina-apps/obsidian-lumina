@@ -6,7 +6,8 @@ import * as ragStore from '../../core/store/ragStore';
 import * as checkpointManager from './checkpointManager';
 
 vi.mock('obsidian', () => ({
-	Notice: vi.fn()
+	Notice: vi.fn(),
+	Platform: { isMobile: false, isTablet: false, isDesktop: true },
 }));
 vi.mock('./fileProcessor');
 vi.mock('../../core/store/ragStore');

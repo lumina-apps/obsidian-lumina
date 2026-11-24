@@ -19,7 +19,7 @@ import {
 	mergeExcludedPathsWithHistory,
 } from '../../../shared/utils/historyPathUtils';
 
-export const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif']);
+export const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif', 'heic', 'heif']);
 const MAX_TEXT_LENGTH = 2000000; // 물리적 텍스트 안전 상한선 (약 50만 토큰, OOM 힙 크래시 방지)
 const MAX_URL_TEXT_LENGTH = 50000; // 외부 웹페이지 본문 최대 길이 (약 1.2만~1.5만 토큰)
 

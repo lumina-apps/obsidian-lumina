@@ -42,6 +42,7 @@
 		resolveTargetFiles,
 	} from "../batchTargetResolver";
 	import { getBatchEligibleProviders } from "../recipes/batchRecipes";
+	import { openLinkTextSafely } from "../../../shared/utils/workspaceNavUtils";
 
 	let { plugin }: { plugin: LuminaPlugin } = $props();
 
@@ -52,10 +53,17 @@
 	let confirmRollbackId = $state<string | null>(null);
 	let customPromptTextareaEl = $state<HTMLTextAreaElement | null>(null);
 
-	// 볼트 파일 및 메타데이터 변화 시 대상 노트 수 재계산 트리거
+	// 볼트 파일 및 메타데이터 변화 시 대상 노트 수 재계산 트리거 (대량 변경 시 디바운스로 부하 방지)
 	onMount(() => {
+		let bumpTimer: number | null = null;
 		const bump = () => {
-			vaultTick++;
+			if (bumpTimer !== null) {
+				window.clearTimeout(bumpTimer);
+			}
+			bumpTimer = window.setTimeout(() => {
+				bumpTimer = null;
+				vaultTick++;
+			}, 200);
 		};
 		const vaultRefs = [
 			plugin.app.vault.on("create", bump),
@@ -65,6 +73,10 @@
 		const metaRef = plugin.app.metadataCache?.on("changed", bump);
 
 		return () => {
+			if (bumpTimer !== null) {
+				window.clearTimeout(bumpTimer);
+				bumpTimer = null;
+			}
 			for (const ref of vaultRefs) {
 				plugin.app.vault.offref(ref);
 			}
@@ -382,7 +394,7 @@
 	}
 
 	function openNoteInWorkspace(path: string): void {
-		void plugin.app.workspace.openLinkText(path, "", false);
+		void openLinkTextSafely(plugin.app, path, "", false);
 	}
 </script>
 
@@ -1936,6 +1948,14 @@
 
 	/* 좁은 배치 스튜디오(폰·태블릿 분할 창 <= 720px)에서만 1열 스택 및 줄바꿈 적용 */
 	@container (max-width: 720px) {
+		:global(body.is-mobile) .lumina-batch-studio {
+			overflow-y: auto;
+		}
+
+		:global(body.is-mobile) .lumina-batch-compare-grid {
+			grid-template-columns: 1fr;
+		}
+
 		:global(body.is-mobile) .lumina-batch-setup-grid {
 			max-height: 220px;
 		}

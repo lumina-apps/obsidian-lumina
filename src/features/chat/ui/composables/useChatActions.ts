@@ -8,6 +8,7 @@ import { toVaultRelativePath } from "../../utils/llmExecutor";
 import { toggleFavoriteModel } from "../../../../shared/utils/modelUtils";
 import { t } from "../../../../shared/locales/helpers";
 import { isWebSearchProviderConfigured } from "../../../../shared/utils/webSearchConfig";
+import { resolveSafeLeafTarget, revealLeafOnMobile } from "../../../../shared/utils/workspaceNavUtils";
 
 export interface ChatActionsContext {
 	getPlugin: () => LuminaPlugin;
@@ -136,7 +137,9 @@ export function useChatActions(ctx: ChatActionsContext) {
 		const relPath = toVaultRelativePath(plugin, path);
 		const file = plugin.app.vault.getAbstractFileByPath(relPath);
 		if (file instanceof TFile) {
-			void plugin.app.workspace.getLeaf(false).openFile(file);
+			const workspace = plugin.app.workspace;
+			const leaf = workspace.getLeaf(resolveSafeLeafTarget(workspace, false));
+			void leaf.openFile(file).then(() => revealLeafOnMobile(workspace, leaf));
 		} else {
 			new Notice(`File not found: ${path}`);
 		}

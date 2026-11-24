@@ -1,5 +1,6 @@
 import { Component, MarkdownRenderer, Keymap, setIcon, type App, type WorkspaceLeaf } from 'obsidian';
 import { toVaultRelativePath } from './fileUtils';
+import { openLinkTextSafely } from './workspaceNavUtils';
 
 interface SearchView {
 	setQuery?: (query: string) => void;
@@ -118,7 +119,7 @@ function handleLinkClick(e: MouseEvent, app: App, container: HTMLElement): void 
 			: Boolean(e.ctrlKey || e.metaKey);
 		const newLeaf = isMod || e.button === 1;
 
-		void app.workspace.openLinkText(resolved.target, '', newLeaf ? 'tab' : false);
+		void openLinkTextSafely(app, resolved.target, '', newLeaf ? 'tab' : false);
 	}
 }
 

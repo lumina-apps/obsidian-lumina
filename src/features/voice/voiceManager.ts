@@ -108,6 +108,7 @@ export class VoiceNoteManager {
 	private unsubVoiceStore: (() => void) | null = null;
 	private isDestroyed = false;
 	private autoStoppingOnLimit = false;
+	private captionsEnabled = false;
 
 	constructor(plugin: LuminaPlugin) {
 		this.plugin = plugin;
@@ -221,6 +222,7 @@ export class VoiceNoteManager {
 
 		const isProVoice = canUseProFeature('voice-note');
 		this.autoStoppingOnLimit = false;
+		this.captionsEnabled = false;
 		this.liveInsertStart = this.targetEditor ? this.targetEditor.getCursor() : null;
 		this.liveInsertEnd = this.liveInsertStart ? { ...this.liveInsertStart } : null;
 		this.liveQueuePromise = Promise.resolve();
@@ -271,7 +273,16 @@ export class VoiceNoteManager {
 				});
 			},
 			onSpeechChunk: (chunk) => {
+				// 모바일 기본 post-process 모드에서 자막이 꺼져 있으면 불필요한 클라우드 이중 업로드 생략
+				if (Platform.isMobile && prefs.recordMode === 'post-process' && !this.captionsEnabled) {
+					return;
+				}
 				this.enqueueLiveChunkTranscription(chunk.wavBlob, chunk.offsetSec);
+			},
+			onInterrupted: () => {
+				if (getVoiceState().status === 'recording') {
+					patchVoiceState({ status: 'paused', audioLevel: 0 });
+				}
 			},
 		});
 
@@ -306,6 +317,11 @@ export class VoiceNoteManager {
 		patchVoiceState({ status: 'recording' });
 	}
 
+	/** 실시간 자막 패널 표시 여부를 기록해 모바일 이중 업로드를 제어합니다. */
+	setCaptionsEnabled(enabled: boolean): void {
+		this.captionsEnabled = enabled;
+	}
+
 	/** 녹음 중 출력 템플릿 변경 */
 	setTemplateId(templateId: VoiceTemplateId): void {
 		if (!canUseProFeature('voice-note') && templateId !== 'verbatim') {
@@ -320,6 +336,7 @@ export class VoiceNoteManager {
 	 */
 	cancelRecording(): void {
 		this.autoStoppingOnLimit = false;
+		this.captionsEnabled = false;
 		this.abortController?.abort();
 		this.abortController = null;
 		this.recorder?.cancel();
@@ -470,13 +487,14 @@ export class VoiceNoteManager {
 		};
 		const handleWindowFocus = () => {
 			if (typeof window === 'undefined') return;
-			// cancel 이벤트를 지원하지 않는 구형 모바일 WebView 대비 300ms 후 미선택 <input> 정리
+			// cancel 이벤트를 지원하지 않는 모바일 파일 피커(iOS Files 등) 대비 지연 후 미선택 <input> 정리
+			const delayMs = Platform.isMobile ? 3000 : 300;
 			fallbackTimerId = window.setTimeout(() => {
 				fallbackTimerId = null;
 				if (input.isConnected && (!input.files || input.files.length === 0)) {
 					cleanupPicker();
 				}
-			}, 300);
+			}, delayMs);
 		};
 
 		input.addEventListener('cancel', cleanupPicker);

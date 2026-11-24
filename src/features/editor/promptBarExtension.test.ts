@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
-import type { Editor, MarkdownView, TFile } from 'obsidian';
+import { Platform, type Editor, type MarkdownView, type TFile } from 'obsidian';
 import {
 	buildPromptBarExtension,
 	openPromptBar,
@@ -816,5 +816,58 @@ describe('promptBarExtension', () => {
 		expect(updatedSelect.querySelectorAll('option')[1].textContent).toContain('gpt-4o');
 
 		resolveRun?.();
+	});
+
+	it('모바일 환경에서 입력 중 외부 pointerdown으로는 닫히지 않고 닫기 버튼으로 닫힌다', () => {
+		const origIsMobile = Platform.isMobile;
+		(Platform as { isMobile: boolean }).isMobile = true;
+		vi.useFakeTimers();
+
+		try {
+			view = new EditorView({
+				state: EditorState.create({
+					doc: 'Target line',
+					selection: { anchor: 0, head: 11 },
+					extensions: [buildPromptBarExtension(mockPlugin)],
+				}),
+				parent,
+			});
+
+			const editor = createMockEditorForCm(view);
+			const mdView = { file: { path: 'Note.md' } as TFile, editor } as unknown as MarkdownView;
+
+			openPromptBar(mockPlugin, editor, mdView);
+			vi.advanceTimersByTime(10);
+
+			const closeBtn = view.dom.querySelector('.lumina-promptbar-close-btn') as HTMLButtonElement | null;
+			const inputEl = view.dom.querySelector('.lumina-promptbar-input') as HTMLTextAreaElement;
+			expect(closeBtn).not.toBeNull();
+
+			inputEl.value = '작성 중인 프롬프트';
+			inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+
+			// 프롬프트가 비어있지 않을 때 바 외부 탭은 프롬프트 바를 닫지 않아야 함
+			const pointerDown = Object.assign(new Event('pointerdown', { bubbles: true }), {
+				clientX: 10,
+				clientY: 10,
+				pointerId: 1,
+			});
+			const pointerUp = Object.assign(new Event('pointerup', { bubbles: true }), {
+				clientX: 10,
+				clientY: 10,
+				pointerId: 1,
+			});
+			document.body.dispatchEvent(pointerDown);
+			document.body.dispatchEvent(pointerUp);
+
+			expect(view.dom.querySelector('.lumina-promptbar-input')).not.toBeNull();
+
+			// 명시적 모바일 닫기 버튼 클릭 시 닫힘
+			closeBtn!.click();
+			expect(view.dom.querySelector('.lumina-promptbar-input')).toBeNull();
+		} finally {
+			vi.useRealTimers();
+			(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+		}
 	});
 });

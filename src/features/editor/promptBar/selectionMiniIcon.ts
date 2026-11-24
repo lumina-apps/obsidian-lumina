@@ -2,7 +2,7 @@ import { StateField } from '@codemirror/state';
 import type { Extension } from '@codemirror/state';
 import { EditorView, showTooltip, ViewPlugin } from '@codemirror/view';
 import type { Tooltip, TooltipView, ViewUpdate } from '@codemirror/view';
-import { Platform, setIcon, type Editor, type MarkdownFileInfo, type MarkdownView } from 'obsidian';
+import { setIcon, type Editor, type MarkdownFileInfo, type MarkdownView } from 'obsidian';
 import type LuminaPlugin from '../../../main';
 import { t } from '../../../shared/locales/helpers';
 import {
@@ -38,13 +38,16 @@ class SelectionMiniIconTooltipView implements TooltipView {
 		setIcon(iconEl, 'sparkles');
 		btn.createSpan({ cls: 'lumina-mini-trigger-label', text: 'AI' });
 
-		// 클릭/터치 시 에디터 선택 영역이 해제되지 않도록 기본 동작 차단
+		// 마우스 클릭 시 에디터 선택 영역이 해제되지 않도록 기본 동작 차단
+		// 터치(pointerdown)에서 preventDefault()를 호출하면 iOS/iPadOS WebKit에서 click 합성이 취소되므로 전파만 중단
 		const preserveSelection = (e: Event) => {
 			e.preventDefault();
 			e.stopPropagation();
 		};
 		btn.addEventListener('mousedown', preserveSelection);
-		btn.addEventListener('pointerdown', preserveSelection);
+		btn.addEventListener('pointerdown', (e) => {
+			e.stopPropagation();
+		});
 
 		btn.addEventListener('click', (e) => {
 			e.preventDefault();
@@ -91,7 +94,7 @@ export function buildSelectionMiniIconExtension(
 					if (value && value.pos === anchor.pos) return value;
 					return {
 						pos: anchor.pos,
-						above: Platform.isMobile,
+						above: false,
 						strictSide: false,
 						create(view: EditorView) {
 							return new SelectionMiniIconTooltipView(plugin, view, onTriggerPromptBar);
@@ -177,7 +180,8 @@ export function buildSelectionMiniIconExtension(
 
 					if (hasPendingEditForView(plugin, this.view)) return;
 
-					const anchorPos = Platform.isMobile ? sel.from : sel.to;
+					// 모바일에서도 OS 복사/붙여넣기 콜아웃 메뉴와 겹치지 않도록 선택 끝 하단에 배치
+					const anchorPos = sel.to;
 					this.view.dispatch({
 						effects: setMiniIconEffect.of({ pos: anchorPos }),
 					});

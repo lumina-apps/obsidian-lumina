@@ -33,7 +33,6 @@ export function createBraveProvider(config: WebSearchProviderConfig): IWebSearch
 					method: 'GET',
 					headers: {
 						'Accept': 'application/json',
-						'Accept-Encoding': 'gzip',
 						'X-Subscription-Token': apiKey,
 					},
 				});

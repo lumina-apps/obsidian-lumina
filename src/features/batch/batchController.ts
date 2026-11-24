@@ -528,6 +528,20 @@ export class BatchStudioController {
 		activeRunAbortController = ac;
 		this.isPaused = false;
 
+		type WakeLockSentinelLike = { release: () => Promise<void> };
+		type NavigatorWithWakeLock = Navigator & {
+			wakeLock?: { request: (type: 'screen') => Promise<WakeLockSentinelLike> };
+		};
+		let wakeLockSentinel: WakeLockSentinelLike | null = null;
+		// 배치 실행 중 모바일 화면 꺼짐으로 인한 작업 중단 방지
+		try {
+			if (typeof navigator !== 'undefined') {
+				wakeLockSentinel = (await (navigator as NavigatorWithWakeLock).wakeLock?.request('screen')) ?? null;
+			}
+		} catch {
+			// Wake Lock 미지원 환경 또는 권한 거부 시 무시
+		}
+
 		try {
 			const queueSnapshot = [...getBatchState().queue];
 			for (const qItem of queueSnapshot) {
@@ -601,6 +615,14 @@ export class BatchStudioController {
 				}
 			}
 		} finally {
+			if (wakeLockSentinel) {
+				try {
+					await wakeLockSentinel.release();
+				} catch {
+					// Wake Lock 해제 오류 무시
+				}
+				wakeLockSentinel = null;
+			}
 			if (this.abortController === ac) {
 				this.abortController = null;
 			}

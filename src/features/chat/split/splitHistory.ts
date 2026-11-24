@@ -4,6 +4,7 @@ import { debugLogger } from '../../../shared/debugLogger';
 import { normalizeError } from '../../../shared/utils/errorUtils';
 import { sanitizeDisplayContent } from '../../../shared/utils/llmTextSanitizer';
 import { resolveDateTemplate } from '../../../shared/utils/datePathTemplate';
+import { revealLeafOnMobile } from '../../../shared/utils/workspaceNavUtils';
 import type {
 	SplitChatSession,
 	SplitLayoutMode,
@@ -338,6 +339,8 @@ export async function exportSplitSessionToMarkdown(
 	const targetPath = await getAvailableHistoryPath(app, exportFolder, filename, null);
 	const markdown = formatSplitComparisonMarkdown(session);
 	const file = await app.vault.create(targetPath, markdown);
-	await app.workspace.getLeaf('tab').openFile(file);
+	const leaf = app.workspace.getLeaf('tab');
+	await leaf.openFile(file);
+	await revealLeafOnMobile(app.workspace, leaf);
 	return file;
 }

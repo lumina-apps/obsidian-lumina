@@ -96,23 +96,27 @@ export function buildCategories(
 		});
 	}
 
-	// Folder
-	cats.push({
-		id: "folder",
-		icon: "folder",
-		label: getLabel("settings.chat.context.categoryFolder"),
-		show: true,
-		type: "folder",
-	});
+	// Folder (볼트에 하위 폴더가 실제로 존재할 때만 표시)
+	if (collectFolderPaths(ctx.files).length > 0) {
+		cats.push({
+			id: "folder",
+			icon: "folder",
+			label: getLabel("settings.chat.context.categoryFolder"),
+			show: true,
+			type: "folder",
+		});
+	}
 
-	// File
-	cats.push({
-		id: "file",
-		icon: "file-text",
-		label: getLabel("settings.chat.context.categoryFile"),
-		show: true,
-		type: "file",
-	});
+	// File (캔버스 외 첨부 가능한 파일이 있을 때만 표시)
+	if (ctx.files.some((f) => f.extension !== "canvas")) {
+		cats.push({
+			id: "file",
+			icon: "file-text",
+			label: getLabel("settings.chat.context.categoryFile"),
+			show: true,
+			type: "file",
+		});
+	}
 
 	// Tag
 	if (ctx.tagsInfo && Object.keys(ctx.tagsInfo).length > 0) {

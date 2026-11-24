@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { VoiceAudioRecorder } from '../audio/audioRecorder';
+import {
+	clearBackupSession,
+	loadBackupSession,
+	saveBackupSession,
+} from '../audio/audioRecoveryStore';
 
 interface MockWorkletInstance {
 	port: {
@@ -308,5 +313,159 @@ describe('VoiceAudioRecorder', () => {
 
 		const res = await recorder.stop();
 		expect(res.fullBlob.size).toBeGreaterThan(0);
+	});
+
+	it('트랙 ended 이벤트 발생 시 녹음 중이면 onInterrupted를 호출하고 stop() 중에는 무시한다', async () => {
+		vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(21);
+		vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+
+		const endedHolder: { cb: (() => void) | null } = { cb: null };
+		const addTrackListenerMock = vi.fn((event: string, cb: () => void) => {
+			if (event === 'ended') {
+				endedHolder.cb = cb;
+			}
+		});
+		const removeTrackListenerMock = vi.fn();
+
+		Object.defineProperty(navigator, 'mediaDevices', {
+			configurable: true,
+			value: {
+				getUserMedia: vi.fn().mockResolvedValue({
+					getTracks: () => [
+						{
+							stop: () => {
+								(trackStopMock as () => void)();
+								endedHolder.cb?.();
+							},
+							addEventListener: addTrackListenerMock,
+							removeEventListener: removeTrackListenerMock,
+						},
+					],
+				}),
+			},
+		});
+
+		const onInterrupted = vi.fn();
+		const recorder = new VoiceAudioRecorder({
+			onSpeechChunk: vi.fn(),
+			onInterrupted,
+		});
+
+		await recorder.start();
+		expect(addTrackListenerMock).toHaveBeenCalledWith('ended', expect.any(Function));
+
+		// 녹음 중 예기치 않은 트랙 종료 시 onInterrupted 호출
+		endedHolder.cb?.();
+		expect(onInterrupted).toHaveBeenCalledTimes(1);
+
+		// 정상 stop() 과정에서 track.stop()으로 발생한 ended는 무시
+		await recorder.stop();
+		expect(onInterrupted).toHaveBeenCalledTimes(1);
+		expect(removeTrackListenerMock).toHaveBeenCalledWith('ended', expect.any(Function));
+	});
+});
+
+describe('audioRecoveryStore - iOS IndexedDB ArrayBuffer 직렬화', () => {
+	afterEach(() => {
+		vi.unstubAllGlobals();
+		vi.restoreAllMocks();
+	});
+
+	it('Blob 청크를 ArrayBuffer 배열로 직렬화하여 저장하고 복구 시 Blob 배열로 복원한다', async () => {
+		const storedRows = new Map<string, Record<string, unknown>>();
+		const mockObjectStore = {
+			put: vi.fn((val: Record<string, unknown>) => {
+				storedRows.set(String(val.id), val);
+			}),
+			get: vi.fn((id: string) => {
+				const req: { result?: unknown; onsuccess: (() => void) | null; onerror: (() => void) | null } = {
+					result: undefined,
+					onsuccess: null,
+					onerror: null,
+				};
+				queueMicrotask(() => {
+					req.result = storedRows.get(id);
+					req.onsuccess?.();
+				});
+				return req;
+			}),
+			delete: vi.fn((id: string) => {
+				storedRows.delete(id);
+			}),
+		};
+		const mockDb = {
+			objectStoreNames: { contains: () => true },
+			createObjectStore: vi.fn(),
+			transaction: vi.fn(() => {
+				const tx: {
+					objectStore: () => typeof mockObjectStore;
+					oncomplete: (() => void) | null;
+					onerror: (() => void) | null;
+					error: null;
+				} = {
+					objectStore: () => mockObjectStore,
+					oncomplete: null,
+					onerror: null,
+					error: null,
+				};
+				queueMicrotask(() => {
+					tx.oncomplete?.();
+				});
+				return tx;
+			}),
+			close: vi.fn(),
+		};
+		vi.stubGlobal('indexedDB', {
+			open: vi.fn(() => {
+				const req: {
+					result: typeof mockDb;
+					onupgradeneeded: (() => void) | null;
+					onsuccess: (() => void) | null;
+					onerror: (() => void) | null;
+					error: null;
+				} = {
+					result: mockDb,
+					onupgradeneeded: null,
+					onsuccess: null,
+					onerror: null,
+					error: null,
+				};
+				queueMicrotask(() => {
+					req.onsuccess?.();
+				});
+				return req;
+			}),
+		});
+
+		const bytes = new Uint8Array([10, 20, 30, 40]);
+		const sourceChunk = {
+			size: bytes.byteLength,
+			type: 'audio/mp4',
+			arrayBuffer: async () => bytes.buffer.slice(0),
+		} as unknown as Blob;
+
+		await saveBackupSession({
+			chunks: [sourceChunk],
+			mimeType: 'audio/mp4',
+			elapsedSec: 12,
+			targetFilePath: 'Note.md',
+			templateId: 'clean',
+		});
+
+		const saved = storedRows.get('active');
+		expect(saved).toBeDefined();
+		expect(saved?.chunks).toBeUndefined();
+		expect(Array.isArray(saved?.chunkBuffers)).toBe(true);
+		expect((saved?.chunkBuffers as unknown[])[0]).toBeInstanceOf(ArrayBuffer);
+
+		const restored = await loadBackupSession();
+		expect(restored).not.toBeNull();
+		expect(restored!.mimeType).toBe('audio/mp4');
+		expect(restored!.chunks).toHaveLength(1);
+		expect(restored!.chunks[0]).toBeInstanceOf(Blob);
+		expect(restored!.chunks[0].size).toBe(4);
+
+		await clearBackupSession();
+		expect(storedRows.has('active')).toBe(false);
 	});
 });

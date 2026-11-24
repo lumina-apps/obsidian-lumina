@@ -2,7 +2,7 @@
  * 파일 목록을 읽고 청킹 → 임베딩하는 실제 처리 파이프라인입니다.
  */
 
-import { App, Notice, TFile } from 'obsidian';
+import { App, Notice, Platform, TFile } from 'obsidian';
 import type { ParentChunk, ChildChunk, EmbedFn, ParseBinaryFn, MarkdownFilterOptions } from '../../shared/types/rag.types';
 import { readAndPrepareFile } from './fileProcessor';
 import { incrementProcessed, incrementProcessedBy } from '../../core/store/ragStore';
@@ -75,7 +75,9 @@ export interface ProcessContext {
 
 export async function processFiles(files: TFile[], ctx: ProcessContext, startedAt: number, initialProcessedPaths: string[] = []): Promise<void> {
 	const fileCount = files.length;
-	const readConcurrency = fileCount <= SMALL_VAULT_THRESHOLD ? 1 : 32;
+	// 모바일 환경에서는 동시 파일 읽기 및 메모리 피크를 줄이기 위해 동시성을 4로 제한
+	const maxReadConcurrency = typeof Platform !== 'undefined' && Platform?.isMobile ? 4 : 32;
+	const readConcurrency = fileCount <= SMALL_VAULT_THRESHOLD ? 1 : maxReadConcurrency;
 	
 	const processedPaths: string[] = [...initialProcessedPaths];
 	const ckptTotal = ctx.totalFileCount > 0 ? ctx.totalFileCount : fileCount;

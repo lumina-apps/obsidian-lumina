@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Platform } from "obsidian";
 	import { tick } from "svelte";
 	import type { LLMProviderConfig, FavoriteModel } from "../../../shared/types/settings.types";
 	import type { FlattenedModel } from "../../../shared/utils/modelUtils";
@@ -64,9 +65,11 @@
 		onClose(true);
 	}
 
-	// 오픈 시 검색창에 포커스
+	// 오픈 시 검색창에 포커스 (모바일 가상키보드 자동 팝업 방지)
 	$effect(() => {
-		void tick().then(() => inputEl?.focus());
+		if (!Platform.isMobile) {
+			void tick().then(() => inputEl?.focus());
+		}
 	});
 
 	// Global keydown capture (팝업이 열려 있는 동안 키보드 네비게이션 처리)

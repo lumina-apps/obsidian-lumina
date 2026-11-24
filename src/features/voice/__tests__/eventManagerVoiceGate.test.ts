@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TFile, Menu, type EditorSuggestContext } from 'obsidian';
 
 vi.mock('obsidian', () => ({
+	Platform: { isMobile: false, isTablet: false, isDesktop: true },
 	TFile: class TFile {
 		path = '';
 		name = '';

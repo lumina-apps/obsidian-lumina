@@ -466,6 +466,13 @@
 	ondragover={handlePanelDragOver}
 >
 	{#if showHistory && ctrl}
+		{#if isCompact}
+			<div
+				class="lumina-split-root__drawer-backdrop"
+				role="presentation"
+				onclick={() => (showHistory = false)}
+			></div>
+		{/if}
 		<div class="lumina-split-root__drawer-wrap">
 			<SplitHistoryDrawer
 				app={plugin.app}
@@ -640,6 +647,13 @@
 		background: var(--background-primary);
 		font-family: var(--font-interface);
 		container-type: inline-size;
+	}
+
+	.lumina-split-root__drawer-backdrop {
+		position: absolute;
+		inset: 0;
+		z-index: 35;
+		background: rgba(0, 0, 0, 0.25);
 	}
 
 	.lumina-split-root__drawer-wrap {

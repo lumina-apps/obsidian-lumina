@@ -14,6 +14,7 @@ import type { GraphData } from '../../shared/types/graph.types';
 import { t } from '../../shared/locales/helpers';
 import { debugLogger } from '../../shared/debugLogger';
 import { ensureFolderExists, sanitizeFilename } from '../../shared/utils/fileUtils';
+import { resolveSafeLeafTarget, revealLeafOnMobile } from '../../shared/utils/workspaceNavUtils';
 
 // ─── 파일명 생성 ──────────────────────────────────────────────────────────────
 
@@ -53,8 +54,11 @@ async function resolveOutputPath(app: App, baseName: string, outputFolder: strin
 }
 
 async function openCanvasFile(app: App, canvasFile: TFile): Promise<void> {
-	const leaf = Platform.isMobile ? app.workspace.getLeaf(true) : app.workspace.getLeaf(false);
+	const leaf = Platform.isMobile
+		? app.workspace.getLeaf('tab')
+		: app.workspace.getLeaf(resolveSafeLeafTarget(app.workspace, false));
 	await leaf.openFile(canvasFile);
+	await revealLeafOnMobile(app.workspace, leaf);
 }
 
 // ─── 단일 노트 기준 Canvas 생성 ──────────────────────────────────────────────

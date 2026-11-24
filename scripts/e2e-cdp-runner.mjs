@@ -2019,14 +2019,44 @@ async function run() {
 				const tools = lumina.mcpManager.getAllTools();
 				const searchTool = tools.find(t => t.name === 'search_notes');
 				if (!searchTool) return { success: false, reason: 'no search_notes tool' };
-				const start = Date.now();
-				const res = await lumina.mcpManager.callTool(searchTool._serverId, 'search_notes', { query: '기본' });
-				const text = res?.content?.[0]?.text || '';
-				return {
-					success: !res?.isError && (text.includes('발견됨') || text.includes('found') || text.includes('.md')),
-					snippet: text.split('\\n')[0],
-					duration: Date.now() - start
-				};
+
+				// RAG 포함 경로 설정이 있는 경우 허용된 하위 경로에 임시 노트를 생성
+				const activeProj = lumina.settings.projects?.list?.find(p => p.id === lumina.settings.projects?.activeProjectId);
+				const ragIncluded = (activeProj?.ragIncludedPaths || [])
+					.map(p => (p || '').trim().replace(/\\\\/g, '/').replace(/^\\/+|\\/+$/g, ''))
+					.filter(Boolean);
+				const respectRag = lumina.settings.mcp?.agentRespectRagExclusions !== false;
+				const baseFolder = respectRag && ragIncluded.length > 0 ? ragIncluded[0] : '';
+				if (baseFolder) {
+					let cur = '';
+					for (const seg of baseFolder.split('/').filter(Boolean)) {
+						cur = cur ? cur + '/' + seg : seg;
+						if (!app.vault.getAbstractFileByPath(cur)) {
+							await app.vault.createFolder(cur);
+						}
+					}
+				}
+
+				const tempPath = (baseFolder ? baseFolder + '/' : '') + '__lumina_search_test__.md';
+				const existing = app.vault.getAbstractFileByPath(tempPath);
+				if (existing) await app.vault.delete(existing, true);
+
+				const token = '__lumina_e2e_search_token_' + Date.now() + '__';
+				await app.vault.create(tempPath, '# Lumina MCP Search Test\\n\\n' + token);
+
+				try {
+					const start = Date.now();
+					const res = await lumina.mcpManager.callTool(searchTool._serverId, 'search_notes', { query: token });
+					const text = res?.content?.[0]?.text || '';
+					return {
+						success: !res?.isError && text.includes(tempPath) && (text.includes('발견됨') || text.includes('found') || text.includes('.md')),
+						snippet: text.split('\\n')[0],
+						duration: Date.now() - start
+					};
+				} finally {
+					const tempFile = app.vault.getAbstractFileByPath(tempPath);
+					if (tempFile) await app.vault.delete(tempFile, true);
+				}
 			})()`);
 
 			reporter.record(

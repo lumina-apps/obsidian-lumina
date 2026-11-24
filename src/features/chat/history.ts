@@ -5,6 +5,7 @@ import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
 import { sanitizeDisplayContent } from '../../shared/utils/llmTextSanitizer';
 import { resolveDateTemplate } from '../../shared/utils/datePathTemplate';
+import { revealLeafOnMobile } from '../../shared/utils/workspaceNavUtils';
 import type { HistoryLocationOptions } from './utils/historyLocation';
 
 // ─── 하위 호환성을 위한 Re-exports ──────────────────────────────────────────────
@@ -419,6 +420,8 @@ export async function exportSessionToMarkdown(app: App, session: ChatSession): P
 	const fullContent = header + body;
 
 	const file = await app.vault.create(targetPath, fullContent);
-	await app.workspace.getLeaf('tab').openFile(file);
+	const leaf = app.workspace.getLeaf('tab');
+	await leaf.openFile(file);
+	await revealLeafOnMobile(app.workspace, leaf);
 	debugLogger.logSystem('history', `exportSessionToMarkdown completed (file=${targetPath})`);
 }

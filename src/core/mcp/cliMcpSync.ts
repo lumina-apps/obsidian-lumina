@@ -427,7 +427,7 @@ export class CliMcpSync {
 			const proc = ProcessManager.spawn({
 				command: 'agy',
 				args: ['mcp', 'remove', 'lumina'],
-				cwd: process.cwd(),
+				cwd: typeof process !== 'undefined' && typeof process.cwd === 'function' ? process.cwd() : '.',
 				timeoutMs: 5000,
 			});
 

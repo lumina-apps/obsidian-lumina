@@ -169,7 +169,10 @@
 						type="button"
 						class="lumina-voice-btn"
 						class:is-active={showCaptions}
-						onclick={() => (showCaptions = !showCaptions)}
+						onclick={() => {
+							showCaptions = !showCaptions;
+							manager.setCaptionsEnabled?.(showCaptions);
+						}}
 					>
 						{$tStore("voiceNote.recorder.captionsToggle")}
 					</button>

@@ -7,9 +7,11 @@
  * 메모리 관리: 캐시 상한(MAX_CACHED)을 초과하면 가장 오래된 항목 순서로 destroy.
  */
 
+import { Platform } from 'obsidian';
 import type { VaultIndexer } from './indexer';
 
 const MAX_CACHED = 5;
+const MOBILE_MAX_CACHED = 1;
 
 class ProjectIndexCache {
 	private cache = new Map<string, { indexer: VaultIndexer; lastAccessed: number }>();
@@ -60,7 +62,9 @@ class ProjectIndexCache {
 	}
 
 	private evictIfNeeded(activeProjectId?: string): void {
-		if (this.cache.size <= MAX_CACHED) return;
+		// 모바일 환경에서는 메모리 압박 방지를 위해 프로젝트 인덱스 캐시를 최대 1개로 제한
+		const maxCached = typeof Platform !== 'undefined' && Platform?.isMobile ? MOBILE_MAX_CACHED : MAX_CACHED;
+		if (this.cache.size <= maxCached) return;
 
 		// lastAccessed 기준 오름차순 정렬 → 가장 오래된 것 중 활성 프로젝트가 아닌 것 우선 제거
 		const sorted = [...this.cache.entries()].sort(

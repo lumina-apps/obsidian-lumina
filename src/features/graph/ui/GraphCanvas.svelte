@@ -17,6 +17,9 @@
 
 	let hoveredNode = $state<GraphNode | null>(null);
 	let hoveredPos = $state<{x: number, y: number} | null>(null);
+	let mobilePreviewNodeId = $state<string | null>(null);
+	let resolvedFontFamily = 'sans-serif';
+	let visibilityHandler: (() => void) | null = null;
 
 	// Color Palette mapping for folders
 	const FOLDER_COLORS = [
@@ -62,6 +65,9 @@
 	}
 
 	onMount(() => {
+		// Canvas 2D ctx.font는 CSS 변수(var(--font-interface))를 해석하지 못하므로 실제 폰트 패밀리를 해석
+		resolvedFontFamily = (getComputedStyle(container).fontFamily || 'sans-serif').trim() || 'sans-serif';
+
 		graph = ForceGraph()(container)
 			.backgroundColor('rgba(0,0,0,0)') // Transparent background for theme support
 			.nodeId('id')
@@ -95,7 +101,9 @@
 			.onNodeClick(node => {
 				const clicked = node as GraphNode;
 				// 모바일에서는 첫 탭으로 툴팁/이웃 하이라이트 미리보기를 표시하고, 동일 노드 재탭 시 노트를 엽니다.
-				if (Platform.isMobile && hoveredNode?.id !== clicked.id) {
+				// (모바일 터치에서는 pointerdown 직후 onNodeHover가 먼저 실행되므로 별도 상태 mobilePreviewNodeId로 판별)
+				if (Platform.isMobile && mobilePreviewNodeId !== clicked.id) {
+					mobilePreviewNodeId = clicked.id;
 					hoveredNode = clicked;
 					const pos = graph.graph2ScreenCoords((node as ForceNode).x, (node as ForceNode).y);
 					const rect = container?.getBoundingClientRect();
@@ -106,13 +114,21 @@
 					updateGraphState({ focusedPath: clicked.id });
 					return;
 				}
+				mobilePreviewNodeId = null;
 				onNodeClick(clicked.id);
 			})
 			.onBackgroundClick(() => {
 				// 빈 배경 탭/클릭 시 선택·미리보기 툴팁과 포커스 하이라이트 해제
+				mobilePreviewNodeId = null;
 				hoveredNode = null;
 				hoveredPos = null;
 				updateGraphState({ focusedPath: null });
+			})
+			.onZoom(() => {
+				// 모바일 핀치 줌·팬 중 fixed 툴팁이 제자리에 남아 가리지 않도록 숨김
+				if (Platform.isMobile && hoveredPos) {
+					hoveredPos = null;
+				}
 			})
 			.cooldownTicks(100);
 
@@ -149,7 +165,7 @@
 			// Render node label only when zoomed in enough or highlighted/focused
 			if (globalScale >= 0.8 || highlight || node.id === $graphState.focusedPath) {
 				const isLight = document.body.classList.contains('theme-light');
-				ctx.font = `${fontSize}px var(--font-interface, sans-serif)`;
+				ctx.font = `${fontSize}px ${resolvedFontFamily}`;
 				ctx.textAlign = 'center';
 				ctx.textBaseline = 'middle';
 				ctx.fillStyle = dimmed 
@@ -159,6 +175,20 @@
 			}
 		});
 
+		// 모바일 터치 히트 영역 확장 (시각적 반지름보다 넓은 최소 14px 히트 타깃)
+		if (typeof graph.nodePointerAreaPaint === 'function') {
+			graph.nodePointerAreaPaint((obj: ForceNode, paintColor: string, ctx: CanvasRenderingContext2D, globalScale: number) => {
+				const visualRadius = Math.sqrt(Math.max(1, obj.degree)) * 1.2 + 1.5;
+				const hitRadius = Platform.isMobile
+					? Math.max(visualRadius, 14 / Math.max(0.25, globalScale))
+					: visualRadius;
+				ctx.fillStyle = paintColor;
+				ctx.beginPath();
+				ctx.arc(obj.x, obj.y, hitRadius, 0, 2 * Math.PI, false);
+				ctx.fill();
+			});
+		}
+
 		resizeObserver = new ResizeObserver(() => {
 			if (container) {
 				graph.width(container.clientWidth);
@@ -166,6 +196,17 @@
 			}
 		});
 		resizeObserver.observe(container);
+
+		// 백그라운드 전환 시 애니메이션 정지 / 복귀 시 재개하여 모바일 배터리 소모 방지
+		visibilityHandler = () => {
+			if (!graph) return;
+			if (document.visibilityState === 'hidden') {
+				graph.pauseAnimation?.();
+			} else if (document.visibilityState === 'visible') {
+				graph.resumeAnimation?.();
+			}
+		};
+		document.addEventListener('visibilitychange', visibilityHandler);
 		
 		// Set initial cursor
 		container.style.cursor = 'grab';
@@ -175,6 +216,10 @@
 
 	onDestroy(() => {
 		if (resizeObserver) resizeObserver.disconnect();
+		if (visibilityHandler) {
+			document.removeEventListener('visibilitychange', visibilityHandler);
+			visibilityHandler = null;
+		}
 		if (graph) {
 			graph._destructor?.();
 		}
@@ -261,7 +306,7 @@
 
 </script>
 
-<div class="lumina-graph-canvas" bind:this={container}></div>
+<div class="lumina-graph-canvas" data-ignore-swipe="true" bind:this={container}></div>
 
 {#if hoveredNode && hoveredPos}
 	<GraphTooltip node={hoveredNode} x={hoveredPos.x} y={hoveredPos.y} />
@@ -272,5 +317,6 @@
 		width: 100%;
 		height: 100%;
 		overflow: hidden;
+		touch-action: none;
 	}
 </style>

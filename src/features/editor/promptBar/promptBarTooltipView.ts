@@ -40,6 +40,8 @@ export class PromptBarTooltipView implements TooltipView {
 
 	private keymapScope: Scope | null = null;
 	private outsidePointerHandler: ((e: PointerEvent) => void) | null = null;
+	private outsidePointerUpHandler: ((e: PointerEvent) => void) | null = null;
+	private outsidePointerDownPos: { x: number; y: number; pointerId: number } | null = null;
 	private mountTimerId: number | null = null;
 	private outsideListenerTimerId: number | null = null;
 	private focusTimerId: number | null = null;
@@ -130,7 +132,9 @@ export class PromptBarTooltipView implements TooltipView {
 				return;
 			}
 
-			if (!Platform.isMobile && e.key === 'Enter' && !e.shiftKey) {
+			const isDesktopEnter = !Platform.isMobile && e.key === 'Enter' && !e.shiftKey;
+			const isModEnter = e.key === 'Enter' && (e.ctrlKey || e.metaKey);
+			if (isDesktopEnter || isModEnter) {
 				this.handledKeyEvents.add(e);
 				e.preventDefault();
 				this.submitCustomPrompt();
@@ -151,6 +155,10 @@ export class PromptBarTooltipView implements TooltipView {
 			} else {
 				this.submitCustomPrompt();
 			}
+		});
+
+		this.refs.closeBtn.addEventListener('click', () => {
+			this.handleEscape();
 		});
 
 		this.refs.replaceBtn.addEventListener('click', () => {
@@ -200,7 +208,36 @@ export class PromptBarTooltipView implements TooltipView {
 			if (this.destroyed) return;
 			if (!(e.target instanceof Node) || this.dom.contains(e.target)) return;
 			const current = this.getState();
-			if (current?.open && current.phase === 'input') {
+			if (!current?.open || current.phase !== 'input') return;
+
+			if (Platform.isMobile) {
+				// 모바일에서 입력된 내용이 있으면 스크롤이나 키보드 툴바 탭으로 프롬프트가 사라지지 않도록 보호
+				if (this.refs.textareaEl.value.trim().length > 0) {
+					this.outsidePointerDownPos = null;
+					return;
+				}
+				this.outsidePointerDownPos = {
+					x: e.clientX,
+					y: e.clientY,
+					pointerId: e.pointerId,
+				};
+				return;
+			}
+
+			this.closeBar();
+		};
+		this.outsidePointerUpHandler = (e: PointerEvent) => {
+			if (this.destroyed || !Platform.isMobile || !this.outsidePointerDownPos) return;
+			const down = this.outsidePointerDownPos;
+			this.outsidePointerDownPos = null;
+			if (e.pointerId !== down.pointerId) return;
+			if (e.target instanceof Node && this.dom.contains(e.target)) return;
+			if (this.refs.textareaEl.value.trim().length > 0) return;
+
+			const current = this.getState();
+			if (!current?.open || current.phase !== 'input') return;
+			const dist = Math.hypot(e.clientX - down.x, e.clientY - down.y);
+			if (dist < 10) {
 				this.closeBar();
 			}
 		};
@@ -208,6 +245,9 @@ export class PromptBarTooltipView implements TooltipView {
 			this.outsideListenerTimerId = null;
 			if (this.destroyed || !this.outsidePointerHandler) return;
 			document.addEventListener('pointerdown', this.outsidePointerHandler, true);
+			if (this.outsidePointerUpHandler) {
+				document.addEventListener('pointerup', this.outsidePointerUpHandler, true);
+			}
 		}, 0);
 	}
 
@@ -238,6 +278,11 @@ export class PromptBarTooltipView implements TooltipView {
 			document.removeEventListener('pointerdown', this.outsidePointerHandler, true);
 			this.outsidePointerHandler = null;
 		}
+		if (this.outsidePointerUpHandler) {
+			document.removeEventListener('pointerup', this.outsidePointerUpHandler, true);
+			this.outsidePointerUpHandler = null;
+		}
+		this.outsidePointerDownPos = null;
 		if (this.keymapScope && this.plugin.app?.keymap?.popScope) {
 			this.plugin.app.keymap.popScope(this.keymapScope);
 			this.keymapScope = null;

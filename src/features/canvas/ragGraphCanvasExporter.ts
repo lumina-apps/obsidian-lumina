@@ -7,7 +7,7 @@
  * - 레이아웃: 간소화된 force-directed 알고리즘
  */
 
-import { normalizePath } from 'obsidian';
+import { Platform, normalizePath } from 'obsidian';
 import type { CanvasData, CanvasEdge, CanvasTextNode, CanvasGroupNode } from './canvasTypes';
 import type { GraphData, GraphNode, GraphEdge } from '../../shared/types/graph.types';
 import { getEdgeSides } from './canvasBuilder';
@@ -285,11 +285,17 @@ export function buildRagGraphCanvasData(
   graphData: GraphData,
   opts: RagGraphCanvasOptions,
 ): CanvasData {
-  const { nodes, links } = graphData;
+  const { nodes: rawNodes, links } = graphData;
 
-  if (nodes.length === 0) {
+  if (rawNodes.length === 0) {
     return { nodes: [], edges: [] };
   }
+
+  // 모바일 메모리·연산 부하 완화를 위해 노드가 500개를 초과하면 차수(degree) 상위 500개로 제한
+  const nodes =
+    typeof Platform !== 'undefined' && Platform?.isMobile && rawNodes.length > 500
+      ? [...rawNodes].sort((a, b) => b.degree - a.degree).slice(0, 500)
+      : rawNodes;
 
   // 0. 유효한 노드 쌍에 대해서만 링크 필터링 (미존재 노드 및 셀프 루프 제거)
   const validNodeIds = new Set(nodes.map(n => n.id));

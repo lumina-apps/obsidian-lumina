@@ -132,6 +132,10 @@ describe('IdleTimeoutController', () => {
 });
 
 describe('requestUrlWithAbort', () => {
+	afterEach(() => {
+		mockPlatform.isMobile = false;
+	});
+
 	it('should call requestUrl with the given params when signal not aborted', async () => {
 		mockRequestUrl.mockResolvedValue({ json: {}, text: '' } as RequestUrlResponse);
 
@@ -155,6 +159,40 @@ describe('requestUrlWithAbort', () => {
 		await expect(
 			requestUrlWithAbort({ url: 'http://example.com' }),
 		).rejects.toThrow('Network error');
+	});
+
+	it('모바일에서는 throw: false로 요청하고 HTTP 4xx/5xx 시 status와 본문 메타데이터를 보존해 예외를 던진다', async () => {
+		mockPlatform.isMobile = true;
+		mockRequestUrl.mockResolvedValue({
+			status: 400,
+			text: 'Bad Request Body',
+			json: { error: { message: 'Invalid request' } },
+			headers: { 'x-req-id': 'abc' },
+		} as unknown as RequestUrlResponse);
+
+		let caught: unknown;
+		try {
+			await requestUrlWithAbort({ url: 'http://example.com' }, undefined);
+		} catch (err) {
+			caught = err;
+		}
+
+		expect(mockRequestUrl).toHaveBeenCalledWith({ url: 'http://example.com', throw: false });
+		expect(caught).toBeInstanceOf(Error);
+		expect(caught).toMatchObject({
+			status: 400,
+			text: 'Bad Request Body',
+			json: { error: { message: 'Invalid request' } },
+		});
+	});
+
+	it('모바일에서도 HTTP 200 응답이면 정상 반환한다', async () => {
+		mockPlatform.isMobile = true;
+		const res = { status: 200, text: '{"ok":true}', json: { ok: true }, headers: {} } as unknown as RequestUrlResponse;
+		mockRequestUrl.mockResolvedValue(res);
+
+		await expect(requestUrlWithAbort({ url: 'http://example.com' }, undefined)).resolves.toBe(res);
+		expect(mockRequestUrl).toHaveBeenCalledWith({ url: 'http://example.com', throw: false });
 	});
 });
 

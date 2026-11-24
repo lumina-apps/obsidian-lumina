@@ -71,12 +71,12 @@ export function renderQuickActionSection(tab: LuminaSettingTab, el: HTMLElement)
 		matchedTaskProvider && !isProviderSupportedOnCurrentPlatform(matchedTaskProvider.type),
 	);
 	const hasTaskModel = Boolean(tab.plugin.settings.connections.taskModelId) && !isTaskProviderUnsupported;
-	if (!Platform.isMobile && !hasTaskModel && s.enableAutocomplete) {
+	const isAutocompleteDisabledOnMobile = Platform.isMobile && !Platform.isTablet;
+	if (!isAutocompleteDisabledOnMobile && !hasTaskModel && s.enableAutocomplete) {
 		s.enableAutocomplete = false;
 		void tab.saveAndSync();
 	}
 
-	const isAutocompleteDisabledOnMobile = Platform.isMobile;
 	const autocompleteDesc = isAutocompleteDisabledOnMobile
 		? t('settings.chat.enableAutocomplete.desc') + '\n\n⚠️ ' + t('settings.chat.enableAutocomplete.mobileUnsupported')
 		: hasTaskModel

@@ -111,6 +111,9 @@ export class VaultIndexer {
 		if (this.embeddingStore) {
 			this.embeddingStore.close();
 		}
+		// 메모리 해제를 위해 인메모리 상태와 검색 인덱스 참조 비우기
+		this.state.clear();
+		this.oramaStore = null;
 	}
 
 	/** 실행 중 채팅 히스토리 저장 경로 변경 시 인덱서 제외 경로를 즉시 갱신합니다. */

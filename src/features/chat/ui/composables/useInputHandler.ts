@@ -41,7 +41,7 @@ export function createKeydownHandler(ctx: KeydownContext): (e: KeyboardEvent) =>
 			if (isComposing) return; // IME 조합 중 Enter는 조합 완료용이므로 전송 방지
 			e.preventDefault();
 			onSendMessage();
-		} else if (!isMobile && sendKey === "ctrl_enter" && e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+		} else if ((isMobile || sendKey === "ctrl_enter") && e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
 			if (isLoading) return;
 			if (isComposing) return; // IME 조합 중 Enter는 조합 완료용이므로 전송 방지
 			e.preventDefault();

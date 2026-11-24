@@ -6,7 +6,7 @@ import { addPendingAttachment, activeSidebarTab } from '../store/chatStore';
 import { setBatchTargetFolder } from '../store/batchStore';
 import { canUseFeature } from '../store/entitlementStore';
 import { updateDiscoveryState } from '../store/discoveryStore';
-import { Notice, Menu, MenuItem, TFile, TFolder } from 'obsidian';
+import { Notice, Menu, MenuItem, Platform, TFile, TFolder, type Editor, type MarkdownFileInfo, type MarkdownView } from 'obsidian';
 import { debugLogger } from '../../shared/debugLogger';
 
 /** 우클릭 음성 변환 메뉴를 표시할 오디오 확장자 목록 */
@@ -30,17 +30,12 @@ export class EventManager {
 				if (!this.plugin.settings.misc.contextMenuEnabled) return;
 				const selection = editor.getSelection();
 				const activeFile = view?.file ?? this.plugin.app.workspace.getActiveFile();
-				
-				menu.addItem((item) => {
-					item.setTitle('✨ Lumina').setIcon('bot');
-					
-					const itemWithSubmenu = item as MenuItemWithSubmenu;
-					const submenu = itemWithSubmenu.setSubmenu ? itemWithSubmenu.setSubmenu() : null;
-					const target = submenu || menu;
+				const isPhoneMenu = typeof Platform !== 'undefined' && Boolean(Platform?.isMobile) && !Boolean(Platform?.isTablet);
 
+				const populateItems = (target: Menu, titlePrefix: string) => {
 					target.addItem((subItem) => {
 						subItem
-							.setTitle(t('uiMessages.promptBar.menuTitle'))
+							.setTitle(`${titlePrefix}${t('uiMessages.promptBar.menuTitle')}`)
 							.setIcon('sparkles')
 							.onClick(() => {
 								debugLogger.logSystem('events', 'context-menu: inline prompt bar triggered');
@@ -53,7 +48,7 @@ export class EventManager {
 					if (canUseFeature('voice-note')) {
 						target.addItem((subItem) => {
 							subItem
-								.setTitle(t('voiceNote.cmdToggleRecord'))
+								.setTitle(`${titlePrefix}${t('voiceNote.cmdToggleRecord')}`)
 								.setIcon('lumina-voice-note')
 								.onClick(() => {
 									debugLogger.logSystem('events', 'context-menu: voice-note recording triggered');
@@ -67,26 +62,26 @@ export class EventManager {
 					if (selection.trim()) {
 						target.addItem((subItem) => {
 							subItem
-								.setTitle(t('uiMessages.cmdCtxMenu'))
+								.setTitle(`${titlePrefix}${t('uiMessages.cmdCtxMenu')}`)
 								.setIcon('message-circle')
-							.onClick(async () => {
-								debugLogger.logSystem('events', 'context-menu: "Ask with selection" triggered');
-								activeSidebarTab.set('chat');
-								await activateView(this.plugin.app.workspace, CHAT_VIEW_TYPE);
-								addPendingAttachment({
-									type: 'selection',
-									path: `selection-${Date.now()}`,
-									name: t('uiMessages.qaSelectedText'),
-									content: selection,
+								.onClick(async () => {
+									debugLogger.logSystem('events', 'context-menu: "Ask with selection" triggered');
+									activeSidebarTab.set('chat');
+									await activateView(this.plugin.app.workspace, CHAT_VIEW_TYPE);
+									addPendingAttachment({
+										type: 'selection',
+										path: `selection-${Date.now()}`,
+										name: t('uiMessages.qaSelectedText'),
+										content: selection,
+									});
 								});
-							});
 						});
 					}
 
 					if (activeFile) {
 						target.addItem((subItem) => {
 							subItem
-								.setTitle(t('uiMessages.cmdAutoLinkNote'))
+								.setTitle(`${titlePrefix}${t('uiMessages.cmdAutoLinkNote')}`)
 								.setIcon('link')
 								.onClick(async () => {
 									debugLogger.logSystem('events', `context-menu: auto-link triggered (file=${activeFile?.path ?? 'null'})`);
@@ -100,7 +95,7 @@ export class EventManager {
 					if (activeFile && activeFile.extension === 'md') {
 						target.addItem((subItem) => {
 							subItem
-								.setTitle('🗺️ ' + t('canvas.menuItem'))
+								.setTitle(`${titlePrefix}🗺️ ${t('canvas.menuItem')}`)
 								.setIcon('map')
 								.onClick(async () => {
 									debugLogger.logSystem('events', `context-menu: canvas generate triggered (file=${activeFile.path})`);
@@ -110,7 +105,7 @@ export class EventManager {
 
 						target.addItem((subItem) => {
 							subItem
-								.setTitle(t('uiMessages.cmdRestoreBackup'))
+								.setTitle(`${titlePrefix}${t('uiMessages.cmdRestoreBackup')}`)
 								.setIcon('history')
 								.onClick(async () => {
 									debugLogger.logSystem('events', `context-menu: restore backup triggered (file=${activeFile.path})`);
@@ -125,7 +120,7 @@ export class EventManager {
 						for (const qa of (this.plugin.settings.chat.quickActions ?? [])) {
 							target.addItem((subItem) => {
 								subItem
-									.setTitle(qa.name)
+									.setTitle(`${titlePrefix}${qa.name}`)
 									.setIcon('zap')
 									.onClick(() => {
 										void this.plugin.quickActionHandler.executeAction(qa, editor, view);
@@ -133,6 +128,19 @@ export class EventManager {
 							});
 						}
 					}
+				};
+
+				// 스마트폰 바텀시트 메뉴는 중첩 서브메뉴를 지원하지 않으므로 최상위에 평면 등록
+				if (isPhoneMenu) {
+					populateItems(menu, '✨ Lumina: ');
+					return;
+				}
+
+				menu.addItem((item) => {
+					item.setTitle('✨ Lumina').setIcon('bot');
+					const itemWithSubmenu = item as MenuItemWithSubmenu;
+					const submenu = itemWithSubmenu.setSubmenu ? itemWithSubmenu.setSubmenu() : null;
+					populateItems(submenu || menu, submenu ? '' : '✨ Lumina: ');
 				});
 			}),
 		);

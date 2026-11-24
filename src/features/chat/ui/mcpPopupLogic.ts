@@ -6,6 +6,7 @@ import { Notice } from "obsidian";
 import type LuminaPlugin from "../../../main";
 import type { McpServerConfig } from "../../../shared/types/settings.types";
 import { t } from "../../../shared/locales/helpers";
+import { isProviderSupportedOnCurrentPlatform } from "../../../shared/utils/modelUtils";
 
 // ─── 상태별 색상 ─────────────────────────────────────────────────────────────
 
@@ -134,7 +135,9 @@ export interface ToggleAgentResult {
  * 내장 도구는 메모리에서 직접 실행되므로 로컬 HTTP 서버를 강제 구동하지 않습니다.
  */
 export async function toggleAgent(plugin: LuminaPlugin): Promise<ToggleAgentResult> {
-	const isConfigured = plugin.settings.connections.providers.some((p) => p.isVerified);
+	const isConfigured = plugin.settings.connections.providers.some(
+		(p) => p.isVerified && isProviderSupportedOnCurrentPlatform(p.type),
+	);
 	if (!isConfigured) {
 		new Notice(t("uiMessages.agentModeLlmRequired"));
 		return {

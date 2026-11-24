@@ -1,7 +1,11 @@
 /** 프론트매터 자동 생성 모듈. AI 기반 tags, description 자동 생성 및 기존 lumina* 잔여 메타데이터 정리를 담당 */
 
-import { App, TFile, type EventRef } from 'obsidian';
+import { App, Platform, TFile, type EventRef } from 'obsidian';
+import { get } from 'svelte/store';
 import { isMarkdownFile } from '../../shared/utils/fileUtils';
+import { isExcluded } from '../../shared/utils/exclusions';
+import { mergeExcludedPathsWithHistory } from '../../shared/utils/historyPathUtils';
+import { activeProject } from '../../core/store/projectStore';
 import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
 import { stripThinkTags } from '../../shared/utils/llmTextSanitizer';
@@ -53,8 +57,12 @@ export class FrontmatterManager {
 	private llmDebounceTimers: Map<string, number> = new Map();
 	/** LLM 생성 데이터 캐시 */
 	private llmGeneratedCache: Map<string, { tags: string[], description: string }> = new Map();
-	/** 등록된 이벤트 참조 (해제용) */
+	/** 등록된 이벤트 참조 (볼트 이벤트 해제용) */
 	private eventRefs: EventRef[] = [];
+	/** 등록된 워크스페이스 이벤트 참조 (워크스페이스 이벤트 해제용) */
+	private workspaceEventRefs: EventRef[] = [];
+	/** 모바일 백그라운드 전환 시 대기 중인 프론트매터 플러시 리스너 */
+	private visibilityHandler: (() => void) | null = null;
 
 	constructor(plugin: LuminaPlugin) {
 		this.plugin = plugin;
@@ -82,10 +90,10 @@ export class FrontmatterManager {
 			void this.processPendingUpdates();
 		});
 		this.plugin.registerEvent(refFileOpen);
-		this.eventRefs.push(refFileOpen);
+		this.workspaceEventRefs.push(refFileOpen);
 
 		const refCreate = this.app.vault.on('create', (file) => {
-			if (isMarkdownFile(file)) {
+			if (isMarkdownFile(file) && !this.isExcludedPath(file.path)) {
 				this.autoGenerate(file, false).catch((err: unknown) => {
 					debugLogger.logError('frontmatter', err instanceof Error ? err : String(err));
 				});
@@ -95,7 +103,7 @@ export class FrontmatterManager {
 		this.eventRefs.push(refCreate);
 
 		const refModify = this.app.vault.on('modify', (file) => {
-			if (!isMarkdownFile(file)) return;
+			if (!isMarkdownFile(file) || this.isExcludedPath(file.path)) return;
 
 			// 플러그인이 수정한 직후 발생하는 modify 이벤트는 무시 (1.5초 이내)
 			const lastUpdate = this.lastUpdateMap.get(file.path) || 0;
@@ -149,14 +157,42 @@ export class FrontmatterManager {
 		});
 		this.plugin.registerEvent(refDelete);
 		this.eventRefs.push(refDelete);
+
+		if (typeof Platform !== 'undefined' && Platform?.isMobile && typeof document !== 'undefined') {
+			// 모바일에서는 앱 전환 시 file-open 없이 백그라운드로 내려가므로 hidden 시점에 대기열 플러시
+			this.visibilityHandler = () => {
+				if (document.visibilityState === 'hidden') {
+					void this.processPendingUpdates();
+				}
+			};
+			document.addEventListener('visibilitychange', this.visibilityHandler);
+		}
+	}
+
+	/** 현재 활성 프로젝트·채팅 히스토리·기본 제외 경로 포함 여부를 판별합니다. */
+	private isExcludedPath(filePath: string): boolean {
+		const projectExcluded = get(activeProject)?.ragExcludedPaths ?? [];
+		const mergedExcluded = mergeExcludedPathsWithHistory(
+			projectExcluded,
+			this.plugin.settings?.chat?.historyPath,
+		);
+		return isExcluded(filePath, mergedExcluded);
 	}
 
 	/** 등록된 프론트매터 이벤트 모두 해제 */
 	clearEvents(): void {
+		for (const ref of this.workspaceEventRefs) {
+			this.app.workspace?.offref?.(ref);
+		}
+		this.workspaceEventRefs = [];
 		for (const ref of this.eventRefs) {
-			this.app.vault.offref(ref);
+			this.app.vault?.offref?.(ref);
 		}
 		this.eventRefs = [];
+		if (this.visibilityHandler && typeof document !== 'undefined') {
+			document.removeEventListener('visibilitychange', this.visibilityHandler);
+			this.visibilityHandler = null;
+		}
 		this.pendingUpdates.clear();
 		this.lastUpdateMap.clear();
 		this.llmGeneratedCache.clear();

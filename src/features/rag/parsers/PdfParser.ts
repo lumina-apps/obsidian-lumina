@@ -207,11 +207,20 @@ export class PdfParser {
 
 			for (let i = 1; i <= pdf.numPages; i++) {
 				const page = await pdf.getPage(i);
-				const content = (await page.getTextContent()) as { items: Array<unknown> };
-				const strings = content.items
-					.filter((item): item is { str: string } => typeof item === 'object' && item !== null && 'str' in item)
-					.map((item: { str: string }) => item.str);
-				fullText += strings.join(' ') + '\n\n';
+				try {
+					const content = (await page.getTextContent()) as { items: Array<unknown> };
+					const strings = content.items
+						.filter((item): item is { str: string } => typeof item === 'object' && item !== null && 'str' in item)
+						.map((item: { str: string }) => item.str);
+					fullText += strings.join(' ') + '\n\n';
+				} finally {
+					// 모바일 WKWebView 등에서 페이지별 폰트·렌더링 캐시 누적을 방지하기 위해 즉시 정리
+					try {
+						(page as { cleanup?: () => void }).cleanup?.();
+					} catch {
+						// 정리 중 오류 무시
+					}
+				}
 			}
 
 			return fullText;

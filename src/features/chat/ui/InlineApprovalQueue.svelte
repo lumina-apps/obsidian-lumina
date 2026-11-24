@@ -3,6 +3,7 @@
 	import type { ApprovalRequest, DiffChunk } from "../utils/approvalManager";
 	import { MarkdownView } from "obsidian";
 	import { computeInlineDiff, splitDiffLines, type InlineSegment, type MergedSegment } from "../../../shared/utils/inlineDiff";
+	import { revealLeafOnMobile } from "../../../shared/utils/workspaceNavUtils";
 
 	// We receive tStore and plugin as props
 	let { tStore, plugin } = $props<{ tStore: any; plugin?: any }>();
@@ -30,6 +31,7 @@
 			const view = leaf.view as MarkdownView;
 			if (view.file?.path === filePath) {
 				plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
+				void revealLeafOnMobile(plugin.app.workspace, leaf);
 				if (view.editor) {
 					const lineIdx = Math.max(0, line - 1);
 					view.editor.setCursor({ line: lineIdx, ch: 0 });
@@ -50,6 +52,7 @@
 			const view = leaf.view as MarkdownView;
 			if (view.file?.path === filePath || leaf === plugin.app.workspace.activeLeaf) {
 				plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
+				void revealLeafOnMobile(plugin.app.workspace, leaf);
 				const state = view.getState();
 				state.mode = 'source';
 				state.source = true;

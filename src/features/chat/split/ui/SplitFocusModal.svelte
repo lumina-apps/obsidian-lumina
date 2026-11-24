@@ -264,9 +264,45 @@
 		overflow-x: auto;
 	}
 
+	.lumina-split-focus-modal__content :global(table) {
+		display: block;
+		max-width: 100%;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.lumina-split-focus-modal__content :global(img) {
+		max-width: 100%;
+		height: auto;
+	}
+
+	.lumina-split-focus-modal__content :global(.lumina-code-insert-btn) {
+		position: absolute;
+		top: 6px;
+		right: 36px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 24px;
+		height: 24px;
+		border-radius: 4px;
+		background: var(--background-secondary);
+		border: 1px solid var(--background-modifier-border);
+		color: var(--text-muted);
+		cursor: pointer;
+		opacity: 0;
+		transition: opacity 0.15s ease;
+	}
+
+	.lumina-split-focus-modal__content :global(pre:hover .lumina-code-insert-btn),
+	:global(.is-mobile) .lumina-split-focus-modal__content :global(.lumina-code-insert-btn) {
+		opacity: 1;
+	}
+
 	/* 모바일(폰+태블릿) 집중 보기 모달 높이·제목 말줄임·아이콘 버튼 터치 보정 */
 	:global(body.is-mobile) .lumina-split-focus-modal {
 		max-height: 90vh;
+		max-height: 90dvh;
 	}
 
 	:global(body.is-mobile) .lumina-split-focus-modal__title {

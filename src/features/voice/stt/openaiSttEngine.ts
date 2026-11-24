@@ -90,6 +90,7 @@ export class OpenAiSttEngine implements ISttEngine {
 		const audioBuffer = await blob.arrayBuffer();
 		const audioBytes = new Uint8Array(audioBuffer);
 		const offsetSec = options.offsetSec ?? 0;
+		const cleanMime = (blob.type || 'audio/webm').split(';')[0].trim() || 'audio/webm';
 
 		const preferVerbose = !this.model.toLowerCase().includes('gpt-4o');
 		const firstFormat = preferVerbose ? 'verbose_json' : 'json';
@@ -99,7 +100,7 @@ export class OpenAiSttEngine implements ISttEngine {
 				url,
 				apiKey,
 				audioBytes,
-				blob.type || 'audio/webm',
+				cleanMime,
 				filename,
 				firstFormat,
 				options,
@@ -114,7 +115,7 @@ export class OpenAiSttEngine implements ISttEngine {
 						url,
 						apiKey,
 						audioBytes,
-						blob.type || 'audio/webm',
+						cleanMime,
 						filename,
 						'json',
 						options,

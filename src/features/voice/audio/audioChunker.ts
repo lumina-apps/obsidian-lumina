@@ -5,8 +5,8 @@
  * 그리고 대용량(25MB 제한 우회) 자동 청크 분할 유틸리티를 제공합니다.
  */
 
-/** STT API 단일 요청 크기 상한(25MB)을 안전하게 우회하기 위한 기본 최대 청크 크기 (20MB) */
-export const DEFAULT_MAX_API_AUDIO_BYTES = 20 * 1024 * 1024;
+/** STT API 단일 요청 및 Gemini 인라인 base64(+33%) 20MB 한도를 안전하게 우회하기 위한 기본 최대 청크 크기 (14MB) */
+export const DEFAULT_MAX_API_AUDIO_BYTES = 14 * 1024 * 1024;
 /** 대용량 분할 시 청크당 길이 (초) — 16kHz 모노 16-bit WAV 기준 약 9.6MB */
 export const DEFAULT_CHUNK_DURATION_SEC = 300;
 /** 로컬 Whisper 및 API 청킹 표준 샘플레이트 (16kHz) */

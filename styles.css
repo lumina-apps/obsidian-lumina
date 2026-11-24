@@ -3217,6 +3217,26 @@ html body .modal-container.lumina-settings-modal-container {
 	transform: translateY(-1px);
 }
 
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-close-btn {
+	display: none;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	border-radius: 8px;
+	border: none;
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.cm-tooltip.lumina-promptbar button.lumina-promptbar-close-btn svg {
+	width: 15px;
+	height: 15px;
+}
+
 .lumina-promptbar-error {
 	display: none;
 	margin: 0 10px 8px;
@@ -4241,13 +4261,24 @@ body.is-mobile .lumina-popup-selector__list {
 
 /* 모바일(폰+태블릿) 뷰 컨테이너 기본 여백 제거·터치 타겟·컨테이너 쿼리 기준 설정 */
 body.is-mobile .view-content.lumina-chat-view,
-body.is-mobile .view-content.lumina-split-view {
+body.is-mobile .view-content.lumina-split-view,
+body.is-mobile .view-content.lumina-batch-view,
+body.is-mobile .view-content.lumina-graph-view,
+body.is-mobile .view-content.lumina-debug-view {
 	padding: 0;
 	overflow: hidden;
 }
 
-/* 모바일 플로팅 네비게이션(--navbar-position: fixed) 사용 시 메인 탭으로 열린 채팅 비교 뷰의 입력창이 하단 바에 가려지지 않도록 여백 확보 */
-body.is-mobile.is-floating-nav:not(.is-hidden-nav) .view-content.lumina-split-view {
+body.is-mobile .view-content.lumina-batch-view {
+	container-type: inline-size;
+}
+
+/* 모바일 플로팅 네비게이션(--navbar-position: fixed) 사용 시 메인 탭으로 열린 뷰의 하단 조작부가 가려지지 않도록 여백 확보 */
+body.is-mobile.is-floating-nav:not(.is-hidden-nav) .view-content.lumina-split-view,
+body.is-mobile.is-floating-nav:not(.is-hidden-nav) .view-content.lumina-batch-view,
+body.is-mobile.is-floating-nav:not(.is-hidden-nav) .view-content.lumina-graph-view,
+body.is-mobile.is-floating-nav:not(.is-hidden-nav) .view-content.lumina-debug-view,
+body.is-mobile.is-floating-nav:not(.is-hidden-nav) .mod-root .view-content.lumina-chat-view {
 	padding-bottom: calc(var(--navbar-height, 0px) + var(--navbar-bottom-offset, 0px) + 4px);
 	box-sizing: border-box;
 }
@@ -4354,8 +4385,8 @@ body.is-mobile .lumina-chat__context-badge {
 }
 
 body.is-mobile .lumina-chat__textarea {
-	font-size: 14px;
-	line-height: 20px;
+	font-size: 16px;
+	line-height: 22px;
 }
 
 body.is-mobile button.lumina-chat__send-btn,
@@ -4606,6 +4637,40 @@ body.is-mobile .lumina-pro-upgrade-modal__close-btn {
 		flex-direction: column;
 		align-items: stretch;
 	}
+}
+
+/* 모바일 터치 타겟·iOS 자동 줌 방지·프롬프트바 닫기 버튼 보정 */
+body.is-mobile .lumina-chat__attachment-remove {
+	width: 24px;
+	height: 24px;
+	min-width: 24px;
+	min-height: 24px;
+	padding: 4px;
+}
+
+body.is-mobile .cm-tooltip.lumina-promptbar textarea.lumina-promptbar-input,
+body.is-mobile .cm-tooltip.lumina-promptbar textarea.lumina-promptbar-input:focus {
+	font-size: 16px;
+}
+
+body.is-mobile .cm-tooltip.lumina-promptbar button.lumina-promptbar-close-btn {
+	display: inline-flex;
+	width: 32px;
+	height: 32px;
+	min-width: 32px;
+}
+
+body.is-mobile .cm-tooltip.lumina-promptbar .lumina-promptbar-model-chip {
+	min-height: 32px;
+	height: 32px;
+}
+
+body.is-mobile .cm-tooltip.lumina-promptbar select.lumina-promptbar-model-select,
+body.is-mobile .cm-tooltip.lumina-promptbar select.lumina-promptbar-model-select:hover,
+body.is-mobile .cm-tooltip.lumina-promptbar select.lumina-promptbar-model-select:focus {
+	min-height: 32px;
+	height: 32px;
+	line-height: 32px;
 }
 
 

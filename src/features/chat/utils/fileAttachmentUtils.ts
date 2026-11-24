@@ -7,7 +7,7 @@ import { DocumentParserRouter } from "../../rag/parsers/DocumentParserRouter";
 
 import { resizeImageDataUrl, MAX_ATTACHMENT_FILE_SIZE } from "./imageUtils";
 
-export const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "webp", "gif"]);
+export const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "webp", "gif", "heic", "heif"]);
 export const TEXT_EXTS = new Set([
 	"md", "markdown", "txt", "csv", "json", "jsonl", "html", "htm",
 	"yaml", "yml", "py", "ts", "tsx", "js", "jsx", "mjs", "cjs", "svelte", "vue",
@@ -30,11 +30,17 @@ export function getFileExtension(file: File): string {
 	return name.toLowerCase();
 }
 
-export const FILE_INPUT_ACCEPT = Array.from([
-	...IMAGE_EXTS,
-	...TEXT_EXTS,
-	...DOC_EXTS,
-]).map((ext) => `.${ext}`).join(",");
+// Android WebView(SAF)에서 .md 및 코드 파일이 비활성화되지 않도록 표준 MIME 타입을 함께 명시
+export const FILE_INPUT_ACCEPT = [
+	"image/*",
+	"text/*",
+	"application/pdf",
+	...Array.from([
+		...IMAGE_EXTS,
+		...TEXT_EXTS,
+		...DOC_EXTS,
+	]).map((ext) => `.${ext}`),
+].join(",");
 
 export function getImageMimeType(ext: string): string {
 	const lower = ext.toLowerCase();
@@ -42,6 +48,8 @@ export function getImageMimeType(ext: string): string {
 	if (lower === "png") return "image/png";
 	if (lower === "webp") return "image/webp";
 	if (lower === "gif") return "image/gif";
+	if (lower === "heic") return "image/heic";
+	if (lower === "heif") return "image/heif";
 	return `image/${lower}`;
 }
 

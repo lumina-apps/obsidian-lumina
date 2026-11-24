@@ -35,6 +35,7 @@ export interface PromptBarDomRefs {
 	dom: HTMLElement;
 	textareaEl: HTMLTextAreaElement;
 	submitBtn: HTMLButtonElement;
+	closeBtn: HTMLButtonElement;
 	replaceBtn: HTMLButtonElement;
 	appendBtn: HTMLButtonElement;
 	modelChipEl: HTMLDivElement;
@@ -99,6 +100,15 @@ export function createPromptBarDom(initialPrompt: string): PromptBarDomRefs {
 		},
 	});
 
+	const closeBtn = inputRow.createEl('button', {
+		cls: 'lumina-promptbar-close-btn',
+		attr: {
+			type: 'button',
+			'aria-label': t('common.cancel'),
+		},
+	});
+	setIcon(closeBtn, 'x');
+
 	// ── 에러 배너 ──
 	const errorEl = dom.createDiv({ cls: 'lumina-promptbar-error' });
 
@@ -154,6 +164,7 @@ export function createPromptBarDom(initialPrompt: string): PromptBarDomRefs {
 		dom,
 		textareaEl,
 		submitBtn,
+		closeBtn,
 		replaceBtn,
 		appendBtn,
 		modelChipEl,

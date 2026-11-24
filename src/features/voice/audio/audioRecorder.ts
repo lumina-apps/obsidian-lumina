@@ -37,6 +37,8 @@ export interface AudioRecorderCallbacks {
 	onSpeechChunk?: (chunk: { wavBlob: Blob; offsetSec: number; durationSec: number }) => void;
 	/** 복구 백업용 주기적 녹음 조각 */
 	onBackupTick?: (chunks: Blob[], mimeType: string, elapsedSec: number) => void;
+	/** 모바일 화면 잠금·트랙 종료 등 외부 요인으로 녹음이 중단되었을 때 호출 */
+	onInterrupted?: () => void;
 }
 
 /** 무음 판정 지속 시간 (ms) — 말을 멈춘 뒤 해당 시간이 지나면 문장 청크를 전송 */
@@ -148,12 +150,15 @@ export class VoiceAudioRecorder {
 	private mimeType = 'audio/webm';
 	private isPaused = false;
 	private isRecording = false;
+	private isStopping = false;
 	private activeStartedAtMs = 0;
 	private accumulatedMs = 0;
 
 	private levelRafId: number | null = null;
 	private elapsedTimerId: number | null = null;
 	private backupTimerId: number | null = null;
+	private trackCleanupFns: Array<() => void> = [];
+	private visibilityHandler: (() => void) | null = null;
 
 	// 실시간 VAD용 PCM 버퍼 상태
 	private pcmBuffers: Float32Array[] = [];
@@ -187,7 +192,10 @@ export class VoiceAudioRecorder {
 		this.pcmSampleCount = 0;
 		this.accumulatedMs = 0;
 		this.isPaused = false;
+		this.isStopping = false;
 		this.isRecording = true;
+
+		this.registerInterruptionHandlers(this.stream);
 
 		const preferredMime = selectSupportedMimeType();
 		this.mediaRecorder = preferredMime
@@ -250,6 +258,18 @@ export class VoiceAudioRecorder {
 	}
 
 	/**
+	 * 현재까지 수집된 녹음 청크를 즉시 복구 백업 콜백으로 전달합니다.
+	 */
+	flushBackupNow(): void {
+		if (!this.isRecording || this.recordedChunks.length === 0) return;
+		this.callbacks.onBackupTick?.(
+			[...this.recordedChunks],
+			this.mimeType,
+			Math.floor(this.getCurrentElapsedMs() / 1000),
+		);
+	}
+
+	/**
 	 * 녹음을 정상 종료하고 전체 오디오 Blob을 반환합니다.
 	 */
 	async stop(): Promise<RecordedAudioResult> {
@@ -262,6 +282,7 @@ export class VoiceAudioRecorder {
 			};
 		}
 
+		this.isStopping = true;
 		const totalMs = this.getCurrentElapsedMs();
 		this.flushSpeechBufferIfReady(true);
 
@@ -283,6 +304,7 @@ export class VoiceAudioRecorder {
 	 * 녹음을 취소하고 모든 스트림·컨텍스트·타이머를 즉시 해제합니다.
 	 */
 	cancel(): void {
+		this.isStopping = true;
 		this.isRecording = false;
 		this.isPaused = false;
 		if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
@@ -294,6 +316,42 @@ export class VoiceAudioRecorder {
 		}
 		this.recordedChunks = [];
 		this.cleanupResources();
+	}
+
+	private registerInterruptionHandlers(stream: MediaStream): void {
+		const handleTrackEnded = () => {
+			if (!this.isRecording || this.isStopping) return;
+			if (!this.isPaused) {
+				this.accumulatedMs += Date.now() - this.activeStartedAtMs;
+				this.isPaused = true;
+			}
+			this.flushSpeechBufferIfReady(true);
+			this.flushBackupNow();
+			this.callbacks.onLevel?.(0);
+			this.callbacks.onInterrupted?.();
+		};
+
+		for (const track of stream.getTracks()) {
+			const evtTrack = track as unknown as {
+				addEventListener?: (type: string, listener: () => void) => void;
+				removeEventListener?: (type: string, listener: () => void) => void;
+			};
+			if (typeof evtTrack.addEventListener === 'function') {
+				evtTrack.addEventListener('ended', handleTrackEnded);
+				this.trackCleanupFns.push(() => {
+					evtTrack.removeEventListener?.('ended', handleTrackEnded);
+				});
+			}
+		}
+
+		if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+			this.visibilityHandler = () => {
+				if (document.visibilityState === 'hidden' && this.isRecording) {
+					this.flushBackupNow();
+				}
+			};
+			document.addEventListener('visibilitychange', this.visibilityHandler);
+		}
 	}
 
 	private getCurrentElapsedMs(): number {
@@ -539,6 +597,21 @@ export class VoiceAudioRecorder {
 	private cleanupResources(): void {
 		this.isRecording = false;
 		this.isPaused = false;
+		this.isStopping = false;
+
+		for (const cleanup of this.trackCleanupFns) {
+			try {
+				cleanup();
+			} catch {
+				// 트랙 리스너 해제 오류 무시
+			}
+		}
+		this.trackCleanupFns = [];
+
+		if (this.visibilityHandler && typeof document !== 'undefined') {
+			document.removeEventListener('visibilitychange', this.visibilityHandler);
+			this.visibilityHandler = null;
+		}
 
 		if (
 			this.levelRafId !== null &&

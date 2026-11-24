@@ -85,4 +85,42 @@ describe("useInputHandler - createKeydownHandler", () => {
 		expect(mobileEv.preventDefault).not.toHaveBeenCalled();
 		expect(onSendMessage).toHaveBeenCalledTimes(1);
 	});
+
+	it("모바일/태블릿에서도 외장 키보드 Cmd/Ctrl+Enter 입력 시 메시지를 전송한다", () => {
+		(Platform as { isMobile: boolean }).isMobile = true;
+		const onSendMessage = vi.fn();
+		const plugin = {
+			settings: { chat: { sendKey: "enter" } },
+		} as unknown as LuminaPlugin;
+		const handler = createKeydownHandler({
+			plugin,
+			showSlashSelector: false,
+			showContextSelector: false,
+			onSendMessage,
+		});
+
+		const ctrlEnterEv = {
+			key: "Enter",
+			ctrlKey: true,
+			metaKey: false,
+			shiftKey: false,
+			isComposing: false,
+			preventDefault: vi.fn(),
+		} as unknown as KeyboardEvent;
+		handler(ctrlEnterEv);
+		expect(ctrlEnterEv.preventDefault).toHaveBeenCalledTimes(1);
+		expect(onSendMessage).toHaveBeenCalledTimes(1);
+
+		const cmdEnterEv = {
+			key: "Enter",
+			ctrlKey: false,
+			metaKey: true,
+			shiftKey: false,
+			isComposing: false,
+			preventDefault: vi.fn(),
+		} as unknown as KeyboardEvent;
+		handler(cmdEnterEv);
+		expect(cmdEnterEv.preventDefault).toHaveBeenCalledTimes(1);
+		expect(onSendMessage).toHaveBeenCalledTimes(2);
+	});
 });

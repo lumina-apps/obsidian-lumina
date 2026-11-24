@@ -4,6 +4,7 @@ import type { ContextAttachment } from "../../../../shared/types/chat.types";
 import { debugLogger } from "../../../../shared/debugLogger";
 import { normalizeError } from "../../../../shared/utils/errorUtils";
 import { ensureFolderExists, extractFileName, isMarkdownFile, sanitizeFilePath, sanitizeFilename } from "../../../../shared/utils/fileUtils";
+import { resolveSafeLeafTarget, revealLeafOnMobile } from "../../../../shared/utils/workspaceNavUtils";
 
 /**
  * 파일 경로로 Obsidian 노트를 연다.
@@ -21,8 +22,9 @@ export async function openFile(
 			app.vault.getAbstractFileByPath(`${filePath}.md`);
 	}
 	if (file instanceof TFile) {
+		const requestedTarget = e.ctrlKey || e.metaKey || ("button" in e && e.button === 1) ? "tab" : false;
 		const leaf = app.workspace.getLeaf(
-			e.ctrlKey || e.metaKey || ("button" in e && e.button === 1) ? "tab" : false,
+			resolveSafeLeafTarget(app.workspace, requestedTarget),
 		);
 		let lineNo: number | undefined = undefined;
 		if (chunkText) {
@@ -53,6 +55,7 @@ export async function openFile(
 		}
 		
 		await leaf.openFile(file, lineNo !== undefined ? { eState: { line: lineNo } } : undefined);
+		await revealLeafOnMobile(app.workspace, leaf);
 	} else {
 		new Notice(t("uiMessages.fileNotFound"));
 	}
@@ -398,6 +401,7 @@ export async function createAndOpenNote(
 		const leaf = app.workspace.getLeaf("tab");
 		if (leaf) {
 			await leaf.openFile(file);
+			await revealLeafOnMobile(app.workspace, leaf);
 		}
 		new Notice(t("uiMessages.noteSaved", { path: file.path }));
 		return file;

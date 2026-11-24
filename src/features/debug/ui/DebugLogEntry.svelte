@@ -98,7 +98,12 @@
 
 	<!-- Entry Detail (펼쳤을 때 타입별 컴포넌트) -->
 	{#if expanded}
-		<div class="lumina-debug__entry-body">
+		<div
+			class="lumina-debug__entry-body"
+			role="presentation"
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+		>
 			{#if entry.type === 'llm-request'}
 				<LLMRequestDetail entry={entry as LLMRequestLog} />
 			{:else if entry.type === 'llm-response'}

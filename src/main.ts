@@ -8,13 +8,14 @@ import { BatchStudioView, BATCH_STUDIO_VIEW_TYPE } from './features/batch/batchS
 import { abortActiveBatchRun } from './features/batch/batchController';
 import { resetBatchStore } from './core/store/batchStore';
 import type { LuminaSettings } from './core/settings/settings.types';
-import { EmbeddingWorkerBridge } from './features/rag/workerBridge';
-import { VaultIndexer } from './features/rag/indexer';
+import type { EmbeddingWorkerBridge } from './features/rag/workerBridge';
+import type { VaultIndexer } from './features/rag/indexer';
 import { loadSystemLocaleCache } from './shared/locales/translator';
 import { setLanguage, t } from './shared/locales/helpers';
 import { debugLogger } from './shared/debugLogger';
 import { registerLuminaIcons } from './shared/icons';
 import { normalizeError } from './shared/utils/errorUtils';
+import { findSupportedProvider, isRagEffectiveOnCurrentPlatform } from './shared/utils/modelUtils';
 import { runMigrations, migrateRemovedProviders } from './core/settings/migrations';
 import { activateView, activateMainView, closeView } from './core/views/viewHelper';
 import { canUseFeature, entitlementStore, initEntitlementStore, resetEntitlementState } from './core/store/entitlementStore';
@@ -273,24 +274,41 @@ export default class LuminaPlugin extends Plugin {
 
 			// RAG 워커 초기화
 			if (this.settings.connections.ragEnabled) {
-				if (Platform.isMobile && this.settings.connections.embedding.mode === 'auto') {
-					new Notice(t('uiMessages.noticeMobileRag'), 10000);
-				} else {
-					if (this.isFirstRun && !Platform.isMobile) {
-						const noteCount = this.app.vault.getMarkdownFiles().length;
-						if (noteCount > 10000) {
-							new Notice(t('uiMessages.noticeLargeVault', { count: noteCount }), 10000);
-						} else {
-							new Notice(t('uiMessages.noticeIndexing'), 8000);
-						}
+				if (Platform.isMobile && !isRagEffectiveOnCurrentPlatform(this.settings.connections)) {
+					if (this.settings.connections.embedding.mode === 'auto' && this.isFirstRun) {
+						new Notice(t('uiMessages.noticeMobileRag'), 10000);
 					}
-					import('./features/rag/ragInitializer').then(({ initEmbeddingWorker }) => {
-						initEmbeddingWorker(this, true, this.isFirstRun).catch((err) => {
-							debugLogger.logError('rag', normalizeError(err, `RAG init fail: ${err}`));
+				} else {
+					const emb = this.settings.connections.embedding;
+					const customEmbProvider = emb.mode === 'custom'
+						? findSupportedProvider(this.settings.connections.providers, emb.providerId)
+						: undefined;
+					const missingSyncedCloudKey = Boolean(
+						Platform.isMobile &&
+						emb.mode === 'custom' &&
+						customEmbProvider &&
+						customEmbProvider.type !== 'custom' &&
+						!customEmbProvider.credential?.trim(),
+					);
+					if (missingSyncedCloudKey) {
+						debugLogger.logSystem('rag', 'Skipping RAG startup init on mobile until synced cloud API key is configured locally.');
+					} else {
+						if (this.isFirstRun && !Platform.isMobile) {
+							const noteCount = this.app.vault.getMarkdownFiles().length;
+							if (noteCount > 10000) {
+								new Notice(t('uiMessages.noticeLargeVault', { count: noteCount }), 10000);
+							} else {
+								new Notice(t('uiMessages.noticeIndexing'), 8000);
+							}
+						}
+						import('./features/rag/ragInitializer').then(({ initEmbeddingWorker }) => {
+							initEmbeddingWorker(this, true, this.isFirstRun).catch((err) => {
+								debugLogger.logError('rag', normalizeError(err, `RAG init fail: ${err}`));
+							});
+						}).catch((err) => {
+							debugLogger.logError('rag', normalizeError(err, `ragInitializer import fail: ${err}`));
 						});
-					}).catch((err) => {
-						debugLogger.logError('rag', normalizeError(err, `ragInitializer import fail: ${err}`));
-					});
+					}
 				}
 			}
 		});
