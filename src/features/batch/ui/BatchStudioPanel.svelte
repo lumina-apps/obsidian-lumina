@@ -1894,8 +1894,38 @@
 	:global(body.is-mobile) .lumina-batch-bulk-apply-btn {
 		flex-wrap: wrap;
 		max-width: 100%;
-		min-height: 38px;
+		min-height: 30px;
 		height: auto;
+	}
+
+	/* 모바일 Obsidian 기본 버튼/입력 높이(--input-height)로 인한 공간 낭비 방지: 컴팩트 높이 적용 */
+	:global(body.is-mobile) .lumina-batch-studio button {
+		height: auto;
+		min-height: 28px;
+		box-shadow: none;
+	}
+
+	:global(body.is-mobile) .lumina-batch-recipe-tab,
+	:global(body.is-mobile) .lumina-batch-main-tab,
+	:global(body.is-mobile) .lumina-batch-filter-tab,
+	:global(body.is-mobile) .lumina-batch-btn,
+	:global(body.is-mobile) .lumina-batch-btn-ghost,
+	:global(body.is-mobile) .lumina-batch-chip-btn {
+		padding: 4px 10px;
+		line-height: 1.2;
+	}
+
+	:global(body.is-mobile) .lumina-batch-segmented button {
+		padding: 3px 10px;
+		line-height: 1.2;
+	}
+
+	:global(body.is-mobile) .lumina-batch-studio input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+	:global(body.is-mobile) .lumina-batch-studio select {
+		height: auto;
+		min-height: 28px;
+		padding-top: 3px;
+		padding-bottom: 3px;
 	}
 
 	@media (max-width: 720px) {

@@ -244,6 +244,9 @@ describe('Mobile Chat View Layout CSS Isolation & Completeness', () => {
 			'input[type="range"]',
 			'textarea.lumina-prompt-card__content',
 			'.lumina-provider-card.mcp-server-card > .setting-item',
+			'body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-feature-card .setting-item-info',
+			'body.is-mobile.is-phone .vertical-tab-content-container .lumina-settings .setting-item',
+			'body.is-mobile.is-floating-nav:not(.is-hidden-nav) .view-content.lumina-split-view',
 			'body.is-mobile .lumina-settings-modal .setting-item',
 			'body.is-mobile .lumina-debug__table td:first-child',
 			'body.is-mobile .cm-tooltip.lumina-promptbar .lumina-promptbar-kbd',
@@ -295,7 +298,11 @@ describe('Mobile Chat View Layout CSS Isolation & Completeness', () => {
 			},
 			{
 				relPath: 'src/features/batch/ui/BatchStudioPanel.svelte',
-				expectedSelectors: [':global(body.is-mobile) .lumina-batch-field-row', ':global(body.is-mobile) .lumina-batch-inspector-path'],
+				expectedSelectors: [
+					':global(body.is-mobile) .lumina-batch-field-row',
+					':global(body.is-mobile) .lumina-batch-inspector-path',
+					':global(body.is-mobile) .lumina-batch-studio button',
+				],
 			},
 			{
 				relPath: 'src/features/voice/ui/VoiceRecorderPill.svelte',

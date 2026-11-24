@@ -134,13 +134,13 @@ export function notifyProFeatureLocked(
 	feature: ProFeatureId,
 	message: string,
 ): void {
-	if (typeof document === 'undefined') {
+	if (typeof document === 'undefined' || typeof createFragment !== 'function') {
 		new Notice(message, 4500);
 		return;
 	}
 
-	const frag = document.createDocumentFragment();
-	frag.createEl('span', {
+	const frag = createFragment();
+	frag.createSpan({
 		text: `✦ ${message}`,
 		cls: 'lumina-pro-notice-msg',
 	});

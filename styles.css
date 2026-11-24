@@ -333,8 +333,7 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 	margin: 16px 0;
 	font-size: 0.9em;
 	line-height: 1.5;
-	display: flex;
-	align-items: center;
+	display: block;
 	border: 1px solid transparent;
 }
 
@@ -3802,6 +3801,128 @@ body.is-mobile .vertical-tab-content-container .lumina-settings select.dropdown.
 	inset-inline-end: 0;
 }
 
+/* 모바일(폰+태블릿) 설정 텍스트 왼쪽 쏠림·이중 패딩·과도한 컨트롤 폭 점유 방지 */
+body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-info,
+body.is-mobile .lumina-settings .setting-item-info {
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-name,
+body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-description,
+body.is-mobile .lumina-settings .setting-item-name,
+body.is-mobile .lumina-settings .setting-item-description {
+	min-width: 0;
+	max-width: 100%;
+	overflow-wrap: anywhere;
+}
+
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-provider-card .setting-item-name,
+body.is-mobile .lumina-settings .lumina-provider-card .setting-item-name {
+	white-space: normal;
+}
+
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-feature-card .setting-item-info,
+body.is-mobile .lumina-settings .lumina-feature-card .setting-item-info {
+	padding-left: 0;
+}
+
+body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item.lumina-autocomplete-prompt-setting .setting-item-info,
+body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-prompt-card .setting-item.lumina-prompt-card__prompt-setting .setting-item-info {
+	flex: 1 1 auto;
+	max-width: 100%;
+	margin-right: 0;
+	white-space: normal;
+}
+
+body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control {
+	min-width: 0;
+	max-width: 55%;
+	flex-wrap: wrap;
+}
+
+body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-cta .setting-item-control,
+body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-center-button .setting-item-control,
+body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-stacked-control .setting-item-control,
+body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-token .setting-item-control {
+	max-width: 100%;
+}
+
+/* 스마트폰(가로 모드 >600px 포함)에서는 Obsidian 기본 .is-phone 전체 폭 컨트롤과 충돌하지 않도록 항상 세로 스택 */
+body.is-mobile.is-phone .vertical-tab-content-container .lumina-settings .setting-item,
+body.is-mobile.is-phone .lumina-settings .setting-item {
+	flex-direction: column;
+	align-items: stretch;
+	gap: 10px;
+	padding: 14px 12px;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+body.is-mobile.is-phone .vertical-tab-content-container .lumina-settings .lumina-settings__section-heading,
+body.is-mobile.is-phone .lumina-settings .lumina-settings__section-heading {
+	padding: 12px 0 8px;
+}
+
+body.is-mobile.is-phone .vertical-tab-content-container .lumina-settings .setting-item-info,
+body.is-mobile.is-phone .lumina-settings .setting-item-info {
+	width: 100%;
+	flex: 0 0 auto;
+	align-self: stretch;
+	padding-left: 0;
+	padding-right: 0;
+	margin-inline-end: 0;
+	margin-right: 0;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+body.is-mobile.is-phone .vertical-tab-content-container .lumina-settings .setting-item-control,
+body.is-mobile.is-phone .lumina-settings .setting-item-control {
+	position: relative;
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
+	justify-content: flex-start;
+	text-align: start;
+	flex-wrap: wrap;
+	padding-right: 0;
+	margin-inline-end: 0;
+	box-sizing: border-box;
+}
+
+body.is-mobile.is-phone .vertical-tab-content-container .lumina-settings .lumina-feature-card,
+body.is-mobile.is-phone .lumina-settings .lumina-feature-card {
+	padding: 4px 12px;
+}
+
+body.is-mobile.is-phone .vertical-tab-content-container .lumina-settings .lumina-feature-card .setting-item,
+body.is-mobile.is-phone .lumina-settings .lumina-feature-card .setting-item {
+	padding: 12px 4px;
+}
+
+body.is-mobile.is-phone .vertical-tab-content-container .vertical-tab-content.lumina-settings .setting-item-control input[type="range"],
+body.is-mobile.is-phone .vertical-tab-content-container .lumina-settings .setting-item-control input[type="range"] {
+	flex: 1 1 120px;
+	width: auto;
+	min-width: 0;
+	max-width: 100%;
+}
+
+body.is-mobile.is-phone .vertical-tab-content-container .vertical-tab-content.lumina-settings .setting-item-control input[type="range"] ~ input[type="number"],
+body.is-mobile.is-phone .vertical-tab-content-container .vertical-tab-content.lumina-settings .setting-item-control input.lumina-slider-number,
+body.is-mobile.is-phone .vertical-tab-content-container .lumina-settings .setting-item-control input[type="range"] ~ input[type="number"],
+body.is-mobile.is-phone .vertical-tab-content-container .lumina-settings .setting-item-control input.lumina-slider-number {
+	flex: 0 0 64px;
+	width: 64px;
+	max-width: 72px;
+	min-width: 0;
+	text-align: right;
+}
+
 /* 좁은 화면(스마트폰) 외곽 패딩 및 스티키 nav 오프셋 일치 */
 @media (max-width: 600px) {
 	body.is-mobile .vertical-tab-content-container .vertical-tab-content.lumina-settings {
@@ -3834,7 +3955,8 @@ body.is-mobile .vertical-tab-content-container .lumina-settings select.dropdown.
 		padding: 7px 0;
 	}
 
-	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item {
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item,
+	body.is-mobile .lumina-settings .setting-item {
 		flex-direction: column;
 		align-items: stretch;
 		gap: 10px;
@@ -3844,27 +3966,45 @@ body.is-mobile .vertical-tab-content-container .lumina-settings select.dropdown.
 		box-sizing: border-box;
 	}
 
-	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-info {
+	body.is-mobile .vertical-tab-content-container .lumina-settings .lumina-settings__section-heading,
+	body.is-mobile .lumina-settings .lumina-settings__section-heading {
+		padding: 12px 0 8px;
+	}
+
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-info,
+	body.is-mobile .lumina-settings .setting-item-info {
+		width: 100%;
+		flex: 0 0 auto;
+		align-self: stretch;
 		padding-left: 0;
+		padding-right: 0;
+		margin-inline-end: 0;
+		margin-right: 0;
 		min-width: 0;
 		max-width: 100%;
+		box-sizing: border-box;
 	}
 
 	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-name,
-	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-description {
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-description,
+	body.is-mobile .lumina-settings .setting-item-name,
+	body.is-mobile .lumina-settings .setting-item-description {
 		min-width: 0;
 		max-width: 100%;
 		overflow-wrap: anywhere;
 	}
 
-	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control {
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-control,
+	body.is-mobile .lumina-settings .setting-item-control {
 		position: relative;
 		width: 100%;
 		min-width: 0;
 		max-width: 100%;
 		justify-content: flex-start;
+		text-align: start;
 		flex-wrap: wrap;
 		padding-right: 0;
+		margin-inline-end: 0;
 		box-sizing: border-box;
 	}
 
@@ -4056,6 +4196,16 @@ body.is-mobile .view-content.lumina-chat-view,
 body.is-mobile .view-content.lumina-split-view {
 	padding: 0;
 	overflow: hidden;
+}
+
+/* 모바일 플로팅 네비게이션(--navbar-position: fixed) 사용 시 메인 탭으로 열린 채팅 비교 뷰의 입력창이 하단 바에 가려지지 않도록 여백 확보 */
+body.is-mobile.is-floating-nav:not(.is-hidden-nav) .view-content.lumina-split-view {
+	padding-bottom: calc(var(--navbar-height, 0px) + var(--navbar-bottom-offset, 0px) + 4px);
+	box-sizing: border-box;
+}
+
+body.is-mobile.is-floating-nav:not(.is-hidden-nav) .lumina-split-view .lumina-chat__input-area {
+	padding-bottom: 8px;
 }
 
 body.is-mobile .lumina-chat {
@@ -4269,13 +4419,21 @@ body.is-mobile .lumina-settings-modal details span {
 	}
 
 	body.is-mobile .lumina-settings-modal .setting-item-info {
+		margin-inline-end: 0;
 		margin-right: 0;
+		align-self: stretch;
 		width: 100%;
+		min-width: 0;
+		max-width: 100%;
+		box-sizing: border-box;
 	}
 
 	body.is-mobile .lumina-settings-modal .setting-item-control {
 		width: 100%;
+		min-width: 0;
+		max-width: 100%;
 		justify-content: flex-start;
+		text-align: start;
 		flex-wrap: wrap;
 		gap: 8px;
 	}

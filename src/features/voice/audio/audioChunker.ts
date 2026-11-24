@@ -309,44 +309,49 @@ export async function measureAudioBlobDurationSec(blob: Blob): Promise<number | 
 		return null;
 	}
 
-	const isJsdom =
-		typeof navigator !== 'undefined' &&
-		typeof navigator.userAgent === 'string' &&
-		navigator.userAgent.toLowerCase().includes('jsdom');
-
 	if (
-		!isJsdom &&
-		typeof document !== 'undefined' &&
+		typeof createEl === 'function' &&
 		typeof URL !== 'undefined' &&
 		typeof URL.createObjectURL === 'function'
 	) {
-		const metaDuration = await new Promise<number | null>((resolve) => {
-			const audio = document.createElement('audio');
-			const objectUrl = URL.createObjectURL(blob);
-			let settled = false;
+		const audio = createEl('audio');
+		// 오디오 코덱 재생을 지원하지 않는 환경(예: 단위 테스트용 jsdom)에서는 대기 없이 디코더 경로로 폴백
+		const supportsAudioPlayback =
+			typeof audio.canPlayType === 'function' &&
+			Boolean(
+				audio.canPlayType('audio/wav') ||
+					audio.canPlayType('audio/mpeg') ||
+					audio.canPlayType('audio/mp4'),
+			);
 
-			const finish = (val: number | null) => {
-				if (settled) return;
-				settled = true;
-				window.clearTimeout(timerId);
-				audio.removeAttribute('src');
+		if (supportsAudioPlayback) {
+			const metaDuration = await new Promise<number | null>((resolve) => {
+				const objectUrl = URL.createObjectURL(blob);
+				let settled = false;
+
+				const finish = (val: number | null) => {
+					if (settled) return;
+					settled = true;
+					window.clearTimeout(timerId);
+					audio.removeAttribute('src');
+					audio.load();
+					URL.revokeObjectURL(objectUrl);
+					resolve(val);
+				};
+
+				const timerId = window.setTimeout(() => finish(null), 400);
+				audio.preload = 'metadata';
+				audio.onloadedmetadata = () => {
+					finish(Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : null);
+				};
+				audio.onerror = () => finish(null);
+				audio.src = objectUrl;
 				audio.load();
-				URL.revokeObjectURL(objectUrl);
-				resolve(val);
-			};
+			});
 
-			const timerId = window.setTimeout(() => finish(null), 400);
-			audio.preload = 'metadata';
-			audio.onloadedmetadata = () => {
-				finish(Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : null);
-			};
-			audio.onerror = () => finish(null);
-			audio.src = objectUrl;
-			audio.load();
-		});
-
-		if (metaDuration !== null) {
-			return metaDuration;
+			if (metaDuration !== null) {
+				return metaDuration;
+			}
 		}
 	}
 

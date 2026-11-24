@@ -474,8 +474,23 @@ if (typeof DocumentFragment !== 'undefined') {
 			const el = document.createElement(tag);
 			if (o?.cls) el.className = o.cls;
 			if (o?.text) el.textContent = o.text;
+			if (o?.attr) {
+				for (const [k, v] of Object.entries(o.attr)) {
+					el.setAttribute(k, String(v));
+				}
+			}
 			this.appendChild(el);
 			return el;
+		};
+	}
+	if (!fragProto.createDiv) {
+		fragProto.createDiv = function (o?: any) {
+			return this.createEl('div', o);
+		};
+	}
+	if (!fragProto.createSpan) {
+		fragProto.createSpan = function (o?: any) {
+			return this.createEl('span', o);
 		};
 	}
 	if (!fragProto.appendText) {
