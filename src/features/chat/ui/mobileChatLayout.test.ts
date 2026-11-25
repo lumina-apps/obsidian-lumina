@@ -124,6 +124,8 @@ describe('Mobile Chat View Layout CSS Isolation & Completeness', () => {
 			'body.is-mobile .lumina-chat__rag-badge',
 			'body.is-mobile .lumina-chat__toggle-btn',
 			'body.is-mobile .lumina-chat__input-area',
+			'body.is-mobile .lumina-chat__input-area.is-keyboard-open .lumina-chat__textarea',
+			'var(--lumina-keyboard-offset, 0px)',
 			'body.is-mobile .lumina-chat__input-toolbar',
 			'body.is-mobile .lumina-chat__hint-inline',
 			'body.is-mobile .lumina-chat__context-badge',
@@ -203,6 +205,13 @@ describe('Mobile Chat View Layout CSS Isolation & Completeness', () => {
 			{
 				relPath: 'src/features/chat/ui/components/FileEditBadge.svelte',
 				expectedSelectors: [':global(body.is-mobile) .lumina-cli-file-edit'],
+			},
+			{
+				relPath: 'src/features/chat/ui/MessageEditArea.svelte',
+				expectedSelectors: [
+					':global(body.is-mobile) .lumina-message__edit-textarea',
+					':global(body.is-mobile) .lumina-message__edit-btn',
+				],
 			},
 		];
 

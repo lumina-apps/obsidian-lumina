@@ -4312,7 +4312,7 @@ body.is-mobile.is-floating-nav:not(.is-hidden-nav) .mod-root .view-content.lumin
 }
 
 body.is-mobile.is-floating-nav:not(.is-hidden-nav) .lumina-split-view .lumina-chat__input-area {
-	padding-bottom: 8px;
+	padding-bottom: calc(8px + var(--lumina-keyboard-offset, 0px));
 }
 
 body.is-mobile .lumina-chat {
@@ -4355,8 +4355,12 @@ body.is-mobile .lumina-chat__toggle-btn {
 }
 
 body.is-mobile .lumina-chat__input-area {
-	padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+	padding-bottom: calc(8px + max(env(safe-area-inset-bottom, 0px), var(--lumina-keyboard-offset, 0px)));
 	gap: 6px;
+}
+
+body.is-mobile .lumina-chat__input-area.is-keyboard-open .lumina-chat__textarea {
+	max-height: 112px;
 }
 
 body.is-mobile .lumina-chat__input-toolbar {
@@ -4477,7 +4481,7 @@ body.is-mobile button.lumina-chat__clear-btn {
 	}
 
 	body.is-mobile .lumina-chat__input-area {
-		padding: 6px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+		padding: 6px 8px calc(8px + max(env(safe-area-inset-bottom, 0px), var(--lumina-keyboard-offset, 0px)));
 	}
 
 	body.is-mobile .lumina-chat__input-toolbar {

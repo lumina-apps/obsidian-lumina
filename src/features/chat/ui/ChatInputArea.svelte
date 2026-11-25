@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { tick } from "svelte";
+	import { onDestroy, onMount, tick } from "svelte";
 	import { MarkdownView, setIcon, TFile } from "obsidian";
 	import type LuminaPlugin from "../../../main";
 	import type { Readable } from "svelte/store";
@@ -36,6 +36,10 @@
 		createRemoveAttachment,
 	} from "./composables/useFileAttachment";
 	import { handleMcpPopupToggle } from "./composables/useInputPopups";
+	import {
+		setupMobileKeyboardViewport,
+		type MobileKeyboardViewportController,
+	} from "./composables/useMobileKeyboardViewport";
 	import { openAttachment } from "./utils/messageActions";
 	import { useActiveFileTracker, type ActiveFileInfo } from "./composables/useActiveFileTracker";
 	import { isExcluded, isIncluded } from "../../../shared/utils/exclusions";
@@ -80,6 +84,7 @@
 		onRegenerateLast,
 		onCompressContext,
 		onOpenSplitChat,
+		onKeyboardOpen,
 	} = $props<{
 		plugin: LuminaPlugin;
 		isLoading: boolean;
@@ -115,7 +120,26 @@
 		onRegenerateLast: () => void;
 		onCompressContext: () => void;
 		onOpenSplitChat?: () => void;
+		onKeyboardOpen?: () => void;
 	}>();
+
+	let inputAreaEl: HTMLElement | null = $state(null);
+	let keyboardViewportCtrl: MobileKeyboardViewportController | null = null;
+
+	onMount(() => {
+		keyboardViewportCtrl = setupMobileKeyboardViewport({
+			getContainerEl: () => inputAreaEl,
+			getInputEl: () => textareaEl,
+			onKeyboardOpen: () => {
+				onKeyboardOpen?.();
+			},
+		});
+	});
+
+	onDestroy(() => {
+		keyboardViewportCtrl?.destroy();
+		keyboardViewportCtrl = null;
+	});
 
 	// ── UI state (팝업 표시 여부 및 검색 쿼리) ───────────────────────────────
 	let showContextSelector = $state(false);
@@ -539,6 +563,7 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
+	bind:this={inputAreaEl}
 	class="lumina-chat__input-area"
 	class:is-dragover={isDragOver}
 	ondrop={handleAreaDrop}
@@ -706,7 +731,13 @@
 					onpaste={handlePaste}
 					ondrop={handleAreaDrop}
 					ondragover={handleDragOver}
-					onfocus={() => activeTracker.updateActiveFile()}
+					onfocus={() => {
+						activeTracker.updateActiveFile();
+						keyboardViewportCtrl?.update();
+					}}
+					onblur={() => {
+						keyboardViewportCtrl?.update();
+					}}
 				></textarea>
 
 				{#if inputText.length > 0 && !isLoading}

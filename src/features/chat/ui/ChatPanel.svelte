@@ -566,6 +566,11 @@
 			onRegenerateLast={regenerateLastAnswer}
 			onCompressContext={chatActions.compressContext}
 			onOpenSplitChat={$splitChatEntitled ? openSplitChat : undefined}
+			onKeyboardOpen={() => {
+				if (!autoScroll.isUserScrolledUp) {
+					void autoScroll.scrollToBottom("auto");
+				}
+			}}
 		/>
 	{/if}
 </div>

@@ -16,11 +16,19 @@
 	} = $props();
 
 	let editContent = $state("");
+	let editTextareaEl: HTMLTextAreaElement | null = $state(null);
 
 	$effect(() => {
 		// content가 변경될 때마다 편집 내용 초기화 (편집 모드 진입 시점)
 		editContent = content;
 	});
+
+	function handleFocus(): void {
+		if (!editTextareaEl) return;
+		window.setTimeout(() => {
+			editTextareaEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+		}, 180);
+	}
 
 	async function handleConfirmSave(): Promise<void> {
 		if (!app || (await confirmWithModal(app, t("uiMessages.saveAndSend"), t("uiMessages.editConfirm")))) {
@@ -30,7 +38,13 @@
 </script>
 
 <div class="lumina-message__edit-area">
-	<textarea bind:value={editContent} class="lumina-message__edit-textarea" rows="3"></textarea>
+	<textarea
+		bind:this={editTextareaEl}
+		bind:value={editContent}
+		class="lumina-message__edit-textarea"
+		rows="3"
+		onfocus={handleFocus}
+	></textarea>
 	<div class="lumina-message__edit-actions">
 		<button class="lumina-message__edit-btn" onclick={onCancel}>{t("common.cancel")}</button>
 		<button class="lumina-message__edit-btn lumina-message__edit-btn--primary" onclick={() => void handleConfirmSave()}>{t("uiMessages.saveAndSend")}</button>
@@ -96,5 +110,18 @@
 		background: var(--interactive-accent-hover);
 		color: white;
 		border-color: var(--interactive-accent-hover);
+	}
+
+	/* 모바일(iOS/Android) 가상 키보드 포커스 시 자동 확대 방지 및 터치 버튼 보정 */
+	:global(body.is-mobile) .lumina-message__edit-textarea {
+		font-size: 16px;
+		line-height: 22px;
+	}
+
+	:global(body.is-mobile) .lumina-message__edit-btn {
+		min-height: 32px;
+		padding: 6px 12px;
+		font-size: 12px;
+		box-shadow: none;
 	}
 </style>

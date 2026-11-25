@@ -620,6 +620,11 @@
 			onExportChat={() => void ctrl?.exportCurrentComparison()}
 			onRegenerateLast={() => {}}
 			onCompressContext={() => {}}
+			onKeyboardOpen={() => {
+				if (!autoScroll.isUserScrolledUp) {
+					void autoScroll.scrollToBottom("auto");
+				}
+			}}
 		/>
 	</div>
 
