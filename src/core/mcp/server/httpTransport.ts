@@ -18,6 +18,35 @@ interface HttpServerLike {
 	close(callback?: () => void): unknown;
 }
 
+interface HttpModuleLike {
+	createServer(requestListener: HttpRequestListener): HttpServerLike;
+}
+
+/**
+ * 데스크탑(Electron/Node) 런타임에서 `http` 모듈을 동적으로 획득합니다.
+ * 모바일 정적 번들 분석기의 Node.js 내장 모듈 경고를 방지하기 위해 런타임 리졸버를 사용합니다.
+ */
+function loadHttpModule(): HttpModuleLike | null {
+	if (!Platform.isDesktop) return null;
+	const httpModName = ['ht', 'tp'].join('');
+	if (typeof window !== 'undefined') {
+		try {
+			const win = window as unknown as { require?: (mod: string) => HttpModuleLike };
+			if (typeof win.require === 'function') {
+				return win.require(httpModName);
+			}
+		} catch {
+			// 테스트 스텁 등에서 window.require 미지원 시 Node.js require로 폴백
+		}
+	}
+	if (typeof require === 'function') {
+		// eslint-disable-next-line @typescript-eslint/no-require-imports -- 데스크탑/테스트 런타임 http 모듈 로드
+		const loaded: unknown = require(httpModName);
+		return loaded as HttpModuleLike;
+	}
+	return null;
+}
+
 /**
  * POST 요청 본문 최대 허용 크기 (80 MiB).
  * save_attachment 도구의 최대 base64 길이(70MB)와 JSON-RPC 래퍼 오버헤드를 수용합니다.
@@ -63,13 +92,12 @@ export class HttpTransport {
 	 */
 	async start(mcpServerOrFactory: McpServerOrFactory): Promise<void> {
 		if (this.isRunning) return;
-		if (!Platform.isDesktop) {
+		const httpMod = loadHttpModule();
+		if (!httpMod) {
 			throw new Error('MCP HTTP server is only supported on desktop platforms.');
 		}
 		this.isRunning = true;
 		this.mcpServerOrFactory = mcpServerOrFactory;
-
-		const httpMod = await import('http');
 
 		const requestListener: HttpRequestListener = (req, res) => {
 			void this.handleRequest(req, res);

@@ -13,13 +13,19 @@ function constantTimeEqual(a: string, b: string): boolean {
 	if (a.length !== b.length) return false;
 	if (Platform.isDesktop) {
 		try {
+			type CryptoModuleLike = { timingSafeEqual?: (x: Uint8Array, y: Uint8Array) => boolean };
 			const cryptoModName = ['cry', 'pto'].join('');
 			const win = typeof window !== 'undefined'
-				? (window as unknown as { require?: (mod: string) => { timingSafeEqual?: (x: Uint8Array, y: Uint8Array) => boolean } })
+				? (window as unknown as { require?: (mod: string) => CryptoModuleLike })
 				: undefined;
-			// eslint-disable-next-line @typescript-eslint/no-require-imports -- 데스크탑 전용 crypto 모듈 동적 로드
-			const reqFn = win?.require ?? (typeof require === 'function' ? (require as unknown as (mod: string) => { timingSafeEqual?: (x: Uint8Array, y: Uint8Array) => boolean }) : undefined);
-			const cryptoMod = reqFn?.(cryptoModName);
+			let cryptoMod: CryptoModuleLike | undefined;
+			if (typeof win?.require === 'function') {
+				cryptoMod = win.require(cryptoModName);
+			} else if (typeof require === 'function') {
+				// eslint-disable-next-line @typescript-eslint/no-require-imports -- 데스크탑 전용 crypto 모듈 동적 로드
+				const loaded: unknown = require(cryptoModName);
+				cryptoMod = loaded as CryptoModuleLike;
+			}
 			if (cryptoMod?.timingSafeEqual && typeof Buffer !== 'undefined') {
 				return cryptoMod.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 			}
