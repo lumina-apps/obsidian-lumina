@@ -21,13 +21,30 @@
 
 | Característica | Descripción |
 | :--- | :--- |
-| **Vista de Chat Multi-LLM** | Un panel lateral dedicado que entiende el contexto de tus notas. Soporta desde potentes modelos en la nube hasta LLMs locales para máxima privacidad. |
-| **Integración de Agentes CLI de Terminal** | Ejecuta agentes de IA de terminal oficiales (Claude Code, Antigravity, OpenCode, Codex) en el panel lateral de Obsidian para explorar y organizar tus notas con flujo de pensamiento en tiempo real y modos de seguridad. |
-| **RAG Sin Configuración** | Cuenta con incrustaciones locales 100% offline para evitar filtraciones de datos. Indexa automáticamente tu bóveda en tiempo real sin configuraciones complejas. |
+| **Vista de Chat Multi-LLM** | Un panel lateral dedicado que entiende el contexto de tus notas. Soporta potentes modelos en la nube (Escritorio y Móvil) y LLMs locales *(Solo Escritorio)* para máxima privacidad. |
+| **Integración de Agentes CLI de Terminal** `*(Solo Escritorio)*` | Ejecuta agentes de IA de terminal oficiales (Claude Code, Antigravity, OpenCode, Codex) en el panel lateral de Obsidian para explorar y organizar tus notas con flujo de pensamiento en tiempo real y modos de seguridad. |
+| **RAG Sin Configuración** | Cuenta con incrustaciones locales 100% offline *(Solo Escritorio)* o incrustaciones personalizadas en la nube *(Escritorio y Móvil)* para indexar automáticamente tu bóveda en tiempo real. |
 | **Descubrimiento Inteligente (Smart Discovery)** | Encuentra instantáneamente documentos altamente relevantes para la nota actual usando búsqueda semántica, detecta y advierte sobre posibles duplicados, e inserta etiquetas recomendadas y enlaces relacionados con un solo clic. |
 | **Acciones Rápidas de IA en Línea** | Resalta texto en el editor para resumir, traducir o corregir instantáneamente sin interrumpir tu flujo de escritura. |
-| **Modo de Agente Inteligente** | El LLM planifica y ejecuta tareas complejas como búsqueda, creación, modificación y eliminación/movimiento de notas usando varias herramientas MCP integradas. |
-| **Integración MCP (Cliente y Servidor)** | Integración bidireccional y completa que permite usar herramientas externas dentro de Obsidian (Cliente) o dejar que las IA externas interactúen con tus notas (Servidor). |
+| **Modo de Agente Inteligente** | El LLM planifica y ejecuta tareas complejas como búsqueda, creación, modificación, eliminación/movimiento de notas y comandos de terminal *(Ejecución de shell: Solo Escritorio)* usando varias herramientas MCP integradas. |
+| **Integración MCP (Cliente y Servidor)** | Integración bidireccional y completa que permite usar herramientas externas dentro de Obsidian (Cliente) o dejar que las IA externas interactúen con tus notas (Servidor). *(Servidores MCP externos y servidor HTTP local: Solo Escritorio)* |
+
+---
+
+## Compatibilidad de Plataformas (Escritorio y Móvil)
+
+Lumina es compatible tanto con **Escritorio** (Windows, macOS, Linux) como con **Móvil** (iOS, iPadOS, Android). Debido a las restricciones de sandbox y memoria de los sistemas operativos móviles, las funciones que requieren procesos locales del sistema, servidores locales o modelos pesados en el dispositivo están disponibles **solo en Escritorio**.
+
+| Característica | 💻 Escritorio | 📱 Móvil / Tablet | Notas |
+| :--- | :---: | :---: | :--- |
+| **Chat con LLM en la Nube** (Gemini, OpenAI, Anthropic, Groq, etc.) | ✅ | ✅ | Soporte completo en todas las plataformas |
+| **Acciones Rápidas de IA en Línea** | ✅ | ✅ | El autocompletado en línea (Ghost Text) es compatible con Escritorio y Tablet |
+| **Modo Agente Inteligente (Herramientas de Bóveda y Aprobación HITL)** | ✅ | ✅ | `run_shell_command` es exclusivo de Escritorio |
+| **Búsqueda Web Integrada** (`lumina_web_search`) | ✅ | ✅ | Soporte completo en todas las plataformas |
+| **RAG y Smart Discovery** | ✅ | ⚠️ | **Escritorio:** Incrustación local offline integrada (`auto`) y modelos personalizados<br>**Móvil:** Compatible al configurar un **Modelo de Incrustación en la Nube** en Configuración Avanzada |
+| **LLMs Locales** (Ollama, LM Studio) | ✅ | ❌ | Requiere entorno de servidor local en escritorio |
+| **Agentes CLI de Terminal** (Claude Code, Antigravity, OpenCode, Codex) | ✅ | ❌ | Requiere shell de SO de escritorio y binarios CLI locales |
+| **Cliente MCP Externo y Servidor MCP HTTP Local** | ✅ | ❌ | Las herramientas integradas de la bóveda en Modo Agente funcionan en Móvil |
 
 ---
 
@@ -57,13 +74,13 @@ Lumina ofrece dos modos según tu nivel de experiencia. ¡Elige el que más te g
 <details>
 <summary><b>Vista de Chat Multi-LLM (Soporte Local y en la Nube)</b></summary>
 
-- **Descripción:** Conversa instantáneamente con varios modelos de IA a través de un panel lateral dedicado dentro de Obsidian. Soporta totalmente potentes modelos en la nube como Gemini y Groq, así como **LLMs Locales** (Ollama, LM Studio, etc.) para privacidad absoluta.
+- **Descripción:** Conversa instantáneamente con varios modelos de IA a través de un panel lateral dedicado dentro de Obsidian. Soporta totalmente potentes modelos en la nube como Gemini y Groq (Escritorio y Móvil), así como **LLMs Locales** (Ollama, LM Studio, etc. — *Solo Escritorio*) para privacidad absoluta.
 - **Cómo usar:** Haz clic en el icono de chat en la cinta izquierda o ejecuta `Lumina: Open Chat` desde la paleta de comandos.
 - **Consejo Pro:** Resalta texto en el editor, haz clic derecho y usa el menú contextual para inyectar directamente el texto seleccionado en el chat como contexto para tus preguntas.
 </details>
 
 <details>
-<summary><b>Integración de Agentes CLI de Terminal (Claude Code, Antigravity, OpenCode, Codex)</b></summary>
+<summary><b>Integración de Agentes CLI de Terminal (Claude Code, Antigravity, OpenCode, Codex) — Solo Escritorio</b></summary>
 
 - **Descripción:** Ejecuta y orquesta agentes de IA de terminal directamente en el panel lateral de Obsidian para explorar, analizar y organizar las notas de tu bóveda.
 - **Agentes Compatibles:** Anthropic **Claude Code**, Google **Antigravity**, **OpenCode**, OpenAI **Codex**.
@@ -80,8 +97,8 @@ Lumina ofrece dos modos según tu nivel de experiencia. ¡Elige el que más te g
 <summary><b>Chat Basado en RAG e Incrustaciones Locales (Privacidad Absoluta)</b></summary>
 
 - **Descripción:** La IA obtiene una visión profunda de tu base de conocimientos. Busca notas relevantes de forma autónoma durante las conversaciones y muestra documentos similares y etiquetas recomendadas en el panel lateral, creando enlaces contextuales inteligentes.
-- **Seguridad Fuera de Línea:** El sistema RAG de Lumina utiliza incrustaciones locales 100% fuera de línea (modelo de incrustación multilingüe integrado `ibm-granite`) para analizar sus notas. A menos que se seleccione un modelo en la nube, sus valiosos datos de notas nunca saldrán de su dispositivo.
-- **Totalmente Automatizado:** ¡No se requiere configuración! La indexación en segundo plano comienza en el momento en que se habilita el plugin y se sincroniza automáticamente en tiempo real (modo `watch`) cada vez que se modifican las notas.
+- **Seguridad Fuera de Línea:** El sistema RAG de Lumina utiliza incrustaciones locales 100% fuera de línea (modelo de incrustación multilingüe integrado `ibm-granite`, *Solo Escritorio*) para analizar sus notas. A menos que se seleccione un modelo en la nube, sus valiosos datos de notas nunca saldrán de su dispositivo. *(En dispositivos móviles, puedes habilitar RAG y Smart Discovery seleccionando un modelo de incrustación en la nube en Configuración Avanzada).*
+- **Totalmente Automatizado:** ¡No se requiere configuración en Escritorio! La indexación en segundo plano comienza en el momento en que se habilita el plugin y se sincroniza automáticamente en tiempo real (modo `watch`) cada vez que se modifican las notas.
 </details>
 
 <details>
@@ -116,7 +133,7 @@ Lumina ofrece dos modos según tu nivel de experiencia. ¡Elige el que más te g
 <details>
 <summary><b>Integración MCP (Soporte Bidireccional Cliente y Servidor)</b></summary>
 
-- **Descripción:** Conecta perfectamente Obsidian con el ecosistema de IA más amplio a través del Protocolo de Contexto de Modelos (MCP). ¡Utiliza Obsidian como un centro de IA todo en uno, o aprovéchalo como el segundo cerebro de tu IA!
+- **Descripción:** Conecta perfectamente Obsidian con el ecosistema de IA más amplio a través del Protocolo de Contexto de Modelos (MCP). ¡Utiliza Obsidian como un centro de IA todo en uno, o aprovéchalo como el segundo cerebro de tu IA! *(Nota: Las herramientas integradas de la bóveda funcionan tanto en Escritorio como en Móvil mediante el Modo Agente Inteligente, mientras que las conexiones a servidores MCP externos y el servidor MCP HTTP local son exclusivos de Escritorio).*
 - **Modo Cliente (Dirigido por Obsidian):**
   - Interactúa y trabaja directamente con IA dentro de Obsidian.
   - Conecta numerosos servidores MCP externos (GitHub, bases de datos locales, búsqueda web, etc.) para extraer (scrape) y organizar instantáneamente grandes cantidades de datos en tus notas.

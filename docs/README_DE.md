@@ -21,13 +21,30 @@
 
 | Funktion | Beschreibung |
 | :--- | :--- |
-| **Multi-LLM-Chat-Ansicht** | Ein dediziertes Seitenpanel, das den Kontext deiner Notizen versteht. Unterstützt alles von leistungsstarken Cloud-Modellen bis hin zu lokalen LLMs für maximale Privatsphäre. |
-| **Terminal-CLI-Agenten-Integration** | Führe offizielle Terminal-KI-Agenten (Claude Code, Antigravity, OpenCode, Codex) direkt im Obsidian-Seitenpanel mit Echtzeit-Denkströmen und Lese-/Bearbeitungs-Sicherheitsmodi aus. |
-| **Zero-Config-RAG** | Bietet 100% Offline-Lokale-Embeddings, um Datenlecks zu verhindern. Indiziert deinen Vault automatisch in Echtzeit ohne komplexe Konfigurationen. |
+| **Multi-LLM-Chat-Ansicht** | Ein dediziertes Seitenpanel, das den Kontext deiner Notizen versteht. Unterstützt leistungsstarke Cloud-Modelle (Desktop & Mobil) sowie lokale LLMs *(Nur Desktop)* für maximale Privatsphäre. |
+| **Terminal-CLI-Agenten-Integration** `*(Nur Desktop)*` | Führe offizielle Terminal-KI-Agenten (Claude Code, Antigravity, OpenCode, Codex) direkt im Obsidian-Seitenpanel mit Echtzeit-Denkströmen und Lese-/Bearbeitungs-Sicherheitsmodi aus. |
+| **Zero-Config-RAG** | Bietet 100% Offline-Lokale-Embeddings *(Nur Desktop)* oder benutzerdefinierte Cloud-Embeddings *(Desktop & Mobil)*, um deinen Vault automatisch in Echtzeit zu indizieren. |
 | **Smart Discovery** | Findet semantisch relevante Dokumente zur aktuellen Notiz, warnt vor Duplikaten und fügt empfohlene Tags sowie Links mit einem Klick ein. |
 | **Inline-KI-Schnellaktionen** | Markiere Text im Editor, um ihn sofort zusammenzufassen, zu übersetzen oder Korrektur zu lesen, ohne deinen Schreibfluss zu unterbrechen. |
-| **Smart-Agent-Modus** | AI plant und führt komplexe Aufgaben wie Suchen, Erstellen, Ändern, Löschen/Verschieben von Notizen und Shell-Befehlsausführung mit verschiedenen integrierten MCP-Tools autonom aus. |
-| **MCP-Integration (Client & Server)** | Eine bidirektionale Full-Stack-Integration, mit der Sie externe Tools in Obsidian verwenden (Client) oder externe AIs mit Ihren Notizen interagieren lassen (Server) können. |
+| **Smart-Agent-Modus** | KI plant und führt komplexe Aufgaben wie Suchen, Erstellen, Ändern, Löschen/Verschieben von Notizen und Shell-Befehlsausführung *(Shell-Befehle: Nur Desktop)* mit verschiedenen integrierten MCP-Tools autonom aus. |
+| **MCP-Integration (Client & Server)** | Eine bidirektionale Full-Stack-Integration, mit der Sie externe Tools in Obsidian verwenden (Client) oder externe KIs mit Ihren Notizen interagieren lassen (Server) können. *(Externe MCP-Server & lokaler HTTP-Server: Nur Desktop)* |
+
+---
+
+## Plattform-Kompatibilität (Desktop & Mobil)
+
+Lumina unterstützt sowohl **Desktop** (Windows, macOS, Linux) als auch **Mobilgeräte** (iOS, iPadOS, Android). Aufgrund von Sandbox- und Speicherbeschränkungen mobiler Betriebssysteme sind Funktionen, die lokale Systemprozesse, lokale Server oder große On-Device-Modelle erfordern, **nur auf dem Desktop** verfügbar.
+
+| Funktion | 💻 Desktop | 📱 Mobil / Tablet | Hinweise |
+| :--- | :---: | :---: | :--- |
+| **Cloud-LLM-Chat** (Gemini, OpenAI, Anthropic, Groq usw.) | ✅ | ✅ | Volle Unterstützung auf allen Plattformen |
+| **Inline-KI-Schnellaktionen** | ✅ | ✅ | Inline-Autovervollständigung (Ghost Text) wird auf Desktop & Tablet unterstützt |
+| **Smart-Agent-Modus (Integrierte Vault-Tools & HITL-Freigabe)** | ✅ | ✅ | `run_shell_command` ist nur auf dem Desktop verfügbar |
+| **Integrierte Websuche** (`lumina_web_search`) | ✅ | ✅ | Volle Unterstützung auf allen Plattformen |
+| **RAG & Smart Discovery** | ✅ | ⚠️ | **Desktop:** Integriertes Offline-Lokal-Embedding (`auto`) & benutzerdefinierte Modelle<br>**Mobil:** Unterstützt, wenn in den Erweiterten Einstellungen ein **Cloud-Embedding-Modell** ausgewählt wird |
+| **Lokale LLMs** (Ollama, LM Studio) | ✅ | ❌ | Erfordert lokale Desktop-Server-Laufzeitumgebung |
+| **Terminal-CLI-Agenten** (Claude Code, Antigravity, OpenCode, Codex) | ✅ | ❌ | Erfordert Desktop-OS-Shell & lokale CLI-Binärdateien |
+| **Externer MCP-Client & Lokaler HTTP-MCP-Server** | ✅ | ❌ | Integrierte Vault-Tools im Smart-Agent-Modus funktionieren auch mobil |
 
 ---
 
@@ -57,13 +74,13 @@ Lumina bietet zwei auf dein Können zugeschnittene Modi. Wähle die Methode, die
 <details>
 <summary><b>Multi-LLM-Chat-Ansicht (Cloud- & Lokaler Support)</b></summary>
 
-- **Beschreibung:** Unterhalte dich sofort mit verschiedenen KI-Modellen über ein dediziertes Seitenpanel in Obsidian. Unterstützt vollständig leistungsstarke Cloud-Modelle wie Gemini und Groq sowie **lokale LLMs** (Ollama, LM Studio usw.) für absolute Privatsphäre.
+- **Beschreibung:** Unterhalte dich sofort mit verschiedenen KI-Modellen über ein dediziertes Seitenpanel in Obsidian. Unterstützt vollständig leistungsstarke Cloud-Modelle wie Gemini und Groq (Desktop & Mobil) sowie **lokale LLMs** (Ollama, LM Studio usw. — *Nur Desktop*) für absolute Privatsphäre.
 - **Verwendung:** Klicke auf das Chat-Symbol im linken Ribbon oder führe `Lumina: Open Chat` über die Befehlspalette aus.
 - **Profi-Tipp:** Markiere Text im Editor, klicke mit der rechten Maustaste und nutze das Kontextmenü, um den markierten Text als Kontext direkt in den Chat für deine Fragen zu injizieren!
 </details>
 
 <details>
-<summary><b>Terminal-CLI-Agenten-Integration (Claude Code, Antigravity, OpenCode, Codex)</b></summary>
+<summary><b>Terminal-CLI-Agenten-Integration (Claude Code, Antigravity, OpenCode, Codex) — Nur Desktop</b></summary>
 
 - **Beschreibung:** Führe Terminal-KI-Agenten direkt im Seitenpanel von Obsidian aus, um deine Vault-Notizen zu erkunden, zu analysieren und zu organisieren.
 - **Unterstützte Agenten:** Anthropic **Claude Code**, Google **Antigravity**, **OpenCode**, OpenAI **Codex**.
@@ -80,8 +97,8 @@ Lumina bietet zwei auf dein Können zugeschnittene Modi. Wähle die Methode, die
 <summary><b>RAG-basierter Chat & Lokale Embeddings (Absolute Privatsphäre)</b></summary>
 
 - **Beschreibung:** Die KI erhält tiefe Einblicke in deine Wissensbasis. Sie sucht während Unterhaltungen autonom nach relevanten Notizen und zeigt ähnliche Dokumente und empfohlene Tags im Seitenpanel an, wodurch smarte kontextuelle Verknüpfungen entstehen.
-- **Offline-Sicherheit:** Das RAG-System von Lumina verwendet 100% Offline-Lokaleinbettungen (integriertes mehrsprachiges Einbettungsmodell `ibm-granite`), um Ihre Notizen zu analysieren. Solange kein Cloud-Modell ausgewählt ist, verlassen Ihre wertvollen Notizdaten niemals Ihr Gerät.
-- **Vollständig automatisiert:** Keine Konfiguration erforderlich! Die Hintergrundindizierung startet leise im Moment der Aktivierung des Plugins und synchronisiert sich automatisch in Echtzeit (`watch`-Modus), wenn Notizen geändert werden.
+- **Offline-Sicherheit:** Das RAG-System von Lumina verwendet 100% Offline-Lokaleinbettungen (integriertes mehrsprachiges Einbettungsmodell `ibm-granite`, *Nur Desktop*), um Ihre Notizen zu analysieren. Solange kein Cloud-Modell ausgewählt ist, verlassen Ihre wertvollen Notizdaten niemals Ihr Gerät. *(Auf Mobilgeräten können Sie RAG & Smart Discovery aktivieren, indem Sie in den Erweiterten Einstellungen ein Cloud-Embedding-Modell auswählen.)*
+- **Vollständig automatisiert:** Keine Konfiguration auf dem Desktop erforderlich! Die Hintergrundindizierung startet leise im Moment der Aktivierung des Plugins und synchronisiert sich automatisch in Echtzeit (`watch`-Modus), wenn Notizen geändert werden.
 </details>
 
 <details>
@@ -116,7 +133,7 @@ Lumina bietet zwei auf dein Können zugeschnittene Modi. Wähle die Methode, die
 <details>
 <summary><b>MCP-Integration (Client & Server Support)</b></summary>
 
-- **Beschreibung:** Überbrückt Obsidian nahtlos mit dem breiteren KI-Ökosystem über das Model Context Protocol (MCP). Nutze Obsidian als All-in-One-KI-Hub oder nutze es als das zweite Gehirn deiner KI!
+- **Beschreibung:** Überbrückt Obsidian nahtlos mit dem breiteren KI-Ökosystem über das Model Context Protocol (MCP). Nutze Obsidian als All-in-One-KI-Hub oder nutze es als das zweite Gehirn deiner KI! *(Hinweis: Integrierte Vault-Tools funktionieren über den Smart-Agent-Modus sowohl auf dem Desktop als auch auf Mobilgeräten, während externe MCP-Server-Verbindungen und der lokale HTTP-MCP-Server nur auf dem Desktop verfügbar sind.)*
 - **Client-Modus (Obsidian-gesteuert):**
   - Interagiere und arbeite direkt mit KI innerhalb von Obsidian.
   - Verbinde zahlreiche externe MCP-Server (GitHub, lokale Datenbanken, Web-Suche usw.), um sofort riesige Datenmengen zu scrapen und in deinen Notizen zu organisieren.

@@ -21,13 +21,30 @@
 
 | Feature | Description |
 | :--- | :--- |
-| **Multi-LLM Chat View** | A dedicated side panel that understands the context of your notes. Supports everything from powerful cloud models to local LLMs for maximum privacy. |
-| **Terminal CLI Agents Integration** | Run official terminal AI agents (Claude Code, Antigravity, OpenCode, Codex) inside Obsidian's side panel with real-time thinking streams and read/edit safety modes. |
-| **Zero-Config RAG** | Features 100% offline local embeddings to prevent data leaks. Automatically indexes your vault in real-time without complex configurations. |
+| **Multi-LLM Chat View** | A dedicated side panel that understands the context of your notes. Supports powerful cloud models on Desktop & Mobile, plus local LLMs *(Desktop Only)* for maximum privacy. |
+| **Terminal CLI Agents Integration** `*(Desktop Only)*` | Run official terminal AI agents (Claude Code, Antigravity, OpenCode, Codex) inside Obsidian's side panel with real-time thinking streams and read/edit safety modes. |
+| **Zero-Config RAG** | Features 100% offline local embeddings *(Desktop Only)* or custom cloud embeddings *(Desktop & Mobile)* to automatically index your vault in real-time. |
 | **Smart Discovery** | Instantly finds documents highly relevant to the note currently being written using semantic search, detects and warns about potential duplicates, and inserts recommended tags and related links with a single click. |
 | **Inline AI Quick Actions** | Highlight text in the editor to instantly summarize, translate, or proofread without interrupting your writing flow. |
-| **Smart Agent Mode** | LLMs autonomously plan and execute complex tasks such as note searching, creation, modification, deletion/move, and terminal management using built-in MCP tools. |
-| **MCP Integration (Client & Server)** | A bidirectional, full-stack integration that allows you to use external tools within Obsidian (Client), or let external AIs interact with your notes (Server). |
+| **Smart Agent Mode** | LLMs autonomously plan and execute complex tasks such as note searching, creation, modification, deletion/move, and terminal management *(Shell execution: Desktop Only)* using built-in MCP tools. |
+| **MCP Integration (Client & Server)** | A bidirectional, full-stack integration that allows you to use external tools within Obsidian (Client), or let external AIs interact with your notes (Server). *(External MCP servers & local HTTP server: Desktop Only)* |
+
+---
+
+## Platform Compatibility (Desktop & Mobile)
+
+Lumina supports both **Desktop** (Windows, macOS, Linux) and **Mobile** (iOS, iPadOS, Android). Due to mobile OS sandbox and memory constraints, features requiring local system processes, local servers, or on-device heavy models are available on **Desktop only**.
+
+| Feature | 💻 Desktop | 📱 Mobile / Tablet | Notes |
+| :--- | :---: | :---: | :--- |
+| **Cloud LLM Chat** (Gemini, OpenAI, Anthropic, Groq, etc.) | ✅ | ✅ | Full support across all platforms |
+| **Inline AI Quick Actions** | ✅ | ✅ | Inline ghost-text autocomplete is supported on Desktop & Tablet |
+| **Smart Agent Mode (Built-in Vault Tools & HITL Approval)** | ✅ | ✅ | `run_shell_command` is Desktop only |
+| **Built-in Web Search** (`lumina_web_search`) | ✅ | ✅ | Full support across all platforms |
+| **RAG & Smart Discovery** | ✅ | ⚠️ | **Desktop:** Built-in offline local embedding (`auto`) & custom models<br>**Mobile:** Supported when configured with a **Cloud Embedding** model in Advanced Settings |
+| **Local LLMs** (Ollama, LM Studio) | ✅ | ❌ | Requires local desktop server runtime |
+| **Terminal CLI Agents** (Claude Code, Antigravity, OpenCode, Codex) | ✅ | ❌ | Requires desktop OS shell & local CLI binaries |
+| **External MCP Client & Local HTTP MCP Server** | ✅ | ❌ | Built-in vault tools inside Smart Agent Mode work on Mobile |
 
 ---
 
@@ -58,13 +75,13 @@ Lumina offers two tracks tailored to your skill level. Choose the one that suits
 <details>
 <summary><b>Multi-LLM Chat View (Cloud & Local Support)</b></summary>
 
-- **Description:** Instantly converse with various AI models via a dedicated side panel inside Obsidian. Fully supports powerful cloud models like Gemini and Groq, as well as **Local LLMs** (Ollama, LM Studio, etc.) for absolute privacy.
+- **Description:** Instantly converse with various AI models via a dedicated side panel inside Obsidian. Fully supports powerful cloud models like Gemini and Groq (Desktop & Mobile), as well as **Local LLMs** (Ollama, LM Studio, etc. — *Desktop Only*) for absolute privacy.
 - **How to use:** Click the chat icon on the left ribbon or execute `Lumina: Open Chat` from the command palette.
 - **Pro Tip:** Highlight text in the editor, right-click, and use the context menu to directly inject the selected text into the chat as context for your questions!
 </details>
 
 <details>
-<summary><b>Terminal CLI Agents Integration (Claude Code, Antigravity, OpenCode, Codex)</b></summary>
+<summary><b>Terminal CLI Agents Integration (Claude Code, Antigravity, OpenCode, Codex) — Desktop Only</b></summary>
 
 - **Description:** Run and orchestrate terminal AI agents directly inside Obsidian's side panel to explore, analyze, and manage your vault notes.
 - **Supported Agents:** Anthropic **Claude Code**, Google **Antigravity**, **OpenCode**, and OpenAI **Codex**.
@@ -81,8 +98,8 @@ Lumina offers two tracks tailored to your skill level. Choose the one that suits
 <summary><b>RAG-Powered Chat & Local Embeddings (Absolute Privacy)</b></summary>
 
 - **Description:** AI gains deep insight into your knowledge base. It autonomously searches relevant notes during conversations and displays similar documents and recommended tags in the side panel, creating smart contextual links.
-- **Offline Security:** Lumina's RAG system uses 100% offline local embeddings (built-in `ibm-granite` multilingual embedding model) to analyze your notes. Unless a cloud model is selected, your valuable note data will never leave your device.
-- **Fully Automated:** Zero configuration required! Background indexing quietly starts the moment the plugin is enabled, and automatically syncs in real-time (`watch` mode) whenever notes are modified.
+- **Offline Security:** Lumina's RAG system uses 100% offline local embeddings (built-in `ibm-granite` multilingual embedding model, *Desktop Only*) to analyze your notes. Unless a cloud model is selected, your valuable note data will never leave your device. *(On Mobile, you can enable RAG & Smart Discovery by selecting a cloud embedding model in Advanced Settings.)*
+- **Fully Automated:** Zero configuration required on Desktop! Background indexing quietly starts the moment the plugin is enabled, and automatically syncs in real-time (`watch` mode) whenever notes are modified.
 </details>
 
 <details>
@@ -117,7 +134,7 @@ Lumina offers two tracks tailored to your skill level. Choose the one that suits
 <details>
 <summary><b>MCP Integration (Bidirectional Client & Server Support)</b></summary>
 
-- **Description:** Seamlessly bridges Obsidian with the broader AI ecosystem via the Model Context Protocol (MCP). Use Obsidian as an all-in-one AI hub, or leverage it as your AI's second brain!
+- **Description:** Seamlessly bridges Obsidian with the broader AI ecosystem via the Model Context Protocol (MCP). Use Obsidian as an all-in-one AI hub, or leverage it as your AI's second brain! *(Note: Built-in vault tools work on both Desktop and Mobile via Smart Agent Mode, while external MCP server connections and the local HTTP MCP server are Desktop Only.)*
 - **Client Mode (Obsidian-led):**
   - Interact and work directly with AI within Obsidian.
   - Connect numerous external MCP servers (GitHub, local DBs, web search, etc.) to instantly scrape and organize vast amounts of data into your notes.
