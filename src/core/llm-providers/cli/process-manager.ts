@@ -1,5 +1,35 @@
-import type { ChildProcess, SpawnOptions as NodeSpawnOptions } from 'child_process';
 import { debugLogger } from '../../../shared/debugLogger';
+
+/** child_process.SpawnOptions 호환 최소 타입 (모바일 정적 분석 회피용) */
+export interface NodeSpawnOptions {
+	cwd?: string;
+	env?: Record<string, string | undefined>;
+	shell?: boolean | string;
+	windowsHide?: boolean;
+	stdio?: Array<'pipe' | 'ignore' | 'inherit'> | 'pipe' | 'ignore' | 'inherit';
+}
+
+/** child_process.ChildProcess 호환 최소 타입 (모바일 정적 분석 회피용) */
+export interface ChildProcessLike {
+	pid?: number;
+	killed: boolean;
+	stdin: {
+		writable: boolean;
+		destroyed: boolean;
+		write(chunk: string | Uint8Array): boolean;
+		end(): void;
+	} | null;
+	stdout: {
+		on(event: 'data', listener: (chunk: Buffer) => void): unknown;
+	} | null;
+	stderr: {
+		on(event: 'data', listener: (chunk: Buffer) => void): unknown;
+	} | null;
+	on(event: 'close', listener: (code: number | null, signal: string | null) => void): unknown;
+	on(event: 'error', listener: (err: Error) => void): unknown;
+	on(event: string, listener: (...args: unknown[]) => void): unknown;
+	kill(signal?: string | number): boolean;
+}
 
 /** 런타임 path 헬퍼 인터페이스 */
 interface RuntimePathHelpers {
@@ -89,7 +119,7 @@ export interface SpawnOptions {
 }
 
 export interface ProcessStreams {
-	process: ChildProcess;
+	process: ChildProcessLike;
 	onStdout(callback: (data: string) => void): void;
 	onStderr(callback: (data: string) => void): void;
 	writeStdin(data: string): void;
@@ -102,7 +132,7 @@ export interface ProcessStreams {
  * Obsidian / Electron 런타임에서 child_process.spawn 함수를 안전하게 획득합니다.
  * 정적 번들 분석기(AST)가 의존성을 오인하지 않도록 런타임 모듈 리졸버를 사용합니다.
  */
-export function getSpawnFunction(): ((command: string, args: string[], options: NodeSpawnOptions) => ChildProcess) | null {
+export function getSpawnFunction(): ((command: string, args: string[], options: NodeSpawnOptions) => ChildProcessLike) | null {
 	if (ProcessManager.spawnFnOverride) {
 		return ProcessManager.spawnFnOverride;
 	}
@@ -111,7 +141,7 @@ export function getSpawnFunction(): ((command: string, args: string[], options: 
 		// 1. Electron renderer window.require 시도
 		if (typeof window !== 'undefined') {
 			const win = window as unknown as {
-				require?: (mod: string) => { spawn?: (c: string, a: string[], o: NodeSpawnOptions) => ChildProcess };
+				require?: (mod: string) => { spawn?: (c: string, a: string[], o: NodeSpawnOptions) => ChildProcessLike };
 			};
 			if (typeof win.require === 'function') {
 				const cp = win.require(modName);
@@ -122,7 +152,7 @@ export function getSpawnFunction(): ((command: string, args: string[], options: 
 		}
 		// 2. Node.js 표준 require 시도
 		// eslint-disable-next-line @typescript-eslint/no-require-imports -- Fallback to Node.js require in desktop runtime
-		const nodeRequire = typeof require === 'function' ? (require as unknown as (mod: string) => { spawn?: (c: string, a: string[], o: NodeSpawnOptions) => ChildProcess }) : undefined;
+		const nodeRequire = typeof require === 'function' ? (require as unknown as (mod: string) => { spawn?: (c: string, a: string[], o: NodeSpawnOptions) => ChildProcessLike }) : undefined;
 		if (typeof nodeRequire === 'function') {
 			const cp = nodeRequire(modName);
 			if (cp && typeof cp.spawn === 'function') {
@@ -587,7 +617,7 @@ export class ProcessManager {
 	/**
 	 * 단위 테스트용 spawn 함수 오버라이드. null일 경우 기본 getSpawnFunction() 동작
 	 */
-	public static spawnFnOverride: ((command: string, args: string[], options: NodeSpawnOptions) => ChildProcess) | null = null;
+	public static spawnFnOverride: ((command: string, args: string[], options: NodeSpawnOptions) => ChildProcessLike) | null = null;
 
 	/**
 	 * CLI 명령어를 자식 프로세스로 스폰하고 입출력 스트림을 제공합니다.
@@ -713,7 +743,7 @@ export class ProcessManager {
 	/**
 	 * 프로세스를 안전하게 종료합니다.
 	 */
-	public static killProcess(child: ChildProcess): void {
+	public static killProcess(child: ChildProcessLike): void {
 		try {
 			if (!child.killed && child.pid) {
 				const spawnFn = getSpawnFunction();

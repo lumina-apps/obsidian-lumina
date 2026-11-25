@@ -1,9 +1,22 @@
-import * as http from 'http';
+import { Platform } from 'obsidian';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { debugLogger } from '../../../shared/debugLogger';
 import { normalizeError } from '../../../shared/utils/errorUtils';
 import { authenticateRequest } from './auth';
+
+type HttpIncomingMessage = Parameters<StreamableHTTPServerTransport['handleRequest']>[0];
+type HttpServerResponse = Parameters<StreamableHTTPServerTransport['handleRequest']>[1];
+type HttpRequestListener = (req: HttpIncomingMessage, res: HttpServerResponse) => void;
+
+interface HttpServerLike {
+	once(event: 'error', listener: (err: NodeJS.ErrnoException) => void): unknown;
+	on(event: 'error', listener: (err: Error) => void): unknown;
+	removeListener(event: 'error', listener: (err: NodeJS.ErrnoException) => void): unknown;
+	listen(port: number, host: string, listeningListener?: () => void): unknown;
+	listen(options: { port: number; host: string; ipv6Only?: boolean }, listeningListener?: () => void): unknown;
+	close(callback?: () => void): unknown;
+}
 
 /**
  * POST 요청 본문 최대 허용 크기 (80 MiB).
@@ -26,8 +39,8 @@ class PayloadTooLargeError extends Error {
  * SSE 기반 MCP 서버의 HTTP 서버 수명주기, 세션 관리, CORS, 라우팅을 담당합니다.
  */
 export class HttpTransport {
-	private httpServer: http.Server | null = null;
-	private ipv6Server: http.Server | null = null;
+	private httpServer: HttpServerLike | null = null;
+	private ipv6Server: HttpServerLike | null = null;
 	private transports = new Map<string, StreamableHTTPServerTransport>();
 	private isRunning = false;
 	private mcpServerOrFactory: McpServerOrFactory | null = null;
@@ -50,16 +63,21 @@ export class HttpTransport {
 	 */
 	async start(mcpServerOrFactory: McpServerOrFactory): Promise<void> {
 		if (this.isRunning) return;
+		if (!Platform.isDesktop) {
+			throw new Error('MCP HTTP server is only supported on desktop platforms.');
+		}
 		this.isRunning = true;
 		this.mcpServerOrFactory = mcpServerOrFactory;
 
-		const requestListener: http.RequestListener = (req, res) => {
+		const httpMod = await import('http');
+
+		const requestListener: HttpRequestListener = (req, res) => {
 			void this.handleRequest(req, res);
 		};
 
-		const tryListenOnPort = (portToTry: number): Promise<{ v4: http.Server; v6: http.Server | null }> => {
+		const tryListenOnPort = (portToTry: number): Promise<{ v4: HttpServerLike; v6: HttpServerLike | null }> => {
 			return new Promise((resolvePort, rejectPort) => {
-				const v4 = http.createServer(requestListener);
+				const v4 = httpMod.createServer(requestListener);
 				const onV4Error = (err: NodeJS.ErrnoException) => {
 					rejectPort(err);
 				};
@@ -68,7 +86,7 @@ export class HttpTransport {
 					v4.removeListener('error', onV4Error);
 
 					// localhost가 ::1로 먼저 해석되는 환경을 위해 IPv6 루프백도 함께 바인딩합니다.
-					const v6 = http.createServer(requestListener);
+					const v6 = httpMod.createServer(requestListener);
 					const onV6Error = (err: NodeJS.ErrnoException) => {
 						if (err.code === 'EADDRINUSE') {
 							v4.close(() => rejectPort(err));
@@ -124,7 +142,7 @@ export class HttpTransport {
 	}
 
 	/** 단일 http.Server 인스턴스를 타임아웃과 함께 안전하게 종료합니다. */
-	private async closeServerInstance(server: http.Server | null): Promise<void> {
+	private async closeServerInstance(server: HttpServerLike | null): Promise<void> {
 		if (!server) return;
 		await new Promise<void>((resolve) => {
 			let resolved = false;
@@ -164,7 +182,7 @@ export class HttpTransport {
 
 	// ─── 내부 요청 처리 ─────────────────────────────────────────────────────
 
-	private setCorsHeaders(req: http.IncomingMessage, res: http.ServerResponse): void {
+	private setCorsHeaders(req: HttpIncomingMessage, res: HttpServerResponse): void {
 		const origin = req.headers.origin || '*';
 		res.setHeader('Access-Control-Allow-Origin', origin);
 		res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE');
@@ -172,7 +190,7 @@ export class HttpTransport {
 		res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id, mcp-protocol-version');
 	}
 
-	private parseBody(req: http.IncomingMessage): Promise<unknown> {
+	private parseBody(req: HttpIncomingMessage): Promise<unknown> {
 		return new Promise((resolve, reject) => {
 			const contentLengthHeader = req.headers['content-length'];
 			const contentLength = contentLengthHeader !== undefined ? Number(contentLengthHeader) : NaN;
@@ -226,8 +244,8 @@ export class HttpTransport {
 	}
 
 	private async handleRequest(
-		req: http.IncomingMessage,
-		res: http.ServerResponse,
+		req: HttpIncomingMessage,
+		res: HttpServerResponse,
 	): Promise<void> {
 		try {
 			this.setCorsHeaders(req, res);
@@ -309,8 +327,8 @@ export class HttpTransport {
 	}
 
 	private async handleSseRequest(
-		req: http.IncomingMessage,
-		res: http.ServerResponse,
+		req: HttpIncomingMessage,
+		res: HttpServerResponse,
 		parsedBody: unknown,
 		isInit: boolean,
 	): Promise<void> {
@@ -394,8 +412,8 @@ export class HttpTransport {
 	}
 
 	private async handleMessageRequest(
-		req: http.IncomingMessage,
-		res: http.ServerResponse,
+		req: HttpIncomingMessage,
+		res: HttpServerResponse,
 		parsedBody: unknown,
 	): Promise<void> {
 		if (!authenticateRequest(req, this.authToken)) {
