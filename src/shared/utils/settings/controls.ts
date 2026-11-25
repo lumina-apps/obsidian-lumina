@@ -1,4 +1,4 @@
-import { Notice, Setting } from 'obsidian';
+import { Notice, Setting, SliderComponent } from 'obsidian';
 import { debugLogger } from '../../debugLogger';
 import { normalizeError } from '../errorUtils';
 import { wrapAsync } from '../asyncUtils';
@@ -105,8 +105,10 @@ export function addSliderWithInput(
 	onChange: (val: number) => void,
 ): void {
 	const state = { val: opts.value };
+	let sliderComp: SliderComponent | null = null;
 	setting
 		.addSlider(slider => {
+			sliderComp = slider;
 			slider
 				.setLimits(opts.min, opts.max, opts.step)
 				.setValue(opts.value)
@@ -128,6 +130,8 @@ export function addSliderWithInput(
 			text.onChange(raw => {
 				const n = parseFloat(raw);
 				if (!isNaN(n) && n >= opts.min && n <= opts.max) {
+					state.val = n;
+					sliderComp?.setValue(n);
 					onChange(n);
 				}
 			});

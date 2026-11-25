@@ -35,7 +35,7 @@
       },
       "apiKey": {
         "name": "API 키 및 모델 등록",
-        "mobileLocalWarning": "모바일 환경에서는 로컬 모델을 연결하여 사용할 수 없습니다.",
+        "mobileLocalWarning": "모바일 환경에서는 로컬 및 CLI 모델을 연결하여 사용할 수 없습니다.",
         "useNativeToolsName": "네이티브 Tool Calling 사용",
         "useNativeToolsDesc": "텍스트 프롬프트 대신 API의 tools 필드로 도구를 전달합니다. 네이티브 도구 호출을 지원하는 로컬 모델(예: Qwen3, Llama 3.1+)에서 켜세요. 기본값: 꺼짐.",
         "addConnection": "+ 새 LLM 연결 추가",

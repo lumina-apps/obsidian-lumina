@@ -35,7 +35,7 @@
       },
       "apiKey": {
         "name": "API Key & Model Registration",
-        "mobileLocalWarning": "Local LLMs cannot be used on mobile devices.",
+        "mobileLocalWarning": "Local and CLI models cannot be used on mobile devices.",
         "useNativeToolsName": "Use native tool calling",
         "useNativeToolsDesc": "Send tool schemas via the API's tools field instead of text prompts. Enable for local models with native tool support (e.g. Qwen3, Llama 3.1+). Default: off.",
         "addConnection": "+ Add new LLM connection",

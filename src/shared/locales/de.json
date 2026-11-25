@@ -35,7 +35,7 @@
       },
       "apiKey": {
         "name": "API-Schlüssel & Modellregistrierung",
-        "mobileLocalWarning": "Lokale LLMs können auf Mobilgeräten nicht verwendet werden.",
+        "mobileLocalWarning": "Lokale und CLI-Modelle können auf Mobilgeräten nicht verwendet werden.",
         "useNativeToolsName": "Native Tool-Aufrufe verwenden",
         "useNativeToolsDesc": "Übergibt Tools über das tools-Feld der API statt per Text-Prompt. Für lokale Modelle mit nativer Tool-Unterstützung (z. B. Qwen3, Llama 3.1+) aktivieren. Standard: aus.",
         "addConnection": "+ Neue LLM-Verbindung hinzufügen",

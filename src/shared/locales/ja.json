@@ -35,7 +35,7 @@
       },
       "apiKey": {
         "name": "APIキーとモデル登録",
-        "mobileLocalWarning": "モバイルデバイスではローカルLLMを使用できません。",
+        "mobileLocalWarning": "モバイルデバイスではローカルおよびCLIモデルを使用できません。",
         "useNativeToolsName": "ネイティブTool Callingを使用",
         "useNativeToolsDesc": "テキストプロンプトの代わりにAPIのtoolsフィールドでツールを渡します。ネイティブ対応のローカルモデル(例: Qwen3, Llama 3.1+)で有効にしてください。既定: オフ。",
         "addConnection": "+ 新しいLLM接続を追加",

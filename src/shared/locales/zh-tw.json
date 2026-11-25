@@ -35,7 +35,7 @@
       },
       "apiKey": {
         "name": "API 金鑰與模型註冊",
-        "mobileLocalWarning": "行動端無法使用本地 LLM。",
+        "mobileLocalWarning": "行動端無法使用本地和 CLI 模型。",
         "useNativeToolsName": "使用原生工具呼叫",
         "useNativeToolsDesc": "透過 API 的 tools 欄位傳遞工具,而非文字提示。適用於支援原生工具呼叫的本地模型(如 Qwen3、Llama 3.1+)。預設:關閉。",
         "addConnection": "+ 新增 LLM 連線",

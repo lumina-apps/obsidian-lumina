@@ -956,10 +956,18 @@ html body .vertical-tab-content-container .vertical-tab-content.lumina-settings 
 	justify-content: center;
 }
 
+.lumina-settings .setting-item.lumina-setting-cta .setting-item-info {
+	display: none;
+}
+
 .lumina-settings .setting-item.lumina-setting-cta .setting-item-control {
+	flex: 1 1 100%;
 	width: 100%;
+	max-width: 100%;
 	justify-content: center;
 	padding: 0;
+	margin-inline-end: 0;
+	box-sizing: border-box;
 }
 
 .lumina-settings .setting-item.lumina-setting-cta button.mod-cta {
@@ -3909,8 +3917,20 @@ body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item-co
 	flex-wrap: wrap;
 }
 
+body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-cta .setting-item-info {
+	display: none;
+}
+
 body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-cta .setting-item-control,
-body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-center-button .setting-item-control,
+body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-center-button .setting-item-control {
+	flex: 1 1 100%;
+	width: 100%;
+	max-width: 100%;
+	justify-content: center;
+	margin-inline-end: 0;
+	box-sizing: border-box;
+}
+
 body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-stacked-control .setting-item-control,
 body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-token .setting-item-control {
 	max-width: 100%;
@@ -4099,6 +4119,14 @@ body.is-mobile.is-phone .vertical-tab-content-container .lumina-settings .settin
 	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-stacked-control .setting-item-control {
 		width: 100%;
 		max-width: 100%;
+	}
+
+	/* 세로 스택 컨트롤(flex-direction: column)에서 flex-basis가 높이로 적용되어 입력칸이 커지는 현상 방지 */
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-stacked-control .setting-item-control input[type="text"],
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-stacked-control .setting-item-control input[type="password"],
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-stacked-control .setting-item-control input[type="search"],
+	body.is-mobile .vertical-tab-content-container .lumina-settings .setting-item.lumina-setting-stacked-control .setting-item-control input[type="url"] {
+		flex: 0 0 auto;
 	}
 
 	/* 슬라이더 + 숫자 입력 콤보가 좁은 폭에서도 한 행에 정렬되도록 선택자 명시도로 오버라이드 */

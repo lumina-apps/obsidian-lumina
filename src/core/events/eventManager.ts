@@ -6,7 +6,7 @@ import { addPendingAttachment, activeSidebarTab } from '../store/chatStore';
 import { setBatchTargetFolder } from '../store/batchStore';
 import { canUseFeature } from '../store/entitlementStore';
 import { updateDiscoveryState } from '../store/discoveryStore';
-import { Notice, Menu, MenuItem, Platform, TFile, TFolder, type Editor, type MarkdownFileInfo, type MarkdownView } from 'obsidian';
+import { Notice, Menu, MenuItem, Platform, TFile, TFolder } from 'obsidian';
 import { debugLogger } from '../../shared/debugLogger';
 
 /** 우클릭 음성 변환 메뉴를 표시할 오디오 확장자 목록 */
@@ -30,7 +30,7 @@ export class EventManager {
 				if (!this.plugin.settings.misc.contextMenuEnabled) return;
 				const selection = editor.getSelection();
 				const activeFile = view?.file ?? this.plugin.app.workspace.getActiveFile();
-				const isPhoneMenu = typeof Platform !== 'undefined' && Boolean(Platform?.isMobile) && !Boolean(Platform?.isTablet);
+				const isPhoneMenu = typeof Platform !== 'undefined' && Boolean(Platform?.isMobile) && !Platform?.isTablet;
 
 				const populateItems = (target: Menu, titlePrefix: string) => {
 					target.addItem((subItem) => {
