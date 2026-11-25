@@ -4301,25 +4301,30 @@ body.is-mobile .view-content.lumina-batch-view {
 	container-type: inline-size;
 }
 
-/* 모바일 플로팅 네비게이션(--navbar-position: fixed) 사용 시 메인 탭으로 열린 뷰의 하단 조작부가 가려지지 않도록 여백 확보 */
+/* 모바일 플로팅 네비게이션(--navbar-position: fixed) 사용 시 메인 탭으로 열린 뷰의 하단 조작부가 가려지지 않도록 여백 확보 (가상 키보드가 열려 플로팅 네비게이션이 숨겨질 때는 0px로 축소) */
 body.is-mobile.is-floating-nav:not(.is-hidden-nav) .view-content.lumina-split-view,
 body.is-mobile.is-floating-nav:not(.is-hidden-nav) .view-content.lumina-batch-view,
 body.is-mobile.is-floating-nav:not(.is-hidden-nav) .view-content.lumina-graph-view,
 body.is-mobile.is-floating-nav:not(.is-hidden-nav) .view-content.lumina-debug-view,
 body.is-mobile.is-floating-nav:not(.is-hidden-nav) .mod-root .view-content.lumina-chat-view {
-	padding-bottom: calc(var(--navbar-height, 0px) + var(--navbar-bottom-offset, 0px) + 4px);
+	padding-bottom: max(0px, calc(var(--navbar-height, 0px) + var(--navbar-bottom-offset, 0px) + 4px - var(--keyboard-height, 0px)));
 	box-sizing: border-box;
 }
 
 body.is-mobile.is-floating-nav:not(.is-hidden-nav) .lumina-split-view .lumina-chat__input-area {
-	padding-bottom: calc(8px + var(--lumina-keyboard-offset, 0px));
+	padding-bottom: calc(8px + max(env(keyboard-inset-height, 0px), var(--lumina-keyboard-offset, 0px)));
 }
 
 body.is-mobile .lumina-chat {
 	container-type: inline-size;
 	min-width: 0;
+	min-height: 0;
 	max-width: 100%;
 	overflow-x: hidden;
+}
+
+body.is-mobile .lumina-chat__messages {
+	min-height: 0;
 }
 
 body.is-mobile .lumina-chat__header .clickable-icon.lumina-chat__icon-btn,
@@ -4355,7 +4360,7 @@ body.is-mobile .lumina-chat__toggle-btn {
 }
 
 body.is-mobile .lumina-chat__input-area {
-	padding-bottom: calc(8px + max(env(safe-area-inset-bottom, 0px), var(--lumina-keyboard-offset, 0px)));
+	padding-bottom: calc(8px + max(env(safe-area-inset-bottom, 0px), env(keyboard-inset-height, 0px), var(--lumina-keyboard-offset, 0px)));
 	gap: 6px;
 }
 
@@ -4481,7 +4486,7 @@ body.is-mobile button.lumina-chat__clear-btn {
 	}
 
 	body.is-mobile .lumina-chat__input-area {
-		padding: 6px 8px calc(8px + max(env(safe-area-inset-bottom, 0px), var(--lumina-keyboard-offset, 0px)));
+		padding: 6px 8px calc(8px + max(env(safe-area-inset-bottom, 0px), env(keyboard-inset-height, 0px), var(--lumina-keyboard-offset, 0px)));
 	}
 
 	body.is-mobile .lumina-chat__input-toolbar {
