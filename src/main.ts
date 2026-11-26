@@ -7,6 +7,7 @@ import { SplitChatView, SPLIT_CHAT_VIEW_TYPE } from './features/chat/split/split
 import { BatchStudioView, BATCH_STUDIO_VIEW_TYPE } from './features/batch/batchStudioView';
 import { abortActiveBatchRun } from './features/batch/batchController';
 import { resetBatchStore } from './core/store/batchStore';
+import { resetBatchWatchStore } from './core/store/batchWatchStore';
 import type { LuminaSettings } from './core/settings/settings.types';
 import type { EmbeddingWorkerBridge } from './features/rag/workerBridge';
 import type { VaultIndexer } from './features/rag/indexer';
@@ -18,7 +19,13 @@ import { normalizeError } from './shared/utils/errorUtils';
 import { findSupportedProvider, isRagEffectiveOnCurrentPlatform } from './shared/utils/modelUtils';
 import { runMigrations, migrateRemovedProviders } from './core/settings/migrations';
 import { activateView, activateMainView, closeView } from './core/views/viewHelper';
-import { canUseFeature, entitlementStore, initEntitlementStore, resetEntitlementState } from './core/store/entitlementStore';
+import {
+	canUseFeature,
+	canUseProFeature,
+	entitlementStore,
+	initEntitlementStore,
+	resetEntitlementState,
+} from './core/store/entitlementStore';
 import { resetVoiceStore } from './core/store/voiceStore';
 import { cleanupApprovalListener } from './features/chat/utils/approvalListener';
 import { SettingsManager } from './core/settings/settingsManager';
@@ -31,6 +38,7 @@ import type { QuickActionHandler } from './features/editor/quickActionHandler';
 import type { FrontmatterManager } from './features/frontmatter/frontmatterManager';
 import type { CanvasManager } from './features/canvas/canvasManager';
 import type { VoiceNoteManager } from './features/voice/voiceManager';
+import type { FolderWatchManager } from './features/batch/watch/folderWatchManager';
 // Lazy Loading Type
 import type { LuminaSettingTab } from './core/settings/settingTab';
 
@@ -106,6 +114,7 @@ export default class LuminaPlugin extends Plugin {
 	public quickActionHandler!: QuickActionHandler;
 	public canvasManager?: CanvasManager;
 	public voiceNoteManager: VoiceNoteManager | null = null;
+	public folderWatchManager: FolderWatchManager | null = null;
 
 	/** 플러그인 언로드 여부 — 비동기 초기화 중 언로드되면 MCP 생성을 건너뛰기 위한 플래그 */
 	private _unloaded = false;
@@ -113,6 +122,7 @@ export default class LuminaPlugin extends Plugin {
 	private hasRegisteredBatchView = false;
 	private unsubSplitEntitlement: (() => void) | null = null;
 	private voiceManagerLoading: Promise<VoiceNoteManager | null> | null = null;
+	private folderWatchLoading: Promise<FolderWatchManager | null> | null = null;
 
 	/** 플러그인이 언로드 과정에 있는지 반환 */
 	get isUnloaded(): boolean {
@@ -245,6 +255,9 @@ export default class LuminaPlugin extends Plugin {
 			if (canUseFeature('voice-note')) {
 				void this.ensureVoiceNoteManager();
 			}
+			if (canUseProFeature('batch-studio')) {
+				void this.ensureFolderWatchManager();
+			}
 			this.unsubSplitEntitlement = entitlementStore.subscribe(() => {
 				this.syncSplitEntitlement();
 			});
@@ -342,6 +355,10 @@ export default class LuminaPlugin extends Plugin {
 		this.voiceNoteManager = null;
 		this.voiceManagerLoading = null;
 		resetVoiceStore();
+		this.folderWatchManager?.destroy();
+		this.folderWatchManager = null;
+		this.folderWatchLoading = null;
+		resetBatchWatchStore();
 		cleanupApprovalListener();
 		void this.mcpManager?.destroy();
 		// 프로젝트별 인덱서 캐시 정리
@@ -416,6 +433,36 @@ export default class LuminaPlugin extends Plugin {
 		return this.voiceManagerLoading;
 	}
 
+	/** Pro 권한('batch-studio') 활성 시 FolderWatchManager를 1회 지연 로드하여 초기화 */
+	public async ensureFolderWatchManager(): Promise<FolderWatchManager | null> {
+		if (!canUseProFeature('batch-studio') || this._unloaded) return null;
+		if (this.folderWatchManager) return this.folderWatchManager;
+		if (this.folderWatchLoading) return this.folderWatchLoading;
+
+		this.folderWatchLoading = (async () => {
+			try {
+				const { FolderWatchManager: RealFolderWatchManager } = await import(
+					'./features/batch/watch/folderWatchManager'
+				);
+				if (this._unloaded || !canUseProFeature('batch-studio')) {
+					return null;
+				}
+				const manager = new RealFolderWatchManager(this);
+				manager.init();
+				if (this._unloaded || !canUseProFeature('batch-studio')) {
+					manager.destroy();
+					return null;
+				}
+				this.folderWatchManager = manager;
+				return manager;
+			} finally {
+				this.folderWatchLoading = null;
+			}
+		})();
+
+		return this.folderWatchLoading;
+	}
+
 	/** 런타임 권한 변경 시 View·커맨드 등록/해제 동기화 */
 	private syncSplitEntitlement(): void {
 		if (canUseFeature('split-chat')) {
@@ -430,6 +477,15 @@ export default class LuminaPlugin extends Plugin {
 			abortActiveBatchRun();
 			resetBatchStore();
 			closeView(this.app.workspace, BATCH_STUDIO_VIEW_TYPE);
+		}
+
+		if (canUseProFeature('batch-studio')) {
+			void this.ensureFolderWatchManager();
+		} else {
+			this.folderWatchManager?.destroy();
+			this.folderWatchManager = null;
+			this.folderWatchLoading = null;
+			resetBatchWatchStore();
 		}
 
 		if (canUseFeature('voice-note')) {

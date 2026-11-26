@@ -20,6 +20,22 @@ import type {
 	BatchScopeConfig,
 	BatchSnapshotEntry,
 } from '../../shared/types/batch.types';
+import type { FolderMoveConfig, FolderWatchRule } from '../../shared/types/batchWatch.types';
+
+/** 기본 폴더 이동 설정을 생성합니다. */
+export function createDefaultFolderMoveConfig(
+	mode: FolderMoveConfig['mode'] = 'fixed',
+): FolderMoveConfig {
+	return {
+		mode,
+		fixedTargetFolder: '',
+		tagMappings: [],
+		aiCandidateFolders: [],
+		fallbackFolder: '',
+		conflictPolicy: 'rename-suffix',
+		createFolderIfMissing: true,
+	};
+}
 
 /** Batch Studio 런타임 상태 구조 */
 export interface BatchStudioState {
@@ -41,6 +57,8 @@ export interface BatchStudioState {
 	history: BatchHistoryEntry[];
 	/** 현재 배치 실행 세션에 연결된 히스토리 ID (단건 수락 묶음용) */
 	activeRunHistoryId: string | null;
+	/** 작업 공간 설정에서 자동감시 탭 규칙 편집기로 넘기는 초안 데이터 */
+	draftWatchRule: Partial<FolderWatchRule> | null;
 }
 
 function createInitialScopeConfig(): BatchScopeConfig {
@@ -64,6 +82,7 @@ function createInitialRecipeOptions(): BatchRecipeOptions {
 		customFrontmatterKey: 'ai_summary',
 		providerId: '',
 		modelId: '',
+		moveConfig: createDefaultFolderMoveConfig('fixed'),
 	};
 }
 
@@ -86,6 +105,7 @@ function createInitialState(): BatchStudioState {
 		rateLimitCountdownSec: null,
 		history: [],
 		activeRunHistoryId: null,
+		draftWatchRule: null,
 	};
 }
 
@@ -184,6 +204,10 @@ export function patchBatchState(patch: Partial<BatchStudioState>): void {
 export function setBatchScopeConfig(patch: Partial<BatchScopeConfig>): void {
 	batchStore.update((state) => ({
 		...state,
+		sampleFilePath: '',
+		sampleResult: null,
+		sampleNoChanges: false,
+		sampleError: null,
 		scopeConfig: {
 			...state.scopeConfig,
 			...patch,

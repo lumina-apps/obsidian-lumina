@@ -13,6 +13,7 @@ import type {
 import type { ProjectSettings } from '../../shared/types/project.types';
 import type { SplitChatPreferences } from '../../shared/types/splitChat.types';
 import type { VoiceNotePreferences } from '../../shared/types/voice.types';
+import type { BatchWatchPreferences } from '../../shared/types/batchWatch.types';
 
 // ─── Section 1: Connections & Models ────────────────────────────────────────
 
@@ -251,4 +252,6 @@ export interface LuminaSettings {
 	projects: ProjectSettings;
 	/** 스마트 음성 노트(Voice-to-Note) 선택 설정 (사용 전까지 미정의 유지) */
 	voiceNote?: VoiceNotePreferences;
+	/** 폴더 자동감시(Batch Auto-Watch) 선택 설정 (사용 전까지 미정의 유지) */
+	batchWatch?: BatchWatchPreferences;
 }

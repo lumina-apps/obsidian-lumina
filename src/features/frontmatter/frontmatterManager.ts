@@ -94,6 +94,10 @@ export class FrontmatterManager {
 
 		const refCreate = this.app.vault.on('create', (file) => {
 			if (isMarkdownFile(file) && !this.isExcludedPath(file.path)) {
+				// 폴더 자동감시가 동일 파일의 frontmatter 생성을 담당 중이면 중복 LLM 호출 방지
+				if (this.plugin.folderWatchManager?.isPathManagedForFrontmatter(file.path)) {
+					return;
+				}
 				this.autoGenerate(file, false).catch((err: unknown) => {
 					debugLogger.logError('frontmatter', err instanceof Error ? err : String(err));
 				});
@@ -104,6 +108,7 @@ export class FrontmatterManager {
 
 		const refModify = this.app.vault.on('modify', (file) => {
 			if (!isMarkdownFile(file) || this.isExcludedPath(file.path)) return;
+			if (this.plugin.folderWatchManager?.isPathManagedForFrontmatter(file.path)) return;
 
 			// 플러그인이 수정한 직후 발생하는 modify 이벤트는 무시 (1.5초 이내)
 			const lastUpdate = this.lastUpdateMap.get(file.path) || 0;

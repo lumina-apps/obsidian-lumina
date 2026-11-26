@@ -65,17 +65,33 @@ describe('BatchStudioController', () => {
 
 		mockApp = {
 			vault: {
+				configDir: '.obsidian',
 				getMarkdownFiles: () => Object.values(fileObjs),
 				getAbstractFileByPath: (path: string) => fileObjs[path] ?? null,
 				read: vi.fn(async (file: TFile) => diskFiles[file.path] ?? ''),
 				modify: vi.fn(async (file: TFile, content: string) => {
 					diskFiles[file.path] = content;
 				}),
+				createFolder: vi.fn(async () => undefined),
 			},
 			metadataCache: {
 				getFileCache: (file: TFile) => ({ frontmatter: fmStore[file.path] }),
 			},
 			fileManager: {
+				renameFile: vi.fn(async (file: TFile, newPath: string) => {
+					const oldPath = file.path;
+					const content = diskFiles[oldPath];
+					const fm = fmStore[oldPath];
+					delete diskFiles[oldPath];
+					delete fileObjs[oldPath];
+					delete fmStore[oldPath];
+					file.path = newPath;
+					file.name = newPath.split('/').pop() ?? newPath;
+					file.basename = file.name.replace(/\.md$/i, '');
+					fileObjs[newPath] = file;
+					diskFiles[newPath] = content;
+					fmStore[newPath] = fm;
+				}),
 				processFrontMatter: vi.fn(
 					async (file: TFile, cb: (fm: Record<string, unknown>) => void) => {
 						const fm = { ...(fmStore[file.path] ?? {}) };
@@ -282,5 +298,48 @@ describe('BatchStudioController', () => {
 		expect(await controller.applyAllSelectedStaged()).toBe(0);
 		expect(await controller.applySingleItem('note-1.md')).toBe(true);
 		expect(fmStore['note-1.md'].tags).toEqual(['무료']);
+	});
+
+	it('수동 folder-move 레시피 실행, 이동 수락, 및 원래 경로로의 스냅샷 롤백이 정상 동작한다', async () => {
+		patchBatchState({
+			activeRecipeId: 'folder-move',
+			recipeOptions: {
+				...getBatchState().recipeOptions,
+				moveConfig: {
+					mode: 'fixed',
+					fixedTargetFolder: 'Archive',
+					tagMappings: [],
+					aiCandidateFolders: [],
+					fallbackFolder: '',
+					conflictPolicy: 'rename-suffix',
+					createFolderIfMissing: true,
+				},
+			},
+		});
+
+		await controller.startBatch();
+
+		let state = getBatchState();
+		expect(state.runState).toBe('completed');
+		expect(state.queue).toHaveLength(2);
+		expect(state.queue[0].proposed?.kind).toBe('move');
+		expect(state.queue[0].proposed?.moveToPath).toBe('Archive/a.md');
+
+		// a.md 단건 수락 -> Archive/a.md로 이동 및 이동 스냅샷 기록
+		const applied = await controller.applySingleItem('a.md');
+		expect(applied).toBe(true);
+		expect(fileObjs['Archive/a.md']).toBeDefined();
+		expect(fileObjs['a.md']).toBeUndefined();
+
+		state = getBatchState();
+		expect(state.history).toHaveLength(1);
+		expect(state.history[0].snapshots[0].movedFromPath).toBe('a.md');
+		expect(state.history[0].snapshots[0].movedToPath).toBe('Archive/a.md');
+
+		// 롤백 시 Archive/a.md를 다시 원래 경로(a.md)로 복원
+		const restored = await controller.rollbackHistoryEntry(state.history[0].id);
+		expect(restored).toBe(1);
+		expect(fileObjs['a.md']).toBeDefined();
+		expect(fileObjs['Archive/a.md']).toBeUndefined();
 	});
 });

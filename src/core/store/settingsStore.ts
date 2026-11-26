@@ -111,5 +111,24 @@ export function syncSettingsStore(settings: LuminaSettings): void {
 					},
 				}
 			: {}),
+		...(settings.batchWatch
+			? {
+					batchWatch: {
+						...settings.batchWatch,
+						rules: (settings.batchWatch.rules ?? []).map((rule) => ({
+							...rule,
+							recipes: [...(rule.recipes ?? [])],
+							recipeOptions: {
+								...rule.recipeOptions,
+							},
+							moveAction: {
+								...rule.moveAction,
+								tagMappings: (rule.moveAction?.tagMappings ?? []).map((m) => ({ ...m })),
+								aiCandidateFolders: [...(rule.moveAction?.aiCandidateFolders ?? [])],
+							},
+						})),
+					},
+				}
+			: {}),
 	});
 }

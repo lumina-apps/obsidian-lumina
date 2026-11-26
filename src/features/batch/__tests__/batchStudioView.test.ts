@@ -87,7 +87,8 @@ describe('BatchStudioView 권한 가드', () => {
 
 		expect(detach).not.toHaveBeenCalled();
 		expect(contentEl.querySelector('.lumina-batch-studio')).not.toBeNull();
-		expect(contentEl.querySelectorAll('.lumina-batch-recipe-tab')).toHaveLength(4);
+		expect(contentEl.querySelectorAll('.lumina-batch-recipe-tab')).toHaveLength(5);
+		expect(contentEl.querySelectorAll('.lumina-batch-main-tab')).toHaveLength(3);
 
 		await view.onClose();
 	});

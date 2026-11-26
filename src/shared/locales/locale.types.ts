@@ -1251,6 +1251,8 @@ export interface TranslationBatchStudioRecipes {
   summaryCalloutDesc: string;
   customPrompt: string;
   customPromptDesc: string;
+  folderMove: string;
+  folderMoveDesc: string;
 }
 
 export interface TranslationBatchStudioTarget {
@@ -1290,6 +1292,28 @@ export interface TranslationBatchStudioOptions {
   outputReplace: string;
   fmKeyPlaceholder: string;
   insertVarHint: string;
+  moveModeLabel: string;
+  moveModeFixed: string;
+  moveModeByTag: string;
+  moveModeAiRoute: string;
+  moveTargetFolderLabel: string;
+  moveTargetFolderPlaceholder: string;
+  moveFallbackFolderLabel: string;
+  moveFallbackFolderPlaceholder: string;
+  moveTagMappingsLabel: string;
+  moveAddMappingBtn: string;
+  moveTagPlaceholder: string;
+  moveAiCandidatesLabel: string;
+  moveAiCandidatesPlaceholder: string;
+  moveAddCandidateBtn: string;
+  moveConflictLabel: string;
+  moveConflictRename: string;
+  moveConflictSkip: string;
+  moveCreateFolderLabel: string;
+  moveNoTargetNotice: string;
+  moveNoRulesNotice: string;
+  moveNoCandidatesNotice: string;
+  localOnlyMoveNotice: string;
 }
 
 export interface TranslationBatchStudioSample {
@@ -1364,17 +1388,84 @@ export interface TranslationBatchStudioInspector {
   errorTitle: string;
   applySuccessSingle: string;
   applySuccessBatch: string;
+  moveFromLabel: string;
+  moveToLabel: string;
+  moveReasonLabel: string;
 }
 
 export interface TranslationBatchStudioHistory {
   tabTitle: string;
   emptyHistory: string;
   batchSummary: string;
+  watchBadge: string;
   rollbackBtn: string;
   rollbackConfirm: string;
   rollbackDone: string;
   rolledBackBadge: string;
   snapshotsMissing: string;
+}
+
+export interface TranslationBatchStudioWatch {
+  tabTitle: string;
+  saveAsRuleBtn: string;
+  saveAsRuleNeedFolderNotice: string;
+  proNotice: string;
+  proCardTitle: string;
+  proCardDesc: string;
+  proCardCta: string;
+  deviceToggleLabel: string;
+  deviceToggleDesc: string;
+  mobileHint: string;
+  dailyUsage: string;
+  dailyCapLabel: string;
+  burstLimitLabel: string;
+  addRuleBtn: string;
+  emptyRules: string;
+  ruleEditorTitleNew: string;
+  ruleEditorTitleEdit: string;
+  ruleNameLabel: string;
+  ruleNamePlaceholder: string;
+  sourceFolderLabel: string;
+  sourceFolderPlaceholder: string;
+  includeSubfoldersLabel: string;
+  triggerModeLabel: string;
+  triggerOnCreate: string;
+  triggerOnCreateOrModify: string;
+  triggerInterval: string;
+  debounceSecLabel: string;
+  intervalMinLabel: string;
+  recipesLabel: string;
+  moveActionLabel: string;
+  moveModeNone: string;
+  executionModeLabel: string;
+  execAutoStage: string;
+  execAutoApply: string;
+  saveRuleBtn: string;
+  runNowBtn: string;
+  runNowNotice: string;
+  editBtn: string;
+  deleteBtn: string;
+  validationSourceRequired: string;
+  validationActionRequired: string;
+  validationSelfLoop: string;
+  stagedSectionTitle: string;
+  stagedEmpty: string;
+  approveBtn: string;
+  rejectBtn: string;
+  approveAllBtn: string;
+  activitySectionTitle: string;
+  activityEmpty: string;
+  statusStaged: string;
+  statusApplied: string;
+  statusMoved: string;
+  statusSkipped: string;
+  statusFailed: string;
+  statusBurstPaused: string;
+  statusDailyCap: string;
+  burstPausedNotice: string;
+  statusBarActive: string;
+  statusBarStaged: string;
+  statusBarProcessing: string;
 }
 
 export interface TranslationBatchStudio {
@@ -1390,6 +1481,7 @@ export interface TranslationBatchStudio {
   execution: TranslationBatchStudioExecution;
   queue: TranslationBatchStudioQueue;
   inspector: TranslationBatchStudioInspector;
+  watch: TranslationBatchStudioWatch;
   history: TranslationBatchStudioHistory;
   proCustomPromptNotice: string;
   proBulkApplyNotice: string;

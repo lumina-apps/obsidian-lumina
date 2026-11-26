@@ -165,4 +165,59 @@ describe('FrontmatterManager', () => {
 		expect(writtenFm.tags).toEqual(['과수원', '사과']);
 		expect(writtenFm.description).toBe('사과 메모입니다.');
 	});
+
+	it('folderWatchManager가 frontmatter 레시피로 관리 중인 파일은 create/modify 이벤트에서 자동 양보(스킵)한다', () => {
+		const vaultHandlers = new Map<string, (file: TFile) => void>();
+		const extMockApp = {
+			...mockApp,
+			vault: {
+				...mockApp.vault,
+				on: vi.fn((event: string, cb: (file: TFile) => void) => {
+					vaultHandlers.set(event, cb);
+					return { event };
+				}),
+				offref: vi.fn(),
+			},
+			workspace: {
+				getActiveFile: vi.fn(() => null),
+				on: vi.fn(() => ({})),
+				offref: vi.fn(),
+			},
+		};
+		const extPlugin = {
+			...mockPlugin,
+			app: extMockApp,
+			registerEvent: vi.fn(),
+			folderWatchManager: {
+				isPathManagedForFrontmatter: vi.fn((path: string) => path.startsWith('00_Inbox/')),
+			},
+		} as unknown as LuminaPlugin;
+
+		const manager = new FrontmatterManager(extPlugin);
+		const autoGenerateSpy = vi.spyOn(
+			manager as unknown as { autoGenerate: (f: TFile, force: boolean) => Promise<void> },
+			'autoGenerate',
+		).mockResolvedValue(undefined);
+
+		manager.registerEvents();
+
+		const managedFile = Object.assign(new TFile(), {
+			path: '00_Inbox/note.md',
+			basename: 'note',
+			extension: 'md',
+		});
+		const unmanagedFile = Object.assign(new TFile(), {
+			path: 'Notes/note.md',
+			basename: 'note',
+			extension: 'md',
+		});
+
+		vaultHandlers.get('create')?.(managedFile);
+		expect(autoGenerateSpy).not.toHaveBeenCalled();
+
+		vaultHandlers.get('create')?.(unmanagedFile);
+		expect(autoGenerateSpy).toHaveBeenCalledTimes(1);
+
+		manager.destroy();
+	});
 });

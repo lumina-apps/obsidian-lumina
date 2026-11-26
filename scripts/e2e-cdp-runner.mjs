@@ -2873,8 +2873,8 @@ async function run() {
 				batchOpen.leafCount > 0 &&
 					batchOpen.hasStudio &&
 					batchOpen.hasProBadge &&
-					batchOpen.recipeCount === 4 &&
-					batchOpen.mainTabCount === 2,
+					batchOpen.recipeCount === 5 &&
+					batchOpen.mainTabCount === 3,
 				`Recipes: ${batchOpen.recipeCount}, MainTabs: ${batchOpen.mainTabCount}, ProBadge: ${batchOpen.hasProBadge}`,
 				Date.now() - tBatch
 			);
@@ -2979,8 +2979,8 @@ async function run() {
 					await new Promise(r => setTimeout(r, 100));
 				}
 
-				// 히스토리 탭으로 이동 후 원클릭 롤백 수행
-				mainTabs[1]?.click();
+				// 히스토리 탭(3번째 탭)으로 이동 후 원클릭 롤백 수행
+				mainTabs[2]?.click();
 				await new Promise(r => setTimeout(r, 200));
 				const rollbackTrigger = studio.querySelector('.lumina-batch-history-card button.lumina-batch-btn');
 				rollbackTrigger?.click();
@@ -3023,6 +3023,346 @@ async function run() {
 				`Sample: ${batchFlow.sampleMatched}, Completed: ${batchFlow.batchCompleted} (queue: ${batchFlow.queueCount}), Diff: ${batchFlow.hasDiffInspector}, Applied: ${batchFlow.appliedToDisk}, RolledBack: ${batchFlow.rolledBackOnDisk}`,
 				Date.now() - tBatchFlow
 			);
+
+			// 3. Folder Move 레시피 E2E: 샘플 미리보기 -> 일괄 실행 -> 검수 -> 이동 반영 -> 원래 경로로 롤백
+			const tMoveFlow = Date.now();
+			try {
+				await client.evaluate(`(async () => {
+					for (const folder of ['__lumina_e2e_move_src__', '__lumina_e2e_move_dest__']) {
+						const existing = app.vault.getAbstractFileByPath(folder);
+						if (existing) await app.vault.delete(existing, true);
+					}
+					await app.vault.createFolder('__lumina_e2e_move_src__');
+					await app.vault.create('__lumina_e2e_move_src__/MoveAlpha.md', 'Folder move E2E test document Alpha with enough characters to pass the minimum length filter.');
+					await app.vault.create('__lumina_e2e_move_src__/MoveBeta.md', 'Folder move E2E test document Beta with enough characters to pass the minimum length filter.');
+				})()`);
+				await sleep(400);
+
+				const moveFlow = await client.evaluate(`(async () => {
+					const studio = document.querySelector('div.lumina-batch-studio');
+					if (!studio) return { success: false, reason: 'Batch Studio not mounted' };
+
+					const mainTabs = studio.querySelectorAll('.lumina-batch-main-tab');
+					mainTabs[0]?.click();
+					await new Promise(r => setTimeout(r, 150));
+					studio.querySelector('.lumina-batch-collapsed-bar button')?.click();
+					await new Promise(r => setTimeout(r, 150));
+
+					const recipeTabs = studio.querySelectorAll('.lumina-batch-recipe-tab');
+					recipeTabs[4]?.click();
+					await new Promise(r => setTimeout(r, 150));
+
+					const scopeBtns = studio.querySelectorAll('.lumina-batch-segmented button');
+					scopeBtns[1]?.click();
+					await new Promise(r => setTimeout(r, 100));
+
+					const inputSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+					const folderInput = studio.querySelector('input[list="lumina-batch-folder-list"]');
+					if (folderInput) {
+						inputSetter.call(folderInput, '__lumina_e2e_move_src__');
+						folderInput.dispatchEvent(new Event('input', { bubbles: true }));
+					}
+					const tagInput = studio.querySelector('.lumina-batch-field-split input[type="text"]');
+					if (tagInput && tagInput.value) {
+						inputSetter.call(tagInput, '');
+						tagInput.dispatchEvent(new Event('input', { bubbles: true }));
+					}
+					const targetInput = studio.querySelector('#lumina-batch-move-target');
+					if (targetInput) {
+						inputSetter.call(targetInput, '__lumina_e2e_move_dest__');
+						targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+					}
+					await new Promise(r => setTimeout(r, 300));
+
+					// 1개 샘플 미리보기 확인
+					const sampleBtn = studio.querySelector('.lumina-batch-sample-box button.lumina-batch-btn');
+					sampleBtn?.click();
+					let sampleMatched = false;
+					const sampleDeadline = Date.now() + 5000;
+					while (Date.now() < sampleDeadline) {
+						const txt = studio.querySelector('.lumina-batch-sample-preview')?.textContent || '';
+						if (txt.includes('__lumina_e2e_move_dest__/Move')) {
+							sampleMatched = true;
+							break;
+						}
+						await new Promise(r => setTimeout(r, 100));
+					}
+
+					// 배치 실행 (이전 테스트의 is-completed 배지가 남아있을 수 있으므로 MoveAlpha 큐 항목 완료까지 대기)
+					studio.querySelector('.lumina-batch-start-btn')?.click();
+					let batchCompleted = false;
+					const runDeadline = Date.now() + 8000;
+					while (Date.now() < runDeadline) {
+						const hasCompletedPill = !!studio.querySelector('.lumina-batch-status-pill.is-completed');
+						const hasMoveQueue = Array.from(studio.querySelectorAll('.lumina-batch-queue-item')).some(
+							el => (el.textContent || '').includes('MoveAlpha')
+						);
+						const hasBulkBtn = !!studio.querySelector('.lumina-batch-bulk-apply-btn');
+						if (hasCompletedPill && hasMoveQueue && hasBulkBtn) {
+							batchCompleted = true;
+							break;
+						}
+						await new Promise(r => setTimeout(r, 100));
+					}
+
+					const queueItems = studio.querySelectorAll('.lumina-batch-queue-item');
+					queueItems[0]?.click();
+					await new Promise(r => setTimeout(r, 150));
+					const inspectorText = studio.querySelector('.lumina-batch-inspector-pane')?.textContent || '';
+					const hasMoveInspector = inspectorText.includes('__lumina_e2e_move_dest__');
+
+					// 일괄 이동 반영
+					studio.querySelector('.lumina-batch-bulk-apply-btn')?.click();
+					let movedOnDisk = false;
+					const applyDeadline = Date.now() + 5000;
+					while (Date.now() < applyDeadline) {
+						const dstA = app.vault.getAbstractFileByPath('__lumina_e2e_move_dest__/MoveAlpha.md');
+						const dstB = app.vault.getAbstractFileByPath('__lumina_e2e_move_dest__/MoveBeta.md');
+						const srcA = app.vault.getAbstractFileByPath('__lumina_e2e_move_src__/MoveAlpha.md');
+						const srcB = app.vault.getAbstractFileByPath('__lumina_e2e_move_src__/MoveBeta.md');
+						if (dstA && dstB && !srcA && !srcB) {
+							movedOnDisk = true;
+							break;
+						}
+						await new Promise(r => setTimeout(r, 100));
+					}
+
+					// 히스토리 탭에서 이동 롤백
+					mainTabs[2]?.click();
+					await new Promise(r => setTimeout(r, 200));
+					studio.querySelector('.lumina-batch-history-card button.lumina-batch-btn')?.click();
+					await new Promise(r => setTimeout(r, 120));
+					studio.querySelector('.lumina-batch-confirm-inline button.mod-warning')?.click();
+
+					let rolledBackPath = false;
+					const rbDeadline = Date.now() + 5000;
+					while (Date.now() < rbDeadline) {
+						const srcA = app.vault.getAbstractFileByPath('__lumina_e2e_move_src__/MoveAlpha.md');
+						const srcB = app.vault.getAbstractFileByPath('__lumina_e2e_move_src__/MoveBeta.md');
+						const dstA = app.vault.getAbstractFileByPath('__lumina_e2e_move_dest__/MoveAlpha.md');
+						const dstB = app.vault.getAbstractFileByPath('__lumina_e2e_move_dest__/MoveBeta.md');
+						if (srcA && srcB && !dstA && !dstB) {
+							rolledBackPath = true;
+							break;
+						}
+						await new Promise(r => setTimeout(r, 100));
+					}
+
+					return {
+						success: sampleMatched && batchCompleted && queueItems.length === 2 && hasMoveInspector && movedOnDisk && rolledBackPath,
+						sampleMatched,
+						batchCompleted,
+						queueCount: queueItems.length,
+						hasMoveInspector,
+						movedOnDisk,
+						rolledBackPath,
+					};
+				})()`);
+
+				reporter.record(
+					'Batch Studio Folder Move Recipe (Sample, Run, Apply & Path Rollback)',
+					moveFlow.success,
+					`Sample: ${moveFlow.sampleMatched}, Completed: ${moveFlow.batchCompleted} (queue: ${moveFlow.queueCount}), Inspector: ${moveFlow.hasMoveInspector}, Moved: ${moveFlow.movedOnDisk}, RolledBack: ${moveFlow.rolledBackPath}`,
+					Date.now() - tMoveFlow
+				);
+			} finally {
+				await client.evaluate(`(async () => {
+					for (const folder of ['__lumina_e2e_move_src__', '__lumina_e2e_move_dest__']) {
+						const obj = app.vault.getAbstractFileByPath(folder);
+						if (obj) await app.vault.delete(obj, true);
+					}
+				})()`);
+			}
+
+			// 4. Pro Auto-Watch 탭 E2E: 규칙 생성(로컬 고정 이동) -> 지금 스캔(Auto-Stage) -> 수락 및 이동 -> 히스토리 확인
+			const tWatchFlow = Date.now();
+			const watchBackup = await client.evaluate(`(() => {
+				const lumina = app.plugins.plugins['lumina'];
+				const prevBatchWatch = lumina?.settings?.batchWatch
+					? JSON.parse(JSON.stringify(lumina.settings.batchWatch))
+					: null;
+				const prevDeviceFlag = window.localStorage?.getItem('lumina-batch-watch-device-enabled') ?? null;
+				return { prevBatchWatch, prevDeviceFlag };
+			})()`);
+
+			try {
+				await client.evaluate(`(async () => {
+					for (const folder of ['__lumina_e2e_watch_src__', '__lumina_e2e_watch_dest__']) {
+						const existing = app.vault.getAbstractFileByPath(folder);
+						if (existing) await app.vault.delete(existing, true);
+					}
+					await app.vault.createFolder('__lumina_e2e_watch_src__');
+					await app.vault.create('__lumina_e2e_watch_src__/WatchNote.md', 'Auto-Watch E2E test document with sufficient content length for staging and moving.');
+				})()`);
+				await sleep(400);
+
+				const watchFlow = await client.evaluate(`(async () => {
+					const studio = document.querySelector('div.lumina-batch-studio');
+					if (!studio) return { success: false, reason: 'Batch Studio not mounted' };
+
+					const mainTabs = studio.querySelectorAll('.lumina-batch-main-tab');
+					mainTabs[1]?.click();
+					await new Promise(r => setTimeout(r, 200));
+
+					const watchPane = studio.querySelector('.lumina-watch-pane');
+					if (!watchPane) return { success: false, reason: 'Watch pane not mounted' };
+
+					// 기기별 감시 스위치가 꺼져 있으면 켜기
+					const deviceToggle = watchPane.querySelector('.lumina-watch-topbar input[type="checkbox"]');
+					if (deviceToggle && !deviceToggle.checked) {
+						deviceToggle.click();
+						await new Promise(r => setTimeout(r, 150));
+					}
+
+					// 새 감시 규칙 에디터 열기
+					watchPane.querySelector('.lumina-watch-topbar button.mod-cta')?.click();
+					await new Promise(r => setTimeout(r, 150));
+
+					const editor = watchPane.querySelector('.lumina-watch-editor');
+					if (!editor) return { success: false, reason: 'Rule editor did not open' };
+
+					const inputSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+					const selectSetter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set;
+
+					const nameInput = editor.querySelector('#lumina-watch-name');
+					if (nameInput) {
+						inputSetter.call(nameInput, 'E2E Watch Move');
+						nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+					}
+					const srcInput = editor.querySelector('#lumina-watch-src');
+					if (srcInput) {
+						inputSetter.call(srcInput, '__lumina_e2e_watch_src__');
+						srcInput.dispatchEvent(new Event('input', { bubbles: true }));
+					}
+
+					// 외부 LLM 없이 테스트하기 위해 기본 체크된 frontmatter 레시피 체크 해제
+					const recipeCheckboxes = editor.querySelectorAll('.lumina-watch-chip-group input[type="checkbox"]');
+					for (const cb of recipeCheckboxes) {
+						if (cb.checked) cb.click();
+					}
+
+					const moveModeSel = editor.querySelector('#lumina-watch-movemode');
+					if (moveModeSel) {
+						selectSetter.call(moveModeSel, 'fixed');
+						moveModeSel.dispatchEvent(new Event('change', { bubbles: true }));
+					}
+					await new Promise(r => setTimeout(r, 150));
+
+					const fixedDestInput = editor.querySelector('#lumina-watch-fixeddest');
+					if (fixedDestInput) {
+						inputSetter.call(fixedDestInput, '__lumina_e2e_watch_dest__');
+						fixedDestInput.dispatchEvent(new Event('input', { bubbles: true }));
+					}
+
+					const execSel = editor.querySelector('#lumina-watch-exec');
+					if (execSel) {
+						selectSetter.call(execSel, 'auto-stage');
+						execSel.dispatchEvent(new Event('change', { bubbles: true }));
+					}
+					await new Promise(r => setTimeout(r, 150));
+
+					// 규칙 저장
+					editor.querySelector('.lumina-watch-editor__footer button.mod-cta')?.click();
+					let ruleSaved = false;
+					const saveDeadline = Date.now() + 4000;
+					while (Date.now() < saveDeadline) {
+						const editorGone = !watchPane.querySelector('.lumina-watch-editor');
+						const hasCard = Array.from(watchPane.querySelectorAll('.lumina-watch-card')).some(
+							c => (c.textContent || '').includes('E2E Watch Move')
+						);
+						if (editorGone && hasCard) {
+							ruleSaved = true;
+							break;
+						}
+						await new Promise(r => setTimeout(r, 100));
+					}
+
+					// 지금 스캔 실행 (Auto-Stage)
+					const ruleCard = Array.from(watchPane.querySelectorAll('.lumina-watch-card')).find(
+						c => (c.textContent || '').includes('E2E Watch Move')
+					);
+					ruleCard?.querySelector('.lumina-watch-card__actions button')?.click();
+
+					let stagedVisible = false;
+					const stageDeadline = Date.now() + 5000;
+					while (Date.now() < stageDeadline) {
+						const movePreview = Array.from(watchPane.querySelectorAll('.lumina-watch-move-preview')).find(
+							el => (el.textContent || '').includes('__lumina_e2e_watch_dest__/WatchNote.md')
+						);
+						if (movePreview) {
+							stagedVisible = true;
+							break;
+						}
+						await new Promise(r => setTimeout(r, 100));
+					}
+
+					// Auto-Stage 상태에서는 아직 원본 위치에 남아있어야 함
+					const stillInSourceBeforeApprove = !!app.vault.getAbstractFileByPath('__lumina_e2e_watch_src__/WatchNote.md');
+
+					// 수락 및 적용
+					const stagedCol = watchPane.querySelectorAll('.lumina-watch-col')[1];
+					const approveBtn = stagedCol?.querySelector('.lumina-watch-card button.mod-cta');
+					approveBtn?.click();
+
+					let movedAfterApprove = false;
+					const approveDeadline = Date.now() + 5000;
+					while (Date.now() < approveDeadline) {
+						const dst = app.vault.getAbstractFileByPath('__lumina_e2e_watch_dest__/WatchNote.md');
+						const src = app.vault.getAbstractFileByPath('__lumina_e2e_watch_src__/WatchNote.md');
+						const previewGone = !watchPane.querySelector('.lumina-watch-move-preview');
+						if (dst && !src && previewGone) {
+							movedAfterApprove = true;
+							break;
+						}
+						await new Promise(r => setTimeout(r, 100));
+					}
+
+					// 히스토리 탭에서 자동감시 이력 기록 확인
+					mainTabs[2]?.click();
+					await new Promise(r => setTimeout(r, 200));
+					const historyText = studio.querySelector('.lumina-batch-history-card')?.textContent || '';
+					const hasWatchHistory = historyText.includes('E2E Watch Move') && historyText.includes('__lumina_e2e_watch_dest__/WatchNote.md');
+
+					return {
+						success: ruleSaved && stagedVisible && stillInSourceBeforeApprove && movedAfterApprove && hasWatchHistory,
+						ruleSaved,
+						stagedVisible,
+						stillInSourceBeforeApprove,
+						movedAfterApprove,
+						hasWatchHistory,
+					};
+				})()`);
+
+				reporter.record(
+					'Batch Studio Auto-Watch Tab (Rule Save, Auto-Stage Scan, Approve Move & History)',
+					watchFlow.success,
+					`RuleSaved: ${watchFlow.ruleSaved}, Staged: ${watchFlow.stagedVisible}, DeferredWrite: ${watchFlow.stillInSourceBeforeApprove}, Moved: ${watchFlow.movedAfterApprove}, WatchHistory: ${watchFlow.hasWatchHistory}`,
+					Date.now() - tWatchFlow
+				);
+			} finally {
+				await client.evaluate(`(async () => {
+					const lumina = app.plugins.plugins['lumina'];
+					if (lumina?.settings) {
+						const backup = ${JSON.stringify(watchBackup)};
+						if (backup.prevBatchWatch === null) {
+							delete lumina.settings.batchWatch;
+						} else {
+							lumina.settings.batchWatch = backup.prevBatchWatch;
+						}
+						await lumina.saveSettings();
+						if (backup.prevDeviceFlag === null) {
+							window.localStorage?.removeItem('lumina-batch-watch-device-enabled');
+						} else {
+							window.localStorage?.setItem('lumina-batch-watch-device-enabled', backup.prevDeviceFlag);
+						}
+						lumina.folderWatchManager?.syncWatchers();
+					}
+					for (const folder of ['__lumina_e2e_watch_src__', '__lumina_e2e_watch_dest__']) {
+						const obj = app.vault.getAbstractFileByPath(folder);
+						if (obj) await app.vault.delete(obj, true);
+					}
+				})()`);
+			}
 		} catch (err) {
 			reporter.record('Batch Studio (Pro) E2E Suite', false, err.message, Date.now() - tBatch);
 		} finally {
@@ -4595,12 +4935,15 @@ async function runMobileSuite(client, input, reporter) {
 
 					const studio = document.querySelector('div.lumina-batch-studio');
 					const recipeTabs = studio?.querySelectorAll('.lumina-batch-recipe-tab') || [];
+					const mainTabEls = studio?.querySelectorAll('.lumina-batch-main-tab') || [];
 					const hasProBadge = !!studio?.querySelector('.lumina-batch-pro-badge');
 					const noOverflow = studio ? studio.scrollWidth <= studio.clientWidth + 4 : false;
 
 					let wbHeight = 0;
 					let wbHeightExpanded = 0;
 					let noOverflowAfterRun = false;
+					let watchMounted = false;
+					let watchNoOverflow = false;
 
 					if (studio) {
 						// 작업 공간 탭 활성화 및 설정 영역 펼치기
@@ -4654,25 +4997,38 @@ async function runMobileSuite(client, input, reporter) {
 						await new Promise(r => setTimeout(r, 150));
 						const workbenchExpanded = studio.querySelector('.lumina-batch-workbench');
 						wbHeightExpanded = workbenchExpanded ? workbenchExpanded.getBoundingClientRect().height : 0;
+
+						// 자동감시 탭(2번째 메인 탭) 마운트 및 모바일 가로 오버플로 확인
+						mainTabs[1]?.click();
+						await new Promise(r => setTimeout(r, 150));
+						const watchPane = studio.querySelector('.lumina-watch-pane');
+						watchMounted = !!watchPane;
+						watchNoOverflow = watchPane ? watchPane.scrollWidth <= watchPane.clientWidth + 4 : false;
 					}
 
 					const ok = !!studio &&
-						recipeTabs.length === 4 &&
+						recipeTabs.length === 5 &&
+						mainTabEls.length === 3 &&
 						hasProBadge &&
 						noOverflow &&
 						noOverflowAfterRun &&
 						wbHeight >= 120 &&
-						wbHeightExpanded >= 120;
+						wbHeightExpanded >= 120 &&
+						watchMounted &&
+						watchNoOverflow;
 
 					return {
 						success: ok,
 						mounted: !!studio,
 						recipeCount: recipeTabs.length,
+						mainTabCount: mainTabEls.length,
 						hasProBadge,
 						noOverflow,
 						noOverflowAfterRun,
 						wbHeight: Math.round(wbHeight),
 						wbHeightExpanded: Math.round(wbHeightExpanded),
+						watchMounted,
+						watchNoOverflow,
 					};
 				} finally {
 					app.workspace.getLeavesOfType('lumina-batch-studio').forEach(l => l.detach());
@@ -4686,7 +5042,7 @@ async function runMobileSuite(client, input, reporter) {
 			reporter.record(
 				'Mobile Batch Studio (Pro): View Mount, Overflow & Workbench Visibility',
 				mobileBatchResult.success,
-				`Mounted: ${mobileBatchResult.mounted}, Recipes: ${mobileBatchResult.recipeCount}, ProBadge: ${mobileBatchResult.hasProBadge}, OverflowOK: ${mobileBatchResult.noOverflow}/${mobileBatchResult.noOverflowAfterRun}, WorkbenchH: ${mobileBatchResult.wbHeight}px (expanded=${mobileBatchResult.wbHeightExpanded}px)`,
+				`Mounted: ${mobileBatchResult.mounted}, Recipes: ${mobileBatchResult.recipeCount}, MainTabs: ${mobileBatchResult.mainTabCount}, ProBadge: ${mobileBatchResult.hasProBadge}, OverflowOK: ${mobileBatchResult.noOverflow}/${mobileBatchResult.noOverflowAfterRun}/watch:${mobileBatchResult.watchNoOverflow}, WorkbenchH: ${mobileBatchResult.wbHeight}px (expanded=${mobileBatchResult.wbHeightExpanded}px)`,
 				Date.now() - tMobileBatch
 			);
 		}

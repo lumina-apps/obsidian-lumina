@@ -1,15 +1,18 @@
 <script lang="ts">
+	import { Notice } from "obsidian";
 	import { onDestroy, onMount, untrack } from "svelte";
 	import type LuminaPlugin from "../../../main";
 	import {
 		batchQueueCounts,
 		batchStore,
+		createDefaultFolderMoveConfig,
 		patchBatchState,
 		setBatchRecipeOptions,
 		setBatchScopeConfig,
 		setBatchSelectedPath,
 		updateBatchQueueItem,
 	} from "../../../core/store/batchStore";
+	import { watchStagedCount } from "../../../core/store/batchWatchStore";
 	import {
 		FREE_MAX_BATCH_FILES,
 		hasProFeature,
@@ -29,6 +32,12 @@
 		CustomOutputMode,
 		FrontmatterMergeMode,
 	} from "../../../shared/types/batch.types";
+	import type {
+		FolderMoveConfig,
+		FolderMoveMode,
+		MoveConflictPolicy,
+		WatchContentRecipeId,
+	} from "../../../shared/types/batchWatch.types";
 	import { icon } from "../../../shared/utils/iconAction";
 	import {
 		parseProviderModelValue,
@@ -42,7 +51,9 @@
 		resolveTargetFiles,
 	} from "../batchTargetResolver";
 	import { getBatchEligibleProviders } from "../recipes/batchRecipes";
+	import { sanitizeFolderPath } from "../watch/folderMover";
 	import { openLinkTextSafely } from "../../../shared/utils/workspaceNavUtils";
+	import BatchWatchTab from "./BatchWatchTab.svelte";
 
 	let { plugin }: { plugin: LuminaPlugin } = $props();
 
@@ -50,6 +61,9 @@
 
 	let vaultTick = $state(0);
 	let newTagInput = $state("");
+	let newMoveTagInput = $state("");
+	let newMoveTagFolderInput = $state("");
+	let newMoveCandidateInput = $state("");
 	let confirmRollbackId = $state<string | null>(null);
 	let customPromptTextareaEl = $state<HTMLTextAreaElement | null>(null);
 
@@ -162,8 +176,21 @@
 		!$isProBatch ? Math.max(0, resolution.matched.length - FREE_MAX_BATCH_FILES) : 0,
 	);
 
+	const moveConfig = $derived(
+		state.recipeOptions.moveConfig ?? createDefaultFolderMoveConfig("fixed"),
+	);
+	const isLocalOnlyRecipe = $derived(
+		state.activeRecipeId === "autolink" ||
+			(state.activeRecipeId === "folder-move" && moveConfig.mode !== "ai-route"),
+	);
+
 	const resourceEstimate = $derived(
-		estimateBatchResources(effectiveMatchedForEstimate, state.activeRecipeId, activeProviderType),
+		estimateBatchResources(
+			effectiveMatchedForEstimate,
+			state.activeRecipeId,
+			activeProviderType,
+			moveConfig.mode,
+		),
 	);
 
 	// 필터된 큐 목록
@@ -241,6 +268,12 @@
 			iconName: "sparkles",
 			label: $tStore("batchStudio.recipes.customPrompt"),
 			desc: $tStore("batchStudio.recipes.customPromptDesc"),
+		},
+		{
+			id: "folder-move",
+			iconName: "folder-input",
+			label: $tStore("batchStudio.recipes.folderMove"),
+			desc: $tStore("batchStudio.recipes.folderMoveDesc"),
 		},
 	]);
 
@@ -376,6 +409,89 @@
 		}
 	}
 
+	function patchMoveConfig(patch: Partial<FolderMoveConfig>): void {
+		setBatchRecipeOptions({
+			moveConfig: {
+				...moveConfig,
+				...patch,
+			},
+		});
+	}
+
+	function addManualMoveTagMapping(): void {
+		const tag = newMoveTagInput.trim().replace(/^#+/, "");
+		const targetFolder = sanitizeFolderPath(newMoveTagFolderInput);
+		if (!tag || !targetFolder) return;
+		patchMoveConfig({
+			tagMappings: [...moveConfig.tagMappings, { tag, targetFolder }],
+		});
+		newMoveTagInput = "";
+		newMoveTagFolderInput = "";
+	}
+
+	function removeManualMoveTagMapping(index: number): void {
+		patchMoveConfig({
+			tagMappings: moveConfig.tagMappings.filter((_, i) => i !== index),
+		});
+	}
+
+	function addManualMoveCandidate(): void {
+		const folder = sanitizeFolderPath(newMoveCandidateInput);
+		if (!folder) return;
+		if (!moveConfig.aiCandidateFolders.some((f) => f.toLowerCase() === folder.toLowerCase())) {
+			patchMoveConfig({
+				aiCandidateFolders: [...moveConfig.aiCandidateFolders, folder],
+			});
+		}
+		newMoveCandidateInput = "";
+	}
+
+	function removeManualMoveCandidate(folder: string): void {
+		patchMoveConfig({
+			aiCandidateFolders: moveConfig.aiCandidateFolders.filter((f) => f !== folder),
+		});
+	}
+
+	function saveCurrentAsWatchRule(): void {
+		if (!$isProBatch) {
+			notifyProFeatureLocked(
+				plugin.app,
+				"batch-studio",
+				$tStore("batchStudio.watch.proNotice"),
+			);
+			return;
+		}
+		if (state.scopeConfig.scopeMode !== "folder" || !state.scopeConfig.folderPath.trim()) {
+			new Notice($tStore("batchStudio.watch.saveAsRuleNeedFolderNotice"));
+			return;
+		}
+		const sourceFolder = sanitizeFolderPath(state.scopeConfig.folderPath);
+		if (!sourceFolder) {
+			new Notice($tStore("batchStudio.watch.saveAsRuleNeedFolderNotice"));
+			return;
+		}
+		const isMoveOnly = state.activeRecipeId === "folder-move";
+		patchBatchState({
+			draftWatchRule: {
+				name: sourceFolder,
+				sourceFolder,
+				tagFilter: state.scopeConfig.tagFilter,
+				minContentLength: state.scopeConfig.minContentLength,
+				skipIfAlreadyHasTarget: state.scopeConfig.skipIfAlreadyHasTarget,
+				recipes: isMoveOnly ? [] : [state.activeRecipeId as WatchContentRecipeId],
+				recipeOptions: { ...state.recipeOptions },
+				moveAction: isMoveOnly
+					? {
+							...moveConfig,
+							tagMappings: moveConfig.tagMappings.map((m) => ({ ...m })),
+							aiCandidateFolders: [...moveConfig.aiCandidateFolders],
+						}
+					: createDefaultFolderMoveConfig("none"),
+			},
+			activeMainTab: "watch",
+		});
+	}
+
 	function getRecipeLabel(recipeId: BatchRecipeId): string {
 		switch (recipeId) {
 			case "frontmatter":
@@ -386,6 +502,8 @@
 				return $tStore("batchStudio.recipes.summaryCallout");
 			case "custom-prompt":
 				return $tStore("batchStudio.recipes.customPrompt");
+			case "folder-move":
+				return $tStore("batchStudio.recipes.folderMove");
 		}
 	}
 
@@ -442,6 +560,22 @@
 			<button
 				type="button"
 				class="lumina-batch-main-tab"
+				class:is-active={state.activeMainTab === "watch"}
+				onclick={() => patchBatchState({ activeMainTab: "watch" })}
+			>
+				<span class="lumina-batch-tab-icon" use:icon={"folder-sync"}></span>
+				<span>
+					{$tStore("batchStudio.watch.tabTitle")}
+					{#if $watchStagedCount > 0}
+						({$watchStagedCount})
+					{:else if !$isProBatch}
+						🔒
+					{/if}
+				</span>
+			</button>
+			<button
+				type="button"
+				class="lumina-batch-main-tab"
 				class:is-active={state.activeMainTab === "history"}
 				onclick={() => patchBatchState({ activeMainTab: "history" })}
 			>
@@ -451,7 +585,9 @@
 		</div>
 	</header>
 
-	{#if state.activeMainTab === "history"}
+	{#if state.activeMainTab === "watch"}
+		<BatchWatchTab {plugin} />
+	{:else if state.activeMainTab === "history"}
 		<!-- 히스토리 및 원클릭 롤백 탭 -->
 		<section class="lumina-batch-history-pane">
 			{#if state.history.length === 0}
@@ -466,6 +602,11 @@
 							<div class="lumina-batch-history-card__top">
 								<div>
 									<div class="lumina-batch-history-card__title">
+										{#if entry.source === "watch"}
+											<span class="lumina-batch-queue-item__badge is-pro">
+												{$tStore("batchStudio.history.watchBadge")}{entry.ruleName ? ` · ${entry.ruleName}` : ""}
+											</span>
+										{/if}
 										{$tStore("batchStudio.history.batchSummary", {
 											recipe: getRecipeLabel(entry.recipeId),
 											count: entry.appliedCount,
@@ -520,7 +661,11 @@
 
 							<div class="lumina-batch-history-card__files">
 								{#each entry.snapshots.slice(0, 12) as snap (snap.path)}
-									<span class="lumina-batch-file-chip">{snap.path}</span>
+									<span class="lumina-batch-file-chip">
+										{snap.movedFromPath && snap.movedToPath
+											? `${snap.movedFromPath} → ${snap.movedToPath}`
+											: snap.path}
+									</span>
 								{/each}
 								{#if entry.snapshots.length > 12}
 									<span class="lumina-batch-file-chip">+{entry.snapshots.length - 12}</span>
@@ -651,7 +796,7 @@
 							</label>
 						</div>
 
-						{#if state.activeRecipeId !== "autolink"}
+						{#if state.activeRecipeId !== "autolink" && (state.activeRecipeId !== "folder-move" || moveConfig.mode === "fixed")}
 							<label class="lumina-batch-checkbox-row">
 								<input
 									type="checkbox"
@@ -679,7 +824,7 @@
 								})}
 							</div>
 							<div class="lumina-batch-target-summary__est">
-								{#if state.activeRecipeId === "autolink"}
+								{#if isLocalOnlyRecipe}
 									{$tStore("batchStudio.execution.estimateLocalOnly", {
 										seconds: resourceEstimate.estimatedSeconds,
 									})}
@@ -700,9 +845,11 @@
 							<span class="lumina-batch-recipe-desc">{activeRecipeDef.desc}</span>
 						</div>
 
-						{#if state.activeRecipeId === "autolink"}
+						{#if isLocalOnlyRecipe}
 							<div class="lumina-batch-info-banner">
-								{$tStore("batchStudio.options.localOnlyAutolinkNotice")}
+								{state.activeRecipeId === "folder-move"
+									? $tStore("batchStudio.options.localOnlyMoveNotice")
+									: $tStore("batchStudio.options.localOnlyAutolinkNotice")}
 							</div>
 						{:else}
 							<div class="lumina-batch-field-row">
@@ -870,6 +1017,175 @@
 									{/if}
 								</div>
 							</div>
+						{:else if state.activeRecipeId === "folder-move"}
+							<div class="lumina-batch-options-group">
+								<div class="lumina-batch-field-row">
+									<label class="lumina-batch-label" for="lumina-batch-move-mode">
+										{$tStore("batchStudio.options.moveModeLabel")}
+									</label>
+									<select
+										id="lumina-batch-move-mode"
+										class="lumina-batch-select"
+										disabled={isRunningOrPaused}
+										value={moveConfig.mode}
+										onchange={(e) =>
+											patchMoveConfig({
+												mode: (e.currentTarget as HTMLSelectElement).value as FolderMoveMode,
+											})}
+									>
+										<option value="fixed">{$tStore("batchStudio.options.moveModeFixed")}</option>
+										<option value="by-tag">{$tStore("batchStudio.options.moveModeByTag")}</option>
+										<option value="ai-route">{$tStore("batchStudio.options.moveModeAiRoute")}</option>
+									</select>
+								</div>
+
+								{#if moveConfig.mode === "fixed"}
+									<div class="lumina-batch-field-row">
+										<label class="lumina-batch-label" for="lumina-batch-move-target">
+											{$tStore("batchStudio.options.moveTargetFolderLabel")}
+										</label>
+										<input
+											id="lumina-batch-move-target"
+											type="text"
+											list="lumina-batch-folder-list"
+											class="lumina-batch-input"
+											disabled={isRunningOrPaused}
+											placeholder={$tStore("batchStudio.options.moveTargetFolderPlaceholder")}
+											value={moveConfig.fixedTargetFolder}
+											oninput={(e) =>
+												patchMoveConfig({
+													fixedTargetFolder: (e.currentTarget as HTMLInputElement).value,
+												})}
+										/>
+									</div>
+								{:else if moveConfig.mode === "by-tag"}
+									<div class="lumina-batch-field-split">
+										<input
+											type="text"
+											class="lumina-batch-input"
+											disabled={isRunningOrPaused}
+											placeholder={$tStore("batchStudio.options.moveTagPlaceholder")}
+											bind:value={newMoveTagInput}
+										/>
+										<input
+											type="text"
+											list="lumina-batch-folder-list"
+											class="lumina-batch-input"
+											disabled={isRunningOrPaused}
+											placeholder={$tStore("batchStudio.options.moveTargetFolderPlaceholder")}
+											bind:value={newMoveTagFolderInput}
+										/>
+										<button
+											type="button"
+											class="lumina-batch-btn"
+											disabled={isRunningOrPaused}
+											onclick={addManualMoveTagMapping}
+										>
+											{$tStore("batchStudio.options.moveAddMappingBtn")}
+										</button>
+									</div>
+									{#if moveConfig.tagMappings.length > 0}
+										<div class="lumina-batch-tag-list">
+											{#each moveConfig.tagMappings as mapping, idx (`${mapping.tag}-${idx}`)}
+												<span class="lumina-batch-tag-pill is-editable">
+													<span>#{mapping.tag} → {mapping.targetFolder}</span>
+													<button
+														type="button"
+														class="lumina-batch-tag-remove"
+														onclick={() => removeManualMoveTagMapping(idx)}
+													>
+														×
+													</button>
+												</span>
+											{/each}
+										</div>
+									{/if}
+								{:else if moveConfig.mode === "ai-route"}
+									<div class="lumina-batch-field-split">
+										<input
+											type="text"
+											list="lumina-batch-folder-list"
+											class="lumina-batch-input"
+											disabled={isRunningOrPaused}
+											placeholder={$tStore("batchStudio.options.moveAiCandidatesPlaceholder")}
+											bind:value={newMoveCandidateInput}
+											onkeydown={(e) => {
+												if (e.key === "Enter") {
+													e.preventDefault();
+													addManualMoveCandidate();
+												}
+											}}
+										/>
+										<button
+											type="button"
+											class="lumina-batch-btn"
+											disabled={isRunningOrPaused}
+											onclick={addManualMoveCandidate}
+										>
+											{$tStore("batchStudio.options.moveAddCandidateBtn")}
+										</button>
+									</div>
+									{#if moveConfig.aiCandidateFolders.length > 0}
+										<div class="lumina-batch-tag-list">
+											{#each moveConfig.aiCandidateFolders as folder (folder)}
+												<span class="lumina-batch-tag-pill is-editable">
+													<span>{folder}</span>
+													<button
+														type="button"
+														class="lumina-batch-tag-remove"
+														onclick={() => removeManualMoveCandidate(folder)}
+													>
+														×
+													</button>
+												</span>
+											{/each}
+										</div>
+									{/if}
+								{/if}
+
+								{#if moveConfig.mode === "by-tag" || moveConfig.mode === "ai-route"}
+									<div class="lumina-batch-field-row">
+										<label class="lumina-batch-label" for="lumina-batch-move-fallback">
+											{$tStore("batchStudio.options.moveFallbackFolderLabel")}
+										</label>
+										<input
+											id="lumina-batch-move-fallback"
+											type="text"
+											list="lumina-batch-folder-list"
+											class="lumina-batch-input"
+											disabled={isRunningOrPaused}
+											placeholder={$tStore("batchStudio.options.moveFallbackFolderPlaceholder")}
+											value={moveConfig.fallbackFolder}
+											oninput={(e) =>
+												patchMoveConfig({
+													fallbackFolder: (e.currentTarget as HTMLInputElement).value,
+												})}
+										/>
+									</div>
+								{/if}
+
+								<div class="lumina-batch-field-row">
+									<label class="lumina-batch-label" for="lumina-batch-move-conflict">
+										{$tStore("batchStudio.options.moveConflictLabel")}
+									</label>
+									<select
+										id="lumina-batch-move-conflict"
+										class="lumina-batch-select"
+										disabled={isRunningOrPaused}
+										value={moveConfig.conflictPolicy}
+										onchange={(e) =>
+											patchMoveConfig({
+												conflictPolicy: (e.currentTarget as HTMLSelectElement)
+													.value as MoveConflictPolicy,
+											})}
+									>
+										<option value="rename-suffix">
+											{$tStore("batchStudio.options.moveConflictRename")}
+										</option>
+										<option value="skip">{$tStore("batchStudio.options.moveConflictSkip")}</option>
+									</select>
+								</div>
+							</div>
 						{/if}
 
 						<!-- 1개 샘플 테스트 영역 -->
@@ -949,6 +1265,16 @@
 												</div>
 											{/if}
 										{/if}
+									{:else if state.sampleResult.kind === "move"}
+										<div class="lumina-batch-sample-row">
+											<span class="lumina-batch-sample-key">→</span>
+											<span>
+												{state.sampleResult.moveFromPath} → <strong>{state.sampleResult.moveToPath}</strong>
+												{#if state.sampleResult.moveReason}
+													({state.sampleResult.moveReason})
+												{/if}
+											</span>
+										</div>
 									{:else}
 										<div class="lumina-batch-diff-preview is-compact">
 											{#each sampleLineDiff.filter((l) => l.type !== "same").slice(0, 10) as line, i (i)}
@@ -973,12 +1299,27 @@
 						<span class="lumina-batch-tab-icon" use:icon={"shield-check"}></span>
 						<span>{$tStore("batchStudio.execution.snapshotNotice")}</span>
 					</div>
-					<button
-						type="button"
-						class="mod-cta lumina-batch-start-btn"
-						disabled={resolution.matched.length === 0 || isRunningOrPaused}
-						onclick={() => void controller.startBatch()}
-					>
+					<div class="lumina-batch-progress-actions">
+						{#if state.scopeConfig.scopeMode === "folder" && state.scopeConfig.folderPath.trim()}
+							<button
+								type="button"
+								class="lumina-batch-btn"
+								class:is-locked={!$isProBatch}
+								onclick={saveCurrentAsWatchRule}
+							>
+								<span class="lumina-batch-tab-icon" use:icon={"folder-sync"}></span>
+								<span>
+									{$tStore("batchStudio.watch.saveAsRuleBtn")}
+									{#if !$isProBatch} 🔒{/if}
+								</span>
+							</button>
+						{/if}
+						<button
+							type="button"
+							class="mod-cta lumina-batch-start-btn"
+							disabled={resolution.matched.length === 0 || isRunningOrPaused}
+							onclick={() => void controller.startBatch()}
+						>
 						<span class="lumina-batch-tab-icon" use:icon={"zap"}></span>
 						<span>
 							{#if lockedPreviewCount > 0}
@@ -992,7 +1333,8 @@
 								})}
 							{/if}
 						</span>
-					</button>
+						</button>
+					</div>
 				</div>
 			{/if}
 		</section>
@@ -1175,7 +1517,14 @@
 								<button
 									type="button"
 									class="lumina-batch-btn-ghost"
-									onclick={() => openNoteInWorkspace(selectedItem.path)}
+									onclick={() =>
+										openNoteInWorkspace(
+											selectedItem.proposed?.kind === "move" &&
+												selectedItem.status === "applied" &&
+												selectedItem.proposed.moveToPath
+												? selectedItem.proposed.moveToPath
+												: selectedItem.path,
+										)}
 								>
 									<span class="lumina-batch-tab-icon" use:icon={"external-link"}></span>
 									<span>{$tStore("batchStudio.inspector.openNoteBtn")}</span>
@@ -1366,6 +1715,37 @@
 										</div>
 									{/if}
 								{/if}
+							{:else if selectedItem.proposed.kind === "move"}
+								<div class="lumina-batch-fm-block">
+									<div class="lumina-batch-compare-grid">
+										<div class="lumina-batch-compare-col">
+											<div class="lumina-batch-compare-label">
+												{$tStore("batchStudio.inspector.moveFromLabel")}
+											</div>
+											<div class="lumina-batch-compare-readonly">
+												{selectedItem.proposed.moveFromPath ?? selectedItem.path}
+											</div>
+										</div>
+										<div class="lumina-batch-compare-col">
+											<div class="lumina-batch-compare-label">
+												{$tStore("batchStudio.inspector.moveToLabel")}
+											</div>
+											<div class="lumina-batch-compare-readonly">
+												{selectedItem.proposed.moveToPath ?? "—"}
+											</div>
+										</div>
+									</div>
+									{#if selectedItem.proposed.moveReason}
+										<div>
+											<div class="lumina-batch-compare-label">
+												{$tStore("batchStudio.inspector.moveReasonLabel")}
+											</div>
+											<div class="lumina-batch-compare-readonly">
+												{selectedItem.proposed.moveReason}
+											</div>
+										</div>
+									{/if}
+								</div>
 							{:else if selectedItem.proposed.kind === "content"}
 								<!-- 본문 변경 인라인 Diff 뷰 -->
 								<div class="lumina-batch-diff-preview">

@@ -118,6 +118,16 @@ function shouldSmartSkipFromCache(
 		return existing !== undefined && existing !== null && String(existing).trim().length > 0;
 	}
 
+	if (recipeId === 'folder-move' && options.moveConfig?.mode === 'fixed') {
+		const rawTarget = options.moveConfig.fixedTargetFolder.trim();
+		if (!rawTarget) return false;
+		const normTarget = normalizePath(rawTarget.replace(/^\/+|\/+$/g, ''));
+		const normFile = normalizePath(file.path);
+		const lastSlash = normFile.lastIndexOf('/');
+		const currentFolder = lastSlash > 0 ? normFile.slice(0, lastSlash) : '';
+		return currentFolder === normTarget;
+	}
+
 	return false;
 }
 
@@ -185,12 +195,13 @@ export function estimateBatchResources(
 	files: readonly TFile[],
 	recipeId: BatchRecipeId,
 	providerType?: string,
+	moveMode?: string,
 ): BatchResourceEstimate {
 	if (files.length === 0) {
 		return { estimatedTokens: 0, estimatedSeconds: 0 };
 	}
 
-	if (recipeId === 'autolink') {
+	if (recipeId === 'autolink' || (recipeId === 'folder-move' && moveMode !== 'ai-route')) {
 		return {
 			estimatedTokens: 0,
 			estimatedSeconds: Math.max(1, Math.ceil(files.length * 0.05)),
@@ -203,7 +214,7 @@ export function estimateBatchResources(
 		const sampleChars = Math.min(Math.max(file.stat?.size ?? 800, 120), 3000);
 		const placeholderText = 'a'.repeat(sampleChars);
 		const inputTokens = estimateTokens(placeholderText, providerType) + 180;
-		const outputTokens = recipeId === 'summary-callout' ? 180 : 140;
+		const outputTokens = recipeId === 'summary-callout' ? 180 : recipeId === 'folder-move' ? 80 : 140;
 		totalTokens += inputTokens + outputTokens;
 	}
 

@@ -36,7 +36,9 @@ import type {
 	BatchSnapshotEntry,
 } from '../../shared/types/batch.types';
 import { normalizeError } from '../../shared/utils/errorUtils';
+import { ensureFolderExists } from '../../shared/utils/fileUtils';
 import { formatLlmError } from '../../shared/utils/llmErrorFormatter';
+import { applyProposedToFile } from './batchApplyHelper';
 import { resolveTargetFiles } from './batchTargetResolver';
 import {
 	executeRecipeForFile,
@@ -108,7 +110,11 @@ export class BatchStudioController {
 			getActiveProject()?.ragExcludedPaths ?? [],
 		);
 
-		const targetPath = explicitPath || state.sampleFilePath || matched[0]?.path || '';
+		const validSamplePath =
+			state.sampleFilePath && matched.some((m) => m.path === state.sampleFilePath)
+				? state.sampleFilePath
+				: '';
+		const targetPath = explicitPath || validSamplePath || matched[0]?.path || '';
 		if (!targetPath) {
 			patchBatchState({
 				sampleResult: null,
@@ -146,6 +152,7 @@ export class BatchStudioController {
 				{
 					skipIfAlreadyHasTarget: state.scopeConfig.skipIfAlreadyHasTarget,
 					minContentLength: state.scopeConfig.minContentLength,
+					excludedPaths: getActiveProject()?.ragExcludedPaths ?? [],
 				},
 			);
 
@@ -189,8 +196,13 @@ export class BatchStudioController {
 			return;
 		}
 
-		// LLM 기반 레시피는 시작 전 모델 및 프롬프트 유효성을 선검증
-		if (state.activeRecipeId !== 'autolink') {
+		// LLM 기반 레시피 및 폴더 이동 설정 선검증
+		const needsLlm =
+			state.activeRecipeId !== 'autolink' &&
+			(state.activeRecipeId !== 'folder-move' ||
+				state.recipeOptions.moveConfig?.mode === 'ai-route');
+
+		if (needsLlm) {
 			try {
 				resolveBatchProviderAndModel(this.plugin, state.recipeOptions);
 			} catch (err) {
@@ -202,6 +214,30 @@ export class BatchStudioController {
 				!state.recipeOptions.customPrompt.trim()
 			) {
 				new Notice(t('batchStudio.options.customPromptPlaceholder'));
+				return;
+			}
+		}
+
+		if (state.activeRecipeId === 'folder-move') {
+			const moveCfg = state.recipeOptions.moveConfig;
+			if (!moveCfg || moveCfg.mode === 'none') {
+				new Notice(t('batchStudio.options.moveNoTargetNotice'));
+				return;
+			}
+			if (moveCfg.mode === 'fixed' && !moveCfg.fixedTargetFolder.trim()) {
+				new Notice(t('batchStudio.options.moveNoTargetNotice'));
+				return;
+			}
+			if (
+				moveCfg.mode === 'by-tag' &&
+				moveCfg.tagMappings.length === 0 &&
+				!moveCfg.fallbackFolder.trim()
+			) {
+				new Notice(t('batchStudio.options.moveNoRulesNotice'));
+				return;
+			}
+			if (moveCfg.mode === 'ai-route' && moveCfg.aiCandidateFolders.length === 0) {
+				new Notice(t('batchStudio.options.moveNoCandidatesNotice'));
 				return;
 			}
 		}
@@ -381,10 +417,21 @@ export class BatchStudioController {
 
 		try {
 			const originalRawContent = await this.app.vault.read(abstractFile);
-			await this.applyProposedToFile(abstractFile, item.proposed);
+			const applyRes = await this.applyProposedToFile(abstractFile, item.proposed);
 
 			this.recordSnapshotsToHistory(
-				[{ path: item.path, originalRawContent }],
+				[
+					{
+						path: item.path,
+						originalRawContent,
+						...(applyRes.moved
+							? {
+									movedFromPath: applyRes.moved.movedFromPath,
+									movedToPath: applyRes.moved.movedToPath,
+								}
+							: {}),
+					},
+				],
 				state.activeRecipeId,
 			);
 			updateBatchQueueItem(item.path, { status: 'applied', selected: false });
@@ -452,8 +499,17 @@ export class BatchStudioController {
 
 			try {
 				const originalRawContent = await this.app.vault.read(abstractFile);
-				await this.applyProposedToFile(abstractFile, item.proposed);
-				snapshots.push({ path: item.path, originalRawContent });
+				const applyRes = await this.applyProposedToFile(abstractFile, item.proposed);
+				snapshots.push({
+					path: item.path,
+					originalRawContent,
+					...(applyRes.moved
+						? {
+								movedFromPath: applyRes.moved.movedFromPath,
+								movedToPath: applyRes.moved.movedToPath,
+							}
+						: {}),
+				});
 				updateBatchQueueItem(item.path, { status: 'applied', selected: false });
 			} catch (err) {
 				const msg = formatLlmError(err);
@@ -492,10 +548,37 @@ export class BatchStudioController {
 		const currentQueuePaths = new Set(getBatchState().queue.map((q) => q.path));
 
 		for (const snap of entry.snapshots) {
-			const abstractFile = this.app.vault.getAbstractFileByPath(snap.path);
+			const lookupPath = snap.movedToPath ?? snap.path;
+			const abstractFile = this.app.vault.getAbstractFileByPath(lookupPath);
 			if (!(abstractFile instanceof TFile)) continue;
 			try {
-				await this.app.vault.modify(abstractFile, snap.originalRawContent);
+				let targetFile: TFile = abstractFile;
+				if (snap.movedToPath && snap.movedFromPath && snap.movedToPath !== snap.movedFromPath) {
+					const occupied = this.app.vault.getAbstractFileByPath(snap.movedFromPath);
+					if (occupied && occupied !== abstractFile) {
+						debugLogger.logWarn(
+							'batch',
+							`Rollback skipped move: target already exists at ${snap.movedFromPath}`,
+						);
+						continue;
+					}
+					await ensureFolderExists(this.app, snap.movedFromPath);
+					await this.app.fileManager.renameFile(abstractFile, snap.movedFromPath);
+					const movedBack = this.app.vault.getAbstractFileByPath(snap.movedFromPath);
+					if (movedBack instanceof TFile) {
+						targetFile = movedBack;
+					}
+				}
+
+				if (snap.movedToPath) {
+					const currentContent = await this.app.vault.read(targetFile);
+					if (currentContent !== snap.originalRawContent) {
+						await this.app.vault.modify(targetFile, snap.originalRawContent);
+					}
+				} else {
+					await this.app.vault.modify(targetFile, snap.originalRawContent);
+				}
+
 				restored++;
 				if (currentQueuePaths.has(snap.path)) {
 					const item = getBatchState().queue.find((q) => q.path === snap.path);
@@ -659,6 +742,7 @@ export class BatchStudioController {
 					{
 						skipIfAlreadyHasTarget: scopeConfig.skipIfAlreadyHasTarget,
 						minContentLength: scopeConfig.minContentLength,
+						excludedPaths: getActiveProject()?.ragExcludedPaths ?? [],
 					},
 					signal,
 				);
@@ -700,43 +784,13 @@ export class BatchStudioController {
 	private async applyProposedToFile(
 		file: TFile,
 		proposed: BatchProposedChange,
-	): Promise<void> {
-		if (proposed.kind === 'frontmatter') {
-			if (typeof this.app.fileManager?.processFrontMatter !== 'function') {
-				throw new Error('Obsidian fileManager.processFrontMatter is unavailable.');
-			}
-
-			await this.app.fileManager.processFrontMatter(file, (fmObj) => {
-				const fm = fmObj as Record<string, unknown>;
-				if (proposed.customFmKey) {
-					fm[proposed.customFmKey] = proposed.afterCustomFmVal ?? '';
-					return;
-				}
-
-				if (proposed.afterTags !== undefined) {
-					const hadBefore = (proposed.beforeTags?.length ?? 0) > 0;
-					if (proposed.afterTags.length > 0) {
-						fm.tags = [...proposed.afterTags];
-					} else if (hadBefore) {
-						delete fm.tags;
-					}
-				}
-
-				if (proposed.afterDescription !== undefined) {
-					const hadBeforeDesc = (proposed.beforeDescription?.length ?? 0) > 0;
-					if (proposed.afterDescription.trim().length > 0) {
-						fm.description = proposed.afterDescription.trim();
-					} else if (hadBeforeDesc) {
-						delete fm.description;
-					}
-				}
-			});
-			return;
-		}
-
-		if (proposed.afterContent !== undefined) {
-			await this.app.vault.modify(file, proposed.afterContent);
-		}
+	) {
+		const state = getBatchState();
+		return applyProposedToFile(this.app, file, proposed, {
+			conflictPolicy: state.recipeOptions.moveConfig?.conflictPolicy ?? 'rename-suffix',
+			createFolderIfMissing: state.recipeOptions.moveConfig?.createFolderIfMissing ?? true,
+			excludedPaths: getActiveProject()?.ragExcludedPaths ?? [],
+		});
 	}
 
 	/** 현재 파일 이후의 다음 'staged' 상태 파일 경로를 탐색 (끝에 도달하면 앞에서부터 순환 탐색) */
