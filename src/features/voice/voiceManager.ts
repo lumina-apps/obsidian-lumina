@@ -26,6 +26,7 @@ import {
 import { debugLogger } from '../../shared/debugLogger';
 import { t } from '../../shared/locales/helpers';
 import type {
+	PendingVoiceItem,
 	SttTranscriptionResult,
 	TranscriptSegment,
 	VoiceEditorPosition,
@@ -42,6 +43,12 @@ import {
 	saveBackupSession,
 } from './audio/audioRecoveryStore';
 import { extensionForMimeType, VoiceAudioRecorder } from './audio/audioRecorder';
+import {
+	buildPendingVoiceBlock,
+	generatePendingVoiceId,
+	replacePendingVoiceBlock,
+} from './deferred/pendingVoiceMarker';
+import { PendingVoiceScanner } from './deferred/pendingVoiceScanner';
 import { assembleVoiceNoteMarkdown, extractUserMemoDiff } from './llm/voicePrompts';
 import { processTranscriptToNote } from './llm/voiceNoteProcessor';
 import { resolveSttEngine } from './stt/sttResolver';
@@ -109,6 +116,9 @@ export class VoiceNoteManager {
 	private isDestroyed = false;
 	private autoStoppingOnLimit = false;
 	private captionsEnabled = false;
+	private isDeferredCaptureSession = false;
+	private pendingScanner: PendingVoiceScanner | null = null;
+	private isProcessingPending = false;
 
 	constructor(plugin: LuminaPlugin) {
 		this.plugin = plugin;
@@ -149,6 +159,21 @@ export class VoiceNoteManager {
 		if (recoverable) {
 			patchVoiceState({ hasRecoverableSession: true });
 			this.ensureOverlayMounted();
+		}
+
+		// 데스크톱 환경에서는 모바일에서 동기화된 대기 음성 노트를 자동 감지
+		if (!Platform.isMobile && !this.pendingScanner) {
+			this.pendingScanner = new PendingVoiceScanner(this.plugin.app, (items) => {
+				if (this.isDestroyed) return;
+				patchVoiceState({ pendingItems: items });
+				const state = getVoiceState();
+				if (items.length > 0 && !state.pendingBannerDismissed) {
+					this.ensureOverlayMounted();
+				} else if (items.length === 0) {
+					this.unmountOverlayIfIdle();
+				}
+			});
+			void this.pendingScanner.start();
 		}
 	}
 
@@ -207,9 +232,7 @@ export class VoiceNoteManager {
 		}
 
 		const prefs = getVoicePreferences(this.plugin.settings);
-		if (!this.preflightMobileStt(prefs)) {
-			return;
-		}
+		const deferred = this.shouldUseDeferredCapture(prefs);
 
 		const view = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
 		this.targetFile = view?.file ?? this.plugin.app.workspace.getActiveFile() ?? null;
@@ -223,6 +246,7 @@ export class VoiceNoteManager {
 		const isProVoice = canUseProFeature('voice-note');
 		this.autoStoppingOnLimit = false;
 		this.captionsEnabled = false;
+		this.isDeferredCaptureSession = deferred;
 		this.liveInsertStart = this.targetEditor ? this.targetEditor.getCursor() : null;
 		this.liveInsertEnd = this.liveInsertStart ? { ...this.liveInsertStart } : null;
 		this.liveQueuePromise = Promise.resolve();
@@ -238,6 +262,7 @@ export class VoiceNoteManager {
 			progressDetail: '',
 			errorMessage: null,
 			reviewResult: null,
+			isDeferredCapture: deferred,
 		});
 
 		this.ensureOverlayMounted();
@@ -273,7 +298,10 @@ export class VoiceNoteManager {
 				});
 			},
 			onSpeechChunk: (chunk) => {
-				// 모바일 기본 post-process 모드에서 자막이 꺼져 있으면 불필요한 클라우드 이중 업로드 생략
+				// 지연 저장 모드이거나 모바일 기본 post-process 모드에서 자막이 꺼져 있으면 불필요한 클라우드 업로드 생략
+				if (this.isDeferredCaptureSession) {
+					return;
+				}
 				if (Platform.isMobile && prefs.recordMode === 'post-process' && !this.captionsEnabled) {
 					return;
 				}
@@ -337,6 +365,7 @@ export class VoiceNoteManager {
 	cancelRecording(): void {
 		this.autoStoppingOnLimit = false;
 		this.captionsEnabled = false;
+		this.isDeferredCaptureSession = false;
 		this.abortController?.abort();
 		this.abortController = null;
 		this.recorder?.cancel();
@@ -349,24 +378,68 @@ export class VoiceNoteManager {
 			liveSegments: [],
 			errorMessage: null,
 			hasRecoverableSession: false,
+			isDeferredCapture: false,
 		});
 		this.unmountOverlayIfIdle();
 	}
 
 	/**
 	 * 진행 중인 녹음을 완료하고 STT + LLM 정리 및 노트 반영을 수행합니다.
+	 * 모바일 지연 캡처 세션인 경우에는 오디오를 볼트에 저장하고 대기 마커만 삽입합니다.
 	 */
 	async stopAndProcess(): Promise<void> {
 		if (!this.recorder || !canUseFeature('voice-note')) return;
 
 		const prefs = getVoicePreferences(this.plugin.settings);
 		const templateId = canUseProFeature('voice-note') ? getVoiceState().templateId : 'verbatim';
+		const isDeferred = this.isDeferredCaptureSession;
+		this.isDeferredCaptureSession = false;
 		const recorder = this.recorder;
 		this.recorder = null;
 		this.autoStoppingOnLimit = false;
 
 		const recorded = await recorder.stop();
 		await this.liveQueuePromise;
+
+		const filename = `recording_${formatDateStampForFile(new Date())}.${recorded.extension}`;
+
+		if (isDeferred) {
+			this.liveInsertStart = null;
+			this.liveInsertEnd = null;
+			try {
+				if (recorded.fullBlob.size === 0) {
+					new Notice(t('voiceNote.notices.noAudioRecorded'));
+					await clearBackupSession();
+					patchVoiceState({
+						status: 'idle',
+						elapsedSec: 0,
+						audioLevel: 0,
+						isDeferredCapture: false,
+						hasRecoverableSession: false,
+					});
+					this.unmountOverlayIfIdle();
+					return;
+				}
+
+				await this.saveDeferredVoiceNote(recorded.fullBlob, filename, templateId, prefs.audioFolder);
+				await clearBackupSession();
+				patchVoiceState({
+					status: 'idle',
+					elapsedSec: 0,
+					audioLevel: 0,
+					isDeferredCapture: false,
+					hasRecoverableSession: false,
+				});
+				this.unmountOverlayIfIdle();
+			} catch (err: unknown) {
+				patchVoiceState({ isDeferredCapture: false });
+				this.handlePipelineError(err);
+				if (await hasBackupSession()) {
+					patchVoiceState({ hasRecoverableSession: true });
+				}
+			}
+			return;
+		}
 
 		const currentNoteContent = this.targetEditor
 			? this.targetEditor.getValue()
@@ -378,7 +451,6 @@ export class VoiceNoteManager {
 				? extractUserMemoDiff(this.initialNoteContent, currentNoteContent)
 				: '';
 
-		const filename = `recording_${formatDateStampForFile(new Date())}.${recorded.extension}`;
 		const precomputedSegments =
 			prefs.recordMode === 'live-insert' ? getVoiceState().liveSegments : [];
 
@@ -436,35 +508,28 @@ export class VoiceNoteManager {
 	}
 
 	/**
-	 * 모바일 환경에서 로컬 Whisper 또는 유효하지 않은 STT 설정이 선택되었는지 사전 점검합니다.
+	 * 모바일 환경에서 즉시 STT 대신 볼트 저장 전용(데스크톱 지연 변환) 모드를 사용할지 판별합니다.
+	 * - 데스크톱은 항상 false
+	 * - 모바일에서 'defer-to-desktop' 설정 시 true
+	 * - 모바일에서 사용 가능한 클라우드 STT 엔진이 없거나 local-whisper 선택 시 true
 	 */
-	private preflightMobileStt(prefs: ReturnType<typeof getVoicePreferences>): boolean {
-		if (!Platform.isMobile) return true;
+	private shouldUseDeferredCapture(prefs: ReturnType<typeof getVoicePreferences>): boolean {
+		if (!Platform.isMobile) return false;
+		if (prefs.mobileCaptureMode === 'defer-to-desktop') return true;
 		try {
 			resolveSttEngine(this.plugin.app, this.plugin.settings.connections.providers, prefs);
-			return true;
-		} catch (err: unknown) {
-			const msg = normalizeError(err).message;
-			new Notice(msg);
-			patchVoiceState({
-				status: 'error',
-				errorMessage: msg,
-				audioLevel: 0,
-			});
 			return false;
+		} catch {
+			return true;
 		}
 	}
 
 	/**
-	 * 시스템 파일 선택기를 열어 로컬 오디오 파일을 업로드·변환합니다.
+	 * 시스템 파일 선택기를 열어 로컬 오디오 파일을 업로드·변환하거나(또는 모바일 지연 저장),
+	 * 볼트에 저장하고 대기 마커를 삽입합니다.
 	 */
 	openAudioFilePicker(): void {
 		if (!canUseFeature('voice-note') || this.isDestroyed || typeof document === 'undefined') return;
-
-		const prefs = getVoicePreferences(this.plugin.settings);
-		if (!this.preflightMobileStt(prefs)) {
-			return;
-		}
 
 		const input = document.body.createEl('input', {
 			cls: 'lumina-voice-file-input',
@@ -518,13 +583,30 @@ export class VoiceNoteManager {
 				this.liveInsertStart = null;
 				this.liveInsertEnd = null;
 
+				const templateId = canUseProFeature('voice-note') ? latestPrefs.defaultTemplate : 'verbatim';
+				const uploadFilename = file.name || `upload_${formatDateStampForFile(new Date())}.m4a`;
+
+				if (this.shouldUseDeferredCapture(latestPrefs)) {
+					try {
+						await this.saveDeferredVoiceNote(
+							file,
+							uploadFilename,
+							templateId,
+							latestPrefs.audioFolder,
+						);
+					} catch (err: unknown) {
+						this.handlePipelineError(err);
+					}
+					return;
+				}
+
 				this.ensureOverlayMounted();
 				this.abortController = new AbortController();
 
 				await this.runTranscriptionAndFormattingPipeline({
 					blob: file,
-					filename: file.name || `upload_${formatDateStampForFile(new Date())}.m4a`,
-					templateId: canUseProFeature('voice-note') ? latestPrefs.defaultTemplate : 'verbatim',
+					filename: uploadFilename,
+					templateId,
 					userMemoDiff: '',
 					precomputedSegments: [],
 					existingAudioVaultPath: null,
@@ -738,12 +820,221 @@ export class VoiceNoteManager {
 		this.unmountOverlayIfIdle();
 	}
 
+	/** 데스크톱 동기화 대기 음성 배너 닫기 */
+	dismissPendingBanner(): void {
+		patchVoiceState({ pendingBannerDismissed: true });
+		this.unmountOverlayIfIdle();
+	}
+
+	/**
+	 * 데스크톱에서 동기화된 모든 준비 완료 대기 음성 노트를 순차 변환합니다.
+	 */
+	async processAllPendingItems(): Promise<void> {
+		if (!canUseFeature('voice-note') || this.isDestroyed) return;
+		if (Platform.isMobile) {
+			new Notice(t('voiceNote.deferred.desktopOnlyNotice'));
+			return;
+		}
+		if (this.isProcessingPending) return;
+
+		const { status } = getVoiceState();
+		if (status === 'recording' || status === 'paused' || status === 'transcribing' || status === 'processing') {
+			return;
+		}
+
+		const allItems = this.pendingScanner
+			? await this.pendingScanner.refreshNow()
+			: getVoiceState().pendingItems;
+		patchVoiceState({ pendingItems: allItems });
+
+		const readyItems = allItems.filter((item) => item.status === 'ready');
+		if (readyItems.length === 0) {
+			if (allItems.some((item) => item.status === 'waiting-audio')) {
+				new Notice(t('voiceNote.deferred.waitingAudioNotice'));
+			} else {
+				new Notice(t('voiceNote.deferred.noPendingNotice'));
+			}
+			return;
+		}
+
+		if (readyItems.length === 1) {
+			await this.processPendingItem(readyItems[0], { showReviewBar: true, manageLifecycle: true });
+			return;
+		}
+
+		this.isProcessingPending = true;
+		this.ensureOverlayMounted();
+		this.abortController = new AbortController();
+
+		let successCount = 0;
+		try {
+			for (let i = 0; i < readyItems.length; i++) {
+				if (this.isDestroyed || this.abortController.signal.aborted) break;
+				const item = readyItems[i];
+				patchVoiceState({
+					status: 'transcribing',
+					progressStep: 1,
+					progressDetail: t('voiceNote.deferred.batchProgress', {
+						current: i + 1,
+						total: readyItems.length,
+					}),
+				});
+				const ok = await this.processPendingItem(item, {
+					showReviewBar: false,
+					manageLifecycle: false,
+				});
+				if (ok) {
+					successCount++;
+				} else if (this.abortController?.signal.aborted) {
+					break;
+				}
+			}
+
+			if (successCount > 0) {
+				new Notice(t('voiceNote.deferred.batchCompletedNotice', { count: successCount }));
+			}
+		} finally {
+			this.isProcessingPending = false;
+			if (!this.isDestroyed) {
+				const currentStatus = getVoiceState().status;
+				if (currentStatus === 'transcribing' || currentStatus === 'processing') {
+					patchVoiceState({
+						status: 'idle',
+						progressStep: 0,
+						progressDetail: '',
+					});
+				}
+				if (this.pendingScanner) {
+					const refreshed = await this.pendingScanner.refreshNow();
+					patchVoiceState({ pendingItems: refreshed });
+				}
+				this.unmountOverlayIfIdle();
+			}
+		}
+	}
+
+	/**
+	 * 단일 대기 음성 항목을 변환해 해당 마크다운 노트의 마커 위치에 제자리 반영합니다.
+	 */
+	async processPendingItem(
+		item: PendingVoiceItem,
+		options: { showReviewBar?: boolean; manageLifecycle?: boolean } = {},
+	): Promise<boolean> {
+		if (!canUseFeature('voice-note') || this.isDestroyed) return false;
+		const showReviewBar = options.showReviewBar !== false;
+		const manageLifecycle = options.manageLifecycle !== false;
+
+		const noteAbs = this.plugin.app.vault.getAbstractFileByPath(item.notePath);
+		const audioAbs = this.plugin.app.vault.getAbstractFileByPath(item.audioPath);
+		if (!(noteAbs instanceof TFile) || !(audioAbs instanceof TFile)) {
+			return false;
+		}
+
+		if (manageLifecycle) {
+			this.ensureOverlayMounted();
+			this.abortController = new AbortController();
+		}
+
+		const prefs = getVoicePreferences(this.plugin.settings);
+		const signal = this.abortController?.signal;
+		const effectiveTemplate: VoiceTemplateId = canUseProFeature('voice-note')
+			? item.templateId
+			: 'verbatim';
+
+		if (manageLifecycle) {
+			patchVoiceState({
+				status: 'transcribing',
+				audioLevel: 0,
+				progressStep: 1,
+				progressDetail: t('voiceNote.progress.stepTranscribing'),
+			});
+		}
+
+		try {
+			const binary = await this.plugin.app.vault.readBinary(audioAbs);
+			const blob = new Blob([binary], { type: mimeFromAudioExtension(audioAbs.extension) });
+			const allowed = await this.checkFreeAudioDurationAllowed(blob);
+			if (!allowed) return false;
+
+			const output = await this.transcribeAndFormatAudio({
+				blob,
+				filename: audioAbs.name,
+				templateId: effectiveTemplate,
+				targetFile: noteAbs,
+				userMemoDiff: '',
+				precomputedSegments: [],
+				existingAudioVaultPath: item.audioPath,
+				keepAudioInVault: true,
+				prefs,
+				signal,
+			});
+
+			if (!output) return false;
+
+			let didReplace = false;
+			if (typeof this.plugin.app.vault.process === 'function') {
+				await this.plugin.app.vault.process(noteAbs, (currentContent) => {
+					const res = replacePendingVoiceBlock(currentContent, item.id, output.finalMarkdown);
+					didReplace = res.replaced;
+					return res.updated;
+				});
+			} else {
+				const currentContent = await this.plugin.app.vault.read(noteAbs);
+				const res = replacePendingVoiceBlock(currentContent, item.id, output.finalMarkdown);
+				didReplace = res.replaced;
+				if (res.replaced) {
+					await this.plugin.app.vault.modify(noteAbs, res.updated);
+				}
+			}
+
+			if (this.pendingScanner) {
+				const refreshed = await this.pendingScanner.refreshNow();
+				patchVoiceState({ pendingItems: refreshed });
+			}
+
+			if (showReviewBar && didReplace) {
+				this.targetFile = noteAbs;
+				this.targetEditor = null;
+				const reviewResult: VoiceReviewResult = {
+					targetFilePath: noteAbs.path,
+					rawTranscript: output.rawTranscript,
+					segments: output.segments,
+					formattedMarkdown: output.finalMarkdown,
+					audioVaultPath: item.audioPath,
+					templateId: output.effectiveTemplateId,
+					userMemoSnapshot: '',
+					createdNewFile: false,
+				};
+				patchVoiceState({
+					status: 'review',
+					templateId: output.effectiveTemplateId,
+					reviewResult,
+					progressStep: 0,
+					progressDetail: '',
+				});
+			}
+
+			return didReplace;
+		} catch (err: unknown) {
+			if (manageLifecycle) {
+				this.handlePipelineError(err);
+			} else if ((err as { name?: string })?.name !== 'AbortError') {
+				debugLogger.logError('voice', normalizeError(err, String(err)));
+			}
+			return false;
+		}
+	}
+
 	/**
 	 * 매니저의 모든 리소스(마이크, 네트워크 요청, 워커, DOM, 리스너)를 즉시 해제합니다.
 	 */
 	destroy(): void {
 		this.isDestroyed = true;
 		this.autoStoppingOnLimit = false;
+		this.isDeferredCaptureSession = false;
+		this.isProcessingPending = false;
+		this.pendingScanner?.destroy();
+		this.pendingScanner = null;
 		this.abortController?.abort();
 		this.abortController = null;
 		this.recorder?.cancel();
@@ -849,6 +1140,176 @@ export class VoiceNoteManager {
 		return resolved;
 	}
 
+	private async saveDeferredVoiceNote(
+		blob: Blob,
+		filename: string,
+		templateId: VoiceTemplateId,
+		audioFolder: string,
+	): Promise<void> {
+		const audioVaultPath = await this.saveAudioToVault(blob, filename, audioFolder);
+		const block = buildPendingVoiceBlock({
+			id: generatePendingVoiceId(),
+			audioVaultPath,
+			templateId,
+			pendingNoticeText: t('voiceNote.deferred.calloutPending'),
+		});
+		await this.writeResultToNote(block);
+		new Notice(t('voiceNote.deferred.savedForDesktopNotice'));
+	}
+
+	private async transcribeAndFormatAudio(params: {
+		blob: Blob;
+		filename: string;
+		templateId: VoiceTemplateId;
+		targetFile: TFile | null;
+		userMemoDiff: string;
+		precomputedSegments: TranscriptSegment[];
+		existingAudioVaultPath: string | null;
+		keepAudioInVault?: boolean;
+		prefs: ReturnType<typeof getVoicePreferences>;
+		signal?: AbortSignal;
+	}): Promise<{
+		rawTranscript: string;
+		segments: TranscriptSegment[];
+		finalMarkdown: string;
+		effectiveTemplateId: VoiceTemplateId;
+		audioVaultPath: string | null;
+	} | null> {
+		const { prefs, signal } = params;
+		let segments: TranscriptSegment[] = [...params.precomputedSegments];
+		let rawTranscript = segments.map((s) => s.text).join(' ').trim();
+
+		if (segments.length === 0) {
+			if (params.blob.size === 0) {
+				return null;
+			}
+
+			const engine = this.getOrCreateSttEngine(prefs);
+			const chunks = await splitAudioBlobForApi(params.blob, params.filename);
+			if (chunks.length === 0) {
+				return null;
+			}
+
+			const isProVoice = canUseProFeature('voice-note');
+			const vocab = isProVoice ? prefs.customVocabulary : [];
+			const promptHint = [params.targetFile?.basename, ...vocab]
+				.filter(Boolean)
+				.join(', ');
+
+			const allResults: SttTranscriptionResult[] = [];
+			for (let i = 0; i < chunks.length; i++) {
+				if (signal?.aborted || this.isDestroyed) return null;
+				if (chunks.length > 1) {
+					patchVoiceState({
+						progressDetail: t('voiceNote.progress.chunkProgress', {
+							current: i + 1,
+							total: chunks.length,
+						}),
+					});
+				}
+				const chunk = chunks[i];
+				const result = await engine.transcribe(chunk.blob, chunk.filename, {
+					language: prefs.language,
+					promptHint,
+					offsetSec: chunk.offsetSec,
+					signal,
+					onProgress: (pct) => {
+						patchVoiceState({
+							progressDetail: t('voiceNote.progress.loadingLocalModel', {
+								pct: Math.round(pct * 100),
+							}),
+						});
+					},
+				});
+				allResults.push(result);
+			}
+
+			segments = allResults.flatMap((r) => r.segments);
+			rawTranscript = allResults
+				.map((r) => r.text.trim())
+				.filter(Boolean)
+				.join('\n')
+				.trim();
+		}
+
+		if (!rawTranscript.trim()) {
+			return null;
+		}
+
+		// 볼트에 오디오 파일 저장 (옵션 활성 시 또는 지연 처리 보존 모드)
+		let audioVaultPath: string | null = params.existingAudioVaultPath;
+		if (
+			!audioVaultPath &&
+			(params.keepAudioInVault || prefs.audioStorageMode === 'vault') &&
+			params.blob.size > 0
+		) {
+			audioVaultPath = await this.saveAudioToVault(params.blob, params.filename, prefs.audioFolder);
+		}
+
+		const isProVoice = canUseProFeature('voice-note');
+		let finalMarkdown: string;
+		let effectiveTemplateId: VoiceTemplateId = params.templateId;
+
+		if (isProVoice) {
+			patchVoiceState({
+				status: 'processing',
+				progressStep: 2,
+				progressDetail: t('voiceNote.progress.stepLinking'),
+			});
+
+			const llmOutput = await processTranscriptToNote({
+				plugin: this.plugin,
+				prefs,
+				templateId: params.templateId,
+				rawTranscript,
+				segments,
+				targetFile: params.targetFile,
+				userMemoDiff: params.userMemoDiff,
+				signal,
+				onStage: (step) => {
+					patchVoiceState({
+						progressStep: step,
+						progressDetail:
+							step === 2
+								? t('voiceNote.progress.stepLinking')
+								: t('voiceNote.progress.stepFormatting'),
+					});
+				},
+			});
+
+			if (!llmOutput.usedLlm) {
+				new Notice(t('voiceNote.notices.noLlmAvailable'));
+			}
+
+			finalMarkdown = assembleVoiceNoteMarkdown({
+				formattedBody: llmOutput.formattedBody,
+				segments,
+				rawTranscript,
+				audioVaultPath,
+				includeRawTranscript: prefs.includeRawTranscript,
+			});
+		} else {
+			// 무료 모드: LLM 정리·자동 위키링크 없이 순수 STT 받아쓰기만 반영
+			effectiveTemplateId = 'verbatim';
+			finalMarkdown = assembleVoiceNoteMarkdown({
+				formattedBody: rawTranscript.trim(),
+				segments,
+				rawTranscript,
+				audioVaultPath,
+				includeRawTranscript:
+					Boolean(audioVaultPath) && prefs.includeRawTranscript && segments.length > 0,
+			});
+		}
+
+		return {
+			rawTranscript,
+			segments,
+			finalMarkdown,
+			effectiveTemplateId,
+			audioVaultPath,
+		};
+	}
+
 	private async runTranscriptionAndFormattingPipeline(params: {
 		blob: Blob;
 		filename: string;
@@ -868,145 +1329,30 @@ export class VoiceNoteManager {
 		});
 
 		try {
-			let segments: TranscriptSegment[] = [...params.precomputedSegments];
-			let rawTranscript = segments.map((s) => s.text).join(' ').trim();
+			const output = await this.transcribeAndFormatAudio({
+				...params,
+				targetFile: this.targetFile,
+				prefs,
+				signal,
+			});
 
-			if (segments.length === 0) {
-				if (params.blob.size === 0) {
-					patchVoiceState({ status: 'idle' });
-					new Notice(t('voiceNote.notices.noAudioRecorded'));
-					this.unmountOverlayIfIdle();
-					return true;
-				}
-
-				const engine = this.getOrCreateSttEngine(prefs);
-				const chunks = await splitAudioBlobForApi(params.blob, params.filename);
-				if (chunks.length === 0) {
-					patchVoiceState({ status: 'idle' });
-					new Notice(t('voiceNote.notices.noAudioRecorded'));
-					this.unmountOverlayIfIdle();
-					return true;
-				}
-
-				const isProVoice = canUseProFeature('voice-note');
-				const vocab = isProVoice ? prefs.customVocabulary : [];
-				const promptHint = [this.targetFile?.basename, ...vocab]
-					.filter(Boolean)
-					.join(', ');
-
-				const allResults: SttTranscriptionResult[] = [];
-				for (let i = 0; i < chunks.length; i++) {
-					if (signal?.aborted || this.isDestroyed) return false;
-					if (chunks.length > 1) {
-						patchVoiceState({
-							progressDetail: t('voiceNote.progress.chunkProgress', {
-								current: i + 1,
-								total: chunks.length,
-							}),
-						});
-					}
-					const chunk = chunks[i];
-					const result = await engine.transcribe(chunk.blob, chunk.filename, {
-						language: prefs.language,
-						promptHint,
-						offsetSec: chunk.offsetSec,
-						signal,
-						onProgress: (pct) => {
-							patchVoiceState({
-								progressDetail: t('voiceNote.progress.loadingLocalModel', {
-									pct: Math.round(pct * 100),
-								}),
-							});
-						},
-					});
-					allResults.push(result);
-				}
-
-				segments = allResults.flatMap((r) => r.segments);
-				rawTranscript = allResults
-					.map((r) => r.text.trim())
-					.filter(Boolean)
-					.join('\n')
-					.trim();
-			}
-
-			if (!rawTranscript.trim()) {
+			if (!output) {
+				if (signal?.aborted || this.isDestroyed) return false;
 				patchVoiceState({ status: 'idle' });
 				new Notice(t('voiceNote.notices.noAudioRecorded'));
 				this.unmountOverlayIfIdle();
 				return true;
 			}
 
-			// 볼트에 오디오 파일 저장 (옵션 활성 시)
-			let audioVaultPath: string | null = params.existingAudioVaultPath;
-			if (!audioVaultPath && prefs.audioStorageMode === 'vault' && params.blob.size > 0) {
-				audioVaultPath = await this.saveAudioToVault(params.blob, params.filename, prefs.audioFolder);
-			}
-
-			const isProVoice = canUseProFeature('voice-note');
-			let finalMarkdown: string;
-			let effectiveTemplateId: VoiceTemplateId = params.templateId;
-
-			if (isProVoice) {
-				patchVoiceState({
-					status: 'processing',
-					progressStep: 2,
-					progressDetail: t('voiceNote.progress.stepLinking'),
-				});
-
-				const llmOutput = await processTranscriptToNote({
-					plugin: this.plugin,
-					prefs,
-					templateId: params.templateId,
-					rawTranscript,
-					segments,
-					targetFile: this.targetFile,
-					userMemoDiff: params.userMemoDiff,
-					signal,
-					onStage: (step) => {
-						patchVoiceState({
-							progressStep: step,
-							progressDetail:
-								step === 2
-									? t('voiceNote.progress.stepLinking')
-									: t('voiceNote.progress.stepFormatting'),
-						});
-					},
-				});
-
-				if (!llmOutput.usedLlm) {
-					new Notice(t('voiceNote.notices.noLlmAvailable'));
-				}
-
-				finalMarkdown = assembleVoiceNoteMarkdown({
-					formattedBody: llmOutput.formattedBody,
-					segments,
-					rawTranscript,
-					audioVaultPath,
-					includeRawTranscript: prefs.includeRawTranscript,
-				});
-			} else {
-				// 무료 모드: LLM 정리·자동 위키링크 없이 순수 STT 받아쓰기만 반영
-				effectiveTemplateId = 'verbatim';
-				finalMarkdown = assembleVoiceNoteMarkdown({
-					formattedBody: rawTranscript.trim(),
-					segments,
-					rawTranscript,
-					audioVaultPath,
-					includeRawTranscript:
-						Boolean(audioVaultPath) && prefs.includeRawTranscript && segments.length > 0,
-				});
-			}
-
-			const writeResult = await this.writeResultToNote(finalMarkdown);
+			const writeResult = await this.writeResultToNote(output.finalMarkdown);
 
 			const reviewResult: VoiceReviewResult = {
 				targetFilePath: writeResult.targetFilePath,
-				rawTranscript,
-				segments,
-				formattedMarkdown: finalMarkdown,
-				audioVaultPath,
-				templateId: effectiveTemplateId,
+				rawTranscript: output.rawTranscript,
+				segments: output.segments,
+				formattedMarkdown: output.finalMarkdown,
+				audioVaultPath: output.audioVaultPath,
+				templateId: output.effectiveTemplateId,
 				userMemoSnapshot: params.userMemoDiff,
 				insertedRange: writeResult.insertedRange,
 				createdNewFile: writeResult.createdNewFile,
@@ -1242,7 +1588,9 @@ export class VoiceNoteManager {
 
 	private unmountOverlayIfIdle(): void {
 		const s = getVoiceState();
-		if (s.status === 'idle' && !s.hasRecoverableSession) {
+		const hasVisiblePendingBanner =
+			!Platform.isMobile && s.pendingItems.length > 0 && !s.pendingBannerDismissed;
+		if (s.status === 'idle' && !s.hasRecoverableSession && !hasVisiblePendingBanner) {
 			this.unmountOverlay();
 		}
 	}

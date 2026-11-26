@@ -1354,6 +1354,7 @@
   "voiceNote": {
     "cmdToggleRecord": "Voice-to-Note 녹음 시작/중지",
     "cmdUploadAudio": "음성 파일 업로드하여 노트 생성",
+    "cmdProcessPending": "대기 중인 동기화 음성 노트 변환",
     "fileMenuTitle": "음성 파일로 스마트 노트 생성",
     "settings": {
       "heading": "AI Voice-to-Note (스마트 음성 노트)",
@@ -1380,6 +1381,12 @@
         "name": "오디오 저장 폴더",
         "desc": "녹음된 오디오 파일이 저장될 볼트 내 폴더 경로입니다.",
         "placeholder": "Attachments/Voice"
+      },
+      "mobileCaptureMode": {
+        "name": "모바일 녹음 저장 방식",
+        "desc": "모바일에서 클라우드 STT 대신 오디오만 볼트에 저장하고 데스크톱 동기화 후 정리할지 선택합니다.",
+        "auto": "자동 (클라우드 STT 없으면 데스크톱에서 변환)",
+        "deferToDesktop": "항상 녹음만 저장 (데스크톱에서 변환)"
       },
       "sttMode": {
         "name": "음성 인식(STT) 엔진",
@@ -1476,6 +1483,22 @@
       "recoveredSuccess": "미완료된 녹음을 복구하여 노트로 변환했습니다.",
       "createdNote": "음성 노트를 생성했습니다: {{path}}",
       "audioSaved": "오디오 파일을 저장했습니다: {{path}}"
+    },
+    "deferred": {
+      "calloutPending": "음성 노트 변환 대기 중 (데스크톱 동기화 후 처리)",
+      "stopAndSave": "저장",
+      "mobileDeferredHint": "녹음 파일이 볼트에 저장되며, 데스크톱 동기화 후 요약·정리할 수 있습니다.",
+      "savedForDesktopNotice": "녹음이 볼트에 저장되었습니다. 데스크톱에서 동기화 후 변환하세요.",
+      "localWhisperMobileInfo": "로컬 Whisper는 데스크톱 전용입니다. 모바일에서는 녹음만 볼트에 저장되며, 데스크톱 동기화 후 로컬 Whisper로 변환됩니다.",
+      "bannerReady": "동기화된 음성 노트 {{count}}건 변환 대기 중",
+      "bannerWaitingAudio": "오디오 파일 {{count}}건 동기화 대기 중...",
+      "convertAllBtn": "모두 변환",
+      "laterBtn": "나중에",
+      "batchProgress": "대기 음성 노트 변환 중 ({{current}}/{{total}})...",
+      "batchCompletedNotice": "대기 음성 노트 {{count}}건을 변환했습니다.",
+      "noPendingNotice": "변환 대기 중인 음성 노트가 없습니다.",
+      "waitingAudioNotice": "오디오 파일이 아직 동기화 중입니다. 잠시 후 다시 시도하세요.",
+      "desktopOnlyNotice": "대기 중인 음성 노트 변환은 데스크톱에서 실행할 수 있습니다."
     },
     "proMaxDurationReachedNotice": "무료 녹음 제한(5분)에 도달하여 현재까지 녹음된 받아쓰기를 저장합니다.",
     "proFileTooLongNotice": "5분을 초과하는 오디오 파일 변환은 Lumina Pro 기능입니다.",

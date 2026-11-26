@@ -374,13 +374,15 @@ describe('VoiceNoteManager', () => {
 		manager.destroy();
 	});
 
-	it('모바일 환경에서 local-whisper 설정 시 녹음 시작 전 사전 차단한다', async () => {
+	it('모바일 환경에서 local-whisper 설정 시 에러 차단 대신 오디오를 볼트에 저장하고 대기 마커를 삽입한다', async () => {
 		const origIsMobile = Platform.isMobile;
 		grantVoiceEntitlement();
 		mockPlugin.settings.voiceNote = {
 			...(mockPlugin.settings.voiceNote ?? {}),
 			sttMode: 'local-whisper',
+			audioFolder: 'Attachments/Voice',
 		};
+		const createProviderSpy = vi.spyOn(llmProviders, 'createProvider');
 
 		try {
 			(Platform as { isMobile: boolean }).isMobile = true;
@@ -388,36 +390,211 @@ describe('VoiceNoteManager', () => {
 			await manager.init();
 			await manager.startRecording();
 
-			expect(navigator.mediaDevices.getUserMedia).not.toHaveBeenCalled();
-			expect(get(voiceStore).status).toBe('error');
+			expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledTimes(1);
+			expect(get(voiceStore).status).toBe('recording');
+			expect(get(voiceStore).isDeferredCapture).toBe(true);
+
+			await manager.stopAndProcess();
+
+			expect(mockPlugin.app.vault.createBinary).toHaveBeenCalledTimes(1);
+			expect(createProviderSpy).not.toHaveBeenCalled();
+			expect(fakeDocContent).toContain('<!-- lumina-voice:pending');
+			expect(fakeDocContent).toContain('![[Attachments/Voice/recording_');
+			expect(get(voiceStore).status).toBe('idle');
+			expect(get(voiceStore).isDeferredCapture).toBe(false);
 			manager.destroy();
 		} finally {
 			(Platform as { isMobile: boolean }).isMobile = origIsMobile;
 		}
 	});
 
-	it('모바일 환경에서 local-whisper 설정 시 openAudioFilePicker()도 파일 선택기를 열기 전 사전 차단한다', async () => {
+	it('모바일 환경에서 local-whisper 설정 시 openAudioFilePicker()로 선택한 오디오도 볼트에 저장하고 대기 마커를 삽입한다', async () => {
 		const origIsMobile = Platform.isMobile;
 		grantVoiceEntitlement();
 		mockPlugin.settings.voiceNote = {
 			...(mockPlugin.settings.voiceNote ?? {}),
 			sttMode: 'local-whisper',
+			audioFolder: 'Attachments/Voice',
 		};
+		const createProviderSpy = vi.spyOn(llmProviders, 'createProvider');
 
-		const createElSpy = vi.spyOn(document.body, 'createEl');
 		try {
 			(Platform as { isMobile: boolean }).isMobile = true;
 			const manager = new VoiceNoteManager(mockPlugin);
 			await manager.init();
 			manager.openAudioFilePicker();
 
-			expect(createElSpy).not.toHaveBeenCalled();
-			expect(get(voiceStore).status).toBe('error');
+			const input = document.body.querySelector<HTMLInputElement>('input.lumina-voice-file-input');
+			expect(input).not.toBeNull();
+
+			const mockAudioFile = new File([new Uint8Array([10, 20, 30])], 'memo.m4a', {
+				type: 'audio/mp4',
+			});
+			Object.defineProperty(input, 'files', {
+				configurable: true,
+				value: [mockAudioFile],
+			});
+			input?.dispatchEvent(new Event('change'));
+			await new Promise((r) => setTimeout(r, 20));
+
+			expect(mockPlugin.app.vault.createBinary).toHaveBeenCalledTimes(1);
+			expect(createProviderSpy).not.toHaveBeenCalled();
+			expect(fakeDocContent).toContain('<!-- lumina-voice:pending');
+			expect(fakeDocContent).toContain('![[Attachments/Voice/memo');
+			expect(get(voiceStore).status).toBe('idle');
 			manager.destroy();
 		} finally {
-			createElSpy.mockRestore();
 			(Platform as { isMobile: boolean }).isMobile = origIsMobile;
 		}
+	});
+
+	it('모바일에서 mobileCaptureMode=defer-to-desktop 설정 시 클라우드 STT가 있어도 즉시 변환하지 않고 볼트에 저장한다', async () => {
+		const origIsMobile = Platform.isMobile;
+		grantVoiceEntitlement();
+		mockPlugin.settings.voiceNote = {
+			...(mockPlugin.settings.voiceNote ?? {}),
+			sttMode: 'auto',
+			mobileCaptureMode: 'defer-to-desktop',
+			audioFolder: 'Attachments/Voice',
+		};
+		const resolveSpy = vi.spyOn(sttResolver, 'resolveSttEngine');
+
+		try {
+			(Platform as { isMobile: boolean }).isMobile = true;
+			const manager = new VoiceNoteManager(mockPlugin);
+			await manager.init();
+			await manager.startRecording();
+			await manager.stopAndProcess();
+
+			expect(resolveSpy).not.toHaveBeenCalled();
+			expect(mockPlugin.app.vault.createBinary).toHaveBeenCalledTimes(1);
+			expect(fakeDocContent).toContain('<!-- lumina-voice:pending');
+			expect(get(voiceStore).status).toBe('idle');
+			manager.destroy();
+		} finally {
+			(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+		}
+	});
+
+	it('모바일에서 mobileCaptureMode=auto이고 클라우드 STT가 연결되어 있으면 기존대로 즉시 변환을 수행한다', async () => {
+		const origIsMobile = Platform.isMobile;
+		grantVoiceEntitlement();
+		mockPlugin.settings.voiceNote = {
+			...(mockPlugin.settings.voiceNote ?? {}),
+			sttMode: 'auto',
+			mobileCaptureMode: 'auto',
+			audioStorageMode: 'discard',
+		};
+		const transcribeSpy = vi.fn().mockResolvedValue({
+			text: '모바일 즉시 변환 테스트',
+			segments: [{ startSec: 0, endSec: 2, text: '모바일 즉시 변환 테스트' }],
+			engineLabel: 'OpenAI (whisper-1)',
+		});
+		vi.spyOn(sttResolver, 'resolveSttEngine').mockReturnValue({
+			id: 'mock-stt',
+			label: 'Mock STT',
+			transcribe: transcribeSpy,
+		});
+		vi.spyOn(llmProviders, 'createProvider').mockReturnValue({
+			providerId: 'prov-1',
+			chat: vi.fn().mockResolvedValue({ content: '모바일 정리 결과' }),
+		} as unknown as ReturnType<typeof llmProviders.createProvider>);
+
+		try {
+			(Platform as { isMobile: boolean }).isMobile = true;
+			const manager = new VoiceNoteManager(mockPlugin);
+			await manager.init();
+			await manager.startRecording();
+			expect(get(voiceStore).isDeferredCapture).toBe(false);
+
+			await manager.stopAndProcess();
+			expect(transcribeSpy).toHaveBeenCalledTimes(1);
+			expect(fakeDocContent).toContain('모바일 정리 결과');
+			expect(fakeDocContent).not.toContain('lumina-voice:pending');
+			manager.destroy();
+		} finally {
+			(Platform as { isMobile: boolean }).isMobile = origIsMobile;
+		}
+	});
+
+	it('데스크톱에서 동기화된 대기 음성 노트를 processAllPendingItems()로 변환해 마커 블록만 제자리 치환한다', async () => {
+		grantVoiceEntitlement();
+
+		const noteFile = new TFile();
+		noteFile.path = 'Notes/SyncNote.md';
+		noteFile.name = 'SyncNote.md';
+		noteFile.basename = 'SyncNote';
+		noteFile.extension = 'md';
+		noteFile.stat = { size: 200, ctime: 1, mtime: 1 };
+
+		const audioFile = new TFile();
+		audioFile.path = 'Attachments/Voice/mobile_rec.m4a';
+		audioFile.name = 'mobile_rec.m4a';
+		audioFile.basename = 'mobile_rec';
+		audioFile.extension = 'm4a';
+		audioFile.stat = { size: 4096, ctime: 1, mtime: Date.now() - 10_000 };
+
+		let syncedNoteContent = [
+			'# 모바일 메모',
+			'',
+			'<!-- lumina-voice:pending id="v_sync_1" audio="Attachments/Voice/mobile_rec.m4a" template="clean" -->',
+			'![[Attachments/Voice/mobile_rec.m4a]]',
+			'> [!info] 대기 중',
+			'<!-- /lumina-voice:pending -->',
+			'',
+			'기존 사용자 본문 유지',
+		].join('\n');
+
+		const vaultMock = mockPlugin.app.vault as unknown as {
+			getMarkdownFiles: ReturnType<typeof vi.fn>;
+			getAbstractFileByPath: ReturnType<typeof vi.fn>;
+			cachedRead: ReturnType<typeof vi.fn>;
+			readBinary: ReturnType<typeof vi.fn>;
+			process: ReturnType<typeof vi.fn>;
+		};
+		vaultMock.getMarkdownFiles = vi.fn().mockReturnValue([noteFile]);
+		vaultMock.getAbstractFileByPath = vi.fn((p: string) => {
+			if (p === noteFile.path) return noteFile;
+			if (p === audioFile.path) return audioFile;
+			return null;
+		});
+		vaultMock.cachedRead = vi.fn().mockImplementation(async () => syncedNoteContent);
+		vaultMock.readBinary = vi.fn().mockResolvedValue(new ArrayBuffer(16));
+		vaultMock.process = vi.fn(async (_file: TFile, fn: (data: string) => string) => {
+			syncedNoteContent = fn(syncedNoteContent);
+			return syncedNoteContent;
+		});
+
+		const transcribeSpy = vi.fn().mockResolvedValue({
+			text: '데스크톱에서 로컬 변환한 내용입니다.',
+			segments: [{ startSec: 0, endSec: 4, text: '데스크톱에서 로컬 변환한 내용입니다.' }],
+			engineLabel: 'Local Whisper',
+		});
+		vi.spyOn(sttResolver, 'resolveSttEngine').mockReturnValue({
+			id: 'stt-local-whisper',
+			label: 'Local Whisper',
+			transcribe: transcribeSpy,
+		});
+		vi.spyOn(llmProviders, 'createProvider').mockReturnValue({
+			providerId: 'prov-1',
+			chat: vi.fn().mockResolvedValue({ content: '> [!summary] 요약\n> - 동기화 변환 완료' }),
+		} as unknown as ReturnType<typeof llmProviders.createProvider>);
+
+		const manager = new VoiceNoteManager(mockPlugin);
+		await manager.init();
+		await manager.processAllPendingItems();
+
+		expect(transcribeSpy).toHaveBeenCalledTimes(1);
+		expect(vaultMock.process).toHaveBeenCalledTimes(1);
+		expect(syncedNoteContent).toContain('# 모바일 메모');
+		expect(syncedNoteContent).toContain('기존 사용자 본문 유지');
+		expect(syncedNoteContent).toContain('![[Attachments/Voice/mobile_rec.m4a]]');
+		expect(syncedNoteContent).toContain('> - 동기화 변환 완료');
+		expect(syncedNoteContent).not.toContain('lumina-voice:pending');
+		expect(get(voiceStore).pendingItems).toEqual([]);
+		expect(get(voiceStore).status).toBe('review');
+
+		manager.destroy();
 	});
 
 	it('Freemium(무료 노출) 상태에서는 LLM을 호출하지 않고 순수 받아쓰기만 반영하며 AI 템플릿 재정리를 차단한다', async () => {

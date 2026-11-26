@@ -7,6 +7,7 @@
 
 import { get, writable } from 'svelte/store';
 import type {
+	PendingVoiceItem,
 	TranscriptSegment,
 	VoiceRecordMode,
 	VoiceReviewResult,
@@ -38,6 +39,12 @@ export interface VoiceRuntimeState {
 	reviewResult: VoiceReviewResult | null;
 	/** 비정상 종료로 복구 가능한 녹음 백업 존재 여부 */
 	hasRecoverableSession: boolean;
+	/** 현재 녹음 세션이 모바일 지연 캡처(볼트 저장 전용)인지 여부 */
+	isDeferredCapture: boolean;
+	/** 데스크톱에서 감지된 동기화 대기 음성 항목 목록 */
+	pendingItems: PendingVoiceItem[];
+	/** 사용자가 대기 항목 배너를 닫았는지 여부 */
+	pendingBannerDismissed: boolean;
 }
 
 function createInitialVoiceState(): VoiceRuntimeState {
@@ -53,6 +60,9 @@ function createInitialVoiceState(): VoiceRuntimeState {
 		errorMessage: null,
 		reviewResult: null,
 		hasRecoverableSession: false,
+		isDeferredCapture: false,
+		pendingItems: [],
+		pendingBannerDismissed: false,
 	};
 }
 

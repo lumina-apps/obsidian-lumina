@@ -241,6 +241,7 @@ export class CommandManager {
 		const isVoiceEntitled = canUseFeature('voice-note');
 		const voiceToggleCmdId = 'toggle-voice-note-recording';
 		const voiceUploadCmdId = 'transcribe-audio-file';
+		const voiceProcessPendingCmdId = 'process-pending-voice-notes';
 
 		if (isVoiceEntitled && !this.isVoiceCommandRegistered) {
 			this.plugin.addCommand({
@@ -265,10 +266,22 @@ export class CommandManager {
 					});
 				},
 			});
+			this.plugin.addCommand({
+				id: voiceProcessPendingCmdId,
+				name: t('voiceNote.cmdProcessPending'),
+				callback: () => {
+					if (!canUseFeature('voice-note')) return;
+					debugLogger.logSystem('commands', 'Command executed: process-pending-voice-notes');
+					void this.plugin.ensureVoiceNoteManager().then((manager) => {
+						void manager?.processAllPendingItems();
+					});
+				},
+			});
 			this.isVoiceCommandRegistered = true;
 		} else if (!isVoiceEntitled && this.isVoiceCommandRegistered) {
 			appWithCommands.commands?.removeCommand(`${this.plugin.manifest.id}:${voiceToggleCmdId}`);
 			appWithCommands.commands?.removeCommand(`${this.plugin.manifest.id}:${voiceUploadCmdId}`);
+			appWithCommands.commands?.removeCommand(`${this.plugin.manifest.id}:${voiceProcessPendingCmdId}`);
 			this.isVoiceCommandRegistered = false;
 		}
 	}

@@ -1354,6 +1354,7 @@
   "voiceNote": {
     "cmdToggleRecord": "Avvia/interrompi registrazione Voice-to-Note",
     "cmdUploadAudio": "Trascrivi file audio in nota",
+    "cmdProcessPending": "Converti le note vocali sincronizzate in sospeso",
     "fileMenuTitle": "Converti audio in Nota Intelligente",
     "settings": {
       "heading": "AI Voice-to-Note",
@@ -1380,6 +1381,12 @@
         "name": "Cartella audio",
         "desc": "Cartella del vault in cui salvare le registrazioni.",
         "placeholder": "Attachments/Voice"
+      },
+      "mobileCaptureMode": {
+        "name": "Modalità registrazione mobile",
+        "desc": "Scegli se salvare solo l'audio su mobile per elaborarlo sul desktop dopo la sincronizzazione.",
+        "auto": "Automatico (Rimanda al desktop senza STT cloud)",
+        "deferToDesktop": "Salva sempre soltanto (Elabora sul desktop)"
       },
       "sttMode": {
         "name": "Motore Speech-to-Text (STT)",
@@ -1476,6 +1483,22 @@
       "recoveredSuccess": "Registrazione incompleta recuperata ed elaborata.",
       "createdNote": "Nota vocale creata: {{path}}",
       "audioSaved": "Audio salvato: {{path}}"
+    },
+    "deferred": {
+      "calloutPending": "Nota vocale in attesa di trascrizione (sincronizza ed elabora sul desktop)",
+      "stopAndSave": "Salva",
+      "mobileDeferredHint": "L'audio verrà salvato nel vault ed elaborato sul desktop dopo la sincronizzazione.",
+      "savedForDesktopNotice": "Registrazione salvata nel vault. Convertila sul desktop dopo la sincronizzazione.",
+      "localWhisperMobileInfo": "Whisper locale è disponibile solo su desktop. Su mobile le registrazioni vengono salvate nel vault per la conversione su desktop.",
+      "bannerReady": "{{count}} nota/e vocale/i sincronizzata/e pronta/e per la conversione",
+      "bannerWaitingAudio": "In attesa della sincronizzazione di {{count}} file audio...",
+      "convertAllBtn": "Converti tutto",
+      "laterBtn": "Più tardi",
+      "batchProgress": "Conversione delle note vocali in sospeso ({{current}}/{{total}})...",
+      "batchCompletedNotice": "Convertite {{count}} note vocali in sospeso.",
+      "noPendingNotice": "Nessuna nota vocale in sospeso trovata.",
+      "waitingAudioNotice": "I file audio sono ancora in sincronizzazione. Riprova tra poco.",
+      "desktopOnlyNotice": "La conversione delle note vocali in sospeso è disponibile su desktop."
     },
     "proMaxDurationReachedNotice": "Raggiunto il limite gratuito di 5 minuti. Salvataggio della dettatura in corso.",
     "proFileTooLongNotice": "I file audio più lunghi di 5 minuti richiedono Lumina Pro.",

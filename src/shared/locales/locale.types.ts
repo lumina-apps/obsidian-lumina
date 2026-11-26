@@ -1401,6 +1401,7 @@ export interface TranslationBatchStudio {
 export interface TranslationVoiceNote {
   cmdToggleRecord: string;
   cmdUploadAudio: string;
+  cmdProcessPending: string;
   fileMenuTitle: string;
   settings: {
     heading: string;
@@ -1427,6 +1428,12 @@ export interface TranslationVoiceNote {
       name: string;
       desc: string;
       placeholder: string;
+    };
+    mobileCaptureMode: {
+      name: string;
+      desc: string;
+      auto: string;
+      deferToDesktop: string;
     };
     sttMode: {
       name: string;
@@ -1523,6 +1530,22 @@ export interface TranslationVoiceNote {
     recoveredSuccess: string;
     createdNote: string;
     audioSaved: string;
+  };
+  deferred: {
+    calloutPending: string;
+    stopAndSave: string;
+    mobileDeferredHint: string;
+    savedForDesktopNotice: string;
+    localWhisperMobileInfo: string;
+    bannerReady: string;
+    bannerWaitingAudio: string;
+    convertAllBtn: string;
+    laterBtn: string;
+    batchProgress: string;
+    batchCompletedNotice: string;
+    noPendingNotice: string;
+    waitingAudioNotice: string;
+    desktopOnlyNotice: string;
   };
   proMaxDurationReachedNotice: string;
   proFileTooLongNotice: string;

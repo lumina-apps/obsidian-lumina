@@ -30,6 +30,7 @@ export const DEFAULT_VOICE_PREFERENCES: Required<VoiceNotePreferences> = {
 	customVocabulary: [],
 	language: 'auto',
 	showRibbonIcon: true,
+	mobileCaptureMode: 'auto',
 };
 
 /**
@@ -63,6 +64,7 @@ export function getVoicePreferences(settings: LuminaSettings): Required<VoiceNot
 			: [...DEFAULT_VOICE_PREFERENCES.customVocabulary],
 		language: saved.language ?? DEFAULT_VOICE_PREFERENCES.language,
 		showRibbonIcon: saved.showRibbonIcon ?? DEFAULT_VOICE_PREFERENCES.showRibbonIcon,
+		mobileCaptureMode: saved.mobileCaptureMode ?? DEFAULT_VOICE_PREFERENCES.mobileCaptureMode,
 	};
 }
 

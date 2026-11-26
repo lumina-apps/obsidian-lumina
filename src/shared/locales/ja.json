@@ -1354,6 +1354,7 @@
   "voiceNote": {
     "cmdToggleRecord": "Voice-to-Note 録音の開始/停止",
     "cmdUploadAudio": "音声ファイルをアップロードしてノート作成",
+    "cmdProcessPending": "同期された保留中の音声ノートを変換",
     "fileMenuTitle": "音声ファイルをスマートノートに変換",
     "settings": {
       "heading": "AI Voice-to-Note",
@@ -1380,6 +1381,12 @@
         "name": "音声保存フォルダ",
         "desc": "録音した音声ファイルを保存するVault内のフォルダパスです。",
         "placeholder": "Attachments/Voice"
+      },
+      "mobileCaptureMode": {
+        "name": "モバイル録音モード",
+        "desc": "モバイルでクラウドSTTを使わずに音声のみ保存し、デスクトップ同期後に変換するかを選択します。",
+        "auto": "自動 (クラウドSTTがない場合はデスクトップで変換)",
+        "deferToDesktop": "常に音声のみ保存 (デスクトップで変換)"
       },
       "sttMode": {
         "name": "音声認識 (STT) エンジン",
@@ -1476,6 +1483,22 @@
       "recoveredSuccess": "未完了の録音を復元してノートに変換しました。",
       "createdNote": "音声ノートを作成しました: {{path}}",
       "audioSaved": "音声を保存しました: {{path}}"
+    },
+    "deferred": {
+      "calloutPending": "音声ノート変換待ち（デスクトップで同期後に処理）",
+      "stopAndSave": "保存",
+      "mobileDeferredHint": "音声はVaultに保存され、同期後にデスクトップで処理されます。",
+      "savedForDesktopNotice": "録音をVaultに保存しました。同期後にデスクトップで変換してください。",
+      "localWhisperMobileInfo": "ローカル Whisper はデスクトップ専用です。モバイルでは録音のみVaultに保存され、デスクトップ同期後に変換できます。",
+      "bannerReady": "同期済みの音声ノート {{count}}件が変換待ちです",
+      "bannerWaitingAudio": "音声ファイル {{count}}件の同期を待機中...",
+      "convertAllBtn": "すべて変換",
+      "laterBtn": "後で",
+      "batchProgress": "保留中の音声ノートを変換中 ({{current}}/{{total}})...",
+      "batchCompletedNotice": "{{count}}件の音声ノートを変換しました。",
+      "noPendingNotice": "変換待ちの音声ノートはありません。",
+      "waitingAudioNotice": "音声ファイルがまだ同期中です。しばらくしてから再試行してください。",
+      "desktopOnlyNotice": "保留中の音声ノートの変換はデスクトップで利用できます。"
     },
     "proMaxDurationReachedNotice": "無料版の録音上限（5分）に達したため、ここまでの文字起こしを保存します。",
     "proFileTooLongNotice": "5分を超える音声ファイルの変換には Lumina Pro が必要です。",

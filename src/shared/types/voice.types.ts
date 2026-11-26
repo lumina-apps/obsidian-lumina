@@ -16,6 +16,26 @@ export type VoiceTemplateId = 'clean' | 'meeting' | 'verbatim';
 /** STT 엔진 선택 모드 */
 export type VoiceSttEngineMode = 'auto' | 'provider' | 'local-whisper';
 
+/** 모바일 녹음 캡처 방식 (자동 / 항상 저장 후 데스크톱에서 변환) */
+export type VoiceMobileCaptureMode = 'auto' | 'defer-to-desktop';
+
+/** 데스크톱 동기화 후 변환 대기 중인 음성 항목 상태 */
+export type PendingVoiceStatus = 'ready' | 'waiting-audio';
+
+/** 마크다운 노트에 기록된 데스크톱 변환 대기 음성 항목 */
+export interface PendingVoiceItem {
+	/** 마커 고유 식별자 */
+	id: string;
+	/** 대기 마커가 포함된 마크다운 노트 경로 */
+	notePath: string;
+	/** 볼트에 저장된 오디오 파일 경로 */
+	audioPath: string;
+	/** 변환 시 적용할 출력 템플릿 ID */
+	templateId: VoiceTemplateId;
+	/** 오디오 파일 동기화 완료 여부 */
+	status: PendingVoiceStatus;
+}
+
 /** 사용자 설정에 선택적으로 저장되는 Voice-to-Note 선호 설정 */
 export interface VoiceNotePreferences {
 	/** 녹음 및 텍스트 반영 방식 (종료 후 AI 정리 / 실시간 커서 입력) */
@@ -48,6 +68,8 @@ export interface VoiceNotePreferences {
 	language?: string;
 	/** 좌측 리본에 Voice-to-Note 마이크 아이콘 표시 여부 */
 	showRibbonIcon?: boolean;
+	/** 모바일 환경 녹음 캡처 방식 */
+	mobileCaptureMode?: VoiceMobileCaptureMode;
 }
 
 /** 타임스탬프가 포함된 단일 전사 세그먼트 */

@@ -1354,6 +1354,7 @@
   "voiceNote": {
     "cmdToggleRecord": "開始/停止 Voice-to-Note 錄音",
     "cmdUploadAudio": "上傳音訊檔案產生筆記",
+    "cmdProcessPending": "轉換待處理的已同步語音筆記",
     "fileMenuTitle": "將音訊轉換為智慧筆記",
     "settings": {
       "heading": "AI Voice-to-Note",
@@ -1380,6 +1381,12 @@
         "name": "音訊儲存資料夾",
         "desc": "用來存放錄音檔案的儲存庫內資料夾路徑。",
         "placeholder": "Attachments/Voice"
+      },
+      "mobileCaptureMode": {
+        "name": "行動裝置錄音模式",
+        "desc": "選擇在行動裝置未連線雲端 STT 時是否僅儲存音訊，同步到桌面端後再轉換。",
+        "auto": "自動 (無雲端 STT 時延後至桌面端轉換)",
+        "deferToDesktop": "永遠僅儲存音訊 (在桌面端轉換)"
       },
       "sttMode": {
         "name": "語音辨識 (STT) 引擎",
@@ -1476,6 +1483,22 @@
       "recoveredSuccess": "已復原並轉換未完成的錄音。",
       "createdNote": "已建立語音筆記: {{path}}",
       "audioSaved": "已儲存音訊檔案: {{path}}"
+    },
+    "deferred": {
+      "calloutPending": "語音筆記等待轉換（同步後於桌面端處理）",
+      "stopAndSave": "儲存",
+      "mobileDeferredHint": "音訊將儲存至儲存庫，並在同步後由桌面端處理。",
+      "savedForDesktopNotice": "錄音已儲存至儲存庫，同步後請在桌面端轉換。",
+      "localWhisperMobileInfo": "本機 Whisper 僅支援桌面端。在行動裝置僅將錄音儲存至儲存庫，同步後可在桌面端轉換。",
+      "bannerReady": "有 {{count}} 筆已同步語音筆記等待轉換",
+      "bannerWaitingAudio": "正在等待 {{count}} 個音訊檔案同步...",
+      "convertAllBtn": "全部轉換",
+      "laterBtn": "稍後",
+      "batchProgress": "正在轉換待處理語音筆記 ({{current}}/{{total}})...",
+      "batchCompletedNotice": "已轉換 {{count}} 筆待處理語音筆記。",
+      "noPendingNotice": "沒有待轉換的語音筆記。",
+      "waitingAudioNotice": "音訊檔案仍在同步中，請稍後再試。",
+      "desktopOnlyNotice": "待處理語音筆記轉換僅支援在桌面端執行。"
     },
     "proMaxDurationReachedNotice": "已達免費版 5 分鐘錄音上限，正在儲存目前的聽寫內容。",
     "proFileTooLongNotice": "轉換超過 5 分鐘的音訊檔案需要 Lumina Pro。",

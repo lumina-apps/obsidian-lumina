@@ -4417,7 +4417,7 @@ async function runMobileSuite(client, input, reporter) {
 				Date.now() - tMobileSplit
 			);
 
-			// 5-B. Mobile Voice-to-Note (Pro): 설정에서 local-whisper 제외, 사전 점검 차단 & .is-mobile 필 위치 검증
+			// 5-B. Mobile Voice-to-Note (Pro): 설정에서 local-whisper 제외, 지연 캡처 전환 & .is-mobile 필 위치 검증
 			const tMobileVoice = Date.now();
 			const mobileVoiceResult = await client.evaluate(`(async () => {
 				const lumina = app.plugins.plugins['lumina'];
@@ -4425,7 +4425,7 @@ async function runMobileSuite(client, input, reporter) {
 				const origVoiceNote = lumina.settings.voiceNote ? JSON.parse(JSON.stringify(lumina.settings.voiceNote)) : undefined;
 				let localWhisperExcluded = false;
 				let localModelSettingHidden = false;
-				let localWhisperBlocked = false;
+				let deferredCaptureActive = false;
 				let mobilePillMounted = false;
 				let pillHasIsMobileClass = false;
 				let pillBottomPx = -1;
@@ -4492,13 +4492,26 @@ async function runMobileSuite(client, input, reporter) {
 					}
 
 					try {
-						// 2-A. sttMode='local-whisper'일 때 모바일 사전 점검으로 차단되어 위젯이 마운트되지 않아야 함
+						// 2-A. sttMode='local-whisper'일 때 모바일에서 차단 대신 볼트 저장 전용(지연 캡처) 위젯이 마운트되고 자막 버튼이 숨겨져야 함
 						app.commands.executeCommandById('lumina:toggle-voice-note-recording');
-						await new Promise(r => setTimeout(r, 400));
-						localWhisperBlocked = !document.querySelector('.lumina-voice-pill-wrap');
-						if (!localWhisperBlocked) {
-							lumina?.voiceNoteManager?.cancelRecording?.();
-							await new Promise(r => setTimeout(r, 150));
+						const deferredDeadline = Date.now() + 2500;
+						while (Date.now() < deferredDeadline) {
+							const deferredWrap = document.querySelector('.lumina-voice-pill-wrap');
+							if (deferredWrap) {
+								const controlBtns = deferredWrap.querySelectorAll('.lumina-voice-controls button');
+								const primaryBtn = deferredWrap.querySelector('.lumina-voice-btn--primary');
+								if (primaryBtn && controlBtns.length === 3) {
+									deferredCaptureActive = true;
+								}
+								break;
+							}
+							await new Promise(r => setTimeout(r, 100));
+						}
+						lumina?.voiceNoteManager?.cancelRecording?.();
+						const unmountDeadline = Date.now() + 1500;
+						while (Date.now() < unmountDeadline) {
+							if (!document.querySelector('.lumina-voice-pill-wrap')) break;
+							await new Promise(r => setTimeout(r, 50));
 						}
 
 						// 2-B. 유효한 클라우드 프로바이더 + sttMode='auto'로 녹음 위젯(.is-mobile, bottom >= 60px) 마운트
@@ -4533,10 +4546,10 @@ async function runMobileSuite(client, input, reporter) {
 
 				const pillBottomOk = pillBottomPx >= 60;
 				return {
-					success: localWhisperExcluded && localModelSettingHidden && localWhisperBlocked && mobilePillMounted && pillHasIsMobileClass && pillBottomOk,
+					success: localWhisperExcluded && localModelSettingHidden && deferredCaptureActive && mobilePillMounted && pillHasIsMobileClass && pillBottomOk,
 					localWhisperExcluded,
 					localModelSettingHidden,
-					localWhisperBlocked,
+					deferredCaptureActive,
 					mobilePillMounted,
 					pillHasIsMobileClass,
 					pillBottomPx,
@@ -4544,9 +4557,9 @@ async function runMobileSuite(client, input, reporter) {
 			})()`);
 
 			reporter.record(
-				'Mobile Voice-to-Note (Pro): Pre-flight Block, Local Whisper Hidden & Pill Offset (.is-mobile)',
+				'Mobile Voice-to-Note (Pro): Deferred Capture, Local Whisper Hidden & Pill Offset (.is-mobile)',
 				mobileVoiceResult.success,
-				`LocalWhisperExcluded: ${mobileVoiceResult.localWhisperExcluded}, PreFlightBlocked: ${mobileVoiceResult.localWhisperBlocked}, WhisperModelHidden: ${mobileVoiceResult.localModelSettingHidden}, MobilePill: ${mobileVoiceResult.mobilePillMounted} (.is-mobile=${mobileVoiceResult.pillHasIsMobileClass}, bottom=${mobileVoiceResult.pillBottomPx}px)`,
+				`LocalWhisperExcluded: ${mobileVoiceResult.localWhisperExcluded}, DeferredCapture: ${mobileVoiceResult.deferredCaptureActive}, WhisperModelHidden: ${mobileVoiceResult.localModelSettingHidden}, MobilePill: ${mobileVoiceResult.mobilePillMounted} (.is-mobile=${mobileVoiceResult.pillHasIsMobileClass}, bottom=${mobileVoiceResult.pillBottomPx}px)`,
 				Date.now() - tMobileVoice
 			);
 

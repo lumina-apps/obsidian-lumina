@@ -1354,6 +1354,7 @@
   "voiceNote": {
     "cmdToggleRecord": "Iniciar/detener grabación Voice-to-Note",
     "cmdUploadAudio": "Transcribir archivo de audio a nota",
+    "cmdProcessPending": "Convertir notas de voz sincronizadas pendientes",
     "fileMenuTitle": "Convertir audio en Nota Inteligente",
     "settings": {
       "heading": "AI Voice-to-Note",
@@ -1380,6 +1381,12 @@
         "name": "Carpeta de audio",
         "desc": "Carpeta del vault donde se guardan las grabaciones.",
         "placeholder": "Attachments/Voice"
+      },
+      "mobileCaptureMode": {
+        "name": "Modo de grabación móvil",
+        "desc": "Elige si el móvil solo guarda el audio en el vault para procesarlo en escritorio tras sincronizar.",
+        "auto": "Automático (Diferir a escritorio si no hay STT en la nube)",
+        "deferToDesktop": "Siempre solo guardar (Procesar en escritorio)"
       },
       "sttMode": {
         "name": "Motor de voz a texto (STT)",
@@ -1476,6 +1483,22 @@
       "recoveredSuccess": "Grabación incompleta recuperada y procesada.",
       "createdNote": "Nota de voz creada: {{path}}",
       "audioSaved": "Audio guardado: {{path}}"
+    },
+    "deferred": {
+      "calloutPending": "Nota de voz en espera de transcripción (sincroniza y procesa en escritorio)",
+      "stopAndSave": "Guardar",
+      "mobileDeferredHint": "El audio se guardará en el vault y se procesará en escritorio al sincronizar.",
+      "savedForDesktopNotice": "Grabación guardada en el vault. Conviértela en escritorio tras sincronizar.",
+      "localWhisperMobileInfo": "Whisper local solo funciona en escritorio. En móvil las grabaciones se guardan en el vault para convertirlas en escritorio.",
+      "bannerReady": "{{count}} nota(s) de voz sincronizada(s) lista(s) para convertir",
+      "bannerWaitingAudio": "Esperando sincronización de {{count}} archivo(s) de audio...",
+      "convertAllBtn": "Convertir todo",
+      "laterBtn": "Más tarde",
+      "batchProgress": "Convirtiendo notas de voz pendientes ({{current}}/{{total}})...",
+      "batchCompletedNotice": "Se convirtieron {{count}} nota(s) de voz pendiente(s).",
+      "noPendingNotice": "No hay notas de voz pendientes.",
+      "waitingAudioNotice": "Los archivos de audio aún se están sincronizando. Inténtalo en breve.",
+      "desktopOnlyNotice": "La conversión de notas de voz pendientes solo está disponible en escritorio."
     },
     "proMaxDurationReachedNotice": "Se alcanzó el límite gratuito de 5 minutos. Guardando tu dictado ahora.",
     "proFileTooLongNotice": "Los archivos de audio de más de 5 minutos requieren Lumina Pro.",

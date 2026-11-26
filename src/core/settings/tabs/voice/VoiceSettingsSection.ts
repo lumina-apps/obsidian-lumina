@@ -18,6 +18,7 @@ import { t } from '../../../../shared/locales/helpers';
 import { PROVIDER_LABELS } from '../../../../shared/types/settings.types';
 import type {
 	VoiceAudioStorageMode,
+	VoiceMobileCaptureMode,
 	VoiceRecordMode,
 	VoiceSttEngineMode,
 	VoiceTemplateId,
@@ -124,6 +125,20 @@ export function renderVoiceSettingsSection(tab: LuminaSettingTab, el: HTMLElemen
 			});
 	}
 
+	// 3-1. 모바일 녹음 캡처 방식 (자동 / 항상 저장 후 데스크톱에서 변환)
+	new Setting(el)
+		.setName(t('voiceNote.settings.mobileCaptureMode.name'))
+		.setDesc(t('voiceNote.settings.mobileCaptureMode.desc'))
+		.addDropdown((dd) => {
+			dd.addOption('auto', t('voiceNote.settings.mobileCaptureMode.auto'));
+			dd.addOption('defer-to-desktop', t('voiceNote.settings.mobileCaptureMode.deferToDesktop'));
+			dd.setValue(prefs.mobileCaptureMode).onChange(async (val) => {
+				await updateVoicePreferences(tab.plugin, {
+					mobileCaptureMode: val as VoiceMobileCaptureMode,
+				});
+			});
+		});
+
 	// 4. STT 엔진 모드
 	new Setting(el)
 		.setName(t('voiceNote.settings.sttMode.name'))
@@ -144,7 +159,7 @@ export function renderVoiceSettingsSection(tab: LuminaSettingTab, el: HTMLElemen
 		});
 
 	if (Platform.isMobile && prefs.sttMode === 'local-whisper') {
-		tab.infoBox(el, t('voiceNote.notices.localWhisperMobileUnsupported'), 'warning');
+		tab.infoBox(el, t('voiceNote.deferred.localWhisperMobileInfo'), 'warning');
 	}
 
 	if (prefs.sttMode === 'provider') {

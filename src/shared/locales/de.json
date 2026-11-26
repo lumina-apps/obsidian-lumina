@@ -1354,6 +1354,7 @@
   "voiceNote": {
     "cmdToggleRecord": "Voice-to-Note-Aufnahme starten/stoppen",
     "cmdUploadAudio": "Audiodatei in Notiz transkribieren",
+    "cmdProcessPending": "Ausstehende synchronisierte Sprachnotizen umwandeln",
     "fileMenuTitle": "Audio in Smart Note umwandeln",
     "settings": {
       "heading": "AI Voice-to-Note",
@@ -1380,6 +1381,12 @@
         "name": "Audio-Ordner",
         "desc": "Vault-Ordner, in dem aufgenommene Audiodateien gespeichert werden.",
         "placeholder": "Attachments/Voice"
+      },
+      "mobileCaptureMode": {
+        "name": "Mobiler Aufnahmemodus",
+        "desc": "Festlegen, ob Audio auf Mobilgeräten nur gespeichert und nach dem Sync auf dem Desktop umgewandelt wird.",
+        "auto": "Automatisch (Auf Desktop verschieben, wenn kein Cloud-STT)",
+        "deferToDesktop": "Immer nur speichern (Auf Desktop verarbeiten)"
       },
       "sttMode": {
         "name": "Spracherkennungs-Engine (STT)",
@@ -1476,6 +1483,22 @@
       "recoveredSuccess": "Unvollständige Aufnahme wiederhergestellt und verarbeitet.",
       "createdNote": "Sprachnotiz erstellt: {{path}}",
       "audioSaved": "Audio gespeichert: {{path}}"
+    },
+    "deferred": {
+      "calloutPending": "Sprachnotiz für Transkription vorgemerkt (nach Sync auf Desktop verarbeiten)",
+      "stopAndSave": "Speichern",
+      "mobileDeferredHint": "Audio wird im Vault gespeichert und nach dem Sync auf dem Desktop verarbeitet.",
+      "savedForDesktopNotice": "Aufnahme im Vault gespeichert. Nach dem Sync auf dem Desktop umwandeln.",
+      "localWhisperMobileInfo": "Lokales Whisper läuft nur auf dem Desktop. Mobilgeräte speichern Aufnahmen im Vault für die spätere Desktop-Umwandlung.",
+      "bannerReady": "{{count}} synchronisierte Sprachnotiz(en) bereit zur Umwandlung",
+      "bannerWaitingAudio": "Warte auf Sync von {{count}} Audiodatei(en)...",
+      "convertAllBtn": "Alle umwandeln",
+      "laterBtn": "Später",
+      "batchProgress": "Ausstehende Sprachnotizen werden umgewandelt ({{current}}/{{total}})...",
+      "batchCompletedNotice": "{{count}} ausstehende Sprachnotiz(en) umgewandelt.",
+      "noPendingNotice": "Keine ausstehenden Sprachnotizen gefunden.",
+      "waitingAudioNotice": "Audiodateien werden noch synchronisiert. Bitte gleich erneut versuchen.",
+      "desktopOnlyNotice": "Die Umwandlung ausstehender Sprachnotizen ist nur auf dem Desktop verfügbar."
     },
     "proMaxDurationReachedNotice": "5-Minuten-Limit der Free-Version erreicht. Diktat wird jetzt gespeichert.",
     "proFileTooLongNotice": "Audiodateien über 5 Minuten erfordern Lumina Pro.",

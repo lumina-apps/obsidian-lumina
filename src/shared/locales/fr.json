@@ -1354,6 +1354,7 @@
   "voiceNote": {
     "cmdToggleRecord": "Démarrer/arrêter l'enregistrement Voice-to-Note",
     "cmdUploadAudio": "Transcrire un fichier audio en note",
+    "cmdProcessPending": "Convertir les notes vocales synchronisées en attente",
     "fileMenuTitle": "Convertir l'audio en Note Intelligente",
     "settings": {
       "heading": "AI Voice-to-Note",
@@ -1380,6 +1381,12 @@
         "name": "Dossier audio",
         "desc": "Dossier du coffre où enregistrer les fichiers audio.",
         "placeholder": "Attachments/Voice"
+      },
+      "mobileCaptureMode": {
+        "name": "Mode d'enregistrement mobile",
+        "desc": "Choisir d'enregistrer uniquement l'audio sur mobile pour le traiter sur ordinateur après synchronisation.",
+        "auto": "Auto (Différer sur ordinateur sans STT cloud)",
+        "deferToDesktop": "Toujours enregistrer uniquement (Traiter sur ordinateur)"
       },
       "sttMode": {
         "name": "Moteur voix-texte (STT)",
@@ -1476,6 +1483,22 @@
       "recoveredSuccess": "Enregistrement inachevé récupéré et traité.",
       "createdNote": "Note vocale créée : {{path}}",
       "audioSaved": "Audio enregistré : {{path}}"
+    },
+    "deferred": {
+      "calloutPending": "Note vocale en attente de transcription (traiter sur ordinateur après synchro)",
+      "stopAndSave": "Enregistrer",
+      "mobileDeferredHint": "L'audio sera enregistré dans le coffre et traité sur ordinateur après synchronisation.",
+      "savedForDesktopNotice": "Enregistrement sauvegardé dans le coffre. Convertissez-le sur ordinateur après synchro.",
+      "localWhisperMobileInfo": "Whisper local fonctionne uniquement sur ordinateur. Sur mobile, les enregistrements sont sauvegardés dans le coffre pour traitement sur ordinateur.",
+      "bannerReady": "{{count}} note(s) vocale(s) synchronisée(s) prête(s) à convertir",
+      "bannerWaitingAudio": "En attente de synchronisation de {{count}} fichier(s) audio...",
+      "convertAllBtn": "Tout convertir",
+      "laterBtn": "Plus tard",
+      "batchProgress": "Conversion des notes vocales en attente ({{current}}/{{total}})...",
+      "batchCompletedNotice": "{{count}} note(s) vocale(s) convertie(s).",
+      "noPendingNotice": "Aucune note vocale en attente.",
+      "waitingAudioNotice": "Les fichiers audio sont encore en cours de synchronisation. Réessayez bientôt.",
+      "desktopOnlyNotice": "La conversion des notes vocales en attente est disponible sur ordinateur."
     },
     "proMaxDurationReachedNotice": "Limite gratuite de 5 minutes atteinte. Enregistrement de votre dictée en cours.",
     "proFileTooLongNotice": "Les fichiers audio de plus de 5 minutes nécessitent Lumina Pro.",

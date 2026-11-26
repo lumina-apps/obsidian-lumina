@@ -1354,6 +1354,7 @@
   "voiceNote": {
     "cmdToggleRecord": "Toggle Voice-to-Note recording",
     "cmdUploadAudio": "Transcribe audio file to note",
+    "cmdProcessPending": "Convert pending synced voice notes",
     "fileMenuTitle": "Convert audio to Smart Note",
     "settings": {
       "heading": "AI Voice-to-Note",
@@ -1380,6 +1381,12 @@
         "name": "Audio Folder",
         "desc": "Vault folder where recorded audio files are saved.",
         "placeholder": "Attachments/Voice"
+      },
+      "mobileCaptureMode": {
+        "name": "Mobile Recording Mode",
+        "desc": "Choose whether mobile records and saves audio for desktop processing when no cloud STT is used.",
+        "auto": "Auto (Defer to desktop if no cloud STT)",
+        "deferToDesktop": "Always save only (Process on desktop)"
       },
       "sttMode": {
         "name": "Speech-to-Text Engine",
@@ -1476,6 +1483,22 @@
       "recoveredSuccess": "Recovered and processed unfinished recording.",
       "createdNote": "Created voice note: {{path}}",
       "audioSaved": "Audio saved: {{path}}"
+    },
+    "deferred": {
+      "calloutPending": "Voice note queued for transcription (sync & process on desktop)",
+      "stopAndSave": "Save",
+      "mobileDeferredHint": "Audio will be saved to vault and processed on desktop after sync.",
+      "savedForDesktopNotice": "Recording saved to vault. Convert it on desktop after sync.",
+      "localWhisperMobileInfo": "Local Whisper runs on desktop only. On mobile, recordings are saved to your vault and queued for desktop conversion.",
+      "bannerReady": "{{count}} synced voice note(s) ready to convert",
+      "bannerWaitingAudio": "Waiting for {{count}} synced audio file(s)...",
+      "convertAllBtn": "Convert All",
+      "laterBtn": "Later",
+      "batchProgress": "Converting pending voice notes ({{current}}/{{total}})...",
+      "batchCompletedNotice": "Converted {{count}} pending voice note(s).",
+      "noPendingNotice": "No pending voice notes found.",
+      "waitingAudioNotice": "Audio files are still syncing. Please try again shortly.",
+      "desktopOnlyNotice": "Pending voice note conversion is available on desktop."
     },
     "proMaxDurationReachedNotice": "Reached the 5-minute Free recording limit. Saving your dictation now.",
     "proFileTooLongNotice": "Audio files longer than 5 minutes require Lumina Pro.",

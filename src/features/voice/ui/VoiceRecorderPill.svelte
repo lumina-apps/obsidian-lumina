@@ -28,8 +28,25 @@
 	const showRecoveryBanner = $derived(
 		state.status === "idle" && state.hasRecoverableSession,
 	);
+	const readyPendingCount = $derived(
+		state.pendingItems.filter((item) => item.status === "ready").length,
+	);
+	const waitingPendingCount = $derived(
+		state.pendingItems.filter((item) => item.status === "waiting-audio").length,
+	);
+	const showPendingBanner = $derived(
+		!isMobile &&
+			state.status === "idle" &&
+			!showRecoveryBanner &&
+			!state.pendingBannerDismissed &&
+			state.pendingItems.length > 0,
+	);
 	const isVisible = $derived(
-		isRecordingOrPaused || isProcessing || state.status === "error" || showRecoveryBanner,
+		isRecordingOrPaused ||
+			isProcessing ||
+			state.status === "error" ||
+			showRecoveryBanner ||
+			showPendingBanner,
 	);
 
 	// 10개 파형 막대의 시각적 가중치 곡선
@@ -76,6 +93,35 @@
 						onclick={() => void manager.discardUnfinishedSession()}
 					>
 						{$tStore("voiceNote.recorder.discardRecoverBtn")}
+					</button>
+				</div>
+			</div>
+		{:else if showPendingBanner}
+			<div class="lumina-voice-pill lumina-voice-pill--recovery">
+				<span class="lumina-voice-icon" use:icon={"lumina-voice-note"}></span>
+				<span class="lumina-voice-status-text">
+					{#if readyPendingCount > 0}
+						{$tStore("voiceNote.deferred.bannerReady", { count: readyPendingCount })}
+					{:else}
+						{$tStore("voiceNote.deferred.bannerWaitingAudio", { count: waitingPendingCount })}
+					{/if}
+				</span>
+				<div class="lumina-voice-actions">
+					{#if readyPendingCount > 0}
+						<button
+							type="button"
+							class="lumina-voice-btn lumina-voice-btn--primary"
+							onclick={() => void manager.processAllPendingItems()}
+						>
+							{$tStore("voiceNote.deferred.convertAllBtn")}
+						</button>
+					{/if}
+					<button
+						type="button"
+						class="lumina-voice-btn"
+						onclick={() => manager.dismissPendingBanner()}
+					>
+						{$tStore("voiceNote.deferred.laterBtn")}
 					</button>
 				</div>
 			</div>
@@ -165,17 +211,19 @@
 						</option>
 					</select>
 
-					<button
-						type="button"
-						class="lumina-voice-btn"
-						class:is-active={showCaptions}
-						onclick={() => {
-							showCaptions = !showCaptions;
-							manager.setCaptionsEnabled?.(showCaptions);
-						}}
-					>
-						{$tStore("voiceNote.recorder.captionsToggle")}
-					</button>
+					{#if !state.isDeferredCapture}
+						<button
+							type="button"
+							class="lumina-voice-btn"
+							class:is-active={showCaptions}
+							onclick={() => {
+								showCaptions = !showCaptions;
+								manager.setCaptionsEnabled?.(showCaptions);
+							}}
+						>
+							{$tStore("voiceNote.recorder.captionsToggle")}
+						</button>
+					{/if}
 
 					{#if state.status === "recording"}
 						<button
@@ -204,7 +252,9 @@
 						class="lumina-voice-btn lumina-voice-btn--primary"
 						onclick={() => void manager.stopAndProcess()}
 					>
-						{$tStore("voiceNote.recorder.stopAndProcess")}
+						{state.isDeferredCapture
+							? $tStore("voiceNote.deferred.stopAndSave")
+							: $tStore("voiceNote.recorder.stopAndProcess")}
 					</button>
 
 					<button
@@ -221,7 +271,9 @@
 
 			{#if isMobile}
 				<div class="lumina-voice-mobile-hint">
-					{$tStore("voiceNote.recorder.mobileScreenHint")}
+					{state.isDeferredCapture
+						? $tStore("voiceNote.deferred.mobileDeferredHint")
+						: $tStore("voiceNote.recorder.mobileScreenHint")}
 				</div>
 			{/if}
 		{/if}
