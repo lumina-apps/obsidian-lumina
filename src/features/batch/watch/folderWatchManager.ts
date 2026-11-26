@@ -1055,7 +1055,7 @@ export class FolderWatchManager {
 	private updateStatusBar(): void {
 		if (!this.statusBarEl) return;
 		if (this.destroyed || !canUseProFeature('batch-studio')) {
-			this.statusBarEl.style.display = 'none';
+			this.statusBarEl.setCssStyles({ display: 'none' });
 			return;
 		}
 		const state = getBatchWatchState();
@@ -1063,11 +1063,11 @@ export class FolderWatchManager {
 		const stagedCount = state.stagedItems.length;
 
 		if ((!state.deviceWatchEnabled || enabledRules.length === 0) && stagedCount === 0) {
-			this.statusBarEl.style.display = 'none';
+			this.statusBarEl.setCssStyles({ display: 'none' });
 			return;
 		}
 
-		this.statusBarEl.style.display = '';
+		this.statusBarEl.setCssStyles({ display: '' });
 		if (state.isProcessing) {
 			this.statusBarEl.setText(t('batchStudio.watch.statusBarProcessing'));
 		} else if (stagedCount > 0) {

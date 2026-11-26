@@ -84,6 +84,10 @@ describe('orphanActionService', () => {
 					f.basename = f.name.replace(/\.md$/i, '');
 					files[newPath] = f;
 				}),
+				trashFile: vi.fn(async (f: TFile) => {
+					delete files[f.path];
+					delete contents[f.path];
+				}),
 			},
 		} as unknown as App;
 
@@ -129,9 +133,11 @@ describe('orphanActionService', () => {
 		expect(files['Archive/Orphans/idea.md']).toBeDefined();
 		expect(arc.snapshots[0].movedToPath).toBe('Archive/Orphans/idea.md');
 
-		const trashed = await trashOrphanFiles(mockApp, [files['Archive/Orphans/idea.md']]);
+		const trashedFile = files['Archive/Orphans/idea.md'];
+		const trashed = await trashOrphanFiles(mockApp, [trashedFile]);
 		expect(trashed.trashedCount).toBe(1);
 		expect(trashed.snapshots[0].trashed).toBe(true);
+		expect(mockApp.fileManager.trashFile).toHaveBeenCalledWith(trashedFile);
 		expect(files['Archive/Orphans/idea.md']).toBeUndefined();
 
 		recordOrphanHistory(trashed.snapshots, 'Trash 1 orphan');

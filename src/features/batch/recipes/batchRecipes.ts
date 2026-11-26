@@ -11,13 +11,11 @@
 import { App, TFile } from 'obsidian';
 import type LuminaPlugin from '../../../main';
 import { calculateAutoLinks } from '../../../core/mcp/server/handlers/utils/autoLinker';
-import { t } from '../../../shared/locales/helpers';
 import type {
 	BatchProposedChange,
 	BatchRecipeId,
 	BatchRecipeOptions,
 } from '../../../shared/types/batch.types';
-import type { LLMProviderConfig } from '../../../shared/types/settings.types';
 import {
 	normalizeFrontmatterTags,
 	sanitizeGeneratedFrontmatterData,

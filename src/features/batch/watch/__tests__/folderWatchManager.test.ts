@@ -82,6 +82,7 @@ describe('FolderWatchManager', () => {
 		addClass: ReturnType<typeof vi.fn>;
 		addEventListener: ReturnType<typeof vi.fn>;
 		setText: ReturnType<typeof vi.fn>;
+		setCssStyles: ReturnType<typeof vi.fn>;
 		detach: ReturnType<typeof vi.fn>;
 		style: { display: string };
 	};
@@ -139,6 +140,9 @@ describe('FolderWatchManager', () => {
 			addClass: vi.fn(),
 			addEventListener: vi.fn(),
 			setText: vi.fn(),
+			setCssStyles: vi.fn((styles: Partial<CSSStyleDeclaration>) => {
+				Object.assign(mockStatusBarEl.style, styles);
+			}),
 			detach: vi.fn(),
 			style: { display: '' },
 		};

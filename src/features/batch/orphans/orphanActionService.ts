@@ -163,7 +163,7 @@ export async function archiveOrphanFiles(
 }
 
 /**
- * 선택한 고아노트들을 영구 삭제 대신 시스템 휴지통(`vault.trash`)으로 이동하고 롤백 스냅샷을 반환합니다.
+ * 선택한 고아노트들을 영구 삭제 대신 사용자 삭제 설정을 존중하는 휴지통(`fileManager.trashFile`)으로 이동하고 롤백 스냅샷을 반환합니다.
  */
 export async function trashOrphanFiles(
 	app: App,
@@ -172,7 +172,7 @@ export async function trashOrphanFiles(
 	const snapshots: BatchSnapshotEntry[] = [];
 	for (const file of files) {
 		const originalRawContent = await app.vault.read(file);
-		await app.vault.trash(file, true);
+		await app.fileManager.trashFile(file);
 		snapshots.push({
 			path: file.path,
 			originalRawContent,
