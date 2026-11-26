@@ -414,4 +414,202 @@ describe('splitChatController', () => {
 		expect(finalTurn.responses['s1'].status).toBe('done');
 		expect(finalTurn.responses['s2'].status).toBe('aborted');
 	});
+
+	it('abortAll과 RAG 컨텍스트 준비 실패/중단 시 모든 슬롯 상태를 error 또는 aborted로 전이한다', async () => {
+		setEntitlementState({
+			tier: 'pro',
+			status: 'active',
+			enabledFeatures: new Set(['split-chat']),
+		});
+
+		// 1) RAG 준비 실패 -> 모든 슬롯 error
+		vi.spyOn(contextBuilder, 'prepareSharedTurnContext').mockRejectedValueOnce(new Error('RAG network failure'));
+		await ctrl.sendPrompt('RAG 오류 질문', []);
+
+		const errTurn = getSplitChatState().turns[0];
+		expect(errTurn.responses['s1'].status).toBe('error');
+		expect(errTurn.responses['s2'].status).toBe('error');
+		expect(errTurn.responses['s1'].errorMessage).toBeTruthy();
+
+		// 2) RAG 도중 abortAll() 호출 -> 모든 슬롯 aborted
+		vi.spyOn(contextBuilder, 'prepareSharedTurnContext').mockImplementationOnce(
+			async ({ signal }) =>
+				new Promise((_, reject) => {
+					signal?.addEventListener('abort', () => {
+						const e = new Error('Aborted');
+						e.name = 'AbortError';
+						reject(e);
+					});
+				}),
+		);
+		const pendingRag = ctrl.sendPrompt('RAG 중단 질문', []);
+		await new Promise((r) => setTimeout(r, 10));
+		ctrl.abortAll();
+		await pendingRag;
+
+		const abortedRagTurn = getSplitChatState().turns[1];
+		expect(abortedRagTurn.responses['s1'].status).toBe('aborted');
+		expect(abortedRagTurn.responses['s2'].status).toBe('aborted');
+
+		// 3) 실행 중 슬롯들에 대한 abortAll()
+		vi.spyOn(contextBuilder, 'prepareSharedTurnContext').mockResolvedValueOnce({
+			attachmentContext: '',
+			multimodalImages: [],
+			failedAttachments: [],
+			ragContext: undefined,
+			ragChunksForLog: undefined,
+			activeFilePath: undefined,
+			activeFileTitle: undefined,
+			attachments: [],
+			ragSkipReason: 'disabled',
+			historyTurnsUsed: 0,
+			summaryApplied: false,
+			historyAttachmentsRestored: 0,
+		});
+		vi.spyOn(splitExecutor, 'executeSplitSlotCall').mockImplementation(
+			async (params) =>
+				new Promise((_, reject) => {
+					params.signal?.addEventListener('abort', () => {
+						const e = new Error('Aborted');
+						e.name = 'AbortError';
+						reject(e);
+					});
+				}),
+		);
+		const pendingRun = ctrl.sendPrompt('전체 슬롯 중단 질문', []);
+		await new Promise((r) => setTimeout(r, 20));
+		ctrl.abortAll();
+		await pendingRun;
+
+		const abortedSlotsTurn = getSplitChatState().turns[2];
+		expect(abortedSlotsTurn.responses['s1'].status).toBe('aborted');
+		expect(abortedSlotsTurn.responses['s2'].status).toBe('aborted');
+	});
+
+	it('editTurnAndResend는 후속 턴을 제거하고 active_note·빈 첨부를 걸러낸 뒤 수정된 프롬프트를 재전송한다', async () => {
+		setEntitlementState({
+			tier: 'pro',
+			status: 'active',
+			enabledFeatures: new Set(['split-chat']),
+		});
+
+		vi.spyOn(contextBuilder, 'prepareSharedTurnContext').mockResolvedValue({
+			attachmentContext: '',
+			multimodalImages: [],
+			failedAttachments: [],
+			ragContext: undefined,
+			ragChunksForLog: undefined,
+			activeFilePath: undefined,
+			activeFileTitle: undefined,
+			attachments: [],
+			ragSkipReason: 'disabled',
+			historyTurnsUsed: 0,
+			summaryApplied: false,
+			historyAttachmentsRestored: 0,
+		});
+		vi.spyOn(contextBuilder, 'resolveAttachmentsWithActiveNote').mockImplementation(
+			async (_app, atts) => atts,
+		);
+		const execSpy = vi.spyOn(splitExecutor, 'executeSplitSlotCall').mockResolvedValue({
+			content: '응답 완료',
+			hasTokenLimitBeenHit: false,
+			metrics: { startedAt: 1000, finishedAt: 1100, durationMs: 100 },
+		});
+
+		await ctrl.sendPrompt('1차 원문', [
+			{ type: 'active_note', name: 'Active.md', path: 'Active.md' },
+			{ type: 'external_file', name: 'empty.pdf', path: 'empty.pdf', content: '' },
+			{ type: 'file', name: 'keep.md', path: 'keep.md', content: '보존 내용' },
+		]);
+		await ctrl.sendPrompt('2차 원문(삭제될 턴)', []);
+		expect(getSplitChatState().turns).toHaveLength(2);
+
+		const firstTurnId = getSplitChatState().turns[0].id;
+		execSpy.mockClear();
+
+		await ctrl.editTurnAndResend(firstTurnId, '1차 수정 질문');
+
+		const state = getSplitChatState();
+		expect(state.turns).toHaveLength(1);
+		expect(state.turns[0].userMessage.content).toBe('1차 수정 질문');
+		expect(state.turns[0].userMessage.attachments?.map((a) => a.name)).toEqual(['keep.md']);
+		expect(execSpy).toHaveBeenCalledTimes(2);
+	});
+
+	it('히스토리 조회·복원·이름 변경·삭제 및 Pro 내보내기 전체 CRUD 경로가 정상 동작한다', async () => {
+		setEntitlementState({
+			tier: 'pro',
+			status: 'active',
+			enabledFeatures: new Set(['split-chat']),
+		});
+
+		const { TFile } = await import('obsidian');
+		const summaryList = [
+			{
+				id: 'sess-1',
+				title: '비교 세션',
+				createdAt: 1000,
+				updatedAt: 1000,
+				mode: 'side-by-side' as const,
+				turnCount: 1,
+				modelLabels: ['gpt-4o'],
+				hasWinner: false,
+			},
+		];
+		const mockSession = {
+			id: 'sess-1',
+			sessionType: 'split' as const,
+			title: '비교 세션',
+			slots: [{ slotId: 's1', label: 'A', providerId: 'p1', modelId: 'gpt-4o' }],
+			turns: [
+				{
+					id: 't1',
+					userMessage: { id: 'u1', role: 'user' as const, content: '질문', isStreaming: false, timestamp: 1000 },
+					ragStep: null,
+					isRevealed: true,
+					responses: {},
+				},
+			],
+			mode: 'side-by-side' as const,
+			contextMode: 'independent' as const,
+			createdAt: 1000,
+			updatedAt: 1000,
+		};
+
+		vi.spyOn(splitHistory, 'loadSplitSessionsList').mockResolvedValue(summaryList);
+		vi.spyOn(splitHistory, 'loadSplitSession')
+			.mockResolvedValueOnce(mockSession)
+			.mockResolvedValueOnce(null)
+			.mockResolvedValueOnce(mockSession)
+			.mockResolvedValueOnce(null);
+		vi.spyOn(splitHistory, 'renameSplitSession').mockResolvedValue({ ...mockSession, title: '새 제목' });
+		vi.spyOn(splitHistory, 'deleteSplitSession').mockResolvedValue(true);
+		const exportSpy = vi
+			.spyOn(splitHistory, 'exportSplitSessionToMarkdown')
+			.mockResolvedValue(Object.assign(new TFile(), { path: 'Exports/s1.md' }));
+
+		// 1. 목록 조회 & 복원
+		expect(await ctrl.fetchHistorySessions()).toEqual(summaryList);
+		expect(await ctrl.restoreHistorySession('sess-1')).toBe(true);
+		expect(getSplitChatState().sessionId).toBe('sess-1');
+		expect(await ctrl.restoreHistorySession('missing')).toBe(false);
+
+		// 2. 이름 변경 (공백 거절 & 정상 반영)
+		expect(await ctrl.renameHistorySession('sess-1', '   ')).toBe(false);
+		expect(await ctrl.renameHistorySession('sess-1', '새 제목')).toBe(true);
+		expect(getSplitChatState().sessionTitle).toBe('새 제목');
+
+		// 3. Pro 내보내기 (현재 세션 & 특정 세션 & 존재하지 않는 세션)
+		expect(await ctrl.exportCurrentComparison()).toBe(true);
+		expect(exportSpy).toHaveBeenCalledTimes(1);
+		expect(await ctrl.exportHistorySession('sess-1')).toBe(true);
+		expect(exportSpy).toHaveBeenCalledTimes(2);
+		expect(await ctrl.exportHistorySession('missing')).toBe(false);
+
+		// 4. 현재 활성 세션 삭제 시 스토어 초기화
+		expect(await ctrl.deleteHistorySession('sess-1')).toBe(true);
+		expect(getSplitChatState().sessionId).toBeNull();
+		expect(getSplitChatState().turns).toHaveLength(0);
+		expect(await ctrl.exportCurrentComparison()).toBe(false);
+	});
 });

@@ -97,6 +97,7 @@ describe('VoiceNoteManager', () => {
 					modify: vi.fn().mockResolvedValue(undefined),
 					create: vi.fn(),
 					createBinary: vi.fn(),
+					createFolder: vi.fn().mockResolvedValue(undefined),
 					delete: vi.fn(),
 					getMarkdownFiles: vi.fn().mockReturnValue([activeFile]),
 					getAbstractFileByPath: vi.fn().mockReturnValue(activeFile),
@@ -674,5 +675,156 @@ describe('VoiceNoteManager', () => {
 			manager.destroy();
 			vi.useRealTimers();
 		}
+	});
+
+	it('미완료 녹음 백업 복구(recoverUnfinishedSession)와 폐기(discardUnfinishedSession)가 정상 동작한다', async () => {
+		grantVoiceEntitlement();
+		const chunk = new Blob([new Uint8Array([1, 2, 3, 4])], { type: 'audio/webm' });
+
+		vi.spyOn(recoveryStore, 'hasBackupSession').mockResolvedValue(true);
+		vi.spyOn(recoveryStore, 'loadBackupSession').mockResolvedValueOnce({
+			id: 'active',
+			chunks: [chunk],
+			mimeType: 'audio/webm',
+			elapsedSec: 25,
+			targetFilePath: 'Notes/Meeting.md',
+			templateId: 'clean',
+			updatedAt: Date.now(),
+		});
+
+		vi.spyOn(sttResolver, 'resolveSttEngine').mockReturnValue({
+			id: 'mock-stt',
+			label: 'Mock STT',
+			transcribe: vi.fn().mockResolvedValue({
+				text: '복구된 녹음 전사 텍스트입니다.',
+				segments: [{ startSec: 0, endSec: 5, text: '복구된 녹음 전사 텍스트입니다.' }],
+				engineLabel: 'Mock STT',
+			}),
+		});
+		vi.spyOn(llmProviders, 'createProvider').mockReturnValue({
+			providerId: 'prov-1',
+			chat: vi.fn().mockResolvedValue({ content: '복구된 요약 노트' }),
+		} as unknown as ReturnType<typeof llmProviders.createProvider>);
+
+		const manager = new VoiceNoteManager(mockPlugin);
+		await manager.init();
+		expect(get(voiceStore).hasRecoverableSession).toBe(true);
+
+		await manager.recoverUnfinishedSession();
+		expect(get(voiceStore).status).toBe('review');
+		expect(get(voiceStore).hasRecoverableSession).toBe(false);
+		expect(recoveryStore.clearBackupSession).toHaveBeenCalledTimes(1);
+		expect(fakeDocContent).toContain('복구된 요약 노트');
+
+		// discardUnfinishedSession 테스트
+		await manager.applyReview();
+		await manager.discardUnfinishedSession();
+		expect(recoveryStore.clearBackupSession).toHaveBeenCalledTimes(2);
+		expect(get(voiceStore).hasRecoverableSession).toBe(false);
+		expect(document.querySelector('.lumina-voice-overlay-root')).toBeNull();
+
+		manager.destroy();
+	});
+
+	it('replaceWithRawTranscriptOnly, transcribeVaultFile 정상 경로, saveAudioToVault 충돌 회피를 검증한다', async () => {
+		grantVoiceEntitlement();
+		mockPlugin.settings.voiceNote = {
+			audioStorageMode: 'vault',
+			audioFolder: 'Attachments/Voice',
+			autoWikiLink: false,
+		};
+
+		const audioFile = new TFile();
+		audioFile.path = 'Recordings/clip.m4a';
+		audioFile.name = 'clip.m4a';
+		audioFile.extension = 'm4a';
+		(mockPlugin.app.vault as unknown as { readBinary: ReturnType<typeof vi.fn> }).readBinary =
+			vi.fn().mockResolvedValue(new ArrayBuffer(32));
+
+		vi.spyOn(sttResolver, 'resolveSttEngine').mockReturnValue({
+			id: 'mock-stt',
+			label: 'Mock STT',
+			transcribe: vi.fn().mockResolvedValue({
+				text: '원본 전사 텍스트 그대로',
+				segments: [{ startSec: 0, endSec: 3, text: '원본 전사 텍스트 그대로' }],
+				engineLabel: 'Mock STT',
+			}),
+		});
+		const chatSpy = vi.fn().mockResolvedValue({ content: 'LLM 가공 결과' });
+		vi.spyOn(llmProviders, 'createProvider').mockReturnValue({
+			providerId: 'prov-1',
+			chat: chatSpy,
+		} as unknown as ReturnType<typeof llmProviders.createProvider>);
+
+		const manager = new VoiceNoteManager(mockPlugin);
+		try {
+			await manager.init();
+
+			// 1) transcribeVaultFile 정상 변환 후 replaceWithRawTranscriptOnly 호출
+			await manager.transcribeVaultFile(audioFile);
+			expect(get(voiceStore).status).toBe('review');
+			expect(fakeDocContent).toContain('LLM 가공 결과');
+
+			await manager.replaceWithRawTranscriptOnly();
+			expect(chatSpy).toHaveBeenCalledTimes(1); // 추가 LLM 호출 없음
+			expect(get(voiceStore).templateId).toBe('verbatim');
+			expect(fakeDocContent).toContain('원본 전사 텍스트 그대로');
+
+			// 2) audioStorageMode='vault' 저장 시 동일 파일명이 이미 있으면 타임스탬프 접미사 부여
+			await manager.applyReview();
+			const createBinarySpy = mockPlugin.app.vault.createBinary as ReturnType<typeof vi.fn>;
+			(mockPlugin.app.vault.getAbstractFileByPath as ReturnType<typeof vi.fn>).mockImplementation(
+				(p: string) => {
+					if (p.startsWith('Attachments/Voice/recording_')) return new TFile();
+					return null;
+				},
+			);
+			await manager.startRecording();
+			await manager.stopAndProcess();
+			expect(createBinarySpy).toHaveBeenCalledTimes(1);
+			const savedPath = createBinarySpy.mock.calls[0][0] as string;
+			expect(savedPath).toMatch(/^Attachments\/Voice\/recording_.*_\d+\./);
+		} finally {
+			manager.destroy();
+		}
+	});
+
+	it('노트 내 #lumina-ts=초 링크 클릭 시 오디오 재생 시점을 이동하고, 마이크 권한 거부 시 error 상태 후 dismissError로 복구한다', async () => {
+		grantVoiceEntitlement();
+
+		const manager = new VoiceNoteManager(mockPlugin);
+		await manager.init();
+
+		// 1) #lumina-ts=75 클릭 -> audio.currentTime = 75 & play()
+		const viewWrap = document.createElement('div');
+		viewWrap.className = 'markdown-reading-view';
+		const audioEl = document.createElement('audio');
+		const playSpy = vi.fn().mockResolvedValue(undefined);
+		audioEl.play = playSpy;
+		const linkEl = document.createElement('a');
+		linkEl.setAttribute('href', '#lumina-ts=75');
+		viewWrap.appendChild(audioEl);
+		viewWrap.appendChild(linkEl);
+		document.body.appendChild(viewWrap);
+
+		linkEl.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+		expect(audioEl.currentTime).toBe(75);
+		expect(playSpy).toHaveBeenCalledTimes(1);
+		viewWrap.remove();
+
+		// 2) getUserMedia 권한 거부(NotAllowedError) -> status: 'error' -> dismissError() 복구
+		const deniedErr = new Error('Permission denied');
+		deniedErr.name = 'NotAllowedError';
+		(navigator.mediaDevices.getUserMedia as ReturnType<typeof vi.fn>).mockRejectedValueOnce(deniedErr);
+
+		await manager.startRecording();
+		expect(get(voiceStore).status).toBe('error');
+		expect(get(voiceStore).errorMessage).toBeTruthy();
+
+		manager.dismissError();
+		expect(get(voiceStore).status).toBe('idle');
+		expect(get(voiceStore).errorMessage).toBeNull();
+
+		manager.destroy();
 	});
 });

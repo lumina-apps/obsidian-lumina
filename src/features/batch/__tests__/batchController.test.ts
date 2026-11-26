@@ -380,4 +380,141 @@ describe('BatchStudioController', () => {
 		expect(fileObjs['a.md']).toBeDefined();
 		expect(diskFiles['a.md']).toBe(originalText);
 	});
+
+	it('일시정지(pauseBatch)·재개(resumeBatch)·중단(cancelBatch) 시 대기 항목을 skipped로 처리하고 상태를 전이한다', async () => {
+		let releaseFirstItem!: () => void;
+		const firstItemGate = new Promise<void>((resolve) => {
+			releaseFirstItem = resolve;
+		});
+
+		let callIdx = 0;
+		vi.mocked(createProvider).mockReturnValue({
+			chat: vi.fn().mockImplementation(async () => {
+				callIdx++;
+				if (callIdx === 1) {
+					await firstItemGate;
+				}
+				return {
+					content: '{"tags": ["진행"], "description": "요약"}',
+					usage: { inputTokens: 10, outputTokens: 10, totalTokens: 20 },
+				};
+			}),
+		} as unknown as ReturnType<typeof createProvider>);
+
+		const batchPromise = controller.startBatch();
+		await new Promise((r) => setTimeout(r, 15));
+		expect(getBatchState().runState).toBe('running');
+
+		// 일시정지 -> 재개
+		controller.pauseBatch();
+		expect(getBatchState().runState).toBe('paused');
+		controller.resumeBatch();
+		expect(getBatchState().runState).toBe('running');
+
+		// 첫 항목 완료 전에 전체 중단 -> b.md는 queued/running에서 skipped로 전이
+		controller.cancelBatch();
+		releaseFirstItem();
+		await batchPromise;
+
+		const state = getBatchState();
+		expect(state.runState).toBe('completed');
+		expect(state.queue.find((q) => q.path === 'b.md')?.status).toBe('skipped');
+	});
+
+	it('retryFailedItems는 실패한 항목만 다시 대기열로 올려 재실행한다', async () => {
+		const chatMock = vi
+			.fn()
+			.mockRejectedValueOnce(new Error('HTTP 500 Internal Error'))
+			.mockResolvedValueOnce({
+				content: '{"tags": ["ok"], "description": "성공"}',
+			})
+			.mockResolvedValueOnce({
+				content: '{"tags": ["retry-ok"], "description": "재시도 성공"}',
+			});
+
+		vi.mocked(createProvider).mockReturnValue({
+			chat: chatMock,
+		} as unknown as ReturnType<typeof createProvider>);
+
+		await controller.startBatch();
+		expect(chatMock).toHaveBeenCalledTimes(2);
+		expect(getBatchState().queue.find((q) => q.path === 'a.md')?.status).toBe('failed');
+		expect(getBatchState().queue.find((q) => q.path === 'b.md')?.status).toBe('staged');
+
+		await controller.retryFailedItems();
+		expect(chatMock).toHaveBeenCalledTimes(3); // 실패했던 a.md 1건만 재호출
+		expect(getBatchState().queue.find((q) => q.path === 'a.md')?.status).toBe('staged');
+	});
+
+	it('summary-callout, custom-prompt, autolink 레시피 적용·스냅샷 롤백 및 이중 롤백 방지를 검증한다', async () => {
+		// 1) summary-callout 실행 및 적용
+		vi.mocked(createProvider).mockReturnValue({
+			chat: vi.fn().mockResolvedValue({
+				content: '핵심 내용 한 줄 요약입니다.',
+				usage: { inputTokens: 20, outputTokens: 15, totalTokens: 35 },
+			}),
+		} as unknown as ReturnType<typeof createProvider>);
+
+		patchBatchState({ activeRecipeId: 'summary-callout' });
+		await controller.startBatch();
+		expect(getBatchState().queue[0].status).toBe('staged');
+		expect(await controller.applySingleItem('a.md')).toBe(true);
+		expect(diskFiles['a.md']).toContain('> [!summary] Summary');
+
+		const summaryHistoryId = getBatchState().history[0].id;
+		expect(await controller.rollbackHistoryEntry(summaryHistoryId)).toBe(1);
+		// 이미 롤백된 히스토리 재호출 시 0 반환 (이중 롤백 방지)
+		expect(await controller.rollbackHistoryEntry(summaryHistoryId)).toBe(0);
+
+		// 2) custom-prompt (prepend 모드) 실행 및 적용
+		resetBatchStore();
+		diskFiles['a.md'] = '첫 번째 노트의 충분한 본문 텍스트입니다. 마크다운 테스트용 문서이며 최소 글자 수 기준을 여유 있게 넘깁니다.';
+		patchBatchState({
+			activeRecipeId: 'custom-prompt',
+			recipeOptions: {
+				...getBatchState().recipeOptions,
+				customPrompt: '핵심만 적으세요',
+				customOutputMode: 'prepend',
+			},
+		});
+		await controller.startBatch();
+		expect(await controller.applySingleItem('a.md')).toBe(true);
+		expect(diskFiles['a.md']).toContain('핵심 내용 한 줄 요약입니다.');
+
+		// 대상 파일 삭제 후 롤백 시 에러 없이 0건 복원
+		delete fileObjs['a.md'];
+		const customHistoryId = getBatchState().history[0].id;
+		expect(await controller.rollbackHistoryEntry(customHistoryId)).toBe(0);
+
+		// 3) autolink 실행 (LLM 없이 로컬 볼트 노트명 링크)
+		resetBatchStore();
+		const targetNote = makeFile('Lumina Guide.md');
+		fileObjs[targetNote.path] = targetNote;
+		diskFiles[targetNote.path] = 'Lumina Guide 문서 본문입니다.';
+		const srcNote = makeFile('source.md');
+		fileObjs[srcNote.path] = srcNote;
+		diskFiles[srcNote.path] = '오늘은 Lumina Guide 문서와 관련된 충분한 분량의 내용을 정리하는 테스트 노트입니다.';
+		delete fileObjs['b.md'];
+		fmStore[targetNote.path] = {};
+		fmStore[srcNote.path] = {};
+
+		patchBatchState({ activeRecipeId: 'autolink' });
+		await controller.startBatch();
+		const srcItem = getBatchState().queue.find((q) => q.path === 'source.md');
+		expect(srcItem?.status).toBe('staged');
+		expect(srcItem?.proposed?.afterContent).toContain('[[Lumina Guide]]');
+	});
+
+	it('매칭 대상 파일이 0건이면 LLM을 호출하지 않고 runState를 idle로 유지한다', async () => {
+		fileObjs = {};
+		const chatMock = vi.fn();
+		vi.mocked(createProvider).mockReturnValue({
+			chat: chatMock,
+		} as unknown as ReturnType<typeof createProvider>);
+
+		await controller.startBatch();
+		expect(chatMock).not.toHaveBeenCalled();
+		expect(getBatchState().runState).toBe('idle');
+		expect(getBatchState().queue).toHaveLength(0);
+	});
 });

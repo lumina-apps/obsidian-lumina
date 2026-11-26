@@ -168,4 +168,80 @@ describe('PendingVoiceScanner', () => {
 		);
 		expect(totalRemainingListeners).toBe(0);
 	});
+
+	it('delete·rename 이벤트, 0바이트 오디오 대기 유지 및 한 노트 내 다중 마커를 정확히 추적한다', async () => {
+		vi.useFakeTimers();
+
+		const multiNote = makeFile('Notes/Multi.md');
+		const a1 = makeFile('Audio/one.m4a', 1024, Date.now() - 10_000);
+		const a2 = makeFile('Audio/zero.m4a', 0, Date.now());
+
+		const multiContent = [
+			buildPendingVoiceBlock({
+				id: 'v_one',
+				audioVaultPath: a1.path,
+				templateId: 'clean',
+				pendingNoticeText: '1번 대기',
+			}),
+			buildPendingVoiceBlock({
+				id: 'v_two',
+				audioVaultPath: a2.path,
+				templateId: 'meeting',
+				pendingNoticeText: '2번 대기',
+			}),
+		].join('\n\n');
+
+		const contents = new Map([[multiNote.path, multiContent]]);
+		const { app, emit, fileMap } = createMockApp([multiNote, a1, a2], contents);
+
+		let latestItems: PendingVoiceItem[] = [];
+		const scanner = new PendingVoiceScanner(
+			app,
+			(items) => {
+				latestItems = items;
+			},
+			{ settleDelayMs: 2000 },
+		);
+
+		await scanner.start();
+		expect(latestItems).toHaveLength(2);
+		expect(latestItems.find((i) => i.id === 'v_one')?.status).toBe('ready');
+		expect(latestItems.find((i) => i.id === 'v_two')?.status).toBe('waiting-audio');
+
+		// 1) 0바이트 오디오는 settleDelayMs가 지나도 waiting-audio 유지
+		await vi.advanceTimersByTimeAsync(2000);
+		expect(latestItems.find((i) => i.id === 'v_two')?.status).toBe('waiting-audio');
+
+		// 크기가 채워지고 안정화되면 ready 전환
+		a2.stat.size = 2048;
+		emit('modify', a2);
+		await vi.advanceTimersByTimeAsync(2000);
+		expect(latestItems.find((i) => i.id === 'v_two')?.status).toBe('ready');
+
+		// 2) 노트 rename 이벤트 -> 새 경로로 notePath 갱신
+		const oldPath = multiNote.path;
+		multiNote.path = 'Notes/RenamedMulti.md';
+		contents.delete(oldPath);
+		contents.set(multiNote.path, multiContent);
+		fileMap.delete(oldPath);
+		fileMap.set(multiNote.path, multiNote);
+
+		emit('rename', multiNote, oldPath);
+		for (let i = 0; i < 6; i++) {
+			await Promise.resolve();
+		}
+		expect(latestItems.every((i) => i.notePath === 'Notes/RenamedMulti.md')).toBe(true);
+
+		// 3) 참조 중인 오디오 파일 delete -> waiting-audio 전환
+		fileMap.delete(a1.path);
+		emit('delete', a1);
+		expect(latestItems.find((i) => i.id === 'v_one')?.status).toBe('waiting-audio');
+
+		// 4) 노트 자체 delete -> 대기 항목 전체 제거
+		fileMap.delete(multiNote.path);
+		emit('delete', multiNote);
+		expect(latestItems).toHaveLength(0);
+
+		scanner.destroy();
+	});
 });

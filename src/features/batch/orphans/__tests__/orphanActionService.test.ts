@@ -5,6 +5,7 @@ import { createProvider } from '../../../../core/llm-providers';
 import { DEFAULT_SETTINGS } from '../../../../core/settings/defaultSettings';
 import { getBatchState, resetBatchStore } from '../../../../core/store/batchStore';
 import {
+	applyAiContextualLinkProposal,
 	archiveOrphanFiles,
 	createOrAppendOrphanMoc,
 	insertOrphanWikiLink,
@@ -194,5 +195,97 @@ describe('orphanActionService', () => {
 		expect(appended.created).toBe(false);
 		expect(appended.addedCount).toBe(1);
 		expect(contents['MOCs/Orphans.md']).toContain('[[second]]');
+	});
+
+	it('insertOrphanWikiLink는 to-orphan 방향, 기존 ## Related 섹션 삽입 및 중복 basename 경로 한정 링크를 지원한다', async () => {
+		const dupIdea = makeFile('Archive/idea.md');
+		files['Archive/idea.md'] = dupIdea;
+		contents['Archive/idea.md'] = '# Duplicate Idea';
+		contents['Projects/hub.md'] = '# Hub\n## Related\n- [[existing]]\n\n## Next Section\n내용';
+
+		const res = await insertOrphanWikiLink(
+			mockApp,
+			files['Inbox/idea.md'],
+			files['Projects/hub.md'],
+			'to-orphan',
+		);
+
+		expect(res.skipped).toBe(false);
+		expect(res.modifiedPath).toBe('Projects/hub.md');
+		expect(contents['Projects/hub.md']).toContain('- [[existing]]\n- [[Inbox/idea|idea]]\n\n## Next Section');
+	});
+
+	it('proposeAiContextualLink는 이미 링크 시 0토큰 반환, 잘못된 LLM 응답 시 Related 폴백, applyAiContextualLinkProposal 예외·스냅샷을 검증한다', async () => {
+		// 1) 이미 위키링크가 있는 경우 LLM 미호출
+		contents['Inbox/idea.md'] = '이미 [[hub]]와 연결됨';
+		const already = await proposeAiContextualLink(
+			mockApp,
+			mockPlugin,
+			files['Inbox/idea.md'],
+			files['Projects/hub.md'],
+			'from-orphan',
+		);
+		expect(already.tokensUsed).toBe(0);
+		expect(already.afterContent).toBe(already.beforeContent);
+		expect(await applyAiContextualLinkProposal(mockApp, already)).toBeNull();
+
+		// 2) LLM이 존재하지 않는 anchorLine 또는 링크 누락 응답 -> Related 폴백
+		contents['Inbox/idea.md'] = '# Idea\n새 본문 줄입니다.';
+		vi.mocked(createProvider).mockReturnValue({
+			chat: vi.fn().mockResolvedValue({
+				content: JSON.stringify({
+					anchorLine: '존재하지 않는 줄',
+					replacementLine: '링크가 빠진 줄',
+					reason: '테스트',
+				}),
+				usage: { totalTokens: 12 },
+			}),
+		} as unknown as ReturnType<typeof createProvider>);
+
+		const fallbackProp = await proposeAiContextualLink(
+			mockApp,
+			mockPlugin,
+			files['Inbox/idea.md'],
+			files['Projects/hub.md'],
+			'from-orphan',
+		);
+		expect(fallbackProp.afterContent).toContain('## Related\n- [[hub]]');
+
+		// 3) applyAiContextualLinkProposal 정상 반영 + 스냅샷 반환 + 파일 미존재 throw
+		const snap = await applyAiContextualLinkProposal(mockApp, fallbackProp);
+		expect(snap).toEqual({
+			path: 'Inbox/idea.md',
+			originalRawContent: '# Idea\n새 본문 줄입니다.',
+		});
+		expect(contents['Inbox/idea.md']).toContain('## Related\n- [[hub]]');
+
+		await expect(
+			applyAiContextualLinkProposal(mockApp, {
+				...fallbackProp,
+				modifiedFilePath: 'Missing/none.md',
+			}),
+		).rejects.toThrow('File not found: Missing/none.md');
+	});
+
+	it('archiveOrphanFiles와 createOrAppendOrphanMoc은 잘못된 폴더·이미 위치한 파일·빈 입력을 안전하게 처리한다', async () => {
+		// 잘못된 아카이브 경로 -> throw
+		await expect(
+			archiveOrphanFiles(mockApp, [files['Inbox/idea.md']], '.obsidian/secret'),
+		).rejects.toThrow(/Invalid archive folder/);
+
+		// 이미 같은 폴더에 있는 파일은 이동 스킵
+		const sameFolder = await archiveOrphanFiles(mockApp, [files['Inbox/idea.md']], 'Inbox');
+		expect(sameFolder.movedCount).toBe(0);
+
+		// MOC 예외 입력들
+		await expect(createOrAppendOrphanMoc(mockApp, [], 'MOC.md', 'Title')).rejects.toThrow(
+			'At least one orphan note is required.',
+		);
+		await expect(
+			createOrAppendOrphanMoc(mockApp, [files['Inbox/idea.md']], '   ', 'Title'),
+		).rejects.toThrow('MOC path is required.');
+		await expect(
+			createOrAppendOrphanMoc(mockApp, [files['Inbox/idea.md']], '.obsidian/MOC.md', 'Title'),
+		).rejects.toThrow(/Invalid MOC folder/);
 	});
 });

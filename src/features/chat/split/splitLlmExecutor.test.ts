@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DEFAULT_SETTINGS } from '../../../core/settings/defaultSettings';
+import { debugLogger } from '../../../shared/debugLogger';
+import { t } from '../../../shared/locales/helpers';
 import type { LLMProviderConfig } from '../../../shared/types/settings.types';
 import type { SharedTurnContext } from '../utils/contextBuilder';
 import { executeSplitSlotCall, SPLIT_CHUNK_BATCH_INTERVAL_MS } from './splitLlmExecutor';
@@ -166,5 +168,178 @@ describe('splitLlmExecutor', () => {
 		expect(flushed).toEqual(['단일 응답 결과']);
 		expect(result.content).toBe('단일 응답 결과');
 		expect(result.tokenUsage?.totalTokens).toBe(15);
+	});
+
+	it('스트리밍 중 오류와 AbortError 발생 시 stopReason을 error/aborted로 로깅하고 예외를 전파한다', async () => {
+		const logRespSpy = vi.spyOn(debugLogger, 'logResponse');
+
+		// 1) 일반 스트리밍 오류
+		vi.spyOn(providerFactory, 'createProvider').mockReturnValue({
+			providerId: 'openai',
+			listModels: vi.fn(),
+			chat: vi.fn(),
+			stream: vi.fn().mockRejectedValue(new Error('Upstream 500')),
+			embed: vi.fn(),
+		});
+
+		const baseParams = {
+			slot: { slotId: 's1', label: 'A', providerId: 'p1', modelId: 'gpt-4o' },
+			providerConfig: {
+				id: 'p1',
+				type: 'openai' as const,
+				credential: 'sk-test',
+				availableModels: ['gpt-4o'],
+				isVerified: true,
+			},
+			userText: '에러 테스트',
+			history: [],
+			sharedContext: makeSharedContext(),
+			chatSettings: { ...DEFAULT_SETTINGS.chat, streaming: true },
+			onChunkFlush: vi.fn(),
+		};
+
+		await expect(executeSplitSlotCall(baseParams)).rejects.toThrow('Upstream 500');
+		expect(logRespSpy).toHaveBeenCalledWith(
+			expect.any(String),
+			expect.objectContaining({ stopReason: 'error' }),
+		);
+
+		// 2) AbortError 중단
+		logRespSpy.mockClear();
+		const ac = new AbortController();
+		ac.abort();
+		const abortErr = new Error('Aborted');
+		abortErr.name = 'AbortError';
+		vi.spyOn(providerFactory, 'createProvider').mockReturnValue({
+			providerId: 'openai',
+			listModels: vi.fn(),
+			chat: vi.fn(),
+			stream: vi.fn().mockRejectedValue(abortErr),
+			embed: vi.fn(),
+		});
+
+		await expect(executeSplitSlotCall({ ...baseParams, signal: ac.signal })).rejects.toThrow('Aborted');
+		expect(logRespSpy).toHaveBeenCalledWith(
+			expect.any(String),
+			expect.objectContaining({ stopReason: 'aborted' }),
+		);
+	});
+
+	it('finishReason이 length이면 토큰 한도 도달 경고를 추가하고, 빈 응답 폴백을 정확히 구분한다', async () => {
+		const providerConfig: LLMProviderConfig = {
+			id: 'p1',
+			type: 'openai',
+			credential: 'sk-test',
+			availableModels: ['gpt-4o'],
+			isVerified: true,
+		};
+
+		// 1) 본문이 있는 상태에서 finishReason='length'
+		vi.spyOn(providerFactory, 'createProvider').mockReturnValue({
+			providerId: 'openai',
+			listModels: vi.fn(),
+			chat: vi.fn().mockResolvedValue({
+				content: '부분 답변입니다.',
+				finishReason: 'length',
+				usage: { inputTokens: 10, outputTokens: 100, totalTokens: 110 },
+			}),
+			stream: vi.fn(),
+			embed: vi.fn(),
+		});
+
+		const truncated = await executeSplitSlotCall({
+			slot: { slotId: 's1', label: 'A', providerId: 'p1', modelId: 'gpt-4o' },
+			providerConfig,
+			userText: '길게 설명해줘',
+			history: [],
+			sharedContext: makeSharedContext(),
+			chatSettings: { ...DEFAULT_SETTINGS.chat, streaming: false },
+			onChunkFlush: vi.fn(),
+		});
+		expect(truncated.hasTokenLimitBeenHit).toBe(true);
+		expect(truncated.content).toContain('부분 답변입니다.');
+		expect(truncated.content).toContain(t('uiMessages.tokenLimitHitWarning'));
+
+		// 2) 빈 응답 + 일반 종료
+		vi.spyOn(providerFactory, 'createProvider').mockReturnValue({
+			providerId: 'openai',
+			listModels: vi.fn(),
+			chat: vi.fn().mockResolvedValue({ content: '<think>생각만 함</think>', finishReason: 'stop' }),
+			stream: vi.fn(),
+			embed: vi.fn(),
+		});
+		const emptyNormal = await executeSplitSlotCall({
+			slot: { slotId: 's1', label: 'A', providerId: 'p1', modelId: 'gpt-4o' },
+			providerConfig,
+			userText: '질문',
+			history: [],
+			sharedContext: makeSharedContext(),
+			chatSettings: { ...DEFAULT_SETTINGS.chat, streaming: false },
+			onChunkFlush: vi.fn(),
+		});
+		expect(emptyNormal.hasTokenLimitBeenHit).toBe(false);
+		expect(emptyNormal.content).toBe(t('settings.chat.emptyResponseFallback'));
+
+		// 3) 빈 응답 + 토큰 한도 초과
+		vi.spyOn(providerFactory, 'createProvider').mockReturnValue({
+			providerId: 'openai',
+			listModels: vi.fn(),
+			chat: vi.fn().mockResolvedValue({ content: '', finishReason: 'length' }),
+			stream: vi.fn(),
+			embed: vi.fn(),
+		});
+		const emptyTokenLimit = await executeSplitSlotCall({
+			slot: { slotId: 's1', label: 'A', providerId: 'p1', modelId: 'gpt-4o' },
+			providerConfig,
+			userText: '질문',
+			history: [],
+			sharedContext: makeSharedContext(),
+			chatSettings: { ...DEFAULT_SETTINGS.chat, streaming: false },
+			onChunkFlush: vi.fn(),
+		});
+		expect(emptyTokenLimit.hasTokenLimitBeenHit).toBe(true);
+		expect(emptyTokenLimit.content).toBe(t('uiMessages.emptyResponseTokenLimit'));
+	});
+
+	it('멀티모달 이미지 첨부 시 Vision 지원 프로바이더에 이미지 파트를 주입해 호출한다', async () => {
+		const chatMock = vi.fn().mockResolvedValue({
+			content: '이미지 설명입니다.',
+			finishReason: 'stop',
+		});
+		vi.spyOn(providerFactory, 'createProvider').mockReturnValue({
+			providerId: 'openai',
+			listModels: vi.fn(),
+			chat: chatMock,
+			stream: vi.fn(),
+			embed: vi.fn(),
+		});
+
+		await executeSplitSlotCall({
+			slot: { slotId: 's1', label: 'A', providerId: 'p1', modelId: 'gpt-4o' },
+			providerConfig: {
+				id: 'p1',
+				type: 'openai',
+				credential: 'sk-test',
+				availableModels: ['gpt-4o'],
+				isVerified: true,
+			},
+			userText: '이 사진이 뭐야?',
+			history: [],
+			sharedContext: makeSharedContext({
+				multimodalImages: ['data:image/png;base64,iVBORw0KGgo='],
+			}),
+			chatSettings: { ...DEFAULT_SETTINGS.chat, streaming: false },
+			onChunkFlush: vi.fn(),
+		});
+
+		expect(chatMock).toHaveBeenCalledTimes(1);
+		const sentMsgs = chatMock.mock.calls[0][0] as Array<{ role: string; content: unknown }>;
+		const lastUserMsg = sentMsgs.filter((m) => m.role === 'user').pop();
+		expect(lastUserMsg).toBeDefined();
+		expect(Array.isArray(lastUserMsg?.content)).toBe(true);
+		const parts = lastUserMsg?.content as Array<{ type: string; image_url?: { url: string } }>;
+		expect(parts.some((p) => p.type === 'image_url' && p.image_url?.url === 'data:image/png;base64,iVBORw0KGgo=')).toBe(
+			true,
+		);
 	});
 });

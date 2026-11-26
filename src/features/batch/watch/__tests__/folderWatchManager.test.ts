@@ -243,6 +243,7 @@ describe('FolderWatchManager', () => {
 	});
 
 	afterEach(() => {
+		vi.useRealTimers();
 		manager?.destroy();
 		window.localStorage?.removeItem?.(DEVICE_WATCH_ENABLED_KEY);
 		resetBatchStore();
@@ -449,5 +450,145 @@ describe('FolderWatchManager', () => {
 		for (const set of workspaceListeners.values()) {
 			expect(set.size).toBe(0);
 		}
+	});
+
+	it('일일 상한(dailyMaxItems) 도달 시 추가 자동감시 작업을 차단하고 daily-cap 로그를 기록한다', async () => {
+		const { incrementDailyProcessed } = await import('../../../../core/store/batchWatchStore');
+		mockPlugin.settings.batchWatch!.dailyMaxItems = 2;
+		incrementDailyProcessed();
+		incrementDailyProcessed();
+
+		const chatSpy = vi.fn().mockResolvedValue({
+			content: '{"tags": ["x"], "description": "y"}',
+		});
+		vi.mocked(createProvider).mockReturnValue({
+			chat: chatSpy,
+		} as unknown as ReturnType<typeof createProvider>);
+
+		manager = new FolderWatchManager(mockPlugin, {
+			startupGraceMs: 0,
+			mtimeMaxAgeMs: 0,
+		});
+		manager.init();
+
+		const f3 = makeFile('00_Inbox/third.md');
+		fileObjs[f3.path] = f3;
+		diskFiles[f3.path] = '일일 상한 초과 테스트 노트 본문입니다. 충분히 긴 내용입니다.';
+		emitVault('create', f3);
+		await flushAsync();
+
+		expect(chatSpy).not.toHaveBeenCalled();
+		expect(getBatchWatchState().stagedItems).toHaveLength(0);
+		expect(
+			getBatchWatchState().activityLog.some(
+				(l) => l.status === 'daily-cap' && l.path === '00_Inbox/third.md',
+			),
+		).toBe(true);
+	});
+
+	it('runRuleNow 수동 실행, rejectStagedItem, approveAllStaged, setDeviceEnabled(false/true)가 정상 동작한다', async () => {
+		vi.mocked(createProvider).mockReturnValue({
+			chat: vi.fn().mockResolvedValue({
+				content: '{"tags": ["수동"], "description": "요약"}',
+			}),
+		} as unknown as ReturnType<typeof createProvider>);
+
+		const f1 = makeFile('00_Inbox/p1.md');
+		const f2 = makeFile('00_Inbox/p2.md');
+		fileObjs[f1.path] = f1;
+		fileObjs[f2.path] = f2;
+		diskFiles[f1.path] = '첫 번째 수동 스캔 테스트 본문입니다. 충분한 길이를 확보합니다.';
+		diskFiles[f2.path] = '두 번째 수동 스캔 테스트 본문입니다. 충분한 길이를 확보합니다.';
+		fmStore[f1.path] = {};
+		fmStore[f2.path] = {};
+
+		manager = new FolderWatchManager(mockPlugin, {
+			startupGraceMs: 0,
+			rateLimitRetryWaitMs: 0,
+		});
+		manager.init();
+
+		// 1) runRuleNow 수동 스캔 -> 2건 staged
+		const queuedCount = await manager.runRuleNow('rule-1');
+		expect(queuedCount).toBe(2);
+		await flushAsync(50);
+		expect(getBatchWatchState().stagedItems).toHaveLength(2);
+
+		// 2) rejectStagedItem 1건 거절 -> approveAllStaged 나머지 1건 일괄 수락
+		const staged = getBatchWatchState().stagedItems;
+		manager.rejectStagedItem(staged[0].id);
+		expect(getBatchWatchState().stagedItems).toHaveLength(1);
+
+		const approved = await manager.approveAllStaged();
+		expect(approved).toBe(1);
+		expect(getBatchWatchState().stagedItems).toHaveLength(0);
+
+		// 3) setDeviceEnabled(false) 시 감시 리스너 중단, 다시 true로 켜면 재활성화
+		manager.setDeviceEnabled(false);
+		expect(getBatchWatchState().deviceWatchEnabled).toBe(false);
+		expect(manager.isPathManagedForFrontmatter('00_Inbox/new.md')).toBe(false);
+		const f3 = makeFile('00_Inbox/ignored-while-off.md');
+		fileObjs[f3.path] = f3;
+		diskFiles[f3.path] = '기기 감시 꺼짐 상태 테스트 본문입니다. 충분히 긴 내용입니다.';
+		emitVault('create', f3);
+		await flushAsync();
+		expect(getBatchWatchState().stagedItems).toHaveLength(0);
+
+		manager.setDeviceEnabled(true);
+		expect(getBatchWatchState().deviceWatchEnabled).toBe(true);
+		emitVault('create', f3);
+		await flushAsync(50);
+		expect(getBatchWatchState().stagedItems).toHaveLength(1);
+	});
+
+	it('interval 주기 스캔 타이머, 429 재시도, rename 시 기존 디바운스 취소가 동작한다', async () => {
+		vi.useFakeTimers();
+
+		const chatSpy = vi
+			.fn()
+			.mockRejectedValueOnce(new Error('HTTP 429 rate limit'))
+			.mockResolvedValue({
+				content: '{"tags": ["주기"], "description": "주기 스캔 요약"}',
+			});
+		vi.mocked(createProvider).mockReturnValue({
+			chat: chatSpy,
+		} as unknown as ReturnType<typeof createProvider>);
+
+		mockPlugin.settings.batchWatch!.rules = [
+			makeRule({ triggerMode: 'interval', intervalMin: 1, debounceSec: 2 }),
+		];
+
+		const periodicFile = makeFile('00_Inbox/periodic.md');
+		fileObjs[periodicFile.path] = periodicFile;
+		diskFiles[periodicFile.path] = '주기 스캔 타이머 테스트용 충분히 긴 본문 내용입니다.';
+		fmStore[periodicFile.path] = {};
+
+		manager = new FolderWatchManager(mockPlugin, {
+			startupGraceMs: 0,
+			rateLimitRetryWaitMs: 0,
+		});
+		manager.init();
+
+		// 1분 주기 타이머 도달 시 스캔 + 429 1회 재시도 후 staged 생성
+		await vi.advanceTimersByTimeAsync(60_000);
+		await vi.advanceTimersByTimeAsync(0);
+		expect(chatSpy).toHaveBeenCalledTimes(2);
+		expect(getBatchWatchState().stagedItems).toHaveLength(1);
+
+		// rename 시 기존 debounce 타이머 취소 검증
+		mockPlugin.settings.batchWatch!.rules = [
+			makeRule({ triggerMode: 'on-create', debounceSec: 5 }),
+		];
+		manager.syncWatchers();
+		const moving = makeFile('00_Inbox/before-move.md', Date.now());
+		fileObjs[moving.path] = moving;
+		diskFiles[moving.path] = '이름 변경 디바운스 취소 테스트용 본문입니다.';
+		emitVault('create', moving);
+
+		moving.path = 'Notes/after-move.md';
+		emitVault('rename', moving, '00_Inbox/before-move.md');
+		await vi.advanceTimersByTimeAsync(6000);
+		// on-create 규칙의 5초 타이머가 취소되어 추가 chat 호출이 없어야 함
+		expect(chatSpy).toHaveBeenCalledTimes(2);
 	});
 });

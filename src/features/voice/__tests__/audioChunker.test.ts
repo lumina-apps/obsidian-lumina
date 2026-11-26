@@ -1,17 +1,26 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
 	calculateRms,
+	decodeBlobToMono16k,
 	encodePcmToWav,
 	isSilentBuffer,
+	measureAudioBlobDurationSec,
 	resampleLinearMono,
 	splitAudioBlobForApi,
 } from '../audio/audioChunker';
 
 describe('audioChunker', () => {
 	const origAudioContext = globalThis.AudioContext;
+	const origOfflineAudioContext = globalThis.OfflineAudioContext;
+	const origCreateObjectURL = URL.createObjectURL;
+	const origRevokeObjectURL = URL.revokeObjectURL;
 
 	afterEach(() => {
+		vi.useRealTimers();
 		globalThis.AudioContext = origAudioContext;
+		globalThis.OfflineAudioContext = origOfflineAudioContext;
+		URL.createObjectURL = origCreateObjectURL;
+		URL.revokeObjectURL = origRevokeObjectURL;
 		vi.restoreAllMocks();
 	});
 
@@ -99,5 +108,150 @@ describe('audioChunker', () => {
 		expect(chunks[1].offsetSec).toBe(2);
 		expect(chunks[1].durationSec).toBe(2);
 		expect(chunks[1].filename).toBe('long_part001.wav');
+	});
+
+	it('measureAudioBlobDurationSec은 0바이트·AudioContext 부재·audio 메타데이터·decodeAudioData 폴백 및 실패를 정확히 처리한다', async () => {
+		// 1) 빈 Blob -> 0
+		expect(await measureAudioBlobDurationSec(new Blob([], { type: 'audio/webm' }))).toBe(0);
+
+		const sampleBlob = new Blob([new Uint8Array([1, 2, 3, 4])], { type: 'audio/wav' });
+
+		// 2) AudioContext 부재 -> null
+		globalThis.AudioContext = undefined as unknown as typeof AudioContext;
+		expect(await measureAudioBlobDurationSec(sampleBlob)).toBeNull();
+
+		// 3) <audio> 메타데이터 경로 성공 + URL.revokeObjectURL 호출
+		const closeMock = vi.fn().mockResolvedValue(undefined);
+		const decodeMock = vi.fn();
+		globalThis.AudioContext = class {
+			decodeAudioData = decodeMock;
+			close = closeMock;
+		} as unknown as typeof AudioContext;
+
+		URL.createObjectURL = vi.fn().mockReturnValue('blob:duration-test');
+		const revokeSpy = vi.fn();
+		URL.revokeObjectURL = revokeSpy as unknown as typeof URL.revokeObjectURL;
+
+		interface FakeAudioElement {
+			canPlayType: ReturnType<typeof vi.fn>;
+			preload: string;
+			duration: number;
+			src: string;
+			onloadedmetadata: (() => void) | null;
+			onerror: (() => void) | null;
+			removeAttribute: ReturnType<typeof vi.fn>;
+			load: ReturnType<typeof vi.fn>;
+		}
+		const fakeAudioEl: FakeAudioElement = {
+			canPlayType: vi.fn().mockReturnValue('probably'),
+			preload: '',
+			duration: 305.5,
+			src: '',
+			onloadedmetadata: null,
+			onerror: null,
+			removeAttribute: vi.fn(),
+			load: vi.fn(function (this: FakeAudioElement) {
+				if (this.src) {
+					queueMicrotask(() => this.onloadedmetadata?.());
+				}
+			}),
+		};
+		vi.spyOn(globalThis, 'createEl').mockReturnValue(fakeAudioEl as unknown as HTMLElement);
+
+		const metaDur = await measureAudioBlobDurationSec(sampleBlob);
+		expect(metaDur).toBe(305.5);
+		expect(revokeSpy).toHaveBeenCalledWith('blob:duration-test');
+		expect(decodeMock).not.toHaveBeenCalled();
+
+		// 4) <audio> onerror 발생 시 decodeAudioData 폴백 + ctx.close() 보장
+		fakeAudioEl.load = vi.fn(function (this: FakeAudioElement) {
+			if (this.src) {
+				queueMicrotask(() => this.onerror?.());
+			}
+		});
+		decodeMock.mockResolvedValueOnce({ duration: 42.25 });
+		const fallbackDur = await measureAudioBlobDurationSec(sampleBlob);
+		expect(fallbackDur).toBe(42.25);
+		expect(closeMock).toHaveBeenCalledTimes(1);
+
+		// 5) decodeAudioData 실패 시에도 null 반환 + finally ctx.close() 호출 보장
+		fakeAudioEl.canPlayType = vi.fn().mockReturnValue('');
+		decodeMock.mockRejectedValueOnce(new Error('Invalid audio format'));
+		const failedDur = await measureAudioBlobDurationSec(sampleBlob);
+		expect(failedDur).toBeNull();
+		expect(closeMock).toHaveBeenCalledTimes(2);
+	});
+
+	it('measureAudioBlobDurationSec은 <audio> 메타데이터 400ms 타임아웃 시 decodeAudioData로 폴백한다', async () => {
+		vi.useFakeTimers();
+		const closeMock = vi.fn().mockResolvedValue(undefined);
+		const decodeMock = vi.fn().mockResolvedValue({ duration: 18.5 });
+		globalThis.AudioContext = class {
+			decodeAudioData = decodeMock;
+			close = closeMock;
+		} as unknown as typeof AudioContext;
+
+		URL.createObjectURL = vi.fn().mockReturnValue('blob:timeout-test');
+		URL.revokeObjectURL = vi.fn() as unknown as typeof URL.revokeObjectURL;
+
+		const hangingAudioEl = {
+			canPlayType: vi.fn().mockReturnValue('maybe'),
+			preload: '',
+			duration: 0,
+			src: '',
+			onloadedmetadata: null,
+			onerror: null,
+			removeAttribute: vi.fn(),
+			load: vi.fn(),
+		};
+		vi.spyOn(globalThis, 'createEl').mockReturnValue(hangingAudioEl as unknown as HTMLElement);
+
+		const blob = new Blob([new Uint8Array([9, 8, 7])], { type: 'audio/mpeg' });
+		const promise = measureAudioBlobDurationSec(blob);
+		await vi.advanceTimersByTimeAsync(450);
+		const dur = await promise;
+
+		expect(dur).toBe(18.5);
+		expect(decodeMock).toHaveBeenCalledTimes(1);
+		expect(closeMock).toHaveBeenCalledTimes(1);
+	});
+
+	it('decodeBlobToMono16k는 AudioContext 부재 시 throw하고, 스테레오 48kHz를 16kHz 모노로 다운샘플링하며 close를 보장한다', async () => {
+		const blob = new Blob([new Uint8Array([1, 2, 3])], { type: 'audio/wav' });
+
+		globalThis.AudioContext = undefined as unknown as typeof AudioContext;
+		await expect(decodeBlobToMono16k(blob)).rejects.toThrow(
+			'AudioContext is not supported in this environment.',
+		);
+
+		globalThis.OfflineAudioContext = undefined as unknown as typeof OfflineAudioContext;
+		const ch0 = new Float32Array(4800).fill(0.2);
+		const ch1 = new Float32Array(4800).fill(0.4);
+		const closeMock = vi.fn().mockResolvedValue(undefined);
+		const decodeMock = vi
+			.fn()
+			.mockResolvedValueOnce({
+				numberOfChannels: 2,
+				length: 4800,
+				sampleRate: 48000,
+				duration: 0.1,
+				getChannelData: (c: number) => (c === 0 ? ch0 : ch1),
+			})
+			.mockRejectedValueOnce(new Error('Decode fail'));
+
+		globalThis.AudioContext = class {
+			decodeAudioData = decodeMock;
+			close = closeMock;
+		} as unknown as typeof AudioContext;
+
+		const decoded = await decodeBlobToMono16k(blob);
+		expect(decoded.sampleRate).toBe(16000);
+		expect(decoded.durationSec).toBe(0.1);
+		expect(decoded.samples.length).toBe(1600);
+		expect(decoded.samples[0]).toBeCloseTo(0.3, 4);
+		expect(closeMock).toHaveBeenCalledTimes(1);
+
+		await expect(decodeBlobToMono16k(blob)).rejects.toThrow('Decode fail');
+		expect(closeMock).toHaveBeenCalledTimes(2);
 	});
 });

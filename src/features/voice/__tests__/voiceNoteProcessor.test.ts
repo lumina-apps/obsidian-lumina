@@ -211,4 +211,73 @@ describe('voicePrompts & voiceNoteProcessor', () => {
 		const bypassedChoice = resolveVoiceLlmProviderAndModel(plugin, DEFAULT_VOICE_PREFERENCES, 'meeting');
 		expect(bypassedChoice?.modelId).toBe('gpt-4o-mini');
 	});
+
+	it('새 노트(targetFile=null)에서도 aliases 프론트매터를 포함한 자동 위키링크를 적용하고 CLI 프로바이더를 우회한다', async () => {
+		const luminaFile = makeNoteFile('Projects/Lumina.md', 'Lumina');
+		const settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS)) as LuminaPlugin['settings'];
+		settings.connections.providers = [
+			{
+				id: 'cli-prov',
+				type: 'cli-claude-code',
+				credential: '',
+				availableModels: ['claude-sonnet'],
+				isVerified: true,
+			},
+			{
+				id: 'api-prov',
+				type: 'openai',
+				credential: 'sk-1',
+				availableModels: ['gpt-4o-mini'],
+				isVerified: true,
+			},
+		];
+
+		// 1) CLI 프로바이더가 활성 세션이어도 일반 API 프로바이더를 우선 선택
+		sessionProviderId.set('cli-prov');
+		sessionModelId.set('claude-sonnet');
+		const picked = resolveVoiceLlmProviderAndModel({ settings } as unknown as LuminaPlugin, DEFAULT_VOICE_PREFERENCES, 'clean');
+		expect(picked?.providerConfig.id).toBe('api-prov');
+
+		// 2) targetFile=null + aliases 자동 위키링크 (LLM 연결 및 빈 응답 원문 폴백 포함)
+		const chatSpy = vi.fn().mockResolvedValue({ content: '   ' });
+		vi.spyOn(llmProviders, 'createProvider').mockReturnValue({
+			providerId: 'api-prov',
+			chat: chatSpy,
+		} as unknown as ReturnType<typeof llmProviders.createProvider>);
+
+		const plugin = {
+			settings,
+			app: {
+				vault: { getMarkdownFiles: () => [luminaFile] },
+				metadataCache: {
+					getFileCache: () => ({ frontmatter: { aliases: ['루미나', 'Lumina App'] } }),
+				},
+			},
+		} as unknown as LuminaPlugin;
+
+		const out = await processTranscriptToNote({
+			plugin,
+			prefs: { ...DEFAULT_VOICE_PREFERENCES, autoWikiLink: true },
+			templateId: 'clean',
+			rawTranscript: '새 음성 노트에서 루미나 앱 기능을 테스트했습니다.',
+			segments: [],
+			targetFile: null,
+		});
+
+		expect(out.usedLlm).toBe(true);
+		expect(out.formattedBody).toContain('[[Lumina|루미나]]');
+
+		// 3) LLM 호출 자체가 실패하면 에러를 호출자에게 전파
+		chatSpy.mockRejectedValueOnce(new Error('LLM 503 Unavailable'));
+		await expect(
+			processTranscriptToNote({
+				plugin,
+				prefs: DEFAULT_VOICE_PREFERENCES,
+				templateId: 'clean',
+				rawTranscript: '실패 테스트',
+				segments: [],
+				targetFile: null,
+			}),
+		).rejects.toThrow('LLM 503 Unavailable');
+	});
 });
