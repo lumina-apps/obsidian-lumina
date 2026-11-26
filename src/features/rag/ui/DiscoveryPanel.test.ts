@@ -238,4 +238,47 @@ describe('DiscoveryPanel 검색 빈 상태 및 오류 처리', () => {
 		flushSync();
 		expect(buildContextFromActiveFile).toHaveBeenCalledTimes(2);
 	});
+
+	it('batch-studio 접근 권한이 있으면 최상단 고아노트 슬림 바를 표시하고 클릭 시 고아노트 탭을 연다', async () => {
+		const { resetEntitlementState, setReleasedFeatures } = await import('../../../core/store/entitlementStore');
+		const { getBatchState, resetBatchStore } = await import('../../../core/store/batchStore');
+		const viewHelper = await import('../../../core/views/viewHelper');
+		const activateSpy = vi.spyOn(viewHelper, 'activateMainView').mockResolvedValue(undefined);
+
+		resetBatchStore();
+		setReleasedFeatures(['batch-studio']);
+
+		const mockPlugin = createMockPlugin();
+		(mockPlugin.app as unknown as Record<string, unknown>).vault = {
+			getMarkdownFiles: () => [
+				{
+					path: 'old-orphan.md',
+					basename: 'old-orphan',
+					extension: 'md',
+					stat: { mtime: 0, size: 100 },
+				},
+			],
+		};
+		(mockPlugin.app.metadataCache as unknown as Record<string, unknown>).resolvedLinks = {};
+
+		try {
+			comp = mount(DiscoveryPanel, {
+				target,
+				props: { plugin: mockPlugin, isActive: true },
+			});
+			flushSync();
+
+			const bar = target.querySelector('.lumina-discovery__orphan-bar') as HTMLButtonElement | null;
+			expect(bar).not.toBeNull();
+			expect(bar?.textContent).toContain('discovery.orphanBarCount');
+
+			bar?.click();
+			expect(getBatchState().activeMainTab).toBe('orphans');
+			expect(activateSpy).toHaveBeenCalled();
+		} finally {
+			resetEntitlementState();
+			resetBatchStore();
+			activateSpy.mockRestore();
+		}
+	});
 });

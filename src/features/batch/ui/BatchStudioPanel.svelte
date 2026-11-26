@@ -53,6 +53,7 @@
 	import { getBatchEligibleProviders } from "../recipes/batchRecipes";
 	import { sanitizeFolderPath } from "../watch/folderMover";
 	import { openLinkTextSafely } from "../../../shared/utils/workspaceNavUtils";
+	import BatchOrphanTab from "./BatchOrphanTab.svelte";
 	import BatchWatchTab from "./BatchWatchTab.svelte";
 
 	let { plugin }: { plugin: LuminaPlugin } = $props();
@@ -518,7 +519,7 @@
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div class="lumina-batch-studio" onkeydown={handleInspectorKeydown} role="region" aria-label={$tStore("batchStudio.title")}>
-	<!-- 상단 헤더 & 레시피 탭 -->
+	<!-- 상단 헤더: 브랜드 + 4개 메인 탭 -->
 	<header class="lumina-batch-header">
 		<div class="lumina-batch-brand">
 			<span class="lumina-batch-brand__icon" use:icon={"lumina-batch-studio"}></span>
@@ -526,31 +527,11 @@
 			<span class="lumina-batch-pro-badge">{$tStore("batchStudio.proBadge")}</span>
 		</div>
 
-		<div class="lumina-batch-recipes" role="tablist">
-			{#each recipeDefs as recipe (recipe.id)}
-				{@const isRecipeLocked = recipe.id === "custom-prompt" && !$isProBatch}
-				<button
-					type="button"
-					class="lumina-batch-recipe-tab"
-					class:is-active={state.activeRecipeId === recipe.id}
-					class:is-locked={isRecipeLocked}
-					disabled={isRunningOrPaused}
-					title={isRecipeLocked ? `${recipe.desc} (PRO)` : recipe.desc}
-					onclick={() => handleRecipeChange(recipe.id)}
-				>
-					<span class="lumina-batch-tab-icon" use:icon={recipe.iconName}></span>
-					<span>{recipe.label}</span>
-					{#if isRecipeLocked}
-						<span class="lumina-batch-lock-tag" aria-hidden="true">🔒</span>
-					{/if}
-				</button>
-			{/each}
-		</div>
-
 		<div class="lumina-batch-main-tabs">
 			<button
 				type="button"
 				class="lumina-batch-main-tab"
+				data-tab="workspace"
 				class:is-active={state.activeMainTab === "workspace"}
 				onclick={() => patchBatchState({ activeMainTab: "workspace" })}
 			>
@@ -560,6 +541,17 @@
 			<button
 				type="button"
 				class="lumina-batch-main-tab"
+				data-tab="orphans"
+				class:is-active={state.activeMainTab === "orphans"}
+				onclick={() => patchBatchState({ activeMainTab: "orphans" })}
+			>
+				<span class="lumina-batch-tab-icon" use:icon={"unlink"}></span>
+				<span>{$tStore("batchStudio.orphans.tabTitle")}</span>
+			</button>
+			<button
+				type="button"
+				class="lumina-batch-main-tab"
+				data-tab="watch"
 				class:is-active={state.activeMainTab === "watch"}
 				onclick={() => patchBatchState({ activeMainTab: "watch" })}
 			>
@@ -576,6 +568,7 @@
 			<button
 				type="button"
 				class="lumina-batch-main-tab"
+				data-tab="history"
 				class:is-active={state.activeMainTab === "history"}
 				onclick={() => patchBatchState({ activeMainTab: "history" })}
 			>
@@ -585,7 +578,9 @@
 		</div>
 	</header>
 
-	{#if state.activeMainTab === "watch"}
+	{#if state.activeMainTab === "orphans"}
+		<BatchOrphanTab {plugin} />
+	{:else if state.activeMainTab === "watch"}
 		<BatchWatchTab {plugin} />
 	{:else if state.activeMainTab === "history"}
 		<!-- 히스토리 및 원클릭 롤백 탭 -->
@@ -606,11 +601,17 @@
 											<span class="lumina-batch-queue-item__badge is-pro">
 												{$tStore("batchStudio.history.watchBadge")}{entry.ruleName ? ` · ${entry.ruleName}` : ""}
 											</span>
+										{:else if entry.source === "orphan"}
+											<span class="lumina-batch-queue-item__badge is-pro">
+												{$tStore("batchStudio.history.orphanBadge")}
+											</span>
 										{/if}
-										{$tStore("batchStudio.history.batchSummary", {
-											recipe: getRecipeLabel(entry.recipeId),
-											count: entry.appliedCount,
-										})}
+										{entry.source === "orphan" && entry.actionLabel
+											? entry.actionLabel
+											: $tStore("batchStudio.history.batchSummary", {
+													recipe: getRecipeLabel(entry.recipeId),
+													count: entry.appliedCount,
+												})}
 									</div>
 									<div class="lumina-batch-history-card__meta">
 										{formatTimestamp(entry.timestamp)}
@@ -677,7 +678,30 @@
 			{/if}
 		</section>
 	{:else}
-		<!-- 작업 공간 탭: 접이식 설정 + 진행률 바 + 2-Pane 검수 워크벤치 -->
+		<!-- 작업 공간 탭: 레시피 선택 바 + 접이식 설정 + 진행률 바 + 2-Pane 검수 워크벤치 -->
+		<div class="lumina-batch-recipes-bar">
+			<div class="lumina-batch-recipes" role="tablist">
+				{#each recipeDefs as recipe (recipe.id)}
+					{@const isRecipeLocked = recipe.id === "custom-prompt" && !$isProBatch}
+					<button
+						type="button"
+						class="lumina-batch-recipe-tab"
+						class:is-active={state.activeRecipeId === recipe.id}
+						class:is-locked={isRecipeLocked}
+						disabled={isRunningOrPaused}
+						title={isRecipeLocked ? `${recipe.desc} (PRO)` : recipe.desc}
+						onclick={() => handleRecipeChange(recipe.id)}
+					>
+						<span class="lumina-batch-tab-icon" use:icon={recipe.iconName}></span>
+						<span>{recipe.label}</span>
+						{#if isRecipeLocked}
+							<span class="lumina-batch-lock-tag" aria-hidden="true">🔒</span>
+						{/if}
+					</button>
+				{/each}
+			</div>
+		</div>
+
 		<section class="lumina-batch-config-section">
 			{#if state.isConfigCollapsed}
 				<div class="lumina-batch-collapsed-bar">
@@ -814,6 +838,35 @@
 								</span>
 							</label>
 						{/if}
+
+						<div class="lumina-batch-field-row">
+							<div class="lumina-batch-segmented">
+								<button
+									type="button"
+									class:is-active={(state.scopeConfig.orphanFilter ?? "all") === "all"}
+									disabled={isRunningOrPaused}
+									onclick={() => setBatchScopeConfig({ orphanFilter: "all" })}
+								>
+									{$tStore("batchStudio.target.orphanFilterAll")}
+								</button>
+								<button
+									type="button"
+									class:is-active={state.scopeConfig.orphanFilter === "isolated"}
+									disabled={isRunningOrPaused}
+									onclick={() => setBatchScopeConfig({ orphanFilter: "isolated" })}
+								>
+									{$tStore("batchStudio.target.orphanFilterIsolated")}
+								</button>
+								<button
+									type="button"
+									class:is-active={state.scopeConfig.orphanFilter === "no-backlinks"}
+									disabled={isRunningOrPaused}
+									onclick={() => setBatchScopeConfig({ orphanFilter: "no-backlinks" })}
+								>
+									{$tStore("batchStudio.target.orphanFilterNoBacklinks")}
+								</button>
+							</div>
+						</div>
 
 						<div class="lumina-batch-target-summary">
 							<div class="lumina-batch-target-summary__main">
@@ -1859,6 +1912,13 @@
 		letter-spacing: 0.04em;
 		background: var(--interactive-accent);
 		color: var(--text-on-accent);
+	}
+
+	.lumina-batch-recipes-bar {
+		padding: 8px 16px;
+		border-bottom: 1px solid var(--background-modifier-border);
+		background: var(--background-primary);
+		flex-shrink: 0;
 	}
 
 	.lumina-batch-recipes,

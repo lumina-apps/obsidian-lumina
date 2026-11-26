@@ -7,6 +7,7 @@ import { CHAT_VIEW_TYPE, DEBUG_VIEW_TYPE, GRAPH_VIEW_TYPE, SPLIT_CHAT_VIEW_TYPE,
 import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
 import { activeSidebarTab } from '../store/chatStore';
+import { patchBatchState } from '../store/batchStore';
 import { canUseFeature } from '../store/entitlementStore';
 
 interface ObsidianAppWithCommands extends App {
@@ -217,9 +218,10 @@ export class CommandManager {
 			this.isSplitCommandRegistered = false;
 		}
 
-		// 2. Batch Studio Pro 커맨드
+		// 2. Batch Studio Pro 커맨드 (일괄 작업 + 고아노트)
 		const isBatchEntitled = canUseFeature('batch-studio');
 		const batchCmdId = 'open-batch-studio';
+		const orphanCmdId = 'open-orphan-notes';
 
 		if (isBatchEntitled && !this.isBatchCommandRegistered) {
 			this.plugin.addCommand({
@@ -231,9 +233,20 @@ export class CommandManager {
 					void activateMainView(this.plugin.app.workspace, BATCH_STUDIO_VIEW_TYPE);
 				},
 			});
+			this.plugin.addCommand({
+				id: orphanCmdId,
+				name: t('batchStudio.openOrphansCommandTitle'),
+				callback: () => {
+					if (!canUseFeature('batch-studio')) return;
+					debugLogger.logSystem('commands', 'Command executed: open-orphan-notes');
+					patchBatchState({ activeMainTab: 'orphans' });
+					void activateMainView(this.plugin.app.workspace, BATCH_STUDIO_VIEW_TYPE);
+				},
+			});
 			this.isBatchCommandRegistered = true;
 		} else if (!isBatchEntitled && this.isBatchCommandRegistered) {
 			appWithCommands.commands?.removeCommand(`${this.plugin.manifest.id}:${batchCmdId}`);
+			appWithCommands.commands?.removeCommand(`${this.plugin.manifest.id}:${orphanCmdId}`);
 			this.isBatchCommandRegistered = false;
 		}
 

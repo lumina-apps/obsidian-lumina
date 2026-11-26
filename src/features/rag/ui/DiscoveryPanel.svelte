@@ -25,8 +25,11 @@
 	import { buildContextFromActiveFile, applyContextResult } from '../utils/discoveryContext';
 	import { estimateFileTokens } from '../utils/stagingUtils';
 	import DiscoveryStagingArea from './DiscoveryStagingArea.svelte';
-	import { activateView } from '../../../core/views/viewHelper';
-	import { CHAT_VIEW_TYPE } from '../../../shared/constants/viewTypes';
+	import { activateView, activateMainView } from '../../../core/views/viewHelper';
+	import { CHAT_VIEW_TYPE, BATCH_STUDIO_VIEW_TYPE } from '../../../shared/constants/viewTypes';
+	import { hasFeatureAccess } from '../../../core/store/entitlementStore';
+	import { patchBatchState } from '../../../core/store/batchStore';
+	import { countOrphanNotesFast, resolveOrphanPreferences } from '../../../shared/utils/orphanUtils';
 
 	// Components
 	import DiscoverySearchBar from './components/DiscoverySearchBar.svelte';
@@ -45,14 +48,18 @@
 
 	let { plugin, isActive }: { plugin: LuminaPlugin; isActive: boolean } = $props();
 
+	const canAccessBatch = hasFeatureAccess('batch-studio');
+
 	// ── 로컬 상태 ──
 	let searchQuery = $state('');
 	let filterQuery = $state('');
 	let searchResults = $state<SearchResult[]>([]);
 	let isSearching = $state(false);
 	let hasBeenReady = $state(false);
+	let orphanCount = $state(0);
 	let contextTimer: ReturnType<typeof setTimeout> | null = null;
 	let searchTimer: ReturnType<typeof setTimeout> | null = null;
+	let orphanTimer: ReturnType<typeof setTimeout> | null = null;
 	let contextAbortController: AbortController | null = null;
 
 	let lastContextKey = $state<string | null>(null);
@@ -80,20 +87,76 @@
 		)
 	);
 
+	function refreshOrphanCount(): void {
+		if (!$canAccessBatch) {
+			orphanCount = 0;
+			return;
+		}
+		const prefs = resolveOrphanPreferences(plugin.settings?.orphanNotes);
+		const excludedPaths = activeProject?.ragExcludedPaths ?? [];
+		orphanCount = countOrphanNotesFast(plugin.app, {
+			mode: prefs.mode,
+			gracePeriodDays: prefs.gracePeriodDays,
+			excludedPaths,
+			ignoredPaths: prefs.ignoredPaths,
+			ignoredFolders: prefs.ignoredFolders,
+			ignoredTags: prefs.ignoredTags,
+		});
+	}
+
+	function scheduleOrphanCountRefresh(): void {
+		if (orphanTimer) clearTimeout(orphanTimer);
+		orphanTimer = setTimeout(() => {
+			orphanTimer = null;
+			refreshOrphanCount();
+		}, 300);
+	}
+
+	function openOrphanManager(): void {
+		patchBatchState({ activeMainTab: 'orphans' });
+		void activateMainView(plugin.app.workspace, BATCH_STUDIO_VIEW_TYPE);
+	}
+
 	// ── 마운트 시 활성 파일 초기화 ──
 	onMount(() => {
 		if (!$discoveryState.activeFile) {
-			const active = plugin.app.workspace.getActiveFile();
+			const active = plugin.app.workspace?.getActiveFile?.();
 			if (active && active.extension === 'md') {
 				updateDiscoveryState({ activeFile: active });
 			}
 		}
 
+		refreshOrphanCount();
+		const vaultRefs = [
+			plugin.app.vault?.on?.('create', scheduleOrphanCountRefresh),
+			plugin.app.vault?.on?.('delete', scheduleOrphanCountRefresh),
+			plugin.app.vault?.on?.('rename', scheduleOrphanCountRefresh),
+		].filter((r): r is NonNullable<typeof r> => Boolean(r));
+		const metaRef = plugin.app.metadataCache?.on?.('changed', scheduleOrphanCountRefresh);
+
 		return () => {
 			if (contextTimer) clearTimeout(contextTimer);
 			if (searchTimer) clearTimeout(searchTimer);
+			if (orphanTimer) clearTimeout(orphanTimer);
+			for (const ref of vaultRefs) {
+				plugin.app.vault?.offref?.(ref);
+			}
+			if (metaRef) {
+				plugin.app.metadataCache?.offref?.(metaRef);
+			}
 			contextAbortController?.abort();
 		};
+	});
+
+	$effect(() => {
+		const accessible = $canAccessBatch;
+		const active = isActive;
+		void $settingsStore?.orphanNotes;
+		if (accessible && active) {
+			untrack(() => {
+				refreshOrphanCount();
+			});
+		}
 	});
 
 	// ready 상태 감지
@@ -316,6 +379,29 @@
 </script>
 
 <div class="lumina-discovery">
+	{#if $canAccessBatch}
+		<button
+			type="button"
+			class="lumina-discovery__orphan-bar"
+			class:has-orphans={orphanCount > 0}
+			onclick={openOrphanManager}
+		>
+			<span class="lumina-discovery__orphan-bar-left">
+				<span class="lumina-discovery__orphan-icon">{orphanCount > 0 ? '🔗' : '✓'}</span>
+				<span>
+					{orphanCount > 0
+						? $tStore('discovery.orphanBarCount', { count: orphanCount })
+						: $tStore('discovery.orphanBarZero')}
+				</span>
+			</span>
+			<span class="lumina-discovery__orphan-cta">
+				{orphanCount > 0
+					? $tStore('discovery.orphanBarAction')
+					: $tStore('discovery.orphanBarOpen')} →
+			</span>
+		</button>
+	{/if}
+
 	{#if !$isRagEnabled}
 		<DiscoveryEmptyState app={plugin.app} />
 	{:else}
@@ -465,5 +551,54 @@
 
 	@keyframes spin {
 		to { transform: rotate(360deg); }
+	}
+
+	.lumina-discovery__orphan-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		width: 100%;
+		min-height: 28px;
+		padding: 4px 10px;
+		border: none;
+		border-bottom: 1px solid var(--background-modifier-border);
+		border-radius: 0;
+		background: var(--background-secondary);
+		color: var(--text-muted);
+		font-size: 11.5px;
+		cursor: pointer;
+		flex-shrink: 0;
+		text-align: left;
+	}
+
+	.lumina-discovery__orphan-bar.has-orphans {
+		color: var(--text-normal);
+	}
+
+	.lumina-discovery__orphan-bar:hover {
+		background: var(--background-modifier-hover);
+	}
+
+	.lumina-discovery__orphan-bar-left {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.lumina-discovery__orphan-cta {
+		font-weight: 600;
+		color: var(--text-accent);
+		white-space: nowrap;
+	}
+
+	:global(body.is-mobile) .lumina-discovery__orphan-bar {
+		min-height: 34px;
+		padding: 6px 12px;
+		font-size: 12.5px;
 	}
 </style>

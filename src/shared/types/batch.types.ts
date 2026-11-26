@@ -25,7 +25,7 @@ export type BatchRunState = 'idle' | 'running' | 'paused' | 'completed';
 export type BatchQueueFilter = 'all' | 'staged' | 'applied' | 'skipped' | 'failed';
 
 /** 메인 화면 탭 */
-export type BatchMainTab = 'workspace' | 'watch' | 'history';
+export type BatchMainTab = 'workspace' | 'orphans' | 'watch' | 'history';
 
 /** 대상 노트 선택 및 스마트 필터 설정 */
 export interface BatchScopeConfig {
@@ -39,6 +39,8 @@ export interface BatchScopeConfig {
 	skipIfAlreadyHasTarget: boolean;
 	/** 최소 본문 글자 수 (프론트매터 제외 길이) */
 	minContentLength: number;
+	/** 고아노트 필터 (전체 / 완전 고립 / 백링크 없음) */
+	orphanFilter?: 'all' | 'isolated' | 'no-backlinks';
 }
 
 /** 레시피별 세부 실행 옵션 */
@@ -136,6 +138,8 @@ export interface BatchSnapshotEntry {
 	movedFromPath?: string;
 	/** 폴더 이동이 발생한 경우 이동 후 경로 */
 	movedToPath?: string;
+	/** 휴지통으로 이동된 경우 롤백 시 파일 재생성 여부 */
+	trashed?: boolean;
 }
 
 /** 배치 반영 히스토리 항목 */
@@ -152,10 +156,12 @@ export interface BatchHistoryEntry {
 	rolledBack: boolean;
 	/** 복원에 사용할 원본 스냅샷 목록 */
 	snapshots: BatchSnapshotEntry[];
-	/** 실행 출처 (수동 배치 vs 폴더 자동감시) */
-	source?: 'manual' | 'watch';
+	/** 실행 출처 (수동 배치 vs 폴더 자동감시 vs 고아노트 정리) */
+	source?: 'manual' | 'watch' | 'orphan';
 	/** 자동감시 규칙 이름 (source === 'watch'일 때 표시용) */
 	ruleName?: string;
+	/** 고아노트 작업 요약 라벨 (source === 'orphan'일 때 표시용) */
+	actionLabel?: string;
 }
 
 /** Watch 탭 규칙 편집기에 전달할 초안 데이터 타입 재노출 */

@@ -72,13 +72,17 @@ describe('CommandManager Pro Split 동적 커맨드 게이트', () => {
 		expect(removeCommand).toHaveBeenCalledWith('obsidian-lumina:open-split-chat');
 	});
 
-	it('Pro Batch Studio 활성화 시 open-batch-studio를 동적 등록하고 비활성화 시 제거한다', () => {
+	it('Pro Batch Studio 활성화 시 open-batch-studio와 open-orphan-notes를 동적 등록하고 비활성화 시 제거한다', async () => {
+		const { getBatchState, resetBatchStore } = await import('../store/batchStore');
+		resetBatchStore();
+
 		const { plugin, registeredCommands, removeCommand } = createMockPluginForCommands();
 		const activateSpy = vi.spyOn(viewHelper, 'activateMainView').mockResolvedValue(undefined);
 
 		const cm = new CommandManager(plugin);
 		cm.registerCommands();
 		expect(registeredCommands.some((c) => c.id === 'open-batch-studio')).toBe(false);
+		expect(registeredCommands.some((c) => c.id === 'open-orphan-notes')).toBe(false);
 
 		setEntitlementState({
 			tier: 'pro',
@@ -88,13 +92,22 @@ describe('CommandManager Pro Split 동적 커맨드 게이트', () => {
 		cm.syncProCommands();
 
 		const batchCmd = registeredCommands.find((c) => c.id === 'open-batch-studio');
+		const orphanCmd = registeredCommands.find((c) => c.id === 'open-orphan-notes');
 		expect(batchCmd).toBeDefined();
+		expect(orphanCmd).toBeDefined();
+
 		batchCmd?.callback?.();
 		expect(activateSpy).toHaveBeenCalledWith(plugin.app.workspace, BATCH_STUDIO_VIEW_TYPE);
+
+		orphanCmd?.callback?.();
+		expect(getBatchState().activeMainTab).toBe('orphans');
+		expect(activateSpy).toHaveBeenCalledTimes(2);
 
 		resetEntitlementState();
 		cm.syncProCommands();
 		expect(removeCommand).toHaveBeenCalledWith('obsidian-lumina:open-batch-studio');
+		expect(removeCommand).toHaveBeenCalledWith('obsidian-lumina:open-orphan-notes');
+		resetBatchStore();
 	});
 
 	it('Pro Voice-to-Note 비활성 시 미등록, 활성 시 2개 동적 등록, 해제 시 모두 제거한다', () => {

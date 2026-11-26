@@ -128,4 +128,40 @@ describe('batchTargetResolver', () => {
 			{ type: 'added', text: 'line4' },
 		]);
 	});
+
+	it('orphanFilter가 지정되면 해당 조건을 만족하는 고아노트만 필터링한다', () => {
+		const files = [
+			makeFile('orphan.md', 200),
+			makeFile('outOnly.md', 200),
+			makeFile('linked.md', 200),
+		];
+		const app = {
+			vault: {
+				getMarkdownFiles: () => files,
+				getAllLoadedFiles: () => files,
+			},
+			metadataCache: {
+				resolvedLinks: {
+					'outOnly.md': { 'linked.md': 1 },
+				},
+				getFileCache: () => null,
+			},
+		} as unknown as App;
+
+		const isolated = resolveTargetFiles(
+			app,
+			{ ...DEFAULT_SCOPE, orphanFilter: 'isolated' },
+			'autolink',
+			DEFAULT_OPTIONS,
+		);
+		expect(isolated.matched.map((f) => f.path)).toEqual(['orphan.md']);
+
+		const noBacklinks = resolveTargetFiles(
+			app,
+			{ ...DEFAULT_SCOPE, orphanFilter: 'no-backlinks' },
+			'autolink',
+			DEFAULT_OPTIONS,
+		);
+		expect(noBacklinks.matched.map((f) => f.path)).toEqual(['orphan.md', 'outOnly.md']);
+	});
 });

@@ -88,7 +88,13 @@ describe('BatchStudioView 권한 가드', () => {
 		expect(detach).not.toHaveBeenCalled();
 		expect(contentEl.querySelector('.lumina-batch-studio')).not.toBeNull();
 		expect(contentEl.querySelectorAll('.lumina-batch-recipe-tab')).toHaveLength(5);
-		expect(contentEl.querySelectorAll('.lumina-batch-main-tab')).toHaveLength(3);
+		const mainTabs = contentEl.querySelectorAll('.lumina-batch-main-tab');
+		expect(mainTabs).toHaveLength(4);
+
+		// 두 번째 메인 탭('고아 노트') 클릭 시 BatchOrphanTab 마운트 확인
+		(mainTabs[1] as HTMLButtonElement).click();
+		flushSync();
+		expect(contentEl.querySelector('.lumina-orphan-tab')).not.toBeNull();
 
 		await view.onClose();
 	});

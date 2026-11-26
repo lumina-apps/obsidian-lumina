@@ -366,8 +366,9 @@ export class SplitChatController {
 				},
 			});
 
+			// readStreamLines가 signal.aborted 시 예외 없이 정상 종료될 수 있으므로 중단 상태를 명시적으로 반영
 			updateSplitSlotResponse(turnId, slot.slotId, {
-				status: 'done',
+				status: ac.signal.aborted ? 'aborted' : 'done',
 				content: result.content,
 				thinking: result.thinking,
 				tokenUsage: result.tokenUsage,

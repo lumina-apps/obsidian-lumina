@@ -14,6 +14,7 @@ import type { ProjectSettings } from '../../shared/types/project.types';
 import type { SplitChatPreferences } from '../../shared/types/splitChat.types';
 import type { VoiceNotePreferences } from '../../shared/types/voice.types';
 import type { BatchWatchPreferences } from '../../shared/types/batchWatch.types';
+import type { OrphanNotesPreferences } from '../../shared/types/orphan.types';
 
 // ─── Section 1: Connections & Models ────────────────────────────────────────
 
@@ -254,4 +255,6 @@ export interface LuminaSettings {
 	voiceNote?: VoiceNotePreferences;
 	/** 폴더 자동감시(Batch Auto-Watch) 선택 설정 (사용 전까지 미정의 유지) */
 	batchWatch?: BatchWatchPreferences;
+	/** 고아노트(Orphan Notes) 정리 선택 설정 (사용 전까지 미정의 유지) */
+	orphanNotes?: OrphanNotesPreferences;
 }

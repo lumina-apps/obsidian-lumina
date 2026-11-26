@@ -15,6 +15,7 @@ import type {
 } from '../../shared/types/batch.types';
 import { isExcluded } from '../../shared/utils/exclusions';
 import { normalizeFrontmatterTags } from '../../shared/utils/frontmatterSanitizer';
+import { buildVaultLinkCounts, isOrphanByCounts } from '../../shared/utils/orphanUtils';
 import { estimateTokens } from '../../shared/utils/tokenEstimator';
 
 /** 타겟 필터링 결과 */
@@ -145,11 +146,28 @@ export function resolveTargetFiles(
 	const matched: TFile[] = [];
 	let skippedCount = 0;
 
+	const orphanMode =
+		config.orphanFilter === 'isolated' || config.orphanFilter === 'no-backlinks'
+			? config.orphanFilter
+			: null;
+	const linkCounts = orphanMode ? buildVaultLinkCounts(app) : null;
+
 	for (const file of allFiles) {
 		// 백업/템플릿/채팅기록 등 시스템 제외 경로는 항상 보호
 		if (isExcluded(file.path, excludedPaths)) {
 			skippedCount++;
 			continue;
+		}
+
+		// 고아노트 필터 (지정된 경우에만 검사)
+		if (orphanMode && linkCounts) {
+			const normPath = normalizePath(file.path);
+			const inCount = linkCounts.inlinks.get(normPath) ?? 0;
+			const outCount = linkCounts.outlinks.get(normPath) ?? 0;
+			if (!isOrphanByCounts(inCount, outCount, orphanMode)) {
+				skippedCount++;
+				continue;
+			}
 		}
 
 		// 폴더 범위 필터

@@ -548,6 +548,28 @@ export class BatchStudioController {
 		const currentQueuePaths = new Set(getBatchState().queue.map((q) => q.path));
 
 		for (const snap of entry.snapshots) {
+			if (snap.trashed) {
+				try {
+					const existing = this.app.vault.getAbstractFileByPath(snap.path);
+					if (existing) {
+						debugLogger.logWarn(
+							'batch',
+							`Rollback skipped trashed file: path already exists at ${snap.path}`,
+						);
+						continue;
+					}
+					await ensureFolderExists(this.app, snap.path);
+					await this.app.vault.create(snap.path, snap.originalRawContent);
+					restored++;
+				} catch (err) {
+					debugLogger.logError(
+						'batch',
+						normalizeError(err, `Rollback failed for trashed ${snap.path}: ${err}`),
+					);
+				}
+				continue;
+			}
+
 			const lookupPath = snap.movedToPath ?? snap.path;
 			const abstractFile = this.app.vault.getAbstractFileByPath(lookupPath);
 			if (!(abstractFile instanceof TFile)) continue;

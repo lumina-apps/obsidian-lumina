@@ -342,4 +342,42 @@ describe('BatchStudioController', () => {
 		expect(fileObjs['a.md']).toBeDefined();
 		expect(fileObjs['Archive/a.md']).toBeUndefined();
 	});
+
+	it('휴지통(trashed) 스냅샷이 기록된 고아노트 히스토리를 롤백하면 원본 파일을 재생성한다', async () => {
+		const { addBatchHistoryEntry } = await import('../../../core/store/batchStore');
+		(mockApp.vault as unknown as { create: ReturnType<typeof vi.fn> }).create = vi.fn(
+			async (p: string, content: string) => {
+				const f = makeFile(p);
+				fileObjs[p] = f;
+				diskFiles[p] = content;
+				return f;
+			},
+		);
+
+		const originalText = diskFiles['a.md'];
+		delete fileObjs['a.md'];
+		delete diskFiles['a.md'];
+
+		addBatchHistoryEntry({
+			id: 'trash-1',
+			timestamp: Date.now(),
+			recipeId: 'autolink',
+			appliedCount: 1,
+			rolledBack: false,
+			source: 'orphan',
+			actionLabel: 'Trash 1 orphan',
+			snapshots: [
+				{
+					path: 'a.md',
+					originalRawContent: originalText,
+					trashed: true,
+				},
+			],
+		});
+
+		const restored = await controller.rollbackHistoryEntry('trash-1');
+		expect(restored).toBe(1);
+		expect(fileObjs['a.md']).toBeDefined();
+		expect(diskFiles['a.md']).toBe(originalText);
+	});
 });

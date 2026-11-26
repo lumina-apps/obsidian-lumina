@@ -353,4 +353,65 @@ describe('splitChatController', () => {
 		expect(await ctrl.promoteToSingleChat('s1')).toBe(true);
 		expect(activateSpy).toHaveBeenCalled();
 	});
+
+	it('abortSlot 호출 후 스트림이 예외 없이 정상 종료되어도 해당 슬롯 상태를 aborted로 기록한다', async () => {
+		setEntitlementState({
+			tier: 'pro',
+			status: 'active',
+			enabledFeatures: new Set(['split-chat']),
+		});
+		initSplitSlots([
+			{ slotId: 's1', label: 'A', providerId: 'p1', modelId: 'gpt-4o' },
+			{ slotId: 's2', label: 'B', providerId: 'p2', modelId: 'claude-sonnet' },
+		]);
+
+		vi.spyOn(contextBuilder, 'prepareSharedTurnContext').mockResolvedValue({
+			attachmentContext: '',
+			multimodalImages: [],
+			failedAttachments: [],
+			ragContext: undefined,
+			ragChunksForLog: undefined,
+			activeFilePath: undefined,
+			activeFileTitle: undefined,
+			attachments: [],
+			ragSkipReason: 'disabled',
+			historyTurnsUsed: 0,
+			summaryApplied: false,
+			historyAttachmentsRestored: 0,
+		});
+
+		// readStreamLines가 signal.aborted 시 예외 없이 루프를 탈출해 정상 반환하는 경우 재현
+		vi.spyOn(splitExecutor, 'executeSplitSlotCall').mockImplementation(async (params) => {
+			if (params.slot.slotId === 's1') {
+				return {
+					content: 'A 완료',
+					hasTokenLimitBeenHit: false,
+					metrics: { startedAt: 1000, finishedAt: 1050, durationMs: 50 },
+				};
+			}
+			await new Promise<void>((resolve) => {
+				if (params.signal?.aborted) {
+					resolve();
+					return;
+				}
+				params.signal?.addEventListener('abort', () => resolve(), { once: true });
+			});
+			return {
+				content: '부분 응답',
+				hasTokenLimitBeenHit: false,
+				metrics: { startedAt: 1000, finishedAt: 1120, durationMs: 120 },
+			};
+		});
+
+		const promptPromise = ctrl.sendPrompt('개별 중단 테스트', []);
+		// 턴 생성 및 슬롯 실행 진입 대기 후 s2만 중단
+		await new Promise((r) => setTimeout(r, 20));
+		const turnId = getSplitChatState().turns[0].id;
+		ctrl.abortSlot(turnId, 's2');
+		await promptPromise;
+
+		const finalTurn = getSplitChatState().turns[0];
+		expect(finalTurn.responses['s1'].status).toBe('done');
+		expect(finalTurn.responses['s2'].status).toBe('aborted');
+	});
 });

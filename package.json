@@ -12,7 +12,10 @@
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
 		"test:e2e": "node scripts/e2e-cdp-runner.mjs",
-		"test:e2e:mobile": "node scripts/e2e-cdp-runner.mjs --mobile-only"
+		"test:e2e:mobile": "node scripts/e2e-cdp-runner.mjs --mobile-only",
+		"test:e2e:pro": "node scripts/e2e-cdp-runner.mjs --pro-only --require-pro",
+		"test:e2e:preview": "node scripts/e2e-cdp-runner.mjs --pro-only --require-preview",
+		"test:e2e:free": "node scripts/e2e-cdp-runner.mjs --pro-only --require-free"
 	},
 	"keywords": [],
 	"author": "",

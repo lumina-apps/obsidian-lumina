@@ -68,6 +68,7 @@ function createInitialScopeConfig(): BatchScopeConfig {
 		tagFilter: '',
 		skipIfAlreadyHasTarget: true,
 		minContentLength: 50,
+		orphanFilter: 'all',
 	};
 }
 
@@ -312,4 +313,32 @@ export function markBatchHistoryRolledBack(historyId: string): void {
 			entry.id === historyId ? { ...entry, rolledBack: true } : entry,
 		),
 	}));
+}
+
+/**
+ * 고아노트 탭에서 '일괄 작업실로 보내기' 클릭 시 작업실 탭으로 전환하고 고아 필터를 지정합니다.
+ * (실행 또는 일시정지 중에는 덮어쓰지 않음)
+ */
+export function sendOrphansToWorkspace(mode: 'isolated' | 'no-backlinks'): boolean {
+	let updated = false;
+	batchStore.update((state) => {
+		if (state.runState === 'running' || state.runState === 'paused') {
+			return state;
+		}
+		updated = true;
+		return {
+			...state,
+			activeMainTab: 'workspace',
+			isConfigCollapsed: false,
+			sampleFilePath: '',
+			sampleResult: null,
+			sampleNoChanges: false,
+			sampleError: null,
+			scopeConfig: {
+				...state.scopeConfig,
+				orphanFilter: mode,
+			},
+		};
+	});
+	return updated;
 }

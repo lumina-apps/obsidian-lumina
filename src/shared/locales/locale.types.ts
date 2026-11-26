@@ -781,6 +781,10 @@ export interface TranslationDiscovery {
   noActiveFile: string;
   clearSearch: string;
   clearFilter: string;
+  orphanBarCount: string;
+  orphanBarZero: string;
+  orphanBarAction: string;
+  orphanBarOpen: string;
 }
 
 // uiMessages
@@ -1268,6 +1272,9 @@ export interface TranslationBatchStudioTarget {
   collapsedSummary: string;
   expandConfig: string;
   collapseConfig: string;
+  orphanFilterAll: string;
+  orphanFilterIsolated: string;
+  orphanFilterNoBacklinks: string;
 }
 
 export interface TranslationBatchStudioOptions {
@@ -1403,6 +1410,80 @@ export interface TranslationBatchStudioHistory {
   rollbackDone: string;
   rolledBackBadge: string;
   snapshotsMissing: string;
+  orphanBadge: string;
+}
+
+export interface TranslationBatchStudioOrphans {
+  tabTitle: string;
+  modeIsolated: string;
+  modeNoBacklinks: string;
+  graceDaysLabel: string;
+  excludeCanvasLabel: string;
+  emptyOnlyLabel: string;
+  showIgnoredLabel: string;
+  searchPlaceholder: string;
+  folderPlaceholder: string;
+  sortMtimeDesc: string;
+  sortMtimeAsc: string;
+  sortNameAsc: string;
+  sortSizeAsc: string;
+  rescanBtn: string;
+  sendToWorkspaceBtn: string;
+  summaryCount: string;
+  selectedBadge: string;
+  scanning: string;
+  emptyList: string;
+  emptyBadge: string;
+  ignoredBadge: string;
+  bulkLinkBtn: string;
+  bulkArchiveBtn: string;
+  bulkMocBtn: string;
+  bulkTrashBtn: string;
+  bulkTrashConfirm: string;
+  confirmTrashBtn: string;
+  mocPathPlaceholder: string;
+  mocTitlePlaceholder: string;
+  mocGroupFolder: string;
+  mocGroupTag: string;
+  mocGroupNone: string;
+  mocCreateBtn: string;
+  emptySelection: string;
+  archiveFolderPlaceholder: string;
+  archiveBtn: string;
+  trashBtn: string;
+  ignoreBtn: string;
+  unignoreBtn: string;
+  recommendationsTitle: string;
+  dirFromOrphan: string;
+  dirToOrphan: string;
+  loadingRecommendations: string;
+  noRecommendations: string;
+  reasonRag: string;
+  reasonKeyword: string;
+  insertLinkBtn: string;
+  aiContextLinkBtn: string;
+  aiGenerating: string;
+  aiProposalTitle: string;
+  applyProposalBtn: string;
+  previewTitle: string;
+  emptyBody: string;
+  proBulkNotice: string;
+  proAiLinkNotice: string;
+  proMocNotice: string;
+  ignoredNotice: string;
+  unignoredNotice: string;
+  linkAlreadyExists: string;
+  linkInsertedNotice: string;
+  archivedNotice: string;
+  trashedNotice: string;
+  bulkLinkDone: string;
+  bulkLinkNone: string;
+  mocSavedNotice: string;
+  historyLinkAction: string;
+  historyAiLinkAction: string;
+  historyArchiveAction: string;
+  historyTrashAction: string;
+  historyMocAction: string;
 }
 
 export interface TranslationBatchStudioWatch {
@@ -1471,6 +1552,7 @@ export interface TranslationBatchStudioWatch {
 export interface TranslationBatchStudio {
   title: string;
   commandTitle: string;
+  openOrphansCommandTitle: string;
   folderMenuTitle: string;
   proBadge: string;
   workspaceTab: string;
@@ -1481,6 +1563,7 @@ export interface TranslationBatchStudio {
   execution: TranslationBatchStudioExecution;
   queue: TranslationBatchStudioQueue;
   inspector: TranslationBatchStudioInspector;
+  orphans: TranslationBatchStudioOrphans;
   watch: TranslationBatchStudioWatch;
   history: TranslationBatchStudioHistory;
   proCustomPromptNotice: string;

@@ -209,12 +209,13 @@ export async function executeSplitSlotCall(
 				? Number(((outputTokenCount / durationMs) * 1000).toFixed(1))
 				: undefined;
 
+		const effectiveStopReason = signal?.aborted ? 'aborted' : finishReason;
 		debugLogger.logResponse(requestId, {
 			model: resolvedModelId,
 			content: fullResponse,
 			durationMs,
 			usage: tokenUsage,
-			...(finishReason ? { stopReason: finishReason } : {}),
+			...(effectiveStopReason ? { stopReason: effectiveStopReason } : {}),
 		});
 
 		const hasTokenLimitBeenHit = isTokenLimitReached(finishReason);
