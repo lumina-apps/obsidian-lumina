@@ -60,6 +60,20 @@ export function renderMiscTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			});
 		});
 
+	if (canUseFeature('batch-studio')) {
+		new Setting(el)
+			.setName(t('settings.misc.batchRibbonIcon.name'))
+			.setDesc(t('settings.misc.batchRibbonIcon.desc'))
+			.addToggle(toggle => {
+				toggle.setValue(s.showBatchRibbonIcon ?? false).onChange(async (val) => {
+					s.showBatchRibbonIcon = val;
+					await tab.saveAndSync();
+					// 재시작 없이 즉시 반영
+					tab.plugin.updateRibbonIcon();
+				});
+			});
+	}
+
 
 	// ── Canvas 시각화 설정 ────────────────────────────────────────────────────
 	const cs = tab.plugin.settings.canvas;

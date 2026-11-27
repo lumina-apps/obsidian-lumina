@@ -10,17 +10,29 @@
 import { App, Platform } from 'obsidian';
 import { WORKER_COMPRESSED_BASE64 } from '../../../core/worker/workerCode';
 import { debugLogger } from '../../../shared/debugLogger';
-import { t } from '../../../shared/locales/helpers';
+import { getLanguage, t } from '../../../shared/locales/helpers';
 import type { IWorker, WorkerResponse } from '../../../shared/types/rag.types';
 import type { SttTranscriptionResult, TranscriptSegment } from '../../../shared/types/voice.types';
 import { getVaultBasePath, joinSystemPath } from '../../../shared/utils/fileUtils';
 import { generateUUID } from '../../../shared/utils/uuid';
 import { decompressWorkerCode } from '../../../shared/utils/workerCodec';
-import { decodeBlobToMono16k } from '../audio/audioChunker';
+import { decodeBlobToMono16k, TARGET_SAMPLE_RATE, trimSilenceFromSamples } from '../audio/audioChunker';
 import type { ISttEngine, SttTranscribeOptions } from './sttTypes';
 
 const IDLE_TERMINATE_MS = 3 * 60 * 1000;
 const INIT_TIMEOUT_MS = 10 * 60 * 1000;
+
+/**
+ * 로컬 Whisper에 전달할 ISO-639-1 언어 코드를 정규화합니다.
+ * Transformers.js v3 Whisper 파이프라인은 언어 미지정 시 자동 감지가 아닌 영어(en)로 고정되므로,
+ * 'auto' 또는 빈 값일 때 현재 UI 언어를 폴백으로 사용합니다.
+ */
+export function resolveWhisperLanguage(languageHint?: string): string {
+	const raw = (languageHint ?? '').trim().toLowerCase();
+	const candidate = !raw || raw === 'auto' ? getLanguage().trim().toLowerCase() : raw;
+	const base = candidate.split(/[-_]/)[0];
+	return base || 'en';
+}
 
 interface PendingWhisperJob {
 	resolve: (res: { text: string; chunks: Array<{ timestamp: [number, number | null]; text: string }> }) => void;
@@ -46,9 +58,9 @@ export class LocalWhisperSttEngine implements ISttEngine {
 	private initReject: ((err: Error) => void) | null = null;
 	private onInitProgress?: (pct: number, status: string) => void;
 
-	constructor(app: App, modelName: string = 'Xenova/whisper-tiny') {
+	constructor(app: App, modelName: string = 'Xenova/whisper-small') {
 		this.app = app;
-		this.modelName = modelName || 'Xenova/whisper-tiny';
+		this.modelName = modelName || 'Xenova/whisper-small';
 		this.label = `Local Whisper (${this.modelName.split('/').pop() ?? this.modelName})`;
 	}
 
@@ -72,13 +84,16 @@ export class LocalWhisperSttEngine implements ISttEngine {
 		await this.ensureWorkerReady(options.signal);
 
 		const { samples, durationSec } = await decodeBlobToMono16k(blob);
-		if (samples.length === 0) {
+		const trimmed = trimSilenceFromSamples(samples, TARGET_SAMPLE_RATE);
+		if (trimmed.samples.length === 0) {
 			this.resetIdleTimer();
-			return { text: '', segments: [], engineLabel: this.label, durationSec: 0 };
+			return { text: '', segments: [], engineLabel: this.label, durationSec };
 		}
 
 		const requestId = generateUUID();
-		const offsetSec = options.offsetSec ?? 0;
+		const baseOffsetSec = options.offsetSec ?? 0;
+		const effectiveOffsetSec = baseOffsetSec + trimmed.leadingTrimSec;
+		const whisperLanguage = resolveWhisperLanguage(options.language);
 
 		const rawResult = await new Promise<{
 			text: string;
@@ -115,14 +130,14 @@ export class LocalWhisperSttEngine implements ISttEngine {
 				},
 			});
 
-			// 메인 스레드에서 디코딩된 16kHz Float32Array를 zero-copy로 워커에 전달
-			const transferable = samples.buffer;
+			// 메인 스레드에서 앞뒤 무음을 제거한 16kHz Float32Array를 zero-copy로 워커에 전달
+			const transferable = trimmed.samples.buffer;
 			this.worker.postMessage(
 				{
 					type: 'whisper-transcribe',
 					requestId,
-					audioData: samples,
-					language: options.language,
+					audioData: trimmed.samples,
+					language: whisperLanguage,
 				},
 				[transferable],
 			);
@@ -134,17 +149,17 @@ export class LocalWhisperSttEngine implements ISttEngine {
 		for (const chunk of rawResult.chunks) {
 			const chunkText = chunk.text.trim();
 			if (!chunkText) continue;
-			const start = Math.max(0, (chunk.timestamp?.[0] ?? 0) + offsetSec);
+			const start = Math.max(0, (chunk.timestamp?.[0] ?? 0) + effectiveOffsetSec);
 			const rawEnd = chunk.timestamp?.[1];
-			const end = Math.max(start, (typeof rawEnd === 'number' ? rawEnd : start) + offsetSec);
+			const end = Math.max(start, (typeof rawEnd === 'number' ? rawEnd : start) + effectiveOffsetSec);
 			segments.push({ startSec: start, endSec: end, text: chunkText });
 		}
 
 		const fullText = rawResult.text.trim() || segments.map((s) => s.text).join(' ');
 		if (segments.length === 0 && fullText) {
 			segments.push({
-				startSec: offsetSec,
-				endSec: offsetSec + durationSec,
+				startSec: baseOffsetSec,
+				endSec: baseOffsetSec + durationSec,
 				text: fullText,
 			});
 		}

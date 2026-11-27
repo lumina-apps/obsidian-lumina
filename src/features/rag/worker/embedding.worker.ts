@@ -300,6 +300,9 @@ async function transcribeWithWhisper(
 			chunk_length_s: 30,
 			stride_length_s: 5,
 			task: 'transcribe',
+			// 온디바이스 양자화 Whisper의 무한 반복·환각 루프 억제
+			no_repeat_ngram_size: 4,
+			repetition_penalty: 1.15,
 			...(langOption ? { language: langOption } : {}),
 		});
 		const single = Array.isArray(output) ? output[0] : output;

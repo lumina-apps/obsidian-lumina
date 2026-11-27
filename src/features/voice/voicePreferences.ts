@@ -24,7 +24,7 @@ export const DEFAULT_VOICE_PREFERENCES: Required<VoiceNotePreferences> = {
 	sttModelId: '',
 	llmProviderId: '',
 	llmModelId: '',
-	localWhisperModel: 'Xenova/whisper-tiny',
+	localWhisperModel: 'Xenova/whisper-small',
 	includeRawTranscript: true,
 	autoWikiLink: true,
 	customVocabulary: [],
@@ -56,7 +56,8 @@ export function getVoicePreferences(settings: LuminaSettings): Required<VoiceNot
 		sttModelId: saved.sttModelId ?? DEFAULT_VOICE_PREFERENCES.sttModelId,
 		llmProviderId: saved.llmProviderId ?? DEFAULT_VOICE_PREFERENCES.llmProviderId,
 		llmModelId: saved.llmModelId ?? DEFAULT_VOICE_PREFERENCES.llmModelId,
-		localWhisperModel: saved.localWhisperModel || DEFAULT_VOICE_PREFERENCES.localWhisperModel,
+		// 로컬 Whisper는 품질 편차가 큰 tiny/base 대신 whisper-small 단일 모델로 고정
+		localWhisperModel: DEFAULT_VOICE_PREFERENCES.localWhisperModel,
 		includeRawTranscript: saved.includeRawTranscript ?? DEFAULT_VOICE_PREFERENCES.includeRawTranscript,
 		autoWikiLink: saved.autoWikiLink ?? DEFAULT_VOICE_PREFERENCES.autoWikiLink,
 		customVocabulary: Array.isArray(saved.customVocabulary)

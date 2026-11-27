@@ -490,6 +490,10 @@
         "name": "Graph-Ribbon-Symbol anzeigen",
         "desc": "Zeigt das RAG-Graph-Symbol in der linken Seitenleiste an."
       },
+      "batchRibbonIcon": {
+        "name": "Batch Studio-Ribbon-Symbol anzeigen",
+        "desc": "Zeigt das Batch Studio-Symbol in der linken Seitenleiste an."
+      },
       "frontmatter": {
         "name": "Frontmatter automatisch generieren",
         "desc": "Fügt beim Erstellen neuer Notizen automatisch Frontmatter hinzu."
@@ -1583,6 +1587,7 @@
         "base": "whisper-base (Ausgewogen)",
         "small": "whisper-small (Höhere Genauigkeit)"
       },
+      "localWhisperNotice": "Der Offline-Fallback nutzt das lokale whisper-small-Modell (kein API-Schlüssel nötig, langsamer auf der CPU). Automatische Spracherkennung wird lokal nicht unterstützt – gib unten einen Sprachhinweis (z. B. de, en, ja) an, wenn du eine andere Sprache als die UI-Sprache sprichst. Für schnellere und genauere mehrsprachige Erkennung empfiehlt sich OpenAI, Groq oder Gemini.",
       "language": {
         "name": "Sprachhinweis",
         "desc": "Optionaler ISO-Sprachcode (z. B. de, en, ko) oder automatische Erkennung.",
@@ -1615,6 +1620,7 @@
       "mobileScreenHint": "Bildschirm bei langen Aufnahmen wach halten.",
       "recoverPrompt": "Unvollständige Aufnahme gefunden",
       "recoverBtn": "Wiederherstellen",
+      "saveAudioOnlyBtn": "Nur Audio speichern",
       "discardRecoverBtn": "Verwerfen",
       "closeError": "Schließen"
     },

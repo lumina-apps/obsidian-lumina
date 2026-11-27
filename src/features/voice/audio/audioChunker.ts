@@ -53,6 +53,56 @@ export function isSilentBuffer(
 }
 
 /**
+ * 16kHz 모노 PCM 샘플의 앞뒤 무음 구간을 잘라내어 Whisper 환각 및 반복 루프를 방지합니다.
+ * 전체가 무음인 경우 빈 Float32Array를 반환합니다.
+ */
+export function trimSilenceFromSamples(
+	samples: Float32Array,
+	sampleRate: number = TARGET_SAMPLE_RATE,
+	threshold: number = 0.005,
+	padSec: number = 0.25,
+): { samples: Float32Array; leadingTrimSec: number } {
+	if (samples.length === 0) {
+		return { samples: new Float32Array(0), leadingTrimSec: 0 };
+	}
+
+	const frameSize = Math.max(1, Math.round(sampleRate * 0.02));
+	if (samples.length <= frameSize) {
+		if (isSilentBuffer(samples, threshold)) {
+			return { samples: new Float32Array(0), leadingTrimSec: 0 };
+		}
+		return { samples: new Float32Array(samples), leadingTrimSec: 0 };
+	}
+
+	let firstActiveStart = -1;
+	let lastActiveEnd = -1;
+
+	for (let pos = 0; pos < samples.length; pos += frameSize) {
+		const end = Math.min(pos + frameSize, samples.length);
+		const frame = samples.subarray(pos, end);
+		if (calculateRms(frame) >= threshold) {
+			if (firstActiveStart === -1) {
+				firstActiveStart = pos;
+			}
+			lastActiveEnd = end;
+		}
+	}
+
+	if (firstActiveStart === -1 || lastActiveEnd === -1) {
+		return { samples: new Float32Array(0), leadingTrimSec: 0 };
+	}
+
+	const padSamples = Math.max(0, Math.round(sampleRate * padSec));
+	const startIdx = Math.max(0, firstActiveStart - padSamples);
+	const endIdx = Math.min(samples.length, lastActiveEnd + padSamples);
+
+	return {
+		samples: samples.slice(startIdx, endIdx),
+		leadingTrimSec: startIdx / sampleRate,
+	};
+}
+
+/**
  * 다채널 AudioBuffer를 단일 모노(Float32Array) 채널로 믹스다운합니다.
  */
 export function mixAudioBufferToMono(audioBuffer: AudioBuffer): Float32Array {

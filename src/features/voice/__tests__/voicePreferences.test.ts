@@ -36,7 +36,13 @@ describe('voicePreferences', () => {
 
 		const prefs = getVoicePreferences(settings);
 		expect(prefs).toEqual(DEFAULT_VOICE_PREFERENCES);
+		expect(prefs.localWhisperModel).toBe('Xenova/whisper-small');
 		expect(settings.voiceNote).toBeUndefined();
+
+		// 이전 설정에 tiny/base가 저장되어 있어도 whisper-small 단일 모델로 정규화됨
+		const legacySettings = cloneSettings();
+		legacySettings.voiceNote = { localWhisperModel: 'Xenova/whisper-tiny' };
+		expect(getVoicePreferences(legacySettings).localWhisperModel).toBe('Xenova/whisper-small');
 
 		prefs.customVocabulary.push('Lumina');
 		expect(DEFAULT_VOICE_PREFERENCES.customVocabulary).toEqual([]);

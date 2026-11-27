@@ -827,4 +827,84 @@ describe('VoiceNoteManager', () => {
 
 		manager.destroy();
 	});
+
+	it('로컬 Whisper 모델 설정(label)이 변경되면 기존 워커 엔진을 destroy하고 새 모델 엔진으로 교체한다', async () => {
+		grantVoiceEntitlement();
+		const destroyTinySpy = vi.fn();
+		const transcribeTinySpy = vi.fn().mockResolvedValue({
+			text: 'tiny 결과',
+			segments: [{ startSec: 0, endSec: 1, text: 'tiny 결과' }],
+			engineLabel: 'Local Whisper (whisper-tiny)',
+		});
+		const transcribeSmallSpy = vi.fn().mockResolvedValue({
+			text: 'small 결과',
+			segments: [{ startSec: 0, endSec: 1, text: 'small 결과' }],
+			engineLabel: 'Local Whisper (whisper-small)',
+		});
+
+		const resolveSpy = vi
+			.spyOn(sttResolver, 'resolveSttEngine')
+			.mockReturnValueOnce({
+				id: 'stt-local-whisper',
+				label: 'Local Whisper (whisper-tiny)',
+				transcribe: transcribeTinySpy,
+				destroy: destroyTinySpy,
+			})
+			.mockReturnValueOnce({
+				id: 'stt-local-whisper',
+				label: 'Local Whisper (whisper-small)',
+				transcribe: transcribeSmallSpy,
+			});
+
+		const manager = new VoiceNoteManager(mockPlugin);
+		await manager.init();
+
+		await manager.startRecording();
+		await manager.stopAndProcess();
+		expect(transcribeTinySpy).toHaveBeenCalledTimes(1);
+		expect(destroyTinySpy).not.toHaveBeenCalled();
+
+		await manager.startRecording();
+		await manager.stopAndProcess();
+		expect(destroyTinySpy).toHaveBeenCalledTimes(1);
+		expect(transcribeSmallSpy).toHaveBeenCalledTimes(1);
+		expect(resolveSpy).toHaveBeenCalledTimes(2);
+
+		manager.destroy();
+	});
+
+	it('saveUnfinishedSessionOnly는 STT API를 호출하지 않고 원본 오디오와 대기 마커를 볼트에 저장한 뒤 백업을 정리한다', async () => {
+		grantVoiceEntitlement();
+		const transcribeSpy = vi.fn();
+		vi.spyOn(sttResolver, 'resolveSttEngine').mockReturnValue({
+			id: 'mock-stt',
+			label: 'Mock STT',
+			transcribe: transcribeSpy,
+		});
+
+		const chunk = new Blob([new Uint8Array([1, 2, 3, 4])], { type: 'audio/webm' });
+		vi.spyOn(recoveryStore, 'hasBackupSession').mockResolvedValue(true);
+		vi.spyOn(recoveryStore, 'loadBackupSession').mockResolvedValueOnce({
+			id: 'active',
+			chunks: [chunk],
+			mimeType: 'audio/webm',
+			elapsedSec: 42,
+			targetFilePath: 'Notes/Meeting.md',
+			templateId: 'clean',
+			updatedAt: Date.now(),
+		});
+
+		const manager = new VoiceNoteManager(mockPlugin);
+		await manager.init();
+		expect(get(voiceStore).hasRecoverableSession).toBe(true);
+
+		await manager.saveUnfinishedSessionOnly();
+
+		expect(transcribeSpy).not.toHaveBeenCalled();
+		expect(get(voiceStore).hasRecoverableSession).toBe(false);
+		expect(fakeDocContent).toContain('lumina-voice:pending');
+		expect(recoveryStore.clearBackupSession).toHaveBeenCalledTimes(1);
+
+		manager.destroy();
+	});
 });

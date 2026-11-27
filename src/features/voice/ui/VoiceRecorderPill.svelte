@@ -90,6 +90,13 @@
 					<button
 						type="button"
 						class="lumina-voice-btn"
+						onclick={() => void manager.saveUnfinishedSessionOnly()}
+					>
+						{$tStore("voiceNote.recorder.saveAudioOnlyBtn")}
+					</button>
+					<button
+						type="button"
+						class="lumina-voice-btn"
 						onclick={() => void manager.discardUnfinishedSession()}
 					>
 						{$tStore("voiceNote.recorder.discardRecoverBtn")}

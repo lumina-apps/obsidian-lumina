@@ -490,6 +490,10 @@
         "name": "Mostra Icona Grafo Ribbon",
         "desc": "Visualizza l'icona del grafo RAG nella barra laterale sinistra."
       },
+      "batchRibbonIcon": {
+        "name": "Mostra Icona Batch Studio nel Ribbon",
+        "desc": "Visualizza l'icona di Batch Studio nella barra laterale sinistra."
+      },
       "frontmatter": {
         "name": "Generazione Automatica Frontmatter",
         "desc": "Aggiungi automaticamente il frontmatter alla creazione di nuove note."
@@ -1583,6 +1587,7 @@
         "base": "whisper-base (Bilanciato)",
         "small": "whisper-small (Maggiore precisione)"
       },
+      "localWhisperNotice": "Il fallback offline utilizza whisper-small in locale (nessuna chiave API richiesta, più lento su CPU). Il rilevamento automatico della lingua non è supportato localmente: imposta un codice in 'Lingua parlata' (es. it, en, ja) se parli una lingua diversa da quella dell'interfaccia. Per una trascrizione multilingue più rapida e precisa, collega OpenAI, Groq o Gemini.",
       "language": {
         "name": "Lingua parlata",
         "desc": "Codice lingua ISO opzionale (es. it, en, ko) o rilevamento automatico.",
@@ -1615,6 +1620,7 @@
       "mobileScreenHint": "Mantieni lo schermo acceso per registrazioni lunghe.",
       "recoverPrompt": "Trovata registrazione incompleta",
       "recoverBtn": "Recupera",
+      "saveAudioOnlyBtn": "Salva solo audio",
       "discardRecoverBtn": "Scarta",
       "closeError": "Chiudi"
     },

@@ -490,6 +490,10 @@
         "name": "Mostrar Ícone de Grafo na Faixa",
         "desc": "Exiba o ícone do Grafo RAG na barra lateral esquerda."
       },
+      "batchRibbonIcon": {
+        "name": "Mostrar Ícone do Batch Studio na Faixa",
+        "desc": "Exiba o ícone do Batch Studio na barra lateral esquerda."
+      },
       "frontmatter": {
         "name": "Gerar Frontmatter Automaticamente",
         "desc": "Adiciona automaticamente frontmatter ao criar novas notas."
@@ -1583,6 +1587,7 @@
         "base": "whisper-base (Equilibrado)",
         "small": "whisper-small (Maior precisão)"
       },
+      "localWhisperNotice": "O fallback offline usa o whisper-small localmente (sem chave de API, mais lento na CPU). A detecção automática de idioma não é suportada localmente — defina a 'Dica de idioma' (ex.: pt, en, ja) se falar um idioma diferente do da interface. Para reconhecimento multilíngue mais rápido e preciso, conecte OpenAI, Groq ou Gemini.",
       "language": {
         "name": "Idioma falado",
         "desc": "Código ISO opcional (ex: pt, en, ko) ou detecção automática.",
@@ -1615,6 +1620,7 @@
       "mobileScreenHint": "Mantenha a tela ligada em gravações longas.",
       "recoverPrompt": "Gravação inacabada encontrada",
       "recoverBtn": "Recuperar",
+      "saveAudioOnlyBtn": "Salvar só áudio",
       "discardRecoverBtn": "Descartar",
       "closeError": "Fechar"
     },

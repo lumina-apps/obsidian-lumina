@@ -667,6 +667,53 @@ export class VoiceNoteManager {
 		}
 	}
 
+	/**
+	 * 미완료 녹음 백업을 STT API 호출 없이 원본 오디오 + 대기 마커 노트로 볼트에 저장합니다.
+	 * (429 한도 초과·네트워크 오류 시 녹음 손실 없이 보관 후 나중에 변환할 수 있도록 지원)
+	 */
+	async saveUnfinishedSessionOnly(): Promise<void> {
+		if (!canUseFeature('voice-note') || this.isDestroyed) return;
+		const backup = await loadBackupSession();
+		if (!backup) {
+			patchVoiceState({ hasRecoverableSession: false });
+			this.unmountOverlayIfIdle();
+			return;
+		}
+
+		try {
+			const fullBlob = new Blob(backup.chunks, { type: backup.mimeType });
+			const ext = extensionForMimeType(backup.mimeType);
+			const filename = `recovered_${formatDateStampForFile(new Date(backup.updatedAt))}.${ext}`;
+			const prefs = getVoicePreferences(this.plugin.settings);
+
+			if (backup.targetFilePath) {
+				const abs = this.plugin.app.vault.getAbstractFileByPath(backup.targetFilePath);
+				this.targetFile = abs instanceof TFile ? abs : null;
+			} else {
+				this.targetFile = null;
+			}
+			const view = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
+			this.targetEditor =
+				view && this.targetFile && view.file?.path === this.targetFile.path ? view.editor : null;
+			this.liveInsertStart = null;
+			this.liveInsertEnd = null;
+
+			const templateId = canUseProFeature('voice-note') ? backup.templateId : 'verbatim';
+			await this.saveDeferredVoiceNote(fullBlob, filename, templateId, prefs.audioFolder);
+			await clearBackupSession();
+			patchVoiceState({
+				status: 'idle',
+				hasRecoverableSession: false,
+				errorMessage: null,
+			});
+			this.unmountOverlayIfIdle();
+		} catch (err: unknown) {
+			const normalized = normalizeError(err);
+			debugLogger.logError('voice', normalized);
+			new Notice(t('voiceNote.notices.transcribeFailed', { error: normalized.message }));
+		}
+	}
+
 	/** 미완료 백업 세션 폐기 */
 	async discardUnfinishedSession(): Promise<void> {
 		await clearBackupSession();
@@ -1132,7 +1179,11 @@ export class VoiceNoteManager {
 
 	private getOrCreateSttEngine(prefs: ReturnType<typeof getVoicePreferences>): ISttEngine {
 		const resolved = resolveSttEngine(this.plugin.app, this.plugin.settings.connections.providers, prefs);
-		if (this.activeSttEngine && this.activeSttEngine.id === resolved.id) {
+		if (
+			this.activeSttEngine &&
+			this.activeSttEngine.id === resolved.id &&
+			this.activeSttEngine.label === resolved.label
+		) {
 			return this.activeSttEngine;
 		}
 		this.activeSttEngine?.destroy?.();

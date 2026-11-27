@@ -593,6 +593,7 @@ export interface TranslationSettingsMisc {
   contextMenu: TranslationSettingsMiscContextMenu;
   ribbonIcon: TranslationSettingsMiscRibbonIcon;
   graphRibbonIcon: TranslationSettingsMiscRibbonIcon;
+  batchRibbonIcon: TranslationSettingsMiscRibbonIcon;
   frontmatter: TranslationSettingsMiscFrontmatter;
   debugMode: TranslationSettingsMiscDebugMode;
   versionInfo: TranslationSettingsMiscVersionInfo;
@@ -1634,6 +1635,7 @@ export interface TranslationVoiceNote {
       base: string;
       small: string;
     };
+    localWhisperNotice: string;
     language: {
       name: string;
       desc: string;
@@ -1666,6 +1668,7 @@ export interface TranslationVoiceNote {
     mobileScreenHint: string;
     recoverPrompt: string;
     recoverBtn: string;
+    saveAudioOnlyBtn: string;
     discardRecoverBtn: string;
     closeError: string;
   };

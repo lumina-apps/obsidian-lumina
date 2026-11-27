@@ -490,6 +490,10 @@
         "name": "그래프 리본 아이콘 표시",
         "desc": "좌측 사이드바에 지식 그래프(RAG Graph) 아이콘을 표시합니다."
       },
+      "batchRibbonIcon": {
+        "name": "배치 스튜디오 리본 아이콘 표시",
+        "desc": "좌측 사이드바에 배치 스튜디오(Batch Studio) 아이콘을 표시합니다."
+      },
       "frontmatter": {
         "name": "프론트매터 자동 생성",
         "desc": "새 노트 생성 시 프론트매터를 자동으로 추가합니다."
@@ -1583,6 +1587,7 @@
         "base": "whisper-base (속도/정확도 균형)",
         "small": "whisper-small (높은 정확도)"
       },
+      "localWhisperNotice": "오프라인 폴백은 온디바이스 whisper-small 모델로 동작합니다(API 키 불필요, CPU 환경에서 느릴 수 있음). 로컬 Whisper는 자동 언어 감지를 지원하지 않으므로 UI 언어와 다른 언어를 말할 때는 아래 '음성 언어 힌트'(예: ko, ja, en)를 직접 지정해 주세요. 더 빠르고 정확한 다국어 인식을 원하시면 OpenAI, Groq 또는 Gemini 연결을 권장합니다.",
       "language": {
         "name": "음성 언어 힌트",
         "desc": "인식 정확도를 높이기 위한 ISO 언어 코드(예: ko, en, ja) 또는 자동 감지입니다.",
@@ -1615,6 +1620,7 @@
       "mobileScreenHint": "긴 녹음 중에는 화면이 꺼지지 않도록 주의하세요.",
       "recoverPrompt": "미완료된 녹음 기록이 발견되었습니다",
       "recoverBtn": "복구",
+      "saveAudioOnlyBtn": "오디오만 저장",
       "discardRecoverBtn": "삭제",
       "closeError": "닫기"
     },

@@ -490,6 +490,10 @@
         "name": "Show Graph Ribbon Icon",
         "desc": "Display the RAG Graph visualizer icon in the left ribbon."
       },
+      "batchRibbonIcon": {
+        "name": "Show Batch Studio Ribbon Icon",
+        "desc": "Display the Batch Studio icon in the left ribbon."
+      },
       "frontmatter": {
         "name": "Auto-generate Frontmatter",
         "desc": "Automatically add frontmatter when creating new notes."
@@ -1583,6 +1587,7 @@
         "base": "whisper-base (Balanced)",
         "small": "whisper-small (Higher Accuracy)"
       },
+      "localWhisperNotice": "Offline fallback uses on-device whisper-small (no API key needed, slower on CPU). Automatic language detection is not supported locally — set Spoken Language Hint (e.g. ko, ja, en) if speaking a language other than the UI language. For faster, higher-accuracy multilingual STT, connect OpenAI, Groq, or Gemini.",
       "language": {
         "name": "Spoken Language Hint",
         "desc": "Optional ISO language code (e.g. ko, en, ja) or auto-detect.",
@@ -1615,6 +1620,7 @@
       "mobileScreenHint": "Keep screen awake during long recordings.",
       "recoverPrompt": "Unfinished recording found",
       "recoverBtn": "Recover",
+      "saveAudioOnlyBtn": "Save Audio Only",
       "discardRecoverBtn": "Discard",
       "closeError": "Close"
     },

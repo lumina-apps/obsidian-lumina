@@ -490,6 +490,10 @@
         "name": "グラフリーボンアイコンを表示",
         "desc": "左側サイドバーにナレッジグラフ(RAG Graph)アイコンを表示します。"
       },
+      "batchRibbonIcon": {
+        "name": "バッチスタジオリボンアイコンを表示",
+        "desc": "左側サイドバーにバッチスタジオ(Batch Studio)アイコンを表示します。"
+      },
       "frontmatter": {
         "name": "フロントマター自動生成",
         "desc": "ノートのフロントマター（メタデータ）を自動的に生成します。"
@@ -1583,6 +1587,7 @@
         "base": "whisper-base（バランス型）",
         "small": "whisper-small（高精度）"
       },
+      "localWhisperNotice": "オフラインフォールバックはオンデバイスの whisper-small を使用します（APIキー不要、CPU環境では低速）。ローカル Whisper は自動言語検出に非対応のため、UI言語と異なる言語を話す場合は下の「音声言語ヒント」（例: ja, ko, en）を指定してください。高速・高精度な多言語認識には OpenAI、Groq、または Gemini の接続をおすすめします。",
       "language": {
         "name": "音声言語ヒント",
         "desc": "認識精度を高めるISO言語コード（例: ja, en, ko）または自動検出です。",
@@ -1615,6 +1620,7 @@
       "mobileScreenHint": "長時間の録音中は画面をオフにしないでください。",
       "recoverPrompt": "未完了の録音データが見つかりました",
       "recoverBtn": "復元",
+      "saveAudioOnlyBtn": "音声のみ保存",
       "discardRecoverBtn": "破棄",
       "closeError": "閉じる"
     },

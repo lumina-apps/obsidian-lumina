@@ -7,6 +7,7 @@ import {
 	measureAudioBlobDurationSec,
 	resampleLinearMono,
 	splitAudioBlobForApi,
+	trimSilenceFromSamples,
 } from '../audio/audioChunker';
 
 describe('audioChunker', () => {
@@ -253,5 +254,21 @@ describe('audioChunker', () => {
 
 		await expect(decodeBlobToMono16k(blob)).rejects.toThrow('Decode fail');
 		expect(closeMock).toHaveBeenCalledTimes(2);
+	});
+
+	it('trimSilenceFromSamples는 앞뒤 무음을 잘라내고 선두 오프셋을 계산하며 완전 무음은 빈 배열을 반환한다', () => {
+		const sampleRate = 16000;
+		// 1초 무음 + 1초 발화 + 1초 무음 = 총 3초
+		const pcm = new Float32Array(sampleRate * 3);
+		pcm.fill(0.2, sampleRate, sampleRate * 2);
+
+		const trimmed = trimSilenceFromSamples(pcm, sampleRate, 0.005, 0.25);
+		expect(trimmed.leadingTrimSec).toBeCloseTo(0.75, 2);
+		expect(trimmed.samples.length).toBe(Math.round(sampleRate * 1.5));
+
+		const allSilent = new Float32Array(sampleRate * 2);
+		const empty = trimSilenceFromSamples(allSilent, sampleRate);
+		expect(empty.samples.length).toBe(0);
+		expect(empty.leadingTrimSec).toBe(0);
 	});
 });

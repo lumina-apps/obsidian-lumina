@@ -490,6 +490,10 @@
         "name": "Afficher l'icône de graphe du ruban",
         "desc": "Afficher l'icône du graphe RAG dans la barre latérale gauche."
       },
+      "batchRibbonIcon": {
+        "name": "Afficher l'icône Batch Studio du ruban",
+        "desc": "Afficher l'icône Batch Studio dans la barre latérale gauche."
+      },
       "frontmatter": {
         "name": "Générer automatiquement le frontmatter",
         "desc": "Ajouter automatiquement le frontmatter lors de la création de nouvelles notes."
@@ -1583,6 +1587,7 @@
         "base": "whisper-base (Équilibré)",
         "small": "whisper-small (Meilleure précision)"
       },
+      "localWhisperNotice": "Le mode hors ligne utilise whisper-small en local (sans clé API, plus lent sur CPU). La détection automatique de langue n'est pas prise en charge localement : indiquez un code dans « Indice de langue » (ex. fr, en, ja) si vous parlez une autre langue que celle de l'interface. Pour une transcription multilingue plus rapide et précise, connectez OpenAI, Groq ou Gemini.",
       "language": {
         "name": "Indice de langue parlée",
         "desc": "Code ISO optionnel (ex. fr, en, ko) ou détection automatique.",
@@ -1615,6 +1620,7 @@
       "mobileScreenHint": "Gardez l'écran allumé lors de longs enregistrements.",
       "recoverPrompt": "Enregistrement inachevé trouvé",
       "recoverBtn": "Récupérer",
+      "saveAudioOnlyBtn": "Enregistrer l'audio",
       "discardRecoverBtn": "Ignorer",
       "closeError": "Fermer"
     },

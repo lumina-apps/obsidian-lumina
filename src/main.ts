@@ -108,6 +108,7 @@ export default class LuminaPlugin extends Plugin {
 	isFirstRun: boolean = false;
 	private ribbonEl: HTMLElement | null = null;
 	private graphRibbonEl: HTMLElement | null = null;
+	private batchRibbonEl: HTMLElement | null = null;
 	private voiceRibbonEl: HTMLElement | null = null;
 	public settingTab: LazyLuminaSettingTab | null = null;
 	public frontmatterManager!: FrontmatterManager;
@@ -341,6 +342,10 @@ export default class LuminaPlugin extends Plugin {
 		if (this.graphRibbonEl) {
 			this.removeRibbonButton(this.graphRibbonEl);
 			this.graphRibbonEl = null;
+		}
+		if (this.batchRibbonEl) {
+			this.removeRibbonButton(this.batchRibbonEl);
+			this.batchRibbonEl = null;
 		}
 		if (this.voiceRibbonEl) {
 			this.removeRibbonButton(this.voiceRibbonEl);
@@ -619,6 +624,29 @@ export default class LuminaPlugin extends Plugin {
 			if (this.graphRibbonEl) {
 				this.removeRibbonButton(this.graphRibbonEl);
 				this.graphRibbonEl = null;
+			}
+		}
+
+		// 2-1. Batch Studio Ribbon Icon (접근 권한 활성 + 사용자 토글 ON 시 노출)
+		const showBatchRibbon =
+			canUseFeature('batch-studio') && (this.settings?.misc?.showBatchRibbonIcon ?? false);
+		if (showBatchRibbon) {
+			if (!this.batchRibbonEl) {
+				this.batchRibbonEl = this.addRibbonIcon(
+					'lumina-batch-studio',
+					t('batchStudio.title'),
+					() => {
+						if (!canUseFeature('batch-studio')) return;
+						void activateMainView(this.app.workspace, BATCH_STUDIO_VIEW_TYPE);
+					},
+				);
+			} else {
+				this.batchRibbonEl.setAttribute('aria-label', t('batchStudio.title'));
+			}
+		} else {
+			if (this.batchRibbonEl) {
+				this.removeRibbonButton(this.batchRibbonEl);
+				this.batchRibbonEl = null;
 			}
 		}
 

@@ -490,6 +490,10 @@
         "name": "顯示圖譜功能區圖示",
         "desc": "在左側邊欄顯示知識圖譜 (RAG Graph) 圖示。"
       },
+      "batchRibbonIcon": {
+        "name": "顯示批次工作室功能區圖示",
+        "desc": "在左側邊欄顯示批次工作室 (Batch Studio) 圖示。"
+      },
       "frontmatter": {
         "name": "自動生成 Frontmatter",
         "desc": "建立新筆記時自動加入 Frontmatter。"
@@ -1583,6 +1587,7 @@
         "base": "whisper-base（均衡）",
         "small": "whisper-small（更高準確率）"
       },
+      "localWhisperNotice": "離線回退使用本地 whisper-small 模型（無需 API 金鑰，CPU 環境下較慢）。本地 Whisper 不支援自動語言偵測，如使用與介面不同的語言請在下方「語音語言提示」中指定代碼（如 zh、en、ja）。如需更快更準的多語言辨識，建議連接 OpenAI、Groq 或 Gemini。",
       "language": {
         "name": "語音語言提示",
         "desc": "用於提升辨識準確率的 ISO 語言代碼（如 zh、en、ko）或自動偵測。",
@@ -1615,6 +1620,7 @@
       "mobileScreenHint": "長時間錄音時請保持螢幕開啟。",
       "recoverPrompt": "發現未完成的錄音紀錄",
       "recoverBtn": "復原",
+      "saveAudioOnlyBtn": "僅儲存音訊",
       "discardRecoverBtn": "捨棄",
       "closeError": "關閉"
     },

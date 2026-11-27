@@ -13,13 +13,17 @@ vi.mock('../../../shared/utils/workerCodec', () => ({
 	decompressWorkerCode: vi.fn().mockResolvedValue('/* whisper worker code */'),
 }));
 
-vi.mock('../audio/audioChunker', () => ({
-	decodeBlobToMono16k: vi.fn(),
-}));
+vi.mock('../audio/audioChunker', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('../audio/audioChunker')>();
+	return {
+		...actual,
+		decodeBlobToMono16k: vi.fn(),
+	};
+});
 
 import { decompressWorkerCode } from '../../../shared/utils/workerCodec';
 import { decodeBlobToMono16k } from '../audio/audioChunker';
-import { LocalWhisperSttEngine } from '../stt/localWhisperEngine';
+import { LocalWhisperSttEngine, resolveWhisperLanguage } from '../stt/localWhisperEngine';
 
 /** 워커 전송 메시지 기록 및 이벤트 시뮬레이션용 페이크 Worker */
 class FakeWhisperWorker {
@@ -254,7 +258,7 @@ describe('LocalWhisperSttEngine', () => {
 		expect(res).toEqual({
 			text: '',
 			segments: [],
-			engineLabel: 'Local Whisper (whisper-tiny)',
+			engineLabel: 'Local Whisper (whisper-small)',
 			durationSec: 0,
 		});
 		// whisper-init만 전송되고 whisper-transcribe는 전송되지 않아야 함
@@ -388,5 +392,35 @@ describe('LocalWhisperSttEngine', () => {
 
 		await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
 		await rejection;
+	});
+
+	it('전체가 무음인 오디오는 Whisper 워커에 전사 요청을 보내지 않고 빈 결과를 반환한다', async () => {
+		vi.mocked(decodeBlobToMono16k).mockResolvedValueOnce({
+			samples: new Float32Array(16000),
+			sampleRate: 16000,
+			durationSec: 1.0,
+		});
+
+		const engine = new LocalWhisperSttEngine(createMockApp(), 'Xenova/whisper-small');
+		const blob = new Blob([new Uint8Array([1, 2])], { type: 'audio/webm' });
+		const promise = engine.transcribe(blob, 'silence.webm');
+
+		await vi.waitFor(() => expect(FakeWhisperWorker.instances).toHaveLength(1));
+		const worker = FakeWhisperWorker.instances[0];
+		worker.emitMessage({ type: 'whisper-ready' });
+
+		const result = await promise;
+		expect(result.text).toBe('');
+		expect(result.segments).toEqual([]);
+		expect(worker.postedMessages.some((m) => (m.msg as { type: string }).type === 'whisper-transcribe')).toBe(false);
+		engine.destroy();
+	});
+
+	it('resolveWhisperLanguage는 auto/빈 값일 때 현재 UI 언어로 폴백하고 지역 코드를 ISO-639-1로 정규화한다', () => {
+		expect(resolveWhisperLanguage('ja')).toBe('ja');
+		expect(resolveWhisperLanguage('ja-JP')).toBe('ja');
+		expect(resolveWhisperLanguage('zh-tw')).toBe('zh');
+		expect(resolveWhisperLanguage('auto')).toMatch(/^[a-z]{2}$/);
+		expect(resolveWhisperLanguage('')).toMatch(/^[a-z]{2}$/);
 	});
 });

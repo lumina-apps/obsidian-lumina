@@ -490,6 +490,10 @@
         "name": "显示图谱功能区图标",
         "desc": "在左侧边栏显示知识图谱 (RAG Graph) 图标。"
       },
+      "batchRibbonIcon": {
+        "name": "显示批处理工作室功能区图标",
+        "desc": "在左侧边栏显示批处理工作室 (Batch Studio) 图标。"
+      },
       "frontmatter": {
         "name": "自动生成 Frontmatter",
         "desc": "创建新笔记时自动添加 Frontmatter。"
@@ -1583,6 +1587,7 @@
         "base": "whisper-base（均衡）",
         "small": "whisper-small（更高准确率）"
       },
+      "localWhisperNotice": "离线回退使用本地 whisper-small 模型（无需 API 密钥，CPU 环境下较慢）。本地 Whisper 不支持自动语言检测，如使用与界面不同的语言请在下方的“语音语言提示”中指定代码（如 zh、en、ja）。如需更快更准的多语言识别，建议连接 OpenAI、Groq 或 Gemini。",
       "language": {
         "name": "语音语言提示",
         "desc": "用于提升识别准确率的 ISO 语言代码（如 zh、en、ko）或自动检测。",
@@ -1615,6 +1620,7 @@
       "mobileScreenHint": "长时间录音时请保持屏幕常亮。",
       "recoverPrompt": "发现未完成的录音记录",
       "recoverBtn": "恢复",
+      "saveAudioOnlyBtn": "仅保存音频",
       "discardRecoverBtn": "丢弃",
       "closeError": "关闭"
     },

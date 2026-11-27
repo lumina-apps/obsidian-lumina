@@ -320,6 +320,15 @@ export function migrateGraphRibbonIcon(plugin: LuminaPlugin): boolean {
 	return false;
 }
 
+/** 배치 스튜디오 리본 아이콘 기본값(false) 마이그레이션 */
+export function migrateBatchRibbonIcon(plugin: LuminaPlugin): boolean {
+	if (plugin.settings.misc && plugin.settings.misc.showBatchRibbonIcon === undefined) {
+		plugin.settings.misc.showBatchRibbonIcon = false;
+		return true;
+	}
+	return false;
+}
+
 const LEGACY_PROVIDER_BASE_URLS: Readonly<Record<string, string>> = {
 	togetherai: 'https://api.together.xyz',
 	kimi: 'https://api.moonshot.ai',
@@ -369,5 +378,6 @@ export function runMigrations(plugin: LuminaPlugin): boolean {
 	if (migrateWebSearch(plugin)) needsSave = true;
 	if (migrateCanvasSettings(plugin)) needsSave = true;
 	if (migrateGraphRibbonIcon(plugin)) needsSave = true;
+	if (migrateBatchRibbonIcon(plugin)) needsSave = true;
 	return needsSave;
 }

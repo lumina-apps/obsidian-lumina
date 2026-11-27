@@ -490,6 +490,10 @@
         "name": "Mostrar icono de grafo en la cinta",
         "desc": "Muestra el icono del grafo RAG en la barra lateral izquierda."
       },
+      "batchRibbonIcon": {
+        "name": "Mostrar icono de Batch Studio en la cinta",
+        "desc": "Muestra el icono de Batch Studio en la barra lateral izquierda."
+      },
       "frontmatter": {
         "name": "Autogenerar frontmatter",
         "desc": "Añade automáticamente frontmatter al crear nuevas notas."
@@ -1583,6 +1587,7 @@
         "base": "whisper-base (Equilibrado)",
         "small": "whisper-small (Mayor precisión)"
       },
+      "localWhisperNotice": "El modo sin conexión utiliza whisper-small localmente (sin clave API, más lento en CPU). No admite detección automática de idioma: indica un código en 'Idioma hablado' (p. ej. es, en, ja) si hablas un idioma distinto al de la interfaz. Para mayor velocidad y precisión multilingüe, conecta OpenAI, Groq o Gemini.",
       "language": {
         "name": "Idioma hablado",
         "desc": "Código ISO opcional (ej. es, en, ko) o detección automática.",
@@ -1615,6 +1620,7 @@
       "mobileScreenHint": "Mantén la pantalla encendida en grabaciones largas.",
       "recoverPrompt": "Se encontró una grabación sin terminar",
       "recoverBtn": "Recuperar",
+      "saveAudioOnlyBtn": "Solo guardar audio",
       "discardRecoverBtn": "Descartar",
       "closeError": "Cerrar"
     },

@@ -186,21 +186,30 @@ export function renderVoiceSettingsSection(tab: LuminaSettingTab, el: HTMLElemen
 			});
 	}
 
-	if (!Platform.isMobile && (prefs.sttMode === 'auto' || prefs.sttMode === 'local-whisper')) {
-		new Setting(el)
-			.setName(t('voiceNote.settings.localWhisperModel.name'))
-			.setDesc(t('voiceNote.settings.localWhisperModel.desc'))
-			.addDropdown((dd) => {
-				dd.addOption('Xenova/whisper-tiny', t('voiceNote.settings.localWhisperModel.tiny'));
-				dd.addOption('Xenova/whisper-base', t('voiceNote.settings.localWhisperModel.base'));
-				dd.addOption('Xenova/whisper-small', t('voiceNote.settings.localWhisperModel.small'));
-				dd.setValue(prefs.localWhisperModel).onChange(async (val) => {
-					await updateVoicePreferences(tab.plugin, { localWhisperModel: val });
-				});
-			});
+	const hasCloudStt = getSttCapableProviders(tab.plugin.settings.connections.providers).length > 0;
+	if (
+		!Platform.isMobile &&
+		(prefs.sttMode === 'local-whisper' || (prefs.sttMode === 'auto' && !hasCloudStt))
+	) {
+		tab.infoBox(el, t('voiceNote.settings.localWhisperNotice'), 'info');
 	}
 
-	// 5. 노트 정리용 LLM 모델 (사용자 연결 프로바이더만 재사용)
+	// 5. 음성 언어 힌트 (STT 엔진 바로 아래에 배치)
+	new Setting(el)
+		.setName(t('voiceNote.settings.language.name'))
+		.setDesc(t('voiceNote.settings.language.desc'))
+		.addText((text) => {
+			text
+				.setPlaceholder(t('voiceNote.settings.language.auto'))
+				.setValue(prefs.language === 'auto' ? '' : prefs.language)
+				.onChange(async (val) => {
+					await updateVoicePreferences(tab.plugin, {
+						language: val.trim() || 'auto',
+					});
+				});
+		});
+
+	// 6. 노트 정리용 LLM 모델 (사용자 연결 프로바이더만 재사용)
 	const llmEligible = getVoiceEligibleLlmProviders(tab.plugin.settings.connections.providers);
 	const llmSetting = new Setting(el)
 		.setName(t('voiceNote.settings.llmModel.name'))
@@ -241,21 +250,6 @@ export function renderVoiceSettingsSection(tab: LuminaSettingTab, el: HTMLElemen
 	if (!isPro) {
 		appendProBadge(llmSetting);
 	}
-
-	// 6. 음성 언어 힌트
-	new Setting(el)
-		.setName(t('voiceNote.settings.language.name'))
-		.setDesc(t('voiceNote.settings.language.desc'))
-		.addText((text) => {
-			text
-				.setPlaceholder(t('voiceNote.settings.language.auto'))
-				.setValue(prefs.language === 'auto' ? '' : prefs.language)
-				.onChange(async (val) => {
-					await updateVoicePreferences(tab.plugin, {
-						language: val.trim() || 'auto',
-					});
-				});
-		});
 
 	// 7. 자동 위키링크([[...]])
 	const wikiLinkSetting = new Setting(el)

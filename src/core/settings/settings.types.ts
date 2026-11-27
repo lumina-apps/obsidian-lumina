@@ -154,6 +154,8 @@ export interface MiscSettings {
 	showRibbonIcon: boolean;
 	/** 좌측 리본 아이콘 표시 여부 (그래프) */
 	showGraphRibbonIcon: boolean;
+	/** 좌측 리본 아이콘 표시 여부 (배치 스튜디오) */
+	showBatchRibbonIcon: boolean;
 
 	// ── Advanced ──
 	/** 프론트매터 자동생성 여부 */
