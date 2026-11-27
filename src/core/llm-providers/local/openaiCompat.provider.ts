@@ -29,12 +29,22 @@ export class OpenAICompatProvider extends BaseOpenAIProvider {
 		this.enableReasoning = true;
 	}
 
+	/** 로컬/사설 네트워크 대상 엔드포인트인지 판별합니다. */
+	private isLocalTarget(): boolean {
+		const category = PROVIDER_CATEGORIES[this.type];
+		return category === 'local' || (this.type === 'custom' && isLocalEndpointUrl(this.baseUrl));
+	}
+
+	/** 데스크탑 로컬 서버(LM Studio, Ollama 등)에서 CORS 비활성화로 fetch가 차단된 경우 requestUrl 폴백을 허용합니다. */
+	protected override shouldAllowDesktopCorsFallback(): boolean {
+		return this.isLocalTarget();
+	}
+
 	protected getStopSequences(options: ChatOptions): string[] | undefined {
 		if (options.stop && options.stop.length > 0) {
 			return options.stop;
 		}
-		const category = PROVIDER_CATEGORIES[this.type];
-		if (category === 'local' || (this.type === 'custom' && isLocalEndpointUrl(this.baseUrl))) {
+		if (this.isLocalTarget()) {
 			return LOCAL_STOP_SEQUENCES;
 		}
 		return undefined;

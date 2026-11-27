@@ -291,7 +291,8 @@ export class AutocompleteHandler {
 			let usage: TokenUsage | undefined;
 			let finishReason: string | undefined;
 
-			if (typeof provider.stream === 'function') {
+			const useStreaming = this.plugin.settings.chat.streaming !== false;
+			if (useStreaming && typeof provider.stream === 'function') {
 				usedStreaming = true;
 				const streamCtrl = new AbortController();
 				let earlyStopped = false;

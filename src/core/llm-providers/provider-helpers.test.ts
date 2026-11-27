@@ -21,6 +21,7 @@ import {
 	raiseApiError,
 	readStreamLines,
 	isMobileStreamingCorsFallbackError,
+	isStreamingCorsFallbackError,
 } from './provider-helpers';
 
 beforeEach(() => {
@@ -264,6 +265,21 @@ describe('isMobileStreamingCorsFallbackError', () => {
 	it('데스크탑에서는 TypeError여도 false를 반환한다', () => {
 		mockPlatform.isMobile = false;
 		expect(isMobileStreamingCorsFallbackError(new TypeError('Load failed'))).toBe(false);
+	});
+
+	it('isStreamingCorsFallbackError는 allowDesktop=true일 때 데스크탑 TypeError를 허용하고 Abort/IdleTimeout은 거부한다', () => {
+		mockPlatform.isMobile = false;
+		expect(isStreamingCorsFallbackError(new TypeError('Failed to fetch'), true)).toBe(true);
+		expect(isStreamingCorsFallbackError(new TypeError('Failed to fetch'), false)).toBe(false);
+
+		const abortErr = new TypeError('Aborted');
+		abortErr.name = 'AbortError';
+		const idleErr = new TypeError('Timed out');
+		idleErr.name = 'IdleTimeoutError';
+
+		expect(isStreamingCorsFallbackError(abortErr, true)).toBe(false);
+		expect(isStreamingCorsFallbackError(idleErr, true)).toBe(false);
+		expect(isStreamingCorsFallbackError(new Error('HTTP 400'), true)).toBe(false);
 	});
 
 	it('AbortError, IdleTimeoutError, 일반 Error는 false를 반환한다', () => {

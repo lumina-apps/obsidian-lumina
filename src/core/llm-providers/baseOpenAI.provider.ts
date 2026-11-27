@@ -12,7 +12,7 @@ import {
 	readStreamLines,
 	requestUrlWithAbort,
 	IdleTimeoutController,
-	isMobileStreamingCorsFallbackError,
+	isStreamingCorsFallbackError,
 } from './provider-helpers';
 import { debugLogger } from '../../shared/debugLogger';
 import {
@@ -117,6 +117,14 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 		return undefined;
 	}
 
+	/**
+	 * 데스크탑 환경에서 스트리밍 fetch가 CORS/네트워크 TypeError로 차단됐을 때
+	 * requestUrl 기반 비스트리밍 폴백을 허용할지 여부를 반환합니다.
+	 */
+	protected shouldAllowDesktopCorsFallback(): boolean {
+		return false;
+	}
+
 	protected buildPayload(
 		options: ChatOptions,
 		messages: ChatMessage[],
@@ -194,8 +202,11 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 				signal: timeoutCtrl.signal,
 			});
 		} catch (err: unknown) {
-			if (isMobileStreamingCorsFallbackError(err)) {
-				debugLogger.logWarn('llm', `${this.type} streaming fetch blocked on mobile, falling back to requestUrl: ${err.message}`);
+			if (!timeoutCtrl.signal.aborted && isStreamingCorsFallbackError(err, this.shouldAllowDesktopCorsFallback())) {
+				debugLogger.logWarn(
+					'llm',
+					`${this.type} streaming fetch blocked (CORS/network), falling back to requestUrl: ${err.message}`,
+				);
 				timeoutCtrl.switchToNonStreamingFallback();
 				const nonStreamPayload: Record<string, unknown> = { ...payload, stream: false };
 				delete nonStreamPayload.stream_options;

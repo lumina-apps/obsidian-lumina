@@ -235,6 +235,22 @@ describe('AutocompleteHandler & Inline Autocomplete', () => {
 			expect(abortedDuringStream).toBe(true);
 			expect(res).toBe('오늘 날씨가 정말 맑습니다.');
 		});
+
+		it('chat.streaming이 false이면 provider.stream이 있더라도 비스트리밍 provider.chat 경로를 사용한다', async () => {
+			mockPlugin.settings.chat.streaming = false;
+			const mockStream = vi.fn();
+			mockChatFn.mockResolvedValueOnce({ content: '비스트리밍 자동완성.' });
+
+			vi.mocked(createProvider).mockReturnValue({
+				stream: mockStream,
+				chat: mockChatFn,
+			} as unknown as ILLMProvider);
+
+			const res = await handler.fetchSuggestion('테스트 문장 ');
+			expect(mockStream).not.toHaveBeenCalled();
+			expect(mockChatFn).toHaveBeenCalledTimes(1);
+			expect(res).toBe('비스트리밍 자동완성.');
+		});
 	});
 
 	describe('autocompletePlugin delete guard', () => {

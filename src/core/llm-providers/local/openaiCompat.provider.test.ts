@@ -273,5 +273,80 @@ describe('OpenAICompatProvider', () => {
 				mockPlatform.isMobile = false;
 			}
 		});
+
+		it('데스크탑에서 LM Studio 스트리밍(stream/chat)이 CORS TypeError로 실패하면 requestUrl 비스트리밍으로 폴백한다', async () => {
+			mockPlatform.isMobile = false;
+			vi.stubGlobal('window', {
+				get setTimeout() { return globalThis.setTimeout; },
+				get clearTimeout() { return globalThis.clearTimeout; },
+				fetch: vi.fn().mockRejectedValue(new TypeError('Failed to fetch')),
+			});
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					choices: [{ message: { content: 'LM Studio fallback response' }, finish_reason: 'stop' }],
+					usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+				},
+			} as RequestUrlResponse);
+
+			const lmStudio = new OpenAICompatProvider('lms-1', 'lmstudio', 'http://localhost:1234/');
+			const streamChunks: string[] = [];
+			const streamRes = await lmStudio.stream(
+				[{ role: 'user', content: 'hello' }],
+				{ model: 'qwen3.8-27b@iq2_s' },
+				(c) => streamChunks.push(c),
+			);
+
+			expect(mockRequestUrl).toHaveBeenCalledTimes(1);
+			const callArg = mockRequestUrl.mock.calls[0][0] as { url: string; body: string };
+			expect(callArg.url).toBe('http://localhost:1234/v1/chat/completions');
+			const parsedBody = JSON.parse(callArg.body) as Record<string, unknown>;
+			expect(parsedBody.stream).toBe(false);
+			expect(parsedBody.stream_options).toBeUndefined();
+			expect(streamChunks).toEqual(['LM Studio fallback response']);
+			expect(streamRes.finishReason).toBe('stop');
+		});
+
+		it('데스크탑에서 원격 custom 엔드포인트는 fetch TypeError 시 requestUrl 폴백을 수행하지 않는다', async () => {
+			mockPlatform.isMobile = false;
+			vi.stubGlobal('window', {
+				get setTimeout() { return globalThis.setTimeout; },
+				get clearTimeout() { return globalThis.clearTimeout; },
+				fetch: vi.fn().mockRejectedValue(new TypeError('Failed to fetch')),
+			});
+
+			const remoteCustom = new OpenAICompatProvider('remote-c', 'custom', 'https://api.together.xyz', 'sk-remote');
+			await expect(
+				remoteCustom.chat(
+					[{ role: 'user', content: 'hello' }],
+					{ model: 'meta-llama/Llama-3-70b' },
+					() => {},
+				),
+			).rejects.toThrow('Failed to fetch');
+			expect(mockRequestUrl).not.toHaveBeenCalled();
+		});
+
+		it('데스크탑 로컬 서버라도 요청이 이미 중단(Abort)된 경우 requestUrl로 폴백하지 않는다', async () => {
+			mockPlatform.isMobile = false;
+			const controller = new AbortController();
+			vi.stubGlobal('window', {
+				get setTimeout() { return globalThis.setTimeout; },
+				get clearTimeout() { return globalThis.clearTimeout; },
+				fetch: vi.fn().mockImplementation(() => {
+					controller.abort();
+					return Promise.reject(new TypeError('Failed to fetch'));
+				}),
+			});
+
+			const lmStudio = new OpenAICompatProvider('lms-1', 'lmstudio', 'http://localhost:1234');
+			await expect(
+				lmStudio.stream(
+					[{ role: 'user', content: 'hello' }],
+					{ model: 'qwen2.5', signal: controller.signal },
+					() => {},
+				),
+			).rejects.toThrow('Failed to fetch');
+			expect(mockRequestUrl).not.toHaveBeenCalled();
+		});
 	});
 });

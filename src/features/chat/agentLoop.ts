@@ -152,11 +152,13 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 		// ── LLM 호출 ──────────────────────────────────────────────────────────
 		let rawResponse: import('../../shared/types/llm.types').ChatResponse;
 		try {
-			rawResponse = await provider.chat(messagesForLLM, chatOptions, (chunk) => {
-				if (chatSettings.streaming) {
-					appendChunk(assistantId, chunk);
-				}
-			});
+			// 비스트리밍 설정 시 onChunk를 전달하지 않아 프로바이더가 requestUrl 기반 비스트리밍 경로를 사용하도록 보장
+			const onChunk = chatSettings.streaming
+				? (chunk: string) => {
+						appendChunk(assistantId, chunk);
+					}
+				: undefined;
+			rawResponse = await provider.chat(messagesForLLM, chatOptions, onChunk);
 		} catch (err: unknown) {
 			// 스트리밍 중 에러 발생 (컨텍스트 오버플로우, 토큰 한도, 네트워크 에러 등)
 			// 누적된 텍스트를 반환하고 루프 종료

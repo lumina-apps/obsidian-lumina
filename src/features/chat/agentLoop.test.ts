@@ -195,5 +195,55 @@ describe('agentLoop', () => {
 			expect(result.fullResponse).toContain('Cut off answer...');
 			expect(result.tokenUsage).toEqual({ inputTokens: 120, outputTokens: 100, totalTokens: 220 });
 		});
+
+		it('streaming이 false이면 provider.chat에 onChunk 콜백을 전달하지 않는다', async () => {
+			const chatMock = vi.fn().mockResolvedValue({
+				content: 'Non-streaming response',
+				toolCalls: [],
+				finishReason: 'stop',
+			});
+			const mockProvider = { chat: chatMock } as unknown as ILLMProvider;
+
+			await runAgentLoop({
+				assistantId: 'msg-non-stream',
+				messagesForLLM: [{ role: 'user', content: 'Hi' }],
+				chatOptions: {} as ChatOptions,
+				provider: mockProvider,
+				chatSettings: { ...baseSettings, streaming: false },
+				mcpManager: null,
+				toolServerMap: {},
+				useTextTools: false,
+			});
+
+			expect(chatMock).toHaveBeenCalledTimes(1);
+			expect(chatMock.mock.calls[0][2]).toBeUndefined();
+		});
+
+		it('streaming이 true이면 provider.chat에 onChunk 콜백을 전달한다', async () => {
+			const chatMock = vi.fn().mockImplementation(async (_msgs, _opts, onChunk?: (c: string) => void) => {
+				onChunk?.('Streamed chunk');
+				return {
+					content: 'Streamed chunk',
+					toolCalls: [],
+					finishReason: 'stop',
+				};
+			});
+			const mockProvider = { chat: chatMock } as unknown as ILLMProvider;
+
+			const result = await runAgentLoop({
+				assistantId: 'msg-stream',
+				messagesForLLM: [{ role: 'user', content: 'Hi' }],
+				chatOptions: {} as ChatOptions,
+				provider: mockProvider,
+				chatSettings: { ...baseSettings, streaming: true },
+				mcpManager: null,
+				toolServerMap: {},
+				useTextTools: false,
+			});
+
+			expect(chatMock).toHaveBeenCalledTimes(1);
+			expect(typeof chatMock.mock.calls[0][2]).toBe('function');
+			expect(result.fullResponse).toBe('Streamed chunk');
+		});
 	});
 });

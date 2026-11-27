@@ -70,6 +70,10 @@ describe('modelUtils', () => {
 			expect(values).toContain('claude-cli-1::claude-3-7-sonnet');
 			expect(values).toContain('antigravity-cli-1::gemini-2.5-pro');
 			expect(values).toContain('ollama-1::llama3:latest');
+			// 로컬 모델 라벨에는 오해를 유발하는 경고 이모지(⚠️)가 붙지 않아야 함
+			const ollamaOpt = options.find(o => o.value === 'ollama-1::llama3:latest');
+			expect(ollamaOpt?.label).toBe('[Ollama] llama3:latest');
+			expect(ollamaOpt?.label).not.toContain('⚠️');
 			// 임베딩 전용 모델은 제외됨
 			expect(values).not.toContain('openai-1::text-embedding-3-small');
 		});

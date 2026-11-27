@@ -124,7 +124,7 @@ export function isEmbeddingModel(providerType: ProviderType, modelId?: string): 
 export function buildProviderModelOptions(
 	providers: LLMProviderConfig[],
 	filter: ModelFilterFn,
-	localWarning: string = ' ⚠️',
+	localWarning: string = '',
 ): ModelOption[] {
 	const options: ModelOption[] = [];
 	const verified = providers.filter(

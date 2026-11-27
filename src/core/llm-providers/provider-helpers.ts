@@ -283,11 +283,12 @@ export async function readStreamLines(
 }
 
 /**
- * 모바일 WebView에서 스트리밍 window.fetch()가 CORS·네트워크 TypeError로 차단됐는지 판별합니다.
- * 데스크탑 환경이나 AbortError/IdleTimeoutError, HTTP 상태 오류에서는 폴백하지 않습니다.
+ * 스트리밍 window.fetch()가 CORS·네트워크 TypeError로 차단돼 비스트리밍(requestUrl) 폴백이 가능한지 판별합니다.
+ * 모바일 WebView에서는 모든 프로바이더에 대해 허용하고, 데스크탑에서는 로컬 서버(LM Studio, Ollama 등)처럼
+ * allowDesktop이 명시된 경우에만 허용합니다. AbortError/IdleTimeoutError 및 일반 Error에서는 폴백하지 않습니다.
  */
-export function isMobileStreamingCorsFallbackError(err: unknown): err is TypeError {
-	if (typeof Platform === 'undefined' || !Platform?.isMobile) {
+export function isStreamingCorsFallbackError(err: unknown, allowDesktop = false): err is TypeError {
+	if (!allowDesktop && (typeof Platform === 'undefined' || !Platform?.isMobile)) {
 		return false;
 	}
 	if (!(err instanceof TypeError)) {
@@ -297,4 +298,12 @@ export function isMobileStreamingCorsFallbackError(err: unknown): err is TypeErr
 		return false;
 	}
 	return true;
+}
+
+/**
+ * 모바일 WebView에서 스트리밍 window.fetch()가 CORS·네트워크 TypeError로 차단됐는지 판별합니다.
+ * 데스크탑 환경이나 AbortError/IdleTimeoutError, HTTP 상태 오류에서는 폴백하지 않습니다.
+ */
+export function isMobileStreamingCorsFallbackError(err: unknown): err is TypeError {
+	return isStreamingCorsFallbackError(err, false);
 }
