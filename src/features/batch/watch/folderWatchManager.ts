@@ -131,7 +131,7 @@ export class FolderWatchManager {
 		if (this.destroyed) return;
 		this.startedAt = Date.now();
 		const isMobile = typeof Platform !== 'undefined' && Boolean(Platform?.isMobile);
-		const deviceEnabled = readDeviceWatchEnabled(isMobile);
+		const deviceEnabled = readDeviceWatchEnabled(isMobile, this.app);
 		patchBatchWatchState({ deviceWatchEnabled: deviceEnabled });
 
 		this.activeFilePath = this.app.workspace?.getActiveFile?.()?.path ?? null;
@@ -155,10 +155,10 @@ export class FolderWatchManager {
 	}
 
 	/**
-	 * 현재 기기의 백그라운드 자동감시 활성화 상태를 변경하고 localStorage에 저장합니다.
+	 * 현재 기기의 백그라운드 자동감시 활성화 상태를 변경하고 Obsidian 로컬 스토리지에 저장합니다.
 	 */
 	setDeviceEnabled(enabled: boolean): void {
-		writeDeviceWatchEnabled(enabled);
+		writeDeviceWatchEnabled(enabled, this.app);
 		patchBatchWatchState({ deviceWatchEnabled: enabled });
 		this.syncWatchers();
 	}

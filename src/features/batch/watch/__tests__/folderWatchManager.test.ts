@@ -5,7 +5,6 @@ import { createProvider } from '../../../../core/llm-providers';
 import { DEFAULT_SETTINGS } from '../../../../core/settings/defaultSettings';
 import { getBatchState, resetBatchStore } from '../../../../core/store/batchStore';
 import {
-	DEVICE_WATCH_ENABLED_KEY,
 	getBatchWatchState,
 	resetBatchWatchStore,
 } from '../../../../core/store/batchWatchStore';
@@ -104,22 +103,6 @@ describe('FolderWatchManager', () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-		if (typeof window !== 'undefined' && !window.localStorage) {
-			const storage = new Map<string, string>();
-			Object.defineProperty(window, 'localStorage', {
-				configurable: true,
-				value: {
-					getItem: (k: string) => storage.get(k) ?? null,
-					setItem: (k: string, v: string) => {
-						storage.set(k, v);
-					},
-					removeItem: (k: string) => {
-						storage.delete(k);
-					},
-				},
-			});
-		}
-		window.localStorage?.removeItem?.(DEVICE_WATCH_ENABLED_KEY);
 		resetBatchStore();
 		resetBatchWatchStore();
 		setEntitlementState({
@@ -147,7 +130,16 @@ describe('FolderWatchManager', () => {
 			style: { display: '' },
 		};
 
+		const localStore = new Map<string, unknown>();
 		mockApp = {
+			loadLocalStorage: vi.fn((key: string) => localStore.get(key) ?? null),
+			saveLocalStorage: vi.fn((key: string, val: unknown | null) => {
+				if (val === null) {
+					localStore.delete(key);
+				} else {
+					localStore.set(key, val);
+				}
+			}),
 			vault: {
 				configDir: '.obsidian',
 				on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
@@ -245,7 +237,6 @@ describe('FolderWatchManager', () => {
 	afterEach(() => {
 		vi.useRealTimers();
 		manager?.destroy();
-		window.localStorage?.removeItem?.(DEVICE_WATCH_ENABLED_KEY);
 		resetBatchStore();
 		resetBatchWatchStore();
 		resetEntitlementState();

@@ -11,8 +11,14 @@ import type {
 	WatchStagedItem,
 } from '../../shared/types/batchWatch.types';
 
-/** 기기별 자동감시 활성화 상태를 저장하는 localStorage 키 */
+/** 기기별 자동감시 활성화 상태를 저장하는 Obsidian 로컬 스토리지 키 */
 export const DEVICE_WATCH_ENABLED_KEY = 'lumina-batch-watch-device-enabled';
+
+/** Obsidian App의 기기별 로컬 스토리지 API 최소 인터페이스 */
+export interface ObsidianLocalStorageHost {
+	loadLocalStorage?: (key: string) => unknown;
+	saveLocalStorage?: (key: string, data: unknown | null) => void;
+}
 
 /** 활동 로그 최대 보존 건수 */
 const MAX_WATCH_ACTIVITY_LOG = 100;
@@ -26,32 +32,32 @@ export function getLocalDateKey(now: Date = new Date()): string {
 }
 
 /**
- * 현재 기기의 localStorage에서 백그라운드 자동감시 활성화 여부를 읽습니다.
+ * 현재 기기의 Obsidian 로컬 스토리지(app.loadLocalStorage)에서 백그라운드 자동감시 활성화 여부를 읽습니다.
  * 미설정 시 데스크톱은 true, 모바일은 false를 기본값으로 반환합니다.
  */
-export function readDeviceWatchEnabled(isMobile: boolean): boolean {
+export function readDeviceWatchEnabled(isMobile: boolean, app?: ObsidianLocalStorageHost): boolean {
 	try {
-		if (typeof window !== 'undefined' && window.localStorage) {
-			const raw = window.localStorage.getItem(DEVICE_WATCH_ENABLED_KEY);
-			if (raw === 'true') return true;
-			if (raw === 'false') return false;
+		if (typeof app?.loadLocalStorage === 'function') {
+			const raw: unknown = app.loadLocalStorage(DEVICE_WATCH_ENABLED_KEY);
+			if (raw === true || raw === 'true') return true;
+			if (raw === false || raw === 'false') return false;
 		}
 	} catch {
-		// localStorage 접근 불가 환경 무시
+		// 로컬 스토리지 접근 불가 환경 무시
 	}
 	return !isMobile;
 }
 
 /**
- * 현재 기기의 백그라운드 자동감시 활성화 여부를 localStorage에 저장합니다.
+ * 현재 기기의 백그라운드 자동감시 활성화 여부를 Obsidian 로컬 스토리지(app.saveLocalStorage)에 저장합니다.
  */
-export function writeDeviceWatchEnabled(enabled: boolean): void {
+export function writeDeviceWatchEnabled(enabled: boolean, app?: ObsidianLocalStorageHost): void {
 	try {
-		if (typeof window !== 'undefined' && window.localStorage) {
-			window.localStorage.setItem(DEVICE_WATCH_ENABLED_KEY, enabled ? 'true' : 'false');
+		if (typeof app?.saveLocalStorage === 'function') {
+			app.saveLocalStorage(DEVICE_WATCH_ENABLED_KEY, enabled);
 		}
 	} catch {
-		// localStorage 접근 불가 환경 무시
+		// 로컬 스토리지 접근 불가 환경 무시
 	}
 }
 

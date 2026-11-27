@@ -1,7 +1,7 @@
 /**
  * batchWatchStore.test.ts
  *
- * 폴더 자동감시 런타임 스토어의 기기별 localStorage 토글,
+ * 폴더 자동감시 런타임 스토어의 기기별 Obsidian 로컬 스토리지 토글,
  * 검토 대기열 upsert/remove, 활동 로그 100건 상한, 일일 처리 카운터 날짜 롤오버를 검증합니다.
  */
 
@@ -21,6 +21,7 @@ import {
 	upsertWatchStagedItem,
 	watchStagedCount,
 	writeDeviceWatchEnabled,
+	type ObsidianLocalStorageHost,
 } from './batchWatchStore';
 import type { WatchActivityLogEntry, WatchStagedItem } from '../../shared/types/batchWatch.types';
 
@@ -49,60 +50,61 @@ function makeLogEntry(id: string): WatchActivityLogEntry {
 }
 
 describe('batchWatchStore', () => {
-	const origLocalStorage = window.localStorage;
-	let memStorage: Map<string, string>;
+	let memStorage: Map<string, unknown>;
+	let mockApp: ObsidianLocalStorageHost;
 
 	beforeEach(() => {
 		resetBatchWatchStore();
-		memStorage = new Map<string, string>();
-		Object.defineProperty(window, 'localStorage', {
-			value: {
-				getItem: (key: string) => memStorage.get(key) ?? null,
-				setItem: (key: string, val: string) => {
-					memStorage.set(key, val);
-				},
-				removeItem: (key: string) => {
+		memStorage = new Map<string, unknown>();
+		mockApp = {
+			loadLocalStorage: (key: string) => memStorage.get(key) ?? null,
+			saveLocalStorage: (key: string, val: unknown | null) => {
+				if (val === null) {
 					memStorage.delete(key);
-				},
+				} else {
+					memStorage.set(key, val);
+				}
 			},
-			configurable: true,
-		});
+		};
 	});
 
 	afterEach(() => {
 		vi.useRealTimers();
-		Object.defineProperty(window, 'localStorage', {
-			value: origLocalStorage,
-			configurable: true,
-		});
 		vi.restoreAllMocks();
 	});
 
 	it('readDeviceWatchEnabled/writeDeviceWatchEnabled는 데스크톱 기본 true, 모바일 기본 false 및 저장값 우선 규칙을 따른다', () => {
-		expect(readDeviceWatchEnabled(false)).toBe(true);
-		expect(readDeviceWatchEnabled(true)).toBe(false);
+		expect(readDeviceWatchEnabled(false, mockApp)).toBe(true);
+		expect(readDeviceWatchEnabled(true, mockApp)).toBe(false);
 
-		writeDeviceWatchEnabled(false);
-		expect(readDeviceWatchEnabled(false)).toBe(false);
+		writeDeviceWatchEnabled(false, mockApp);
+		expect(memStorage.get(DEVICE_WATCH_ENABLED_KEY)).toBe(false);
+		expect(readDeviceWatchEnabled(false, mockApp)).toBe(false);
 
-		writeDeviceWatchEnabled(true);
-		expect(readDeviceWatchEnabled(true)).toBe(true);
+		writeDeviceWatchEnabled(true, mockApp);
+		expect(memStorage.get(DEVICE_WATCH_ENABLED_KEY)).toBe(true);
+		expect(readDeviceWatchEnabled(true, mockApp)).toBe(true);
+
+		// 문자열로 저장된 기존 값 호환 확인
+		memStorage.set(DEVICE_WATCH_ENABLED_KEY, 'false');
+		expect(readDeviceWatchEnabled(false, mockApp)).toBe(false);
+		memStorage.set(DEVICE_WATCH_ENABLED_KEY, 'true');
+		expect(readDeviceWatchEnabled(true, mockApp)).toBe(true);
 	});
 
-	it('localStorage 접근이 예외를 던져도 안전하게 기본값을 반환하고 저장 시 크래시하지 않는다', () => {
-		Object.defineProperty(window, 'localStorage', {
-			value: {
-				getItem: () => {
-					throw new Error('SecurityError');
-				},
-				setItem: () => {
-					throw new Error('QuotaExceededError');
-				},
+	it('Obsidian 로컬 스토리지 접근이 예외를 던지거나 app이 없어도 안전하게 기본값을 반환한다', () => {
+		const throwingApp: ObsidianLocalStorageHost = {
+			loadLocalStorage: () => {
+				throw new Error('SecurityError');
 			},
-			configurable: true,
-		});
+			saveLocalStorage: () => {
+				throw new Error('QuotaExceededError');
+			},
+		};
 
-		expect(() => writeDeviceWatchEnabled(true)).not.toThrow();
+		expect(() => writeDeviceWatchEnabled(true, throwingApp)).not.toThrow();
+		expect(readDeviceWatchEnabled(false, throwingApp)).toBe(true);
+		expect(readDeviceWatchEnabled(true, throwingApp)).toBe(false);
 		expect(readDeviceWatchEnabled(false)).toBe(true);
 		expect(readDeviceWatchEnabled(true)).toBe(false);
 	});
