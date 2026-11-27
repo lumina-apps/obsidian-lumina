@@ -154,7 +154,9 @@
 		}
 
 		includeActiveNote = plugin.settings.rag.includeActiveNote;
-		useRagContext = plugin.settings.connections.ragEnabled;
+		useRagContext = plugin.settings.connections.ragEnabled
+			? (savedPrefs?.useRagContext ?? true)
+			: false;
 		ctrl = new SplitChatController(plugin);
 		if (!Platform.isMobile) {
 			textareaEl?.focus();
@@ -290,6 +292,7 @@
 			return;
 		}
 		useRagContext = !useRagContext;
+		void ctrl?.persistPreferences({ useRagContext });
 	}
 
 	function handleToggleActiveNote(): void {
@@ -360,6 +363,7 @@
 	}
 
 	function handleVoteWinner(turnId: string, winner: SplitWinnerChoice): void {
+		if (!$isProSplit) return;
 		setSplitTurnWinner(turnId, winner, true);
 		ctrl?.scheduleAutoSave();
 	}
@@ -568,6 +572,7 @@
 							{turn}
 							slots={$splitChatStore.slots}
 							mode={$splitChatStore.mode}
+							isPro={$isProSplit}
 							{isCompact}
 							activeMobileSlotId={$splitChatStore.activeMobileSlotId}
 							app={plugin.app}

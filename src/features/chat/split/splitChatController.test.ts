@@ -294,9 +294,14 @@ describe('splitChatController', () => {
 			metrics: { startedAt: 1000, finishedAt: 1100, durationMs: 100 },
 		});
 
-		await ctrl.persistPreferences();
+		await ctrl.persistPreferences({ useRagContext: false });
 		expect(plugin.settings.chat.splitChat?.lastSlots).toHaveLength(2);
+		expect(plugin.settings.chat.splitChat?.useRagContext).toBe(false);
 		expect(plugin.saveSettings).toHaveBeenCalled();
+
+		// 이후 일반 선호 설정 저장 시에도 기존 useRagContext 값이 유지되어야 함
+		await ctrl.persistPreferences();
+		expect(plugin.settings.chat.splitChat?.useRagContext).toBe(false);
 
 		await ctrl.sendPrompt('자동 저장 질문', []);
 		expect(saveHistorySpy).toHaveBeenCalledTimes(1);

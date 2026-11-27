@@ -152,10 +152,12 @@ export class SplitChatController {
 		return resolveHistoryLocation(chat, projects?.list ?? [], getActiveProject());
 	}
 
-	/** 현재 슬롯·모드 선호 설정을 settings.chat.splitChat에 저장 (권한 활성 시에만 기록) */
-	async persistPreferences(): Promise<void> {
+	/** 현재 슬롯·모드·RAG 선호 설정을 settings.chat.splitChat에 저장 (권한 활성 시에만 기록) */
+	async persistPreferences(overrides?: { useRagContext?: boolean }): Promise<void> {
 		if (!canUseFeature('split-chat')) return;
 		const state = getSplitChatState();
+		const nextUseRagContext =
+			overrides?.useRagContext ?? this.plugin.settings.chat.splitChat?.useRagContext;
 		this.plugin.settings.chat.splitChat = {
 			lastSlots: state.slots.map((s) => ({
 				providerId: s.providerId,
@@ -166,6 +168,7 @@ export class SplitChatController {
 			})),
 			mode: state.mode,
 			contextMode: state.contextMode,
+			...(nextUseRagContext !== undefined ? { useRagContext: nextUseRagContext } : {}),
 		};
 		await this.plugin.saveSettings();
 	}

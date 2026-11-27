@@ -22,6 +22,7 @@
 		slotLabel,
 		maskedLabel,
 		isMasked,
+		isPro = true,
 		isWinner,
 		isFastest,
 		app,
@@ -36,6 +37,7 @@
 		slotLabel: string;
 		maskedLabel: string;
 		isMasked: boolean;
+		isPro?: boolean;
 		isWinner: boolean;
 		isFastest: boolean;
 		app: App;
@@ -248,7 +250,7 @@
 			</div>
 
 			<div class="lumina-split-card__actions">
-				{#if !isMasked && response.status !== "error" && displayContent}
+				{#if isPro && !isMasked && response.status !== "error" && displayContent}
 					<button
 						type="button"
 						class="lumina-split-card__pick-btn"

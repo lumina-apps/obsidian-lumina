@@ -137,4 +137,6 @@ export interface SplitChatPreferences {
 	mode?: SplitLayoutMode;
 	/** 마지막 멀티턴 컨텍스트 전략 */
 	contextMode?: SplitContextMode;
+	/** 마지막 RAG 컨텍스트 사용 여부 */
+	useRagContext?: boolean;
 }

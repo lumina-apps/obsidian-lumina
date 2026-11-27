@@ -23,6 +23,7 @@
 		turn,
 		slots,
 		mode,
+		isPro = true,
 		isCompact,
 		activeMobileSlotId,
 		app,
@@ -38,6 +39,7 @@
 		turn: SplitTurn;
 		slots: SplitSlotConfig[];
 		mode: SplitLayoutMode;
+		isPro?: boolean;
 		isCompact: boolean;
 		activeMobileSlotId: string | null;
 		app: App;
@@ -194,6 +196,7 @@
 					slotLabel={getSlotLabel(sid, fullIdx)}
 					maskedLabel={getMaskedLabel(fullIdx)}
 					{isMasked}
+					{isPro}
 					isWinner={turn.winnerSlotId === sid}
 					isFastest={fastestSlotId === sid}
 					{app}
