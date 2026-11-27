@@ -1345,6 +1345,10 @@ export interface TranslationBatchStudioExecution {
   resumeBtn: string;
   cancelBtn: string;
   retryFailedBtn: string;
+  resumeCancelledBtn: string;
+  completedNotice: string;
+  completedAllSkippedNotice: string;
+  completedFailedNotice: string;
   statusIdle: string;
   statusRunning: string;
   statusPaused: string;
@@ -1388,6 +1392,7 @@ export interface TranslationBatchStudioInspector {
   addTagBtn: string;
   removeTagAria: string;
   rejectBtn: string;
+  undoRejectBtn: string;
   acceptSingleBtn: string;
   acceptAllSelectedBtn: string;
   appliedBadge: string;

@@ -418,7 +418,11 @@ describe('BatchStudioController', () => {
 
 		const state = getBatchState();
 		expect(state.runState).toBe('completed');
-		expect(state.queue.find((q) => q.path === 'b.md')?.status).toBe('skipped');
+		const cancelledItem = state.queue.find((q) => q.path === 'b.md');
+		expect(cancelledItem?.status).toBe('skipped');
+		expect(cancelledItem?.cancelledByUser).toBe(true);
+		// 중단된 미실행 항목은 done(처리됨) 수에 포함되지 않아야 함
+		expect(get(batchQueueCounts).done).toBe(0);
 	});
 
 	it('retryFailedItems는 실패한 항목만 다시 대기열로 올려 재실행한다', async () => {
@@ -516,5 +520,131 @@ describe('BatchStudioController', () => {
 		expect(chatMock).not.toHaveBeenCalled();
 		expect(getBatchState().runState).toBe('idle');
 		expect(getBatchState().queue).toHaveLength(0);
+	});
+
+	it('롤백 후 동일 세션에서 다시 적용해도 새 고유 히스토리 ID를 발급해 중복 키 오류가 발생하지 않는다', async () => {
+		vi.mocked(createProvider).mockReturnValue({
+			chat: vi.fn().mockResolvedValue({
+				content: '{"tags": ["롤백테스트"], "description": "설명"}',
+				usage: { inputTokens: 10, outputTokens: 10, totalTokens: 20 },
+			}),
+		} as unknown as ReturnType<typeof createProvider>);
+
+		await controller.startBatch();
+		expect(await controller.applySingleItem('a.md')).toBe(true);
+		const firstId = getBatchState().history[0].id;
+
+		expect(await controller.rollbackHistoryEntry(firstId)).toBe(1);
+		expect(getBatchState().activeRunHistoryId).toBeNull();
+
+		// 롤백 후 다시 반영 시 이전 ID와 다른 새 히스토리 ID가 생성되어야 함
+		expect(await controller.applySingleItem('a.md')).toBe(true);
+		const history = getBatchState().history;
+		expect(history).toHaveLength(2);
+		expect(history[0].id).not.toBe(history[1].id);
+		expect(new Set(history.map((h) => h.id)).size).toBe(2);
+	});
+
+	it('거절한 항목을 restoreRejectedItem으로 다시 검수 대기(staged) 상태로 되돌릴 수 있다', async () => {
+		vi.mocked(createProvider).mockReturnValue({
+			chat: vi.fn().mockResolvedValue({
+				content: '{"tags": ["복구"], "description": "설명"}',
+				usage: { inputTokens: 10, outputTokens: 10, totalTokens: 20 },
+			}),
+		} as unknown as ReturnType<typeof createProvider>);
+
+		await controller.startBatch();
+		controller.rejectSingleItem('a.md');
+		expect(getBatchState().queue.find((q) => q.path === 'a.md')?.status).toBe('rejected');
+
+		controller.restoreRejectedItem('a.md');
+		const restored = getBatchState().queue.find((q) => q.path === 'a.md');
+		expect(restored?.status).toBe('staged');
+		expect(restored?.selected).toBe(true);
+	});
+
+	it('resumeCancelledItems는 기존 staged 결과를 유지하고 중단된 미실행 항목만 이어서 실행한다', async () => {
+		let releaseSecondItem!: () => void;
+		const secondItemGate = new Promise<void>((resolve) => {
+			releaseSecondItem = resolve;
+		});
+
+		const chatMock = vi.fn().mockImplementation(async () => {
+			if (chatMock.mock.calls.length === 2) {
+				await secondItemGate;
+			}
+			return {
+				content: '{"tags": ["이어하기"], "description": "설명"}',
+				usage: { inputTokens: 10, outputTokens: 10, totalTokens: 20 },
+			};
+		});
+		vi.mocked(createProvider).mockReturnValue({
+			chat: chatMock,
+		} as unknown as ReturnType<typeof createProvider>);
+
+		const firstRun = controller.startBatch();
+		await vi.waitFor(() =>
+			expect(getBatchState().queue.find((q) => q.path === 'a.md')?.status).toBe('staged'),
+		);
+
+		// 1건 완료 후 2번째 항목 처리 중 중단
+		controller.cancelBatch();
+		releaseSecondItem();
+		await firstRun;
+
+		expect(get(batchQueueCounts).done).toBe(1);
+		expect(get(batchQueueCounts).cancelled).toBe(1);
+
+		const callsBeforeResume = chatMock.mock.calls.length;
+		await controller.resumeCancelledItems();
+
+		// 기존 a.md는 재호출하지 않고 중단됐던 b.md 1건만 추가 호출되어야 함
+		expect(chatMock.mock.calls.length).toBe(callsBeforeResume + 1);
+		expect(get(batchQueueCounts).done).toBe(2);
+		expect(get(batchQueueCounts).cancelled).toBe(0);
+		expect(getBatchState().queue.find((q) => q.path === 'a.md')?.status).toBe('staged');
+		expect(getBatchState().queue.find((q) => q.path === 'b.md')?.status).toBe('staged');
+	});
+
+	it('Freemium 요약 콜아웃에서 앞 5개 반영 후 재실행하면 이미 요약된 5개를 건너뛰고 6~7번째 노트를 처리한다', async () => {
+		resetEntitlementState();
+		setReleasedFeatures(['batch-studio']);
+		fileObjs = {};
+		diskFiles = {};
+		fmStore = {};
+		for (let i = 1; i <= 7; i++) {
+			const p = `note-${i}.md`;
+			fileObjs[p] = makeFile(p, 300);
+			diskFiles[p] = `${i}번째 노트의 본문입니다. 요약 콜아웃 배치를 위한 충분한 길이의 텍스트를 담고 있습니다.`;
+			fmStore[p] = {};
+		}
+
+		const chatMock = vi.fn().mockResolvedValue({
+			content: '핵심 요약 문장입니다.',
+			usage: { inputTokens: 10, outputTokens: 10, totalTokens: 20 },
+		});
+		vi.mocked(createProvider).mockReturnValue({
+			chat: chatMock,
+		} as unknown as ReturnType<typeof createProvider>);
+
+		patchBatchState({ activeRecipeId: 'summary-callout' });
+
+		// 1차 실행: 상위 5개 처리, 2개 locked
+		await controller.startBatch();
+		expect(get(batchQueueCounts).staged).toBe(5);
+		expect(get(batchQueueCounts).locked).toBe(2);
+
+		// 1~5번 노트 개별 수락 -> 디스크 본문에 > [!summary] 반영됨
+		for (let i = 1; i <= 5; i++) {
+			expect(await controller.applySingleItem(`note-${i}.md`)).toBe(true);
+			expect(diskFiles[`note-${i}.md`]).toContain('> [!summary]');
+		}
+
+		// 2차 실행: 이미 요약된 1~5번은 사전 제외되고 6~7번 2개만 정상 실행되어야 함
+		await controller.startBatch();
+		const queue2 = getBatchState().queue;
+		expect(queue2.map((q) => q.path)).toEqual(['note-6.md', 'note-7.md']);
+		expect(get(batchQueueCounts).staged).toBe(2);
+		expect(get(batchQueueCounts).locked).toBe(0);
 	});
 });

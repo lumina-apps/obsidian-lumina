@@ -133,6 +133,46 @@ function shouldSmartSkipFromCache(
 }
 
 /**
+ * 마크다운 본문에 이미 요약 콜아웃(> [!summary])이 존재하는지 판별합니다.
+ */
+export function hasSummaryCallout(rawContent: string): boolean {
+	const body = rawContent.replace(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/, '').trim();
+	return /^>\s*\[!summary\]/im.test(body);
+}
+
+/**
+ * 요약 콜아웃 레시피에서 이미 > [!summary] 콜아웃이 있는 노트를 사전 제외합니다.
+ * 무료 5개 상한 슬라이싱 전에 필터링해, 앞 5개 반영 후 다음 5개 노트가 정상 진입하도록 보장합니다.
+ */
+export async function filterOutExistingSummaryCallouts(
+	app: App,
+	files: readonly TFile[],
+): Promise<TFile[]> {
+	const readFn =
+		typeof app.vault?.cachedRead === 'function'
+			? (f: TFile) => app.vault.cachedRead(f)
+			: typeof app.vault?.read === 'function'
+				? (f: TFile) => app.vault.read(f)
+				: null;
+	if (!readFn || files.length === 0) {
+		return [...files];
+	}
+
+	const kept: TFile[] = [];
+	for (const file of files) {
+		try {
+			const raw = await readFn(file);
+			if (!hasSummaryCallout(raw)) {
+				kept.push(file);
+			}
+		} catch {
+			kept.push(file);
+		}
+	}
+	return kept;
+}
+
+/**
  * 범위·태그·최소 길이·스마트 스킵 조건에 따라 배치 대상 마크다운 파일 목록을 계산합니다.
  */
 export function resolveTargetFiles(

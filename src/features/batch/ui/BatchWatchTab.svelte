@@ -40,6 +40,7 @@
 	import { computeLineDiff, listVaultFolders } from "../batchTargetResolver";
 	import { getBatchEligibleProviders } from "../recipes/batchRecipes";
 	import { sanitizeFolderPath, validateMoveDestination } from "../watch/folderMover";
+	import BatchFolderSelect from "./BatchFolderSelect.svelte";
 
 	let { plugin }: { plugin: LuminaPlugin } = $props();
 
@@ -522,12 +523,6 @@
 			</button>
 		</div>
 	{:else}
-		<datalist id="lumina-watch-folder-list">
-			{#each vaultFolders as folder (folder)}
-				<option value={folder}></option>
-			{/each}
-		</datalist>
-
 		{#if editorOpen}
 			<!-- 규칙 추가/편집 패널 -->
 			<div class="lumina-watch-editor">
@@ -559,12 +554,12 @@
 
 					<div class="lumina-watch-field">
 						<label for="lumina-watch-src">{$tStore("batchStudio.watch.sourceFolderLabel")}</label>
-						<input
+						<BatchFolderSelect
 							id="lumina-watch-src"
-							type="text"
-							list="lumina-watch-folder-list"
+							folders={vaultFolders}
 							placeholder={$tStore("batchStudio.watch.sourceFolderPlaceholder")}
-							bind:value={draftRule.sourceFolder}
+							value={draftRule.sourceFolder}
+							onChange={(val) => (draftRule.sourceFolder = val)}
 						/>
 					</div>
 
@@ -804,12 +799,12 @@
 								<label for="lumina-watch-fixeddest">
 									{$tStore("batchStudio.options.moveTargetFolderLabel")}
 								</label>
-								<input
+								<BatchFolderSelect
 									id="lumina-watch-fixeddest"
-									type="text"
-									list="lumina-watch-folder-list"
+									folders={vaultFolders}
 									placeholder={$tStore("batchStudio.options.moveTargetFolderPlaceholder")}
-									bind:value={draftRule.moveAction.fixedTargetFolder}
+									value={draftRule.moveAction.fixedTargetFolder}
+									onChange={(val) => (draftRule.moveAction.fixedTargetFolder = val)}
 								/>
 							</div>
 						{:else if draftRule.moveAction.mode === "by-tag"}
@@ -823,11 +818,11 @@
 										placeholder={$tStore("batchStudio.options.moveTagPlaceholder")}
 										bind:value={newTagMapTag}
 									/>
-									<input
-										type="text"
-										list="lumina-watch-folder-list"
+									<BatchFolderSelect
+										folders={vaultFolders}
 										placeholder={$tStore("batchStudio.options.moveTargetFolderPlaceholder")}
-										bind:value={newTagMapFolder}
+										value={newTagMapFolder}
+										onChange={(val) => (newTagMapFolder = val)}
 									/>
 									<button type="button" onclick={addTagMapping}>
 										{$tStore("batchStudio.options.moveAddMappingBtn")}
@@ -850,17 +845,12 @@
 									{$tStore("batchStudio.options.moveAiCandidatesLabel")}
 								</span>
 								<div class="lumina-watch-inline-add">
-									<input
-										type="text"
-										list="lumina-watch-folder-list"
+									<BatchFolderSelect
+										folders={vaultFolders}
 										placeholder={$tStore("batchStudio.options.moveAiCandidatesPlaceholder")}
-										bind:value={newAiCandidateFolder}
-										onkeydown={(e) => {
-											if (e.key === "Enter") {
-												e.preventDefault();
-												addAiCandidate();
-											}
-										}}
+										value={newAiCandidateFolder}
+										onChange={(val) => (newAiCandidateFolder = val)}
+										onEnter={addAiCandidate}
 									/>
 									<button type="button" onclick={addAiCandidate}>
 										{$tStore("batchStudio.options.moveAddCandidateBtn")}
@@ -884,12 +874,12 @@
 								<label for="lumina-watch-fallback">
 									{$tStore("batchStudio.options.moveFallbackFolderLabel")}
 								</label>
-								<input
+								<BatchFolderSelect
 									id="lumina-watch-fallback"
-									type="text"
-									list="lumina-watch-folder-list"
+									folders={vaultFolders}
 									placeholder={$tStore("batchStudio.options.moveFallbackFolderPlaceholder")}
-									bind:value={draftRule.moveAction.fallbackFolder}
+									value={draftRule.moveAction.fallbackFolder}
+									onChange={(val) => (draftRule.moveAction.fallbackFolder = val)}
 								/>
 							</div>
 						{/if}

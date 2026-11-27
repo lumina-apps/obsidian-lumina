@@ -72,6 +72,7 @@ describe('batchStore', () => {
 			applied: 1,
 			rejected: 1,
 			skipped: 1,
+			cancelled: 0,
 			failed: 1,
 			done: 6,
 			selectedStaged: 1,

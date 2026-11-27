@@ -126,6 +126,8 @@ export interface BatchQueueItem {
 	errorMessage?: string;
 	/** 해당 항목 처리에 소모된 토큰 수 */
 	tokensUsed?: number;
+	/** 사용자 중단(cancelBatch)으로 미실행 건너뜀 처리된 항목 여부 */
+	cancelledByUser?: boolean;
 }
 
 /** 롤백용 단일 파일 원본 스냅샷 */

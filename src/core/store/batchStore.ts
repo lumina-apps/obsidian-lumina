@@ -122,6 +122,7 @@ export const batchQueueCounts: Readable<{
 	applied: number;
 	rejected: number;
 	skipped: number;
+	cancelled: number;
 	failed: number;
 	done: number;
 	selectedStaged: number;
@@ -133,6 +134,8 @@ export const batchQueueCounts: Readable<{
 	let applied = 0;
 	let rejected = 0;
 	let skipped = 0;
+	let cancelled = 0;
+	let processedSkipped = 0;
 	let failed = 0;
 	let selectedStaged = 0;
 
@@ -159,6 +162,11 @@ export const batchQueueCounts: Readable<{
 				break;
 			case 'skipped':
 				skipped++;
+				if (item.cancelledByUser) {
+					cancelled++;
+				} else {
+					processedSkipped++;
+				}
 				break;
 			case 'failed':
 				failed++;
@@ -167,7 +175,7 @@ export const batchQueueCounts: Readable<{
 	}
 
 	const total = $s.queue.length - locked;
-	const done = staged + applied + rejected + skipped + failed;
+	const done = staged + applied + rejected + processedSkipped + failed;
 	return {
 		total,
 		locked,
@@ -177,6 +185,7 @@ export const batchQueueCounts: Readable<{
 		applied,
 		rejected,
 		skipped,
+		cancelled,
 		failed,
 		done,
 		selectedStaged,
@@ -274,11 +283,11 @@ export function setBatchTargetFolder(folderPath: string): boolean {
 	return updated;
 }
 
-/** 새 배치 히스토리 항목을 목록 맨 앞에 추가 */
+/** 새 배치 히스토리 항목을 목록 맨 앞에 추가 (동일 ID 중복 방지) */
 export function addBatchHistoryEntry(entry: BatchHistoryEntry): void {
 	batchStore.update((state) => ({
 		...state,
-		history: [entry, ...state.history].slice(0, 30),
+		history: [entry, ...state.history.filter((h) => h.id !== entry.id)].slice(0, 30),
 	}));
 }
 

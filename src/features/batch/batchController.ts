@@ -39,7 +39,10 @@ import { normalizeError } from '../../shared/utils/errorUtils';
 import { ensureFolderExists } from '../../shared/utils/fileUtils';
 import { formatLlmError } from '../../shared/utils/llmErrorFormatter';
 import { applyProposedToFile } from './batchApplyHelper';
-import { resolveTargetFiles } from './batchTargetResolver';
+import {
+	filterOutExistingSummaryCallouts,
+	resolveTargetFiles,
+} from './batchTargetResolver';
 import {
 	executeRecipeForFile,
 	isRateLimitError,
@@ -102,13 +105,21 @@ export class BatchStudioController {
 			return;
 		}
 
-		const { matched } = resolveTargetFiles(
+		let { matched } = resolveTargetFiles(
 			this.app,
 			state.scopeConfig,
 			state.activeRecipeId,
 			state.recipeOptions,
 			getActiveProject()?.ragExcludedPaths ?? [],
 		);
+
+		if (
+			state.activeRecipeId === 'summary-callout' &&
+			state.scopeConfig.skipIfAlreadyHasTarget &&
+			matched.length > 0
+		) {
+			matched = await filterOutExistingSummaryCallouts(this.app, matched);
+		}
 
 		const validSamplePath =
 			state.sampleFilePath && matched.some((m) => m.path === state.sampleFilePath)
@@ -242,13 +253,21 @@ export class BatchStudioController {
 			}
 		}
 
-		const { matched } = resolveTargetFiles(
+		let { matched } = resolveTargetFiles(
 			this.app,
 			state.scopeConfig,
 			state.activeRecipeId,
 			state.recipeOptions,
 			getActiveProject()?.ragExcludedPaths ?? [],
 		);
+
+		if (
+			state.activeRecipeId === 'summary-callout' &&
+			state.scopeConfig.skipIfAlreadyHasTarget &&
+			matched.length > 0
+		) {
+			matched = await filterOutExistingSummaryCallouts(this.app, matched);
+		}
 
 		if (matched.length === 0) {
 			new Notice(t('batchStudio.sample.noTargetNotes'));
@@ -328,7 +347,11 @@ export class BatchStudioController {
 		const currentQueue = getBatchState().queue;
 		for (const item of currentQueue) {
 			if (item.status === 'queued' || item.status === 'running') {
-				updateBatchQueueItem(item.path, { status: 'skipped', selected: false });
+				updateBatchQueueItem(item.path, {
+					status: 'skipped',
+					selected: false,
+					cancelledByUser: true,
+				});
 			}
 		}
 
@@ -361,6 +384,40 @@ export class BatchStudioController {
 
 		patchBatchState({
 			runState: 'running',
+			rateLimitCountdownSec: null,
+		});
+
+		await this.processQueueItems(targetPaths, state.activeRecipeId);
+	}
+
+	/**
+	 * 사용자 중단(cancelBatch)으로 미실행된 항목들만 다시 대기열에 올려 이어서 실행합니다.
+	 * 이미 생성된 staged/applied 항목은 그대로 보존됩니다.
+	 */
+	async resumeCancelledItems(): Promise<void> {
+		if (!canUseFeature('batch-studio')) return;
+		const state = getBatchState();
+		if (state.runState === 'running' || state.runState === 'paused') return;
+
+		const cancelledItems = state.queue.filter(
+			(item) => item.status === 'skipped' && item.cancelledByUser,
+		);
+		if (cancelledItems.length === 0) return;
+
+		const targetPaths = new Set<string>();
+		for (const item of cancelledItems) {
+			targetPaths.add(item.path);
+			updateBatchQueueItem(item.path, {
+				status: 'queued',
+				selected: true,
+				cancelledByUser: false,
+				errorMessage: undefined,
+			});
+		}
+
+		patchBatchState({
+			runState: 'running',
+			isConfigCollapsed: true,
 			rateLimitCountdownSec: null,
 		});
 
@@ -467,6 +524,16 @@ export class BatchStudioController {
 		if (nextPath) {
 			setBatchSelectedPath(nextPath);
 		}
+	}
+
+	/**
+	 * 거절('rejected')한 노트를 다시 검수 대기('staged') 상태로 되돌립니다.
+	 */
+	restoreRejectedItem(path: string): void {
+		const item = getBatchState().queue.find((q) => q.path === path);
+		if (!item || item.status !== 'rejected' || !item.proposed) return;
+
+		updateBatchQueueItem(item.path, { status: 'staged', selected: true });
 	}
 
 	/**
@@ -617,6 +684,9 @@ export class BatchStudioController {
 		}
 
 		markBatchHistoryRolledBack(historyId);
+		if (getBatchState().activeRunHistoryId === historyId) {
+			patchBatchState({ activeRunHistoryId: null });
+		}
 		new Notice(t('batchStudio.history.rollbackDone', { count: restored }));
 		return restored;
 	}
@@ -647,6 +717,10 @@ export class BatchStudioController {
 			// Wake Lock 미지원 환경 또는 권한 거부 시 무시
 		}
 
+		let runStaged = 0;
+		let runSkipped = 0;
+		let runFailed = 0;
+
 		try {
 			const queueSnapshot = [...getBatchState().queue];
 			for (const qItem of queueSnapshot) {
@@ -664,6 +738,7 @@ export class BatchStudioController {
 
 				const abstractFile = this.app.vault.getAbstractFileByPath(qItem.path);
 				if (!(abstractFile instanceof TFile)) {
+					runFailed++;
 					updateBatchQueueItem(qItem.path, {
 						status: 'failed',
 						selected: false,
@@ -687,6 +762,7 @@ export class BatchStudioController {
 					if (ac.signal.aborted) break;
 
 					if (res.proposed) {
+						runStaged++;
 						updateBatchQueueItem(qItem.path, {
 							status: 'staged',
 							selected: true,
@@ -699,6 +775,7 @@ export class BatchStudioController {
 							setBatchSelectedPath(qItem.path);
 						}
 					} else {
+						runSkipped++;
 						updateBatchQueueItem(qItem.path, {
 							status: 'skipped',
 							selected: false,
@@ -707,6 +784,7 @@ export class BatchStudioController {
 					}
 				} catch (err) {
 					if (ac.signal.aborted) break;
+					runFailed++;
 					const msg = formatLlmError(err);
 					debugLogger.logError(
 						'batch',
@@ -741,6 +819,32 @@ export class BatchStudioController {
 				runState: 'completed',
 				rateLimitCountdownSec: null,
 			});
+
+			// 사용자가 직접 중단하지 않고 정상 종료된 경우 결과 요약 Notice 표시
+			if (!ac.signal.aborted && runStaged + runSkipped + runFailed > 0) {
+				if (runStaged > 0) {
+					new Notice(
+						t('batchStudio.execution.completedNotice', {
+							staged: runStaged,
+							skipped: runSkipped,
+							failed: runFailed,
+						}),
+					);
+				} else if (runFailed > 0) {
+					new Notice(
+						t('batchStudio.execution.completedFailedNotice', {
+							failed: runFailed,
+							skipped: runSkipped,
+						}),
+					);
+				} else {
+					new Notice(
+						t('batchStudio.execution.completedAllSkippedNotice', {
+							skipped: runSkipped,
+						}),
+					);
+				}
+			}
 		}
 	}
 
@@ -849,10 +953,9 @@ export class BatchStudioController {
 			return;
 		}
 
-		const nextId = runId ?? crypto.randomUUID();
-		if (!runId) {
-			patchBatchState({ activeRunHistoryId: nextId });
-		}
+		// 기존 activeRunHistoryId가 이미 롤백되었거나 없는 경우 반드시 새 고유 ID를 발급해 중복 키 충돌 방지
+		const nextId = crypto.randomUUID();
+		patchBatchState({ activeRunHistoryId: nextId });
 		addBatchHistoryEntry({
 			id: nextId,
 			timestamp: Date.now(),

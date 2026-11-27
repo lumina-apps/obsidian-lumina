@@ -39,6 +39,7 @@
 	} from "../orphans/orphanActionService";
 	import { recommendLinksForOrphan } from "../orphans/orphanRecommender";
 	import { clearCanvasRefCache, scanOrphanNotes } from "../orphans/orphanScanner";
+	import BatchFolderSelect from "./BatchFolderSelect.svelte";
 
 	let { plugin }: { plugin: LuminaPlugin } = $props();
 
@@ -767,22 +768,18 @@
 				}}
 			/>
 
-			<input
-				type="text"
-				list="lumina-orphan-folder-list"
-				class="lumina-orphan-input is-folder"
-				placeholder={$tStore("batchStudio.orphans.folderPlaceholder")}
-				value={folderFilter}
-				oninput={(e) => {
-					folderFilter = (e.currentTarget as HTMLInputElement).value;
-					void runScan();
-				}}
-			/>
-			<datalist id="lumina-orphan-folder-list">
-				{#each vaultFolders as folder (folder)}
-					<option value={folder}></option>
-				{/each}
-			</datalist>
+			<div class="lumina-orphan-folder-wrap">
+				<BatchFolderSelect
+					folders={vaultFolders}
+					inputClass="lumina-orphan-input"
+					placeholder={$tStore("batchStudio.orphans.folderPlaceholder")}
+					value={folderFilter}
+					onChange={(val) => {
+						folderFilter = val;
+						void runScan();
+					}}
+				/>
+			</div>
 
 			<select
 				class="lumina-orphan-select"
@@ -1024,14 +1021,12 @@
 				<!-- 무료 개별 무제한 정리 바 -->
 				<div class="lumina-orphan-single-actions">
 					<div class="lumina-orphan-archive-group">
-						<input
-							type="text"
-							list="lumina-orphan-folder-list"
-							class="lumina-orphan-input"
+						<BatchFolderSelect
+							folders={vaultFolders}
+							inputClass="lumina-orphan-input"
 							placeholder={$tStore("batchStudio.orphans.archiveFolderPlaceholder")}
 							value={prefs.archiveFolder}
-							onchange={(e) =>
-								handleArchiveFolderChange((e.currentTarget as HTMLInputElement).value)}
+							onChange={(val) => handleArchiveFolderChange(val)}
 						/>
 						<button
 							type="button"
@@ -1297,8 +1292,10 @@
 		flex: 1;
 	}
 
-	.lumina-orphan-input.is-folder {
+	.lumina-orphan-folder-wrap {
+		min-width: 150px;
 		max-width: 190px;
+		flex: 1;
 	}
 
 	.lumina-orphan-btn {
@@ -1676,7 +1673,7 @@
 	}
 
 	:global(body.is-mobile) .lumina-orphan-input,
-	:global(body.is-mobile) .lumina-orphan-input.is-folder,
+	:global(body.is-mobile) .lumina-orphan-folder-wrap,
 	:global(body.is-mobile) .lumina-orphan-archive-group {
 		min-width: 0;
 		max-width: 100%;

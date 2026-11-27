@@ -39,6 +39,7 @@
 		WatchContentRecipeId,
 	} from "../../../shared/types/batchWatch.types";
 	import { icon } from "../../../shared/utils/iconAction";
+	import BatchFolderSelect from "./BatchFolderSelect.svelte";
 	import {
 		parseProviderModelValue,
 		toProviderModelValue,
@@ -47,6 +48,7 @@
 	import {
 		computeLineDiff,
 		estimateBatchResources,
+		filterOutExistingSummaryCallouts,
 		listVaultFolders,
 		resolveTargetFiles,
 	} from "../batchTargetResolver";
@@ -170,11 +172,40 @@
 		);
 	});
 
+	// 요약 콜아웃 스마트 스킵 비동기 사전 필터링 결과 (버튼 카운트 및 미리보기 정확도 유지)
+	let summaryFilteredMatched = $state<typeof resolution.matched | null>(null);
+	let summaryFilterSeq = 0;
+
+	$effect(() => {
+		const isSummarySkip =
+			state.activeRecipeId === "summary-callout" && state.scopeConfig.skipIfAlreadyHasTarget;
+		const candidates = resolution.matched;
+		void counts.applied;
+		void vaultTick;
+
+		if (!isSummarySkip || candidates.length === 0) {
+			summaryFilteredMatched = null;
+			return;
+		}
+
+		const seq = ++summaryFilterSeq;
+		void filterOutExistingSummaryCallouts(plugin.app, candidates).then((filtered) => {
+			if (seq === summaryFilterSeq) {
+				summaryFilteredMatched = filtered;
+			}
+		});
+	});
+
+	const resolvedMatchedFiles = $derived(summaryFilteredMatched ?? resolution.matched);
+	const resolvedSkippedCount = $derived(
+		resolution.skippedCount + Math.max(0, resolution.matched.length - resolvedMatchedFiles.length),
+	);
+
 	const effectiveMatchedForEstimate = $derived(
-		$isProBatch ? resolution.matched : resolution.matched.slice(0, FREE_MAX_BATCH_FILES),
+		$isProBatch ? resolvedMatchedFiles : resolvedMatchedFiles.slice(0, FREE_MAX_BATCH_FILES),
 	);
 	const lockedPreviewCount = $derived(
-		!$isProBatch ? Math.max(0, resolution.matched.length - FREE_MAX_BATCH_FILES) : 0,
+		!$isProBatch ? Math.max(0, resolvedMatchedFiles.length - FREE_MAX_BATCH_FILES) : 0,
 	);
 
 	const moveConfig = $derived(
@@ -243,6 +274,15 @@
 		counts.total > 0 ? Math.round((counts.done / counts.total) * 100) : 0,
 	);
 
+	// 현재 워크스페이스 세션에서 반영되어 즉시 롤백 가능한 히스토리 항목
+	const activeRollbackEntry = $derived(
+		state.activeRunHistoryId
+			? (state.history.find(
+					(h) => h.id === state.activeRunHistoryId && !h.rolledBack && h.snapshots.length > 0,
+				) ?? null)
+			: null,
+	);
+
 	const recipeDefs = $derived<
 		Array<{ id: BatchRecipeId; iconName: string; label: string; desc: string }>
 	>([
@@ -296,6 +336,7 @@
 		}
 		patchBatchState({
 			activeRecipeId: recipeId,
+			isConfigCollapsed: false,
 			sampleResult: null,
 			sampleNoChanges: false,
 			sampleError: null,
@@ -661,7 +702,7 @@
 							</div>
 
 							<div class="lumina-batch-history-card__files">
-								{#each entry.snapshots.slice(0, 12) as snap (snap.path)}
+								{#each entry.snapshots.slice(0, 12) as snap, idx (`${snap.path}-${idx}`)}
 									<span class="lumina-batch-file-chip">
 										{snap.movedFromPath && snap.movedToPath
 											? `${snap.movedFromPath} → ${snap.movedToPath}`
@@ -700,12 +741,34 @@
 					</button>
 				{/each}
 			</div>
+
+			{#if state.queue.length > 0}
+				<button
+					type="button"
+					class="lumina-batch-btn-ghost lumina-batch-config-toggle"
+					onclick={() => patchBatchState({ isConfigCollapsed: !state.isConfigCollapsed })}
+				>
+					<span>
+						{state.isConfigCollapsed
+							? $tStore("batchStudio.target.expandConfig")
+							: $tStore("batchStudio.target.collapseConfig")}
+					</span>
+					<span
+						class="lumina-batch-tab-icon"
+						use:icon={state.isConfigCollapsed ? "chevron-down" : "chevron-up"}
+					></span>
+				</button>
+			{/if}
 		</div>
 
 		<section class="lumina-batch-config-section">
 			{#if state.isConfigCollapsed}
 				<div class="lumina-batch-collapsed-bar">
-					<div class="lumina-batch-collapsed-bar__summary">
+					<button
+						type="button"
+						class="lumina-batch-collapsed-bar__summary"
+						onclick={() => patchBatchState({ isConfigCollapsed: false })}
+					>
 						<span class="lumina-batch-tab-icon" use:icon={"folder"}></span>
 						<span>
 							{$tStore("batchStudio.target.collapsedSummary", {
@@ -717,15 +780,31 @@
 								count: counts.total > 0 ? counts.total : effectiveMatchedForEstimate.length,
 							})}
 						</span>
-					</div>
-					<button
-						type="button"
-						class="lumina-batch-btn-ghost"
-						onclick={() => patchBatchState({ isConfigCollapsed: false })}
-					>
-						<span>{$tStore("batchStudio.target.expandConfig")}</span>
-						<span class="lumina-batch-tab-icon" use:icon={"chevron-down"}></span>
 					</button>
+					<div class="lumina-batch-collapsed-bar__actions">
+						{#if !isRunningOrPaused && counts.cancelled === 0}
+							<button
+								type="button"
+								class="mod-cta lumina-batch-start-btn"
+								disabled={resolvedMatchedFiles.length === 0}
+								onclick={() => void controller.startBatch()}
+							>
+								<span class="lumina-batch-tab-icon" use:icon={"zap"}></span>
+								<span>
+									{#if lockedPreviewCount > 0}
+										{$tStore("batchStudio.execution.startBtnFreeLimited", {
+											free: FREE_MAX_BATCH_FILES,
+											locked: lockedPreviewCount,
+										})}
+									{:else}
+										{$tStore("batchStudio.execution.startBtn", {
+											count: resolvedMatchedFiles.length,
+										})}
+									{/if}
+								</span>
+							</button>
+						{/if}
+					</div>
 				</div>
 			{:else}
 				<div class="lumina-batch-setup-grid">
@@ -733,16 +812,6 @@
 					<div class="lumina-batch-card">
 						<div class="lumina-batch-card__header">
 							<h3>{$tStore("batchStudio.target.sectionTitle")}</h3>
-							{#if state.queue.length > 0}
-								<button
-									type="button"
-									class="lumina-batch-btn-ghost"
-									onclick={() => patchBatchState({ isConfigCollapsed: true })}
-								>
-									<span>{$tStore("batchStudio.target.collapseConfig")}</span>
-									<span class="lumina-batch-tab-icon" use:icon={"chevron-up"}></span>
-								</button>
-							{/if}
 						</div>
 
 						<div class="lumina-batch-field-row">
@@ -768,23 +837,14 @@
 
 						{#if state.scopeConfig.scopeMode === "folder"}
 							<div class="lumina-batch-field">
-								<input
-									type="text"
-									list="lumina-batch-folder-list"
-									class="lumina-batch-input"
+								<BatchFolderSelect
+									folders={vaultFolders}
+									inputClass="lumina-batch-input"
 									disabled={isRunningOrPaused}
 									placeholder={$tStore("batchStudio.target.folderPlaceholder")}
 									value={state.scopeConfig.folderPath}
-									oninput={(e) =>
-										setBatchScopeConfig({
-											folderPath: (e.currentTarget as HTMLInputElement).value,
-										})}
+									onChange={(val) => setBatchScopeConfig({ folderPath: val })}
 								/>
-								<datalist id="lumina-batch-folder-list">
-									{#each vaultFolders as folder (folder)}
-										<option value={folder}></option>
-									{/each}
-								</datalist>
 							</div>
 						{/if}
 
@@ -871,8 +931,8 @@
 						<div class="lumina-batch-target-summary">
 							<div class="lumina-batch-target-summary__main">
 								{$tStore("batchStudio.target.matchedSummary", {
-									matched: resolution.matched.length,
-									skipped: resolution.skippedCount,
+									matched: resolvedMatchedFiles.length,
+									skipped: resolvedSkippedCount,
 									total: resolution.totalScanned,
 								})}
 							</div>
@@ -1097,18 +1157,14 @@
 										<label class="lumina-batch-label" for="lumina-batch-move-target">
 											{$tStore("batchStudio.options.moveTargetFolderLabel")}
 										</label>
-										<input
+										<BatchFolderSelect
 											id="lumina-batch-move-target"
-											type="text"
-											list="lumina-batch-folder-list"
-											class="lumina-batch-input"
+											folders={vaultFolders}
+											inputClass="lumina-batch-input"
 											disabled={isRunningOrPaused}
 											placeholder={$tStore("batchStudio.options.moveTargetFolderPlaceholder")}
 											value={moveConfig.fixedTargetFolder}
-											oninput={(e) =>
-												patchMoveConfig({
-													fixedTargetFolder: (e.currentTarget as HTMLInputElement).value,
-												})}
+											onChange={(val) => patchMoveConfig({ fixedTargetFolder: val })}
 										/>
 									</div>
 								{:else if moveConfig.mode === "by-tag"}
@@ -1120,13 +1176,13 @@
 											placeholder={$tStore("batchStudio.options.moveTagPlaceholder")}
 											bind:value={newMoveTagInput}
 										/>
-										<input
-											type="text"
-											list="lumina-batch-folder-list"
-											class="lumina-batch-input"
+										<BatchFolderSelect
+											folders={vaultFolders}
+											inputClass="lumina-batch-input"
 											disabled={isRunningOrPaused}
 											placeholder={$tStore("batchStudio.options.moveTargetFolderPlaceholder")}
-											bind:value={newMoveTagFolderInput}
+											value={newMoveTagFolderInput}
+											onChange={(val) => (newMoveTagFolderInput = val)}
 										/>
 										<button
 											type="button"
@@ -1155,19 +1211,14 @@
 									{/if}
 								{:else if moveConfig.mode === "ai-route"}
 									<div class="lumina-batch-field-split">
-										<input
-											type="text"
-											list="lumina-batch-folder-list"
-											class="lumina-batch-input"
+										<BatchFolderSelect
+											folders={vaultFolders}
+											inputClass="lumina-batch-input"
 											disabled={isRunningOrPaused}
 											placeholder={$tStore("batchStudio.options.moveAiCandidatesPlaceholder")}
-											bind:value={newMoveCandidateInput}
-											onkeydown={(e) => {
-												if (e.key === "Enter") {
-													e.preventDefault();
-													addManualMoveCandidate();
-												}
-											}}
+											value={newMoveCandidateInput}
+											onChange={(val) => (newMoveCandidateInput = val)}
+											onEnter={addManualMoveCandidate}
 										/>
 										<button
 											type="button"
@@ -1201,18 +1252,14 @@
 										<label class="lumina-batch-label" for="lumina-batch-move-fallback">
 											{$tStore("batchStudio.options.moveFallbackFolderLabel")}
 										</label>
-										<input
+										<BatchFolderSelect
 											id="lumina-batch-move-fallback"
-											type="text"
-											list="lumina-batch-folder-list"
-											class="lumina-batch-input"
+											folders={vaultFolders}
+											inputClass="lumina-batch-input"
 											disabled={isRunningOrPaused}
 											placeholder={$tStore("batchStudio.options.moveFallbackFolderPlaceholder")}
 											value={moveConfig.fallbackFolder}
-											oninput={(e) =>
-												patchMoveConfig({
-													fallbackFolder: (e.currentTarget as HTMLInputElement).value,
-												})}
+											onChange={(val) => patchMoveConfig({ fallbackFolder: val })}
 										/>
 									</div>
 								{/if}
@@ -1246,8 +1293,8 @@
 							<div class="lumina-batch-sample-box__controls">
 								<select
 									class="lumina-batch-select"
-									disabled={resolution.matched.length === 0 || state.sampleRunning}
-									value={state.sampleFilePath || resolution.matched[0]?.path || ""}
+									disabled={resolvedMatchedFiles.length === 0 || state.sampleRunning}
+									value={state.sampleFilePath || resolvedMatchedFiles[0]?.path || ""}
 									onchange={(e) =>
 										patchBatchState({
 											sampleFilePath: (e.currentTarget as HTMLSelectElement).value,
@@ -1256,10 +1303,10 @@
 											sampleError: null,
 										})}
 								>
-									{#if resolution.matched.length === 0}
+									{#if resolvedMatchedFiles.length === 0}
 										<option value="">{$tStore("batchStudio.sample.noTargetNotes")}</option>
 									{:else}
-										{#each resolution.matched.slice(0, 100) as f (f.path)}
+										{#each resolvedMatchedFiles.slice(0, 100) as f (f.path)}
 											<option value={f.path}>{f.path}</option>
 										{/each}
 									{/if}
@@ -1269,7 +1316,7 @@
 									type="button"
 									class="lumina-batch-btn"
 									disabled={
-										resolution.matched.length === 0 ||
+										resolvedMatchedFiles.length === 0 ||
 										state.sampleRunning ||
 										isRunningOrPaused
 									}
@@ -1305,7 +1352,7 @@
 												<div class="lumina-batch-sample-row">
 													<span class="lumina-batch-sample-key">tags:</span>
 													<div class="lumina-batch-tag-list">
-														{#each state.sampleResult.afterTags as tag (tag)}
+														{#each state.sampleResult.afterTags as tag, idx (`${tag}-${idx}`)}
 															<span class="lumina-batch-tag-pill">#{tag}</span>
 														{/each}
 													</div>
@@ -1370,7 +1417,7 @@
 						<button
 							type="button"
 							class="mod-cta lumina-batch-start-btn"
-							disabled={resolution.matched.length === 0 || isRunningOrPaused}
+							disabled={resolvedMatchedFiles.length === 0 || isRunningOrPaused}
 							onclick={() => void controller.startBatch()}
 						>
 						<span class="lumina-batch-tab-icon" use:icon={"zap"}></span>
@@ -1382,7 +1429,7 @@
 								})}
 							{:else}
 								{$tStore("batchStudio.execution.startBtn", {
-									count: resolution.matched.length,
+									count: resolvedMatchedFiles.length,
 								})}
 							{/if}
 						</span>
@@ -1443,19 +1490,74 @@
 								<span class="lumina-batch-tab-icon" use:icon={"square"}></span>
 								<span>{$tStore("batchStudio.execution.cancelBtn")}</span>
 							</button>
-						{:else if counts.failed > 0}
-							<button
-								type="button"
-								class="lumina-batch-btn"
-								onclick={() => void controller.retryFailedItems()}
-							>
-								<span class="lumina-batch-tab-icon" use:icon={"refresh-cw"}></span>
-								<span>
-									{$tStore("batchStudio.execution.retryFailedBtn", {
-										count: counts.failed,
-									})}
-								</span>
-							</button>
+						{:else}
+							{#if counts.cancelled > 0}
+								<button
+									type="button"
+									class="mod-cta"
+									onclick={() => void controller.resumeCancelledItems()}
+								>
+									<span class="lumina-batch-tab-icon" use:icon={"play"}></span>
+									<span>
+										{$tStore("batchStudio.execution.resumeCancelledBtn", {
+											count: counts.cancelled,
+										})}
+									</span>
+								</button>
+							{/if}
+							{#if activeRollbackEntry}
+								{#if confirmRollbackId === activeRollbackEntry.id}
+									<div class="lumina-batch-confirm-inline">
+										<span class="lumina-batch-confirm-inline__text">
+											{$tStore("batchStudio.history.rollbackConfirm", {
+												count: activeRollbackEntry.snapshots.length,
+											})}
+										</span>
+										<button
+											type="button"
+											class="mod-warning"
+											onclick={() => {
+												const targetId = activeRollbackEntry.id;
+												confirmRollbackId = null;
+												void controller.rollbackHistoryEntry(targetId);
+											}}
+										>
+											{$tStore("batchStudio.history.rollbackBtn")}
+										</button>
+										<button
+											type="button"
+											onclick={() => (confirmRollbackId = null)}
+										>
+											{$tStore("common.cancel")}
+										</button>
+									</div>
+								{:else}
+									<button
+										type="button"
+										class="lumina-batch-btn"
+										onclick={() => (confirmRollbackId = activeRollbackEntry.id)}
+									>
+										<span class="lumina-batch-tab-icon" use:icon={"rotate-ccw"}></span>
+										<span>
+											{$tStore("batchStudio.history.rollbackBtn")} ({activeRollbackEntry.snapshots.length})
+										</span>
+									</button>
+								{/if}
+							{/if}
+							{#if counts.failed > 0}
+								<button
+									type="button"
+									class="lumina-batch-btn"
+									onclick={() => void controller.retryFailedItems()}
+								>
+									<span class="lumina-batch-tab-icon" use:icon={"refresh-cw"}></span>
+									<span>
+										{$tStore("batchStudio.execution.retryFailedBtn", {
+											count: counts.failed,
+										})}
+									</span>
+								</button>
+							{/if}
 						{/if}
 					</div>
 				</div>
@@ -1667,7 +1769,7 @@
 														{#if (selectedItem.proposed.beforeTags?.length ?? 0) === 0}
 															<span class="lumina-batch-muted">—</span>
 														{:else}
-															{#each selectedItem.proposed.beforeTags ?? [] as tag (tag)}
+															{#each selectedItem.proposed.beforeTags ?? [] as tag, idx (`${tag}-${idx}`)}
 																<span class="lumina-batch-tag-pill is-before">
 																	#{tag}
 																</span>
@@ -1680,7 +1782,7 @@
 														{$tStore("batchStudio.inspector.afterLabel")}
 													</div>
 													<div class="lumina-batch-tag-list">
-														{#each selectedItem.proposed.afterTags as tag (tag)}
+														{#each selectedItem.proposed.afterTags as tag, idx (`${tag}-${idx}`)}
 															<span class="lumina-batch-tag-pill is-editable">
 																<span>#{tag}</span>
 																{#if selectedItem.status === "staged"}
@@ -1834,6 +1936,15 @@
 										<span class="lumina-batch-tab-icon" use:icon={"check"}></span>
 										<span>{$tStore("batchStudio.inspector.acceptSingleBtn")}</span>
 									</button>
+								{:else if selectedItem.status === "rejected" && selectedItem.proposed}
+									<button
+										type="button"
+										class="lumina-batch-btn"
+										onclick={() => controller.restoreRejectedItem(selectedItem.path)}
+									>
+										<span class="lumina-batch-tab-icon" use:icon={"rotate-ccw"}></span>
+										<span>{$tStore("batchStudio.inspector.undoRejectBtn")}</span>
+									</button>
 								{/if}
 							</div>
 
@@ -1915,9 +2026,18 @@
 	}
 
 	.lumina-batch-recipes-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 8px;
 		padding: 8px 16px;
 		border-bottom: 1px solid var(--background-modifier-border);
 		background: var(--background-primary);
+		flex-shrink: 0;
+	}
+
+	.lumina-batch-config-toggle {
 		flex-shrink: 0;
 	}
 
@@ -1983,16 +2103,33 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 8px;
 		padding: 8px 16px;
 		background: var(--background-secondary-alt);
 	}
 
 	.lumina-batch-collapsed-bar__summary {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 2px 4px;
+		border: none;
+		background: transparent;
+		box-shadow: none;
+		font-size: 12px;
+		color: var(--text-muted);
+		cursor: pointer;
+	}
+
+	.lumina-batch-collapsed-bar__summary:hover {
+		color: var(--text-normal);
+	}
+
+	.lumina-batch-collapsed-bar__actions {
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		font-size: 12px;
-		color: var(--text-muted);
 	}
 
 	.lumina-batch-setup-grid {
