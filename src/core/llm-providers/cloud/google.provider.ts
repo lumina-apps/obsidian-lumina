@@ -16,6 +16,11 @@ import {
 	type ResolvedExplicitCache,
 } from './gemini-cache-manager';
 import { resolveGeminiThinkingConfig } from '../reasoning-config';
+import {
+	buildGeminiResponseFormatConfig,
+	isStructuredOutputRetryableError,
+	structuredOutputFallbackCache,
+} from '../structured-output';
 
 type GeminiCandidate = NonNullable<GeminiResponse['candidates']>[number];
 
@@ -85,16 +90,34 @@ export class GoogleProvider implements ILLMProvider {
 
 		return timeoutCtrl.run(async () => {
 			let res;
-			try {
-				const req = this.buildRequest('generateContent', options, messages, true, explicitCache ?? undefined);
-				res = await requestUrlWithAbort({ url: req.url, method: 'POST', headers: req.headers, body: JSON.stringify(req.payload) }, timeoutCtrl.signal);
-			} catch (err: unknown) {
-				if (explicitCache && isExplicitCacheRetryableError(err)) {
-					debugLogger.logWarn('llm', 'Gemini explicit cache rejected; retrying with standard request');
-					geminiContextCacheManager.invalidate(explicitCache.cacheHash);
-					const fallbackReq = this.buildRequest('generateContent', options, messages, true);
-					res = await requestUrlWithAbort({ url: fallbackReq.url, method: 'POST', headers: fallbackReq.headers, body: JSON.stringify(fallbackReq.payload) }, timeoutCtrl.signal);
-				} else {
+			let activeExplicitCache = explicitCache ?? undefined;
+			let activeOptions = options;
+			let retriedCache = false;
+			let retriedStructured = false;
+
+			while (true) {
+				const req = this.buildRequest('generateContent', activeOptions, messages, true, activeExplicitCache);
+				try {
+					res = await requestUrlWithAbort({ url: req.url, method: 'POST', headers: req.headers, body: JSON.stringify(req.payload) }, timeoutCtrl.signal);
+					break;
+				} catch (err: unknown) {
+					if (activeExplicitCache && !retriedCache && isExplicitCacheRetryableError(err)) {
+						debugLogger.logWarn('llm', 'Gemini explicit cache rejected; retrying with standard request');
+						geminiContextCacheManager.invalidate(activeExplicitCache.cacheHash);
+						activeExplicitCache = undefined;
+						retriedCache = true;
+						continue;
+					}
+					if (req.hasResponseFormat && !retriedStructured && isStructuredOutputRetryableError(err)) {
+						structuredOutputFallbackCache.markUnsupported(this.providerId, activeOptions.model);
+						debugLogger.logWarn(
+							'llm',
+							`Google structured output rejected (${activeOptions.model}); retrying without responseJsonSchema`,
+						);
+						activeOptions = { ...activeOptions, responseFormat: undefined };
+						retriedStructured = true;
+						continue;
+					}
 					throw err;
 				}
 			}
@@ -198,7 +221,7 @@ export class GoogleProvider implements ILLMProvider {
 		messages: ChatMessage[],
 		includeTools: boolean,
 		explicitCache?: ResolvedExplicitCache,
-	): { url: string; headers: Record<string, string>; payload: Record<string, unknown> } {
+	): { url: string; headers: Record<string, string>; payload: Record<string, unknown>; hasResponseFormat: boolean } {
 		const cleanModel = options.model.replace(/^models\//, '');
 		const url = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:${method}`;
 
@@ -208,11 +231,15 @@ export class GoogleProvider implements ILLMProvider {
 		};
 
 		const thinkingConfig = resolveGeminiThinkingConfig(options.model, options.reasoning);
+		const responseFormatConfig = !structuredOutputFallbackCache.isUnsupported(this.providerId, options.model)
+			? buildGeminiResponseFormatConfig(options.model, options.responseFormat)
+			: undefined;
 		const generationConfig: Record<string, unknown> = {
 			temperature: options.temperature ?? 0.7,
 			maxOutputTokens: options.maxOutputTokens,
 			...(options.stop?.length ? { stopSequences: options.stop } : {}),
 			...(thinkingConfig ? { thinkingConfig } : {}),
+			...(responseFormatConfig ?? {}),
 		};
 
 		if (explicitCache) {
@@ -222,7 +249,7 @@ export class GoogleProvider implements ILLMProvider {
 				contents: explicitCache.tailContents,
 				generationConfig,
 			};
-			return { url, headers, payload };
+			return { url, headers, payload, hasResponseFormat: Boolean(responseFormatConfig) };
 		}
 
 		const formattedContents = formatGeminiMessages(messages);
@@ -244,7 +271,7 @@ export class GoogleProvider implements ILLMProvider {
 			}
 		}
 
-		return { url, headers, payload };
+		return { url, headers, payload, hasResponseFormat: Boolean(responseFormatConfig) };
 	}
 
 	private async streamInternal(

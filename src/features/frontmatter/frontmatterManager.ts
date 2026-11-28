@@ -9,7 +9,10 @@ import { activeProject } from '../../core/store/projectStore';
 import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
 import { stripThinkTags } from '../../shared/utils/llmTextSanitizer';
-import { sanitizeGeneratedFrontmatterData } from '../../shared/utils/frontmatterSanitizer';
+import {
+	FRONTMATTER_RESPONSE_FORMAT,
+	sanitizeGeneratedFrontmatterData,
+} from '../../shared/utils/frontmatterSanitizer';
 import { findSupportedProvider } from '../../shared/utils/modelUtils';
 import { createProvider } from '../../core/llm-providers';
 import { StripFrontmatterModal } from './stripFrontmatterModal';
@@ -307,6 +310,8 @@ ${contentWithoutFm.substring(0, 3000)}`;
 					model: taskModelId,
 					temperature: 0.1,
 					maxOutputTokens: FRONTMATTER_MAX_OUTPUT_TOKENS,
+					responseFormat: FRONTMATTER_RESPONSE_FORMAT,
+					reasoning: { effort: 'off' },
 					ttftTimeoutMs: 15000,
 					interTokenTimeoutMs: 10000,
 				});

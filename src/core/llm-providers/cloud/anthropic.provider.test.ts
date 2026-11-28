@@ -16,6 +16,7 @@ vi.mock('obsidian', () => ({
 }));
 
 import { AnthropicProvider } from './anthropic.provider';
+import { structuredOutputFallbackCache } from '../structured-output';
 
 describe('AnthropicProvider', () => {
 	const PROVIDER_ID = 'test-anthropic';
@@ -23,6 +24,7 @@ describe('AnthropicProvider', () => {
 	let provider: AnthropicProvider;
 
 	beforeEach(() => {
+		structuredOutputFallbackCache.clear();
 		mockRequestUrl.mockReset();
 		provider = new AnthropicProvider(PROVIDER_ID, API_KEY);
 			// Mock window.fetch (Anthropic stream 내부에서 사용)
@@ -550,6 +552,84 @@ describe('AnthropicProvider', () => {
 				{ type: 'thinking', thinking: 'Deep thought', signature: 'sig-part-1-part-2' },
 				{ type: 'redacted_thinking', data: 'enc-blob' },
 			]);
+		});
+	});
+
+	describe('structured outputs', () => {
+		it('지원 모델에서 output_config.format을 주입하고 effort와 병합하며 구형 모델에는 생략한다', async () => {
+			const responseFormat = {
+				type: 'json_schema' as const,
+				jsonSchema: {
+					name: 'fm_meta',
+					schema: {
+						type: 'object',
+						properties: { tags: { type: 'array', items: { type: 'string' } } },
+						required: ['tags'],
+						additionalProperties: false,
+					},
+					strict: true,
+				},
+			};
+
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: { content: [{ type: 'text', text: '{"tags":["claude"]}' }], stop_reason: 'end_turn' },
+			} as RequestUrlResponse);
+
+			// Claude 4.7에서 adaptive thinking의 output_config.effort와 병합 확인
+			await provider.chat(
+				[{ role: 'user', content: 'extract' }],
+				{
+					model: 'claude-opus-4-7',
+					reasoning: { effort: 'high' },
+					responseFormat,
+				},
+			);
+			const body47 = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as {
+				output_config?: Record<string, unknown>;
+			};
+			expect(body47.output_config).toEqual({
+				effort: 'high',
+				format: {
+					type: 'json_schema',
+					schema: responseFormat.jsonSchema.schema,
+				},
+			});
+
+			// 구형 Claude 3.5 모델에는 output_config.format 생략
+			mockRequestUrl.mockClear();
+			await provider.chat(
+				[{ role: 'user', content: 'extract' }],
+				{ model: 'claude-3-5-sonnet-latest', responseFormat },
+			);
+			const body35 = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(body35.output_config).toBeUndefined();
+
+			// HTTP 400 거부 시 output_config.format 제거 후 1회 재시도 + 캐시 등록
+			mockRequestUrl.mockReset();
+			mockRequestUrl
+				.mockRejectedValueOnce({ status: 400, message: 'output_config.format not supported' })
+				.mockResolvedValue({
+					text: '{}',
+					json: { content: [{ type: 'text', text: '{"tags":["fallback"]}' }], stop_reason: 'end_turn' },
+				} as RequestUrlResponse);
+
+			const fallbackRes = await provider.chat(
+				[{ role: 'user', content: 'extract' }],
+				{ model: 'claude-sonnet-4-5', responseFormat },
+			);
+			expect(fallbackRes.content).toBe('{"tags":["fallback"]}');
+			expect(mockRequestUrl).toHaveBeenCalledTimes(2);
+			const retryBody = JSON.parse((mockRequestUrl.mock.calls[1][0] as { body: string }).body) as Record<string, unknown>;
+			expect(retryBody.output_config).toBeUndefined();
+
+			// 2회차 호출은 캐시 히트로 1회만 요청
+			mockRequestUrl.mockClear();
+			await provider.chat(
+				[{ role: 'user', content: 'extract' }],
+				{ model: 'claude-sonnet-4-5', responseFormat },
+			);
+			expect(mockRequestUrl).toHaveBeenCalledTimes(1);
 		});
 	});
 });

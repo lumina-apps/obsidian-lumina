@@ -160,7 +160,14 @@ describe('FrontmatterManager', () => {
 
 		expect(chatSpy).toHaveBeenCalledWith(
 			expect.any(Array),
-			expect.objectContaining({ maxOutputTokens: 1000 }),
+			expect.objectContaining({
+				maxOutputTokens: 1000,
+				responseFormat: expect.objectContaining({
+					type: 'json_schema',
+					jsonSchema: expect.objectContaining({ name: 'frontmatter_metadata' }),
+				}),
+				reasoning: { effort: 'off' },
+			}),
 		);
 		expect(writtenFm.tags).toEqual(['과수원', '사과']);
 		expect(writtenFm.description).toBe('사과 메모입니다.');

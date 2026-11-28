@@ -3,6 +3,30 @@
  * FrontmatterManager와 BatchStudio의 프론트매터 레시피에서 공통 사용합니다.
  */
 
+import type { ResponseFormatOptions } from '../types/llm.types';
+
+/** 프론트매터(tags, description) 생성용 공통 Structured Output 스키마 */
+export const FRONTMATTER_RESPONSE_FORMAT: ResponseFormatOptions = {
+	type: 'json_schema',
+	jsonSchema: {
+		name: 'frontmatter_metadata',
+		description: 'Markdown note tags and one-sentence summary description',
+		schema: {
+			type: 'object',
+			properties: {
+				tags: {
+					type: 'array',
+					items: { type: 'string' },
+				},
+				description: { type: 'string' },
+			},
+			required: ['tags', 'description'],
+			additionalProperties: false,
+		},
+		strict: true,
+	},
+};
+
 const PLACEHOLDER_TAG_PATTERNS: readonly RegExp[] = [
 	/^tag\d*$/i,
 	/^example\d*$/i,

@@ -18,6 +18,7 @@ vi.mock('obsidian', () => ({
 import { GoogleProvider } from './google.provider';
 import { mapUsageMetadata } from './google.types';
 import { geminiContextCacheManager } from './gemini-cache-manager';
+import { structuredOutputFallbackCache } from '../structured-output';
 
 describe('GoogleProvider', () => {
 	const PROVIDER_ID = 'test-google';
@@ -25,6 +26,7 @@ describe('GoogleProvider', () => {
 	let provider: GoogleProvider;
 
 	beforeEach(() => {
+		structuredOutputFallbackCache.clear();
 		mockRequestUrl.mockReset();
 		provider = new GoogleProvider(PROVIDER_ID, API_KEY);
 			// Mock window.fetch (Google stream 내부에서 사용)
@@ -509,6 +511,76 @@ describe('GoogleProvider', () => {
 				{ model: 'gemini-2.5-flash', reasoning: { effort: 'low' } },
 			);
 			expect(nonStreamRes.content).toBe('<think>\nNon-stream thought\n</think>\nFinal text');
+		});
+	});
+
+	describe('structured outputs', () => {
+		it('generationConfig에 responseMimeType과 responseJsonSchema를 주입하고 400 거부 시 폴백 재시도 후 캐시한다', async () => {
+			const responseFormat = {
+				type: 'json_schema' as const,
+				jsonSchema: {
+					name: 'fm_meta',
+					schema: {
+						type: 'object',
+						properties: { tags: { type: 'array', items: { type: 'string' } } },
+						required: ['tags'],
+						additionalProperties: false,
+					},
+					strict: true,
+				},
+			};
+
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					candidates: [{ content: { parts: [{ text: '{"tags":["gemini"]}' }] }, finishReason: 'STOP' }],
+				},
+			} as RequestUrlResponse);
+
+			await provider.chat(
+				[{ role: 'user', content: 'extract' }],
+				{ model: 'gemini-2.5-flash', responseFormat },
+			);
+			const body = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as {
+				generationConfig: Record<string, unknown>;
+			};
+			expect(body.generationConfig.responseMimeType).toBe('application/json');
+			expect(body.generationConfig.responseJsonSchema).toEqual(responseFormat.jsonSchema.schema);
+
+			// HTTP 400 거부 시 responseMimeType/responseJsonSchema 제거 후 1회 재시도 + 이후 캐시 생략
+			mockRequestUrl.mockReset();
+			mockRequestUrl
+				.mockRejectedValueOnce({ status: 400, message: 'Invalid JSON payload: responseJsonSchema' })
+				.mockResolvedValue({
+					text: '{}',
+					json: {
+						candidates: [{ content: { parts: [{ text: '{"tags":["fallback"]}' }] }, finishReason: 'STOP' }],
+					},
+				} as RequestUrlResponse);
+
+			const fallbackRes = await provider.chat(
+				[{ role: 'user', content: 'extract' }],
+				{ model: 'gemini-1.5-pro', responseFormat },
+			);
+			expect(fallbackRes.content).toBe('{"tags":["fallback"]}');
+			expect(mockRequestUrl).toHaveBeenCalledTimes(2);
+			const retryBody = JSON.parse((mockRequestUrl.mock.calls[1][0] as { body: string }).body) as {
+				generationConfig: Record<string, unknown>;
+			};
+			expect(retryBody.generationConfig.responseMimeType).toBeUndefined();
+			expect(retryBody.generationConfig.responseJsonSchema).toBeUndefined();
+
+			// 2회차 호출은 캐시 히트로 1회만 요청
+			mockRequestUrl.mockClear();
+			await provider.chat(
+				[{ role: 'user', content: 'extract' }],
+				{ model: 'gemini-1.5-pro', responseFormat },
+			);
+			expect(mockRequestUrl).toHaveBeenCalledTimes(1);
+			const cachedBody = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as {
+				generationConfig: Record<string, unknown>;
+			};
+			expect(cachedBody.generationConfig.responseJsonSchema).toBeUndefined();
 		});
 	});
 });

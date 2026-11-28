@@ -10,7 +10,7 @@ import { createProvider } from '../../../core/llm-providers';
 import { debugLogger } from '../../../shared/debugLogger';
 import { t } from '../../../shared/locales/helpers';
 import type { BatchRecipeOptions } from '../../../shared/types/batch.types';
-import type { ChatResponse } from '../../../shared/types/llm.types';
+import type { ChatResponse, ReasoningOptions, ResponseFormatOptions } from '../../../shared/types/llm.types';
 import { isCliProvider, type LLMProviderConfig } from '../../../shared/types/settings.types';
 import { stripThinkTags } from '../../../shared/utils/llmTextSanitizer';
 import { isEmbeddingModel, isProviderSupportedOnCurrentPlatform } from '../../../shared/utils/modelUtils';
@@ -124,6 +124,10 @@ export async function callBatchLlm(
 	prompt: string,
 	signal?: AbortSignal,
 	maxOutputTokens: number = BATCH_DEFAULT_MAX_OUTPUT_TOKENS,
+	extraOptions?: {
+		responseFormat?: ResponseFormatOptions;
+		reasoning?: ReasoningOptions;
+	},
 ): Promise<{ text: string; tokensUsed: number }> {
 	const { providerConfig, modelId } = resolveBatchProviderAndModel(plugin, options);
 	const reqStart = Date.now();
@@ -147,6 +151,8 @@ export async function callBatchLlm(
 			signal,
 			ttftTimeoutMs: 20000,
 			interTokenTimeoutMs: 12000,
+			...(extraOptions?.responseFormat ? { responseFormat: extraOptions.responseFormat } : {}),
+			...(extraOptions?.reasoning ? { reasoning: extraOptions.reasoning } : {}),
 		});
 		debugLogger.logResponse(requestId, {
 			model: modelId,

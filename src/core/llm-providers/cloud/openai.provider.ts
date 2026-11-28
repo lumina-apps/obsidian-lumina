@@ -15,6 +15,11 @@ export class OpenAIProvider extends BaseOpenAIProvider {
 		this.enableReasoning = true;
 	}
 
+	/** OpenAI 공식 API Structured Outputs 지원 식별자 반환 */
+	protected override getStructuredOutputProvider(): 'openai' {
+		return 'openai';
+	}
+
 	/** OpenAI 공식 API 프롬프트 캐시 키 및 추론 강도(reasoning_effort)를 주입합니다. */
 	protected override buildPayload(
 		options: ChatOptions,

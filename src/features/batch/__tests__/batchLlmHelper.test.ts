@@ -152,4 +152,42 @@ describe('batchLlmHelper', () => {
 			callBatchLlm(plugin, { providerId: 'p1', modelId: 'gpt-4o-mini' }, 'a.md', 'Test', 'prompt'),
 		).rejects.toThrow('API timeout');
 	});
+
+	it('callBatchLlm은 extraOptions의 responseFormat과 reasoning을 provider.chat 옵션으로 전달한다', async () => {
+		const plugin = makePlugin([makeProvider({ id: 'p1', availableModels: ['gpt-4o-mini'] })]);
+		const chatSpy = vi.fn().mockResolvedValue({
+			content: '{"ok":true}',
+			usage: { totalTokens: 10 },
+		});
+		vi.mocked(createProvider).mockReturnValue({ chat: chatSpy } as unknown as ReturnType<typeof createProvider>);
+
+		const responseFormat = {
+			type: 'json_schema' as const,
+			jsonSchema: {
+				name: 'test_schema',
+				schema: { type: 'object', properties: {}, required: [], additionalProperties: false },
+				strict: true,
+			},
+		};
+
+		await callBatchLlm(
+			plugin,
+			{ providerId: 'p1', modelId: 'gpt-4o-mini' },
+			'a.md',
+			'Test',
+			'prompt',
+			undefined,
+			500,
+			{ responseFormat, reasoning: { effort: 'off' } },
+		);
+
+		expect(chatSpy).toHaveBeenCalledWith(
+			expect.any(Array),
+			expect.objectContaining({
+				maxOutputTokens: 500,
+				responseFormat,
+				reasoning: { effort: 'off' },
+			}),
+		);
+	});
 });

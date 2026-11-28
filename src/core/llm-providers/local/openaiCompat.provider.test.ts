@@ -16,12 +16,14 @@ vi.mock('obsidian', () => ({
 }));
 
 import { OpenAICompatProvider } from './openaiCompat.provider';
+import { structuredOutputFallbackCache } from '../structured-output';
 
 describe('OpenAICompatProvider', () => {
 	const PROVIDER_ID = 'test-ollama';
 	let provider: OpenAICompatProvider;
 
 	beforeEach(() => {
+		structuredOutputFallbackCache.clear();
 		mockRequestUrl.mockReset();
 		provider = new OpenAICompatProvider(PROVIDER_ID, 'ollama', 'http://localhost:11434');
 				// Mock window.fetch (stream에서 사용)
@@ -382,6 +384,72 @@ describe('OpenAICompatProvider', () => {
 			);
 			const ollamaBody = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
 			expect(ollamaBody.cache_control).toBeUndefined();
+		});
+
+		it('ollama·lmstudio·xai는 response_format을 주입하고 400 시 폴백하며, deepseek·groq·openrouter·custom은 생략한다', async () => {
+			const responseFormat = {
+				type: 'json_schema' as const,
+				jsonSchema: {
+					name: 'route_schema',
+					schema: {
+						type: 'object',
+						properties: { folder: { type: 'string' } },
+						required: ['folder'],
+						additionalProperties: false,
+					},
+					strict: true,
+				},
+			};
+
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: { choices: [{ message: { content: '{"folder":"Notes"}' }, finish_reason: 'stop' }] },
+			} as RequestUrlResponse);
+
+			// 1단계 지원 3종: ollama, lmstudio, xai
+			const supportedTargets = [
+				new OpenAICompatProvider('ol-1', 'ollama', 'http://localhost:11434'),
+				new OpenAICompatProvider('lms-1', 'lmstudio', 'http://localhost:1234'),
+				new OpenAICompatProvider('xai-1', 'xai', 'https://api.x.ai', 'sk-xai'),
+			];
+			for (const p of supportedTargets) {
+				mockRequestUrl.mockClear();
+				await p.chat([{ role: 'user', content: 'hi' }], { model: 'test-model', responseFormat });
+				const body = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+				expect(body.response_format).toBeDefined();
+			}
+
+			// 1단계 제외 4종: deepseek, groq, openrouter, custom
+			const excludedTargets = [
+				new OpenAICompatProvider('ds-1', 'deepseek', 'https://api.deepseek.com', 'sk-ds'),
+				new OpenAICompatProvider('gq-1', 'groq', 'https://api.groq.com/openai', 'sk-gq'),
+				new OpenAICompatProvider('or-1', 'openrouter', 'https://openrouter.ai/api', 'sk-or'),
+				new OpenAICompatProvider('cu-1', 'custom', 'https://custom.example.com', 'sk-cu'),
+			];
+			for (const p of excludedTargets) {
+				mockRequestUrl.mockClear();
+				await p.chat([{ role: 'user', content: 'hi' }], { model: 'test-model', responseFormat });
+				const body = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+				expect(body.response_format).toBeUndefined();
+			}
+
+			// Ollama 구버전/비호환 모델 HTTP 400 거부 시 response_format 제거 후 1회 폴백 재시도
+			mockRequestUrl.mockReset();
+			mockRequestUrl
+				.mockRejectedValueOnce({ status: 400, message: 'invalid response_format' })
+				.mockResolvedValueOnce({
+					text: '{}',
+					json: { choices: [{ message: { content: '{"folder":"Notes"}' }, finish_reason: 'stop' }] },
+				} as RequestUrlResponse);
+
+			const res = await provider.chat(
+				[{ role: 'user', content: 'hi' }],
+				{ model: 'legacy-llama', responseFormat },
+			);
+			expect(res.content).toBe('{"folder":"Notes"}');
+			expect(mockRequestUrl).toHaveBeenCalledTimes(2);
+			const retryBody = JSON.parse((mockRequestUrl.mock.calls[1][0] as { body: string }).body) as Record<string, unknown>;
+			expect(retryBody.response_format).toBeUndefined();
 		});
 	});
 });

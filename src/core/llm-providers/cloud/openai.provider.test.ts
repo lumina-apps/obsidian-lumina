@@ -18,6 +18,7 @@ vi.mock('obsidian', () => ({
 }));
 
 import { OpenAIProvider } from './openai.provider';
+import { structuredOutputFallbackCache } from '../structured-output';
 
 describe('OpenAIProvider', () => {
 	const PROVIDER_ID = 'test-openai';
@@ -25,6 +26,7 @@ describe('OpenAIProvider', () => {
 	let provider: OpenAIProvider;
 
 	beforeEach(() => {
+		structuredOutputFallbackCache.clear();
 		mockRequestUrl.mockReset();
 		provider = new OpenAIProvider(PROVIDER_ID, API_KEY);
 	});
@@ -363,6 +365,78 @@ describe('OpenAIProvider', () => {
 			);
 			const gpt4oBody = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
 			expect(gpt4oBody.reasoning_effort).toBeUndefined();
+		});
+
+		it('responseFormat(json_schema)을 지원 모델에 주입하고 구형 모델에는 생략하며 400 거부 시 폴백 재시도 후 캐시한다', async () => {
+			const responseFormat = {
+				type: 'json_schema' as const,
+				jsonSchema: {
+					name: 'fm_meta',
+					schema: {
+						type: 'object',
+						properties: { tags: { type: 'array', items: { type: 'string' } } },
+						required: ['tags'],
+						additionalProperties: false,
+					},
+					strict: true,
+				},
+			};
+
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: { choices: [{ message: { content: '{"tags":["a"]}' }, finish_reason: 'stop' }] },
+			} as RequestUrlResponse);
+
+			await provider.chat(
+				[{ role: 'user', content: 'extract' }],
+				{ model: 'gpt-4o-mini', responseFormat },
+			);
+			const body4oMini = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(body4oMini.response_format).toEqual({
+				type: 'json_schema',
+				json_schema: {
+					name: 'fm_meta',
+					schema: responseFormat.jsonSchema.schema,
+					strict: true,
+				},
+			});
+
+			// 구형 모델(gpt-3.5-turbo)에는 json_schema 생략
+			mockRequestUrl.mockClear();
+			await provider.chat(
+				[{ role: 'user', content: 'extract' }],
+				{ model: 'gpt-3.5-turbo', responseFormat },
+			);
+			const body35 = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(body35.response_format).toBeUndefined();
+
+			// HTTP 400 거부 시 response_format 제거 후 1회 재시도 + 2회차 호출부터 캐시로 미전송
+			mockRequestUrl.mockReset();
+			mockRequestUrl
+				.mockRejectedValueOnce({ status: 400, message: 'json_schema unsupported for snapshot' })
+				.mockResolvedValue({
+					text: '{}',
+					json: { choices: [{ message: { content: '{"tags":["b"]}' }, finish_reason: 'stop' }] },
+				} as RequestUrlResponse);
+
+			const fallbackRes = await provider.chat(
+				[{ role: 'user', content: 'extract' }],
+				{ model: 'gpt-4o-custom', responseFormat },
+			);
+			expect(fallbackRes.content).toBe('{"tags":["b"]}');
+			expect(mockRequestUrl).toHaveBeenCalledTimes(2);
+			const retryBody = JSON.parse((mockRequestUrl.mock.calls[1][0] as { body: string }).body) as Record<string, unknown>;
+			expect(retryBody.response_format).toBeUndefined();
+
+			// 다음 호출에서는 캐시 덕분에 1회만 요청
+			mockRequestUrl.mockClear();
+			await provider.chat(
+				[{ role: 'user', content: 'extract' }],
+				{ model: 'gpt-4o-custom', responseFormat },
+			);
+			expect(mockRequestUrl).toHaveBeenCalledTimes(1);
+			const cachedSkipBody = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(cachedSkipBody.response_format).toBeUndefined();
 		});
 	});
 });

@@ -180,4 +180,29 @@ describe('reranker', () => {
 		expect(preserved).toHaveLength(1);
 		expect(preserved[0].chunk.id).toBe('c1');
 	});
+
+	it('Structured Output JSON({"ranked_indices":[...]}) 응답과 <think> 포함 응답을 우선 파싱하고 responseFormat을 전달한다', async () => {
+		const chatSpy = vi.fn().mockResolvedValue({
+			content: '<think>0보다 2가 더 관련 있음</think>\n{"ranked_indices":[2, 0, 1]}',
+		});
+		vi.mocked(createProvider).mockReturnValue({
+			chat: chatSpy,
+		} as unknown as ReturnType<typeof createProvider>);
+
+		const res = await rerankChunks('query about Gamma', mockChunks, mockConfig, 'gpt-4o', 2);
+		expect(res).toHaveLength(2);
+		expect(res[0].chunk.id).toBe('c2');
+		expect(res[1].chunk.id).toBe('c0');
+		expect(chatSpy).toHaveBeenCalledWith(
+			expect.any(Array),
+			expect.objectContaining({
+				maxOutputTokens: 256,
+				reasoning: { effort: 'off' },
+				responseFormat: expect.objectContaining({
+					type: 'json_schema',
+					jsonSchema: expect.objectContaining({ name: 'rerank_indices' }),
+				}),
+			}),
+		);
+	});
 });

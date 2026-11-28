@@ -12,6 +12,7 @@ import {
 } from '../../../core/mcp/server/handlers/utils/mocUtils';
 import { addBatchHistoryEntry } from '../../../core/store/batchStore';
 import type { BatchSnapshotEntry } from '../../../shared/types/batch.types';
+import type { ResponseFormatOptions } from '../../../shared/types/llm.types';
 import type {
 	OrphanAiLinkProposal,
 	OrphanLinkDirection,
@@ -24,6 +25,26 @@ import {
 	getParentFolder,
 	validateMoveDestination,
 } from '../watch/folderMover';
+
+/** 고아노트 문맥 링크 제안용 Structured Output 스키마 */
+const ORPHAN_LINK_RESPONSE_FORMAT: ResponseFormatOptions = {
+	type: 'json_schema',
+	jsonSchema: {
+		name: 'orphan_contextual_link',
+		description: 'Verbatim anchor line, updated replacement line with wikilink, and short reason',
+		schema: {
+			type: 'object',
+			properties: {
+				anchorLine: { type: 'string' },
+				replacementLine: { type: 'string' },
+				reason: { type: 'string' },
+			},
+			required: ['anchorLine', 'replacementLine', 'reason'],
+			additionalProperties: false,
+		},
+		strict: true,
+	},
+};
 
 /** 단일 위키링크 삽입 결과 */
 export interface WikiLinkInsertResult {
@@ -242,6 +263,10 @@ ${beforeContent.slice(0, 2500)}`;
 		prompt,
 		opts?.signal,
 		500,
+		{
+			responseFormat: ORPHAN_LINK_RESPONSE_FORMAT,
+			reasoning: { effort: 'off' },
+		},
 	);
 
 	let anchorLine = '';

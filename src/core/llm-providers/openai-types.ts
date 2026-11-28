@@ -54,6 +54,8 @@ export interface OpenAIResponse {
 		message?: {
 			role?: string;
 			content?: string | null;
+			/** Structured Outputs 안전 거부 사유 */
+			refusal?: string | null;
 			/** DeepSeek-R1 등 reasoning model 전용 */
 			reasoning_content?: string | null;
 			/** 일부 모델의 reasoning 필드 (호환성) */

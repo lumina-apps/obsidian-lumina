@@ -14,6 +14,7 @@ import type {
 	FolderMoveConfig,
 	MoveConflictPolicy,
 } from '../../../shared/types/batchWatch.types';
+import type { ResponseFormatOptions } from '../../../shared/types/llm.types';
 import { isExcluded } from '../../../shared/utils/exclusions';
 import { ensureFolderExists, sanitizeFilePath } from '../../../shared/utils/fileUtils';
 import { normalizeFrontmatterTags } from '../../../shared/utils/frontmatterSanitizer';
@@ -22,6 +23,35 @@ import {
 	extractJsonObject,
 	splitFrontmatterAndBody,
 } from '../recipes/batchLlmHelper';
+
+/** AI 폴더 분류 시 grammar 컴파일 과부하를 방지하기 위한 enum 최대 후보 개수 */
+const FOLDER_ROUTE_MAX_ENUM_SIZE = 50;
+
+/** AI 폴더 분류용 Structured Output 스키마를 후보 목록 크기에 맞춰 생성합니다. */
+function buildFolderRouteResponseFormat(validCandidates: readonly string[]): ResponseFormatOptions {
+	const folderProperty: Record<string, unknown> =
+		validCandidates.length <= FOLDER_ROUTE_MAX_ENUM_SIZE
+			? { type: 'string', enum: [...validCandidates, 'NONE'] }
+			: { type: 'string' };
+
+	return {
+		type: 'json_schema',
+		jsonSchema: {
+			name: 'folder_route_classification',
+			description: 'Classified destination folder path from allowed candidates or NONE, plus short reason',
+			schema: {
+				type: 'object',
+				properties: {
+					folder: folderProperty,
+					reason: { type: 'string' },
+				},
+				required: ['folder', 'reason'],
+				additionalProperties: false,
+			},
+			strict: true,
+		},
+	};
+}
 
 /** 폴더 이동 대상 계산 결과 */
 export interface MoveResolutionResult {
@@ -311,6 +341,10 @@ ${trimmedBody.substring(0, 2000)}`;
 			prompt,
 			opts?.signal,
 			400,
+			{
+				responseFormat: buildFolderRouteResponseFormat(validCandidates),
+				reasoning: { effort: 'off' },
+			},
 		);
 		tokensUsed = llmResult.tokensUsed;
 

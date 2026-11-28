@@ -1,8 +1,34 @@
 import type { SearchResult } from '../../shared/types/rag.types';
+import type { ResponseFormatOptions } from '../../shared/types/llm.types';
 import type { LLMProviderConfig } from '../../shared/types/settings.types';
 import { createProvider } from '../../core/llm-providers';
 import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
+import { stripThinkTags } from '../../shared/utils/llmTextSanitizer';
+
+/** Listwise 리랭킹 JSON 응답 여유 확보를 위한 최대 출력 토큰 */
+const RERANK_MAX_OUTPUT_TOKENS = 256;
+
+/** Listwise 리랭킹 Structured Output 스키마 */
+const RERANK_RESPONSE_FORMAT: ResponseFormatOptions = {
+	type: 'json_schema',
+	jsonSchema: {
+		name: 'rerank_indices',
+		description: '0-based chunk indices ordered from most relevant to least relevant',
+		schema: {
+			type: 'object',
+			properties: {
+				ranked_indices: {
+					type: 'array',
+					items: { type: 'integer' },
+				},
+			},
+			required: ['ranked_indices'],
+			additionalProperties: false,
+		},
+		strict: true,
+	},
+};
 
 export interface RerankOptions {
 	/** 네이티브 rerank API 사용 시 이 점수 미만의 청크를 필터링 (선택) */
@@ -92,7 +118,7 @@ export async function rerankChunks(
 Given the following user query and a list of document chunks, rank the chunks by their relevance to the query.
 
 CRITICAL RULES:
-1. Return ONLY a comma-separated list of chunk indices (e.g., 2,0,1,3) ordered from most relevant to least relevant.
+1. Return ONLY a JSON object with a "ranked_indices" array of 0-based chunk indices ordered from most relevant to least relevant (e.g., {"ranked_indices": [2, 0, 1, 3]}).
 2. DO NOT include any other text, explanation, or markdown formatting.
 
 User Query:
@@ -107,7 +133,7 @@ ${chunks.map((c, i) => `[${i}] ${buildRerankSnippet(c)}...`).join('\n\n')}
 			provider: providerConfig.type,
 			model: modelId,
 			temperature: 0.1,
-			maxTokens: 150,
+			maxTokens: RERANK_MAX_OUTPUT_TOKENS,
 			stream: false,
 			systemPrompt: `[RAG Listwise Rerank — ${chunks.length} chunks]`,
 			messages: [{ role: 'user', content: prompt }],
@@ -120,8 +146,10 @@ ${chunks.map((c, i) => `[${i}] ${buildRerankSnippet(c)}...`).join('\n\n')}
 				{
 					model: modelId,
 					temperature: 0.1,
-					maxOutputTokens: 150,
-					signal
+					maxOutputTokens: RERANK_MAX_OUTPUT_TOKENS,
+					responseFormat: RERANK_RESPONSE_FORMAT,
+					reasoning: { effort: 'off' },
+					signal,
 				}
 			);
 			debugLogger.logResponse(requestId, {
@@ -142,25 +170,51 @@ ${chunks.map((c, i) => `[${i}] ${buildRerankSnippet(c)}...`).join('\n\n')}
 			throw chatErr;
 		}
 
-		const resultText = response.content.trim();
+		const resultText = stripThinkTags(
+			response.content
+				.replace(/&lt;think&gt;/gi, '<think>')
+				.replace(/&lt;\/think&gt;/gi, '</think>'),
+		).trim();
 		let orderedIndices: number[] = [];
 
-		const lines = resultText.split('\n').map(l => l.trim()).filter(Boolean);
-		if (lines.length > 1) {
-			for (const line of lines) {
-				const m = line.match(/^(?:\d+[.)]|[-*])\s*(?:chunk\s*)?\[?(\d+)\]?/i) || line.match(/^(?:chunk\s*)?\[?(\d+)\]?/i);
-				if (m && m[1]) {
-					const idx = parseInt(m[1], 10);
-					if (!isNaN(idx) && idx >= 0 && idx < chunks.length) {
-						orderedIndices.push(idx);
-					}
+		// 1단계: Structured Output JSON({"ranked_indices": [...]}) 우선 추출
+		const strippedFence = resultText
+			.replace(/^```(?:json)?\s*/i, '')
+			.replace(/\s*```$/i, '')
+			.trim();
+		const jsonMatch = strippedFence.match(/\{[\s\S]*\}/);
+		if (jsonMatch) {
+			try {
+				const parsed = JSON.parse(jsonMatch[0]) as { ranked_indices?: unknown };
+				if (Array.isArray(parsed?.ranked_indices)) {
+					orderedIndices = parsed.ranked_indices.filter(
+						(n): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 0 && n < chunks.length,
+					);
 				}
+			} catch {
+				// JSON 파싱 실패 시 2단계 텍스트 폴백 파서로 진행
 			}
 		}
 
+		// 2단계: 미지원 프로바이더/폴백용 텍스트(번호 매기기 목록·쉼표 구분 숫자) 파서
 		if (orderedIndices.length === 0) {
-			const matches = resultText.match(/\d+/g);
-			orderedIndices = matches ? matches.map(s => parseInt(s, 10)).filter(n => !isNaN(n) && n >= 0 && n < chunks.length) : [];
+			const lines = resultText.split('\n').map(l => l.trim()).filter(Boolean);
+			if (lines.length > 1) {
+				for (const line of lines) {
+					const m = line.match(/^(?:\d+[.)]|[-*])\s*(?:chunk\s*)?\[?(\d+)\]?/i) || line.match(/^(?:chunk\s*)?\[?(\d+)\]?/i);
+					if (m && m[1]) {
+						const idx = parseInt(m[1], 10);
+						if (!isNaN(idx) && idx >= 0 && idx < chunks.length) {
+							orderedIndices.push(idx);
+						}
+					}
+				}
+			}
+
+			if (orderedIndices.length === 0) {
+				const matches = resultText.match(/\d+/g);
+				orderedIndices = matches ? matches.map(s => parseInt(s, 10)).filter(n => !isNaN(n) && n >= 0 && n < chunks.length) : [];
+			}
 		}
 
 		const rankedChunks: SearchResult[] = [];

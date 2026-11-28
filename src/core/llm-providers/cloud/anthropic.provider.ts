@@ -32,6 +32,11 @@ import {
 } from './anthropic-message-formatter';
 import { AnthropicStreamAccumulator, parseAnthropicNonStreamResponse } from './anthropic-stream-parser';
 import { resolveAnthropicThinking } from '../reasoning-config';
+import {
+	buildAnthropicOutputFormat,
+	isStructuredOutputRetryableError,
+	structuredOutputFallbackCache,
+} from '../structured-output';
 
 export class AnthropicProvider implements ILLMProvider {
 	readonly providerId: string;
@@ -80,16 +85,41 @@ export class AnthropicProvider implements ILLMProvider {
 		const url = 'https://api.anthropic.com/v1/messages';
 		const headers = this.buildHeaders();
 		const payload = this.buildPayload(options, messages, false);
+		const hasStructuredOutput = Boolean(
+			payload.output_config &&
+			typeof payload.output_config === 'object' &&
+			'format' in (payload.output_config as Record<string, unknown>),
+		);
 
 		const timeoutCtrl = new IdleTimeoutController(options.signal, options.ttftTimeoutMs, options.interTokenTimeoutMs);
 
 		return timeoutCtrl.run(async () => {
-			const res = await requestUrlWithAbort({
-				url,
-				method: 'POST',
-				headers,
-				body: JSON.stringify(payload),
-			}, timeoutCtrl.signal);
+			let res;
+			try {
+				res = await requestUrlWithAbort({
+					url,
+					method: 'POST',
+					headers,
+					body: JSON.stringify(payload),
+				}, timeoutCtrl.signal);
+			} catch (err: unknown) {
+				if (hasStructuredOutput && isStructuredOutputRetryableError(err)) {
+					structuredOutputFallbackCache.markUnsupported(this.providerId, options.model);
+					debugLogger.logWarn(
+						'llm',
+						`Anthropic structured output rejected (${options.model}); retrying without output_config.format`,
+					);
+					const fallbackPayload = this.buildPayload({ ...options, responseFormat: undefined }, messages, false);
+					res = await requestUrlWithAbort({
+						url,
+						method: 'POST',
+						headers,
+						body: JSON.stringify(fallbackPayload),
+					}, timeoutCtrl.signal);
+				} else {
+					throw err;
+				}
+			}
 
 			const data = res.json as AnthropicResponse;
 			const { fullContent, toolCalls, thinkingBlocks, usage, finishReason } = parseAnthropicNonStreamResponse(res.text, data);
@@ -161,6 +191,21 @@ export class AnthropicProvider implements ILLMProvider {
 			if (resolvedThinking.outputConfig) {
 				payload.output_config = resolvedThinking.outputConfig;
 			}
+		}
+
+		// Structured Outputs (GA output_config.format): 기존 output_config.effort를 보존하며 병합
+		const anthropicFormat = !structuredOutputFallbackCache.isUnsupported(this.providerId, options.model)
+			? buildAnthropicOutputFormat(options.model, options.responseFormat)
+			: undefined;
+		if (anthropicFormat) {
+			const existingOutputConfig =
+				payload.output_config && typeof payload.output_config === 'object'
+					? (payload.output_config as Record<string, unknown>)
+					: {};
+			payload.output_config = {
+				...existingOutputConfig,
+				format: anthropicFormat,
+			};
 		}
 
 		if (options.stop && options.stop.length > 0) {

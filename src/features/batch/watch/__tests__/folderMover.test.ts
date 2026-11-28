@@ -219,12 +219,13 @@ describe('folderMover', () => {
 		);
 		expect(resHallucinated.targetPath).toBe('Archive/Unsorted/note.md');
 
-		// 2. 허용 목록 내 폴더 선택 시 정상 라우팅
+		// 2. 허용 목록 내 폴더 선택 시 정상 라우팅 + enum 스키마 전달 검증
+		const matchedChatSpy = vi.fn().mockResolvedValue({
+			content: '{"folder": "projects/work", "reason": "업무 일정 노트입니다."}',
+			usage: { inputTokens: 40, outputTokens: 15, totalTokens: 55 },
+		});
 		vi.mocked(createProvider).mockReturnValue({
-			chat: vi.fn().mockResolvedValue({
-				content: '{"folder": "projects/work", "reason": "업무 일정 노트입니다."}',
-				usage: { inputTokens: 40, outputTokens: 15, totalTokens: 55 },
-			}),
+			chat: matchedChatSpy,
 		} as unknown as ReturnType<typeof createProvider>);
 
 		const resMatched = await resolveMoveTargetPath(
@@ -235,6 +236,44 @@ describe('folderMover', () => {
 		);
 		expect(resMatched.targetPath).toBe('Projects/Work/note.md');
 		expect(resMatched.reason).toBe('업무 일정 노트입니다.');
+		expect(matchedChatSpy).toHaveBeenCalledWith(
+			expect.any(Array),
+			expect.objectContaining({
+				reasoning: { effort: 'off' },
+				responseFormat: expect.objectContaining({
+					type: 'json_schema',
+					jsonSchema: expect.objectContaining({
+						name: 'folder_route_classification',
+						schema: expect.objectContaining({
+							properties: expect.objectContaining({
+								folder: { type: 'string', enum: ['Projects/Work', 'Areas/Health', 'NONE'] },
+							}),
+						}),
+					}),
+				}),
+			}),
+		);
+
+		// 3. 후보 폴더가 50개를 초과하면 enum을 생략하고 일반 string으로 스키마를 생성한다
+		const manyFolders = Array.from({ length: 55 }, (_, i) => `Folder_${i + 1}`);
+		const manyChatSpy = vi.fn().mockResolvedValue({
+			content: '{"folder": "Folder_1", "reason": "분류 완료"}',
+			usage: { inputTokens: 40, outputTokens: 15, totalTokens: 55 },
+		});
+		vi.mocked(createProvider).mockReturnValue({
+			chat: manyChatSpy,
+		} as unknown as ReturnType<typeof createProvider>);
+
+		await resolveMoveTargetPath(
+			mockApp,
+			mockPlugin,
+			fileObjs['00_Inbox/note.md'],
+			baseMoveConfig({ mode: 'ai-route', aiCandidateFolders: manyFolders }),
+		);
+		const manyOpts = manyChatSpy.mock.calls[0]?.[1] as {
+			responseFormat?: { jsonSchema?: { schema?: { properties?: { folder?: Record<string, unknown> } } } };
+		};
+		expect(manyOpts.responseFormat?.jsonSchema?.schema?.properties?.folder).toEqual({ type: 'string' });
 	});
 
 	it('executeSafeFileMove는 부모 폴더를 생성한 뒤 fileManager.renameFile을 호출한다', async () => {

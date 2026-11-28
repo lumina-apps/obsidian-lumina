@@ -60,6 +60,20 @@ export interface ReasoningOptions {
 	budgetTokens?: number;
 }
 
+export interface JsonSchemaDefinition {
+	/** 스키마 식별자 (영숫자/언더스코어/하이픈, OpenAI 호환 json_schema.name 필수) */
+	name: string;
+	description?: string;
+	/** strict 호환 표준 JSON Schema (루트 object, additionalProperties: false, 전체 required) */
+	schema: Record<string, unknown>;
+	/** strict 모드 여부 (기본값 true) */
+	strict?: boolean;
+}
+
+export type ResponseFormatOptions =
+	| { type: 'json_object' }
+	| { type: 'json_schema'; jsonSchema: JsonSchemaDefinition };
+
 export interface ChatOptions {
 	model: string;
 	temperature?: number;
@@ -74,6 +88,8 @@ export interface ChatOptions {
 	promptCaching?: PromptCachingOptions;
 	/** 요청별 추론/사고 강도 및 예산 제어 옵션 (Cloud 직접 API 채팅 전용) */
 	reasoning?: ReasoningOptions;
+	/** 네이티브 JSON 구조화 출력 제약 옵션 */
+	responseFormat?: ResponseFormatOptions;
 }
 
 // ─── Provider Interface ─────────────────────────

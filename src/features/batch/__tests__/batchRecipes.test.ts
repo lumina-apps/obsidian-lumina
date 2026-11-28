@@ -4,6 +4,7 @@ import type LuminaPlugin from '../../../main';
 import { createProvider } from '../../../core/llm-providers';
 import { DEFAULT_SETTINGS } from '../../../core/settings/defaultSettings';
 import type { BatchRecipeOptions } from '../../../shared/types/batch.types';
+import { FRONTMATTER_RESPONSE_FORMAT } from '../../../shared/utils/frontmatterSanitizer';
 import { executeRecipeForFile, getBatchEligibleProviders } from '../recipes/batchRecipes';
 
 vi.mock('../../../core/llm-providers', () => ({
@@ -84,12 +85,13 @@ describe('batchRecipes', () => {
 	});
 
 	it('frontmatter 레시피: merge 모드에서 기존 태그를 유지하면서 플레이스홀더를 걸러내고 병합한다', async () => {
+		const chatSpy = vi.fn().mockResolvedValue({
+			content:
+				'{"tags": ["#과일", "tag1", "기존태그", "농장"], "description": "사과에 대해 정리한 노트입니다."}',
+			usage: { inputTokens: 100, outputTokens: 40, totalTokens: 140 },
+		});
 		vi.mocked(createProvider).mockReturnValue({
-			chat: vi.fn().mockResolvedValue({
-				content:
-					'{"tags": ["#과일", "tag1", "기존태그", "농장"], "description": "사과에 대해 정리한 노트입니다."}',
-				usage: { inputTokens: 100, outputTokens: 40, totalTokens: 140 },
-			}),
+			chat: chatSpy,
 		} as unknown as ReturnType<typeof createProvider>);
 
 		const res = await executeRecipeForFile(
@@ -100,6 +102,13 @@ describe('batchRecipes', () => {
 			{ ...BASE_OPTIONS, fmMergeMode: 'merge' },
 		);
 
+		expect(chatSpy).toHaveBeenCalledWith(
+			expect.any(Array),
+			expect.objectContaining({
+				responseFormat: FRONTMATTER_RESPONSE_FORMAT,
+				reasoning: { effort: 'off' },
+			}),
+		);
 		expect(res.tokensUsed).toBe(140);
 		expect(res.proposed).toEqual({
 			kind: 'frontmatter',
@@ -126,11 +135,12 @@ describe('batchRecipes', () => {
 	});
 
 	it('summary-callout 레시피: 프론트매터 바로 아래 본문 최상단에 요약 콜아웃을 삽입한다', async () => {
+		const chatSpy = vi.fn().mockResolvedValue({
+			content: '이 노트는 사과에 대한 관찰 기록입니다.',
+			usage: { inputTokens: 80, outputTokens: 25, totalTokens: 105 },
+		});
 		vi.mocked(createProvider).mockReturnValue({
-			chat: vi.fn().mockResolvedValue({
-				content: '이 노트는 사과에 대한 관찰 기록입니다.',
-				usage: { inputTokens: 80, outputTokens: 25, totalTokens: 105 },
-			}),
+			chat: chatSpy,
 		} as unknown as ReturnType<typeof createProvider>);
 
 		const res = await executeRecipeForFile(
@@ -141,6 +151,9 @@ describe('batchRecipes', () => {
 			BASE_OPTIONS,
 		);
 
+		const chatOpts = chatSpy.mock.calls[0]?.[1] as Record<string, unknown>;
+		expect(chatOpts.responseFormat).toBeUndefined();
+		expect(chatOpts.reasoning).toBeUndefined();
 		expect(res.proposed?.kind).toBe('content');
 		expect(res.proposed?.afterContent).toContain(
 			'---\ntags:\n  - 기존태그\n---\n> [!summary] 핵심 요약\n> 이 노트는 사과에 대한 관찰 기록입니다.',

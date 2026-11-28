@@ -17,10 +17,12 @@ import type {
 	BatchRecipeOptions,
 } from '../../../shared/types/batch.types';
 import {
+	FRONTMATTER_RESPONSE_FORMAT,
 	normalizeFrontmatterTags,
 	sanitizeGeneratedFrontmatterData,
 } from '../../../shared/utils/frontmatterSanitizer';
 import {
+	BATCH_DEFAULT_MAX_OUTPUT_TOKENS,
 	callBatchLlm,
 	extractJsonObject,
 	getBatchEligibleProviders,
@@ -121,6 +123,11 @@ ${trimmedBody.substring(0, 3000)}`;
 		'Frontmatter',
 		prompt,
 		signal,
+		BATCH_DEFAULT_MAX_OUTPUT_TOKENS,
+		{
+			responseFormat: FRONTMATTER_RESPONSE_FORMAT,
+			reasoning: { effort: 'off' },
+		},
 	);
 
 	const parsed = extractJsonObject(text);

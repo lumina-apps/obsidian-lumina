@@ -21,6 +21,12 @@ import {
 	wrapReasoningContent,
 	StreamChunkAccumulator,
 } from './stream-accumulator';
+import {
+	buildOpenAIResponseFormat,
+	isStructuredOutputRetryableError,
+	structuredOutputFallbackCache,
+	type StructuredOutputProvider,
+} from './structured-output';
 
 export abstract class BaseOpenAIProvider implements ILLMProvider {
 	abstract readonly providerId: string;
@@ -50,7 +56,20 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 			if (onChunk) {
 				return await this.handleStreamingChat(url, headers, payload, timeoutCtrl, onChunk);
 			}
-			return await this.handleNonStreamingChat(url, headers, payload, timeoutCtrl);
+			try {
+				return await this.handleNonStreamingChat(url, headers, payload, timeoutCtrl);
+			} catch (err: unknown) {
+				if (payload.response_format !== undefined && isStructuredOutputRetryableError(err)) {
+					structuredOutputFallbackCache.markUnsupported(this.providerId, options.model);
+					debugLogger.logWarn(
+						'llm',
+						`${this.type} structured output rejected (${options.model}); retrying without response_format`,
+					);
+					const fallbackPayload = this.buildPayload({ ...options, responseFormat: undefined }, messages, false);
+					return await this.handleNonStreamingChat(url, headers, fallbackPayload, timeoutCtrl);
+				}
+				throw err;
+			}
 		});
 	}
 
@@ -125,6 +144,23 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 		return false;
 	}
 
+	/** Structured Outputs(response_format) 지원 프로바이더 식별자 (미지원 시 undefined) */
+	protected getStructuredOutputProvider(): Exclude<StructuredOutputProvider, 'google' | 'anthropic'> | undefined {
+		return undefined;
+	}
+
+	/** 프로바이더 지원 여부·캐시·모델 가드를 확인해 response_format 페이로드를 생성합니다. */
+	protected resolveResponseFormatPayload(options: ChatOptions): Record<string, unknown> | undefined {
+		const structuredProvider = this.getStructuredOutputProvider();
+		if (!structuredProvider || !options.responseFormat) {
+			return undefined;
+		}
+		if (structuredOutputFallbackCache.isUnsupported(this.providerId, options.model)) {
+			return undefined;
+		}
+		return buildOpenAIResponseFormat(structuredProvider, options.model, options.responseFormat);
+	}
+
 	protected buildPayload(
 		options: ChatOptions,
 		messages: ChatMessage[],
@@ -155,6 +191,11 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 			}
 		}
 
+		const responseFormatPayload = this.resolveResponseFormatPayload(options);
+		if (responseFormatPayload) {
+			payload.response_format = responseFormatPayload;
+		}
+
 		return payload;
 	}
 
@@ -181,6 +222,11 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 			if (stopSeq) {
 				payload.stop = stopSeq;
 			}
+		}
+
+		const responseFormatPayload = this.resolveResponseFormatPayload(options);
+		if (responseFormatPayload) {
+			payload.response_format = responseFormatPayload;
 		}
 
 		return payload;
@@ -285,6 +331,9 @@ export abstract class BaseOpenAIProvider implements ILLMProvider {
 		const usage = mapOpenAIUsage(data.usage);
 
 		let content = message.content || '';
+		if (!content && message.refusal) {
+			debugLogger.logWarn('llm', `${this.type} structured output refusal: ${message.refusal}`);
+		}
 		if (this.enableReasoning) {
 			const reasoning = (message.reasoning_content ?? message.reasoning) ?? undefined;
 			content = wrapReasoningContent(reasoning, content);

@@ -146,15 +146,16 @@ describe('orphanActionService', () => {
 	});
 
 	it('proposeAiContextualLink는 LLM의 anchorLine을 교체해 문맥 링크를 제안한다', async () => {
-		vi.mocked(createProvider).mockReturnValue({
-			chat: vi.fn().mockResolvedValue({
-				content: JSON.stringify({
-					anchorLine: '프로젝트 허브 노트입니다.',
-					replacementLine: '프로젝트 허브 노트입니다. 세부 아이디어는 [[idea]]를 참고하세요.',
-					reason: '관련 아이디어를 본문에 자연스럽게 연결',
-				}),
-				usage: { totalTokens: 42 },
+		const chatSpy = vi.fn().mockResolvedValue({
+			content: JSON.stringify({
+				anchorLine: '프로젝트 허브 노트입니다.',
+				replacementLine: '프로젝트 허브 노트입니다. 세부 아이디어는 [[idea]]를 참고하세요.',
+				reason: '관련 아이디어를 본문에 자연스럽게 연결',
 			}),
+			usage: { totalTokens: 42 },
+		});
+		vi.mocked(createProvider).mockReturnValue({
+			chat: chatSpy,
 		} as unknown as ReturnType<typeof createProvider>);
 
 		const proposal = await proposeAiContextualLink(
@@ -163,6 +164,16 @@ describe('orphanActionService', () => {
 			files['Inbox/idea.md'],
 			files['Projects/hub.md'],
 			'to-orphan',
+		);
+		expect(chatSpy).toHaveBeenCalledWith(
+			expect.any(Array),
+			expect.objectContaining({
+				reasoning: { effort: 'off' },
+				responseFormat: expect.objectContaining({
+					type: 'json_schema',
+					jsonSchema: expect.objectContaining({ name: 'orphan_contextual_link' }),
+				}),
+			}),
 		);
 		expect(proposal.modifiedFilePath).toBe('Projects/hub.md');
 		expect(proposal.afterContent).toContain('[[idea]]');

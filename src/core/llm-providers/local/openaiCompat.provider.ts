@@ -34,6 +34,14 @@ export class OpenAICompatProvider extends BaseOpenAIProvider {
 		return this.type === 'openrouter' && (/^anthropic\//i.test(model) || /(?:^|\/)claude/i.test(model));
 	}
 
+	/** 1단계 지원 대상 OpenAI 호환 프로바이더(xai, ollama, lmstudio)만 Structured Outputs 식별자 반환 */
+	protected override getStructuredOutputProvider(): 'xai' | 'ollama' | 'lmstudio' | undefined {
+		if (this.type === 'xai' || this.type === 'ollama' || this.type === 'lmstudio') {
+			return this.type;
+		}
+		return undefined;
+	}
+
 	/** OpenRouter에서 Claude 모델 호출 시에만 최상위 cache_control을 패스스루합니다. */
 	protected override buildPayload(
 		options: ChatOptions,
