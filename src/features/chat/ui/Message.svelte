@@ -192,7 +192,7 @@
 		gap: 6px;
 		padding: 12px 14px;
 		animation: fadeSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-		transition: all 0.2s ease;
+		transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 	}
 
 	@keyframes fadeSlideIn {

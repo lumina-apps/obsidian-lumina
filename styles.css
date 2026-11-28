@@ -1417,9 +1417,10 @@ body .lumina-model-suggest-modal .suggestion-item.is-selected-default::after {
 
 .lumina-chat__messages {
 	flex: 1;
+	min-height: 0;
 	overflow-y: auto;
+	overflow-anchor: none;
 	padding: 8px;
-	scroll-behavior: smooth;
 }
 
 .lumina-chat__messages::-webkit-scrollbar { width: 6px; }

@@ -118,10 +118,10 @@
 		}
 
 		if (!scrollTimer) {
-			scrollTimer = setTimeout(() => {
+			scrollTimer = window.setTimeout(() => {
 				scrollTimer = null;
 				if (!autoScroll.isUserScrolledUp) {
-					void autoScroll.scrollToBottom("auto");
+					void autoScroll.scrollToBottom("instant");
 				}
 			}, 50);
 		}
@@ -227,6 +227,11 @@
 	});
 
 	onDestroy(() => {
+		if (scrollTimer !== null) {
+			window.clearTimeout(scrollTimer);
+			scrollTimer = null;
+		}
+		autoScroll.destroy();
 		ctrl?.destroy();
 	});
 
@@ -331,7 +336,7 @@
 		}
 		autoScroll.resetUserScrolledUp();
 		await tick();
-		await autoScroll.scrollToBottom("smooth");
+		await autoScroll.scrollToBottom("instant");
 	}
 
 	// ── Message Actions ───────────────────────────────────────────────────
@@ -582,7 +587,7 @@
 			onOpenSplitChat={$splitChatEntitled ? openSplitChat : undefined}
 			onKeyboardOpen={() => {
 				if (!autoScroll.isUserScrolledUp) {
-					void autoScroll.scrollToBottom("auto");
+					void autoScroll.scrollToBottom("instant");
 				}
 			}}
 		/>

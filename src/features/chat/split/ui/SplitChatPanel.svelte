@@ -119,10 +119,10 @@
 				.join("|");
 		}
 		if (!scrollTimer) {
-			scrollTimer = setTimeout(() => {
+			scrollTimer = window.setTimeout(() => {
 				scrollTimer = null;
 				if (!autoScroll.isUserScrolledUp) {
-					void autoScroll.scrollToBottom("auto");
+					void autoScroll.scrollToBottom("instant");
 				}
 			}, 60);
 		}
@@ -183,9 +183,10 @@
 		resizeObserver?.disconnect();
 		resizeObserver = null;
 		if (scrollTimer) {
-			clearTimeout(scrollTimer);
+			window.clearTimeout(scrollTimer);
 			scrollTimer = null;
 		}
+		autoScroll.destroy();
 		ctrl?.destroy();
 	});
 
@@ -272,7 +273,7 @@
 			includeActiveNote,
 		});
 		historyRefreshTick += 1;
-		await autoScroll.scrollToBottom("smooth");
+		await autoScroll.scrollToBottom("instant");
 	}
 
 	function handleCancelStream(): void {
@@ -402,7 +403,7 @@
 			}
 			autoScroll.resetUserScrolledUp();
 			await tick();
-			await autoScroll.scrollToBottom("auto");
+			await autoScroll.scrollToBottom("instant");
 		}
 	}
 
@@ -634,7 +635,7 @@
 			onCompressContext={() => {}}
 			onKeyboardOpen={() => {
 				if (!autoScroll.isUserScrolledUp) {
-					void autoScroll.scrollToBottom("auto");
+					void autoScroll.scrollToBottom("instant");
 				}
 			}}
 		/>

@@ -10,7 +10,7 @@
  *   $effect(() => {
  *     messages;
  *     if (!autoScroll.isUserScrolledUp) {
- *       void autoScroll.scrollToBottom("auto");
+ *       void autoScroll.scrollToBottom("instant");
  *     }
  *   });
  */
@@ -43,14 +43,26 @@ export function useAutoScroll(
 		});
 	}
 
-	async function scrollToBottom(behavior: ScrollBehavior = "smooth"): Promise<void> {
+	async function scrollToBottom(behavior: ScrollBehavior = "instant"): Promise<void> {
 		await tick();
 		const el = getMessagesEl();
-		el?.scrollTo({ top: el.scrollHeight, behavior });
+		if (!el) return;
+		// CSS scroll-behavior 영향 없이 즉시 이동이 필요한 경우 "instant"를 명시합니다.
+		const resolvedBehavior: ScrollBehavior = behavior === "auto" ? "instant" : behavior;
+		el.scrollTo({ top: el.scrollHeight, behavior: resolvedBehavior });
+		lastScrollTop = el.scrollTop;
 	}
 
 	function resetUserScrolledUp(): void {
 		isUserScrolledUp = false;
+	}
+
+	/** 대기 중인 스크롤 rAF를 정리합니다. */
+	function destroy(): void {
+		if (scrollRafId !== null) {
+			window.cancelAnimationFrame(scrollRafId);
+			scrollRafId = null;
+		}
 	}
 
 	return {
@@ -60,5 +72,6 @@ export function useAutoScroll(
 		handleScroll,
 		scrollToBottom,
 		resetUserScrolledUp,
+		destroy,
 	};
 }
