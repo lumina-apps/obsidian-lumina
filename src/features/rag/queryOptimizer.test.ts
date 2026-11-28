@@ -59,6 +59,53 @@ describe('queryOptimizer (Fail-Safe Guardrails)', () => {
 			const raw = '<think>생각만 하다가 토큰 한도에 걸려 끊김';
 			expect(sanitizeRewrittenQueries(raw, '질문', 2)).toEqual([]);
 		});
+
+		it('Gemma 4 채널/사고 태그(<|channel>thought, <|thought|>, <thought>)와 마크다운 굵게/백틱을 제거한다', () => {
+			const raw = `<|channel>thought
+Thinking about the user's follow-up query...
+<channel|>
+1. **프로젝트A 비상연락망**
+2. \`김철수 연락처\``;
+			expect(sanitizeRewrittenQueries(raw, '그거 번호 뭐야', 2)).toEqual([
+				'프로젝트A 비상연락망',
+				'김철수 연락처',
+			]);
+
+			const rawThoughtTag = '<thought>내부 추론 중</thought>\n사내 서버 이전 계획';
+			expect(sanitizeRewrittenQueries(rawThoughtTag, '이전 계획 알려줘', 2)).toEqual([
+				'사내 서버 이전 계획',
+			]);
+		});
+
+		it('Tier 1(<q>...</q>): 장황한 사족이나 같은 줄 나열에서도 태그 내부 검색어만 정확히 추출한다', () => {
+			const raw = `물론입니다! 대화 문맥을 바탕으로 검색어를 정리해 드릴게요.
+아래 태그를 참고하세요:
+<q>프로젝트A 비상연락망</q> <q>김철수 내선번호</q>
+도움이 되셨길 바랍니다.`;
+			expect(sanitizeRewrittenQueries(raw, '그거 번호?', 2)).toEqual([
+				'프로젝트A 비상연락망',
+				'김철수 내선번호',
+			]);
+		});
+
+		it('Tier 2(JSON): 사족 뒤에 붙은 JSON queries 객체 또는 문자열 배열에서 검색어를 추출한다', () => {
+			const rawObj = '검색 쿼리는 다음과 같습니다:\n{"queries": ["알파 프로젝트 일정", "알파 로드맵"]}';
+			expect(sanitizeRewrittenQueries(rawObj, '그거 언제야', 2)).toEqual([
+				'알파 프로젝트 일정',
+				'알파 로드맵',
+			]);
+
+			const rawArr = '["서버 이전 계획", "담당자 연락처"]';
+			expect(sanitizeRewrittenQueries(rawArr, '어디야', 2)).toEqual([
+				'서버 이전 계획',
+				'담당자 연락처',
+			]);
+		});
+
+		it('프롬프트의 1-shot 예시를 그대로 따라 출력(echo)한 경우 필터링한다', () => {
+			const raw = '<q>Q3 launch plan deadline</q>\n<q>실제 사용자 검색어</q>';
+			expect(sanitizeRewrittenQueries(raw, '질문', 2)).toEqual(['실제 사용자 검색어']);
+		});
 	});
 
 	describe('optimizeSearchQueries', () => {
@@ -186,6 +233,24 @@ describe('queryOptimizer (Fail-Safe Guardrails)', () => {
 			const sentPrompt = mockProvider.chat.mock.calls[0][0][0].content as string;
 			expect(sentPrompt).not.toContain('<think>');
 			expect(sentPrompt).toContain('알파 프로젝트는 18개월 보관입니다.');
+		});
+
+		it('사고 블록만 출력되고 본문 없이 잘린 경우 reason을 thinking_only_truncated로 기록한다', async () => {
+			const mockProvider = {
+				chat: vi.fn().mockResolvedValue({
+					content: '<|channel>thought\n계속 생각 중...',
+				}),
+			};
+			vi.mocked(createProvider).mockReturnValue(mockProvider as unknown as ReturnType<typeof createProvider>);
+
+			const res = await optimizeSearchQueries({
+				userText: '그거 뭐야',
+				providerConfig: mockConfig,
+				modelId: 'gemma4:e2b-mlx',
+			});
+
+			expect(res.status).toBe('invalid_output');
+			expect(res.reason).toBe('thinking_only_truncated');
 		});
 	});
 

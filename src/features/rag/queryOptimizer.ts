@@ -16,6 +16,7 @@ import type { LLMProviderConfig } from '../../shared/types/settings.types';
 import { createProvider } from '../../core/llm-providers';
 import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
+import { stripThinkTags } from '../../shared/utils/llmTextSanitizer';
 import type { WeightedSearchQuery } from './search';
 
 export interface ConversationTurnForQuery {
@@ -131,10 +132,126 @@ const REFUSAL_OR_META_PATTERNS: readonly RegExp[] = [
 	/^(죄송합니다|죄송하지만|할 수 없습니다|물론입니다|다음은|검색어\s*:|재작성된\s*쿼리)/i,
 ];
 
+/** 1-Shot 프롬프트 예시를 그대로 따라 적는 초소형 모델 출력 차단 목록 */
+const EXAMPLE_ECHO_BLOCKLIST = new Set([
+	'q3 launch plan deadline',
+	'log retention period archive policy',
+]);
+
 interface ParsedQueriesResult {
 	queries: string[];
 	/** 모델이 원문과 동일한 정상 쿼리만 출력해 재작성이 불필요했던 경우 */
 	matchedOriginalOnly: boolean;
+	/** 추론/사고 블록만 출력되고 실제 본문 없이 잘린 경우 */
+	thinkingOnly: boolean;
+	/** 추론 태그 제거 후 남은 정제 전 본문 미리보기 (디버그 진단용) */
+	cleanedPreview: string;
+}
+
+/**
+ * 표준 `<think>/<thought>/<reasoning>` 태그뿐 아니라 Gemma 4 / MLX 계열의
+ * `<|channel>thought...<channel|>`, `<|thought|>...<|/thought|>` 채널 토큰까지 모두 제거합니다.
+ */
+function stripAllReasoningBlocks(raw: string): string {
+	let cleaned = raw
+		.replace(/<\|channel>thought[\s\S]*?(?:<channel\|>|$)/gi, '')
+		.replace(/<\|thought\|>[\s\S]*?(?:<\|\/thought\|>|$)/gi, '');
+	cleaned = stripThinkTags(cleaned);
+	return cleaned.replace(/<\|[^|]+\|>/g, '').trim();
+}
+
+/** 단일 후보 문자열 정제 및 유효성 검사 */
+function cleanAndValidateCandidate(
+	rawCandidate: string,
+	normOriginal: string,
+	maxAllowedLen: number,
+): { valid: string | null; isOriginal: boolean } {
+	let line = rawCandidate
+		.trim()
+		.replace(/^(?:\d+[.)]|[-*•])\s+/, '')
+		.replace(/^(?:query\s*\d*|검색어\s*\d*)\s*[:\-]\s*/i, '')
+		.replace(/^\*\*([\s\S]+)\*\*$/, '$1')
+		.replace(/^\*([\s\S]+)\*$/, '$1')
+		.replace(/^`([\s\S]+)`$/, '$1')
+		.trim();
+
+	if (
+		(line.startsWith('"') && line.endsWith('"') && line.length >= 2) ||
+		(line.startsWith("'") && line.endsWith("'") && line.length >= 2)
+	) {
+		line = line.slice(1, -1).trim();
+	}
+
+	if (line.length < 2 || line.length > maxAllowedLen) {
+		return { valid: null, isOriginal: false };
+	}
+	if (REFUSAL_OR_META_PATTERNS.some(re => re.test(line))) {
+		return { valid: null, isOriginal: false };
+	}
+
+	const normLine = line.toLowerCase().replace(/\s+/g, ' ');
+	if (EXAMPLE_ECHO_BLOCKLIST.has(normLine)) {
+		return { valid: null, isOriginal: false };
+	}
+	if (normLine === normOriginal) {
+		return { valid: null, isOriginal: true };
+	}
+
+	return { valid: line, isOriginal: false };
+}
+
+/** Tier 2: 응답 내 JSON 객체(`{"queries": [...]}`) 또는 문자열 배열(`[...]`)에서 쿼리를 추출합니다. */
+function extractJsonCandidates(cleaned: string): string[] {
+	const jsonBlocks = Array.from(cleaned.matchAll(/\{[\s\S]*?"queries"\s*:\s*\[[\s\S]*?\][\s\S]*?\}|\[[\s\S]*?\]/g));
+	for (let i = jsonBlocks.length - 1; i >= 0; i--) {
+		try {
+			const parsed: unknown = JSON.parse(jsonBlocks[i][0]);
+			const arr: unknown[] | null = Array.isArray(parsed)
+				? parsed
+				: parsed && typeof parsed === 'object' && Array.isArray((parsed as { queries?: unknown }).queries)
+					? (parsed as { queries: unknown[] }).queries
+					: null;
+			if (!arr) continue;
+			const strings = arr
+				.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+				.map(s => s.trim());
+			if (strings.length > 0) {
+				return strings;
+			}
+		} catch {
+			// 유효하지 않은 JSON 조각은 무시하고 다음 후보 확인
+		}
+	}
+	return [];
+}
+
+function collectValidatedQueries(
+	candidates: readonly string[],
+	normOriginal: string,
+	maxAllowedLen: number,
+	maxQueries: number,
+): { valid: string[]; sawOriginalMatch: boolean } {
+	const seen = new Set<string>();
+	const valid: string[] = [];
+	let sawOriginalMatch = false;
+
+	for (const candidate of candidates) {
+		const res = cleanAndValidateCandidate(candidate, normOriginal, maxAllowedLen);
+		if (res.isOriginal) {
+			sawOriginalMatch = true;
+			continue;
+		}
+		if (!res.valid) continue;
+
+		const normLine = res.valid.toLowerCase().replace(/\s+/g, ' ');
+		if (seen.has(normLine)) continue;
+
+		seen.add(normLine);
+		valid.push(res.valid);
+		if (valid.length >= maxQueries) break;
+	}
+
+	return { valid, sawOriginalMatch };
 }
 
 function parseRewrittenQueries(
@@ -143,59 +260,69 @@ function parseRewrittenQueries(
 	maxQueries: number = 2,
 ): ParsedQueriesResult {
 	if (!rawOutput || typeof rawOutput !== 'string') {
-		return { queries: [], matchedOriginalOnly: false };
+		return { queries: [], matchedOriginalOnly: false, thinkingOnly: false, cleanedPreview: '' };
 	}
 
-	// 1. 추론 모델(<think>...</think> 또는 닫히지 않은 <think>...) 제거
-	let cleaned = rawOutput
-		.replace(/<think>[\s\S]*?<\/think>/gi, '')
-		.replace(/<think>[\s\S]*$/gi, '');
+	// 1. 추론/사고 블록 제거
+	let cleaned = stripAllReasoningBlocks(rawOutput);
+	if (!cleaned) {
+		return {
+			queries: [],
+			matchedOriginalOnly: false,
+			thinkingOnly: rawOutput.trim().length > 0,
+			cleanedPreview: '',
+		};
+	}
 
 	// 2. 코드펜스 마커 제거
 	cleaned = cleaned.replace(/```[^\n]*\n?/g, '').replace(/```/g, '');
 
 	const normOriginal = originalQuery.trim().toLowerCase().replace(/\s+/g, ' ');
 	const maxAllowedLen = Math.max(originalQuery.trim().length * 3, 180);
-	const seen = new Set<string>();
-	const valid: string[] = [];
-	let sawOriginalMatch = false;
+	const cleanedPreview = cleaned.replace(/\s+/g, ' ').slice(0, 60);
 
-	for (const rawLine of cleaned.split(/\r?\n/)) {
-		let line = rawLine.trim();
-		if (!line) continue;
-
-		// 번호, 불릿, 라벨 접두사 제거
-		line = line
-			.replace(/^(?:\d+[.)]|[-*•])\s+/, '')
-			.replace(/^(?:query\s*\d*|검색어\s*\d*)\s*[:\-]\s*/i, '')
-			.trim();
-
-		// 양끝 따옴표 제거
-		if (
-			(line.startsWith('"') && line.endsWith('"') && line.length >= 2) ||
-			(line.startsWith("'") && line.endsWith("'") && line.length >= 2)
-		) {
-			line = line.slice(1, -1).trim();
+	// Tier 1: <q>...</q> 화이트리스트 태그 추출 (앞뒤 사족·서론·결론 무관)
+	const tagMatches = Array.from(cleaned.matchAll(/<q>([\s\S]*?)<\/q>/gi))
+		.map(m => m[1])
+		.filter(s => s.trim().length > 0);
+	if (tagMatches.length > 0) {
+		const res = collectValidatedQueries(tagMatches, normOriginal, maxAllowedLen, maxQueries);
+		if (res.valid.length > 0 || res.sawOriginalMatch) {
+			return {
+				queries: res.valid,
+				matchedOriginalOnly: res.valid.length === 0 && res.sawOriginalMatch,
+				thinkingOnly: false,
+				cleanedPreview,
+			};
 		}
-
-		if (line.length < 2 || line.length > maxAllowedLen) continue;
-		if (REFUSAL_OR_META_PATTERNS.some(re => re.test(line))) continue;
-
-		const normLine = line.toLowerCase().replace(/\s+/g, ' ');
-		if (normLine === normOriginal) {
-			sawOriginalMatch = true;
-			continue;
-		}
-		if (seen.has(normLine)) continue;
-
-		seen.add(normLine);
-		valid.push(line);
-		if (valid.length >= maxQueries) break;
 	}
 
+	// Tier 2: JSON({"queries": [...]} 또는 [...]) 추출
+	const jsonCandidates = extractJsonCandidates(cleaned);
+	if (jsonCandidates.length > 0) {
+		const res = collectValidatedQueries(jsonCandidates, normOriginal, maxAllowedLen, maxQueries);
+		if (res.valid.length > 0 || res.sawOriginalMatch) {
+			return {
+				queries: res.valid,
+				matchedOriginalOnly: res.valid.length === 0 && res.sawOriginalMatch,
+				thinkingOnly: false,
+				cleanedPreview,
+			};
+		}
+	}
+
+	// Tier 3: 평문 줄 단위 폴백 (콜론(:)으로 끝나는 헤더 줄은 제외)
+	const plainLines = cleaned
+		.split(/\r?\n/)
+		.map(l => l.trim())
+		.filter(l => l.length > 0 && !l.endsWith(':'));
+	const plainRes = collectValidatedQueries(plainLines, normOriginal, maxAllowedLen, maxQueries);
+
 	return {
-		queries: valid,
-		matchedOriginalOnly: valid.length === 0 && sawOriginalMatch,
+		queries: plainRes.valid,
+		matchedOriginalOnly: plainRes.valid.length === 0 && plainRes.sawOriginalMatch,
+		thinkingOnly: false,
+		cleanedPreview,
 	};
 }
 
@@ -323,10 +450,8 @@ function formatRecentHistorySnippet(history?: ConversationTurnForQuery[]): strin
 	return recent
 		.map(turn => {
 			const label = turn.role === 'user' ? 'User' : 'Assistant';
-			// 이전 어시스턴트 추론(<think>) 블록이 히스토리 요약을 잠식하지 않도록 먼저 제거
-			const stripped = turn.content
-				.replace(/<think>[\s\S]*?<\/think>/gi, '')
-				.replace(/<think>[\s\S]*$/gi, '');
+			// 이전 어시스턴트 추론 블록이 히스토리 요약을 잠식하지 않도록 먼저 제거
+			const stripped = stripAllReasoningBlocks(turn.content);
 			const text = stripped.replace(/\s+/g, ' ').trim().slice(0, 250);
 			return text ? `${label}: ${text}` : '';
 		})
@@ -363,21 +488,24 @@ export async function optimizeSearchQueries(
 	}
 
 	const historyText = formatRecentHistorySnippet(recentHistory);
-	const prompt = `Rewrite or expand the user's question into 1 or 2 concise search queries for a personal Obsidian knowledge base.
-Rules:
-- Resolve pronouns or references using the conversation context if present.
-- Preserve exact proper nouns, file names, code identifiers, and technical terms.
-- Output ONLY 1 or 2 search queries, one per line. No numbering, no quotes, no explanation.
-${historyText ? `\nRecent conversation:\n${historyText}\n` : ''}
-User question:
-${trimmedQuery}`;
+	const prompt = `Generate 1 or 2 search queries for an Obsidian knowledge base.
+Resolve pronouns from conversation context and keep exact proper nouns/terms.
+Wrap each search query in <q>...</q> tags.
+
+Example:
+Context: User: Tell me about Q3 launch plan
+Question: When is its deadline?
+Output: <q>Q3 launch plan deadline</q>
+${historyText ? `\nContext:\n${historyText}` : ''}
+Question: ${trimmedQuery}
+Output:`;
 
 	try {
 		const { content, timedOut } = await runChatWithHardTimeout(
 			providerConfig,
 			modelId,
 			prompt,
-			512,
+			1536,
 			timeoutMs,
 			'RAG Query Optimizer',
 			signal,
@@ -387,7 +515,7 @@ ${trimmedQuery}`;
 		if (timedOut) {
 			const reason = `timeout(${timeoutMs}ms)`;
 			taskModelCircuitBreaker.recordFailure(providerConfig.id, modelId, Date.now(), reason);
-			debugLogger.logWarn('rag', `Query optimizer timed out after ${timeoutMs}ms (${modelId})`);
+			debugLogger.logDebug('rag', `Query optimizer timed out after ${timeoutMs}ms (${modelId})`);
 			return { extraQueries: [], status: 'timeout', reason };
 		}
 
@@ -398,9 +526,13 @@ ${trimmedQuery}`;
 				taskModelCircuitBreaker.recordSuccess(providerConfig.id, modelId);
 				return { extraQueries: [], status: 'unchanged' };
 			}
-			const reason = content.trim() ? 'filtered_invalid_output' : 'empty_response';
+			const reason = parsed.thinkingOnly
+				? 'thinking_only_truncated'
+				: content.trim()
+					? `filtered_invalid_output: "${parsed.cleanedPreview}"`
+					: 'empty_response';
 			taskModelCircuitBreaker.recordFailure(providerConfig.id, modelId, Date.now(), reason);
-			debugLogger.logWarn('rag', `Query optimizer produced no valid queries (${modelId}, ${reason})`);
+			debugLogger.logDebug('rag', `Query optimizer fallback to original (${modelId}, ${reason})`);
 			return { extraQueries: [], status: 'invalid_output', reason };
 		}
 
@@ -419,7 +551,7 @@ ${trimmedQuery}`;
 		}
 		const msg = normalizeError(err).message;
 		taskModelCircuitBreaker.recordFailure(providerConfig.id, modelId, Date.now(), msg);
-		debugLogger.logWarn('rag', `Query optimizer failed (${modelId}): ${msg}`);
+		debugLogger.logDebug('rag', `Query optimizer error fallback (${modelId}): ${msg}`);
 		return { extraQueries: [], status: 'error', reason: msg };
 	}
 }
@@ -447,19 +579,21 @@ export async function generateBroadFallbackQuery(
 		return null;
 	}
 
-	const prompt = `Extract the core keywords and broader synonyms from the question below into a single concise search query.
-Rules:
-- Output ONLY 1 line of keywords. No numbering, no quotes, no explanation.
+	const prompt = `Extract core keywords and broader synonyms as 1 concise search query wrapped in <q>...</q>.
 
-Question:
-${trimmedQuery}`;
+Example:
+Question: How long do we keep archived logs?
+Output: <q>log retention period archive policy</q>
+
+Question: ${trimmedQuery}
+Output:`;
 
 	try {
 		const { content, timedOut } = await runChatWithHardTimeout(
 			providerConfig,
 			modelId,
 			prompt,
-			512,
+			1536,
 			timeoutMs,
 			'RAG CRAG Fallback',
 			signal,
@@ -477,7 +611,11 @@ ${trimmedQuery}`;
 				taskModelCircuitBreaker.recordSuccess(providerConfig.id, modelId);
 				return null;
 			}
-			const reason = content.trim() ? 'filtered_invalid_output' : 'empty_response';
+			const reason = parsed.thinkingOnly
+				? 'thinking_only_truncated'
+				: content.trim()
+					? `filtered_invalid_output: "${parsed.cleanedPreview}"`
+					: 'empty_response';
 			taskModelCircuitBreaker.recordFailure(providerConfig.id, modelId, Date.now(), reason);
 			return null;
 		}
@@ -490,7 +628,7 @@ ${trimmedQuery}`;
 		}
 		const msg = normalizeError(err).message;
 		taskModelCircuitBreaker.recordFailure(providerConfig.id, modelId, Date.now(), msg);
-		debugLogger.logWarn('rag', `CRAG fallback query failed (${modelId}): ${msg}`);
+		debugLogger.logDebug('rag', `CRAG fallback error (${modelId}): ${msg}`);
 		return null;
 	}
 }

@@ -57,13 +57,13 @@ export interface RagSearchResult {
 	ragChunksForLog: RagChunkMeta[] | undefined;
 }
 
-/** 저신뢰 검색 결과 판정 (임베딩 모델별 적응형 임계값 기반 경량 CRAG 폴백 트리거용) */
+/** 저신뢰 검색 결과 판정 (임베딩 모델별 적응형 임계값 + 대용량 볼트 BM25 스케일 반영) */
 function isLowConfidenceResults(results: readonly SearchResult[], adaptiveThreshold: number): boolean {
 	if (results.length === 0) return true;
 	const top = results[0];
 	const rawVec = top.rawVectorScore ?? 0;
 	const bm25 = top.bm25Score ?? 0;
-	return rawVec < adaptiveThreshold && bm25 < 1.5;
+	return rawVec < adaptiveThreshold && bm25 < 4.5;
 }
 
 /** 1차 결과와 CRAG 재검색 결과를 청크 ID 기준으로 비파괴 병합합니다. */
