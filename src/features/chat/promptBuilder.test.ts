@@ -50,6 +50,8 @@ describe('promptBuilder', () => {
 			interTokenTimeoutMs: 0,
 			enablePromptCaching: true,
 			geminiExplicitCaching: false,
+			reasoningEffort: 'auto',
+			reasoningBudgetTokens: 0,
 		} as ChatSettings;
 
 		mockHistory = [

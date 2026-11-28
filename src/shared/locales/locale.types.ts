@@ -406,6 +406,44 @@ export interface TranslationSettingsChatPromptCaching {
   geminiExplicitDesc: string;
 }
 
+export interface TranslationSettingsChatReasoning {
+  effortName: string;
+  effortDesc: string;
+  budgetName: string;
+  budgetDesc: string;
+  options: {
+    auto: string;
+    off: string;
+    low: string;
+    medium: string;
+    high: string;
+  };
+  short: {
+    auto: string;
+    off: string;
+    low: string;
+    medium: string;
+    high: string;
+  };
+  popupTitle: string;
+  toolbarTooltip: string;
+  summaryAuto: string;
+  summaryOffOpenAIUnsupported: string;
+  summaryOffOpenAIMinimal: string;
+  summaryOffOpenAINone: string;
+  summaryOffAnthropic: string;
+  summaryOffGeminiZero: string;
+  summaryOffGeminiProMin: string;
+  summaryOffGeminiLevel: string;
+  summaryOpenAIEffort: string;
+  summaryAnthropicManual: string;
+  summaryAnthropicAdaptive: string;
+  summaryGeminiBudget: string;
+  summaryGeminiLevel: string;
+  summarySplitMulti: string;
+  manualBudgetIgnoredHint: string;
+}
+
 export interface TranslationSettingsChat {
   quickSettings: TranslationSettingsChatQuickSettings;
   title: string;
@@ -421,6 +459,7 @@ export interface TranslationSettingsChat {
   modelParams: TranslationSettingsChatModelParams;
   streaming: TranslationSettingsChatStreaming;
   promptCaching: TranslationSettingsChatPromptCaching;
+  reasoning: TranslationSettingsChatReasoning;
   timeout: {
     ttftLabel: string;
     ttftDesc: string;

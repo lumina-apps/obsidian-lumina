@@ -1,4 +1,5 @@
 import { createProvider } from '../../../core/llm-providers/index';
+import { formatReasoningForDebugLog } from '../../../core/llm-providers/reasoning-config';
 import { isCliProvider, type LLMProviderConfig } from '../../../shared/types/settings.types';
 import type { ChatOptions, TokenUsage } from '../../../shared/types/llm.types';
 import { runAgentLoop, isTokenLimitReached } from '../agentLoop';
@@ -63,6 +64,8 @@ export async function executeLlmCall(
 	const provider = createProvider(providerConfig);
 
 	const enablePromptCaching = chatSettings.enablePromptCaching !== false;
+	const reasoningEffort = chatSettings.reasoningEffort ?? 'auto';
+	const reasoningBudgetTokens = chatSettings.reasoningBudgetTokens ?? 0;
 	const chatOptions: ChatOptions = {
 		model: resolvedModelId,
 		temperature: chatSettings.temperature,
@@ -80,6 +83,14 @@ export async function executeLlmCall(
 					cacheKey: get(currentSessionId) || `chat-${providerConfig.id}`,
 					geminiExplicit: Boolean(chatSettings.geminiExplicitCaching),
 					geminiTtlSeconds: 300,
+				},
+			}
+			: {}),
+		...(reasoningEffort !== 'auto'
+			? {
+				reasoning: {
+					effort: reasoningEffort,
+					...(reasoningBudgetTokens > 0 ? { budgetTokens: reasoningBudgetTokens } : {}),
 				},
 			}
 			: {}),
@@ -131,6 +142,12 @@ export async function executeLlmCall(
 			return acc + estimateTokens(c, providerConfig.type);
 		}, 0);
 
+		const reasoningLog = formatReasoningForDebugLog(
+			providerConfig.type,
+			resolvedModelId,
+			chatOptions.reasoning,
+			chatSettings.maxOutputTokens,
+		);
 		const requestId = debugLogger.logRequest({
 			provider: providerConfig.type,
 			model: resolvedModelId,
@@ -141,6 +158,7 @@ export async function executeLlmCall(
 			messages: formatMessagesForDebugLog(llmMessages),
 			estimatedInputTokens,
 			...(ctx.ragChunksForLog ? { ragChunks: ctx.ragChunksForLog } : {}),
+			...(reasoningLog ? { reasoning: reasoningLog } : {}),
 		});
 
 		try {

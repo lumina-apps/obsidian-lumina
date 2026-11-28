@@ -385,6 +385,43 @@
         "desc": "Кэширует повторяющиеся системные промпты, схемы инструментов и префиксы диалога (Anthropic, OpenAI, OpenRouter, Gemini) для снижения стоимости и задержки. Совет: динамические переменные вроде {{time}} в начале системного промпта снижают процент попаданий.",
         "geminiExplicitName": "Явное кэширование контекста Gemini",
         "geminiExplicitDesc": "Предварительно кэширует длинный контекст (от 4 096 токенов) на моделях Gemini 2.5/3 через API cachedContents. Взимается отдельная плата Google за хранение в течение 5-минутного TTL; неподдерживаемые модели (напр. Gemini 4) автоматически откатываются к обычному запросу."
+      },
+      "reasoning": {
+        "effortName": "Уровень рассуждений / размышления",
+        "effortDesc": "Управляет глубиной рассуждений при прямых вызовах Cloud API (OpenAI o-series/GPT-5, Anthropic Claude 3.7+, Google Gemini 2.5+). «Авто» не отправляет параметр, сохраняя настройки модели по умолчанию.",
+        "budgetName": "Ручной бюджет токенов размышления",
+        "budgetDesc": "Необязательный бюджет токенов для моделей с явным лимитом (Claude 3.7–4.6, Gemini 2.5). 0 — автоматический выбор по уровню. (Claude 4.7+ и Gemini 3+ используют уровень/effort.)",
+        "options": {
+          "auto": "Авто (по умолчанию)",
+          "off": "Выкл / Минимум",
+          "low": "Низкий",
+          "medium": "Средний",
+          "high": "Высокий"
+        },
+        "short": {
+          "auto": "Авто",
+          "off": "Выкл",
+          "low": "Низк",
+          "medium": "Сред",
+          "high": "Выс"
+        },
+        "popupTitle": "Рассуждения / Размышление",
+        "toolbarTooltip": "Уровень рассуждений / размышления",
+        "summaryAuto": "По умолчанию модели (параметр не отправляется)",
+        "summaryOffOpenAIUnsupported": "OpenAI o-серия не поддерживает отключение рассуждений (пропущено)",
+        "summaryOffOpenAIMinimal": "OpenAI GPT-5 · reasoning_effort: minimal",
+        "summaryOffOpenAINone": "OpenAI GPT-5.1+ · reasoning_effort: none",
+        "summaryOffAnthropic": "Anthropic · thinking: disabled",
+        "summaryOffGeminiZero": "Gemini 2.5 · thinkingBudget: 0 (выкл)",
+        "summaryOffGeminiProMin": "Gemini 2.5 Pro · мин. thinkingBudget: 128",
+        "summaryOffGeminiLevel": "Gemini 3+ · thinkingLevel: {{level}}",
+        "summaryOpenAIEffort": "OpenAI · reasoning_effort: {{effort}}",
+        "summaryAnthropicManual": "Anthropic · ручной бюджет: {{budget}} токенов",
+        "summaryAnthropicAdaptive": "Anthropic · adaptive (effort: {{effort}})",
+        "summaryGeminiBudget": "Gemini 2.5 · thinkingBudget: {{budget}} токенов",
+        "summaryGeminiLevel": "Gemini 3+ · thinkingLevel: {{level}}",
+        "summarySplitMulti": "Применяется для каждого поддерживаемого Cloud-слота",
+        "manualBudgetIgnoredHint": "Ручной бюджет применяется только к Claude 3.7–4.6 и Gemini 2.5; эта модель использует уровень/effort."
       }
     },
     "rag": {

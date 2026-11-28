@@ -345,6 +345,22 @@ export function migratePromptCaching(plugin: LuminaPlugin): boolean {
 	return changed;
 }
 
+/** 추론/사고(Reasoning/Thinking) 제어 설정 기본값 마이그레이션 */
+export function migrateReasoningSettings(plugin: LuminaPlugin): boolean {
+	const chat = plugin.settings.chat as unknown as Record<string, unknown> | undefined;
+	if (!chat) return false;
+	let changed = false;
+	if (chat.reasoningEffort === undefined) {
+		chat.reasoningEffort = 'auto';
+		changed = true;
+	}
+	if (chat.reasoningBudgetTokens === undefined) {
+		chat.reasoningBudgetTokens = 0;
+		changed = true;
+	}
+	return changed;
+}
+
 const LEGACY_PROVIDER_BASE_URLS: Readonly<Record<string, string>> = {
 	togetherai: 'https://api.together.xyz',
 	kimi: 'https://api.moonshot.ai',
@@ -396,5 +412,6 @@ export function runMigrations(plugin: LuminaPlugin): boolean {
 	if (migrateGraphRibbonIcon(plugin)) needsSave = true;
 	if (migrateBatchRibbonIcon(plugin)) needsSave = true;
 	if (migratePromptCaching(plugin)) needsSave = true;
+	if (migrateReasoningSettings(plugin)) needsSave = true;
 	return needsSave;
 }

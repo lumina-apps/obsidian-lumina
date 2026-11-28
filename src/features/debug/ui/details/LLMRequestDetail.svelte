@@ -18,6 +18,9 @@
 				<tr><td>top_p</td><td>{entry.topP}</td></tr>
 			{/if}
 			<tr><td>stream</td><td>{entry.stream}</td></tr>
+			{#if entry.reasoning}
+				<tr><td>reasoning</td><td>{entry.reasoning}</td></tr>
+			{/if}
 			{#if entry.estimatedInputTokens !== undefined}
 				<tr><td>est. input tokens</td><td>{entry.estimatedInputTokens}</td></tr>
 			{/if}

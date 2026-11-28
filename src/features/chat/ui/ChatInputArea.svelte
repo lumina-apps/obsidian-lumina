@@ -5,13 +5,19 @@
 	import type { Readable } from "svelte/store";
 	import type { TranslationKeys } from "../../../shared/locales/locale.types";
 	import type { ContextAttachment } from "../../../shared/types/chat.types";
-	import type { LLMProviderConfig, FavoriteModel, QuickAction } from "../../../shared/types/settings.types";
+	import type { ReasoningEffort } from "../../../shared/types/llm.types";
+	import type { LLMProviderConfig, FavoriteModel, QuickAction, ProviderType } from "../../../shared/types/settings.types";
 	import ContextSelector from "./ContextSelector.svelte";
 	import SlashCommandSelector from "./SlashCommandSelector.svelte";
 	import McpQuickPopup from "./McpQuickPopup.svelte";
+	import ReasoningQuickPopup from "./ReasoningQuickPopup.svelte";
 	import ModelPickerPopup from "./ModelPickerPopup.svelte";
 	import PromptPickerPopup from "./PromptPickerPopup.svelte";
 	import ChatInputToolbar from "./ChatInputToolbar.svelte";
+	import {
+		getModelReasoningSupport,
+		isAnyModelReasoningSupported,
+	} from "../../../core/llm-providers/reasoning-config";
 	import { getAttachmentIcon, IMAGE_EXTS } from "../utils/fileAttachmentUtils";
 	import { resizeTextarea } from "../../../shared/utils/textareaUtils";
 	import { buildSlashCommands } from "../utils/slashCommandUtils";
@@ -66,6 +72,7 @@
 		favoriteModels = [],
 		selectedProviderId = "",
 		selectedModelId = "",
+		reasoningTargetModels,
 		tStore,
 		inputText = $bindable(""),
 		attachments = $bindable<ContextAttachment[]>([]),
@@ -108,6 +115,7 @@
 		favoriteModels?: FavoriteModel[];
 		selectedProviderId: string;
 		selectedModelId: string;
+		reasoningTargetModels?: Array<{ providerType?: ProviderType; modelId?: string }>;
 		tStore: TStore;
 		inputText: string;
 		attachments: ContextAttachment[];
@@ -157,6 +165,7 @@
 	let slashStartIndex = $state(-1);
 
 	let showMcpPopup = $state(false);
+	let showReasoningPopup = $state(false);
 	let showModelPicker = $state(false);
 	let showPromptPicker = $state(false);
 
@@ -200,6 +209,33 @@
 	const selectedProviderType = $derived(
 		providers.find((p: LLMProviderConfig) => p.id === selectedProviderId)?.type,
 	);
+
+	// ── 추론/사고 제어 표시 여부 및 상태 ──────────────────────────────────────
+	const singleModelReasoningSupport = $derived(
+		getModelReasoningSupport(selectedProviderType, selectedModelId),
+	);
+	const showReasoningControl = $derived(
+		reasoningTargetModels !== undefined
+			? isAnyModelReasoningSupported(reasoningTargetModels)
+			: singleModelReasoningSupport.supported,
+	);
+	const reasoningEffort = $derived<ReasoningEffort>(
+		$settingsStore?.chat.reasoningEffort ?? plugin.settings.chat.reasoningEffort ?? "auto",
+	);
+	const reasoningBudgetTokens = $derived(
+		$settingsStore?.chat.reasoningBudgetTokens ?? plugin.settings.chat.reasoningBudgetTokens ?? 0,
+	);
+	const reasoningSupportsCustomBudget = $derived(
+		reasoningTargetModels !== undefined
+			? reasoningTargetModels.some((m) => getModelReasoningSupport(m.providerType, m.modelId).supportsCustomBudget)
+			: singleModelReasoningSupport.supportsCustomBudget,
+	);
+
+	$effect(() => {
+		if (!showReasoningControl && showReasoningPopup) {
+			showReasoningPopup = false;
+		}
+	});
 
 	const tokenEstimation = $derived.by(() => {
 		return estimateInputTokensDetails({
@@ -521,14 +557,27 @@
 	);
 	const allSlashCommands = $derived([...slashCommands, ...customSlashCommands]);
 
-	// ── MCP 팝업 토글 ──────────────────────────────────────────────────────
+	// ── MCP / Reasoning 팝업 토글 (상호 배타) ───────────────────────────────
 	const toggleMcpPopup = handleMcpPopupToggle((v) => {
-		if (typeof v === "function") {
-			showMcpPopup = v(showMcpPopup);
-		} else {
-			showMcpPopup = v;
-		}
+		const next = typeof v === "function" ? v(showMcpPopup) : v;
+		if (next) showReasoningPopup = false;
+		showMcpPopup = next;
 	});
+
+	function toggleReasoningPopup(e: MouseEvent): void {
+		e.stopPropagation();
+		if (!showReasoningPopup) {
+			showMcpPopup = false;
+		}
+		showReasoningPopup = !showReasoningPopup;
+	}
+
+	async function handleSelectReasoningEffort(effort: ReasoningEffort): Promise<void> {
+		plugin.settings.chat.reasoningEffort = effort;
+		await plugin.saveSettings();
+		showReasoningPopup = false;
+		textareaEl?.focus();
+	}
 
 	// ── 드래그 앤 드롭 상태 ───────────────────────────────────────────────
 	let isDragOver = $state(false);
@@ -592,9 +641,15 @@
 		isTokenOverLimit={tokenEstimation.isOverLimit}
 		{sessionTokenStats}
 		{tStore}
+		{showReasoningControl}
+		{reasoningEffort}
+		{reasoningBudgetTokens}
+		{reasoningSupportsCustomBudget}
+		isReasoningPopupOpen={showReasoningPopup}
 		onInsertContextMention={insertContextMention}
 		onFileSelect={handleFileSelect}
 		onToggleMcpPopup={toggleMcpPopup}
+		onToggleReasoningPopup={toggleReasoningPopup}
 		onToggleAgentExecutionMode={onToggleAgentExecutionMode}
 		onToggleActiveNote={onToggleActiveNote}
 	/>
@@ -690,6 +745,26 @@
 					}}
 					onOpenSettings={() => {
 						showMcpPopup = false;
+						onOpenSettings();
+					}}
+				/>
+			{/if}
+
+			{#if showReasoningPopup && showReasoningControl}
+				<ReasoningQuickPopup
+					{tStore}
+					currentEffort={reasoningEffort}
+					budgetTokens={reasoningBudgetTokens}
+					providerType={selectedProviderType}
+					modelId={selectedModelId}
+					isSplitMode={reasoningTargetModels !== undefined}
+					onSelect={(effort) => void handleSelectReasoningEffort(effort)}
+					onClose={(focusTextarea) => {
+						showReasoningPopup = false;
+						if (focusTextarea) textareaEl?.focus();
+					}}
+					onOpenSettings={() => {
+						showReasoningPopup = false;
 						onOpenSettings();
 					}}
 				/>

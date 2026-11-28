@@ -385,6 +385,43 @@
         "desc": "반복되는 시스템 프롬프트, 도구 정의, 대화 앞부분을 캐싱(Anthropic, OpenAI, OpenRouter, Gemini)하여 토큰 비용과 응답 지연을 줄입니다. 참고: 시스템 프롬프트 앞부분에 {{time}} 같은 동적 변수가 있으면 캐시 재사용률이 낮아질 수 있습니다.",
         "geminiExplicitName": "Gemini 명시적 컨텍스트 캐싱 (Explicit Caching)",
         "geminiExplicitDesc": "Gemini 2.5/3 모델에서 4,096토큰 이상의 대용량 컨텍스트를 cachedContents API로 확정 캐싱합니다. 5분 TTL 동안 Google 스토리지 요금이 별도 부과되며, 미지원 모델(Gemini 4 등)은 자동으로 일반 요청으로 폴백됩니다."
+      },
+      "reasoning": {
+        "effortName": "추론 / 사고 강도 (Reasoning / Thinking)",
+        "effortDesc": "Cloud 직접 API 호출(OpenAI o-시리즈/GPT-5, Anthropic Claude 3.7+, Google Gemini 2.5+) 시 추론 강도나 사고 깊이를 제어합니다. \"자동\"은 파라미터를 전송하지 않아 모델 기본값을 따릅니다.",
+        "budgetName": "수동 사고 토큰 예산 (Budget Tokens)",
+        "budgetDesc": "고정 토큰 예산을 지원하는 모델(Claude 3.7~4.6, Gemini 2.5)의 선택적 예산 오버라이드입니다. 0이면 강도별 프리셋을 자동 사용합니다. (Claude 4.7+ 및 Gemini 3+는 강도/레벨로 동작)",
+        "options": {
+          "auto": "자동 (모델 기본값)",
+          "off": "끔 / 최소화",
+          "low": "낮음 (Low)",
+          "medium": "보통 (Medium)",
+          "high": "높음 (High)"
+        },
+        "short": {
+          "auto": "자동",
+          "off": "끔",
+          "low": "낮음",
+          "medium": "보통",
+          "high": "높음"
+        },
+        "popupTitle": "추론 / 사고 강도",
+        "toolbarTooltip": "추론 / 사고 강도 설정",
+        "summaryAuto": "모델 기본값 사용 (추론 파라미터 미전송)",
+        "summaryOffOpenAIUnsupported": "OpenAI o-시리즈는 추론 끄기를 지원하지 않아 생략됩니다",
+        "summaryOffOpenAIMinimal": "OpenAI GPT-5 · reasoning_effort: minimal",
+        "summaryOffOpenAINone": "OpenAI GPT-5.1+ · reasoning_effort: none",
+        "summaryOffAnthropic": "Anthropic · thinking: disabled",
+        "summaryOffGeminiZero": "Gemini 2.5 · thinkingBudget: 0 (끔)",
+        "summaryOffGeminiProMin": "Gemini 2.5 Pro · 최소 thinkingBudget: 128",
+        "summaryOffGeminiLevel": "Gemini 3+ · thinkingLevel: {{level}}",
+        "summaryOpenAIEffort": "OpenAI · reasoning_effort: {{effort}}",
+        "summaryAnthropicManual": "Anthropic · 수동 예산: {{budget}} 토큰",
+        "summaryAnthropicAdaptive": "Anthropic · adaptive (effort: {{effort}})",
+        "summaryGeminiBudget": "Gemini 2.5 · thinkingBudget: {{budget}} 토큰",
+        "summaryGeminiLevel": "Gemini 3+ · thinkingLevel: {{level}}",
+        "summarySplitMulti": "지원되는 Cloud 슬롯 모델마다 자동 적용됩니다",
+        "manualBudgetIgnoredHint": "수동 토큰 예산은 Claude 3.7~4.6 및 Gemini 2.5에만 적용되며, 현재 모델은 레벨/강도로 동작합니다."
       }
     },
     "rag": {

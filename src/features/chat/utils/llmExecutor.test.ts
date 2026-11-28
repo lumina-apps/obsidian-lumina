@@ -473,6 +473,50 @@ describe('llmExecutor - CLI Agent Execution & Debug Logging', () => {
 			expect(res.fullResponse).toBe('Final response after tool execution');
 			expect(res.tokenUsage?.totalTokens).toBe(150);
 		});
+
+		it('reasoningEffort가 auto가 아닐 때만 chatOptions.reasoning을 전달한다', async () => {
+			const chatMock = vi.fn().mockResolvedValue({
+				content: 'Done',
+				usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+			});
+			vi.spyOn(providerIndex, 'createProvider').mockReturnValue({
+				stream: vi.fn(),
+				chat: chatMock,
+			} as any);
+
+			await executeLlmCall(
+				mockPlugin,
+				mockContext,
+				cloudConfig,
+				'o3',
+				{ ...mockPlugin.settings.chat, streaming: false, reasoningEffort: 'auto', reasoningBudgetTokens: 8192 },
+				undefined,
+				'asst-reason-auto',
+			);
+			expect(chatMock.mock.calls[0][1].reasoning).toBeUndefined();
+
+			const logRequestSpy = vi.spyOn(debugLogger, 'logRequest');
+			chatMock.mockClear();
+			await executeLlmCall(
+				mockPlugin,
+				mockContext,
+				cloudConfig,
+				'o3',
+				{ ...mockPlugin.settings.chat, streaming: false, reasoningEffort: 'medium', reasoningBudgetTokens: 4096 },
+				undefined,
+				'asst-reason-med',
+			);
+			expect(chatMock.mock.calls[0][1].reasoning).toEqual({
+				effort: 'medium',
+				budgetTokens: 4096,
+			});
+			expect(logRequestSpy).toHaveBeenCalledWith(
+				expect.objectContaining({
+					model: 'o3',
+					reasoning: 'reasoning_effort=medium',
+				}),
+			);
+		});
 	});
 
 	describe('CLI 에이전트 문서 수정 시 자동 백업', () => {

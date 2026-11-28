@@ -15,6 +15,8 @@ export interface GeminiStreamChunk {
 		content?: {
 			parts?: Array<{
 				text?: string;
+				/** Gemini 사고 요약 파트 여부 (includeThoughts: true 시 반환) */
+				thought?: boolean;
 				functionCall?: {
 					name: string;
 					args?: Record<string, unknown>;
@@ -39,6 +41,8 @@ export interface GeminiResponse {
 		content?: {
 			parts?: Array<{
 				text?: string;
+				/** Gemini 사고 요약 파트 여부 (includeThoughts: true 시 반환) */
+				thought?: boolean;
 				functionCall?: {
 					name: string;
 					args?: Record<string, unknown>;

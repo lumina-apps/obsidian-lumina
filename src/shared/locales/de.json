@@ -385,6 +385,43 @@
         "desc": "Speichert wiederkehrende System-Prompts, Tool-Schemata und Gesprächspräfixe (Anthropic, OpenAI, OpenRouter, Gemini) im Cache, um Kosten und Latenz zu senken. Hinweis: Dynamische Variablen wie {{time}} am Anfang des System-Prompts können Trefferquoten verringern.",
         "geminiExplicitName": "Explizites Gemini-Kontext-Caching",
         "geminiExplicitDesc": "Cached große Kontextpräfixe (ab 4.096 Tokens) auf Gemini 2.5/3-Modellen über die cachedContents-API. Verursacht während der 5-minütigen TTL separate Google-Speichergebühren; nicht unterstützte Modelle (z. B. Gemini 4) wechseln automatisch zurück."
+      },
+      "reasoning": {
+        "effortName": "Reasoning- / Thinking-Stufe",
+        "effortDesc": "Steuert die Denktiefe bei direkten Cloud-API-Aufrufen (OpenAI o-Serie/GPT-5, Anthropic Claude 3.7+, Google Gemini 2.5+). „Auto“ sendet keinen Parameter und behält die Modellvorgabe bei.",
+        "budgetName": "Manuelles Thinking-Token-Budget",
+        "budgetDesc": "Optionale Token-Budget-Überschreibung für Modelle mit explizitem Budget (Claude 3.7–4.6, Gemini 2.5). 0 verwendet die Stufen-Vorgaben automatisch. (Claude 4.7+ und Gemini 3+ nutzen Stufe/Effort.)",
+        "options": {
+          "auto": "Auto (Modellstandard)",
+          "off": "Aus / Minimal",
+          "low": "Niedrig",
+          "medium": "Mittel",
+          "high": "Hoch"
+        },
+        "short": {
+          "auto": "Auto",
+          "off": "Aus",
+          "low": "Niedrig",
+          "medium": "Mittel",
+          "high": "Hoch"
+        },
+        "popupTitle": "Reasoning / Thinking",
+        "toolbarTooltip": "Reasoning- / Thinking-Stufe",
+        "summaryAuto": "Modellstandard (kein Parameter gesendet)",
+        "summaryOffOpenAIUnsupported": "OpenAI o-Serie unterstützt kein Deaktivieren (weggelassen)",
+        "summaryOffOpenAIMinimal": "OpenAI GPT-5 · reasoning_effort: minimal",
+        "summaryOffOpenAINone": "OpenAI GPT-5.1+ · reasoning_effort: none",
+        "summaryOffAnthropic": "Anthropic · thinking: disabled",
+        "summaryOffGeminiZero": "Gemini 2.5 · thinkingBudget: 0 (Aus)",
+        "summaryOffGeminiProMin": "Gemini 2.5 Pro · Minimum thinkingBudget: 128",
+        "summaryOffGeminiLevel": "Gemini 3+ · thinkingLevel: {{level}}",
+        "summaryOpenAIEffort": "OpenAI · reasoning_effort: {{effort}}",
+        "summaryAnthropicManual": "Anthropic · manuelles Budget: {{budget}} Tokens",
+        "summaryAnthropicAdaptive": "Anthropic · adaptive (effort: {{effort}})",
+        "summaryGeminiBudget": "Gemini 2.5 · thinkingBudget: {{budget}} Tokens",
+        "summaryGeminiLevel": "Gemini 3+ · thinkingLevel: {{level}}",
+        "summarySplitMulti": "Wird je unterstütztem Cloud-Slot-Modell angewendet",
+        "manualBudgetIgnoredHint": "Das manuelle Budget gilt nur für Claude 3.7–4.6 und Gemini 2.5; dieses Modell nutzt Stufe/Effort."
       }
     },
     "rag": {

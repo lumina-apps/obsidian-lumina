@@ -4,13 +4,14 @@
  */
 
 import { stripThinkTags } from '../../../shared/utils/llmTextSanitizer';
-import type { ChatMessage, ToolCall } from '../../../shared/types/llm.types';
+import type { AnthropicThinkingBlock, ChatMessage, ToolCall } from '../../../shared/types/llm.types';
 
 /** tool call이 포함된 라운드의 assistant 메시지 구성 */
 export function buildAssistantToolMessage(
 	resolvedToolCalls: ToolCall[],
 	currentRoundText: string,
 	useTextTools: boolean,
+	thinkingBlocks?: AnthropicThinkingBlock[],
 ): ChatMessage {
 	let assistantContent = currentRoundText || '';
 
@@ -35,6 +36,9 @@ export function buildAssistantToolMessage(
 	return {
 		role: 'assistant',
 		content: assistantContent,
+		...(!useTextTools && thinkingBlocks && thinkingBlocks.length > 0
+			? { thinkingBlocks }
+			: {}),
 		tool_calls: useTextTools
 			? undefined
 			: resolvedToolCalls.map((tc: ToolCall) => ({

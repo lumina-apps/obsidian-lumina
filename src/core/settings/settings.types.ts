@@ -11,6 +11,7 @@ import type {
 	QuickAction,
 } from '../../shared/types/settings.types';
 import type { ProjectSettings } from '../../shared/types/project.types';
+import type { ReasoningEffort } from '../../shared/types/llm.types';
 import type { SplitChatPreferences } from '../../shared/types/splitChat.types';
 import type { VoiceNotePreferences } from '../../shared/types/voice.types';
 import type { BatchWatchPreferences } from '../../shared/types/batchWatch.types';
@@ -100,6 +101,10 @@ export interface ChatSettings {
 	enablePromptCaching: boolean;
 	/** Google Gemini 명시적 컨텍스트 캐싱(cachedContents) 사용 여부 (스토리지 비용 별도 발생) */
 	geminiExplicitCaching: boolean;
+	/** Cloud API 추론/사고 강도 ('auto' | 'off' | 'low' | 'medium' | 'high') */
+	reasoningEffort: ReasoningEffort;
+	/** 수동 사고 토큰 예산 오버라이드 (0 = 강도별 프리셋 자동 사용) */
+	reasoningBudgetTokens: number;
 	/** 멀티 모델 비교(Split) 선호 설정 (사용 전까지 미정의 상태 유지) */
 	splitChat?: SplitChatPreferences;
 }

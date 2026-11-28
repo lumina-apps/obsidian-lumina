@@ -14,6 +14,7 @@ export const COMMON_SYNONYMS: string[][] = [
 	['api', 'apikey', 'key'],
 	['rerank', 'reranker'],
 	['cache', 'caching', 'prompt caching'],
+	['reasoning', 'thinking', 'budget', 'effort'],
 ];
 
 /**
@@ -47,6 +48,7 @@ export const LOCALE_SYNONYMS: Record<string, string[][]> = {
 		['history', '히스토리', '기록', '이력'],
 		['web', '웹', '인터넷'],
 		['cache', 'caching', '캐시', '캐싱'],
+		['reasoning', 'thinking', '추론', '사고', '생각'],
 	],
 	ja: [
 		['model', 'モデル'],
@@ -74,6 +76,7 @@ export const LOCALE_SYNONYMS: Record<string, string[][]> = {
 		['history', '履歴', 'ヒストリー'],
 		['web', 'ウェブ', 'インターネット'],
 		['cache', 'caching', 'キャッシュ', 'キャッシング'],
+		['reasoning', 'thinking', '推論', '思考'],
 	],
 	zh: [
 		['model', '模型'],
@@ -101,6 +104,7 @@ export const LOCALE_SYNONYMS: Record<string, string[][]> = {
 		['history', '历史', '记录'],
 		['web', '网络', '网页'],
 		['cache', 'caching', '缓存'],
+		['reasoning', 'thinking', '推理', '思考'],
 	],
 	'zh-tw': [
 		['model', '模型'],
@@ -128,6 +132,7 @@ export const LOCALE_SYNONYMS: Record<string, string[][]> = {
 		['history', '歷史', '紀錄'],
 		['web', '網路', '網頁'],
 		['cache', 'caching', '快取'],
+		['reasoning', 'thinking', '推理', '思考'],
 	],
 };
 

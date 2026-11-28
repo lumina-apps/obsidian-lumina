@@ -287,5 +287,47 @@ describe('agentLoop', () => {
 			expect(typeof chatMock.mock.calls[0][2]).toBe('function');
 			expect(result.fullResponse).toBe('Streamed chunk');
 		});
+
+		it('Anthropic thinkingBlocks가 반환되면 다음 도구 라운드 assistant 메시지에 그대로 보존한다', async () => {
+			const capturedMessages: ChatMessage[][] = [];
+			let round = 0;
+			const mockProvider: ILLMProvider = {
+				chat: vi.fn().mockImplementation(async (msgs: ChatMessage[]) => {
+					capturedMessages.push(msgs.map((m) => ({ ...m })));
+					round++;
+					if (round === 1) {
+						return {
+							content: '<think>\nThinking\n</think>\n',
+							toolCalls: [{ id: 'tc1', name: 'read_note', arguments: { path: 'x.md' } }],
+							thinkingBlocks: [{ type: 'thinking', thinking: 'Thinking', signature: 'sig-round-1' }],
+							finishReason: 'tool_use',
+						};
+					}
+					return {
+						content: 'Final reply',
+						toolCalls: [],
+						finishReason: 'end_turn',
+					};
+				}),
+			} as unknown as ILLMProvider;
+
+			const result = await runAgentLoop({
+				assistantId: 'msg-thinking-preserve',
+				messagesForLLM: [{ role: 'user', content: 'Check x.md' }],
+				chatOptions: {} as ChatOptions,
+				provider: mockProvider,
+				chatSettings: baseSettings,
+				mcpManager: null,
+				toolServerMap: {},
+				useTextTools: false,
+			});
+
+			expect(result.fullResponse).toContain('Final reply');
+			expect(capturedMessages).toHaveLength(2);
+			const round2Assistant = capturedMessages[1].find((m) => m.role === 'assistant');
+			expect(round2Assistant?.thinkingBlocks).toEqual([
+				{ type: 'thinking', thinking: 'Thinking', signature: 'sig-round-1' },
+			]);
+		});
 	});
 });

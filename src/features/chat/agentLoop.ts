@@ -10,6 +10,7 @@ import type { ChatSettings } from '../../core/settings/settings.types';
 import type { McpManager } from '../../core/mcp/mcpManager';
 import { appendChunk, syncMessageContent, addExecutingTool, removeExecutingTool } from '../../core/store/chatStore';
 import { debugLogger, formatMessagesForDebugLog, type RagChunkMeta } from '../../shared/debugLogger';
+import { formatReasoningForDebugLog } from '../../core/llm-providers/reasoning-config';
 import { estimateTokens } from '../../shared/utils/tokenEstimator';
 import { parseTextToolCalls } from './utils/textToolParser';
 import { stripMaskTokens, stripThinkTags } from '../../shared/utils/llmTextSanitizer';
@@ -141,16 +142,24 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 				}, 0) + (!useTextTools && chatOptions.tools?.length ? estimateTokens(JSON.stringify(chatOptions.tools), opts.providerType) : 0)
 			: undefined;
 
+		const maxTokensForLog = chatOptions.maxOutputTokens ?? chatSettings.maxOutputTokens ?? 4096;
+		const reasoningLog = formatReasoningForDebugLog(
+			opts.providerType,
+			modelLabel,
+			chatOptions.reasoning,
+			maxTokensForLog,
+		);
 		const requestId = debugLogger.logRequest({
 			provider: opts.providerType ?? provider.providerId ?? 'unknown',
 			model: modelLabel,
 			temperature: chatOptions.temperature ?? chatSettings.temperature ?? 0.7,
-			maxTokens: chatOptions.maxOutputTokens ?? chatSettings.maxOutputTokens ?? 4096,
+			maxTokens: maxTokensForLog,
 			stream: Boolean(chatSettings.streaming),
 			systemPrompt: systemPromptText,
 			messages: formatMessagesForDebugLog(messagesForLLM),
 			...(estimatedInputTokens !== undefined ? { estimatedInputTokens } : {}),
 			...(toolRound === 1 && opts.ragChunksForLog ? { ragChunks: opts.ragChunksForLog } : {}),
+			...(reasoningLog ? { reasoning: reasoningLog } : {}),
 		});
 
 		// ── LLM 호출 ──────────────────────────────────────────────────────────
@@ -297,7 +306,9 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentLoopRes
 		if (lastToolCallKeys.length > 4) lastToolCallKeys.shift();
 
 		// ── assistant tool call 메시지 추가 ──────────────────────────────────
-		messagesForLLM.push(buildAssistantToolMessage(resolvedToolCalls, currentRoundText, useTextTools));
+		messagesForLLM.push(
+			buildAssistantToolMessage(resolvedToolCalls, currentRoundText, useTextTools, rawResponse.thinkingBlocks),
+		);
 
 		// ── 각 tool call 실행 후 결과 메시지 추가 ───────────────────────────
 		for (const tc of resolvedToolCalls) {

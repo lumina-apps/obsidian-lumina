@@ -324,5 +324,45 @@ describe('OpenAIProvider', () => {
 			const plainBody = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
 			expect(plainBody.prompt_cache_key).toBeUndefined();
 		});
+
+		it('reasoning 옵션에 따라 o3/gpt-5/gpt-5.2에는 reasoning_effort를 주입하고 gpt-4o/auto에는 생략한다', async () => {
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					choices: [{ message: { content: 'Reasoned' }, finish_reason: 'stop' }],
+				},
+			} as RequestUrlResponse);
+
+			await provider.chat(
+				[{ role: 'user', content: 'solve' }],
+				{ model: 'o3', reasoning: { effort: 'high' } },
+			);
+			const o3Body = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(o3Body.reasoning_effort).toBe('high');
+
+			mockRequestUrl.mockClear();
+			await provider.chat(
+				[{ role: 'user', content: 'quick' }],
+				{ model: 'gpt-5', reasoning: { effort: 'off' } },
+			);
+			const gpt5OffBody = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(gpt5OffBody.reasoning_effort).toBe('minimal');
+
+			mockRequestUrl.mockClear();
+			await provider.chat(
+				[{ role: 'user', content: 'quick' }],
+				{ model: 'gpt-5.2', reasoning: { effort: 'off' } },
+			);
+			const gpt52OffBody = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(gpt52OffBody.reasoning_effort).toBe('none');
+
+			mockRequestUrl.mockClear();
+			await provider.chat(
+				[{ role: 'user', content: 'chat' }],
+				{ model: 'gpt-4o', reasoning: { effort: 'high' } },
+			);
+			const gpt4oBody = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(gpt4oBody.reasoning_effort).toBeUndefined();
+		});
 	});
 });

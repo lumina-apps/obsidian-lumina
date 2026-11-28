@@ -342,4 +342,54 @@ describe('splitLlmExecutor', () => {
 			true,
 		);
 	});
+
+	it('reasoningEffort가 auto이면 reasoning 옵션을 생략하고, 설정 시 chatOptions.reasoning을 전달한다', async () => {
+		const chatMock = vi.fn().mockResolvedValue({ content: 'OK', finishReason: 'stop' });
+		vi.spyOn(providerFactory, 'createProvider').mockReturnValue({
+			providerId: 'openai',
+			listModels: vi.fn(),
+			chat: chatMock,
+			stream: vi.fn(),
+			embed: vi.fn(),
+		});
+
+		const providerConfig: LLMProviderConfig = {
+			id: 'p1',
+			type: 'openai',
+			credential: 'sk-test',
+			availableModels: ['o3'],
+			isVerified: true,
+		};
+
+		await executeSplitSlotCall({
+			slot: { slotId: 's1', label: 'A', providerId: 'p1', modelId: 'o3' },
+			providerConfig,
+			userText: 'hi',
+			history: [],
+			sharedContext: makeSharedContext(),
+			chatSettings: { ...DEFAULT_SETTINGS.chat, streaming: false, reasoningEffort: 'auto' },
+			onChunkFlush: vi.fn(),
+		});
+		expect(chatMock.mock.calls[0][1].reasoning).toBeUndefined();
+
+		chatMock.mockClear();
+		await executeSplitSlotCall({
+			slot: { slotId: 's1', label: 'A', providerId: 'p1', modelId: 'o3' },
+			providerConfig,
+			userText: 'hi',
+			history: [],
+			sharedContext: makeSharedContext(),
+			chatSettings: {
+				...DEFAULT_SETTINGS.chat,
+				streaming: false,
+				reasoningEffort: 'high',
+				reasoningBudgetTokens: 12000,
+			},
+			onChunkFlush: vi.fn(),
+		});
+		expect(chatMock.mock.calls[0][1].reasoning).toEqual({
+			effort: 'high',
+			budgetTokens: 12000,
+		});
+	});
 });

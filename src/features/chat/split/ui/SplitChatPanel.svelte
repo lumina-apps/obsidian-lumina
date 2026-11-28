@@ -90,6 +90,12 @@
 
 	const eligibleProviders = $derived(getSplitEligibleProviders($verifiedProviders));
 	const hasEligibleProvider = $derived(eligibleProviders.length > 0);
+	const splitReasoningTargets = $derived(
+		$splitChatStore.slots.map((slot) => ({
+			providerType: eligibleProviders.find((p) => p.id === slot.providerId)?.type,
+			modelId: slot.modelId,
+		})),
+	);
 	const globalTemperature = $derived(
 		$settingsStore?.chat.temperature ?? plugin.settings.chat.temperature ?? 0.7,
 	);
@@ -608,6 +614,7 @@
 			favoriteModels={$favoriteModels}
 			selectedProviderId={eligibleProviders[0]?.id ?? ""}
 			selectedModelId={eligibleProviders[0]?.availableModels[0] ?? ""}
+			reasoningTargetModels={splitReasoningTargets}
 			{tStore}
 			bind:inputText
 			bind:attachments

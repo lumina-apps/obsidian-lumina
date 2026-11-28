@@ -385,6 +385,43 @@
         "desc": "缓存重复的系统提示词、工具定义与对话前缀（Anthropic、OpenAI、OpenRouter、Gemini），降低令牌费用与首字延迟。提示：系统提示词开头包含 {{time}} 等动态变量会降低缓存命中率。",
         "geminiExplicitName": "Gemini 显式上下文缓存",
         "geminiExplicitDesc": "在 Gemini 2.5/3 模型上通过 cachedContents API 预先缓存 4,096+ 令牌的大段上下文。5 分钟 TTL 期间会产生额外的 Google 存储费用；不支持的模型（如 Gemini 4）将自动回退为常规请求。"
+      },
+      "reasoning": {
+        "effortName": "推理 / 思考强度",
+        "effortDesc": "控制直接调用 Cloud API（OpenAI o系列/GPT-5、Anthropic Claude 3.7+、Google Gemini 2.5+）时的推理强度与思考深度。“自动”将不发送该参数，保持模型默认行为。",
+        "budgetName": "手动思考令牌预算",
+        "budgetDesc": "为支持固定预算的模型（Claude 3.7–4.6、Gemini 2.5）提供可选的令牌预算覆盖。设为 0 将按强度预设自动分配。（Claude 4.7+ 与 Gemini 3+ 仅使用强度/级别）",
+        "options": {
+          "auto": "自动（模型默认）",
+          "off": "关闭 / 最小",
+          "low": "低 (Low)",
+          "medium": "中 (Medium)",
+          "high": "高 (High)"
+        },
+        "short": {
+          "auto": "自动",
+          "off": "关闭",
+          "low": "低",
+          "medium": "中",
+          "high": "高"
+        },
+        "popupTitle": "推理 / 思考强度",
+        "toolbarTooltip": "设置推理 / 思考强度",
+        "summaryAuto": "使用模型默认值（不发送推理参数）",
+        "summaryOffOpenAIUnsupported": "OpenAI o 系列不支持关闭推理（已省略参数）",
+        "summaryOffOpenAIMinimal": "OpenAI GPT-5 · reasoning_effort: minimal",
+        "summaryOffOpenAINone": "OpenAI GPT-5.1+ · reasoning_effort: none",
+        "summaryOffAnthropic": "Anthropic · thinking: disabled",
+        "summaryOffGeminiZero": "Gemini 2.5 · thinkingBudget: 0（关闭）",
+        "summaryOffGeminiProMin": "Gemini 2.5 Pro · 最小 thinkingBudget: 128",
+        "summaryOffGeminiLevel": "Gemini 3+ · thinkingLevel: {{level}}",
+        "summaryOpenAIEffort": "OpenAI · reasoning_effort: {{effort}}",
+        "summaryAnthropicManual": "Anthropic · 手动预算: {{budget}} 令牌",
+        "summaryAnthropicAdaptive": "Anthropic · adaptive (effort: {{effort}})",
+        "summaryGeminiBudget": "Gemini 2.5 · thinkingBudget: {{budget}} 令牌",
+        "summaryGeminiLevel": "Gemini 3+ · thinkingLevel: {{level}}",
+        "summarySplitMulti": "将按各支持的 Cloud 槽位模型自动应用",
+        "manualBudgetIgnoredHint": "手动令牌预算仅适用于 Claude 3.7–4.6 和 Gemini 2.5；当前模型按级别/强度运行。"
       }
     },
     "rag": {

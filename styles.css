@@ -1501,16 +1501,24 @@ body .lumina-model-suggest-modal .suggestion-item.is-selected-default::after {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
+	container-type: inline-size;
 }
 
 .lumina-chat__input-toolbar {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+	flex-wrap: wrap;
+	gap: 6px 8px;
 	padding: 0 4px;
 }
 
-.lumina-chat__toolbar-group { display: flex; gap: 6px; }
+.lumina-chat__toolbar-group {
+	display: flex;
+	align-items: center;
+	flex-shrink: 0;
+	gap: 6px;
+}
 
 .lumina-chat__toolbar-btn {
 	display: flex;
@@ -1535,6 +1543,50 @@ body .lumina-model-suggest-modal .suggestion-item.is-selected-default::after {
 .lumina-chat__toolbar-btn.is-agent-active {
 	background: rgba(var(--color-accent-rgb, 139, 92, 246), 0.12);
 	color: var(--interactive-accent);
+}
+
+.lumina-chat__reasoning-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 9.5px;
+	font-weight: 600;
+	padding: 3px 7px;
+	border-radius: 4px;
+	background: rgba(var(--mono-rgb-100), 0.05);
+	color: var(--text-muted);
+	border: 1px solid var(--background-modifier-border);
+	cursor: pointer;
+	white-space: nowrap;
+	flex-shrink: 0;
+	transition: all 0.2s ease;
+}
+
+.lumina-chat__reasoning-btn:hover,
+.lumina-chat__reasoning-btn.is-open {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.lumina-chat__reasoning-btn.is-active {
+	background: rgba(var(--color-accent-rgb, 139, 92, 246), 0.12);
+	color: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+}
+
+.lumina-chat__reasoning-btn.is-off {
+	color: var(--text-faint);
+	border-style: dashed;
+}
+
+.lumina-chat__reasoning-icon {
+	display: inline-flex;
+	align-items: center;
+}
+
+.lumina-chat__reasoning-icon svg {
+	width: 12px;
+	height: 12px;
 }
 
 .lumina-chat__context-badge {
@@ -1911,7 +1963,8 @@ button.lumina-chat__send-btn.lumina-chat__send-btn--cancel:hover {
 	align-items: center;
 	justify-content: flex-end;
 	flex-wrap: wrap;
-	gap: 8px;
+	margin-left: auto;
+	gap: 6px;
 }
 
 .lumina-chat__input-container {
@@ -1936,6 +1989,19 @@ button.lumina-chat__send-btn.lumina-chat__send-btn--cancel:hover {
 	padding: 2px 6px;
 	border-radius: 4px;
 	border: 1px solid var(--background-modifier-border);
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
+/* 좁은 데스크탑 사이드바에서 툴바 1줄 유지 여유 확보 */
+@container (max-width: 500px) {
+	.lumina-chat__hint-inline {
+		display: none;
+	}
+
+	.lumina-chat__context-badge-label {
+		max-width: 96px;
+	}
 }
 
 .lumina-chat__token-cache-badge {
@@ -4424,6 +4490,14 @@ body.is-mobile .lumina-chat__context-badge {
 	padding: 3px 8px;
 	font-size: 10px;
 	max-width: 100%;
+	box-shadow: none;
+	box-sizing: border-box;
+}
+
+body.is-mobile .lumina-chat__reasoning-btn {
+	min-height: 26px;
+	padding: 3px 8px;
+	font-size: 10px;
 	box-shadow: none;
 	box-sizing: border-box;
 }

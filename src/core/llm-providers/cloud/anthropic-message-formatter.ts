@@ -2,7 +2,7 @@
  * anthropic-message-formatter.ts
  * ChatMessage → Anthropic API 메시지 포맷 변환
  */
-import type { ChatMessage, ToolDefinition } from '../../../shared/types/llm.types';
+import type { AnthropicThinkingBlock, ChatMessage, ToolDefinition } from '../../../shared/types/llm.types';
 import { isMockToolText } from '../openai-formatter';
 
 /**
@@ -47,9 +47,16 @@ export function formatAnthropicMessages(messages: ChatMessage[]) {
 		}
 		if (m.role === 'assistant') {
 			const contentArray: Array<
+				| AnthropicThinkingBlock
 				| { type: 'text'; text: string }
 				| { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
 			> = [];
+			// Anthropic tool use 루프에서 직전 턴의 서명된 thinking 블록을 수정 없이 선두에 복원
+			if (m.thinkingBlocks && m.thinkingBlocks.length > 0) {
+				for (const tb of m.thinkingBlocks) {
+					contentArray.push(tb);
+				}
+			}
 			const contentText = typeof m.content === 'string' ? m.content : '';
 			if (contentText && !isMockToolText(contentText)) {
 				contentArray.push({ type: 'text', text: contentText });

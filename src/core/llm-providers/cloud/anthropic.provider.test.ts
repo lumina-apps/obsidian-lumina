@@ -442,5 +442,115 @@ describe('AnthropicProvider', () => {
 			}
 		});
 	});
+
+	describe('reasoning / thinking control', () => {
+		it('Claude 4.5에서 manual thinking 활성 시 budget_tokens를 설정하고 max_tokens 상향 및 temperature 생략을 적용한다', async () => {
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					content: [
+						{ type: 'thinking', thinking: 'Step 1', signature: 'sig-123' },
+						{ type: 'text', text: 'Final answer' },
+					],
+					stop_reason: 'end_turn',
+				},
+			} as RequestUrlResponse);
+
+			const res = await provider.chat(
+				[{ role: 'user', content: 'reason' }],
+				{ model: 'claude-sonnet-4-5', maxOutputTokens: 4000, temperature: 0.7, reasoning: { effort: 'medium' } },
+			);
+
+			const body = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(body.thinking).toEqual({ type: 'enabled', budget_tokens: 8192 });
+			expect(body.max_tokens).toBe(12192);
+			expect(body.temperature).toBeUndefined();
+			expect(res.content).toBe('<think>\nStep 1\n</think>\nFinal answer');
+			expect(res.thinkingBlocks).toEqual([{ type: 'thinking', thinking: 'Step 1', signature: 'sig-123' }]);
+		});
+
+		it('Claude 4.7+에서는 adaptive + display:summarized와 output_config.effort를 전송하고 budget_tokens를 무시한다', async () => {
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					content: [{ type: 'text', text: 'OK' }],
+					stop_reason: 'end_turn',
+				},
+			} as RequestUrlResponse);
+
+			await provider.chat(
+				[{ role: 'user', content: 'reason' }],
+				{
+					model: 'claude-opus-4-7',
+					maxOutputTokens: 4000,
+					reasoning: { effort: 'high', budgetTokens: 16000 },
+				},
+			);
+
+			const body = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(body.thinking).toEqual({ type: 'adaptive', display: 'summarized' });
+			expect(body.output_config).toEqual({ effort: 'high' });
+			expect(body.max_tokens).toBe(4000);
+			expect(body.temperature).toBeUndefined();
+		});
+
+		it('effort=off 시 thinking.type=disabled를 전송하고 미지원(3.5) 모델에는 생략한다', async () => {
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					content: [{ type: 'text', text: 'OK' }],
+					stop_reason: 'end_turn',
+				},
+			} as RequestUrlResponse);
+
+			await provider.chat(
+				[{ role: 'user', content: 'fast' }],
+				{ model: 'claude-opus-4-7', reasoning: { effort: 'off' } },
+			);
+			const body47 = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(body47.thinking).toEqual({ type: 'disabled' });
+
+			mockRequestUrl.mockClear();
+			await provider.chat(
+				[{ role: 'user', content: 'fast' }],
+				{ model: 'claude-3-5-sonnet-latest', reasoning: { effort: 'high' } },
+			);
+			const body35 = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(body35.thinking).toBeUndefined();
+		});
+
+		it('스트리밍 시 signature_delta와 redacted_thinking 블록을 수집하여 반환한다', async () => {
+			const events = [
+				'data: ' + JSON.stringify({ type: 'content_block_start', index: 0, content_block: { type: 'thinking' } }),
+				'data: ' + JSON.stringify({ type: 'content_block_delta', index: 0, delta: { type: 'thinking_delta', thinking: 'Deep thought' } }),
+				'data: ' + JSON.stringify({ type: 'content_block_delta', index: 0, delta: { type: 'signature_delta', signature: 'sig-part-1' } }),
+				'data: ' + JSON.stringify({ type: 'content_block_delta', index: 0, delta: { type: 'signature_delta', signature: '-part-2' } }),
+				'data: ' + JSON.stringify({ type: 'content_block_start', index: 1, content_block: { type: 'redacted_thinking', data: 'enc-blob' } }),
+				'data: ' + JSON.stringify({ type: 'content_block_start', index: 2, content_block: { type: 'text' } }),
+				'data: ' + JSON.stringify({ type: 'content_block_delta', index: 2, delta: { type: 'text_delta', text: 'Done' } }),
+			];
+			const stream = new ReadableStream({
+				start(controller) {
+					for (const ev of events) {
+						controller.enqueue(new TextEncoder().encode(ev + '\n'));
+					}
+					controller.close();
+				},
+			});
+			window.fetch = vi.fn().mockResolvedValue({ ok: true, body: stream });
+
+			const res = await provider.chat(
+				[{ role: 'user', content: 'hi' }],
+				{ model: 'claude-sonnet-4-5', reasoning: { effort: 'low' } },
+				() => {},
+			);
+
+			expect(res.content).toBe('<think>\nDeep thought\n</think>\nDone');
+			expect(res.thinkingBlocks).toEqual([
+				{ type: 'thinking', thinking: 'Deep thought', signature: 'sig-part-1-part-2' },
+				{ type: 'redacted_thinking', data: 'enc-blob' },
+			]);
+		});
+	});
 });
 

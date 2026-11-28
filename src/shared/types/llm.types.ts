@@ -4,6 +4,10 @@ export type MultiModalContent =
 	| { type: 'text'; text: string }
 	| { type: 'image_url'; image_url: { url: string } };
 
+export type AnthropicThinkingBlock =
+	| { type: 'thinking'; thinking: string; signature: string }
+	| { type: 'redacted_thinking'; data: string };
+
 export interface ChatMessage {
 	role: 'system' | 'user' | 'assistant' | 'tool';
 	content: string | MultiModalContent[];
@@ -11,6 +15,8 @@ export interface ChatMessage {
 	name?: string;
 	tool_calls?: ToolCall[];
 	thoughtSignature?: string;
+	/** Anthropic extended/adaptive thinking 다중 턴 도구 루프용 원형 블록 (signature 포함) */
+	thinkingBlocks?: AnthropicThinkingBlock[];
 }
 
 // ─── Tool Calling ───────────────────────────────
@@ -45,6 +51,15 @@ export interface PromptCachingOptions {
 	geminiTtlSeconds?: number;
 }
 
+export type ReasoningEffort = 'auto' | 'off' | 'low' | 'medium' | 'high';
+
+export interface ReasoningOptions {
+	/** 추론 강도 ('auto' = 미전송, 모델 기본 동작 유지) */
+	effort: ReasoningEffort;
+	/** 선택적 수동 사고 토큰 예산 (0 또는 미지정 시 프리셋 사용 — Anthropic 3.7~4.6, Gemini 2.5 적용) */
+	budgetTokens?: number;
+}
+
 export interface ChatOptions {
 	model: string;
 	temperature?: number;
@@ -57,6 +72,8 @@ export interface ChatOptions {
 	cwd?: string;
 	/** 요청별 프롬프트 캐싱 제어 옵션 (단발성 호출에는 미전달) */
 	promptCaching?: PromptCachingOptions;
+	/** 요청별 추론/사고 강도 및 예산 제어 옵션 (Cloud 직접 API 채팅 전용) */
+	reasoning?: ReasoningOptions;
 }
 
 // ─── Provider Interface ─────────────────────────
@@ -76,6 +93,8 @@ export interface ChatResponse {
 	usage?: TokenUsage;
 	toolCalls?: ToolCall[];
 	finishReason?: string;
+	/** Anthropic extended/adaptive thinking 응답 블록 (후속 도구 라운드 패스스루용) */
+	thinkingBlocks?: AnthropicThinkingBlock[];
 }
 
 export interface ILLMProvider {

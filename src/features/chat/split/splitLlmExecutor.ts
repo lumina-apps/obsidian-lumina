@@ -1,4 +1,5 @@
 import { createProvider } from '../../../core/llm-providers/index';
+import { formatReasoningForDebugLog } from '../../../core/llm-providers/reasoning-config';
 import type { ChatSettings } from '../../../core/settings/settings.types';
 import { debugLogger, formatMessagesForDebugLog } from '../../../shared/debugLogger';
 import { t } from '../../../shared/locales/helpers';
@@ -113,6 +114,8 @@ export async function executeSplitSlotCall(
 	const effectiveTemp = slot.temperatureOverride ?? chatSettings.temperature;
 
 	const enablePromptCaching = chatSettings.enablePromptCaching !== false;
+	const reasoningEffort = chatSettings.reasoningEffort ?? 'auto';
+	const reasoningBudgetTokens = chatSettings.reasoningBudgetTokens ?? 0;
 	const chatOptions: ChatOptions = {
 		model: resolvedModelId,
 		temperature: effectiveTemp,
@@ -127,6 +130,14 @@ export async function executeSplitSlotCall(
 					cacheKey: `split-${slot.slotId}`,
 					geminiExplicit: Boolean(chatSettings.geminiExplicitCaching),
 					geminiTtlSeconds: 300,
+				},
+			}
+			: {}),
+		...(reasoningEffort !== 'auto'
+			? {
+				reasoning: {
+					effort: reasoningEffort,
+					...(reasoningBudgetTokens > 0 ? { budgetTokens: reasoningBudgetTokens } : {}),
 				},
 			}
 			: {}),
@@ -148,6 +159,12 @@ export async function executeSplitSlotCall(
 		return acc + estimateTokens(c, providerConfig.type);
 	}, 0);
 
+	const reasoningLog = formatReasoningForDebugLog(
+		providerConfig.type,
+		resolvedModelId,
+		chatOptions.reasoning,
+		chatSettings.maxOutputTokens,
+	);
 	const requestId = debugLogger.logRequest({
 		provider: providerConfig.type,
 		model: resolvedModelId,
@@ -158,6 +175,7 @@ export async function executeSplitSlotCall(
 		messages: formatMessagesForDebugLog(llmMessages),
 		estimatedInputTokens,
 		...(sharedContext.ragChunksForLog ? { ragChunks: sharedContext.ragChunksForLog } : {}),
+		...(reasoningLog ? { reasoning: reasoningLog } : {}),
 	});
 
 	let fullResponse = '';

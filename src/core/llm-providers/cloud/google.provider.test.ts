@@ -423,4 +423,92 @@ describe('GoogleProvider', () => {
 			expect(fallbackBody.systemInstruction).toBeDefined();
 		});
 	});
+
+	describe('thinkingConfig & thought part parsing', () => {
+		it('Gemini 2.5에는 thinkingBudget, Gemini 3+에는 thinkingLevel만 주입하고 2.0에는 생략한다', async () => {
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					candidates: [{ content: { parts: [{ text: 'OK' }] }, finishReason: 'STOP' }],
+				},
+			} as RequestUrlResponse);
+
+			await provider.chat(
+				[{ role: 'user', content: 'hi' }],
+				{ model: 'gemini-2.5-pro', reasoning: { effort: 'off' } },
+			);
+			const body25Pro = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as {
+				generationConfig: { thinkingConfig?: Record<string, unknown> };
+			};
+			expect(body25Pro.generationConfig.thinkingConfig).toEqual({ thinkingBudget: 128 });
+
+			mockRequestUrl.mockClear();
+			await provider.chat(
+				[{ role: 'user', content: 'hi' }],
+				{ model: 'gemini-3-flash-preview', reasoning: { effort: 'medium', budgetTokens: 4096 } },
+			);
+			const body3Flash = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as {
+				generationConfig: { thinkingConfig?: Record<string, unknown> };
+			};
+			expect(body3Flash.generationConfig.thinkingConfig).toEqual({
+				thinkingLevel: 'medium',
+				includeThoughts: true,
+			});
+
+			mockRequestUrl.mockClear();
+			await provider.chat(
+				[{ role: 'user', content: 'hi' }],
+				{ model: 'gemini-2.0-flash', reasoning: { effort: 'high' } },
+			);
+			const body20 = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as {
+				generationConfig: { thinkingConfig?: Record<string, unknown> };
+			};
+			expect(body20.generationConfig.thinkingConfig).toBeUndefined();
+		});
+
+		it('스트리밍 및 논스트리밍 응답의 part.thought=true를 <think> 블록으로 래핑한다', async () => {
+			const streamPayload = [
+				JSON.stringify({ candidates: [{ content: { parts: [{ text: 'Thinking 1', thought: true }] } }] }),
+				JSON.stringify({ candidates: [{ content: { parts: [{ text: 'Thinking 2', thought: true }, { text: 'Answer' }] }, finishReason: 'STOP' }] }),
+			].join('\n');
+
+			const stream = new ReadableStream({
+				start(controller) {
+					controller.enqueue(new TextEncoder().encode(streamPayload));
+					controller.close();
+				},
+			});
+			window.fetch = vi.fn().mockResolvedValue({ ok: true, body: stream });
+
+			const chunks: string[] = [];
+			const streamRes = await provider.chat(
+				[{ role: 'user', content: 'hi' }],
+				{ model: 'gemini-2.5-flash', reasoning: { effort: 'low' } },
+				(c) => chunks.push(c),
+			);
+			expect(streamRes.content).toBe('<think>\nThinking 1Thinking 2\n</think>\nAnswer');
+			expect(chunks.join('')).toBe('<think>\nThinking 1Thinking 2\n</think>\nAnswer');
+
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					candidates: [{
+						content: {
+							parts: [
+								{ text: 'Non-stream thought', thought: true },
+								{ text: 'Final text' },
+							],
+						},
+						finishReason: 'STOP',
+					}],
+				},
+			} as RequestUrlResponse);
+
+			const nonStreamRes = await provider.chat(
+				[{ role: 'user', content: 'hi' }],
+				{ model: 'gemini-2.5-flash', reasoning: { effort: 'low' } },
+			);
+			expect(nonStreamRes.content).toBe('<think>\nNon-stream thought\n</think>\nFinal text');
+		});
+	});
 });

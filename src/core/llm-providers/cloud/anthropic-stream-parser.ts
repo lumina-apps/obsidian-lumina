@@ -2,7 +2,7 @@
  * anthropic-stream-parser.ts
  * Anthropic API 스트림 응답 파싱 및 non-streaming 응답 변환
  */
-import type { TokenUsage, ToolCall } from '../../../shared/types/llm.types';
+import type { AnthropicThinkingBlock, TokenUsage, ToolCall } from '../../../shared/types/llm.types';
 import type { AnthropicBlock, AnthropicStreamChunk, AnthropicResponse, AnthropicUsagePayload } from './anthropic.types';
 import { debugLogger } from '../../../shared/debugLogger';
 
@@ -75,6 +75,7 @@ export class AnthropicStreamAccumulator {
 	getResult(): {
 		fullContent: string;
 		toolCalls: ToolCall[];
+		thinkingBlocks?: AnthropicThinkingBlock[];
 		usage?: TokenUsage;
 		finishReason?: string;
 	} {
@@ -85,9 +86,11 @@ export class AnthropicStreamAccumulator {
 			this.onChunk?.(closeTag);
 		}
 		const toolCalls = this.extractToolCalls();
+		const thinkingBlocks = this.extractThinkingBlocks();
 		return {
 			fullContent: this.fullContent,
 			toolCalls,
+			...(thinkingBlocks ? { thinkingBlocks } : {}),
 			usage: this.usage,
 			finishReason: this.finishReason,
 		};
@@ -111,6 +114,9 @@ export class AnthropicStreamAccumulator {
 				name: chunk.content_block?.name || '',
 				input: '',
 				text: '',
+				thinking: chunk.content_block?.thinking || '',
+				signature: chunk.content_block?.signature || '',
+				data: chunk.content_block?.data || '',
 			};
 		}
 		else if (chunk.type === 'content_block_delta') {
@@ -124,8 +130,12 @@ export class AnthropicStreamAccumulator {
 						this.fullContent += openTag;
 						this.onChunk?.(openTag);
 					}
+					block.thinking = (block.thinking || '') + chunk.delta.thinking;
 					this.fullContent += chunk.delta.thinking;
 					this.onChunk?.(chunk.delta.thinking);
+				}
+				else if (chunk.delta?.type === 'signature_delta' && chunk.delta.signature) {
+					block.signature = (block.signature || '') + chunk.delta.signature;
 				}
 				else if (chunk.delta?.type === 'text_delta' && chunk.delta.text && block.type === 'text') {
 					if (this.isThinking) {
@@ -186,17 +196,39 @@ export class AnthropicStreamAccumulator {
 		}
 		return toolCalls;
 	}
+
+	/** 도구 호출 다중 턴 재전송을 위해 서명이 포함된 thinking/redacted_thinking 블록을 추출합니다. */
+	private extractThinkingBlocks(): AnthropicThinkingBlock[] | undefined {
+		const blocks: AnthropicThinkingBlock[] = [];
+		for (const block of this.accumulatedBlocks) {
+			if (!block) continue;
+			if (block.type === 'thinking' && block.signature) {
+				blocks.push({
+					type: 'thinking',
+					thinking: block.thinking || '',
+					signature: block.signature,
+				});
+			} else if (block.type === 'redacted_thinking' && block.data) {
+				blocks.push({
+					type: 'redacted_thinking',
+					data: block.data,
+				});
+			}
+		}
+		return blocks.length > 0 ? blocks : undefined;
+	}
 }
 
 // ─── Non-Streaming Response Parser ──────────────────────────────────────────
 
 /**
- * Anthropic non-streaming 응답을 파싱하여 content, toolCalls, usage, finishReason을 반환합니다.
+ * Anthropic non-streaming 응답을 파싱하여 content, toolCalls, thinkingBlocks, usage, finishReason을 반환합니다.
  * 응답이 비어 있으면 Error를 throw합니다.
  */
 export function parseAnthropicNonStreamResponse(rawBody: string, data: AnthropicResponse): {
 	fullContent: string;
 	toolCalls: ToolCall[];
+	thinkingBlocks?: AnthropicThinkingBlock[];
 	usage?: TokenUsage;
 	finishReason?: string;
 } {
@@ -206,9 +238,26 @@ export function parseAnthropicNonStreamResponse(rawBody: string, data: Anthropic
 
 	let fullContent = '';
 	const toolCalls: ToolCall[] = [];
+	const thinkingBlocks: AnthropicThinkingBlock[] = [];
 
 	for (const block of data.content) {
-		if (block.type === 'text') {
+		if (block.type === 'thinking') {
+			if (block.thinking) {
+				fullContent += `<think>\n${block.thinking}\n</think>\n`;
+			}
+			if (block.signature) {
+				thinkingBlocks.push({
+					type: 'thinking',
+					thinking: block.thinking || '',
+					signature: block.signature,
+				});
+			}
+		} else if (block.type === 'redacted_thinking' && block.data) {
+			thinkingBlocks.push({
+				type: 'redacted_thinking',
+				data: block.data,
+			});
+		} else if (block.type === 'text') {
 			fullContent += block.text || '';
 		} else if (block.type === 'tool_use') {
 			toolCalls.push({
@@ -224,6 +273,7 @@ export function parseAnthropicNonStreamResponse(rawBody: string, data: Anthropic
 	return {
 		fullContent,
 		toolCalls,
+		...(thinkingBlocks.length > 0 ? { thinkingBlocks } : {}),
 		usage,
 		finishReason: data.stop_reason || undefined,
 	};

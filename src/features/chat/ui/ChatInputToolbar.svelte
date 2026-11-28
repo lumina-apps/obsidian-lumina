@@ -2,6 +2,7 @@
 	import { setIcon } from "obsidian";
 	import type { Readable } from "svelte/store";
 	import type { TranslationKeys } from "../../../shared/locales/locale.types";
+	import type { ReasoningEffort } from "../../../shared/types/llm.types";
 	import { FILE_INPUT_ACCEPT } from "../utils/fileAttachmentUtils";
 
 	type TStore = Readable<
@@ -22,9 +23,15 @@
 		isTokenOverLimit = false,
 		sessionTokenStats,
 		tStore,
+		showReasoningControl = false,
+		reasoningEffort = "auto",
+		reasoningBudgetTokens = 0,
+		reasoningSupportsCustomBudget = false,
+		isReasoningPopupOpen = false,
 		onInsertContextMention,
 		onFileSelect,
 		onToggleMcpPopup,
+		onToggleReasoningPopup,
 		onToggleAgentExecutionMode,
 		onToggleActiveNote,
 	} = $props<{
@@ -51,9 +58,15 @@
 			cacheCreationTokens?: number;
 		};
 		tStore: TStore;
+		showReasoningControl?: boolean;
+		reasoningEffort?: ReasoningEffort;
+		reasoningBudgetTokens?: number;
+		reasoningSupportsCustomBudget?: boolean;
+		isReasoningPopupOpen?: boolean;
 		onInsertContextMention: () => void;
 		onFileSelect: (e: Event) => void;
 		onToggleMcpPopup: () => void;
+		onToggleReasoningPopup?: (e: MouseEvent) => void;
 		onToggleAgentExecutionMode: () => void;
 		onToggleActiveNote: () => void;
 	}>();
@@ -143,6 +156,18 @@
 		return tooltip;
 	});
 
+	const reasoningBadgeLabel = $derived.by(() => {
+		const base = $tStore(`settings.chat.reasoning.short.${reasoningEffort}` as TranslationKeys);
+		const isEffortActive = reasoningEffort === "low" || reasoningEffort === "medium" || reasoningEffort === "high";
+		if (reasoningSupportsCustomBudget && reasoningBudgetTokens > 0 && isEffortActive) {
+			const budgetLabel = reasoningBudgetTokens >= 1000
+				? `${Math.round(reasoningBudgetTokens / 1000)}k`
+				: String(reasoningBudgetTokens);
+			return `${base}·${budgetLabel}`;
+		}
+		return base;
+	});
+
 	let fileInputEl: HTMLInputElement | null = $state(null);
 
 	function triggerFileInput() {
@@ -187,6 +212,22 @@
 				onclick={onToggleMcpPopup}
 				type="button"
 			></button>
+		{/if}
+		{#if showReasoningControl}
+			<button
+				class="lumina-chat__reasoning-btn"
+				class:is-active={reasoningEffort === "low" || reasoningEffort === "medium" || reasoningEffort === "high"}
+				class:is-off={reasoningEffort === "off"}
+				class:is-open={isReasoningPopupOpen}
+				aria-label={$tStore("settings.chat.reasoning.toolbarTooltip")}
+				aria-expanded={isReasoningPopupOpen}
+				title={$tStore("settings.chat.reasoning.toolbarTooltip")}
+				onclick={(e) => onToggleReasoningPopup?.(e)}
+				type="button"
+			>
+				<span class="lumina-chat__reasoning-icon" use:icon={"brain"}></span>
+				<span>{reasoningBadgeLabel}</span>
+			</button>
 		{/if}
 	</div>
 

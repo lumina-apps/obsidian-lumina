@@ -11,6 +11,12 @@ export interface AnthropicBlock {
 	name?: string;
 	input?: string;
 	text?: string;
+	/** thinking 블록 본문 */
+	thinking?: string;
+	/** thinking 블록 검증 서명 */
+	signature?: string;
+	/** redacted_thinking 블록 암호화 데이터 */
+	data?: string;
 }
 
 // ─── Streaming Chunk ────────────────────────────────────────────────────────
@@ -32,12 +38,17 @@ export interface AnthropicStreamChunk {
 		type?: string;
 		id?: string;
 		name?: string;
+		thinking?: string;
+		signature?: string;
+		data?: string;
 	};
 	delta?: {
 		type?: string;
 		text?: string;
 		/** extended thinking 블록 전용 (thinking_delta 이벤트) */
 		thinking?: string;
+		/** extended thinking 블록 서명 (signature_delta 이벤트) */
+		signature?: string;
 		partial_json?: string;
 		stop_reason?: string | null;
 	};
@@ -54,6 +65,9 @@ export interface AnthropicResponse {
 	content?: Array<{
 		type: string;
 		text?: string;
+		thinking?: string;
+		signature?: string;
+		data?: string;
 		id?: string;
 		name?: string;
 		input?: Record<string, unknown>;

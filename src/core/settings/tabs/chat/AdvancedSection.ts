@@ -2,6 +2,7 @@ import { Setting } from 'obsidian';
 import type { LuminaSettingTab } from '../../settingTab';
 import { wrapAsync, addSliderWithInput } from '../../../../shared/utils/settingHelpers';
 import { t } from '../../../../shared/locales/helpers';
+import type { ReasoningEffort } from '../../../../shared/types/llm.types';
 
 export function renderAdvancedSection(tab: LuminaSettingTab, el: HTMLElement): void {
 	const s = tab.plugin.settings.chat;
@@ -119,6 +120,54 @@ export function renderAdvancedSection(tab: LuminaSettingTab, el: HTMLElement): v
 			.addToggle(toggle => {
 				toggle.setValue(Boolean(s.geminiExplicitCaching)).onChange(wrapAsync(async (val) => {
 					s.geminiExplicitCaching = val;
+					await tab.saveAndSync();
+				}));
+			});
+	}
+
+	new Setting(el)
+		.setName(t('settings.chat.reasoning.effortName'))
+		.setDesc(t('settings.chat.reasoning.effortDesc'))
+		.addDropdown(drop => {
+			drop
+				.addOption('auto', t('settings.chat.reasoning.options.auto'))
+				.addOption('off', t('settings.chat.reasoning.options.off'))
+				.addOption('low', t('settings.chat.reasoning.options.low'))
+				.addOption('medium', t('settings.chat.reasoning.options.medium'))
+				.addOption('high', t('settings.chat.reasoning.options.high'))
+				.setValue(s.reasoningEffort ?? 'auto')
+				.onChange(wrapAsync(async (val) => {
+					s.reasoningEffort = val as ReasoningEffort;
+					await tab.saveAndSync();
+					tab.refreshDisplay();
+				}));
+		});
+
+	const activeEffort = s.reasoningEffort ?? 'auto';
+	if (activeEffort === 'low' || activeEffort === 'medium' || activeEffort === 'high') {
+		new Setting(el)
+			.setName(t('settings.chat.reasoning.budgetName'))
+			.setDesc(t('settings.chat.reasoning.budgetDesc'))
+			.addText(text => {
+				let composing = false;
+				const inputEl = text.inputEl;
+				inputEl.type = 'number';
+				inputEl.min = '0';
+				inputEl.step = '1024';
+				inputEl.placeholder = '0';
+				const commitValue = (raw: string) => {
+					const parsed = parseInt(raw, 10);
+					s.reasoningBudgetTokens = isNaN(parsed) || parsed <= 0 ? 0 : parsed;
+				};
+				inputEl.addEventListener('compositionstart', () => { composing = true; });
+				inputEl.addEventListener('compositionend', () => {
+					composing = false;
+					commitValue(inputEl.value);
+					void tab.saveAndSync();
+				});
+				text.setValue(String(s.reasoningBudgetTokens ?? 0)).onChange(wrapAsync(async (val) => {
+					if (composing) return;
+					commitValue(val);
 					await tab.saveAndSync();
 				}));
 			});

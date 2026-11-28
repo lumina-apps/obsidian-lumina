@@ -385,6 +385,43 @@
         "desc": "繰り返されるシステムプロンプトやツール定義、会話の先頭部分をキャッシュ（Anthropic・OpenAI・OpenRouter・Gemini）し、トークンコストと応答遅延を削減します。ヒント: {{time}} のような動的変数がシステムプロンプトの先頭にあるとキャッシュ効率が下がる場合があります。",
         "geminiExplicitName": "Gemini 明示的コンテキストキャッシュ",
         "geminiExplicitDesc": "Gemini 2.5/3 モデルで 4,096 トークン以上のコンテキストを cachedContents API で明示的にキャッシュします。5分間の TTL 中は Google のストレージ料金が別途発生し、非対応モデル（Gemini 4 等）では自動的に通常リクエストへフォールバックします。"
+      },
+      "reasoning": {
+        "effortName": "推論 / 思考レベル",
+        "effortDesc": "Cloud 直接 API 呼び出し（OpenAI oシリーズ/GPT-5、Anthropic Claude 3.7+、Google Gemini 2.5+）の推論強度や思考の深さを制御します。「自動」はパラメータを送信せずモデルの既定値に従います。",
+        "budgetName": "手動思考トークン予算",
+        "budgetDesc": "トークン予算を指定できるモデル（Claude 3.7〜4.6、Gemini 2.5）向けの任意の上書き値です。0 で強度プリセットを自動使用します。（Claude 4.7+ と Gemini 3+ はレベル指定で動作）",
+        "options": {
+          "auto": "自動 (モデル既定)",
+          "off": "オフ / 最小",
+          "low": "低 (Low)",
+          "medium": "中 (Medium)",
+          "high": "高 (High)"
+        },
+        "short": {
+          "auto": "自動",
+          "off": "オフ",
+          "low": "低",
+          "medium": "中",
+          "high": "高"
+        },
+        "popupTitle": "推論 / 思考レベル",
+        "toolbarTooltip": "推論 / 思考レベル設定",
+        "summaryAuto": "モデル既定値（推論パラメータ未送信）",
+        "summaryOffOpenAIUnsupported": "OpenAI oシリーズは推論無効化に非対応のため省略されます",
+        "summaryOffOpenAIMinimal": "OpenAI GPT-5 · reasoning_effort: minimal",
+        "summaryOffOpenAINone": "OpenAI GPT-5.1+ · reasoning_effort: none",
+        "summaryOffAnthropic": "Anthropic · thinking: disabled",
+        "summaryOffGeminiZero": "Gemini 2.5 · thinkingBudget: 0 (オフ)",
+        "summaryOffGeminiProMin": "Gemini 2.5 Pro · 最小 thinkingBudget: 128",
+        "summaryOffGeminiLevel": "Gemini 3+ · thinkingLevel: {{level}}",
+        "summaryOpenAIEffort": "OpenAI · reasoning_effort: {{effort}}",
+        "summaryAnthropicManual": "Anthropic · 手動予算: {{budget}} トークン",
+        "summaryAnthropicAdaptive": "Anthropic · adaptive (effort: {{effort}})",
+        "summaryGeminiBudget": "Gemini 2.5 · thinkingBudget: {{budget}} トークン",
+        "summaryGeminiLevel": "Gemini 3+ · thinkingLevel: {{level}}",
+        "summarySplitMulti": "対応する Cloud スロットのモデルごとに適用されます",
+        "manualBudgetIgnoredHint": "手動トークン予算は Claude 3.7〜4.6 と Gemini 2.5 のみに適用され、現在のモデルはレベル指定で動作します。"
       }
     },
     "rag": {

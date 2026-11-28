@@ -2,7 +2,15 @@
  * anthropic.provider.ts
  * Anthropic Claude API 프로바이더
  */
-import type { ChatMessage, ChatOptions, ChatResponse, ILLMProvider, TokenUsage, ToolCall } from '../../../shared/types/llm.types';
+import type {
+	AnthropicThinkingBlock,
+	ChatMessage,
+	ChatOptions,
+	ChatResponse,
+	ILLMProvider,
+	TokenUsage,
+	ToolCall,
+} from '../../../shared/types/llm.types';
 import { t } from '../../../shared/locales/helpers';
 import { requestUrl } from 'obsidian';
 import {
@@ -23,6 +31,7 @@ import {
 	formatAnthropicTools,
 } from './anthropic-message-formatter';
 import { AnthropicStreamAccumulator, parseAnthropicNonStreamResponse } from './anthropic-stream-parser';
+import { resolveAnthropicThinking } from '../reasoning-config';
 
 export class AnthropicProvider implements ILLMProvider {
 	readonly providerId: string;
@@ -56,12 +65,13 @@ export class AnthropicProvider implements ILLMProvider {
 
 	async chat(messages: ChatMessage[], options: ChatOptions, onChunk?: (chunk: string) => void): Promise<ChatResponse> {
 		if (onChunk) {
-			const { fullContent, toolCalls, usage, finishReason } = await this.streamInternal(messages, options, onChunk);
+			const { fullContent, toolCalls, thinkingBlocks, usage, finishReason } = await this.streamInternal(messages, options, onChunk);
 
 			return {
 				content: fullContent,
 				usage,
 				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+				...(thinkingBlocks ? { thinkingBlocks } : {}),
 				finishReason,
 			};
 		}
@@ -82,12 +92,13 @@ export class AnthropicProvider implements ILLMProvider {
 			}, timeoutCtrl.signal);
 
 			const data = res.json as AnthropicResponse;
-			const { fullContent, toolCalls, usage, finishReason } = parseAnthropicNonStreamResponse(res.text, data);
+			const { fullContent, toolCalls, thinkingBlocks, usage, finishReason } = parseAnthropicNonStreamResponse(res.text, data);
 
 			return {
 				content: fullContent,
 				usage,
 				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+				...(thinkingBlocks ? { thinkingBlocks } : {}),
 				finishReason,
 			};
 		});
@@ -128,18 +139,28 @@ export class AnthropicProvider implements ILLMProvider {
 			? applyAnthropicMessageCacheBreakpoints(formattedMessages)
 			: formattedMessages;
 		const formattedTools = formatAnthropicTools(options.tools, enableCaching);
+		const requestedMaxTokens = options.maxOutputTokens ?? 4096;
+		const resolvedThinking = resolveAnthropicThinking(options.model, options.reasoning, requestedMaxTokens);
 
 		const payload: Record<string, unknown> = {
 			model: options.model,
 			messages: finalMessages,
-			max_tokens: options.maxOutputTokens ?? 4096,
+			max_tokens: resolvedThinking?.adjustedMaxTokens ?? requestedMaxTokens,
 			tools: formattedTools,
 			stream,
 		};
 
-		// Claude 4.7+ 및 Claude 5+ 모델은 temperature 파라미터가 deprecated 되어 전송 시 HTTP 400 발생
-		if (!/^claude-(?:(?:opus|sonnet|haiku)-)?(?:4[-.](?:[7-9]|\d{2})|[5-9])/i.test(options.model)) {
+		// Claude 4.7+ / 5+ 모델 또는 thinking 활성 시 temperature 전송하면 HTTP 400 발생하므로 생략
+		const isTempDeprecated = /^claude-(?:(?:opus|sonnet|haiku)-)?(?:4[-.](?:[7-9]|\d{2})(?:[-._]|$)|[5-9](?:[-._]|$))/i.test(options.model);
+		if (!resolvedThinking?.omitTemperature && !isTempDeprecated) {
 			payload.temperature = options.temperature ?? 0.7;
+		}
+
+		if (resolvedThinking) {
+			payload.thinking = resolvedThinking.thinking;
+			if (resolvedThinking.outputConfig) {
+				payload.output_config = resolvedThinking.outputConfig;
+			}
 		}
 
 		if (options.stop && options.stop.length > 0) {
@@ -160,6 +181,7 @@ export class AnthropicProvider implements ILLMProvider {
 	): Promise<{
 		fullContent: string;
 		toolCalls: ToolCall[];
+		thinkingBlocks?: AnthropicThinkingBlock[];
 		usage?: TokenUsage;
 		finishReason?: string;
 	}> {

@@ -2,6 +2,7 @@ import type { ChatMessage, ChatOptions } from '../../../shared/types/llm.types';
 import { requestUrl } from 'obsidian';
 import { raiseApiError } from '../provider-helpers';
 import { BaseOpenAIProvider } from '../baseOpenAI.provider';
+import { resolveOpenAIReasoningEffort } from '../reasoning-config';
 
 export class OpenAIProvider extends BaseOpenAIProvider {
 	readonly providerId: string;
@@ -14,7 +15,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
 		this.enableReasoning = true;
 	}
 
-	/** OpenAI 공식 API 프롬프트 캐시 라우팅 적중률을 높이기 위해 prompt_cache_key를 주입합니다. */
+	/** OpenAI 공식 API 프롬프트 캐시 키 및 추론 강도(reasoning_effort)를 주입합니다. */
 	protected override buildPayload(
 		options: ChatOptions,
 		messages: ChatMessage[],
@@ -24,10 +25,14 @@ export class OpenAIProvider extends BaseOpenAIProvider {
 		if (options.promptCaching?.enabled && options.promptCaching.cacheKey) {
 			payload.prompt_cache_key = options.promptCaching.cacheKey;
 		}
+		const reasoningEffort = resolveOpenAIReasoningEffort(options.model, options.reasoning);
+		if (reasoningEffort) {
+			payload.reasoning_effort = reasoningEffort;
+		}
 		return payload;
 	}
 
-	/** 스트리밍 전용 요청에도 prompt_cache_key를 일관되게 주입합니다. */
+	/** 스트리밍 전용 요청에도 prompt_cache_key와 reasoning_effort를 일관되게 주입합니다. */
 	protected override buildStreamOnlyPayload(
 		options: ChatOptions,
 		messages: ChatMessage[],
@@ -35,6 +40,10 @@ export class OpenAIProvider extends BaseOpenAIProvider {
 		const payload = super.buildStreamOnlyPayload(options, messages);
 		if (options.promptCaching?.enabled && options.promptCaching.cacheKey) {
 			payload.prompt_cache_key = options.promptCaching.cacheKey;
+		}
+		const reasoningEffort = resolveOpenAIReasoningEffort(options.model, options.reasoning);
+		if (reasoningEffort) {
+			payload.reasoning_effort = reasoningEffort;
 		}
 		return payload;
 	}

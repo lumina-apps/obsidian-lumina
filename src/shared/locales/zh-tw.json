@@ -385,6 +385,43 @@
         "desc": "快取重複的系統提示詞、工具定義與對話前綴（Anthropic、OpenAI、OpenRouter、Gemini），降低權杖費用與回應延遲。提示：系統提示詞開頭若包含 {{time}} 等動態變數，可能會降低快取命中率。",
         "geminiExplicitName": "Gemini 明確上下文快取",
         "geminiExplicitDesc": "在 Gemini 2.5/3 模型上透過 cachedContents API 預先快取 4,096+ 權杖的大型上下文。5 分鐘 TTL 期間將產生額外的 Google 儲存費用；不支援的模型（如 Gemini 4）會自動退回一般請求。"
+      },
+      "reasoning": {
+        "effortName": "推理 / 思考強度",
+        "effortDesc": "控制直接呼叫 Cloud API（OpenAI o系列/GPT-5、Anthropic Claude 3.7+、Google Gemini 2.5+）時的推理強度與思考深度。「自動」將不傳送該參數，維持模型預設行為。",
+        "budgetName": "手動思考權杖預算",
+        "budgetDesc": "為支援固定預算的模型（Claude 3.7–4.6、Gemini 2.5）提供可選的權杖預算覆蓋。設為 0 將依強度預設值自動配置。（Claude 4.7+ 與 Gemini 3+ 僅使用強度/等級）",
+        "options": {
+          "auto": "自動（模型預設）",
+          "off": "關閉 / 最小",
+          "low": "低 (Low)",
+          "medium": "中 (Medium)",
+          "high": "高 (High)"
+        },
+        "short": {
+          "auto": "自動",
+          "off": "關閉",
+          "low": "低",
+          "medium": "中",
+          "high": "高"
+        },
+        "popupTitle": "推理 / 思考強度",
+        "toolbarTooltip": "設定推理 / 思考強度",
+        "summaryAuto": "使用模型預設值（未傳送推理參數）",
+        "summaryOffOpenAIUnsupported": "OpenAI o 系列不支援關閉推理（已省略參數）",
+        "summaryOffOpenAIMinimal": "OpenAI GPT-5 · reasoning_effort: minimal",
+        "summaryOffOpenAINone": "OpenAI GPT-5.1+ · reasoning_effort: none",
+        "summaryOffAnthropic": "Anthropic · thinking: disabled",
+        "summaryOffGeminiZero": "Gemini 2.5 · thinkingBudget: 0（關閉）",
+        "summaryOffGeminiProMin": "Gemini 2.5 Pro · 最小 thinkingBudget: 128",
+        "summaryOffGeminiLevel": "Gemini 3+ · thinkingLevel: {{level}}",
+        "summaryOpenAIEffort": "OpenAI · reasoning_effort: {{effort}}",
+        "summaryAnthropicManual": "Anthropic · 手動預算: {{budget}} 權杖",
+        "summaryAnthropicAdaptive": "Anthropic · adaptive (effort: {{effort}})",
+        "summaryGeminiBudget": "Gemini 2.5 · thinkingBudget: {{budget}} 權杖",
+        "summaryGeminiLevel": "Gemini 3+ · thinkingLevel: {{level}}",
+        "summarySplitMulti": "將依各支援的 Cloud 槽位模型自動套用",
+        "manualBudgetIgnoredHint": "手動權杖預算僅適用於 Claude 3.7–4.6 與 Gemini 2.5；目前模型依等級/強度運作。"
       }
     },
     "rag": {

@@ -12,6 +12,7 @@ import {
 	migrateGraphRibbonIcon,
 	migrateBatchRibbonIcon,
 	migratePromptCaching,
+	migrateReasoningSettings,
 	runMigrations,
 } from './migrations';
 import { addDynamicLocale, setLanguage, getEnLocale } from '../../shared/locales/helpers';
@@ -307,7 +308,7 @@ describe('runMigrations', () => {
 			settings: {
 				misc: { hasMigratedChatHistory: true, showGraphRibbonIcon: false, showBatchRibbonIcon: false },
 				rag: { minSimilarity: 0.5 },
-				chat: { quickActions: [], memoryMethod: 'tokens', contextWindowTurns: 10, enablePromptCaching: true, geminiExplicitCaching: false },
+				chat: { quickActions: [], memoryMethod: 'tokens', contextWindowTurns: 10, enablePromptCaching: true, geminiExplicitCaching: false, reasoningEffort: 'auto', reasoningBudgetTokens: 0 },
 				webSearch: {
 					enabled: false,
 					providers: [
@@ -519,6 +520,24 @@ describe('migratePromptCaching', () => {
 		expect(migratePromptCaching(mockPlugin)).toBe(false);
 		expect(mockPlugin.settings.chat.enablePromptCaching).toBe(false);
 		expect(mockPlugin.settings.chat.geminiExplicitCaching).toBe(true);
+	});
+});
+
+describe('migrateReasoningSettings', () => {
+	it('reasoningEffort와 reasoningBudgetTokens가 없을 때 기본값으로 초기화한다', () => {
+		const mockPlugin = { settings: { chat: {} } } as unknown as LuminaPlugin;
+		expect(migrateReasoningSettings(mockPlugin)).toBe(true);
+		expect(mockPlugin.settings.chat.reasoningEffort).toBe('auto');
+		expect(mockPlugin.settings.chat.reasoningBudgetTokens).toBe(0);
+	});
+
+	it('이미 설정되어 있으면 변경하지 않고 false를 반환한다', () => {
+		const mockPlugin = {
+			settings: { chat: { reasoningEffort: 'high', reasoningBudgetTokens: 8192 } },
+		} as unknown as LuminaPlugin;
+		expect(migrateReasoningSettings(mockPlugin)).toBe(false);
+		expect(mockPlugin.settings.chat.reasoningEffort).toBe('high');
+		expect(mockPlugin.settings.chat.reasoningBudgetTokens).toBe(8192);
 	});
 });
 

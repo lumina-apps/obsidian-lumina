@@ -243,5 +243,32 @@ describe('anthropic-message-formatter', () => {
 		const emptyResult = applyAnthropicMessageCacheBreakpoints([{ role: 'user', content: '' }]);
 		expect(emptyResult[0].content).toBe('');
 	});
+
+	it('should preserve assistant thinkingBlocks before text and tool_use blocks', () => {
+		const messages: ChatMessage[] = [
+			{ role: 'user', content: 'Inspect note' },
+			{
+				role: 'assistant',
+				content: 'I will inspect the note.',
+				thinkingBlocks: [
+					{ type: 'thinking', thinking: 'Let me check', signature: 'sig-abc' },
+					{ type: 'redacted_thinking', data: 'redacted-xyz' },
+				],
+				tool_calls: [{ id: 'tc-1', name: 'read_note', arguments: { path: 'a.md' } }],
+			},
+			{ role: 'tool', tool_call_id: 'tc-1', content: 'file content' },
+		];
+
+		const formatted = formatAnthropicMessages(messages);
+		expect(formatted[1]).toEqual({
+			role: 'assistant',
+			content: [
+				{ type: 'thinking', thinking: 'Let me check', signature: 'sig-abc' },
+				{ type: 'redacted_thinking', data: 'redacted-xyz' },
+				{ type: 'text', text: 'I will inspect the note.' },
+				{ type: 'tool_use', id: 'tc-1', name: 'read_note', input: { path: 'a.md' } },
+			],
+		});
+	});
 });
 

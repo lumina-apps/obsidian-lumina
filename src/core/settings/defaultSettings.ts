@@ -67,6 +67,8 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		interTokenTimeoutMs: 30000,
 		enablePromptCaching: true,
 		geminiExplicitCaching: false,
+		reasoningEffort: 'auto',
+		reasoningBudgetTokens: 0,
 	},
 
 	// ── Section 3: RAG & Context ─────────────────────────────────────────────

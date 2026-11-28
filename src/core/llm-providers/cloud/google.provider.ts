@@ -15,6 +15,7 @@ import {
 	geminiContextCacheManager,
 	type ResolvedExplicitCache,
 } from './gemini-cache-manager';
+import { resolveGeminiThinkingConfig } from '../reasoning-config';
 
 type GeminiCandidate = NonNullable<GeminiResponse['candidates']>[number];
 
@@ -206,16 +207,20 @@ export class GoogleProvider implements ILLMProvider {
 			'x-goog-api-key': this.apiKey,
 		};
 
+		const thinkingConfig = resolveGeminiThinkingConfig(options.model, options.reasoning);
+		const generationConfig: Record<string, unknown> = {
+			temperature: options.temperature ?? 0.7,
+			maxOutputTokens: options.maxOutputTokens,
+			...(options.stop?.length ? { stopSequences: options.stop } : {}),
+			...(thinkingConfig ? { thinkingConfig } : {}),
+		};
+
 		if (explicitCache) {
 			// Gemini REST API 제약: cachedContent 지정 시 systemInstruction 및 tools 중복 전송 시 HTTP 400 발생
 			const payload: Record<string, unknown> = {
 				cachedContent: explicitCache.cacheName,
 				contents: explicitCache.tailContents,
-				generationConfig: {
-					temperature: options.temperature ?? 0.7,
-					maxOutputTokens: options.maxOutputTokens,
-					...(options.stop?.length ? { stopSequences: options.stop } : {}),
-				},
+				generationConfig,
 			};
 			return { url, headers, payload };
 		}
@@ -225,11 +230,7 @@ export class GoogleProvider implements ILLMProvider {
 
 		const payload: Record<string, unknown> = {
 			contents: formattedContents,
-			generationConfig: {
-				temperature: options.temperature ?? 0.7,
-				maxOutputTokens: options.maxOutputTokens,
-				...(options.stop?.length ? { stopSequences: options.stop } : {}),
-			}
+			generationConfig,
 		};
 
 		if (systemInstruction) {
@@ -294,6 +295,7 @@ export class GoogleProvider implements ILLMProvider {
 		const { url, headers, payload } = this.buildRequest('streamGenerateContent', options, messages, includeTools, explicitCache);
 
 		let fullContent = '';
+		let isThinking = false;
 		const accumulatedToolCalls: ToolCall[] = [];
 		let usage: TokenUsage | undefined;
 		let finishReason: string | undefined;
@@ -357,10 +359,29 @@ export class GoogleProvider implements ILLMProvider {
 				if (parts) {
 					for (const part of parts) {
 						if (part.text) {
+							if (part.thought) {
+								if (!isThinking) {
+									isThinking = true;
+									const openTag = '<think>\n';
+									fullContent += openTag;
+									onChunk?.(openTag);
+								}
+							} else if (isThinking) {
+								isThinking = false;
+								const closeTag = '\n</think>\n';
+								fullContent += closeTag;
+								onChunk?.(closeTag);
+							}
 							fullContent += part.text;
 							onChunk?.(part.text);
 						}
 						if (part.functionCall) {
+							if (isThinking) {
+								isThinking = false;
+								const closeTag = '\n</think>\n';
+								fullContent += closeTag;
+								onChunk?.(closeTag);
+							}
 							accumulatedToolCalls.push({
 								id: crypto.randomUUID(),
 								name: part.functionCall.name,
@@ -382,6 +403,13 @@ export class GoogleProvider implements ILLMProvider {
 			}
 		});
 
+		if (isThinking) {
+			isThinking = false;
+			const closeTag = '\n</think>\n';
+			fullContent += closeTag;
+			onChunk?.(closeTag);
+		}
+
 		return { content: fullContent, toolCalls: accumulatedToolCalls, usage, finishReason };
 	}
 }
@@ -393,15 +421,29 @@ function parseNonStreamingResponse(candidate: GeminiCandidate): {
 	toolCalls: ToolCall[];
 } {
 	let fullContent = '';
+	let isThinking = false;
 	const toolCalls: ToolCall[] = [];
 	const parts = candidate?.content?.parts;
 
 	if (parts) {
 		for (const part of parts) {
 			if (part.text) {
+				if (part.thought) {
+					if (!isThinking) {
+						isThinking = true;
+						fullContent += '<think>\n';
+					}
+				} else if (isThinking) {
+					isThinking = false;
+					fullContent += '\n</think>\n';
+				}
 				fullContent += part.text;
 			}
 			if (part.functionCall) {
+				if (isThinking) {
+					isThinking = false;
+					fullContent += '\n</think>\n';
+				}
 				toolCalls.push({
 					id: crypto.randomUUID(),
 					name: part.functionCall.name,
@@ -410,6 +452,10 @@ function parseNonStreamingResponse(candidate: GeminiCandidate): {
 				});
 			}
 		}
+	}
+
+	if (isThinking) {
+		fullContent += '\n</think>\n';
 	}
 
 	return { fullContent, toolCalls };

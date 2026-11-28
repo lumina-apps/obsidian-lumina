@@ -385,6 +385,43 @@
         "desc": "Met en cache les prompts système répétés, schémas d’outils et préfixes de conversation (Anthropic, OpenAI, OpenRouter, Gemini) pour réduire coûts et latence. Astuce : les variables dynamiques comme {{time}} au début du prompt réduisent le taux de réutilisation.",
         "geminiExplicitName": "Cache de contexte explicite Gemini",
         "geminiExplicitDesc": "Pré-met en cache les grands contextes (4 096+ jetons) sur Gemini 2.5/3 via l’API cachedContents. Entraîne des frais de stockage Google distincts pendant le TTL de 5 min ; les modèles non pris en charge (ex. Gemini 4) basculent automatiquement."
+      },
+      "reasoning": {
+        "effortName": "Niveau de raisonnement / réflexion",
+        "effortDesc": "Contrôle l’effort de raisonnement ou la profondeur de réflexion pour les appels directs aux API Cloud (OpenAI o-series/GPT-5, Anthropic Claude 3.7+, Google Gemini 2.5+). « Auto » omet le paramètre.",
+        "budgetName": "Budget manuel de jetons de réflexion",
+        "budgetDesc": "Remplacement optionnel du budget pour les modèles à budget explicite (Claude 3.7–4.6, Gemini 2.5). 0 utilise les préréglages automatiques. (Claude 4.7+ et Gemini 3+ utilisent niveau/effort.)",
+        "options": {
+          "auto": "Auto (par défaut)",
+          "off": "Désactivé / Minimal",
+          "low": "Faible",
+          "medium": "Moyen",
+          "high": "Élevé"
+        },
+        "short": {
+          "auto": "Auto",
+          "off": "Off",
+          "low": "Faible",
+          "medium": "Moy",
+          "high": "Élevé"
+        },
+        "popupTitle": "Raisonnement / Réflexion",
+        "toolbarTooltip": "Niveau de raisonnement / réflexion",
+        "summaryAuto": "Valeur par défaut du modèle (paramètre omis)",
+        "summaryOffOpenAIUnsupported": "La série o d’OpenAI ne permet pas de désactiver le raisonnement (omis)",
+        "summaryOffOpenAIMinimal": "OpenAI GPT-5 · reasoning_effort: minimal",
+        "summaryOffOpenAINone": "OpenAI GPT-5.1+ · reasoning_effort: none",
+        "summaryOffAnthropic": "Anthropic · thinking: disabled",
+        "summaryOffGeminiZero": "Gemini 2.5 · thinkingBudget: 0 (désactivé)",
+        "summaryOffGeminiProMin": "Gemini 2.5 Pro · thinkingBudget minimum : 128",
+        "summaryOffGeminiLevel": "Gemini 3+ · thinkingLevel: {{level}}",
+        "summaryOpenAIEffort": "OpenAI · reasoning_effort: {{effort}}",
+        "summaryAnthropicManual": "Anthropic · budget manuel : {{budget}} jetons",
+        "summaryAnthropicAdaptive": "Anthropic · adaptive (effort: {{effort}})",
+        "summaryGeminiBudget": "Gemini 2.5 · thinkingBudget : {{budget}} jetons",
+        "summaryGeminiLevel": "Gemini 3+ · thinkingLevel: {{level}}",
+        "summarySplitMulti": "Appliqué selon chaque modèle Cloud compatible",
+        "manualBudgetIgnoredHint": "Le budget manuel s’applique uniquement à Claude 3.7–4.6 et Gemini 2.5 ; ce modèle utilise niveau/effort."
       }
     },
     "rag": {

@@ -23,6 +23,8 @@ export interface LLMRequestLog extends BaseLogEntry {
 	messages: Array<{ role: string; content: string }>;
 	ragChunks?: RagChunkMeta[];
 	estimatedInputTokens?: number;
+	/** 적용된 추론/사고 제어 파라미터 요약 (미적용 시 생략) */
+	reasoning?: string;
 }
 
 // ─── LLM Response ───────────────────────────────
