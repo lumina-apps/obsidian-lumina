@@ -264,6 +264,8 @@ describe('AnthropicProvider', () => {
 				inputTokens: 2112,
 				outputTokens: 45,
 				totalTokens: 2157,
+				cacheReadTokens: 2000,
+				cacheCreationTokens: 100,
 			});
 		});
 
@@ -313,7 +315,62 @@ describe('AnthropicProvider', () => {
 				inputTokens: 460,
 				outputTokens: 25,
 				totalTokens: 485,
+				cacheReadTokens: 400,
+				cacheCreationTokens: 50,
 			});
+		});
+
+		it('promptCaching.enabled가 true일 때 tools, system, messages에 cache_control을 주입하고 비활성 시 생략한다', async () => {
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					content: [{ type: 'text', text: 'OK' }],
+					stop_reason: 'end_turn',
+				},
+			} as RequestUrlResponse);
+
+			await provider.chat(
+				[
+					{ role: 'system', content: 'System prompt' },
+					{ role: 'user', content: 'Hello' },
+				],
+				{
+					model: 'claude-sonnet-4-5',
+					tools: [{ name: 'read_note', description: 'Read', inputSchema: { type: 'object', properties: {} } }],
+					promptCaching: { enabled: true },
+				},
+			);
+
+			const cachedBody = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as {
+				system: Array<{ cache_control?: unknown }>;
+				tools: Array<{ cache_control?: unknown }>;
+				messages: Array<{ content: Array<{ cache_control?: unknown }> }>;
+			};
+			expect(cachedBody.system[0].cache_control).toEqual({ type: 'ephemeral' });
+			expect(cachedBody.tools[0].cache_control).toEqual({ type: 'ephemeral' });
+			expect(cachedBody.messages[0].content[0].cache_control).toEqual({ type: 'ephemeral' });
+
+			mockRequestUrl.mockClear();
+
+			await provider.chat(
+				[
+					{ role: 'system', content: 'System prompt' },
+					{ role: 'user', content: 'Hello' },
+				],
+				{
+					model: 'claude-sonnet-4-5',
+					tools: [{ name: 'read_note', description: 'Read', inputSchema: { type: 'object', properties: {} } }],
+				},
+			);
+
+			const plainBody = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as {
+				system: unknown;
+				tools: Array<{ cache_control?: unknown }>;
+				messages: Array<{ content: unknown }>;
+			};
+			expect(plainBody.system).toBe('System prompt');
+			expect(plainBody.tools[0].cache_control).toBeUndefined();
+			expect(plainBody.messages[0].content).toBe('Hello');
 		});
 
 		it('모바일에서 스트리밍 fetch가 CORS TypeError로 실패하면 requestUrl 비스트리밍으로 폴백한다', async () => {

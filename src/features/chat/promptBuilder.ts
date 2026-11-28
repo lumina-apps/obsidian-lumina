@@ -123,7 +123,13 @@ export function buildMessages(
 		systemContent = `${systemContent}\n\n[IMPORTANT STATUS]\nYou are currently in READ-ONLY mode. You cannot modify, delete, or execute any files or notes. If the user requests any modifying action, DO NOT say "I don't have the tool". Instead, politely inform them that they must click the "${editModeLabel}" toggle located at the bottom right to enable modifications.`.trim();
 	}
 
-	// RAG 컨텍스트 주입은 이제 마지막 User 메시지에서 처리합니다.
+	// 프롬프트 캐시 적중률 유지를 위해 attachmentContext(정적/반정적)를 시스템 프롬프트 영역에 배치하고,
+	// 매 턴 변동되는 요약([이전 대화 요약]) 및 RAG 검색 결과는 뒤쪽에 배치합니다.
+	const trimmedAttachmentContext = attachmentContext?.trim() ?? '';
+	if (trimmedAttachmentContext) {
+		const attachmentSection = `<context>\n${trimmedAttachmentContext}\n</context>\n\n<instruction>\nUse the provided context to address the user's request. Prioritize and accurately ground your response in the facts from the context where relevant. You may synthesize, explain, translate, or extrapolate as requested by the user. DO NOT repeat, regurgitate, or dump the raw context unless explicitly requested by the user.\n</instruction>`;
+		systemContent = systemContent ? `${systemContent}\n\n${attachmentSection}` : attachmentSection;
+	}
 
 	const messages: ChatMessage[] = [];
 
@@ -247,19 +253,13 @@ export function buildMessages(
 		}
 	}
 
-	let combinedContext = '';
-	if (attachmentContext?.trim()) {
-		combinedContext += attachmentContext.trim();
-	}
-	if (optimizedRag?.trim()) {
-		if (combinedContext) combinedContext += '\n\n---\n\n';
-		combinedContext += optimizedRag.trim();
-	}
-
-	if (combinedContext) {
+	const trimmedRag = optimizedRag?.trim() ?? '';
+	if (trimmedRag) {
 		const effectiveUserText = userText.trim() || 'Please review, explain, or summarize the provided context.';
-		// User 메시지 상단에 컨텍스트를 주입
-		finalUserText = `<context>\n${combinedContext}\n</context>\n\nUser Question: ${effectiveUserText}\n\n<instruction>\nUse the provided context to address the user's request. Prioritize and accurately ground your response in the facts from the context where relevant. You may synthesize, explain, translate, or extrapolate as requested by the user. DO NOT repeat, regurgitate, or dump the raw context unless explicitly requested by the user.\n</instruction>`;
+		// 매 턴 변동되는 RAG 컨텍스트만 마지막 User 메시지 상단에 주입
+		finalUserText = `<context>\n${trimmedRag}\n</context>\n\nUser Question: ${effectiveUserText}\n\n<instruction>\nUse the provided context to address the user's request. Prioritize and accurately ground your response in the facts from the context where relevant. You may synthesize, explain, translate, or extrapolate as requested by the user. DO NOT repeat, regurgitate, or dump the raw context unless explicitly requested by the user.\n</instruction>`;
+	} else if (trimmedAttachmentContext && !userText.trim()) {
+		finalUserText = 'Please review, explain, or summarize the provided context.';
 	}
 
 	messages.push({ role: 'user', content: finalUserText });

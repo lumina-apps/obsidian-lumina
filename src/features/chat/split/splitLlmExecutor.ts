@@ -112,6 +112,7 @@ export async function executeSplitSlotCall(
 	const provider = createProvider(providerConfig);
 	const effectiveTemp = slot.temperatureOverride ?? chatSettings.temperature;
 
+	const enablePromptCaching = chatSettings.enablePromptCaching !== false;
 	const chatOptions: ChatOptions = {
 		model: resolvedModelId,
 		temperature: effectiveTemp,
@@ -119,6 +120,16 @@ export async function executeSplitSlotCall(
 		signal,
 		ttftTimeoutMs: chatSettings.ttftTimeoutMs,
 		interTokenTimeoutMs: chatSettings.interTokenTimeoutMs,
+		...(enablePromptCaching
+			? {
+				promptCaching: {
+					enabled: true,
+					cacheKey: `split-${slot.slotId}`,
+					geminiExplicit: Boolean(chatSettings.geminiExplicitCaching),
+					geminiTtlSeconds: 300,
+				},
+			}
+			: {}),
 	};
 
 	const startedAt = Date.now();

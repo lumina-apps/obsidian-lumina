@@ -374,6 +374,10 @@ export default class LuminaPlugin extends Plugin {
 		import('./features/rag/parsers/PdfParser').then(({ disposePdfWorker }) => {
 			disposePdfWorker();
 		}).catch(() => { /* ignore */ });
+		// Gemini Explicit 컨텍스트 캐시 정리
+		import('./core/llm-providers/cloud/gemini-cache-manager').then(({ geminiContextCacheManager }) => {
+			void geminiContextCacheManager.destroyAll();
+		}).catch(() => { /* ignore */ });
 	}
 
 	// ─── Settings ───────────────────────────────────────────────────────

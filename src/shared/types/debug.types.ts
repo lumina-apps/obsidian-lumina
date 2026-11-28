@@ -37,6 +37,8 @@ export interface LLMResponseLog extends BaseLogEntry {
 		inputTokens: number;
 		outputTokens: number;
 		totalTokens: number;
+		cacheReadTokens?: number;
+		cacheCreationTokens?: number;
 	};
 	stopReason?: string;
 }

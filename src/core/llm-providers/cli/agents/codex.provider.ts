@@ -307,17 +307,22 @@ export class CodexProvider extends BaseCliAgent {
 		// 6. 결과 및 사용량 (turn.completed / usage / result)
 		if (eventType === 'turn.completed' || eventType === 'usage' || eventType === 'result') {
 			const events: CliEvent[] = [];
-			const u = (obj.usage || item?.usage || obj.tokenUsage) as Record<string, number> | undefined;
+			const u = (obj.usage || item?.usage || obj.tokenUsage) as Record<string, unknown> | undefined;
 			if (u && typeof u === 'object') {
-				const inputTokens = u.input_tokens || u.prompt_tokens || u.inputTokens || 0;
-				const outputTokens = u.output_tokens || u.completion_tokens || u.outputTokens || 0;
-				const totalTokens = u.total_tokens || u.totalTokens || (inputTokens + outputTokens);
+				const inputTokens = Number(u.input_tokens || u.prompt_tokens || u.inputTokens || 0);
+				const outputTokens = Number(u.output_tokens || u.completion_tokens || u.outputTokens || 0);
+				const totalTokens = Number(u.total_tokens || u.totalTokens || (inputTokens + outputTokens));
+				const details = u.prompt_tokens_details as Record<string, unknown> | undefined;
+				const cacheReadTokens = Number(
+					u.cached_input_tokens || u.cache_read_input_tokens || details?.cached_tokens || 0,
+				);
 				events.push({
 					type: 'usage',
 					usage: {
 						inputTokens,
 						outputTokens,
 						totalTokens,
+						...(cacheReadTokens > 0 ? { cacheReadTokens } : {}),
 					},
 					raw,
 				});

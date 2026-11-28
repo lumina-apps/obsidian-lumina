@@ -305,12 +305,17 @@ export class OpenCodeProvider extends BaseCliAgent {
 				const inputTokens = Number(tokens.input || tokens.inputTokens || tokens.input_tokens || 0);
 				const outputTokens = Number(tokens.output || tokens.outputTokens || tokens.output_tokens || 0);
 				const totalTokens = Number(tokens.total || tokens.totalTokens || tokens.total_tokens || (inputTokens + outputTokens));
+				const cacheObj = tokens.cache as Record<string, unknown> | undefined;
+				const cacheReadTokens = Number(cacheObj?.read || tokens.cache_read_input_tokens || 0);
+				const cacheCreationTokens = Number(cacheObj?.write || tokens.cache_creation_input_tokens || 0);
 				events.push({
 					type: 'usage',
 					usage: {
 						inputTokens,
 						outputTokens,
 						totalTokens,
+						...(cacheReadTokens > 0 ? { cacheReadTokens } : {}),
+						...(cacheCreationTokens > 0 ? { cacheCreationTokens } : {}),
 					},
 					raw,
 				});

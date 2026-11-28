@@ -70,14 +70,16 @@ export const GOOGLE_MODELS = [
 	'text-embedding-004',
 ];
 
-/** Gemini usageMetadata → TokenUsage 매핑 (thoughtsTokenCount 및 toolUsePromptTokenCount 포함) */
+/** Gemini usageMetadata → TokenUsage 매핑 (thoughtsTokenCount, toolUsePromptTokenCount, cachedContentTokenCount 포함) */
 export function mapUsageMetadata(meta: GeminiStreamChunk['usageMetadata']): TokenUsage {
 	const inputTokens = (meta?.promptTokenCount ?? 0) + (meta?.toolUsePromptTokenCount ?? 0);
 	const outputTokens = (meta?.candidatesTokenCount ?? 0) + (meta?.thoughtsTokenCount ?? 0);
 	const totalTokens = meta?.totalTokenCount ?? (inputTokens + outputTokens);
+	const cacheReadTokens = meta?.cachedContentTokenCount ?? 0;
 	return {
 		inputTokens,
 		outputTokens,
 		totalTokens,
+		...(cacheReadTokens > 0 ? { cacheReadTokens } : {}),
 	};
 }

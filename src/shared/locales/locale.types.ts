@@ -399,6 +399,13 @@ export interface TranslationSettingsChatStreaming {
   desc: string;
 }
 
+export interface TranslationSettingsChatPromptCaching {
+  name: string;
+  desc: string;
+  geminiExplicitName: string;
+  geminiExplicitDesc: string;
+}
+
 export interface TranslationSettingsChat {
   quickSettings: TranslationSettingsChatQuickSettings;
   title: string;
@@ -413,6 +420,7 @@ export interface TranslationSettingsChat {
   memoryLimit: TranslationSettingsChatMemoryLimit;
   modelParams: TranslationSettingsChatModelParams;
   streaming: TranslationSettingsChatStreaming;
+  promptCaching: TranslationSettingsChatPromptCaching;
   timeout: {
     ttftLabel: string;
     ttftDesc: string;
@@ -736,6 +744,10 @@ export interface TranslationChat {
   slashCommands: TranslationChatSlashCommands;
   sessionUsage: string;
   sessionTokens: string;
+  cacheReusedBadge: string;
+  sessionUsageDetailedTooltip: string;
+  sessionUsageCachedTooltip: string;
+  sessionUsageCachedWriteSuffix: string;
   estimatedTokensTooltip: string;
   tokenOverLimitTooltip: string;
   cliMode: TranslationChatCliMode;

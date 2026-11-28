@@ -4,7 +4,8 @@ import type { ChatOptions, TokenUsage } from '../../../shared/types/llm.types';
 import { runAgentLoop, isTokenLimitReached } from '../agentLoop';
 import { debugLogger, formatMessagesForDebugLog } from '../../../shared/debugLogger';
 import { estimateTokens } from '../../../shared/utils/tokenEstimator';
-import { appendChunk } from '../../../core/store/chatStore';
+import { get } from 'svelte/store';
+import { appendChunk, currentSessionId } from '../../../core/store/chatStore';
 import type { ResolvedContext } from './contextBuilder';
 import type LuminaPlugin from '../../../main';
 import { getVaultBasePath, toVaultRelativePath } from './cliFileBackupHelper';
@@ -61,6 +62,7 @@ export async function executeLlmCall(
 
 	const provider = createProvider(providerConfig);
 
+	const enablePromptCaching = chatSettings.enablePromptCaching !== false;
 	const chatOptions: ChatOptions = {
 		model: resolvedModelId,
 		temperature: chatSettings.temperature,
@@ -71,6 +73,16 @@ export async function executeLlmCall(
 		ttftTimeoutMs: chatSettings.ttftTimeoutMs,
 		interTokenTimeoutMs: chatSettings.interTokenTimeoutMs,
 		cwd: getVaultBasePath(plugin),
+		...(enablePromptCaching
+			? {
+				promptCaching: {
+					enabled: true,
+					cacheKey: get(currentSessionId) || `chat-${providerConfig.id}`,
+					geminiExplicit: Boolean(chatSettings.geminiExplicitCaching),
+					geminiTtlSeconds: 300,
+				},
+			}
+			: {}),
 	};
 
 	const hasTools = mcpTools.length > 0;

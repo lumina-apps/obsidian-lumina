@@ -6,6 +6,7 @@
 	import { clickOutside, iconAction } from "../../../shared/utils/domUtils";
 	import { useKeyboardListNav } from "./composables/useKeyboardListNav.svelte";
 	import { getAllModels, filterModels, findSelectedModel } from "./composables/useModelList";
+	import { computeDesktopModelDropdownStyle } from "./utils/modelSelectorPosition";
 	import ModelListItems from "./components/ModelListItems.svelte";
 
 	// ═══════════════════════════════════════════════════════════════════════════
@@ -34,7 +35,7 @@
 	// ═══════════════════════════════════════════════════════════════════════════
 	let isOpen = $state(false);
 	let searchQuery = $state("");
-	let mobileDropdownStyle = $state<string | undefined>(undefined);
+	let dropdownStyle = $state<string | undefined>(undefined);
 	let containerEl: HTMLDivElement | null = $state(null);
 	let inputEl: HTMLInputElement | null = $state(null);
 	let listEl: HTMLDivElement | null = $state(null);
@@ -72,32 +73,50 @@
 	// ═══════════════════════════════════════════════════════════════════════════
 	// Dropdown open/close management
 	// ═══════════════════════════════════════════════════════════════════════════
+	/**
+	 * 호스트 컨테이너(.lumina-chat, .lumina-split-root) 경계 내에서
+	 * 드롭다운이 잘리지 않도록 위치 및 너비 스타일을 갱신합니다.
+	 */
+	function updateDropdownStyle() {
+		if (!containerEl) {
+			dropdownStyle = undefined;
+			return;
+		}
+
+		const rect = containerEl.getBoundingClientRect();
+		const hostEl = containerEl.closest('.lumina-chat, .lumina-split-root') as HTMLElement | null;
+		const hostRect = hostEl ? hostEl.getBoundingClientRect() : null;
+
+		if (Platform.isMobile) {
+			const offsetTop = hostRect ? rect.bottom - hostRect.top : rect.bottom;
+			const top = offsetTop > 0 ? Math.round(offsetTop + 4) : 56;
+			const viewportW = typeof window !== "undefined" ? window.innerWidth : 390;
+			const boundW = hostRect && hostRect.width > 0 ? hostRect.width : viewportW;
+			if (viewportW > 600 && boundW > 384) {
+				// 태블릿 등 넓은 컨테이너에서는 트리거 좌/우 기준 360px 앵커 팝오버로 표시 (컨테이너 상대 좌표 보정)
+				const dropdownW = Math.min(360, boundW - 24);
+				const relLeft = hostRect ? rect.left - hostRect.left : rect.left;
+				const relRight = hostRect ? rect.right - hostRect.left : rect.right;
+				const rawLeft = dropdownAlign === "left" ? relLeft : relRight - dropdownW;
+				const clampedLeft = Math.max(12, Math.min(rawLeft, boundW - dropdownW - 12));
+				dropdownStyle = `top: ${top}px; left: ${Math.round(clampedLeft)}px; right: auto; width: ${dropdownW}px; max-width: calc(100% - 24px);`;
+			} else {
+				dropdownStyle = `top: ${top}px;`;
+			}
+		} else {
+			dropdownStyle = computeDesktopModelDropdownStyle({
+				triggerRect: rect,
+				hostRect,
+				dropdownAlign,
+			});
+		}
+	}
+
 	function toggleDropdown(e: MouseEvent) {
 		e.stopPropagation();
 		isOpen = !isOpen;
 		if (isOpen) {
-			if (Platform.isMobile && containerEl) {
-				const rect = containerEl.getBoundingClientRect();
-				const hostEl = containerEl.closest('.lumina-chat, .lumina-split-root') as HTMLElement | null;
-				const hostRect = hostEl ? hostEl.getBoundingClientRect() : null;
-				const offsetTop = hostRect ? rect.bottom - hostRect.top : rect.bottom;
-				const top = offsetTop > 0 ? Math.round(offsetTop + 4) : 56;
-				const viewportW = typeof window !== "undefined" ? window.innerWidth : 390;
-				const boundW = hostRect && hostRect.width > 0 ? hostRect.width : viewportW;
-				if (viewportW > 600 && boundW > 384) {
-					// 태블릿 등 넓은 컨테이너에서는 트리거 좌/우 기준 360px 앵커 팝오버로 표시 (컨테이너 상대 좌표 보정)
-					const dropdownW = Math.min(360, boundW - 24);
-					const relLeft = hostRect ? rect.left - hostRect.left : rect.left;
-					const relRight = hostRect ? rect.right - hostRect.left : rect.right;
-					const rawLeft = dropdownAlign === "left" ? relLeft : relRight - dropdownW;
-					const clampedLeft = Math.max(12, Math.min(rawLeft, boundW - dropdownW - 12));
-					mobileDropdownStyle = `top: ${top}px; left: ${Math.round(clampedLeft)}px; right: auto; width: ${dropdownW}px; max-width: calc(100% - 24px);`;
-				} else {
-					mobileDropdownStyle = `top: ${top}px;`;
-				}
-			} else {
-				mobileDropdownStyle = undefined;
-			}
+			updateDropdownStyle();
 			searchQuery = "";
 			nav.resetIndex();
 			// 모바일에서는 드롭다운 오픈 시 소프트 키보드가 즉시 팝업되지 않도록 자동 포커스 생략
@@ -108,6 +127,25 @@
 			}
 		}
 	}
+
+	// 드롭다운이 열린 상태에서 사이드바/창 크기 변경 시 위치를 재계산
+	$effect(() => {
+		if (!isOpen || !containerEl) return;
+		const hostEl = containerEl.closest('.lumina-chat, .lumina-split-root') as HTMLElement | null;
+		const handleResize = () => updateDropdownStyle();
+		window.addEventListener("resize", handleResize);
+
+		let resizeObserver: ResizeObserver | null = null;
+		if (hostEl && typeof ResizeObserver !== "undefined") {
+			resizeObserver = new ResizeObserver(handleResize);
+			resizeObserver.observe(hostEl);
+		}
+
+		return () => {
+			window.removeEventListener("resize", handleResize);
+			resizeObserver?.disconnect();
+		};
+	});
 
 	function closeDropdown() {
 		isOpen = false;
@@ -165,7 +203,7 @@
 		<div
 			class="lumina-popup-selector lumina-model-selector__dropdown"
 			class:lumina-model-selector__dropdown--left={dropdownAlign === "left"}
-			style={Platform.isMobile ? mobileDropdownStyle : undefined}
+			style={dropdownStyle}
 		>
 			<div class="lumina-model-selector__search-wrap">
 				<input
@@ -255,6 +293,7 @@
 		left: auto;
 		width: 360px;
 		max-width: calc(100vw - 32px);
+		box-sizing: border-box;
 		padding: 0;
 		z-index: 100;
 	}

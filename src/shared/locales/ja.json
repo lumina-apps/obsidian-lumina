@@ -379,6 +379,12 @@
       "enableSelectionMiniIcon": {
         "name": "選択範囲ミニAIアイコンを表示",
         "desc": "エディタでテキストを選択すると、インラインプロンプトバーを素早く開く小さなAIボタンを表示します。"
+      },
+      "promptCaching": {
+        "name": "プロンプトキャッシュ (Prompt Caching)",
+        "desc": "繰り返されるシステムプロンプトやツール定義、会話の先頭部分をキャッシュ（Anthropic・OpenAI・OpenRouter・Gemini）し、トークンコストと応答遅延を削減します。ヒント: {{time}} のような動的変数がシステムプロンプトの先頭にあるとキャッシュ効率が下がる場合があります。",
+        "geminiExplicitName": "Gemini 明示的コンテキストキャッシュ",
+        "geminiExplicitDesc": "Gemini 2.5/3 モデルで 4,096 トークン以上のコンテキストを cachedContents API で明示的にキャッシュします。5分間の TTL 中は Google のストレージ料金が別途発生し、非対応モデル（Gemini 4 等）では自動的に通常リクエストへフォールバックします。"
       }
     },
     "rag": {
@@ -646,7 +652,11 @@
       "editModeTooltip": "編集モード: CLIエージェントが保管庫内のノートを作成・編集できます。",
       "readModeNotice": "👁️ CLIエージェント: 読み取りモード (ノート変更無効)",
       "editModeNotice": "✏️ CLIエージェント: 編集モード (ノート作成・編集許可)"
-    }
+    },
+    "cacheReusedBadge": "⚡ {{percent}}% 再利用",
+    "sessionUsageCachedTooltip": "セッション合計 {{total}} トークン（入力 {{input}} 中 {{reused}} 再利用 · {{percent}}% 節約 / 出力 {{output}}）",
+    "sessionUsageCachedWriteSuffix": " · 新規キャッシュ {{written}}",
+    "sessionUsageDetailedTooltip": "セッション合計 {{total}} トークン（入力 {{input}} / 出力 {{output}}）"
   },
   "common": {
     "save": "保存",

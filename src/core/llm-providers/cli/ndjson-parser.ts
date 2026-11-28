@@ -470,10 +470,16 @@ export function mergeCliTokenUsage(
 	const rawTotal = incoming.totalTokens ?? 0;
 	const computedTotal = inputTokens + outputTokens;
 	const totalTokens = rawTotal >= computedTotal && rawTotal > 0 ? rawTotal : computedTotal;
+	const incomingCacheRead = incoming.cacheReadTokens ?? 0;
+	const incomingCacheCreation = incoming.cacheCreationTokens ?? 0;
+	const cacheReadTokens = incomingCacheRead > 0 ? incomingCacheRead : (prev?.cacheReadTokens ?? 0);
+	const cacheCreationTokens = incomingCacheCreation > 0 ? incomingCacheCreation : (prev?.cacheCreationTokens ?? 0);
 
 	return {
 		inputTokens,
 		outputTokens,
 		totalTokens,
+		...(cacheReadTokens > 0 ? { cacheReadTokens } : {}),
+		...(cacheCreationTokens > 0 ? { cacheCreationTokens } : {}),
 	};
 }

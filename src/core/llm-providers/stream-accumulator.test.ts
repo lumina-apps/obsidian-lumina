@@ -77,6 +77,49 @@ describe('mapOpenAIUsage', () => {
 	it('undefined 입력 시 undefined를 반환한다', () => {
 		expect(mapOpenAIUsage(undefined)).toBeUndefined();
 	});
+
+	it('prompt_tokens_details.cached_tokens 및 DeepSeek prompt_cache_hit_tokens를 cacheReadTokens로 매핑한다', () => {
+		expect(
+			mapOpenAIUsage({
+				prompt_tokens: 1500,
+				completion_tokens: 50,
+				total_tokens: 1550,
+				prompt_tokens_details: { cached_tokens: 1024 },
+			}),
+		).toEqual({
+			inputTokens: 1500,
+			outputTokens: 50,
+			totalTokens: 1550,
+			cacheReadTokens: 1024,
+		});
+
+		expect(
+			mapOpenAIUsage({
+				prompt_tokens: 800,
+				completion_tokens: 40,
+				total_tokens: 840,
+				prompt_cache_hit_tokens: 512,
+			}),
+		).toEqual({
+			inputTokens: 800,
+			outputTokens: 40,
+			totalTokens: 840,
+			cacheReadTokens: 512,
+		});
+
+		expect(
+			mapOpenAIUsage({
+				prompt_tokens: 100,
+				completion_tokens: 20,
+				total_tokens: 120,
+				prompt_tokens_details: { cached_tokens: 0 },
+			}),
+		).toEqual({
+			inputTokens: 100,
+			outputTokens: 20,
+			totalTokens: 120,
+		});
+	});
 });
 
 // ── accumulateToolCalls ──

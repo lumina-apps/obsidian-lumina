@@ -379,6 +379,12 @@
       "enableSelectionMiniIcon": {
         "name": "Show Selection Mini AI Button",
         "desc": "Display a compact floating AI button near selected text in the editor to quickly open the inline prompt bar."
+      },
+      "promptCaching": {
+        "name": "Prompt Caching",
+        "desc": "Cache repeated system prompts, tool schemas, and conversation prefixes (Anthropic, OpenAI, OpenRouter, Gemini) to cut token costs and latency. Tip: Dynamic variables like {{time}} near the top of your system prompt can reduce cache hits.",
+        "geminiExplicitName": "Gemini Explicit Context Caching",
+        "geminiExplicitDesc": "Pre-cache large context prefixes (4,096+ tokens) on Gemini 2.5/3 models via cachedContents API. Incurs separate Google context-cache storage fees for the 5-minute TTL; unsupported models (e.g., Gemini 4) fall back automatically."
       }
     },
     "rag": {
@@ -646,7 +652,11 @@
       "editModeTooltip": "Edit Mode: CLI agent is allowed to create and modify notes directly.",
       "readModeNotice": "👁️ CLI Agent: Read Mode (Note modifications blocked)",
       "editModeNotice": "✏️ CLI Agent: Edit Mode (Allowed to create and edit notes)"
-    }
+    },
+    "cacheReusedBadge": "⚡ {{percent}}% reused",
+    "sessionUsageCachedTooltip": "Session total: {{total}} tokens ({{reused}} of {{input}} input tokens reused · {{percent}}% saved / {{output}} output)",
+    "sessionUsageCachedWriteSuffix": " · {{written}} newly cached",
+    "sessionUsageDetailedTooltip": "Session total: {{total}} tokens ({{input}} input / {{output}} output)"
   },
   "common": {
     "save": "Save",

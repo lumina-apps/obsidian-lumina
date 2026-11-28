@@ -39,6 +39,11 @@ export interface OpenAIStreamChunk {
 		prompt_tokens: number;
 		completion_tokens: number;
 		total_tokens: number;
+		prompt_tokens_details?: {
+			cached_tokens?: number;
+		};
+		/** DeepSeek 호환 캐시 히트 토큰 필드 */
+		prompt_cache_hit_tokens?: number;
 	};
 }
 
@@ -68,5 +73,10 @@ export interface OpenAIResponse {
 		prompt_tokens: number;
 		completion_tokens: number;
 		total_tokens: number;
+		prompt_tokens_details?: {
+			cached_tokens?: number;
+		};
+		/** DeepSeek 호환 캐시 히트 토큰 필드 */
+		prompt_cache_hit_tokens?: number;
 	};
 }

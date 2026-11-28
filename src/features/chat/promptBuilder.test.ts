@@ -48,6 +48,8 @@ describe('promptBuilder', () => {
 			agentMaxSteps: 15,
 			ttftTimeoutMs: 0,
 			interTokenTimeoutMs: 0,
+			enablePromptCaching: true,
+			geminiExplicitCaching: false,
 		} as ChatSettings;
 
 		mockHistory = [
@@ -214,16 +216,74 @@ describe('promptBuilder', () => {
 		expect(lastMessage.content).toContain('... (Context truncated due to length limits)');
 	});
 
-	it('should NOT truncate attachmentContext even if it exceeds MAX_RAG_CHARS', () => {
+	it('should NOT truncate attachmentContext even if it exceeds MAX_RAG_CHARS and place it in system message', () => {
 		const longAttachment = 'b'.repeat(30000); // 30,000 chars > MAX_RAG_CHARS (20000)
 		const messages = buildMessages([], 'Question', {
 			chat: mockChatSettings,
 			attachmentContext: longAttachment,
 		});
 
-		const lastMessage = messages[messages.length - 1];
-		expect(lastMessage.content).toContain(longAttachment);
-		expect(lastMessage.content).not.toContain('... (Context truncated due to length limits)');
+		const systemMessage = messages[0];
+		expect(systemMessage.role).toBe('system');
+		expect(systemMessage.content).toContain(longAttachment);
+		expect(systemMessage.content).not.toContain('... (Context truncated due to length limits)');
+		expect(messages[messages.length - 1].content).toBe('Question');
+	});
+
+	it('should place attachmentContext before sessionSummary in system message and keep ragContext in the final user message', () => {
+		mockChatSettings.memoryMethod = 'auto_summary';
+		const messages = buildMessages([], 'Explain both', {
+			chat: mockChatSettings,
+			attachmentContext: 'Large attached note content',
+			ragContext: 'Dynamic RAG chunk',
+			sessionSummary: 'Earlier conversation summary',
+		});
+
+		const sysContent = String(messages[0].content);
+		const sysPromptIdx = sysContent.indexOf('You are a helpful assistant.');
+		const attachmentIdx = sysContent.indexOf('<context>\nLarge attached note content\n</context>');
+		const summaryIdx = sysContent.indexOf('[이전 대화 요약]\nEarlier conversation summary');
+		expect(sysPromptIdx).toBeGreaterThanOrEqual(0);
+		expect(attachmentIdx).toBeGreaterThan(sysPromptIdx);
+		expect(summaryIdx).toBeGreaterThan(attachmentIdx);
+
+		const lastUserContent = String(messages[messages.length - 1].content);
+		expect(lastUserContent).toContain('<context>\nDynamic RAG chunk\n</context>');
+		expect(lastUserContent).toContain('User Question: Explain both');
+		expect(lastUserContent).not.toContain('Large attached note content');
+	});
+
+	it('should preserve identical system prefix across turn 1 and turn 2 for the same attachmentContext', () => {
+		const turn1 = buildMessages([], 'First question', {
+			chat: mockChatSettings,
+			attachmentContext: 'Shared attached note',
+		});
+		const turn2 = buildMessages(
+			[
+				{ id: 'u1', role: 'user', content: 'First question', isStreaming: false, timestamp: 1 },
+				{ id: 'a1', role: 'assistant', content: 'First answer', isStreaming: false, timestamp: 2 },
+			],
+			'Follow-up question',
+			{
+				chat: mockChatSettings,
+				attachmentContext: 'Shared attached note',
+			},
+		);
+
+		expect(turn1[0]).toEqual(turn2[0]);
+	});
+
+	it('should use fallback user question when userText is empty and only attachmentContext is provided', () => {
+		const messages = buildMessages([], '   ', {
+			chat: mockChatSettings,
+			attachmentContext: 'Attached note only',
+		});
+
+		expect(messages[0].role).toBe('system');
+		expect(messages[0].content).toContain('Attached note only');
+		expect(messages[messages.length - 1].content).toBe(
+			'Please review, explain, or summarize the provided context.',
+		);
 	});
 	it('should prefix [Attachments: ...] in history user turns when attachments exist', () => {
 		const historyWithAtt: UIChatMessage[] = [

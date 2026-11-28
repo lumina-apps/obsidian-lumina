@@ -379,6 +379,12 @@
       "enableSelectionMiniIcon": {
         "name": "Mini-KI-Symbol bei Textauswahl anzeigen",
         "desc": "Zeigt bei ausgewähltem Text im Editor eine kompakte schwebende KI-Schaltfläche zum Öffnen der Prompt-Leiste an."
+      },
+      "promptCaching": {
+        "name": "Prompt-Caching",
+        "desc": "Speichert wiederkehrende System-Prompts, Tool-Schemata und Gesprächspräfixe (Anthropic, OpenAI, OpenRouter, Gemini) im Cache, um Kosten und Latenz zu senken. Hinweis: Dynamische Variablen wie {{time}} am Anfang des System-Prompts können Trefferquoten verringern.",
+        "geminiExplicitName": "Explizites Gemini-Kontext-Caching",
+        "geminiExplicitDesc": "Cached große Kontextpräfixe (ab 4.096 Tokens) auf Gemini 2.5/3-Modellen über die cachedContents-API. Verursacht während der 5-minütigen TTL separate Google-Speichergebühren; nicht unterstützte Modelle (z. B. Gemini 4) wechseln automatisch zurück."
       }
     },
     "rag": {
@@ -646,7 +652,11 @@
       "editModeTooltip": "Bearbeitungsmodus: Der CLI-Agent darf Notizen direkt erstellen und bearbeiten.",
       "readModeNotice": "👁️ CLI-Agent: Lesemodus (Notizänderungen blockiert)",
       "editModeNotice": "✏️ CLI-Agent: Bearbeitungsmodus (Notizen erstellen und bearbeiten erlaubt)"
-    }
+    },
+    "cacheReusedBadge": "⚡ {{percent}}% wiederverwendet",
+    "sessionUsageCachedTooltip": "Sitzung gesamt: {{total}} Tokens ({{reused}} von {{input}} Eingabe-Tokens wiederverwendet · {{percent}}% gespart / {{output}} Ausgabe)",
+    "sessionUsageCachedWriteSuffix": " · {{written}} neu gecacht",
+    "sessionUsageDetailedTooltip": "Sitzung gesamt: {{total}} Tokens ({{input}} Eingabe / {{output}} Ausgabe)"
   },
   "common": {
     "save": "Speichern",

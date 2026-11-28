@@ -65,6 +65,8 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		// 기본 타임아웃 활성화: LLM/네트워크가 응답하지 않을 때 무한 대기 방지
 		ttftTimeoutMs: 60000,
 		interTokenTimeoutMs: 30000,
+		enablePromptCaching: true,
+		geminiExplicitCaching: false,
 	},
 
 	// ── Section 3: RAG & Context ─────────────────────────────────────────────

@@ -795,6 +795,8 @@ claude-3-5-haiku
 					inputTokens: 550,
 					outputTokens: 25,
 					totalTokens: 575,
+					cacheReadTokens: 400,
+					cacheCreationTokens: 100,
 				});
 				expect(res[1].type).toBe('text');
 			});
@@ -1284,6 +1286,139 @@ claude-3-5-haiku
 				inputTokens: 1200,
 				outputTokens: 80,
 				totalTokens: 1280,
+			});
+		});
+
+		it('message_start의 cacheReadTokens와 cacheCreationTokens를 이후 부분 delta에서도 유지한다', () => {
+			const afterStart = mergeCliTokenUsage(undefined, {
+				inputTokens: 1000,
+				outputTokens: 0,
+				totalTokens: 1000,
+				cacheReadTokens: 800,
+				cacheCreationTokens: 150,
+			});
+			const afterDelta = mergeCliTokenUsage(afterStart, { inputTokens: 0, outputTokens: 50, totalTokens: 50 });
+			expect(afterDelta).toEqual({
+				inputTokens: 1000,
+				outputTokens: 50,
+				totalTokens: 1050,
+				cacheReadTokens: 800,
+				cacheCreationTokens: 150,
+			});
+		});
+	});
+
+	describe('CLI 에이전트 캐시 토큰 파싱 (Antigravity / Codex / OpenCode)', () => {
+		it('Antigravity result 이벤트의 cachedContentTokenCount 및 cache_read_input_tokens를 cacheReadTokens로 매핑한다', () => {
+			const agy = new AntigravityProvider({ id: 'a', type: 'antigravity', binaryPath: 'agy', autoApprove: true, isVerified: true });
+			const map = (agy as unknown as { mapEvent(raw: unknown): unknown }).mapEvent.bind(agy);
+			const res = map({
+				type: 'result',
+				result: 'Done',
+				usage: {
+					input_tokens: 1000,
+					output_tokens: 50,
+					cachedContentTokenCount: 750,
+				},
+			}) as Array<{ type: string; usage?: Record<string, number> }>;
+			expect(res[0].usage).toEqual({
+				inputTokens: 1000,
+				outputTokens: 50,
+				totalTokens: 1050,
+				cacheReadTokens: 750,
+			});
+		});
+
+		it('실제 agy step_update 및 중첩 result.usage의 cache_read_tokens를 중복 합산 없이 매핑한다', () => {
+			const agy = new AntigravityProvider({ id: 'a', type: 'antigravity', binaryPath: 'agy', autoApprove: true, isVerified: true });
+			const map = (agy as unknown as { mapEvent(raw: unknown): unknown }).mapEvent.bind(agy);
+
+			const stepRes = map({
+				event: 'step_update',
+				step_update: {
+					step_index: 1,
+					state: 'DONE',
+					step_type: 'agent_response',
+					text_delta: 'Hello!\n',
+					usage: {
+						input_tokens: 10561,
+						output_tokens: 13,
+						thinking_tokens: 0,
+						cache_read_tokens: 8000,
+						total_tokens: 10574,
+					},
+				},
+			}) as Array<{ type: string; usage?: Record<string, number> }>;
+			const stepUsage = stepRes.find((e) => e.type === 'usage')?.usage;
+			expect(stepUsage).toEqual({
+				inputTokens: 10561,
+				outputTokens: 13,
+				totalTokens: 10574,
+				cacheReadTokens: 8000,
+			});
+
+			const resultRes = map({
+				event: 'result',
+				result: {
+					status: 'SUCCESS',
+					response: 'Hello!\n',
+					usage: {
+						input_tokens: 10561,
+						output_tokens: 13,
+						cache_read_tokens: 8000,
+						total_tokens: 10574,
+					},
+				},
+			}) as { type: string; usage?: Record<string, number> } | Array<{ type: string; usage?: Record<string, number> }>;
+			const resultList = Array.isArray(resultRes) ? resultRes : [resultRes];
+			const resultUsage = resultList.find((e) => e.type === 'usage')?.usage;
+			expect(resultUsage).toEqual({
+				inputTokens: 10561,
+				outputTokens: 13,
+				totalTokens: 10574,
+				cacheReadTokens: 8000,
+			});
+		});
+
+		it('Codex turn.completed 이벤트의 cached_input_tokens를 cacheReadTokens로 매핑한다', () => {
+			const codex = new CodexProvider({ id: 'x', type: 'codex', binaryPath: 'codex', autoApprove: true, isVerified: true });
+			const map = (codex as unknown as { mapEvent(raw: unknown): unknown }).mapEvent.bind(codex);
+			const res = map({
+				type: 'turn.completed',
+				usage: {
+					input_tokens: 2000,
+					cached_input_tokens: 1500,
+					output_tokens: 100,
+				},
+			}) as { type: string; usage?: Record<string, number> };
+			expect(res.usage).toEqual({
+				inputTokens: 2000,
+				outputTokens: 100,
+				totalTokens: 2100,
+				cacheReadTokens: 1500,
+			});
+		});
+
+		it('OpenCode step_finish 이벤트의 tokens.cache.read/write를 매핑한다', () => {
+			const opencode = new OpenCodeProvider({ id: 'o', type: 'opencode', binaryPath: 'opencode', autoApprove: true, isVerified: true });
+			const map = (opencode as unknown as { mapEvent(raw: unknown): unknown }).mapEvent.bind(opencode);
+			const res = map({
+				type: 'step_finish',
+				part: {
+					type: 'step-finish',
+					tokens: {
+						input: 1200,
+						output: 80,
+						cache: { read: 900, write: 100 },
+					},
+				},
+			}) as { type: string; usage?: Record<string, number> };
+			expect(res.usage).toEqual({
+				inputTokens: 1200,
+				outputTokens: 80,
+				totalTokens: 1280,
+				cacheReadTokens: 900,
+				cacheCreationTokens: 100,
 			});
 		});
 	});

@@ -379,6 +379,12 @@
       "enableSelectionMiniIcon": {
         "name": "Afficher la mini-icône IA lors de la sélection",
         "desc": "Affiche un bouton IA flottant discret près du texte sélectionné dans l'éditeur pour ouvrir la barre de prompt."
+      },
+      "promptCaching": {
+        "name": "Mise en cache des prompts",
+        "desc": "Met en cache les prompts système répétés, schémas d’outils et préfixes de conversation (Anthropic, OpenAI, OpenRouter, Gemini) pour réduire coûts et latence. Astuce : les variables dynamiques comme {{time}} au début du prompt réduisent le taux de réutilisation.",
+        "geminiExplicitName": "Cache de contexte explicite Gemini",
+        "geminiExplicitDesc": "Pré-met en cache les grands contextes (4 096+ jetons) sur Gemini 2.5/3 via l’API cachedContents. Entraîne des frais de stockage Google distincts pendant le TTL de 5 min ; les modèles non pris en charge (ex. Gemini 4) basculent automatiquement."
       }
     },
     "rag": {
@@ -646,7 +652,11 @@
       "editModeTooltip": "Mode édition : L'agent CLI est autorisé à créer et modifier des notes.",
       "readModeNotice": "👁️ Agent CLI : Mode lecture (Modification des notes bloquée)",
       "editModeNotice": "✏️ Agent CLI : Mode édition (Création et édition des notes autorisée)"
-    }
+    },
+    "cacheReusedBadge": "⚡ {{percent}}% réutilisé",
+    "sessionUsageCachedTooltip": "Total session : {{total}} jetons ({{reused}} sur {{input}} jetons d’entrée réutilisés · {{percent}}% économisés / {{output}} sortie)",
+    "sessionUsageCachedWriteSuffix": " · {{written}} nouvellement mis en cache",
+    "sessionUsageDetailedTooltip": "Total session : {{total}} jetons ({{input}} entrée / {{output}} sortie)"
   },
   "common": {
     "save": "Enregistrer",

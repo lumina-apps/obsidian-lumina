@@ -379,6 +379,12 @@
       "enableSelectionMiniIcon": {
         "name": "선택 영역 미니 AI 아이콘 표시",
         "desc": "에디터에서 텍스트를 선택하면 선택 끝부분에 즉석 프롬프트 바를 여는 작은 플로팅 AI 아이콘을 표시합니다."
+      },
+      "promptCaching": {
+        "name": "프롬프트 캐싱 (Prompt Caching)",
+        "desc": "반복되는 시스템 프롬프트, 도구 정의, 대화 앞부분을 캐싱(Anthropic, OpenAI, OpenRouter, Gemini)하여 토큰 비용과 응답 지연을 줄입니다. 참고: 시스템 프롬프트 앞부분에 {{time}} 같은 동적 변수가 있으면 캐시 재사용률이 낮아질 수 있습니다.",
+        "geminiExplicitName": "Gemini 명시적 컨텍스트 캐싱 (Explicit Caching)",
+        "geminiExplicitDesc": "Gemini 2.5/3 모델에서 4,096토큰 이상의 대용량 컨텍스트를 cachedContents API로 확정 캐싱합니다. 5분 TTL 동안 Google 스토리지 요금이 별도 부과되며, 미지원 모델(Gemini 4 등)은 자동으로 일반 요청으로 폴백됩니다."
       }
     },
     "rag": {
@@ -646,7 +652,11 @@
       "editModeTooltip": "수정 모드: CLI 에이전트가 볼트 내 노트를 직접 생성 및 수정할 수 있습니다.",
       "readModeNotice": "👁️ CLI 에이전트: 읽기 모드 (노트 수정 차단)",
       "editModeNotice": "✏️ CLI 에이전트: 수정 모드 (노트 생성 및 수정 허용)"
-    }
+    },
+    "cacheReusedBadge": "⚡ {{percent}}% 재사용",
+    "sessionUsageCachedTooltip": "세션 누적 {{total}} 토큰 (입력 {{input}} 중 {{reused}} 재사용 · {{percent}}% 절약 / 출력 {{output}})",
+    "sessionUsageCachedWriteSuffix": " · 새로 캐싱 {{written}}",
+    "sessionUsageDetailedTooltip": "세션 누적 {{total}} 토큰 (입력 {{input}} / 출력 {{output}})"
   },
   "common": {
     "save": "저장",

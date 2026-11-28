@@ -11,8 +11,21 @@ import {
 	isMobileStreamingCorsFallbackError,
 } from '../provider-helpers';
 import { debugLogger } from '../../../shared/debugLogger';
+import {
+	geminiContextCacheManager,
+	type ResolvedExplicitCache,
+} from './gemini-cache-manager';
 
 type GeminiCandidate = NonNullable<GeminiResponse['candidates']>[number];
+
+/** Explicit 캐시 참조가 만료되었거나 거부(HTTP 400/404)된 오류인지 판별합니다. */
+function isExplicitCacheRetryableError(err: unknown): boolean {
+	if (!err || typeof err !== 'object') return false;
+	const status = (err as { status?: number }).status;
+	if (status === 400 || status === 404) return true;
+	const msg = err instanceof Error ? err.message : String(err);
+	return /HTTP (?:400|404)\b|status (?:400|404)\b|cachedContent|CachedContent/i.test(msg);
+}
 
 export class GoogleProvider implements ILLMProvider {
 	readonly providerId: string;
@@ -66,11 +79,24 @@ export class GoogleProvider implements ILLMProvider {
 			};
 		}
 
-		const { url, headers, payload } = this.buildRequest('generateContent', options, messages, true);
+		const explicitCache = await this.tryResolveExplicitCache(options, messages, true);
 		const timeoutCtrl = new IdleTimeoutController(options.signal, options.ttftTimeoutMs, options.interTokenTimeoutMs);
 
 		return timeoutCtrl.run(async () => {
-			const res = await requestUrlWithAbort({ url, method: 'POST', headers, body: JSON.stringify(payload) }, timeoutCtrl.signal);
+			let res;
+			try {
+				const req = this.buildRequest('generateContent', options, messages, true, explicitCache ?? undefined);
+				res = await requestUrlWithAbort({ url: req.url, method: 'POST', headers: req.headers, body: JSON.stringify(req.payload) }, timeoutCtrl.signal);
+			} catch (err: unknown) {
+				if (explicitCache && isExplicitCacheRetryableError(err)) {
+					debugLogger.logWarn('llm', 'Gemini explicit cache rejected; retrying with standard request');
+					geminiContextCacheManager.invalidate(explicitCache.cacheHash);
+					const fallbackReq = this.buildRequest('generateContent', options, messages, true);
+					res = await requestUrlWithAbort({ url: fallbackReq.url, method: 'POST', headers: fallbackReq.headers, body: JSON.stringify(fallbackReq.payload) }, timeoutCtrl.signal);
+				} else {
+					throw err;
+				}
+			}
 
 			const data = res.json as GeminiResponse;
 			const candidate = data.candidates?.[0];
@@ -141,11 +167,36 @@ export class GoogleProvider implements ILLMProvider {
 
 	// ─── Private ──────────────────────────────────────────────────────────
 
+	private async tryResolveExplicitCache(
+		options: ChatOptions,
+		messages: ChatMessage[],
+		includeTools: boolean,
+	): Promise<ResolvedExplicitCache | null> {
+		if (!options.promptCaching?.enabled || !options.promptCaching.geminiExplicit) {
+			return null;
+		}
+		const formattedContents = formatGeminiMessages(messages);
+		const systemInstruction = getGeminiSystemInstruction(messages);
+		const formattedTools = includeTools ? formatGeminiTools(options.tools) : undefined;
+		return geminiContextCacheManager.getOrCreateCache({
+			providerId: this.providerId,
+			apiKey: this.apiKey,
+			model: options.model,
+			formattedContents,
+			systemInstruction,
+			formattedTools,
+			ttlSeconds: options.promptCaching.geminiTtlSeconds,
+			sessionKey: options.promptCaching.cacheKey,
+			signal: options.signal,
+		});
+	}
+
 	private buildRequest(
 		method: 'generateContent' | 'streamGenerateContent',
 		options: ChatOptions,
 		messages: ChatMessage[],
 		includeTools: boolean,
+		explicitCache?: ResolvedExplicitCache,
 	): { url: string; headers: Record<string, string>; payload: Record<string, unknown> } {
 		const cleanModel = options.model.replace(/^models\//, '');
 		const url = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:${method}`;
@@ -154,6 +205,20 @@ export class GoogleProvider implements ILLMProvider {
 			'Content-Type': 'application/json',
 			'x-goog-api-key': this.apiKey,
 		};
+
+		if (explicitCache) {
+			// Gemini REST API 제약: cachedContent 지정 시 systemInstruction 및 tools 중복 전송 시 HTTP 400 발생
+			const payload: Record<string, unknown> = {
+				cachedContent: explicitCache.cacheName,
+				contents: explicitCache.tailContents,
+				generationConfig: {
+					temperature: options.temperature ?? 0.7,
+					maxOutputTokens: options.maxOutputTokens,
+					...(options.stop?.length ? { stopSequences: options.stop } : {}),
+				},
+			};
+			return { url, headers, payload };
+		}
 
 		const formattedContents = formatGeminiMessages(messages);
 		const systemInstruction = getGeminiSystemInstruction(messages);
@@ -187,92 +252,137 @@ export class GoogleProvider implements ILLMProvider {
 		onChunk?: (text: string) => void,
 		includeTools = true,
 	): Promise<{ content: string; toolCalls: ToolCall[]; usage?: TokenUsage; finishReason?: string }> {
-		const { url, headers, payload } = this.buildRequest('streamGenerateContent', options, messages, includeTools);
+		const explicitCache = await this.tryResolveExplicitCache(options, messages, includeTools);
+		const timeoutCtrl = new IdleTimeoutController(options.signal, options.ttftTimeoutMs, options.interTokenTimeoutMs);
+
+		return timeoutCtrl.run(async () => {
+			try {
+				return await this.executeStreamAttempt(
+					messages,
+					options,
+					onChunk,
+					includeTools,
+					timeoutCtrl,
+					explicitCache ?? undefined,
+				);
+			} catch (err: unknown) {
+				if (explicitCache && isExplicitCacheRetryableError(err)) {
+					debugLogger.logWarn('llm', 'Gemini explicit cache stream rejected; retrying with standard request');
+					geminiContextCacheManager.invalidate(explicitCache.cacheHash);
+					return await this.executeStreamAttempt(
+						messages,
+						options,
+						onChunk,
+						includeTools,
+						timeoutCtrl,
+						undefined,
+					);
+				}
+				throw err;
+			}
+		});
+	}
+
+	private async executeStreamAttempt(
+		messages: ChatMessage[],
+		options: ChatOptions,
+		onChunk: ((text: string) => void) | undefined,
+		includeTools: boolean,
+		timeoutCtrl: IdleTimeoutController,
+		explicitCache: ResolvedExplicitCache | undefined,
+	): Promise<{ content: string; toolCalls: ToolCall[]; usage?: TokenUsage; finishReason?: string }> {
+		const { url, headers, payload } = this.buildRequest('streamGenerateContent', options, messages, includeTools, explicitCache);
 
 		let fullContent = '';
 		const accumulatedToolCalls: ToolCall[] = [];
 		let usage: TokenUsage | undefined;
 		let finishReason: string | undefined;
 
-		const timeoutCtrl = new IdleTimeoutController(options.signal, options.ttftTimeoutMs, options.interTokenTimeoutMs);
-
-		return timeoutCtrl.run(async () => {
-			let response: Response;
-			try {
-				response = await window.fetch(url, {
+		let response: Response;
+		try {
+			response = await window.fetch(url, {
+				method: 'POST',
+				headers,
+				body: JSON.stringify(payload),
+				signal: timeoutCtrl.signal,
+			});
+		} catch (err: unknown) {
+			if (isMobileStreamingCorsFallbackError(err)) {
+				debugLogger.logWarn('llm', `Google streaming fetch blocked on mobile, falling back to requestUrl: ${err.message}`);
+				timeoutCtrl.switchToNonStreamingFallback();
+				const fallback = this.buildRequest('generateContent', options, messages, includeTools, explicitCache);
+				const res = await requestUrlWithAbort({
+					url: fallback.url,
 					method: 'POST',
-					headers,
-					body: JSON.stringify(payload),
-					signal: timeoutCtrl.signal,
-				});
-			} catch (err: unknown) {
-				if (isMobileStreamingCorsFallbackError(err)) {
-					debugLogger.logWarn('llm', `Google streaming fetch blocked on mobile, falling back to requestUrl: ${err.message}`);
-					timeoutCtrl.switchToNonStreamingFallback();
-					const fallback = this.buildRequest('generateContent', options, messages, includeTools);
-					const res = await requestUrlWithAbort({
-						url: fallback.url,
-						method: 'POST',
-						headers: fallback.headers,
-						body: JSON.stringify(fallback.payload),
-					}, timeoutCtrl.signal);
-					const data = res.json as GeminiResponse;
-					const candidate = data.candidates?.[0];
-					if (!candidate) {
-						throw new Error(`Google Gemini API returned an empty response. Response: ${res.text}`);
-					}
-					const parsed = parseNonStreamingResponse(candidate);
-					const fallbackUsage = data.usageMetadata ? mapUsageMetadata(data.usageMetadata) : undefined;
-					if (parsed.fullContent) {
-						onChunk?.(parsed.fullContent);
-					}
-					return {
-						content: parsed.fullContent,
-						toolCalls: parsed.toolCalls,
-						usage: fallbackUsage,
-						finishReason: candidate.finishReason || undefined,
-					};
+					headers: fallback.headers,
+					body: JSON.stringify(fallback.payload),
+				}, timeoutCtrl.signal);
+				const data = res.json as GeminiResponse;
+				const candidate = data.candidates?.[0];
+				if (!candidate) {
+					throw new Error(`Google Gemini API returned an empty response. Response: ${res.text}`);
 				}
-				throw err;
+				const parsed = parseNonStreamingResponse(candidate);
+				const fallbackUsage = data.usageMetadata ? mapUsageMetadata(data.usageMetadata) : undefined;
+				if (parsed.fullContent) {
+					onChunk?.(parsed.fullContent);
+				}
+				return {
+					content: parsed.fullContent,
+					toolCalls: parsed.toolCalls,
+					usage: fallbackUsage,
+					finishReason: candidate.finishReason || undefined,
+				};
 			}
+			throw err;
+		}
 
-			if (!response.ok) {
-				const errText = await response.text();
-				throw new Error(`Google Gemini Error (HTTP ${response.status}): ${errText}`);
-			}
+		if (!response.ok) {
+			const errText = await response.text();
+			const httpErr = Object.assign(
+				new Error(`Google Gemini Error (HTTP ${response.status}): ${errText}`),
+				{ status: response.status },
+			);
+			throw httpErr;
+		}
 
-			await readGeminiStreamChunks(response, timeoutCtrl.signal, (chunk) => {
-				timeoutCtrl.onChunkReceived();
-				const candidate = chunk.candidates?.[0];
-				if (candidate) {
-					if (candidate.finishReason) {
-						finishReason = candidate.finishReason;
-					}
-					const parts = candidate.content?.parts;
-					if (parts) {
-						for (const part of parts) {
-							if (part.text) {
-								fullContent += part.text;
-								onChunk?.(part.text);
-							}
-							if (part.functionCall) {
-								accumulatedToolCalls.push({
-									id: crypto.randomUUID(),
-									name: part.functionCall.name,
-									arguments: part.functionCall.args || {},
-									thoughtSignature: part.thoughtSignature,
-								});
-							}
+		await readGeminiStreamChunks(response, timeoutCtrl.signal, (chunk) => {
+			timeoutCtrl.onChunkReceived();
+			const candidate = chunk.candidates?.[0];
+			if (candidate) {
+				if (candidate.finishReason) {
+					finishReason = candidate.finishReason;
+				}
+				const parts = candidate.content?.parts;
+				if (parts) {
+					for (const part of parts) {
+						if (part.text) {
+							fullContent += part.text;
+							onChunk?.(part.text);
+						}
+						if (part.functionCall) {
+							accumulatedToolCalls.push({
+								id: crypto.randomUUID(),
+								name: part.functionCall.name,
+								arguments: part.functionCall.args || {},
+								thoughtSignature: part.thoughtSignature,
+							});
 						}
 					}
 				}
-				if (chunk.usageMetadata) {
-					usage = mapUsageMetadata(chunk.usageMetadata);
-				}
-			});
-
-			return { content: fullContent, toolCalls: accumulatedToolCalls, usage, finishReason };
+			}
+			if (chunk.usageMetadata) {
+				const mapped = mapUsageMetadata(chunk.usageMetadata);
+				const prevCacheRead = usage?.cacheReadTokens ?? 0;
+				const nextCacheRead = Math.max(prevCacheRead, mapped.cacheReadTokens ?? 0);
+				usage = {
+					...mapped,
+					...(nextCacheRead > 0 ? { cacheReadTokens: nextCacheRead } : {}),
+				};
+			}
 		});
+
+		return { content: fullContent, toolCalls: accumulatedToolCalls, usage, finishReason };
 	}
 }
 

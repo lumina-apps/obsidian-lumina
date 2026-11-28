@@ -90,7 +90,13 @@
 		isLoading: boolean;
 		hasProvider: boolean;
 		sendHint: string;
-		sessionTokenStats: { totalTokens: number };
+		sessionTokenStats: {
+			totalTokens: number;
+			inputTokens?: number;
+			outputTokens?: number;
+			cacheReadTokens?: number;
+			cacheCreationTokens?: number;
+		};
 		includeActiveNote: boolean;
 		agentEnabled: boolean;
 		agentExecutionMode: "read" | "edit";

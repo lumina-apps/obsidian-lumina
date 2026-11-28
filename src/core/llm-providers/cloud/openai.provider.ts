@@ -1,3 +1,4 @@
+import type { ChatMessage, ChatOptions } from '../../../shared/types/llm.types';
 import { requestUrl } from 'obsidian';
 import { raiseApiError } from '../provider-helpers';
 import { BaseOpenAIProvider } from '../baseOpenAI.provider';
@@ -11,6 +12,31 @@ export class OpenAIProvider extends BaseOpenAIProvider {
 		super(apiKey?.trim() ?? '');
 		this.providerId = providerId;
 		this.enableReasoning = true;
+	}
+
+	/** OpenAI 공식 API 프롬프트 캐시 라우팅 적중률을 높이기 위해 prompt_cache_key를 주입합니다. */
+	protected override buildPayload(
+		options: ChatOptions,
+		messages: ChatMessage[],
+		stream: boolean,
+	): Record<string, unknown> {
+		const payload = super.buildPayload(options, messages, stream);
+		if (options.promptCaching?.enabled && options.promptCaching.cacheKey) {
+			payload.prompt_cache_key = options.promptCaching.cacheKey;
+		}
+		return payload;
+	}
+
+	/** 스트리밍 전용 요청에도 prompt_cache_key를 일관되게 주입합니다. */
+	protected override buildStreamOnlyPayload(
+		options: ChatOptions,
+		messages: ChatMessage[],
+	): Record<string, unknown> {
+		const payload = super.buildStreamOnlyPayload(options, messages);
+		if (options.promptCaching?.enabled && options.promptCaching.cacheKey) {
+			payload.prompt_cache_key = options.promptCaching.cacheKey;
+		}
+		return payload;
 	}
 
 	async listModels(): Promise<string[]> {

@@ -9,6 +9,7 @@ import type {
 	CliExecution,
 } from '../../shared/types/cliAgent.types';
 import { t } from '../../shared/locales/helpers';
+import { geminiContextCacheManager } from '../llm-providers/cloud/gemini-cache-manager';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -28,6 +29,10 @@ export const activeCliExecution = writable<CliExecution | null>(null);
 // ─── Actions ──────────────────────────────────────────────────────────────────
 
 export function resetChat(): void {
+	const prevSessionId = get(currentSessionId);
+	if (prevSessionId) {
+		void geminiContextCacheManager.clearSession(prevSessionId);
+	}
 	messages.set([]);
 	isLoading.set(false);
 	currentSessionId.set(null);

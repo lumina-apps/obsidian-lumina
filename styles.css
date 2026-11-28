@@ -1909,6 +1909,8 @@ button.lumina-chat__send-btn.lumina-chat__send-btn--cancel:hover {
 .lumina-chat__toolbar-right {
 	display: flex;
 	align-items: center;
+	justify-content: flex-end;
+	flex-wrap: wrap;
 	gap: 8px;
 }
 
@@ -1934,6 +1936,11 @@ button.lumina-chat__send-btn.lumina-chat__send-btn--cancel:hover {
 	padding: 2px 6px;
 	border-radius: 4px;
 	border: 1px solid var(--background-modifier-border);
+}
+
+.lumina-chat__token-cache-badge {
+	color: var(--text-success, var(--color-green));
+	font-weight: 600;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

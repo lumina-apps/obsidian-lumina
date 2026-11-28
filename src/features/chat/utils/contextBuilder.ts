@@ -166,15 +166,7 @@ export async function prepareSharedTurnContext(
 		att => !(att.type === 'folder' && ragFilterFolderSet.has(att.path)),
 	);
 
-	// 첨부파일 컨텍스트 빌드
-	let { attachmentContext, multimodalImages, failedAttachments } =
-		await ChatAttachmentHandler.buildAttachmentContext(plugin.app, attachmentsForDirectRead, plugin, { skipFolders: false });
-
-	if (failedAttachments && failedAttachments.length > 0) {
-		new Notice(t('uiMessages.attachmentsSkipped', { files: failedAttachments.join(', ') }));
-	}
-
-	// 최근 대화 턴(요약 이후 최대 3턴)의 텍스트 기반 첨부파일 컨텍스트 복원
+	// 최근 대화 턴(요약 이후 최대 3턴)의 텍스트 기반 첨부파일 컨텍스트를 시간순(오래된 턴 -> 최근 턴)으로 수집해 프리픽스 안정성 확보
 	const currentSummaryUpToId = 'summaryUpToMessageId' in params
 		? params.summaryUpToMessageId
 		: get(summaryUpToMessageId);
@@ -187,12 +179,9 @@ export async function prepareSharedTurnContext(
 	}
 	const recentUserTurns = effectiveHistory
 		.filter(m => m.role === 'user' && !m.isContextSummary && m.attachments && m.attachments.length > 0)
-		.slice(-3)
-		.reverse();
+		.slice(-3);
 
-	const seenAttachmentKeys = new Set(
-		updatedAttachments.map(a => `${a.type}:${a.path || a.name}`),
-	);
+	const seenHistoryKeys = new Set<string>();
 	const historyTextAttachments: ContextAttachment[] = [];
 	for (const turn of recentUserTurns) {
 		for (const att of turn.attachments ?? []) {
@@ -204,11 +193,24 @@ export async function prepareSharedTurnContext(
 				continue;
 			}
 			const key = `${att.type}:${att.path || att.name}`;
-			if (!seenAttachmentKeys.has(key)) {
-				seenAttachmentKeys.add(key);
+			if (!seenHistoryKeys.has(key)) {
+				seenHistoryKeys.add(key);
 				historyTextAttachments.push(att);
 			}
 		}
+	}
+
+	// 과거 턴에 이미 포함된 첨부파일은 앞쪽 순서를 유지하도록 현재 턴 직접 읽기 목록에서 중복 제외
+	const currentAttachmentsToRead = attachmentsForDirectRead.filter(att => {
+		const key = `${att.type}:${att.path || att.name}`;
+		return !seenHistoryKeys.has(key);
+	});
+
+	let { attachmentContext, multimodalImages, failedAttachments } =
+		await ChatAttachmentHandler.buildAttachmentContext(plugin.app, currentAttachmentsToRead, plugin, { skipFolders: false });
+
+	if (failedAttachments && failedAttachments.length > 0) {
+		new Notice(t('uiMessages.attachmentsSkipped', { files: failedAttachments.join(', ') }));
 	}
 
 	if (historyTextAttachments.length > 0) {
@@ -224,9 +226,10 @@ export async function prepareSharedTurnContext(
 				historyAttContext.length > MAX_HISTORY_ATTACHMENT_CHARS
 					? historyAttContext.slice(0, MAX_HISTORY_ATTACHMENT_CHARS) + '\n\n... (이전 턴 첨부 컨텍스트 일부 생략됨)'
 					: historyAttContext.trim();
-			attachmentContext = attachmentContext
-				? `${attachmentContext}[이전 턴 첨부 컨텍스트]\n${trimmedHistoryAtt}\n\n`
-				: `[이전 턴 첨부 컨텍스트]\n${trimmedHistoryAtt}\n\n`;
+			const trimmedCurrentAtt = attachmentContext.trim();
+			attachmentContext = trimmedCurrentAtt
+				? `${trimmedHistoryAtt}\n\n${trimmedCurrentAtt}`
+				: trimmedHistoryAtt;
 		}
 	}
 

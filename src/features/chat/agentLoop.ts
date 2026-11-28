@@ -70,10 +70,14 @@ function accumulateTokenUsage(
 	if (!current) {
 		return { ...incoming };
 	}
+	const cacheReadTokens = (current.cacheReadTokens ?? 0) + (incoming.cacheReadTokens ?? 0);
+	const cacheCreationTokens = (current.cacheCreationTokens ?? 0) + (incoming.cacheCreationTokens ?? 0);
 	return {
 		inputTokens: current.inputTokens + incoming.inputTokens,
 		outputTokens: current.outputTokens + incoming.outputTokens,
 		totalTokens: current.totalTokens + incoming.totalTokens,
+		...(cacheReadTokens > 0 ? { cacheReadTokens } : {}),
+		...(cacheCreationTokens > 0 ? { cacheCreationTokens } : {}),
 	};
 }
 

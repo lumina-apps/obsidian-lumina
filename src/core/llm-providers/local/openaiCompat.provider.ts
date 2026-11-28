@@ -1,5 +1,5 @@
 import type { ProviderType } from '../../../shared/types/settings.types';
-import type { ChatOptions } from '../../../shared/types/llm.types';
+import type { ChatMessage, ChatOptions } from '../../../shared/types/llm.types';
 import { t } from '../../../shared/locales/helpers';
 import { PROVIDER_CATEGORIES } from '../../../shared/types/settings.types';
 import { requestUrl } from 'obsidian';
@@ -27,6 +27,36 @@ export class OpenAICompatProvider extends BaseOpenAIProvider {
 		// 후행 슬래시 및 중복 /v1 제거 정규화
 		this.baseUrl = baseUrl.trim().replace(/\/+$/, '').replace(/\/v1$/, '');
 		this.enableReasoning = true;
+	}
+
+	/** OpenRouter를 통해 Anthropic Claude 모델을 호출하는 경우인지 판별합니다. */
+	private isOpenRouterClaudeModel(model: string): boolean {
+		return this.type === 'openrouter' && (/^anthropic\//i.test(model) || /(?:^|\/)claude/i.test(model));
+	}
+
+	/** OpenRouter에서 Claude 모델 호출 시에만 최상위 cache_control을 패스스루합니다. */
+	protected override buildPayload(
+		options: ChatOptions,
+		messages: ChatMessage[],
+		stream: boolean,
+	): Record<string, unknown> {
+		const payload = super.buildPayload(options, messages, stream);
+		if (options.promptCaching?.enabled && this.isOpenRouterClaudeModel(options.model)) {
+			payload.cache_control = { type: 'ephemeral' };
+		}
+		return payload;
+	}
+
+	/** 스트리밍 전용 요청에서도 OpenRouter Claude 모델에 cache_control을 패스스루합니다. */
+	protected override buildStreamOnlyPayload(
+		options: ChatOptions,
+		messages: ChatMessage[],
+	): Record<string, unknown> {
+		const payload = super.buildStreamOnlyPayload(options, messages);
+		if (options.promptCaching?.enabled && this.isOpenRouterClaudeModel(options.model)) {
+			payload.cache_control = { type: 'ephemeral' };
+		}
+		return payload;
 	}
 
 	/** 로컬/사설 네트워크 대상 엔드포인트인지 판별합니다. */

@@ -379,6 +379,12 @@
       "enableSelectionMiniIcon": {
         "name": "Mostrar icono mini de IA al seleccionar texto",
         "desc": "Muestra un botón flotante compacto junto al texto seleccionado en el editor para abrir rápidamente la barra de prompt."
+      },
+      "promptCaching": {
+        "name": "Caché de prompts (Prompt Caching)",
+        "desc": "Almacena en caché prompts del sistema repetidos, esquemas de herramientas y prefijos de conversación (Anthropic, OpenAI, OpenRouter, Gemini) para reducir costes y latencia. Consejo: variables dinámicas como {{time}} al inicio del prompt pueden reducir los aciertos.",
+        "geminiExplicitName": "Caché explícita de contexto en Gemini",
+        "geminiExplicitDesc": "Almacena prefijos grandes (4096+ tokens) en modelos Gemini 2.5/3 mediante la API cachedContents. Genera cargos adicionales de almacenamiento en Google durante el TTL de 5 min; los modelos no compatibles (p. ej., Gemini 4) hacen fallback automático."
       }
     },
     "rag": {
@@ -646,7 +652,11 @@
       "editModeTooltip": "Modo edición: El agente CLI puede crear y modificar notas directamente.",
       "readModeNotice": "👁️ Agente CLI: Modo lectura (Modificación de notas bloqueada)",
       "editModeNotice": "✏️ Agente CLI: Modo edición (Creación y edición de notas permitida)"
-    }
+    },
+    "cacheReusedBadge": "⚡ {{percent}}% reutilizado",
+    "sessionUsageCachedTooltip": "Total de sesión: {{total}} tokens ({{reused}} de {{input}} tokens de entrada reutilizados · {{percent}}% ahorrado / {{output}} salida)",
+    "sessionUsageCachedWriteSuffix": " · {{written}} nuevos en caché",
+    "sessionUsageDetailedTooltip": "Total de sesión: {{total}} tokens ({{input}} entrada / {{output}} salida)"
   },
   "common": {
     "save": "Guardar",

@@ -34,6 +34,17 @@ export interface ToolCall {
 
 // ─── Chat Options ───────────────────────────────
 
+export interface PromptCachingOptions {
+	/** 프롬프트 캐싱 활성화 여부 */
+	enabled: boolean;
+	/** 세션/대화 단위 캐시 라우팅 키 (OpenAI prompt_cache_key 및 Gemini Explicit 세션 식별용) */
+	cacheKey?: string;
+	/** Gemini Explicit Context Caching 활성화 여부 (기본 false, Opt-in) */
+	geminiExplicit?: boolean;
+	/** Gemini Explicit 캐시 TTL(초, 기본 300초) */
+	geminiTtlSeconds?: number;
+}
+
 export interface ChatOptions {
 	model: string;
 	temperature?: number;
@@ -44,6 +55,8 @@ export interface ChatOptions {
 	ttftTimeoutMs?: number;
 	interTokenTimeoutMs?: number;
 	cwd?: string;
+	/** 요청별 프롬프트 캐싱 제어 옵션 (단발성 호출에는 미전달) */
+	promptCaching?: PromptCachingOptions;
 }
 
 // ─── Provider Interface ─────────────────────────
@@ -52,6 +65,10 @@ export interface TokenUsage {
 	inputTokens: number;
 	outputTokens: number;
 	totalTokens: number;
+	/** 캐시에서 재사용(읽기)된 입력 토큰 수 (0일 때는 생략) */
+	cacheReadTokens?: number;
+	/** 캐시에 새로 생성(쓰기)된 입력 토큰 수 (0일 때는 생략) */
+	cacheCreationTokens?: number;
 }
 
 export interface ChatResponse {

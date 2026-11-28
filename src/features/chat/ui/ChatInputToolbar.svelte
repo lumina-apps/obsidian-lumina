@@ -43,7 +43,13 @@
 		estimatedInputTokens?: number;
 		estimatedTokensDisplayText?: string;
 		isTokenOverLimit?: boolean;
-		sessionTokenStats: { totalTokens: number };
+		sessionTokenStats: {
+			totalTokens: number;
+			inputTokens?: number;
+			outputTokens?: number;
+			cacheReadTokens?: number;
+			cacheCreationTokens?: number;
+		};
 		tStore: TStore;
 		onInsertContextMention: () => void;
 		onFileSelect: (e: Event) => void;
@@ -91,6 +97,51 @@
 				: "file-x"
 			: "file-minus",
 	);
+
+	const cacheReuseInfo = $derived.by(() => {
+		const input = sessionTokenStats.inputTokens ?? 0;
+		const reused = sessionTokenStats.cacheReadTokens ?? 0;
+		if (reused <= 0 || input <= 0) {
+			return null;
+		}
+		const percent = Math.min(100, Math.round((reused / input) * 100));
+		return { percent };
+	});
+
+	const sessionUsageTooltip = $derived.by(() => {
+		const input = sessionTokenStats.inputTokens ?? 0;
+		const output = sessionTokenStats.outputTokens ?? 0;
+		const reused = sessionTokenStats.cacheReadTokens ?? 0;
+		const written = sessionTokenStats.cacheCreationTokens ?? 0;
+		if (sessionTokenStats.totalTokens <= 0) {
+			return $tStore("chat.sessionUsage");
+		}
+		let tooltip: string;
+		if (reused > 0 && input > 0) {
+			const percent = Math.min(100, Math.round((reused / input) * 100));
+			tooltip = $tStore("chat.sessionUsageCachedTooltip", {
+				total: sessionTokenStats.totalTokens.toLocaleString(),
+				input: input.toLocaleString(),
+				reused: reused.toLocaleString(),
+				percent,
+				output: output.toLocaleString(),
+			});
+		} else if (input > 0 || output > 0) {
+			tooltip = $tStore("chat.sessionUsageDetailedTooltip", {
+				total: sessionTokenStats.totalTokens.toLocaleString(),
+				input: input.toLocaleString(),
+				output: output.toLocaleString(),
+			});
+		} else {
+			tooltip = $tStore("chat.sessionUsage");
+		}
+		if (written > 0) {
+			tooltip += $tStore("chat.sessionUsageCachedWriteSuffix", {
+				written: written.toLocaleString(),
+			});
+		}
+		return tooltip;
+	});
 
 	let fileInputEl: HTMLInputElement | null = $state(null);
 
@@ -150,11 +201,13 @@
 
 	<div class="lumina-chat__toolbar-right">
 		{#if estimatedTokensDisplayText || estimatedInputTokens > 0}
+			{@const estTooltip = isTokenOverLimit
+				? ($tStore("chat.tokenOverLimitTooltip") || "Context exceeds 100k tokens (capped estimate)")
+				: ($tStore("chat.estimatedTokensTooltip") || "Estimated input tokens for this prompt (approx.)")}
 			<span
 				class="lumina-chat__token-stats"
-				title={isTokenOverLimit
-					? ($tStore("chat.tokenOverLimitTooltip") || "Context exceeds 100k tokens (capped estimate)")
-					: ($tStore("chat.estimatedTokensTooltip") || "Estimated input tokens for this prompt (approx.)")}
+				aria-label={estTooltip}
+				title={estTooltip}
 			>
 				{estimatedTokensDisplayText || `~${estimatedInputTokens.toLocaleString()} tokens`}{#if splitModelCount > 1}&nbsp;{$tStore("splitChat.modelsCountSuffix", { count: splitModelCount })}{/if}
 			</span>
@@ -162,11 +215,12 @@
 		{#if sessionTokenStats.totalTokens > 0}
 			<span
 				class="lumina-chat__token-stats"
-				title={$tStore("chat.sessionUsage")}
+				aria-label={sessionUsageTooltip}
+				title={sessionUsageTooltip}
 			>
 				{$tStore("chat.sessionTokens", {
 					tokens: sessionTokenStats.totalTokens.toLocaleString(),
-				})}
+				})}{#if cacheReuseInfo}&nbsp;·&nbsp;<span class="lumina-chat__token-cache-badge">{$tStore("chat.cacheReusedBadge", { percent: cacheReuseInfo.percent })}</span>{/if}
 			</span>
 		{/if}
 		<span class="lumina-chat__hint-inline">{sendHint}</span>

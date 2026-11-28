@@ -159,12 +159,26 @@
 
 	const sessionTokenStats = $derived.by(() => {
 		let totalTokens = 0;
+		let inputTokens = 0;
+		let outputTokens = 0;
+		let cacheReadTokens = 0;
+		let cacheCreationTokens = 0;
 		for (const msg of $messages) {
 			if (msg.tokenUsage) {
 				totalTokens += msg.tokenUsage.totalTokens;
+				inputTokens += msg.tokenUsage.inputTokens;
+				outputTokens += msg.tokenUsage.outputTokens;
+				cacheReadTokens += msg.tokenUsage.cacheReadTokens ?? 0;
+				cacheCreationTokens += msg.tokenUsage.cacheCreationTokens ?? 0;
 			}
 		}
-		return { totalTokens };
+		return {
+			totalTokens,
+			inputTokens,
+			outputTokens,
+			cacheReadTokens,
+			cacheCreationTokens,
+		};
 	});
 
 	// ── Chat Actions (Composable) ──────────────────────────────────────────

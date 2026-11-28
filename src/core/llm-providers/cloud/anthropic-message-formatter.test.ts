@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { formatAnthropicMessages, formatAnthropicTools } from './anthropic-message-formatter';
+import {
+	applyAnthropicMessageCacheBreakpoints,
+	formatAnthropicMessages,
+	formatAnthropicSystem,
+	formatAnthropicTools,
+} from './anthropic-message-formatter';
 import type { ChatMessage, ToolDefinition } from '../../../shared/types/llm.types';
 
 describe('anthropic-message-formatter', () => {
@@ -190,6 +195,53 @@ describe('anthropic-message-formatter', () => {
 		expect(formatted[0].content).toBe(
 			'📋 [Previous conversation compressed]\n\nSummary text\n\nFirst question after compression\n\nRetry question after empty assistant',
 		);
+	});
+
+	it('should format system prompt with cache_control and split dynamic summary block when caching is enabled', () => {
+		const staticSys = 'You are a helpful assistant.';
+		const summarySys = `${staticSys}\n\n[이전 대화 요약]\nOld summary`;
+
+		expect(formatAnthropicSystem(staticSys, false)).toBe(staticSys);
+		expect(formatAnthropicSystem(staticSys, true)).toEqual([
+			{ type: 'text', text: staticSys, cache_control: { type: 'ephemeral' } },
+		]);
+		expect(formatAnthropicSystem(summarySys, true)).toEqual([
+			{ type: 'text', text: staticSys, cache_control: { type: 'ephemeral' } },
+			{ type: 'text', text: '\n\n[이전 대화 요약]\nOld summary' },
+		]);
+	});
+
+	it('should attach cache_control only to the last tool when enableCaching is true', () => {
+		const tools: ToolDefinition[] = [
+			{ name: 'tool_a', description: 'A', inputSchema: { type: 'object', properties: {} } },
+			{ name: 'tool_b', description: 'B', inputSchema: { type: 'object', properties: {} } },
+		];
+		const formatted = formatAnthropicTools(tools, true)!;
+		expect((formatted[0] as Record<string, unknown>).cache_control).toBeUndefined();
+		expect((formatted[1] as Record<string, unknown>).cache_control).toEqual({ type: 'ephemeral' });
+	});
+
+	it('should apply rolling cache breakpoints to at most last 2 non-empty user messages and skip empty text blocks', () => {
+		const formatted = formatAnthropicMessages([
+			{ role: 'user', content: 'Turn 1' },
+			{ role: 'assistant', content: 'Ans 1' },
+			{ role: 'user', content: 'Turn 2' },
+			{ role: 'assistant', content: 'Ans 2' },
+			{ role: 'user', content: 'Turn 3' },
+		]);
+
+		const cached = applyAnthropicMessageCacheBreakpoints(formatted);
+		expect(cached[0].content).toBe('Turn 1');
+		expect(cached[2].content).toEqual([
+			{ type: 'text', text: 'Turn 2', cache_control: { type: 'ephemeral' } },
+		]);
+		expect(cached[4].content).toEqual([
+			{ type: 'text', text: 'Turn 3', cache_control: { type: 'ephemeral' } },
+		]);
+
+		// 빈 텍스트 블록에는 cache_control을 붙이지 않음
+		const emptyResult = applyAnthropicMessageCacheBreakpoints([{ role: 'user', content: '' }]);
+		expect(emptyResult[0].content).toBe('');
 	});
 });
 

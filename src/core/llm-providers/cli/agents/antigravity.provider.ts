@@ -295,20 +295,9 @@ export class AntigravityProvider extends BaseCliAgent {
 
 			// 토큰 사용량
 			if (step.usage && typeof step.usage === 'object') {
-				const u = step.usage as Record<string, number>;
-				const inputTokens =
-					(u.input_tokens || u.inputTokens || 0) +
-					(u.cache_creation_input_tokens || 0) +
-					(u.cache_read_input_tokens || 0);
-				const outputTokens = u.output_tokens || u.outputTokens || 0;
-				const totalTokens = u.total_tokens || u.totalTokens || (inputTokens + outputTokens);
 				events.push({
 					type: 'usage',
-					usage: {
-						inputTokens,
-						outputTokens,
-						totalTokens,
-					},
+					usage: buildAntigravityUsage(step.usage as Record<string, unknown>),
 					raw,
 				});
 			}
@@ -406,20 +395,15 @@ export class AntigravityProvider extends BaseCliAgent {
 			}
 		}
 
-		// 3. Antigravity result / response / message 이벤트 (usage 동시 포함 지원)
+		// 3. Antigravity result / response / message 이벤트 (usage 동시 포함 및 중첩 result.usage 지원)
 		if (eventType === 'result' || eventType === 'response') {
 			const events: CliEvent[] = [];
-			if (obj.usage && typeof obj.usage === 'object') {
-				const u = obj.usage as Record<string, number>;
-				const inputTokens =
-					(u.input_tokens || u.inputTokens || 0) +
-					(u.cache_creation_input_tokens || 0) +
-					(u.cache_read_input_tokens || 0);
-				const outputTokens = u.output_tokens || u.outputTokens || 0;
-				const totalTokens = u.total_tokens || u.totalTokens || (inputTokens + outputTokens);
+			const nestedResult = obj.result && typeof obj.result === 'object' ? (obj.result as Record<string, unknown>) : undefined;
+			const usageObj = obj.usage || nestedResult?.usage;
+			if (usageObj && typeof usageObj === 'object') {
 				events.push({
 					type: 'usage',
-					usage: { inputTokens, outputTokens, totalTokens },
+					usage: buildAntigravityUsage(usageObj as Record<string, unknown>),
 					raw,
 				});
 			}
@@ -469,20 +453,9 @@ export class AntigravityProvider extends BaseCliAgent {
 
 		// 8. 사용량 (Usage) 이벤트
 		if (obj.usage && typeof obj.usage === 'object') {
-			const u = obj.usage as Record<string, number>;
-			const inputTokens =
-				(u.input_tokens || u.inputTokens || 0) +
-				(u.cache_creation_input_tokens || 0) +
-				(u.cache_read_input_tokens || 0);
-			const outputTokens = u.output_tokens || u.outputTokens || 0;
-			const totalTokens = u.total_tokens || u.totalTokens || (inputTokens + outputTokens);
 			return {
 				type: 'usage',
-				usage: {
-					inputTokens,
-					outputTokens,
-					totalTokens,
-				},
+				usage: buildAntigravityUsage(obj.usage as Record<string, unknown>),
 				raw,
 			};
 		}
@@ -495,4 +468,26 @@ export class AntigravityProvider extends BaseCliAgent {
 
 		return null;
 	}
+}
+
+/** Antigravity CLI usage 객체에서 캐시 토큰을 포함해 CliUsage를 구성합니다. */
+function buildAntigravityUsage(u: Record<string, unknown>): NonNullable<CliEvent['usage']> {
+	const cacheCreationTokens = Number(u.cache_creation_tokens || u.cache_creation_input_tokens || 0);
+	const cacheReadTokens = Number(
+		u.cache_read_tokens || u.cache_read_input_tokens || u.cachedContentTokenCount || u.cached_tokens || 0,
+	);
+	// agy의 input_tokens에는 이미 cache_read_tokens가 포함되어 있으므로 Anthropic 형식(cache_read_input_tokens)만 추가 합산
+	const inputTokens =
+		Number(u.input_tokens || u.inputTokens || 0) +
+		Number(u.cache_creation_input_tokens || 0) +
+		Number(u.cache_read_input_tokens || 0);
+	const outputTokens = Number(u.output_tokens || u.outputTokens || 0);
+	const totalTokens = Number(u.total_tokens || u.totalTokens || (inputTokens + outputTokens));
+	return {
+		inputTokens,
+		outputTokens,
+		totalTokens,
+		...(cacheReadTokens > 0 ? { cacheReadTokens } : {}),
+		...(cacheCreationTokens > 0 ? { cacheCreationTokens } : {}),
+	};
 }

@@ -348,5 +348,40 @@ describe('OpenAICompatProvider', () => {
 			).rejects.toThrow('Failed to fetch');
 			expect(mockRequestUrl).not.toHaveBeenCalled();
 		});
+
+		it('OpenRouter Claude 모델에 promptCaching 활성 시 cache_control을 포함하고, 그 외 모델/프로바이더에는 생략한다', async () => {
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					choices: [{ message: { content: 'ok' }, finish_reason: 'stop' }],
+				},
+			} as RequestUrlResponse);
+
+			const openrouter = new OpenAICompatProvider('or-1', 'openrouter', 'https://openrouter.ai/api', 'sk-or');
+			await openrouter.chat(
+				[{ role: 'user', content: 'hello' }],
+				{ model: 'anthropic/claude-sonnet-4-5', promptCaching: { enabled: true } },
+			);
+			const claudeBody = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(claudeBody.cache_control).toEqual({ type: 'ephemeral' });
+
+			mockRequestUrl.mockClear();
+
+			await openrouter.chat(
+				[{ role: 'user', content: 'hello' }],
+				{ model: 'openai/gpt-4o', promptCaching: { enabled: true } },
+			);
+			const gptBody = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(gptBody.cache_control).toBeUndefined();
+
+			mockRequestUrl.mockClear();
+
+			await provider.chat(
+				[{ role: 'user', content: 'hello' }],
+				{ model: 'claude-like-local', promptCaching: { enabled: true } },
+			);
+			const ollamaBody = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(ollamaBody.cache_control).toBeUndefined();
+		});
 	});
 });

@@ -219,6 +219,48 @@ describe('agentLoop', () => {
 			expect(chatMock.mock.calls[0][2]).toBeUndefined();
 		});
 
+		it('멀티 라운드 에이전트 실행 시 cacheReadTokens와 cacheCreationTokens를 누적 합산한다', async () => {
+			let round = 0;
+			const mockProvider: ILLMProvider = {
+				chat: vi.fn().mockImplementation(async () => {
+					round++;
+					if (round === 1) {
+						return {
+							content: 'Calling read_note',
+							toolCalls: [{ id: 'c1', name: 'read_note', arguments: { path: 'a.md' } }],
+							usage: { inputTokens: 1000, outputTokens: 20, totalTokens: 1020, cacheCreationTokens: 900 },
+							finishReason: 'tool_calls',
+						};
+					}
+					return {
+						content: 'Final answer',
+						toolCalls: [],
+						usage: { inputTokens: 1200, outputTokens: 30, totalTokens: 1230, cacheReadTokens: 900, cacheCreationTokens: 200 },
+						finishReason: 'stop',
+					};
+				}),
+			} as any;
+
+			const result = await runAgentLoop({
+				assistantId: 'msg-cache-acc',
+				messagesForLLM: [{ role: 'user', content: 'Read a.md' }],
+				chatOptions: {} as ChatOptions,
+				provider: mockProvider,
+				chatSettings: baseSettings,
+				mcpManager: null,
+				toolServerMap: {},
+				useTextTools: false,
+			});
+
+			expect(result.tokenUsage).toEqual({
+				inputTokens: 2200,
+				outputTokens: 50,
+				totalTokens: 2250,
+				cacheReadTokens: 900,
+				cacheCreationTokens: 1100,
+			});
+		});
+
 		it('streaming이 true이면 provider.chat에 onChunk 콜백을 전달한다', async () => {
 			const chatMock = vi.fn().mockImplementation(async (_msgs, _opts, onChunk?: (c: string) => void) => {
 				onChunk?.('Streamed chunk');

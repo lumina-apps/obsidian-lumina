@@ -16,7 +16,12 @@ import {
 import { debugLogger } from '../../../shared/debugLogger';
 import { ANTHROPIC_MODELS } from './anthropic.types';
 import type { AnthropicResponse } from './anthropic.types';
-import { formatAnthropicMessages, formatAnthropicTools } from './anthropic-message-formatter';
+import {
+	applyAnthropicMessageCacheBreakpoints,
+	formatAnthropicMessages,
+	formatAnthropicSystem,
+	formatAnthropicTools,
+} from './anthropic-message-formatter';
 import { AnthropicStreamAccumulator, parseAnthropicNonStreamResponse } from './anthropic-stream-parser';
 
 export class AnthropicProvider implements ILLMProvider {
@@ -116,13 +121,17 @@ export class AnthropicProvider implements ILLMProvider {
 		messages: ChatMessage[],
 		stream: boolean,
 	): Record<string, unknown> {
+		const enableCaching = Boolean(options.promptCaching?.enabled);
 		const system = extractSystemContent(messages);
 		const formattedMessages = formatAnthropicMessages(messages);
-		const formattedTools = formatAnthropicTools(options.tools);
+		const finalMessages = enableCaching
+			? applyAnthropicMessageCacheBreakpoints(formattedMessages)
+			: formattedMessages;
+		const formattedTools = formatAnthropicTools(options.tools, enableCaching);
 
 		const payload: Record<string, unknown> = {
 			model: options.model,
-			messages: formattedMessages,
+			messages: finalMessages,
 			max_tokens: options.maxOutputTokens ?? 4096,
 			tools: formattedTools,
 			stream,
@@ -138,7 +147,7 @@ export class AnthropicProvider implements ILLMProvider {
 		}
 
 		if (system) {
-			payload.system = system;
+			payload.system = formatAnthropicSystem(system, enableCaching);
 		}
 
 		return payload;

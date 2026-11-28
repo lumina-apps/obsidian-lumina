@@ -65,6 +65,9 @@
 				{formatDuration(e.durationMs)}
 				{#if e.usage}
 					· {e.usage.inputTokens}in / {e.usage.outputTokens}out
+					{#if e.usage.cacheReadTokens && e.usage.inputTokens > 0}
+						· ⚡ {Math.min(100, Math.round((e.usage.cacheReadTokens / e.usage.inputTokens) * 100))}% cached
+					{/if}
 				{/if}
 				{#if e.stopReason}
 					· {e.stopReason}

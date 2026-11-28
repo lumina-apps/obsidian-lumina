@@ -423,7 +423,7 @@ export async function executeCliAgentCall(
 						tokenUsage = mergeCliTokenUsage(tokenUsage, event.usage);
 						debugLogger.logDebug(
 							'cli-agent',
-							`Token usage: in=${tokenUsage.inputTokens}, out=${tokenUsage.outputTokens}, total=${tokenUsage.totalTokens}`,
+							`Token usage: in=${tokenUsage.inputTokens}, out=${tokenUsage.outputTokens}, total=${tokenUsage.totalTokens}${tokenUsage.cacheReadTokens ? `, cacheRead=${tokenUsage.cacheReadTokens}` : ''}`,
 						);
 						setCliUsage(assistantId, tokenUsage);
 					}

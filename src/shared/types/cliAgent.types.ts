@@ -32,6 +32,10 @@ export interface CliUsage {
 	inputTokens?: number;
 	outputTokens?: number;
 	totalTokens?: number;
+	/** 캐시에서 재사용된 입력 토큰 수 */
+	cacheReadTokens?: number;
+	/** 캐시에 새로 저장된 입력 토큰 수 */
+	cacheCreationTokens?: number;
 }
 
 export interface CliEvent {

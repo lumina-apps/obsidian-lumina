@@ -379,6 +379,12 @@
       "enableSelectionMiniIcon": {
         "name": "顯示選取文字迷你 AI 圖示",
         "desc": "在編輯器中選取文字時，於選取範圍旁顯示迷你浮動 AI 按鈕以快速開啟內嵌提示列。"
+      },
+      "promptCaching": {
+        "name": "提示詞快取 (Prompt Caching)",
+        "desc": "快取重複的系統提示詞、工具定義與對話前綴（Anthropic、OpenAI、OpenRouter、Gemini），降低權杖費用與回應延遲。提示：系統提示詞開頭若包含 {{time}} 等動態變數，可能會降低快取命中率。",
+        "geminiExplicitName": "Gemini 明確上下文快取",
+        "geminiExplicitDesc": "在 Gemini 2.5/3 模型上透過 cachedContents API 預先快取 4,096+ 權杖的大型上下文。5 分鐘 TTL 期間將產生額外的 Google 儲存費用；不支援的模型（如 Gemini 4）會自動退回一般請求。"
       }
     },
     "rag": {
@@ -646,7 +652,11 @@
       "editModeTooltip": "編輯模式：允許 CLI 代理直接在保險庫中建立和修改筆記。",
       "readModeNotice": "👁️ CLI 代理：唯讀模式（禁止修改筆記）",
       "editModeNotice": "✏️ CLI 代理：編輯模式（允許建立和修改筆記）"
-    }
+    },
+    "cacheReusedBadge": "⚡ {{percent}}% 重用",
+    "sessionUsageCachedTooltip": "工作階段累計 {{total}} 權杖（輸入 {{input}} 中重用 {{reused}} · 節省 {{percent}}% / 輸出 {{output}}）",
+    "sessionUsageCachedWriteSuffix": " · 新增快取 {{written}}",
+    "sessionUsageDetailedTooltip": "工作階段累計 {{total}} 權杖（輸入 {{input}} / 輸出 {{output}}）"
   },
   "common": {
     "save": "儲存",

@@ -23,7 +23,10 @@ export function collectMcpTools(params: {
 	const toolServerMap: Record<string, string> = {};
 
 	if (!agentEnabled || !mcpManager || !clientToolsEnabled) {
-		return { mcpTools, toolServerMap };
+		// 프롬프트 캐시 적중률 유지를 위해 툴 목록을 이름순으로 결정적 정렬
+	mcpTools.sort((a, b) => a.name.localeCompare(b.name));
+
+	return { mcpTools, toolServerMap };
 	}
 
 	const rawTools = mcpManager.getAllTools();
@@ -52,7 +55,25 @@ export function collectMcpTools(params: {
 		toolServerMap[tool.name] = tool._serverId ?? '';
 	}
 
+	// 프롬프트 캐시 적중률 유지를 위해 툴 목록을 이름순으로 결정적 정렬
+	mcpTools.sort((a, b) => a.name.localeCompare(b.name));
+
 	return { mcpTools, toolServerMap };
+}
+
+/** 시스템 프롬프트 내 `<context>` 또는 `[이전 대화 요약]` 마커 직전에 툴 사용 지침을 삽입합니다. */
+function insertToolPromptBeforeDynamicSections(systemContent: string, toolPrompt: string): string {
+	const contextIdx = systemContent.indexOf('<context>\n');
+	const summaryIdx = systemContent.indexOf('[이전 대화 요약]\n');
+	const candidates = [contextIdx, summaryIdx].filter((idx) => idx >= 0);
+	if (candidates.length === 0) {
+		return systemContent + toolPrompt;
+	}
+	const insertIdx = Math.min(...candidates);
+	const before = systemContent.slice(0, insertIdx).replace(/\n+$/, '');
+	const after = systemContent.slice(insertIdx);
+	const trimmedTool = toolPrompt.replace(/^\n+/, '');
+	return before ? `${before}\n\n${trimmedTool}\n\n${after}` : `${trimmedTool}\n\n${after}`;
 }
 
 /** 모델 타입에 따라 툴 사용 지침을 system 메시지에 주입 */
@@ -68,21 +89,14 @@ export function injectToolPrompts(
 		systemContent = llmMessages[0].content as string;
 	}
 
-	if (useTextTools) {
-		const textToolPrompt = buildTextToolPrompt(mcpTools);
-		if (systemContent !== null) {
-			llmMessages[0].content = systemContent + textToolPrompt;
-		} else {
-			llmMessages.unshift({ role: 'system', content: textToolPrompt });
-		}
+	const toolPrompt = useTextTools
+		? buildTextToolPrompt(mcpTools)
+		: `\n\n[Tool Use Instruction]\nYou have access to Obsidian vault tools. If the user asks you to do something that involves notes or files (e.g., summarizing, explaining, analyzing, reading, modifying, writing, appending, or searching), you MUST call the appropriate tool first (such as \`read_active_note\`, \`read_note\`, or search tools to retrieve content before summarizing or answering, and write tools to apply changes). Do not claim a task is unsupported just because there is no single-step tool for it (e.g., summarize by calling \`read_active_note\` or \`read_note\` first, then summarizing the retrieved text).`;
+
+	if (systemContent !== null) {
+		llmMessages[0].content = insertToolPromptBeforeDynamicSections(systemContent, toolPrompt);
 	} else {
-		const cloudToolPrompt =
-			`\n\n[Tool Use Instruction]\nYou have access to Obsidian vault tools. If the user asks you to do something that involves notes or files (e.g., summarizing, explaining, analyzing, reading, modifying, writing, appending, or searching), you MUST call the appropriate tool first (such as \`read_active_note\`, \`read_note\`, or search tools to retrieve content before summarizing or answering, and write tools to apply changes). Do not claim a task is unsupported just because there is no single-step tool for it (e.g., summarize by calling \`read_active_note\` or \`read_note\` first, then summarizing the retrieved text).`;
-		if (systemContent !== null) {
-			llmMessages[0].content = systemContent + cloudToolPrompt;
-		} else {
-			llmMessages.unshift({ role: 'system', content: cloudToolPrompt });
-		}
+		llmMessages.unshift({ role: 'system', content: toolPrompt });
 	}
 
 	return llmMessages;

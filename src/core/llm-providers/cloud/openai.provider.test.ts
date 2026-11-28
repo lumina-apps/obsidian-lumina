@@ -294,5 +294,35 @@ describe('OpenAIProvider', () => {
 				vi.useRealTimers();
 			}
 		});
+
+		it('promptCaching.cacheKey가 전달되면 prompt_cache_key를 포함하고, 없으면 생략한다', async () => {
+			mockRequestUrl.mockResolvedValue({
+				text: '{}',
+				json: {
+					choices: [{ message: { content: 'Cached' }, finish_reason: 'stop' }],
+					usage: {
+						prompt_tokens: 2000,
+						completion_tokens: 20,
+						total_tokens: 2020,
+						prompt_tokens_details: { cached_tokens: 1500 },
+					},
+				},
+			} as RequestUrlResponse);
+
+			const res = await provider.chat(
+				[{ role: 'user', content: 'hello' }],
+				{ model: 'gpt-4o', promptCaching: { enabled: true, cacheKey: 'sess-openai-1' } },
+			);
+
+			const cachedBody = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(cachedBody.prompt_cache_key).toBe('sess-openai-1');
+			expect(res.usage?.cacheReadTokens).toBe(1500);
+
+			mockRequestUrl.mockClear();
+
+			await provider.chat([{ role: 'user', content: 'hello' }], { model: 'gpt-4o' });
+			const plainBody = JSON.parse((mockRequestUrl.mock.calls[0][0] as { body: string }).body) as Record<string, unknown>;
+			expect(plainBody.prompt_cache_key).toBeUndefined();
+		});
 	});
 });

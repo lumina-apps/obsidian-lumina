@@ -329,6 +329,22 @@ export function migrateBatchRibbonIcon(plugin: LuminaPlugin): boolean {
 	return false;
 }
 
+/** 프롬프트 캐싱 설정 기본값 마이그레이션 */
+export function migratePromptCaching(plugin: LuminaPlugin): boolean {
+	const chat = plugin.settings.chat as unknown as Record<string, unknown> | undefined;
+	if (!chat) return false;
+	let changed = false;
+	if (chat.enablePromptCaching === undefined) {
+		chat.enablePromptCaching = true;
+		changed = true;
+	}
+	if (chat.geminiExplicitCaching === undefined) {
+		chat.geminiExplicitCaching = false;
+		changed = true;
+	}
+	return changed;
+}
+
 const LEGACY_PROVIDER_BASE_URLS: Readonly<Record<string, string>> = {
 	togetherai: 'https://api.together.xyz',
 	kimi: 'https://api.moonshot.ai',
@@ -379,5 +395,6 @@ export function runMigrations(plugin: LuminaPlugin): boolean {
 	if (migrateCanvasSettings(plugin)) needsSave = true;
 	if (migrateGraphRibbonIcon(plugin)) needsSave = true;
 	if (migrateBatchRibbonIcon(plugin)) needsSave = true;
+	if (migratePromptCaching(plugin)) needsSave = true;
 	return needsSave;
 }

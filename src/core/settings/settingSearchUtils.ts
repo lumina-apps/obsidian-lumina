@@ -13,6 +13,7 @@ export const COMMON_SYNONYMS: string[][] = [
 	['temp', 'temperature'],
 	['api', 'apikey', 'key'],
 	['rerank', 'reranker'],
+	['cache', 'caching', 'prompt caching'],
 ];
 
 /**
@@ -45,6 +46,7 @@ export const LOCALE_SYNONYMS: Record<string, string[][]> = {
 		['sync', '동기화'],
 		['history', '히스토리', '기록', '이력'],
 		['web', '웹', '인터넷'],
+		['cache', 'caching', '캐시', '캐싱'],
 	],
 	ja: [
 		['model', 'モデル'],
@@ -71,6 +73,7 @@ export const LOCALE_SYNONYMS: Record<string, string[][]> = {
 		['sync', '同期'],
 		['history', '履歴', 'ヒストリー'],
 		['web', 'ウェブ', 'インターネット'],
+		['cache', 'caching', 'キャッシュ', 'キャッシング'],
 	],
 	zh: [
 		['model', '模型'],
@@ -97,6 +100,7 @@ export const LOCALE_SYNONYMS: Record<string, string[][]> = {
 		['sync', '同步'],
 		['history', '历史', '记录'],
 		['web', '网络', '网页'],
+		['cache', 'caching', '缓存'],
 	],
 	'zh-tw': [
 		['model', '模型'],
@@ -123,6 +127,7 @@ export const LOCALE_SYNONYMS: Record<string, string[][]> = {
 		['sync', '同步'],
 		['history', '歷史', '紀錄'],
 		['web', '網路', '網頁'],
+		['cache', 'caching', '快取'],
 	],
 };
 

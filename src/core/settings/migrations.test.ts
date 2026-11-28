@@ -11,6 +11,7 @@ import {
 	migrateCanvasSettings,
 	migrateGraphRibbonIcon,
 	migrateBatchRibbonIcon,
+	migratePromptCaching,
 	runMigrations,
 } from './migrations';
 import { addDynamicLocale, setLanguage, getEnLocale } from '../../shared/locales/helpers';
@@ -306,7 +307,7 @@ describe('runMigrations', () => {
 			settings: {
 				misc: { hasMigratedChatHistory: true, showGraphRibbonIcon: false, showBatchRibbonIcon: false },
 				rag: { minSimilarity: 0.5 },
-				chat: { quickActions: [], memoryMethod: 'tokens', contextWindowTurns: 10 },
+				chat: { quickActions: [], memoryMethod: 'tokens', contextWindowTurns: 10, enablePromptCaching: true, geminiExplicitCaching: false },
 				webSearch: {
 					enabled: false,
 					providers: [
@@ -500,6 +501,24 @@ describe('migrateRemovedProviders', () => {
 		} as unknown as LuminaPlugin;
 
 		expect(migrateRemovedProviders(mockPlugin)).toBe(false);
+	});
+});
+
+describe('migratePromptCaching', () => {
+	it('enablePromptCaching과 geminiExplicitCaching이 없을 때 기본값으로 초기화한다', () => {
+		const mockPlugin = { settings: { chat: {} } } as unknown as LuminaPlugin;
+		expect(migratePromptCaching(mockPlugin)).toBe(true);
+		expect(mockPlugin.settings.chat.enablePromptCaching).toBe(true);
+		expect(mockPlugin.settings.chat.geminiExplicitCaching).toBe(false);
+	});
+
+	it('이미 설정되어 있으면 변경하지 않고 false를 반환한다', () => {
+		const mockPlugin = {
+			settings: { chat: { enablePromptCaching: false, geminiExplicitCaching: true } },
+		} as unknown as LuminaPlugin;
+		expect(migratePromptCaching(mockPlugin)).toBe(false);
+		expect(mockPlugin.settings.chat.enablePromptCaching).toBe(false);
+		expect(mockPlugin.settings.chat.geminiExplicitCaching).toBe(true);
 	});
 });
 

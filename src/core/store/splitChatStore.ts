@@ -76,19 +76,39 @@ export const isAnySlotStreaming: Readable<boolean> = derived(splitChatStore, ($s
 	),
 );
 
-/** 현재 Split 세션 전체의 누적 토큰 합계 */
-export const splitSessionTokenStats: Readable<{ totalTokens: number }> = derived(
+/** 현재 Split 세션 전체의 누적 토큰 및 캐시 재사용 합계 */
+export const splitSessionTokenStats: Readable<{
+	totalTokens: number;
+	inputTokens: number;
+	outputTokens: number;
+	cacheReadTokens: number;
+	cacheCreationTokens: number;
+}> = derived(
 	splitChatStore,
 	($s) => {
 		let totalTokens = 0;
+		let inputTokens = 0;
+		let outputTokens = 0;
+		let cacheReadTokens = 0;
+		let cacheCreationTokens = 0;
 		for (const turn of $s.turns) {
 			for (const resp of Object.values(turn.responses)) {
 				if (resp.tokenUsage) {
 					totalTokens += resp.tokenUsage.totalTokens;
+					inputTokens += resp.tokenUsage.inputTokens;
+					outputTokens += resp.tokenUsage.outputTokens;
+					cacheReadTokens += resp.tokenUsage.cacheReadTokens ?? 0;
+					cacheCreationTokens += resp.tokenUsage.cacheCreationTokens ?? 0;
 				}
 			}
 		}
-		return { totalTokens };
+		return {
+			totalTokens,
+			inputTokens,
+			outputTokens,
+			cacheReadTokens,
+			cacheCreationTokens,
+		};
 	},
 );
 

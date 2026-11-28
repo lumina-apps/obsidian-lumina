@@ -379,6 +379,12 @@
       "enableSelectionMiniIcon": {
         "name": "显示选中文本迷你 AI 图标",
         "desc": "在编辑器中选中文本时，在选区附近显示一个迷你浮动 AI 按钮以快速打开内联提示栏。"
+      },
+      "promptCaching": {
+        "name": "提示词缓存 (Prompt Caching)",
+        "desc": "缓存重复的系统提示词、工具定义与对话前缀（Anthropic、OpenAI、OpenRouter、Gemini），降低令牌费用与首字延迟。提示：系统提示词开头包含 {{time}} 等动态变量会降低缓存命中率。",
+        "geminiExplicitName": "Gemini 显式上下文缓存",
+        "geminiExplicitDesc": "在 Gemini 2.5/3 模型上通过 cachedContents API 预先缓存 4,096+ 令牌的大段上下文。5 分钟 TTL 期间会产生额外的 Google 存储费用；不支持的模型（如 Gemini 4）将自动回退为常规请求。"
       }
     },
     "rag": {
@@ -646,7 +652,11 @@
       "editModeTooltip": "编辑模式：允许 CLI 智能体直接在库中创建和修改笔记。",
       "readModeNotice": "👁️ CLI 智能体：只读模式（禁止修改笔记）",
       "editModeNotice": "✏️ CLI 智能体：编辑模式（允许创建和修改笔记）"
-    }
+    },
+    "cacheReusedBadge": "⚡ {{percent}}% 复用",
+    "sessionUsageCachedTooltip": "会话累计 {{total}} 令牌（输入 {{input}} 中复用 {{reused}} · 节省 {{percent}}% / 输出 {{output}}）",
+    "sessionUsageCachedWriteSuffix": " · 新增缓存 {{written}}",
+    "sessionUsageDetailedTooltip": "会话累计 {{total}} 令牌（输入 {{input}} / 输出 {{output}}）"
   },
   "common": {
     "save": "保存",

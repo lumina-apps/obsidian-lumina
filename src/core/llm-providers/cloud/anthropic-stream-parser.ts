@@ -15,6 +15,28 @@ function computeAnthropicInputTokens(usage: AnthropicUsagePayload): number {
 	);
 }
 
+/** Anthropic usage 객체를 TokenUsage로 변환하며 0보다 큰 캐시 토큰만 선택적으로 포함합니다. */
+function buildAnthropicTokenUsage(
+	usage: AnthropicUsagePayload,
+	prevUsage?: TokenUsage,
+	hasInputFields = true,
+): TokenUsage {
+	const inputTokens = hasInputFields
+		? computeAnthropicInputTokens(usage)
+		: (prevUsage?.inputTokens ?? 0);
+	const outputTokens = usage.output_tokens ?? prevUsage?.outputTokens ?? 0;
+	const cacheReadTokens = usage.cache_read_input_tokens ?? prevUsage?.cacheReadTokens ?? 0;
+	const cacheCreationTokens = usage.cache_creation_input_tokens ?? prevUsage?.cacheCreationTokens ?? 0;
+
+	return {
+		inputTokens,
+		outputTokens,
+		totalTokens: inputTokens + outputTokens,
+		...(cacheReadTokens > 0 ? { cacheReadTokens } : {}),
+		...(cacheCreationTokens > 0 ? { cacheCreationTokens } : {}),
+	};
+}
+
 // ─── Stream Accumulator ─────────────────────────────────────────────────────
 
 /**
@@ -79,13 +101,7 @@ export class AnthropicStreamAccumulator {
 			throw new Error(`Anthropic Stream Error: ${errorMsg}`);
 		}
 		if (chunk.type === 'message_start' && chunk.message?.usage) {
-			const inputTokens = computeAnthropicInputTokens(chunk.message.usage);
-			const outputTokens = chunk.message.usage.output_tokens || 0;
-			this.usage = {
-				inputTokens,
-				outputTokens,
-				totalTokens: inputTokens + outputTokens,
-			};
+			this.usage = buildAnthropicTokenUsage(chunk.message.usage);
 		}
 		else if (chunk.type === 'content_block_start') {
 			const index = chunk.index ?? 0;
@@ -148,15 +164,7 @@ export class AnthropicStreamAccumulator {
 					typeof chunk.usage.input_tokens === 'number' ||
 					typeof chunk.usage.cache_creation_input_tokens === 'number' ||
 					typeof chunk.usage.cache_read_input_tokens === 'number';
-				const nextInputTokens = hasInputFields
-					? computeAnthropicInputTokens(chunk.usage)
-					: (this.usage?.inputTokens ?? 0);
-				const nextOutputTokens = chunk.usage.output_tokens ?? this.usage?.outputTokens ?? 0;
-				this.usage = {
-					inputTokens: nextInputTokens,
-					outputTokens: nextOutputTokens,
-					totalTokens: nextInputTokens + nextOutputTokens,
-				};
+				this.usage = buildAnthropicTokenUsage(chunk.usage, this.usage, hasInputFields);
 			}
 		}
 	}
@@ -211,16 +219,7 @@ export function parseAnthropicNonStreamResponse(rawBody: string, data: Anthropic
 		}
 	}
 
-	let usage: TokenUsage | undefined;
-	if (data.usage) {
-		const inputTokens = computeAnthropicInputTokens(data.usage);
-		const outputTokens = data.usage.output_tokens || 0;
-		usage = {
-			inputTokens,
-			outputTokens,
-			totalTokens: inputTokens + outputTokens,
-		};
-	}
+	const usage = data.usage ? buildAnthropicTokenUsage(data.usage) : undefined;
 
 	return {
 		fullContent,

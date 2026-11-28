@@ -28,15 +28,23 @@ export function parseSSEChunk(line: string): OpenAIStreamChunk | null {
 
 // ── Usage 매핑 ──
 
-/** OpenAI usage 정보를 TokenUsage로 변환 */
+/** OpenAI usage 정보를 TokenUsage로 변환 (캐시 히트 토큰이 0보다 클 때만 포함) */
 export function mapOpenAIUsage(
-	usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } | undefined,
+	usage: {
+		prompt_tokens: number;
+		completion_tokens: number;
+		total_tokens: number;
+		prompt_tokens_details?: { cached_tokens?: number };
+		prompt_cache_hit_tokens?: number;
+	} | undefined,
 ): TokenUsage | undefined {
 	if (!usage) return undefined;
+	const cacheReadTokens = usage.prompt_tokens_details?.cached_tokens ?? usage.prompt_cache_hit_tokens ?? 0;
 	return {
 		inputTokens: usage.prompt_tokens,
 		outputTokens: usage.completion_tokens,
 		totalTokens: usage.total_tokens,
+		...(cacheReadTokens > 0 ? { cacheReadTokens } : {}),
 	};
 }
 

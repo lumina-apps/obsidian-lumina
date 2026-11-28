@@ -17,6 +17,7 @@ vi.mock('obsidian', () => ({
 
 import { GoogleProvider } from './google.provider';
 import { mapUsageMetadata } from './google.types';
+import { geminiContextCacheManager } from './gemini-cache-manager';
 
 describe('GoogleProvider', () => {
 	const PROVIDER_ID = 'test-google';
@@ -325,6 +326,7 @@ describe('GoogleProvider', () => {
 				inputTokens: 300,
 				outputTokens: 200,
 				totalTokens: 500,
+				cacheReadTokens: 100,
 			});
 		});
 
@@ -340,6 +342,85 @@ describe('GoogleProvider', () => {
 				outputTokens: 50,
 				totalTokens: 150,
 			});
+		});
+	});
+
+	describe('explicit context caching', () => {
+		afterEach(async () => {
+			await geminiContextCacheManager.destroyAll();
+		});
+
+		it('geminiExplicit 활성화 시 cachedContent를 전송하고 systemInstruction/tools를 제외한다', async () => {
+			const largeSys = 'System instruction '.repeat(1500);
+			mockRequestUrl
+				.mockResolvedValueOnce({
+					json: {
+						name: 'cachedContents/explicit-1',
+						expireTime: new Date(Date.now() + 300_000).toISOString(),
+					},
+				} as RequestUrlResponse)
+				.mockResolvedValueOnce({
+					text: '{}',
+					json: {
+						candidates: [{ content: { parts: [{ text: 'Cached reply' }] }, finishReason: 'STOP' }],
+						usageMetadata: { promptTokenCount: 1000, cachedContentTokenCount: 900, candidatesTokenCount: 10 },
+					},
+				} as RequestUrlResponse);
+
+			const res = await provider.chat(
+				[
+					{ role: 'system', content: largeSys },
+					{ role: 'user', content: 'Question' },
+				],
+				{
+					model: 'gemini-2.5-pro',
+					tools: [{ name: 'read_note', description: 'Read', inputSchema: { type: 'object', properties: {} } }],
+					promptCaching: { enabled: true, geminiExplicit: true, cacheKey: 'sess-g1', geminiTtlSeconds: 300 },
+				},
+			);
+
+			expect(res.content).toBe('Cached reply');
+			expect(res.usage?.cacheReadTokens).toBe(900);
+			expect(mockRequestUrl).toHaveBeenCalledTimes(2);
+			const genBody = JSON.parse((mockRequestUrl.mock.calls[1][0] as { body: string }).body) as Record<string, unknown>;
+			expect(genBody.cachedContent).toBe('cachedContents/explicit-1');
+			expect(genBody.systemInstruction).toBeUndefined();
+			expect(genBody.tools).toBeUndefined();
+		});
+
+		it('Explicit 캐시 참조가 HTTP 404로 거부되면 일반 요청으로 자동 폴백한다', async () => {
+			const largeSys = 'System instruction '.repeat(1500);
+			mockRequestUrl
+				.mockResolvedValueOnce({
+					json: {
+						name: 'cachedContents/expired-1',
+						expireTime: new Date(Date.now() + 300_000).toISOString(),
+					},
+				} as RequestUrlResponse)
+				.mockRejectedValueOnce({ status: 404, message: 'CachedContent not found' })
+				.mockResolvedValueOnce({
+					text: '{}',
+					json: {
+						candidates: [{ content: { parts: [{ text: 'Fallback ok' }] }, finishReason: 'STOP' }],
+					},
+				} as RequestUrlResponse);
+
+			const res = await provider.chat(
+				[
+					{ role: 'system', content: largeSys },
+					{ role: 'user', content: 'Question' },
+				],
+				{
+					model: 'gemini-2.5-pro',
+					promptCaching: { enabled: true, geminiExplicit: true, cacheKey: 'sess-g2' },
+				},
+			);
+
+			expect(res.content).toBe('Fallback ok');
+			expect(mockRequestUrl).toHaveBeenCalledTimes(3);
+			const fallbackBody = JSON.parse((mockRequestUrl.mock.calls[2][0] as { body: string }).body) as Record<string, unknown>;
+			expect(fallbackBody.cachedContent).toBeUndefined();
+			expect(fallbackBody.systemInstruction).toBeDefined();
 		});
 	});
 });

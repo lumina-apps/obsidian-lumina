@@ -96,6 +96,10 @@ export interface ChatSettings {
 	ttftTimeoutMs: number;
 	/** 스트리밍 중 다음 토큰 대기 시간 (밀리초, 0이면 비활성화) */
 	interTokenTimeoutMs: number;
+	/** 프롬프트 캐싱(Anthropic/OpenAI/OpenRouter/Gemini) 제어 활성화 여부 */
+	enablePromptCaching: boolean;
+	/** Google Gemini 명시적 컨텍스트 캐싱(cachedContents) 사용 여부 (스토리지 비용 별도 발생) */
+	geminiExplicitCaching: boolean;
 	/** 멀티 모델 비교(Split) 선호 설정 (사용 전까지 미정의 상태 유지) */
 	splitChat?: SplitChatPreferences;
 }

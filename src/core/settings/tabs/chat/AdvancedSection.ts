@@ -102,6 +102,29 @@ export function renderAdvancedSection(tab: LuminaSettingTab, el: HTMLElement): v
 		});
 
 	new Setting(el)
+		.setName(t('settings.chat.promptCaching.name'))
+		.setDesc(t('settings.chat.promptCaching.desc'))
+		.addToggle(toggle => {
+			toggle.setValue(s.enablePromptCaching !== false).onChange(wrapAsync(async (val) => {
+				s.enablePromptCaching = val;
+				await tab.saveAndSync();
+				tab.refreshDisplay();
+			}));
+		});
+
+	if (s.enablePromptCaching !== false) {
+		new Setting(el)
+			.setName(t('settings.chat.promptCaching.geminiExplicitName'))
+			.setDesc(t('settings.chat.promptCaching.geminiExplicitDesc'))
+			.addToggle(toggle => {
+				toggle.setValue(Boolean(s.geminiExplicitCaching)).onChange(wrapAsync(async (val) => {
+					s.geminiExplicitCaching = val;
+					await tab.saveAndSync();
+				}));
+			});
+	}
+
+	new Setting(el)
 		.setName(t('settings.chat.timeout.ttftLabel', { fallback: 'Time-To-First-Token Timeout (ms)' }))
 		.setDesc(t('settings.chat.timeout.ttftDesc', { fallback: 'Wait time for the very first token to arrive. Set to 0 to disable. (Default: 0)' }))
 		.addText(text => {
