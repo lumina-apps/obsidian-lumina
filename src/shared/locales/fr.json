@@ -517,7 +517,24 @@
         "button": "🗑 Réinitialiser l'index",
         "resetConfirm": "Êtes-vous sûr de vouloir réinitialiser l'index ? Cette action est irréversible.",
         "resetSuccess": "🗑 L'index a été réinitialisé."
-      }
+      },
+      "hybridAlpha": {
+        "name": "Équilibre recherche hybride (Vecteur vs Mot-clé)",
+        "desc": "Ajuste le poids entre recherche vectorielle sémantique (1.0) et recherche par mots-clés BM25 (0.0). (Par défaut : 0.5)"
+      },
+      "linkExpansion": {
+        "name": "Extension de graphe Wiki-lien 1-Hop",
+        "desc": "Explore aussi les notes directement liées par [[liens wiki]] et rétroliens depuis les meilleurs résultats sans appel LLM supplémentaire. (Par défaut : Activé)"
+      },
+      "queryOptimization": {
+        "name": "Réécriture de requête et Multi-Query",
+        "desc": "Utilise le modèle Task pour résoudre les pronoms conversationnels et étendre la recherche avec délai max et disjoncteur."
+      },
+      "cragFallback": {
+        "name": "Nouvelle recherche si faible confiance (CRAG)",
+        "desc": "Relance une recherche avec des mots-clés plus larges extraits par le modèle Task lorsque les résultats initiaux sont vides ou faibles."
+      },
+      "taskModelRequiredHint": "Nécessite un modèle Task dans Connexions et Modèles"
     },
     "misc": {
       "title": "Divers\net Extensions",
@@ -807,6 +824,11 @@
     "debugChunks": "segments",
     "debugExpandAll": "Tout développer",
     "debugCollapseAll": "Tout réduire",
+    "debugSearchPlaceholder": "Rechercher dans les journaux...",
+    "debugClearSearch": "Effacer la recherche",
+    "debugNoMatches": "Aucun journal correspondant",
+    "debugResetFilters": "Réinitialiser les filtres",
+    "debugCopyEntry": "Copier le journal en JSON",
     "ragTooLong": "[Lumina] Contexte RAG trop long, tronqué à {{max}} caractères.",
     "ragWorkerInitErr": "Erreur d'initialisation du Worker inconnue (Vérifier la console)",
     "ragWorkerTerm": "Worker terminé.",
@@ -907,7 +929,8 @@
     "ragProgress": {
       "searching": "🔍 Recherche en cours...",
       "reranking": "⚖️ Reranking en cours...",
-      "generating": "💡 Génération de la réponse..."
+      "generating": "💡 Génération de la réponse...",
+      "rewriting": "🧠 Optimisation de la requête..."
     },
     "promptBar": {
       "commandTitle": "Ouvrir la barre de prompt intégrée",

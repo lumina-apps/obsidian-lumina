@@ -572,6 +572,11 @@ export interface TranslationSettingsRagReset {
   resetSuccess: string;
 }
 
+export interface TranslationSettingsRagToggle {
+	name: string;
+	desc: string;
+}
+
 export interface TranslationSettingsRag {
   toggleTooltip: string;
   title: string;
@@ -584,6 +589,11 @@ export interface TranslationSettingsRag {
 	minSimilarity: TranslationSettingsRagMinSimilarity;
 	relatedNotesMinSimilarity: TranslationSettingsRagRelatedNotesMinSimilarity;
 	duplicateThreshold: TranslationSettingsRagDuplicateThreshold;
+	hybridAlpha: TranslationSettingsRagToggle;
+	linkExpansion: TranslationSettingsRagToggle;
+	queryOptimization: TranslationSettingsRagToggle;
+	cragFallback: TranslationSettingsRagToggle;
+	taskModelRequiredHint: string;
 	maxFileSize: TranslationSettingsRagMaxFileSize;
 	contentFilter: TranslationSettingsRagContentFilter;
 	reindex: TranslationSettingsRagReindex;
@@ -941,6 +951,11 @@ export interface TranslationUiMessages {
   debugChunks: string;
   debugExpandAll: string;
   debugCollapseAll: string;
+  debugSearchPlaceholder: string;
+  debugClearSearch: string;
+  debugNoMatches: string;
+  debugResetFilters: string;
+  debugCopyEntry: string;
   ragTooLong: string;
   ragWorkerInitErr: string;
   ragWorkerTerm: string;
@@ -1039,6 +1054,7 @@ export interface TranslationUiMessages {
   edit: string;
   openReferenceNote: string;
   ragProgress: {
+    rewriting: string;
     searching: string;
     reranking: string;
     generating: string;

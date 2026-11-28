@@ -517,7 +517,24 @@
         "button": "🗑 Redefinir Índice",
         "resetConfirm": "Tem certeza de que deseja redefinir o índice? Esta ação não pode ser desfeita.",
         "resetSuccess": "🗑 O índice foi redefinido."
-      }
+      },
+      "hybridAlpha": {
+        "name": "Equilíbrio da busca híbrida (Vetor vs Palavra-chave)",
+        "desc": "Ajusta o peso entre busca vetorial semântica (1.0) e busca BM25 por palavras-chave (0.0). (Padrão: 0.5)"
+      },
+      "linkExpansion": {
+        "name": "Expansão de grafo Wiki-link 1-Hop",
+        "desc": "Inspeciona também notas ligadas diretamente por [[wikilinks]] e backlinks dos principais resultados sem chamadas LLM extras. (Padrão: Ativo)"
+      },
+      "queryOptimization": {
+        "name": "Reescrita de consulta e Multi-Query",
+        "desc": "Usa o modelo Task para resolver pronomes da conversa e expandir consultas com proteção de timeout e disjuntor."
+      },
+      "cragFallback": {
+        "name": "Nova busca em baixa confiança (CRAG)",
+        "desc": "Tenta novamente a busca uma vez com palavras-chave mais amplas do modelo Task quando os resultados iniciais são vazios ou fracos."
+      },
+      "taskModelRequiredHint": "Requer um modelo Task em Conexões e Modelos"
     },
     "misc": {
       "title": "Diversos\ne Extensões",
@@ -807,6 +824,11 @@
     "debugChunks": "blocos",
     "debugExpandAll": "Expandir Todos",
     "debugCollapseAll": "Recolher Todos",
+    "debugSearchPlaceholder": "Pesquisar logs...",
+    "debugClearSearch": "Limpar pesquisa",
+    "debugNoMatches": "Nenhum log correspondente",
+    "debugResetFilters": "Redefinir filtros",
+    "debugCopyEntry": "Copiar log como JSON",
     "ragTooLong": "[Lumina] Contexto RAG muito longo, truncado para {{max}} caracteres.",
     "ragWorkerInitErr": "Erro de inicialização do Worker desconhecido (Verifique o console)",
     "ragWorkerTerm": "Worker encerrado.",
@@ -907,7 +929,8 @@
     "ragProgress": {
       "searching": "🔍 Pesquisando...",
       "reranking": "⚖️ Reordenando...",
-      "generating": "💡 Gerando resposta..."
+      "generating": "💡 Gerando resposta...",
+      "rewriting": "🧠 Otimizando consulta de busca..."
     },
     "promptBar": {
       "commandTitle": "Abrir barra de prompt inline",

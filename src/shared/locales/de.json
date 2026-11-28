@@ -517,7 +517,24 @@
         "button": "🗑 Index zurücksetzen",
         "resetConfirm": "Möchten Sie den Index wirklich zurücksetzen? Diese Aktion kann nicht rückgängig gemacht werden.",
         "resetSuccess": "🗑 Index wurde zurückgesetzt."
-      }
+      },
+      "hybridAlpha": {
+        "name": "Hybrid-Suchgewichtung (Vektor vs. Stichwort)",
+        "desc": "Gewichtung zwischen semantischer Vektorsuche (1.0) und BM25-Stichwortsuche (0.0) anpassen. (Standard: 0.5)"
+      },
+      "linkExpansion": {
+        "name": "Wiki-Link 1-Hop-Grapherweiterung",
+        "desc": "Durchsucht ohne zusätzliche LLM-Aufrufe auch Notizen, die per [[Wikilink]] oder Backlink direkt mit Top-Treffern verknüpft sind. (Standard: Ein)"
+      },
+      "queryOptimization": {
+        "name": "Query-Rewriting & Multi-Query",
+        "desc": "Verwendet das Task-Modell zur Auflösung von Pronomen und Erweiterung von Suchanfragen mit Timeout- & Circuit-Breaker-Schutz."
+      },
+      "cragFallback": {
+        "name": "Fallback-Suche bei geringer Konfidenz (CRAG)",
+        "desc": "Wiederholt die Suche einmalig mit breiteren Schlüsselwörtern des Task-Modells, wenn die ersten Treffer leer oder schwach sind."
+      },
+      "taskModelRequiredHint": "Erfordert ein Task-Modell unter Verbindungen & Modelle"
     },
     "misc": {
       "title": "Sonstiges\n& Extras",
@@ -807,6 +824,11 @@
     "debugChunks": "Chunks",
     "debugExpandAll": "Alle erweitern",
     "debugCollapseAll": "Alle einklappen",
+    "debugSearchPlaceholder": "Protokolle durchsuchen...",
+    "debugClearSearch": "Suche löschen",
+    "debugNoMatches": "Keine passenden Protokolle",
+    "debugResetFilters": "Filter zurücksetzen",
+    "debugCopyEntry": "Protokoll als JSON kopieren",
     "ragTooLong": "[Lumina] RAG-Kontext zu lang, auf {{max}} Zeichen gekürzt.",
     "ragWorkerInitErr": "Unbekannter Worker-Initialisierungsfehler (Konsole prüfen)",
     "ragWorkerTerm": "Worker beendet.",
@@ -907,7 +929,8 @@
     "ragProgress": {
       "searching": "🔍 Suchen...",
       "reranking": "⚖️ Neuordnung (Reranking)...",
-      "generating": "💡 Antwort generieren..."
+      "generating": "💡 Antwort generieren...",
+      "rewriting": "🧠 Suchanfrage wird optimiert..."
     },
     "promptBar": {
       "commandTitle": "Inline-Prompt-Leiste öffnen",

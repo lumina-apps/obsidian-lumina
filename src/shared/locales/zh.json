@@ -517,7 +517,24 @@
         "button": "🗑 重置索引",
         "resetConfirm": "您确定要重置索引吗？此操作无法撤销。",
         "resetSuccess": "🗑 索引已重置。"
-      }
+      },
+      "hybridAlpha": {
+        "name": "混合检索权重 (向量 vs 关键词)",
+        "desc": "调节语义向量检索(1.0)与 BM25 关键词检索(0.0)之间的权重。(默认: 0.5)"
+      },
+      "linkExpansion": {
+        "name": "双链 1-Hop 图谱扩展检索",
+        "desc": "无需额外 LLM 调用，自动结合顶部结果通过 [[双链]] 与反向链接直接关联的笔记进行扩展检索。(默认: 开启)"
+      },
+      "queryOptimization": {
+        "name": "查询重写与多查询扩展",
+        "desc": "使用专用 Task 模型消解对话指代并扩展检索查询（内置超时与熔断保护）。"
+      },
+      "cragFallback": {
+        "name": "低置信度重检回退 (CRAG)",
+        "desc": "当首次检索无结果或置信度极低时，使用 Task 模型提取更宽泛的关键词重试检索一次。"
+      },
+      "taskModelRequiredHint": "需在连接与模型设置中选择 Task 模型"
     },
     "misc": {
       "title": "附加功能\n与其他",
@@ -807,6 +824,11 @@
     "debugChunks": "分块",
     "debugExpandAll": "展开全部",
     "debugCollapseAll": "折叠全部",
+    "debugSearchPlaceholder": "搜索日志...",
+    "debugClearSearch": "清除搜索",
+    "debugNoMatches": "没有匹配的日志",
+    "debugResetFilters": "重置筛选",
+    "debugCopyEntry": "复制日志为 JSON",
     "ragTooLong": "[Lumina] RAG 上下文过长，已截断至 {{max}} 字符。",
     "ragWorkerInitErr": "未知的 Worker 初始化错误（请检查控制台）",
     "ragWorkerTerm": "Worker 已终止。",
@@ -907,7 +929,8 @@
     "ragProgress": {
       "searching": "🔍 扩展搜索中...",
       "reranking": "⚖️ 重排计算中...",
-      "generating": "💡 生成回答中..."
+      "generating": "💡 生成回答中...",
+      "rewriting": "🧠 正在优化检索查询..."
     },
     "promptBar": {
       "commandTitle": "打开内联提示栏",

@@ -49,6 +49,7 @@ export class OramaStore {
 				parentId: 'string',
 				path: 'enum',
 				text: 'string',
+				contextPrefix: 'string',
 				embedding: `vector[${this.dimension}]`,
 			},
 			components: {
@@ -75,6 +76,7 @@ export class OramaStore {
 				parentId: c.parentId,
 				path: c.path,
 				text: c.text,
+				contextPrefix: c.contextPrefix ?? '',
 				embedding: Array.from(c.embedding!),
 			}));
 
@@ -144,7 +146,7 @@ export class OramaStore {
 		const searchParams: Parameters<typeof search>[1] = {
 			term: query,
 			limit,
-			properties: ['text'],
+			properties: ['text', 'contextPrefix'],
 		};
 
 		if (allowedPaths !== undefined && allowedPaths !== null) {

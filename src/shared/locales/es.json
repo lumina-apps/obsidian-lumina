@@ -517,7 +517,24 @@
         "button": "🗑 Restablecer índice",
         "resetConfirm": "¿Estás seguro de que deseas restablecer el índice? Esta acción no se puede deshacer.",
         "resetSuccess": "🗑 El índice ha sido restablecido."
-      }
+      },
+      "hybridAlpha": {
+        "name": "Balance de búsqueda híbrida (Vector vs Palabra clave)",
+        "desc": "Ajusta el peso entre búsqueda vectorial semántica (1.0) y búsqueda BM25 por palabras clave (0.0). (Por defecto: 0.5)"
+      },
+      "linkExpansion": {
+        "name": "Expansión de grafo Wiki-link 1-Hop",
+        "desc": "Explora también notas conectadas directamente mediante [[wikilinks]] y retroenlaces desde los mejores resultados sin llamadas LLM extra. (Por defecto: Activado)"
+      },
+      "queryOptimization": {
+        "name": "Reescritura de consultas y Multi-Query",
+        "desc": "Usa el modelo Task para resolver referencias de conversación y expandir consultas con protección de tiempo límite y disyuntor."
+      },
+      "cragFallback": {
+        "name": "Reintento ante baja confianza (CRAG)",
+        "desc": "Reintenta la búsqueda una vez con palabras clave más amplias del modelo Task cuando no hay resultados o su confianza es baja."
+      },
+      "taskModelRequiredHint": "Requiere seleccionar un modelo Task en Conexiones y Modelos"
     },
     "misc": {
       "title": "Varios\ny extensiones",
@@ -807,6 +824,11 @@
     "debugChunks": "fragmentos",
     "debugExpandAll": "Expandir todo",
     "debugCollapseAll": "Colapsar todo",
+    "debugSearchPlaceholder": "Buscar registros...",
+    "debugClearSearch": "Limpiar búsqueda",
+    "debugNoMatches": "No hay registros coincidentes",
+    "debugResetFilters": "Restablecer filtros",
+    "debugCopyEntry": "Copiar registro como JSON",
     "ragTooLong": "[Lumina] El contexto RAG es demasiado largo; se truncó a {{max}} caracteres.",
     "ragWorkerInitErr": "Error de inicialización del worker desconocido (Ver consola)",
     "ragWorkerTerm": "Worker finalizado.",
@@ -907,7 +929,8 @@
     "ragProgress": {
       "searching": "🔍 Buscando...",
       "reranking": "⚖️ Reordenando...",
-      "generating": "💡 Generando respuesta..."
+      "generating": "💡 Generando respuesta...",
+      "rewriting": "🧠 Optimizando consulta de búsqueda..."
     },
     "promptBar": {
       "commandTitle": "Abrir barra de prompt en línea",

@@ -7,6 +7,7 @@
 	import type { DebugLogEntry, DebugLogType } from '../../../shared/types/debug.types';
 	import { copyToClipboard } from '../../../shared/utils/clipboardUtils';
 	import { confirmWithModal } from '../../../shared/utils/modal';
+	import { matchesSearchQuery, tokenizeSearchQuery } from '../utils/searchUtils';
 	import DebugHeader from './DebugHeader.svelte';
 	import DebugFilterBar from './DebugFilterBar.svelte';
 	import DebugEmptyState from './DebugEmptyState.svelte';
@@ -18,16 +19,25 @@
 	let entries = $state<DebugLogEntry[]>([]);
 	let expandedIds = $state<Set<string>>(new Set());
 	let filterType = $state<DebugLogType | 'all'>('all');
+	let searchQuery = $state('');
 	let autoScroll = $state(true);
 	let logContainerEl: HTMLElement | null = $state(null);
 	let unsubLog: (() => void) | null = null;
 	let unsubClear: (() => void) | null = null;
 
 	// ── 계산된 값 ─────────────────────────────────────────────────────────────
+	const searchTokens = $derived(tokenizeSearchQuery(searchQuery));
+
+	const isFiltered = $derived(
+		filterType !== 'all' || searchTokens.length > 0,
+	);
+
 	const filteredEntries = $derived(
-		filterType === 'all'
-			? entries
-			: entries.filter((e) => e.type === filterType),
+		entries.filter(
+			(e) =>
+				(filterType === 'all' || e.type === filterType) &&
+				matchesSearchQuery(e, searchTokens),
+		),
 	);
 
 	const allFilteredExpanded = $derived(
@@ -46,7 +56,13 @@
 		unsubLog = debugLogger.onLog((entry) => {
 			entries = [...entries, entry];
 			if (entries.length > MAX_DEBUG_ENTRIES) entries = entries.slice(-MAX_DEBUG_ENTRIES);
-			if (autoScroll) scrollToBottom();
+			if (
+				autoScroll &&
+				(filterType === 'all' || entry.type === filterType) &&
+				matchesSearchQuery(entry, searchTokens)
+			) {
+				scrollToBottom();
+			}
 		});
 
 		unsubClear = debugLogger.onClear(() => {
@@ -136,6 +152,15 @@
 	function handleFilterChange(value: DebugLogType | 'all') {
 		filterType = value;
 	}
+
+	function handleSearchChange(value: string) {
+		searchQuery = value;
+	}
+
+	function resetFilters() {
+		filterType = 'all';
+		searchQuery = '';
+	}
 </script>
 
 <div class="lumina-debug">
@@ -149,22 +174,30 @@
 
 	<DebugFilterBar
 		{filterType}
+		{searchQuery}
 		filteredCount={filteredEntries.length}
+		totalCount={entries.length}
 		{allFilteredExpanded}
 		{anyFilteredExpanded}
 		onFilterChange={handleFilterChange}
+		onSearchChange={handleSearchChange}
 		onExpandAll={expandAll}
 		onCollapseAll={collapseAll}
 	/>
 
 	<div class="lumina-debug__log-list" bind:this={logContainerEl}>
 		{#if filteredEntries.length === 0}
-			<DebugEmptyState debugMode={plugin.settings.misc.debugMode} />
+			<DebugEmptyState
+				debugMode={plugin.settings.misc.debugMode}
+				isFiltered={entries.length > 0 && isFiltered}
+				onResetFilters={resetFilters}
+			/>
 		{:else}
 			{#each filteredEntries as entry (entry.id)}
 				<DebugLogEntryComp
 					{entry}
 					expanded={expandedIds.has(entry.id)}
+					highlightTokens={searchTokens}
 					ontoggle={toggleExpand}
 				/>
 			{/each}

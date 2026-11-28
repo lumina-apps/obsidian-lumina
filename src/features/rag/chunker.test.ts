@@ -104,4 +104,65 @@ describe('chunkDocument', () => {
 		expect(result.parentChunks).toHaveLength(1);
 		expect(result.parentChunks[0].text).toBe('핵심 문서 텍스트입니다.');
 	});
+
+	it('마크다운 헤딩 계층별로 분할하고 headingPath와 contextPrefix를 분리 저장하며 text 원문을 오염시키지 않는다', () => {
+		const content = [
+			'---',
+			'title: 아키텍처 가이드',
+			'tags: [rag, obsidian]',
+			'---',
+			'# 개요',
+			'시스템 소개 본문입니다.',
+			'',
+			'## 검색 파이프라인',
+			'하이브리드 검색과 리랭킹을 수행합니다.',
+		].join('\n');
+		const doc: RawDocument = { path: 'docs/rag-design.md', content, mtime: Date.now() };
+		const result = chunkDocument(doc, 1000, 100, 200, 20);
+
+		expect(result.parentChunks).toHaveLength(2);
+		expect(result.parentChunks[0].headingPath).toEqual(['개요']);
+		expect(result.parentChunks[1].headingPath).toEqual(['개요', '검색 파이프라인']);
+		// 원문 text에는 contextPrefix가 섞이지 않아야 함
+		expect(result.parentChunks[1].text).not.toContain('rag-design (');
+		expect(result.parentChunks[1].text).toContain('하이브리드 검색과 리랭킹을 수행합니다.');
+		// contextPrefix에는 보일러플레이트 라벨 없이 파일명·제목·섹션·태그가 압축 포함됨
+		expect(result.parentChunks[1].contextPrefix).toContain('rag-design (아키텍처 가이드)');
+		expect(result.parentChunks[1].contextPrefix).toContain('개요 > 검색 파이프라인');
+		expect(result.parentChunks[1].contextPrefix).toContain('#rag');
+		expect(result.parentChunks[1].contextPrefix).not.toContain('문서:');
+		expect(result.childChunks[1].contextPrefix).toBe(result.parentChunks[1].contextPrefix);
+	});
+
+	it('본문 없이 바로 하위 헤딩이 이어지는 단독 헤딩은 빈 청크로 남기지 않고 계층 경로만 승계한다', () => {
+		const content = [
+			'# 대제목',
+			'',
+			'## 소제목',
+			'여기에만 실제 본문이 있습니다.',
+		].join('\n');
+		const doc: RawDocument = { path: 'nested.md', content, mtime: Date.now() };
+		const result = chunkDocument(doc, 1000, 100, 300, 20);
+
+		expect(result.parentChunks).toHaveLength(1);
+		expect(result.parentChunks[0].headingPath).toEqual(['대제목', '소제목']);
+		expect(result.parentChunks[0].text).toContain('여기에만 실제 본문이 있습니다.');
+	});
+
+	it('펜스 코드블록 내부의 # 주석을 마크다운 헤딩으로 오인하지 않는다', () => {
+		const content = [
+			'# 실제 섹션',
+			'```python',
+			'# 이것은 파이썬 주석입니다',
+			'def hello():',
+			'    return 1',
+			'```',
+		].join('\n');
+		const doc: RawDocument = { path: 'code.md', content, mtime: Date.now() };
+		const result = chunkDocument(doc, 1000, 100, 300, 20);
+
+		expect(result.parentChunks).toHaveLength(1);
+		expect(result.parentChunks[0].headingPath).toEqual(['실제 섹션']);
+		expect(result.parentChunks[0].text).toContain('# 이것은 파이썬 주석입니다');
+	});
 });

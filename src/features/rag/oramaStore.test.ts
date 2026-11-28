@@ -154,4 +154,22 @@ describe('OramaStore - Vector & Full-text Hybrid Search', () => {
 
 		expect((await store.search([1, 0, 0], 5)).length).toBe(0);
 	});
+
+	it('contextPrefix의 제목/헤딩/태그 키워드도 전문 검색(Full-text)에 매칭된다', async () => {
+		await store.insertChunks([
+			{
+				id: 'ctx1',
+				parentId: 'p_ctx1',
+				path: 'Architecture/Search.md',
+				text: '내부 본문에는 해당 키워드가 없습니다.',
+				contextPrefix: '[문서: Architecture/Search | 제목: 하이브리드검색설계 | 섹션: RRF 알고리즘]',
+				chunkIndex: 0,
+				embedding: [1, 0, 0],
+			},
+		]);
+
+		const results = await store.searchFulltext('하이브리드검색설계', 5);
+		expect(results.length).toBe(1);
+		expect(results[0].parentId).toBe('p_ctx1');
+	});
 });

@@ -152,6 +152,14 @@ export interface RagSettings {
 	excludeComments: boolean;
 	/** 마크다운 본문에서 제외할 사용자 정의 정규식 패턴 목록 */
 	excludeContentPatterns: string[];
+	/** 하이브리드 검색 가중치 (0 = BM25 중심, 1 = 벡터 중심, 기본: 0.5) */
+	hybridAlpha: number;
+	/** Obsidian 위키링크 1-Hop 그래프 이웃 확장 검색 활성화 여부 (기본: true) */
+	enableLinkExpansion: boolean;
+	/** Task 모델 기반 대화형 쿼리 재작성 및 Multi-Query 확장 사용 여부 (기본: false) */
+	enableQueryOptimization: boolean;
+	/** 검색 결과 부재/저신뢰 시 Task 모델 기반 1회 재검색(경량 CRAG) 폴백 여부 (기본: false) */
+	enableCragFallback: boolean;
 }
 
 // ─── Section 4: Misc & Extensions ────────────────────────────────────────────

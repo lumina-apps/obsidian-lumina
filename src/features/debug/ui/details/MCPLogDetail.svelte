@@ -2,16 +2,28 @@
 	import { icon } from '../../../../shared/utils/iconAction';
 	import type { MCPLog } from '../../../../shared/types/debug.types';
 	import { copyToClipboard } from '../../../../shared/utils/clipboardUtils';
+	import { safeJsonStringify } from '../../utils/searchUtils';
+	import HighlightText from '../HighlightText.svelte';
 
-	let { entry }: { entry: MCPLog } = $props();
+	let {
+		entry,
+		highlightTokens = [],
+	}: {
+		entry: MCPLog;
+		highlightTokens?: readonly string[];
+	} = $props();
+
+	const dataText = $derived(
+		entry.data !== undefined
+			? typeof entry.data === 'string'
+				? entry.data
+				: safeJsonStringify(entry.data, 2)
+			: '',
+	);
 
 	function handleCopy(evt: MouseEvent) {
 		evt.stopPropagation();
-		const text =
-			typeof entry.data === 'string'
-				? entry.data
-				: JSON.stringify(entry.data, null, 2);
-		void copyToClipboard(text);
+		void copyToClipboard(dataText);
 	}
 
 </script>
@@ -19,8 +31,8 @@
 <section class="lumina-debug__section">
 	<table class="lumina-debug__table">
 		<tbody>
-			<tr><td>action</td><td>{entry.action}</td></tr>
-			<tr><td>message</td><td>{entry.message}</td></tr>
+			<tr><td>action</td><td><HighlightText text={entry.action} tokens={highlightTokens} /></td></tr>
+			<tr><td>message</td><td><HighlightText text={entry.message} tokens={highlightTokens} /></td></tr>
 		</tbody>
 	</table>
 	{#if entry.data !== undefined}
@@ -36,10 +48,6 @@
 				<span use:icon={'copy'}></span>
 			</button>
 		</div>
-		<pre class="lumina-debug__pre">
-			{typeof entry.data === 'string'
-				? entry.data
-				: JSON.stringify(entry.data, null, 2)}
-		</pre>
+		<pre class="lumina-debug__pre"><HighlightText text={dataText} tokens={highlightTokens} /></pre>
 	{/if}
 </section>

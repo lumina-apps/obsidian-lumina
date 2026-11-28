@@ -517,7 +517,24 @@
         "button": "🗑 Reset Index",
         "resetConfirm": "Are you sure you want to reset the index? This action cannot be undone.",
         "resetSuccess": "🗑 Index has been reset."
-      }
+      },
+      "hybridAlpha": {
+        "name": "Hybrid Search Balance (Vector vs Keyword)",
+        "desc": "Adjust weight between semantic vector search (1.0) and BM25 keyword search (0.0). (Default: 0.5)"
+      },
+      "linkExpansion": {
+        "name": "Wiki-link 1-Hop Graph Expansion",
+        "desc": "Also inspect notes directly linked via [[wikilinks]] and backlinks from top search results without extra LLM calls. (Default: On)"
+      },
+      "queryOptimization": {
+        "name": "Query Rewriting & Multi-Query",
+        "desc": "Use the dedicated Task model to resolve conversation pronouns and expand search queries with fail-safe timeout & circuit breaker."
+      },
+      "cragFallback": {
+        "name": "Low-Confidence Re-search Fallback (CRAG)",
+        "desc": "Automatically retry search once with broader keywords extracted by the Task model when initial results are empty or low-confidence."
+      },
+      "taskModelRequiredHint": "Requires a Task model in Connections & Models"
     },
     "misc": {
       "title": "Misc\n& Extensions",
@@ -807,6 +824,11 @@
     "debugChunks": "chunks",
     "debugExpandAll": "Expand All",
     "debugCollapseAll": "Collapse All",
+    "debugSearchPlaceholder": "Search logs...",
+    "debugClearSearch": "Clear search",
+    "debugNoMatches": "No matching logs",
+    "debugResetFilters": "Reset filters",
+    "debugCopyEntry": "Copy log as JSON",
     "ragTooLong": "[Lumina] RAG context too long, truncated to {{max}} chars.",
     "ragWorkerInitErr": "Unknown Worker init error (Check console)",
     "ragWorkerTerm": "Worker terminated.",
@@ -907,7 +929,8 @@
     "ragProgress": {
       "searching": "🔍 Searching...",
       "reranking": "⚖️ Reranking...",
-      "generating": "💡 Generating response..."
+      "generating": "💡 Generating response...",
+      "rewriting": "🧠 Optimizing search query..."
     },
     "promptBar": {
       "commandTitle": "Open Inline Prompt Bar",

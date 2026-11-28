@@ -128,4 +128,56 @@ describe('reranker', () => {
 		expect(res[0].chunk.id).toBe('c0');
 		expect(res[1].chunk.id).toBe('c1');
 	});
+
+	it('프롬프트 기반 리랭킹 시 bestChildText와 headingPath를 우선 포함해 평가한다', async () => {
+		const richChunks = [
+			{
+				chunk: {
+					id: 'p0',
+					path: 'notes/a.md',
+					text: 'A'.repeat(400) + ' TARGET_KEYWORD_HERE',
+					chunkIndex: 0,
+					headingPath: ['아키텍처', '검색'],
+				},
+				bestChildText: 'TARGET_KEYWORD_HERE relevant snippet',
+				score: 0.5,
+			},
+		];
+		const mockProvider = {
+			chat: vi.fn().mockResolvedValue({ content: '0' }),
+		};
+		vi.mocked(createProvider).mockReturnValue(mockProvider as any);
+
+		await rerankChunks('keyword', richChunks, mockConfig, 'gpt-4o', 1);
+		const sentPrompt = vi.mocked(mockProvider.chat).mock.calls[0][0][0].content as string;
+		expect(sentPrompt).toContain('notes/a.md > 아키텍처 > 검색');
+		expect(sentPrompt).toContain('TARGET_KEYWORD_HERE relevant snippet');
+	});
+
+	it('네이티브 rerank에서 minNativeScore 미만 청크를 필터링하되 preserveAtLeastOne으로 1개는 보존한다', async () => {
+		const mockProvider = {
+			rerank: vi.fn().mockResolvedValue([
+				{ index: 2, score: 0.85 },
+				{ index: 0, score: 0.05 },
+			]),
+		};
+		vi.mocked(createProvider).mockReturnValue(mockProvider as any);
+
+		const filtered = await rerankChunks('query', mockChunks, mockConfig, 'rerank-model', 2, undefined, {
+			minNativeScore: 0.15,
+		});
+		expect(filtered).toHaveLength(1);
+		expect(filtered[0].chunk.id).toBe('c2');
+
+		// 모두 임계값 미만이어도 기본 preserveAtLeastOne=true면 최상위 1개 보존
+		mockProvider.rerank.mockResolvedValueOnce([
+			{ index: 1, score: 0.08 },
+			{ index: 0, score: 0.02 },
+		]);
+		const preserved = await rerankChunks('query', mockChunks, mockConfig, 'rerank-model', 2, undefined, {
+			minNativeScore: 0.15,
+		});
+		expect(preserved).toHaveLength(1);
+		expect(preserved[0].chunk.id).toBe('c1');
+	});
 });

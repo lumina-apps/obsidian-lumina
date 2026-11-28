@@ -392,6 +392,30 @@ export function migrateRemovedProviders(plugin: LuminaPlugin): boolean {
 	return changed;
 }
 
+/** RAG 고도화 설정(하이브리드 비중, 링크 확장, 쿼리 최적화, CRAG 폴백) 기본값 마이그레이션 */
+export function migrateRagEnhancementSettings(plugin: LuminaPlugin): boolean {
+	const rag = plugin.settings.rag as unknown as Record<string, unknown> | undefined;
+	if (!rag) return false;
+	let changed = false;
+	if (rag.hybridAlpha === undefined) {
+		rag.hybridAlpha = 0.5;
+		changed = true;
+	}
+	if (rag.enableLinkExpansion === undefined) {
+		rag.enableLinkExpansion = true;
+		changed = true;
+	}
+	if (rag.enableQueryOptimization === undefined) {
+		rag.enableQueryOptimization = false;
+		changed = true;
+	}
+	if (rag.enableCragFallback === undefined) {
+		rag.enableCragFallback = false;
+		changed = true;
+	}
+	return changed;
+}
+
 /**
  * 모든 마이그레이션을 순차 실행하고 변경이 있으면 저장합니다.
  * @returns 저장이 필요하면 true
@@ -413,5 +437,6 @@ export function runMigrations(plugin: LuminaPlugin): boolean {
 	if (migrateBatchRibbonIcon(plugin)) needsSave = true;
 	if (migratePromptCaching(plugin)) needsSave = true;
 	if (migrateReasoningSettings(plugin)) needsSave = true;
+	if (migrateRagEnhancementSettings(plugin)) needsSave = true;
 	return needsSave;
 }

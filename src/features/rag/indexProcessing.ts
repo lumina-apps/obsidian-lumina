@@ -34,6 +34,10 @@ function isFatalEmbedError(err: unknown): boolean {
 	);
 }
 
+function getChunkEmbedText(chunk: ChildChunk): string {
+	return chunk.contextPrefix ? `${chunk.contextPrefix}\n${chunk.text}` : chunk.text;
+}
+
 function validateAndAssignEmbeddings(childChunks: ChildChunk[], embeddings: number[][]): void {
 	if (!Array.isArray(embeddings) || embeddings.length < childChunks.length) {
 		throw new Error(`임베딩 개수 불일치 (요청: ${childChunks.length}, 응답: ${embeddings?.length ?? 0})`);
@@ -155,7 +159,7 @@ async function processSequential(
 			} else {
 				try {
 					if (result.childChunks.length > 0) {
-						const embeddings = await ctx.embedFn(result.childChunks.map(c => c.text));
+						const embeddings = await ctx.embedFn(result.childChunks.map(getChunkEmbedText));
 						if (checkCancel()) return;
 						validateAndAssignEmbeddings(result.childChunks, embeddings);
 					}
@@ -279,7 +283,7 @@ async function processBatched(
 				for (let i = 0; i < toEmbedChildChunks.length; i += CHUNK_EMBED_BATCH) {
 					if (checkCancel()) break;
 					const batch = toEmbedChildChunks.slice(i, i + CHUNK_EMBED_BATCH);
-					const embeddings = await ctx.embedFn(batch.map(c => c.text));
+					const embeddings = await ctx.embedFn(batch.map(getChunkEmbedText));
 					validateAndAssignEmbeddings(batch, embeddings);
 				}
 				

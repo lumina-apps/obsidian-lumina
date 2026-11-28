@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import { icon } from '../../../shared/utils/iconAction';
+	import { copyToClipboard } from '../../../shared/utils/clipboardUtils';
 	import type {
 		DebugLogEntry,
 		LLMRequestLog,
@@ -10,7 +12,9 @@
 		MCPLog,
 	} from '../../../shared/types/debug.types';
 	import { formatTime, formatDuration, truncate, typeLabel } from '../utils/formatUtils';
+	import { safeJsonStringify } from '../utils/searchUtils';
 	import { t } from '../../../shared/locales/helpers';
+	import HighlightText from './HighlightText.svelte';
 	import LLMRequestDetail from './details/LLMRequestDetail.svelte';
 	import LLMResponseDetail from './details/LLMResponseDetail.svelte';
 	import RAGSearchDetail from './details/RAGSearchDetail.svelte';
@@ -18,11 +22,26 @@
 	import ErrorLogDetail from './details/ErrorLogDetail.svelte';
 	import MCPLogDetail from './details/MCPLogDetail.svelte';
 
-	let { entry, expanded, ontoggle }: {
+	let {
+		entry,
+		expanded,
+		highlightTokens = [],
+		ontoggle,
+	}: {
 		entry: DebugLogEntry;
 		expanded: boolean;
+		highlightTokens?: readonly string[];
 		ontoggle: (id: string) => void;
 	} = $props();
+
+	let copied = $state(false);
+	let copyResetTimer: number | null = null;
+
+	onDestroy(() => {
+		if (copyResetTimer !== null) {
+			window.clearTimeout(copyResetTimer);
+		}
+	});
 
 	function handleToggle() {
 		ontoggle(entry.id);
@@ -32,6 +51,20 @@
 		if (e.key === 'Enter') {
 			ontoggle(entry.id);
 		}
+	}
+
+	function handleCopyEntry(e: MouseEvent) {
+		e.stopPropagation();
+		const json = safeJsonStringify(entry, 2);
+		void copyToClipboard(json, t('uiMessages.copiedToClipboard'));
+		copied = true;
+		if (copyResetTimer !== null) {
+			window.clearTimeout(copyResetTimer);
+		}
+		copyResetTimer = window.setTimeout(() => {
+			copied = false;
+			copyResetTimer = null;
+		}, 1500);
 	}
 </script>
 
@@ -54,7 +87,7 @@
 		{#if entry.type === 'llm-request'}
 			{@const e = entry as LLMRequestLog}
 			<span class="lumina-debug__entry-summary">
-				{e.model} · temp {e.temperature} · max {e.maxTokens}tok
+				<HighlightText text={e.model} tokens={highlightTokens} /> · temp {e.temperature} · max {e.maxTokens}tok
 				{#if e.ragChunks?.length}
 					· RAG {e.ragChunks.length}{t('uiMessages.debugChunks')}
 				{/if}
@@ -70,28 +103,42 @@
 					{/if}
 				{/if}
 				{#if e.stopReason}
-					· {e.stopReason}
+					· <HighlightText text={e.stopReason} tokens={highlightTokens} />
 				{/if}
 			</span>
 		{:else if entry.type === 'rag'}
 			{@const e = entry as RAGSearchLog}
 			<span class="lumina-debug__entry-summary">
-				"{truncate(e.query, 40)}" · {e.chunks.length}{t('uiMessages.debugChunks')} · {formatDuration(e.durationMs)}
+				"<HighlightText text={truncate(e.query, 40)} tokens={highlightTokens} />" · {e.chunks.length}{t('uiMessages.debugChunks')} · {formatDuration(e.durationMs)}
 			</span>
 		{:else if entry.type === 'system'}
 			{@const e = entry as SystemLog}
-			<span class="lumina-debug__entry-summary">{e.event} — {truncate(e.message, 60)}</span>
+			<span class="lumina-debug__entry-summary">
+				<HighlightText text={e.event} tokens={highlightTokens} /> — <HighlightText text={truncate(e.message, 60)} tokens={highlightTokens} />
+			</span>
 		{:else if entry.type === 'error'}
 			{@const e = entry as ErrorLog}
 			<span class="lumina-debug__entry-summary lumina-debug__entry-summary--error">
-				[{e.domain}] {truncate(e.message, 80)}
+				[<HighlightText text={e.domain} tokens={highlightTokens} />] <HighlightText text={truncate(e.message, 80)} tokens={highlightTokens} />
 			</span>
 		{:else if entry.type === 'mcp'}
 			{@const e = entry as MCPLog}
 			<span class="lumina-debug__entry-summary">
-				{e.action} — {truncate(e.message, 60)}
+				<HighlightText text={e.action} tokens={highlightTokens} /> — <HighlightText text={truncate(e.message, 60)} tokens={highlightTokens} />
 			</span>
 		{/if}
+
+		<button
+			class="lumina-debug__entry-copy-btn"
+			class:is-copied={copied}
+			type="button"
+			aria-label={t('uiMessages.debugCopyEntry')}
+			title={t('uiMessages.debugCopyEntry')}
+			onclick={handleCopyEntry}
+			onkeydown={(e) => e.stopPropagation()}
+		>
+			<span use:icon={copied ? 'check' : 'copy'}></span>
+		</button>
 
 		<span
 			class="lumina-debug__entry-chevron"
@@ -108,17 +155,17 @@
 			onkeydown={(e) => e.stopPropagation()}
 		>
 			{#if entry.type === 'llm-request'}
-				<LLMRequestDetail entry={entry as LLMRequestLog} />
+				<LLMRequestDetail entry={entry as LLMRequestLog} {highlightTokens} />
 			{:else if entry.type === 'llm-response'}
-				<LLMResponseDetail entry={entry as LLMResponseLog} />
+				<LLMResponseDetail entry={entry as LLMResponseLog} {highlightTokens} />
 			{:else if entry.type === 'rag'}
-				<RAGSearchDetail entry={entry as RAGSearchLog} />
+				<RAGSearchDetail entry={entry as RAGSearchLog} {highlightTokens} />
 			{:else if entry.type === 'system'}
-				<SystemLogDetail entry={entry as SystemLog} />
+				<SystemLogDetail entry={entry as SystemLog} {highlightTokens} />
 			{:else if entry.type === 'error'}
-				<ErrorLogDetail entry={entry as ErrorLog} />
+				<ErrorLogDetail entry={entry as ErrorLog} {highlightTokens} />
 			{:else if entry.type === 'mcp'}
-				<MCPLogDetail entry={entry as MCPLog} />
+				<MCPLogDetail entry={entry as MCPLog} {highlightTokens} />
 			{/if}
 		</div>
 	{/if}
@@ -206,6 +253,45 @@
 
 	.lumina-debug__entry-summary--error {
 		color: #f87171;
+	}
+
+	.lumina-debug__entry-copy-btn {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 22px;
+		height: 22px;
+		padding: 0;
+		border: none;
+		border-radius: 4px;
+		background: transparent;
+		color: var(--text-faint);
+		cursor: pointer;
+		opacity: 0.7;
+		transition: background 0.12s ease, color 0.12s ease, opacity 0.12s ease;
+	}
+
+	.lumina-debug__entry-copy-btn:hover {
+		background: var(--background-modifier-hover);
+		color: var(--text-normal);
+		opacity: 1;
+	}
+
+	.lumina-debug__entry-copy-btn.is-copied {
+		color: var(--color-green, #4ade80);
+		opacity: 1;
+	}
+
+	.lumina-debug__entry-copy-btn :global(svg) {
+		width: 12px;
+		height: 12px;
+	}
+
+	:global(body.is-mobile) .lumina-debug__entry-copy-btn {
+		width: 28px;
+		height: 28px;
+		opacity: 1;
 	}
 
 	.lumina-debug__entry-chevron {

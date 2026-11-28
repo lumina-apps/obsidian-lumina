@@ -13,6 +13,8 @@
 
 	let stepText = $derived.by(() => {
 		switch (step) {
+			case 'rewriting':
+				return t('uiMessages.ragProgress.rewriting');
 			case 'searching':
 				return t('uiMessages.ragProgress.searching');
 			case 'reranking':

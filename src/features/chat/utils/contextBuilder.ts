@@ -250,6 +250,16 @@ export async function prepareSharedTurnContext(
 		.map(a => a.path);
 
 	if (isRagReady && plugin.indexer && (userText.trim().length > 0 || ragFilterFolders.length > 0)) {
+		const recentHistoryForRag = effectiveHistory
+			.filter(
+				(m): m is UIChatMessage & { role: 'user' | 'assistant' } =>
+					(m.role === 'user' || m.role === 'assistant') &&
+					!m.isContextSummary &&
+					m.content.trim().length > 0,
+			)
+			.slice(-6)
+			.map(m => ({ role: m.role, content: m.content }));
+
 		const result = await performRagSearch({
 			userText,
 			rag: ragSettings,
@@ -257,6 +267,8 @@ export async function prepareSharedTurnContext(
 			existingContext: undefined,
 			assistantId,
 			indexer: plugin.indexer,
+			app: plugin.app,
+			recentHistory: recentHistoryForRag,
 			filterPaths: ragFilterFolders.length > 0 ? ragFilterFolders : undefined,
 			excludePaths: attachedVaultPaths.length > 0 ? attachedVaultPaths : undefined,
 			signal,

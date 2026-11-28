@@ -517,7 +517,24 @@
         "button": "🗑 인덱스 초기화",
         "resetConfirm": "정말로 인덱스를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
         "resetSuccess": "🗑 인덱스가 초기화되었습니다."
-      }
+      },
+      "hybridAlpha": {
+        "name": "하이브리드 검색 비중 (벡터 vs 키워드)",
+        "desc": "의미 벡터 검색(1.0)과 BM25 키워드 검색(0.0) 간의 가중치를 조절합니다. (기본값: 0.5)"
+      },
+      "linkExpansion": {
+        "name": "위키링크 1-Hop 그래프 확장 검색",
+        "desc": "추가 LLM 비용 없이 상위 검색 노트와 [[위키링크]]·백링크로 직접 연결된 이웃 노트까지 함께 탐색합니다. (기본값: 켜짐)"
+      },
+      "queryOptimization": {
+        "name": "대화형 쿼리 재작성 및 다중 쿼리 확장",
+        "desc": "전용 Task 모델을 사용해 대화 지시어를 해소하고 검색 쿼리를 확장합니다 (타임아웃·서킷 브레이커 보호 적용)."
+      },
+      "cragFallback": {
+        "name": "저신뢰 검색 1회 재검색 폴백 (CRAG)",
+        "desc": "1차 검색 결과가 없거나 유사도가 매우 낮을 때 Task 모델로 넓은 키워드를 추출해 1회 재검색합니다."
+      },
+      "taskModelRequiredHint": "[연결 및 모델 설정]에서 Task 모델 선택 필요"
     },
     "misc": {
       "title": "부가 기능\n및 기타",
@@ -807,6 +824,11 @@
     "debugChunks": "청크",
     "debugExpandAll": "모두 펼치기",
     "debugCollapseAll": "모두 접기",
+    "debugSearchPlaceholder": "로그 검색...",
+    "debugClearSearch": "검색어 지우기",
+    "debugNoMatches": "일치하는 로그가 없습니다",
+    "debugResetFilters": "필터 초기화",
+    "debugCopyEntry": "로그 JSON 복사",
     "ragTooLong": "[Lumina] RAG 컨텍스트가 너무 길어 {{max}}자로 잘렸습니다.",
     "ragWorkerInitErr": "알 수 없는 Worker 초기화 에러 (Console 확인 필요)",
     "ragWorkerTerm": "Worker가 종료되었습니다.",
@@ -907,7 +929,8 @@
     "ragProgress": {
       "searching": "🔍 확장 검색 중...",
       "reranking": "⚖️ 리랭크 연산 중...",
-      "generating": "💡 답변 생성 중..."
+      "generating": "💡 답변 생성 중...",
+      "rewriting": "🧠 검색 쿼리 최적화 중..."
     },
     "promptBar": {
       "commandTitle": "즉석 AI 프롬프트 바 열기",

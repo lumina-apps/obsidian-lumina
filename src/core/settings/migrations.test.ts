@@ -13,6 +13,7 @@ import {
 	migrateBatchRibbonIcon,
 	migratePromptCaching,
 	migrateReasoningSettings,
+	migrateRagEnhancementSettings,
 	runMigrations,
 } from './migrations';
 import { addDynamicLocale, setLanguage, getEnLocale } from '../../shared/locales/helpers';
@@ -307,7 +308,13 @@ describe('runMigrations', () => {
 		const mockPlugin = {
 			settings: {
 				misc: { hasMigratedChatHistory: true, showGraphRibbonIcon: false, showBatchRibbonIcon: false },
-				rag: { minSimilarity: 0.5 },
+				rag: {
+					minSimilarity: 0.5,
+					hybridAlpha: 0.5,
+					enableLinkExpansion: true,
+					enableQueryOptimization: false,
+					enableCragFallback: false,
+				},
 				chat: { quickActions: [], memoryMethod: 'tokens', contextWindowTurns: 10, enablePromptCaching: true, geminiExplicitCaching: false, reasoningEffort: 'auto', reasoningBudgetTokens: 0 },
 				webSearch: {
 					enabled: false,
@@ -538,6 +545,35 @@ describe('migrateReasoningSettings', () => {
 		expect(migrateReasoningSettings(mockPlugin)).toBe(false);
 		expect(mockPlugin.settings.chat.reasoningEffort).toBe('high');
 		expect(mockPlugin.settings.chat.reasoningBudgetTokens).toBe(8192);
+	});
+});
+
+describe('migrateRagEnhancementSettings', () => {
+	it('신규 RAG 고도화 필드가 없을 때 안전한 기본값으로 초기화한다', () => {
+		const mockPlugin = { settings: { rag: {} } } as unknown as LuminaPlugin;
+		expect(migrateRagEnhancementSettings(mockPlugin)).toBe(true);
+		expect(mockPlugin.settings.rag.hybridAlpha).toBe(0.5);
+		expect(mockPlugin.settings.rag.enableLinkExpansion).toBe(true);
+		expect(mockPlugin.settings.rag.enableQueryOptimization).toBe(false);
+		expect(mockPlugin.settings.rag.enableCragFallback).toBe(false);
+	});
+
+	it('이미 설정되어 있으면 기존 값을 보존하고 false를 반환한다', () => {
+		const mockPlugin = {
+			settings: {
+				rag: {
+					hybridAlpha: 0.7,
+					enableLinkExpansion: false,
+					enableQueryOptimization: true,
+					enableCragFallback: true,
+				},
+			},
+		} as unknown as LuminaPlugin;
+		expect(migrateRagEnhancementSettings(mockPlugin)).toBe(false);
+		expect(mockPlugin.settings.rag.hybridAlpha).toBe(0.7);
+		expect(mockPlugin.settings.rag.enableLinkExpansion).toBe(false);
+		expect(mockPlugin.settings.rag.enableQueryOptimization).toBe(true);
+		expect(mockPlugin.settings.rag.enableCragFallback).toBe(true);
 	});
 });
 

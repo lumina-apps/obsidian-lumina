@@ -13,6 +13,7 @@ import {
 	toProviderModelValue,
 	sortModelOptionsWithFavorites,
 } from '../../../../shared/utils/settingHelpers';
+import { resetQueryOptimizerCircuitBreaker } from '../../../../features/rag/queryOptimizer';
 
 export function renderTaskModelSection(tab: LuminaSettingTab, el: HTMLElement): void {
 	const s = tab.plugin.settings.connections;
@@ -45,8 +46,10 @@ export function renderTaskModelSection(tab: LuminaSettingTab, el: HTMLElement): 
 			if (val === '') {
 				s.taskProviderId = '';
 				s.taskModelId = '';
-				// Task 모델이 없으면 인라인 자동완성 기능도 강제로 끕니다.
+				// Task 모델이 없으면 인라인 자동완성 및 Task 모델 기반 RAG 최적화 기능도 강제로 끕니다.
 				tab.plugin.settings.chat.enableAutocomplete = false;
+				tab.plugin.settings.rag.enableQueryOptimization = false;
+				tab.plugin.settings.rag.enableCragFallback = false;
 			} else {
 				const parsed = parseProviderModelValue(val);
 				if (parsed) {
@@ -54,6 +57,7 @@ export function renderTaskModelSection(tab: LuminaSettingTab, el: HTMLElement): 
 					s.taskModelId = parsed.modelId;
 				}
 			}
+			resetQueryOptimizerCircuitBreaker();
 			await tab.saveAndSync();
 		},
 		() => s.taskProviderId && s.taskModelId ? toProviderModelValue(s.taskProviderId, s.taskModelId) : '',

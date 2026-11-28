@@ -8,6 +8,7 @@ import { ConfirmModal } from '../../../shared/utils/modal';
 import { syncProjectStore } from '../../../core/store/projectStore';
 import { resolveHistoryBasePath, sanitizeHistorySubfolder } from '../../../shared/utils/historyPathUtils';
 import { isRagEffectiveOnCurrentPlatform } from '../../../shared/utils/modelUtils';
+import { resetQueryOptimizerCircuitBreaker } from '../../../features/rag/queryOptimizer';
 
 /** 경로 설정 변경 후 자동 재인덱싱 디바운스 타이머 */
 let pathChangeDebounceTimer: number | null = null;
@@ -227,6 +228,57 @@ export function renderRagTab(tab: LuminaSettingTab, el: HTMLElement): void {
 			{ min: 0, max: 1, step: 0.05, value: s.duplicateThreshold },
 			wrapAsync(async (val) => { s.duplicateThreshold = val; await tab.saveAndSync(); }),
 		);
+
+		addSliderWithInput(
+			new Setting(el)
+				.setName(t('settings.rag.hybridAlpha.name'))
+				.setDesc(t('settings.rag.hybridAlpha.desc')),
+			{ min: 0, max: 1, step: 0.05, value: typeof s.hybridAlpha === 'number' ? s.hybridAlpha : 0.5 },
+			wrapAsync(async (val) => { s.hybridAlpha = val; await tab.saveAndSync(); }),
+		);
+
+		new Setting(el)
+			.setName(t('settings.rag.linkExpansion.name'))
+			.setDesc(t('settings.rag.linkExpansion.desc'))
+			.addToggle(toggle => {
+				toggle
+					.setValue(s.enableLinkExpansion !== false)
+					.onChange(wrapAsync(async (val) => {
+						s.enableLinkExpansion = val;
+						await tab.saveAndSync();
+					}));
+			});
+
+		const hasTaskModel = Boolean(connections.taskProviderId && connections.taskModelId);
+		const noTaskModelNotice = hasTaskModel ? '' : ` (${t('settings.rag.taskModelRequiredHint')})`;
+
+		new Setting(el)
+			.setName(t('settings.rag.queryOptimization.name'))
+			.setDesc(`${t('settings.rag.queryOptimization.desc')}${noTaskModelNotice}`)
+			.addToggle(toggle => {
+				toggle
+					.setValue(Boolean(s.enableQueryOptimization))
+					.setDisabled(!hasTaskModel)
+					.onChange(wrapAsync(async (val) => {
+						s.enableQueryOptimization = val;
+						resetQueryOptimizerCircuitBreaker();
+						await tab.saveAndSync();
+					}));
+			});
+
+		new Setting(el)
+			.setName(t('settings.rag.cragFallback.name'))
+			.setDesc(`${t('settings.rag.cragFallback.desc')}${noTaskModelNotice}`)
+			.addToggle(toggle => {
+				toggle
+					.setValue(Boolean(s.enableCragFallback))
+					.setDisabled(!hasTaskModel)
+					.onChange(wrapAsync(async (val) => {
+						s.enableCragFallback = val;
+						resetQueryOptimizerCircuitBreaker();
+						await tab.saveAndSync();
+					}));
+			});
 
 		addSliderWithInput(
 			new Setting(el)

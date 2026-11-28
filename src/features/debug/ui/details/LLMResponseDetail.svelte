@@ -1,8 +1,15 @@
 <script lang="ts">
 	import type { LLMResponseLog } from '../../../../shared/types/debug.types';
 	import { formatDuration } from '../../utils/formatUtils';
+	import HighlightText from '../HighlightText.svelte';
 
-	let { entry }: { entry: LLMResponseLog } = $props();
+	let {
+		entry,
+		highlightTokens = [],
+	}: {
+		entry: LLMResponseLog;
+		highlightTokens?: readonly string[];
+	} = $props();
 </script>
 
 <!-- Stats -->
@@ -23,9 +30,9 @@
 				<tr><td>total tokens</td><td>{entry.usage.totalTokens}</td></tr>
 			{/if}
 			{#if entry.stopReason}
-				<tr><td>stop_reason</td><td>{entry.stopReason}</td></tr>
+				<tr><td>stop_reason</td><td><HighlightText text={entry.stopReason} tokens={highlightTokens} /></td></tr>
 			{/if}
-			<tr><td>request_id</td><td class="lumina-debug__mono">{entry.requestId}</td></tr>
+			<tr><td>request_id</td><td class="lumina-debug__mono"><HighlightText text={entry.requestId} tokens={highlightTokens} /></td></tr>
 		</tbody>
 	</table>
 </section>
@@ -33,5 +40,5 @@
 <!-- Response Content -->
 <section class="lumina-debug__section">
 	<div class="lumina-debug__section-title">Response</div>
-	<pre class="lumina-debug__pre">{entry.content}</pre>
+	<pre class="lumina-debug__pre"><HighlightText text={entry.content} tokens={highlightTokens} /></pre>
 </section>

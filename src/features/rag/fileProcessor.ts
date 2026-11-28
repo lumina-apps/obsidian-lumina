@@ -3,12 +3,53 @@
  */
 
 import { App, TFile } from 'obsidian';
-import type { ParentChunk, ChildChunk, ParseBinaryFn, MarkdownFilterOptions } from '../../shared/types/rag.types';
+import type { ParentChunk, ChildChunk, ParseBinaryFn, MarkdownFilterOptions, DocumentMetadata } from '../../shared/types/rag.types';
 import { hashString } from '../../shared/utils/hash';
 import { isLuminaHistoryContent } from '../../shared/utils/historyPathUtils';
 import { preprocessMarkdown } from '../../shared/utils/markdownPreprocessor';
 import { DocumentParserRouter } from './parsers/DocumentParserRouter';
 import { chunkDocument } from './chunker';
+
+/** Obsidian metadataCache에서 청킹 보강용 경량 메타데이터를 추출합니다. */
+function collectMetadataFromCache(app: App, file: TFile): DocumentMetadata | undefined {
+	const cache = app.metadataCache?.getFileCache?.(file);
+	if (!cache) return undefined;
+
+	const fm = cache.frontmatter;
+	const rawTitle = typeof fm?.title === 'string' ? fm.title.trim() : undefined;
+	const tagSet = new Set<string>();
+
+	if (fm?.tags !== undefined) {
+		const fmTags = Array.isArray(fm.tags) ? fm.tags : [fm.tags];
+		for (const item of fmTags) {
+			const clean = String(item).replace(/^#+/, '').trim();
+			if (clean) tagSet.add(clean);
+		}
+	}
+	if (Array.isArray(cache.tags)) {
+		for (const t of cache.tags) {
+			const clean = typeof t?.tag === 'string' ? t.tag.replace(/^#+/, '').trim() : '';
+			if (clean) tagSet.add(clean);
+		}
+	}
+
+	const aliasSet = new Set<string>();
+	if (fm?.aliases !== undefined) {
+		const fmAliases = Array.isArray(fm.aliases) ? fm.aliases : [fm.aliases];
+		for (const item of fmAliases) {
+			const clean = String(item).trim();
+			if (clean) aliasSet.add(clean);
+		}
+	}
+
+	if (!rawTitle && tagSet.size === 0 && aliasSet.size === 0) return undefined;
+
+	return {
+		...(rawTitle ? { title: rawTitle } : {}),
+		...(tagSet.size > 0 ? { tags: Array.from(tagSet).slice(0, 8) } : {}),
+		...(aliasSet.size > 0 ? { aliases: Array.from(aliasSet).slice(0, 5) } : {}),
+	};
+}
 
 export interface ReadAndPrepareResult {
 	parentChunks: ParentChunk[];
@@ -68,6 +109,7 @@ export async function readAndPrepareFile(
 		return { parentChunks: [], childChunks: [], contentHash, skip: true };
 	}
 
+	const fileMetadata = collectMetadataFromCache(app, file);
 	const { parentChunks, childChunks } = chunkDocument(
 		{ path: file.path, content, mtime: file.stat.mtime },
 		parentChunkSize,
@@ -75,6 +117,7 @@ export async function readAndPrepareFile(
 		childChunkSize,
 		childChunkOverlap,
 		filterOptions,
+		fileMetadata,
 	);
 
 	return { parentChunks, childChunks, contentHash, skip: false };

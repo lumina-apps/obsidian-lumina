@@ -4,8 +4,29 @@ import { createProvider } from '../../core/llm-providers';
 import { debugLogger } from '../../shared/debugLogger';
 import { normalizeError } from '../../shared/utils/errorUtils';
 
+export interface RerankOptions {
+	/** 네이티브 rerank API 사용 시 이 점수 미만의 청크를 필터링 (선택) */
+	minNativeScore?: number;
+	/** 점수 필터링 시 최소 1개 결과는 보존할지 여부 (기본: true) */
+	preserveAtLeastOne?: boolean;
+}
+
 /**
- * 프롬프트 기반 Listwise Reranking 구현체.
+ * 리랭킹 모델에 전달할 청크 텍스트를 구성합니다.
+ * 구조 컨텍스트(경로/헤딩)와 가장 일치도가 높았던 하위 청크(bestChildText)를 우선 포함합니다.
+ */
+function buildRerankSnippet(result: SearchResult): string {
+	const header = result.chunk.contextPrefix
+		? `${result.chunk.contextPrefix}\n`
+		: result.chunk.headingPath && result.chunk.headingPath.length > 0
+			? `[${result.chunk.path} > ${result.chunk.headingPath.join(' > ')}]\n`
+			: '';
+	const body = (result.bestChildText || result.chunk.text).slice(0, 600);
+	return `${header}${body}`;
+}
+
+/**
+ * 네이티브 Rerank API 또는 프롬프트 기반 Listwise Reranking 구현체.
  * RAG의 1차 검색 결과를 받아 쿼리 연관성 기준으로 재정렬한 후 지정된 개수만큼 반환합니다.
  * 오류 발생 시(Fallback) 원본 정렬 상태의 상위 N개를 그대로 반환합니다.
  */
@@ -15,7 +36,8 @@ export async function rerankChunks(
 	providerConfig: LLMProviderConfig,
 	modelId: string,
 	topK: number,
-	signal?: AbortSignal
+	signal?: AbortSignal,
+	options?: RerankOptions,
 ): Promise<SearchResult[]> {
 	if (chunks.length === 0) return chunks;
 
@@ -26,7 +48,9 @@ export async function rerankChunks(
 		if (provider.rerank) {
 			const apiStart = Date.now();
 			try {
-				const documentTexts = chunks.map(c => c.chunk.text);
+				const documentTexts = chunks.map(c =>
+					c.chunk.contextPrefix ? `${c.chunk.contextPrefix}\n${c.chunk.text}` : c.chunk.text,
+				);
 				const results = await provider.rerank(query, documentTexts, { model: modelId, topN: topK });
 				debugLogger.logSystem('rag_rerank', `Native rerank completed (${results.length}/${chunks.length} chunks, ${Date.now() - apiStart}ms)`, {
 					model: modelId,
@@ -34,14 +58,26 @@ export async function rerankChunks(
 					outputCount: results.length,
 					durationMs: Date.now() - apiStart,
 				});
-				
-				// 네이티브 API의 정렬 결과 및 점수를 반영하여 반환 (인덱스 범위 유효성 검증)
-				return results
+
+				const mapped = results
 					.filter(r => r.index >= 0 && r.index < chunks.length)
 					.map(r => ({
 						...chunks[r.index],
-						score: r.score
+						score: r.score,
 					}));
+
+				if (typeof options?.minNativeScore === 'number' && options.minNativeScore > 0 && mapped.length > 0) {
+					const filtered = mapped.filter(item => item.score >= options.minNativeScore!);
+					if (filtered.length > 0) {
+						return filtered;
+					}
+					if (options.preserveAtLeastOne !== false) {
+						return [mapped[0]];
+					}
+					return [];
+				}
+
+				return mapped;
 			} catch (err) {
 				if (err instanceof Error && err.name === 'AbortError') {
 					throw err;
@@ -63,7 +99,7 @@ User Query:
 ${query}
 
 Document Chunks:
-${chunks.map((c, i) => `[${i}] ${c.chunk.text.slice(0, 300)}...`).join('\n\n')}
+${chunks.map((c, i) => `[${i}] ${buildRerankSnippet(c)}...`).join('\n\n')}
 `;
 
 		const reqStart = Date.now();

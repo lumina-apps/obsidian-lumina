@@ -59,10 +59,13 @@ export function calculateBM25(
 	const docTokensMap = new Map<number, string[]>();
 	const df = new Map<string, number>();
 
-	// 1. 문서 토큰화 및 DF 계산
+	// 1. 문서 토큰화 및 DF 계산 (구조 컨텍스트 접두사 포함)
 	for (let i = 0; i < chunks.length; i++) {
 		const chunk = chunks[i];
-		const tokens = tokenize(chunk.text);
+		const searchableText = chunk.contextPrefix
+			? `${chunk.contextPrefix} ${chunk.text}`
+			: chunk.text;
+		const tokens = tokenize(searchableText);
 		docTokensMap.set(i, tokens);
 		totalDocLength += tokens.length;
 

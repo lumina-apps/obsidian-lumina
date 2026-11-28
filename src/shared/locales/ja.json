@@ -517,7 +517,24 @@
         "button": "🗑 インデックスをリセット",
         "resetConfirm": "インデックスをリセットしてもよろしいですか？この操作は元に戻せません。",
         "resetSuccess": "🗑 インデックスがリセットされました。"
-      }
+      },
+      "hybridAlpha": {
+        "name": "ハイブリッド検索バランス (ベクトル vs キーワード)",
+        "desc": "意味ベクトル検索(1.0)とBM25キーワード検索(0.0)の重みを調整します。(デフォルト: 0.5)"
+      },
+      "linkExpansion": {
+        "name": "Wikiリンク 1-Hop グラフ拡張検索",
+        "desc": "追加のLLMコストなしで、上位検索結果と[[リンク]]・バックリンクで直接つながる関連ノートも探索します。(デフォルト: オン)"
+      },
+      "queryOptimization": {
+        "name": "クエリ書き換え・マルチクエリ拡張",
+        "desc": "Task専用モデルを使って会話の指示語を解決し検索クエリを拡張します（タイムアウト・サーキットブレーカー保護付き）。"
+      },
+      "cragFallback": {
+        "name": "低信頼度時の再検索フォールバック (CRAG)",
+        "desc": "初回検索結果が空または信頼度が低い場合、Taskモデルで広いキーワードを抽出し1回だけ再検索します。"
+      },
+      "taskModelRequiredHint": "接続とモデル設定でTaskモデルの選択が必要です"
     },
     "misc": {
       "title": "その他\n& 拡張機能",
@@ -807,6 +824,11 @@
     "debugChunks": "チャンク",
     "debugExpandAll": "すべて展開",
     "debugCollapseAll": "すべて折りたたむ",
+    "debugSearchPlaceholder": "ログを検索...",
+    "debugClearSearch": "検索をクリア",
+    "debugNoMatches": "一致するログがありません",
+    "debugResetFilters": "フィルターをリセット",
+    "debugCopyEntry": "ログをJSONでコピー",
     "ragTooLong": "[Lumina] RAGコンテキストが長すぎるため{{max}}文字に切り捨てられました。",
     "ragWorkerInitErr": "不明なワーカー初期化エラー（コンソールを確認）",
     "ragWorkerTerm": "ワーカーが終了しました。",
@@ -907,7 +929,8 @@
     "ragProgress": {
       "searching": "🔍 拡張検索中...",
       "reranking": "⚖️ リランク演算中...",
-      "generating": "💡 回答生成中..."
+      "generating": "💡 回答生成中...",
+      "rewriting": "🧠 検索クエリを最適化中..."
     },
     "promptBar": {
       "commandTitle": "インラインプロンプトバーを開く",

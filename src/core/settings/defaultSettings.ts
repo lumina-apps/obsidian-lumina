@@ -92,6 +92,10 @@ export const DEFAULT_SETTINGS: LuminaSettings = {
 		excludeImages: false,
 		excludeComments: false,
 		excludeContentPatterns: [],
+		hybridAlpha: 0.5,
+		enableLinkExpansion: true,
+		enableQueryOptimization: false,
+		enableCragFallback: false,
 	},
 
 	// ── Section 4: Misc & Extensions ─────────────────────────────────────────

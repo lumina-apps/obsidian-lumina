@@ -17,11 +17,24 @@ export interface RawDocument {
 	mtime: number;
 }
 
+export interface DocumentMetadata {
+	/** 노트 제목 (프론트매터 title 또는 파일명 기반) */
+	title?: string;
+	/** 정규화된 태그 목록 (# 제외) */
+	tags?: string[];
+	/** 노트 별칭 목록 */
+	aliases?: string[];
+}
+
 export interface ParentChunk {
 	id: string;
 	path: string;
 	text: string;
 	chunkIndex: number;
+	/** 마크다운 헤딩 계층 경로 (예: ['아키텍처', '검색 파이프라인']) */
+	headingPath?: string[];
+	/** 검색/임베딩 보강용 구조 컨텍스트 접두사 (원문 text와 분리 저장) */
+	contextPrefix?: string;
 }
 
 export interface ChildChunk {
@@ -30,13 +43,17 @@ export interface ChildChunk {
 	path: string;
 	text: string;
 	chunkIndex: number;
+	/** 마크다운 헤딩 계층 경로 */
+	headingPath?: string[];
+	/** 검색/임베딩 보강용 구조 컨텍스트 접두사 */
+	contextPrefix?: string;
 	embedding?: number[] | Float32Array;
 }
 
 // ─── Persistence ─────────────────────────────────
 
 /** 스키마 버전. 청크 구조 변경 시 증가 → 기존 인덱스 자동 무효화 */
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 7;
 
 export interface PersistedIndex {
 	version: number;
@@ -58,6 +75,10 @@ export interface SearchResult {
 	rawVectorScore?: number;
 	bm25Score?: number;
 	bestChildText?: string;
+	/** 위키링크 1-hop 확장을 통해 발굴된 결과 여부 */
+	expandedViaLink?: boolean;
+	/** 1-hop 확장의 출발지가 된 Seed 노트 경로 */
+	linkedFromPath?: string;
 }
 
 // ─── Indexing State ──────────────────────────────
